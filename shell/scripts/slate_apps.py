@@ -932,7 +932,7 @@ def obsidian_css(c):
         "--divider-color": line, "--divider-color-hover": c["accent"], "--tab-outline-color": line,
         "--tab-divider-color": line, "--titlebar-border-color": line, "--table-border-color": line,
         "--hr-color": line, "--metadata-divider-color": line, "--prompt-border-color": line,
-        "--modal-border-color": line, "--embed-border-left": "2px solid " + line, "--file-line-width": "1px",
+        "--modal-border-color": line, "--embed-border-left": "2px solid " + line,
         "--background-modifier-border-focus": c["accent"], "--background-modifier-hover": c["accent"] + "14",
         "--background-modifier-active-hover": c["accent"] + "1f", "--background-modifier-form-field": c["surface"],
         "--background-modifier-message": c["surface"],
