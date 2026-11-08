@@ -32,7 +32,17 @@ Rectangle {
     readonly property string imageFile: image.startsWith("file://") ? image.slice(7)
         : image.startsWith("image://icon//") ? image.slice(13)
         : image.startsWith("/") ? image : ""
-    readonly property bool preview: imageFile !== ""
+    // …if it's big enough to be a picture: a small one (an icon given as a file, like
+    // notify-send --icon=/path) stays the small icon rather than stretched into a preview
+    readonly property bool preview: imageFile !== "" && sizeProbe.status === Image.Ready
+        && Math.max(sizeProbe.implicitWidth, sizeProbe.implicitHeight) >= 200
+    Image {
+        id: sizeProbe
+        visible: false
+        asynchronous: true
+        sourceSize: Qt.size(256, 256)   // enough to tell (small icons aren't scaled up)
+        source: card.imageFile !== "" ? "file://" + card.imageFile : ""
+    }
 
     readonly property real band: critical && !inPanel ? 3.5 : 0   // red band across the top (urgent pop-ups only)
     readonly property bool hasTimer: progress >= 0
