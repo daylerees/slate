@@ -4441,7 +4441,7 @@ FloatingWindow {
                     detail: "The introduction from Slate's first start, with its recommended choices"
                     Button {
                         label: "Show the welcome"
-                        onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "welcome", "show"]); }
+                        onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "welcome", "open"]); }
                     }
                 }
                 Separator {}

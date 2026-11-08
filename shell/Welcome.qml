@@ -3,7 +3,7 @@
 // windows, colours (from the wallpaper), where the bar and dock go, and the shortcuts.
 // Everything it sets is in Settings too. Skip (or Escape) at any point.
 //
-//   slate ipc call welcome show
+//   slate ipc call welcome open
 
 import QtQuick
 import QtQuick.Effects
@@ -37,7 +37,7 @@ PanelWindow {
     }
     IpcHandler {
         target: "welcome"
-        function show(): void { w.open(); }
+        function open(): void { w.open(); }
     }
 
     property real fade: shown ? 1 : 0
