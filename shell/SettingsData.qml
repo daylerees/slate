@@ -78,7 +78,7 @@ JsonAdapter {
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)
     property string screenshotAfter: "edit"   // edit (swash, when installed) or save
     property bool clipboardHistory: true      // keep a history of what you copy (Super+V)
-    property bool keepEmptyWorkspace: false   // Settings → Windows: always an empty workspace after the last one in use
+    property bool keepEmptyWorkspace: false   // Settings → Workspaces: always an empty workspace after the last one in use
     property string windowMode: "tiling"       // tiling, or floating (every window floats, like a traditional desktop)
     property string titleButtons: "right"     // floating windows' title bar buttons: left or right
     property int windowGap: 6                 // px between tiled windows (edges get 2 more; 0 = none)

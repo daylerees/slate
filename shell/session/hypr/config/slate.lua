@@ -10,7 +10,7 @@
 -- system's own handling (logind: usually suspend / power off); otherwise Slate holds the
 -- system's handling back and does it here.
 LID_ACTION = LID_ACTION or ""
--- Super+Left/Right go from the last workspace round to the first, and back (Settings → Windows;
+-- Super+Left/Right go from the last workspace round to the first, and back (Settings → Workspaces;
 -- Slate sets this directly when it starts, when this config reloads and when it changes)
 WRAP_WORKSPACES = WRAP_WORKSPACES ~= false
 POWER_KEY_ACTION = POWER_KEY_ACTION or ""

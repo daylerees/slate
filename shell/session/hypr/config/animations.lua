@@ -35,7 +35,7 @@ hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = sp(5), bezi
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })
 end
 defineLeaves()
--- How switching workspace looks (Settings → Appearance → Workspace switching); Slate sets it
+-- How switching workspace looks (Settings → Workspaces → Workspace switching); Slate sets it
 -- with setWorkspaceAnimation(style) when it starts, when this config reloads and when it
 -- changes:
 --   slidefade      the new workspace slides in over the old, which fades underneath (default)

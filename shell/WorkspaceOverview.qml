@@ -479,7 +479,7 @@ PanelWindow {
                 width: ov.cardW
                 height: list.cardH + 40
                 scale: lifted ? 1.04 : isSelected ? 1 : 0.86
-                // Without wrapping round (Settings → Windows), the row ends at the first and last
+                // Without wrapping round (Settings → Workspaces), the row ends at the first and last
                 // workspace: the repeats past either end (the other end's cards) fade away
                 readonly property int offset: {
                     const n = ov.strip.length;
@@ -577,7 +577,7 @@ PanelWindow {
                                 layer.enabled: true
                                 Rectangle { anchors.fill: parent; radius: ovWin.radius }
                             }
-                            // Its app's icon in the middle (Settings → Windows), with a soft shadow
+                            // Its app's icon in the middle (Settings → Workspaces), with a soft shadow
                             // so it reads over the window
                             Item {
                                 visible: Config.s.overviewAppIcons

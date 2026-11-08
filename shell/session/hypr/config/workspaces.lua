@@ -77,7 +77,7 @@ function newWorkspace(movingAddr)
     return maxId + 1
 end
 
--- Keep an empty workspace (Settings → Windows): there's always one empty workspace after the
+-- Keep an empty workspace (Settings → Workspaces): there's always one empty workspace after the
 -- last one in use, ready for a new window, like GNOME. Hyprland only keeps an empty workspace
 -- that's marked persistent, so the mark moves to the number after the highest workspace with
 -- windows whenever windows open, close or move. Slate turns it on and off (setSpareWorkspace).

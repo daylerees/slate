@@ -468,7 +468,7 @@ local function cycleWorkspace(step)
         end
     end
     local wraps = (step > 0 and current.id == maxId) or (step < 0 and current.id == minId)
-    -- Wrapping turned off (Settings → Windows): stay on the last (or first) one
+    -- Wrapping turned off (Settings → Workspaces): stay on the last (or first) one
     if wraps and WRAP_WORKSPACES == false then
         hl.exec_cmd(slate("osd workspace"))
         return

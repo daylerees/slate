@@ -126,8 +126,8 @@ FloatingWindow {
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
-            "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
-            "wallpaperFolder", "wallpaperChange", "workspaceAnimation", "wallpaperHideSmall", "wallpaperMinSize"],
+            "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
@@ -142,7 +142,8 @@ FloatingWindow {
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
-        windows: ["windowMode", "keepEmptyWorkspace", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons", "overviewCardWidth", "overviewAppIcons", "wrapWorkspaces"],
+        windows: ["windowMode", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons"],
+        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewAppIcons"],
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
@@ -176,6 +177,7 @@ FloatingWindow {
         { id: "sound", label: "Sound", icon: 0xEB51 },
         { id: "power", label: "Power", icon: 0xEA38 },
         { id: "windows", label: "Windows", icon: 0xEFE6 },
+        { id: "workspaces", label: "Workspaces", icon: 0xEDBA },
         { id: "notifications", label: "Notifications", icon: 0xEA35 },
         { id: "wifi", label: "Wi-Fi", icon: 0xEB52 },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37 },
@@ -361,7 +363,7 @@ FloatingWindow {
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
                 }
             }
@@ -2930,12 +2932,6 @@ FloatingWindow {
                 }
                 Separator { visible: Config.titleBarsAvailable }
                 SettingRow {
-                    label: "Keep an empty workspace"
-                    detail: "Always have an empty workspace after the last one in use, ready for a new window"
-                    Toggle { checked: Config.s.keepEmptyWorkspace; onToggled: v => Config.s.keepEmptyWorkspace = v }
-                }
-                Separator {}
-                SettingRow {
                     id: focusRow
                     label: "Focus follows the pointer"
                     detail: "Windows take the keyboard as the pointer moves over them. Off: click a window to use it (scrolling still reaches the one under the pointer)"
@@ -2990,6 +2986,99 @@ FloatingWindow {
                 }
 
             }
+        }
+    }
+
+    Component {
+        id: workspacesPage
+        Column {
+            spacing: 4
+            PageTitle { text: "Workspaces" }
+            Group {
+                DropdownSetting {
+                    label: "Workspace switching"
+                    detail: Config.s.animations === "off" ? "Animations are off, so workspaces switch straight away"
+                        : ({ slidefade: "The new workspace slides in over the old one, which fades away underneath",
+                             slidefadevert: "The new workspace slides in from above or below over the old one, which fades away",
+                             slide: "Both slide along together, like turning pages",
+                             slidevert: "Both slide up or down together",
+                             crossfade: "The new workspace fades in over the old one",
+                             none: "Straight to the new workspace, with no animation" })[Config.s.workspaceAnimation] || ""
+                    options: [{ value: "slidefade", label: "Slide Fade" }, { value: "slide", label: "Slide" },
+                              { value: "crossfade", label: "Crossfade" }, { value: "slidefadevert", label: "Vertical Slide Fade" },
+                              { value: "slidevert", label: "Vertical Slide" }, { value: "none", label: "None" }]
+                    value: Config.s.workspaceAnimation || "slidefade"
+                    onPicked: v => Config.s.workspaceAnimation = v
+                }
+                Separator {}
+                SettingRow {
+                    label: "Workspaces wrap around"
+                    detail: "Super+Left/Right and the overview go from the last workspace back to the first (and the other way); off, they stop at the ends, and the overview's row ends there too"
+                    Toggle { checked: Config.s.wrapWorkspaces; onToggled: v => Config.s.wrapWorkspaces = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Keep an empty workspace"
+                    detail: "Always have an empty workspace after the last one in use, ready for a new window"
+                    Toggle { checked: Config.s.keepEmptyWorkspace; onToggled: v => Config.s.keepEmptyWorkspace = v }
+                }
+            }
+            GroupLabel { text: "Look" }
+            Group {
+                SettingRow {
+                    label: "Workspace indicators"
+                    detail: "The shape of the workspace dots on the bar, the window switcher, the overview and the on-screen display"
+                    // Two-way switch: Circles | Squares, each with a small preview
+                    Rectangle {
+                        readonly property var shapes: ["circle", "square"]
+                        width: 184; height: 34; radius: 9
+                        color: Config.tint("#151920")
+                        Rectangle {
+                            width: 92 - 6; height: parent.height - 6; radius: 7
+                            y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
+                            color: win.accent
+                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        }
+                        Row {
+                            anchors.fill: parent
+                            Repeater {
+                                model: [{ shape: "circle", label: "Circles" }, { shape: "square", label: "Squares" }]
+                                delegate: Item {
+                                    required property var modelData
+                                    readonly property bool on: Config.s.workspaceShape === modelData.shape
+                                    width: 92; height: 34
+                                    Rectangle {
+                                        anchors { fill: parent; margins: 3 }
+                                        radius: 7
+                                        color: win.accent
+                                        opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
+                                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                                    }
+                                    HoverHandler { id: shapeHover; cursorShape: Qt.PointingHandCursor }
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 7
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: 10; height: 10
+                                            radius: parent.parent.modelData.shape === "square" ? 10 * 0.28 : 5
+                                            color: parent.parent.on ? win.accentText : win.dim
+                                        }
+                                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
+                                    }
+                                    TapHandler { onTapped: Config.s.workspaceShape = parent.modelData.shape }
+                                }
+                            }
+                        }
+                    }
+                }
+                Separator {}
+                SettingRow {
+                    label: "On the menu bar"
+                    detail: "The workspace dots on the bar (also in Menu bar)"
+                    Toggle { checked: Config.s.barShowWorkspaces; onToggled: v => Config.s.barShowWorkspaces = v }
+                }
+            }
             GroupLabel { text: "Workspace overview (Super+Down)" }
             Group {
                 SettingRow {
@@ -3002,11 +3091,13 @@ FloatingWindow {
                     detail: "Each window's app icon in the middle of it on the cards"
                     Toggle { checked: Config.s.overviewAppIcons; onToggled: v => Config.s.overviewAppIcons = v }
                 }
-                Separator {}
+            }
+            GroupLabel { text: "Spaces" }
+            Group {
                 SettingRow {
-                    label: "Workspaces wrap around"
-                    detail: "Super+Left/Right and the overview go from the last workspace back to the first (and the other way); off, they stop at the ends, and the overview's row ends there too"
-                    Toggle { checked: Config.s.wrapWorkspaces; onToggled: v => Config.s.wrapWorkspaces = v }
+                    label: "Spaces"
+                    detail: "Save sets of workspaces with their apps and layout, and bring them back in one click"
+                    Button { label: "Open"; onClicked: win.goTo("spaces", "") }
                 }
             }
         }
@@ -3286,54 +3377,6 @@ FloatingWindow {
                     Toggle { checked: Config.s.roundedScreenCorners; onToggled: v => Config.s.roundedScreenCorners = v }
                 }
                 Separator {}
-                SettingRow {
-                    label: "Workspace indicators"
-                    detail: "The shape of the workspace dots on the bar, the window switcher, the overview and the on-screen display"
-                    // Two-way switch: Circles | Squares, each with a small preview
-                    Rectangle {
-                        readonly property var shapes: ["circle", "square"]
-                        width: 184; height: 34; radius: 9
-                        color: Config.tint("#151920")
-                        Rectangle {
-                            width: 92 - 6; height: parent.height - 6; radius: 7
-                            y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
-                            color: win.accent
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                        }
-                        Row {
-                            anchors.fill: parent
-                            Repeater {
-                                model: [{ shape: "circle", label: "Circles" }, { shape: "square", label: "Squares" }]
-                                delegate: Item {
-                                    required property var modelData
-                                    readonly property bool on: Config.s.workspaceShape === modelData.shape
-                                    width: 92; height: 34
-                                    Rectangle {
-                                        anchors { fill: parent; margins: 3 }
-                                        radius: 7
-                                        color: win.accent
-                                        opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
-                                    }
-                                    HoverHandler { id: shapeHover; cursorShape: Qt.PointingHandCursor }
-                                    Row {
-                                        anchors.centerIn: parent
-                                        spacing: 7
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: 10; height: 10
-                                            radius: parent.parent.modelData.shape === "square" ? 10 * 0.28 : 5
-                                            color: parent.parent.on ? win.accentText : win.dim
-                                        }
-                                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
-                                    }
-                                    TapHandler { onTapped: Config.s.workspaceShape = parent.modelData.shape }
-                                }
-                            }
-                        }
-                    }
-                }
-                Separator {}
                 // Folder colour for file managers: Papirus's coloured folders (scripts/folder-colour.py)
                 Column {
                     id: folderSet
@@ -3519,22 +3562,6 @@ FloatingWindow {
                     options: [{ value: "normal", label: "Normal" }, { value: "fast", label: "Faster" }, { value: "off", label: "Off" }]
                     value: Config.s.animations !== "" ? Config.s.animations : "normal"
                     onPicked: v => Config.s.animations = v
-                }
-                Separator {}
-                DropdownSetting {
-                    label: "Workspace switching"
-                    detail: Config.s.animations === "off" ? "Animations are off, so workspaces switch straight away"
-                        : ({ slidefade: "The new workspace slides in over the old one, which fades away underneath",
-                             slidefadevert: "The new workspace slides in from above or below over the old one, which fades away",
-                             slide: "Both slide along together, like turning pages",
-                             slidevert: "Both slide up or down together",
-                             crossfade: "The new workspace fades in over the old one",
-                             none: "Straight to the new workspace, with no animation" })[Config.s.workspaceAnimation] || ""
-                    options: [{ value: "slidefade", label: "Slide Fade" }, { value: "slide", label: "Slide" },
-                              { value: "crossfade", label: "Crossfade" }, { value: "slidefadevert", label: "Vertical Slide Fade" },
-                              { value: "slidevert", label: "Vertical Slide" }, { value: "none", label: "None" }]
-                    value: Config.s.workspaceAnimation || "slidefade"
-                    onPicked: v => Config.s.workspaceAnimation = v
                 }
             }
             GroupLabel { id: wallLabel; text: "Wallpaper" }
