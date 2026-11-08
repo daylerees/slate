@@ -176,9 +176,7 @@ PanelWindow {
         height: 52; radius: 26
         color: osd.bar.barColor
         opacity: osd.fade
-        // Glass: a thin light rim
-        border.width: Config.glassShine ? 1 : 0
-        border.color: Config.glassEdge
+        Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: !Config.glass; shadowColor: "#000000"; shadowOpacity: 0.4
