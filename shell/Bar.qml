@@ -58,7 +58,8 @@ PanelWindow {
     Component.onCompleted: Config.bars = Config.bars.concat([bar])
     Component.onDestruction: Config.bars = Config.bars.filter(b => b !== bar)
     // A panel is open from this bar (the panels go to whichever screen opened them)
-    readonly property bool popoutHere: !!popouts && popouts.shown && popouts.screen === bar.screen
+    // (from the start of opening, so the bar is done changing before the panel slides)
+    readonly property bool popoutHere: !!popouts && popouts.engaged && popouts.screen === bar.screen
     function openPopout(name, item) {
         if (!popouts) return;
         const p = item.mapToItem(content, item.width / 2, item.height / 2);   // from the screen edge
@@ -244,7 +245,9 @@ PanelWindow {
         // a panel is open
         Item {
             anchors.fill: parent
-            layer.enabled: bar.shadow > 0.01
+            // On the whole time a panel from this bar is shown (from before it slides), so the
+            // shadow's blur is set up once, not as it slides (that held the slide up)
+            layer.enabled: bar.shadow > 0.01 || (!!bar.popouts && bar.popouts.active && bar.popouts.screen === bar.screen)
             layer.effect: MultiEffect {
                 shadowEnabled: true
                 shadowColor: "black"

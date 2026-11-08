@@ -30,17 +30,53 @@ PanelWindow {
     property real anchorY: 0
     readonly property bool shown: current !== ""
 
+    // Opening from closed, a panel is made and drawn for two frames out of sight (slid away,
+    // cut off by its edge) before it slides in, so everything in it (rounded pictures,
+    // shadows, effects) is prepared first. Made as the slide started, the first frames were
+    // late: the slide showed, held, then went
+    property string pending: ""
+    property int pendingFrames: 0
     // scr: the screen of the bar that opened it (the panel moves there)
     function toggle(name, x, y, scr) {
         const target = scr || Config.focusedScreen;
-        if (target && screen !== target) { current = ""; screen = target; }
+        if (target && screen !== target) { current = ""; pending = ""; revealed = false; screen = target; }
         else if (current === name) { close(); return; }
         anchorX = x;
         anchorY = y === undefined ? 0 : y;
         displayed = name;
-        current = name;
+        if (current !== "") { current = name; return; }      // one already open: switch at once
+        pending = name;
+        pendingFrames = 0;
+        openFallback.restart();
     }
-    function close() { current = ""; }
+    // Then it's moved out of sight, and slides in only once that frame is drawn (started
+    // straight away, the slide had already run part-way when it first appeared)
+    property bool revealed: false
+    property bool revealWaiting: false
+    function startOpening() {
+        if (pending === "") return;
+        const name = pending;
+        pending = "";
+        current = name;
+        revealWaiting = true;
+        revealFallback.restart();
+    }
+    function reveal() {
+        if (!revealWaiting) return;
+        revealWaiting = false;
+        if (current !== "") revealed = true;
+    }
+    function close() { current = ""; pending = ""; revealed = false; revealWaiting = false; }
+    // Its first frame is drawn (still slid away): now slide it in
+    Connections {
+        target: panelArea.Window.window
+        function onFrameSwapped() {
+            if (pop.pending !== "") { if (++pop.pendingFrames >= 2) Qt.callLater(pop.startOpening); }
+            else if (pop.revealWaiting) Qt.callLater(pop.reveal);
+        }
+    }
+    Timer { id: openFallback; interval: 200; onTriggered: pop.startOpening() }
+    Timer { id: revealFallback; interval: 120; onTriggered: pop.reveal() }
 
     // e.g.  slate ipc call popout toggle volume 1250
     IpcHandler {
@@ -61,11 +97,16 @@ PanelWindow {
         asynchronous: true
     }
 
-    property real fade: shown ? 1 : 0
+    property real fade: revealed ? 1 : 0
     Behavior on fade { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     // ---- Window ------------------------------------------------------------
-    visible: fade > 0
+    // Opening, open or closing (when closed it's empty: no panel, no clicks, no keyboard)
+    readonly property bool active: fade > 0 || pending !== "" || revealWaiting
+    // The window itself stays on screen, empty, between panels: a window made as a panel
+    // opened drew its first several frames slowly (its screen buffers being set up), which
+    // held up the slide
+    visible: true
     anchors { top: true; bottom: true; left: true; right: true }
     // Panels come out of the bar: down from a top bar, up from a bottom one, sideways from a
     // side bar, next to the button that opened them
@@ -80,16 +121,20 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-popout"
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Takes the keyboard and the clicks from the start of opening, while it's still being
+    // prepared: Hyprland's side of that took a frame or two, and done as the slide began it
+    // held the slide up
+    readonly property bool engaged: shown || pending !== ""
+    WlrLayershell.keyboardFocus: engaged ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // While closing, let clicks through so the desktop is usable straight away
-    mask: Region { item: shown ? catcher : panelArea }
+    mask: Region { item: pop.engaged ? catcher : pop.active ? panelArea : null }
 
     Item { id: catcher; anchors.fill: parent }
 
     // Click outside the panel to close
     MouseArea {
         anchors.fill: parent
-        enabled: pop.shown
+        enabled: pop.engaged
         onClicked: pop.close()
     }
 
@@ -104,19 +149,21 @@ PanelWindow {
     readonly property real radius: 14
     readonly property real pad: 14
 
-    // ---- Drop shadow under the panel: a copy of the panel's shape as far as it has slid
-    // out (the panel clips itself, so it can't cast one), cast away from the bar
+    // ---- Drop shadow under the panel: a copy of the panel's shape (the panel clips itself, so
+    // it can't cast one), cast away from the bar. It moves with the panel at its full size: the
+    // part not slid out yet is past the window's edge, so isn't drawn. (Sized to the part slid
+    // out instead, its blur was redone on every frame of the slide.)
     Rectangle {
-        readonly property real offX: Math.abs(body.x)
-        readonly property real offY: Math.abs(body.y)
-        x: panelArea.x + Math.max(0, body.x)
-        y: panelArea.y + Math.max(0, body.y)
-        width: Math.max(0, panelArea.width - offX)
-        height: Math.max(0, panelArea.height - offY)
+        x: panelArea.x + body.x
+        y: panelArea.y + body.y
+        width: panelArea.width
+        height: panelArea.height
         color: pop.bg
         topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
         bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
-        opacity: pop.fade
+        // Never quite 0 while shown: at 0 Qt drops it from the scene and rebuilds it on the
+        // first frame of the slide, which held the slide up
+        opacity: pop.active ? Math.max(0.01, pop.fade) : 0      // prepared with the panel (see pending)
         visible: width > 0 && height > 0
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -158,6 +205,8 @@ PanelWindow {
             width: parent.width
             height: parent.height
             // Slides out of the bar; rounded on the corners away from it
+            // (While it's being prepared it's drawn here too, still slid away and cut off by the
+            // panel's edge, so it's ready without showing: see `pending`)
             x: pop.sideways ? (pop.side === "left" ? -1 : 1) * width * (1 - pop.fade) : 0
             y: pop.sideways ? 0 : (pop.fromBottom ? 1 : -1) * height * (1 - pop.fade)
             color: pop.bg
@@ -166,7 +215,8 @@ PanelWindow {
             topRightRadius: (pop.side === "bottom" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenStart) ? pop.radius : 0
             bottomLeftRadius: (pop.side === "top" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenEnd) ? pop.radius : 0
             bottomRightRadius: (pop.side === "top" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenEnd) ? pop.radius : 0
-            opacity: Math.min(1, pop.fade * 1.5)
+            // Fades with its movement: in as it slides out, out as it slides back
+            opacity: pop.active ? Math.max(0.01, pop.fade) : 0
 
             FocusScope {
                 anchors.fill: parent
@@ -176,6 +226,9 @@ PanelWindow {
                 Loader {
                     id: content
                     focus: true
+                    // Made fresh for each opening (in the prep stage), and gone when closed so
+                    // nothing in it (meters, clocks…) makes the idle window redraw
+                    active: pop.active
                     sourceComponent: pop.displayed === "volume" ? volumePanel
                         : pop.displayed === "wifi" ? wifiPanel
                         : pop.displayed === "keyboard" ? keyboardPanel
@@ -207,7 +260,7 @@ PanelWindow {
                 : (index === 0 ? panelArea.x - width : panelArea.x + panelArea.width)
             y: pop.sideways ? (index === 0 ? panelArea.y - height : panelArea.y + panelArea.height)
                 : (pop.fromBottom ? pop.height - height : 0)
-            opacity: pop.fade
+            opacity: pop.active ? Math.max(0.01, pop.fade) : 0
             transform: Scale {
                 xScale: pop.sideways ? (pop.side === "left" ? -1 : 1) : (index === 0 ? 1 : -1)
                 yScale: pop.sideways ? (index === 0 ? -1 : 1) : (pop.fromBottom ? -1 : 1)
