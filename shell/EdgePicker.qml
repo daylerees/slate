@@ -1,6 +1,6 @@
 // A small screen to pick an edge for the menu bar or dock (Settings → Menu bar / Dock):
 // click an edge. The chosen one is in the accent; the other (the dock, picking for the bar,
-// and the other way round) sits dimmed where it is, for reference. bar: true draws the edges
+// and the other way round) shows as a thin faint line inside its edge, for reference. bar: true draws the edges
 // as full-length bars, false as short dock-like pills.
 
 import QtQuick
@@ -29,6 +29,21 @@ Rectangle {
         return along ? Qt.rect(x, y, len, thick) : Qt.rect(x, y, thick, len);
     }
 
+    // The other one, for reference: a thin, faint line of its length, just inside its edge
+    // (beside the spots there, so it's never covered and never in the way of a click)
+    Rectangle {
+        readonly property rect r: ep.place(ep.other, !ep.bar)
+        readonly property bool along: ep.other === "top" || ep.other === "bottom"
+        readonly property real thin: 3
+        readonly property real inset: ep.gap + ep.thick + 3
+        x: along ? r.x : ep.other === "left" ? inset : ep.width - inset - thin
+        y: along ? (ep.other === "top" ? inset : ep.height - inset - thin) : r.y
+        width: along ? r.width : thin
+        height: along ? thin : r.height
+        radius: thin / 2
+        color: Config.tint("#4a5360")
+    }
+
     Repeater {
         model: ["top", "bottom", "left", "right"]
         delegate: Rectangle {
@@ -43,12 +58,5 @@ Rectangle {
             HoverHandler { id: spotHover; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: ep.picked(spot.modelData) }
         }
-    }
-    // The other one, for reference (clicks go through to the edge under it)
-    Rectangle {
-        readonly property rect r: ep.place(ep.other, !ep.bar)
-        x: r.x; y: r.y; width: r.width; height: r.height
-        radius: 3
-        color: Config.tint("#4a5360")
     }
 }
