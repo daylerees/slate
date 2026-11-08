@@ -192,6 +192,7 @@ FloatingWindow {
         { id: "apps", label: "Default apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
         { id: "startup", label: "Startup apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
         { id: "datetime", label: "Date & time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
+        { id: "apptheming", label: "App theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
@@ -363,7 +364,7 @@ FloatingWindow {
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
                 }
             }
@@ -3564,6 +3565,16 @@ FloatingWindow {
                     onPicked: v => Config.s.animations = v
                 }
             }
+            GroupLabel { text: "Other apps" }
+            Group {
+                SettingRow {
+                    label: "App theming"
+                    readonly property int count: (Config.s.themedApps || []).length
+                    detail: "Terminals, editors, GTK, Qt and more following Slate's colours and accent · "
+                        + (count === 0 ? "none switched on" : count + (count === 1 ? " app" : " apps") + " themed")
+                    Button { label: "Open"; onClicked: win.goTo("apptheming", "") }
+                }
+            }
             GroupLabel { id: wallLabel; text: "Wallpaper" }
             Group {
                 SettingRow {
@@ -3814,7 +3825,14 @@ FloatingWindow {
                     }
                 }
             }
-            GroupLabel { text: "App theming" }
+        }
+    }
+
+    Component {
+        id: appThemingPage
+        Column {
+            spacing: 4
+            PageTitle { text: "App theming" }
             Group {
                 id: appTheming
                 // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail, installed}]

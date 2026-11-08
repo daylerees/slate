@@ -1,4 +1,4 @@
-"""The apps Slate themes (Settings → Appearance → App theming). Each entry:
+"""The apps Slate themes (Settings → App theming). Each entry:
   id, label, detail     shown in Settings
   installed()           whether the app is on this computer
   apply(ctx)            writes its theme from ctx.c (Slate's colours) through ctx, which
