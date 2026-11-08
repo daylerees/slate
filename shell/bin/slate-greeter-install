@@ -47,7 +47,7 @@ put() {    # put <source> <dest> <mode>
 }
 stage=$(mktemp -d /usr/local/share/.slate-greeter.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
-for f in greeter/shell.qml greeter/fonts.conf LoginScreen.qml Config.qml RoundImage.qml; do
+for f in greeter/shell.qml greeter/fonts.conf LoginScreen.qml Config.qml SettingsData.qml RoundImage.qml; do
     put "$SRC/$f" "$stage/$(basename "$f")" 644
 done
 put "$SRC/greeter/run-greeter.sh" "$stage/run-greeter.sh" 755

@@ -41,7 +41,7 @@ greetd ──runs as "greeter"──▶ dbus-run-session start-hyprland -c /usr/
 
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
-| `/usr/local/share/slate-greeter` (+ `.previous`) | root | `shell.qml` (from `greeter/`), `LoginScreen.qml`, `Config.qml`, `RoundImage.qml`, `scripts/`, `hyprland.lua` (keyboard layout filled in), `run-greeter.sh`, `fonts.conf`, `settings.json` → symlink to the data folder | `sudo ~/.config/slate/bin/slate-greeter-install` |
+| `/usr/local/share/slate-greeter` (+ `.previous`) | root | `shell.qml` (from `greeter/`), `LoginScreen.qml`, `Config.qml`, `SettingsData.qml`, `RoundImage.qml`, `scripts/`, `hyprland.lua` (keyboard layout filled in), `run-greeter.sh`, `fonts.conf`, `settings.json` → symlink to the data folder | `sudo ~/.config/slate/bin/slate-greeter-install` |
 | `/var/lib/slate-greeter` | you | appearance only: `settings.json`, `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
 | `/var/cache/slate-greeter` | greeter | `last-session`, logs, caches | the greeter |
 

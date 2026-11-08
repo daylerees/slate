@@ -26,6 +26,7 @@ run-greeter.sh $SRC/greeter/run-greeter.sh
 fonts.conf $SRC/greeter/fonts.conf
 LoginScreen.qml $SRC/LoginScreen.qml
 Config.qml $SRC/Config.qml
+SettingsData.qml $SRC/SettingsData.qml
 RoundImage.qml $SRC/RoundImage.qml
 scripts/wallpaper-accent.py $SRC/scripts/wallpaper-accent.py
 EOF
