@@ -918,12 +918,21 @@ def obsidian_css(c):
     import colorsys
     r, g, b = (int(c["accent"][i:i + 2], 16) / 255 for i in (1, 3, 5))
     h, l, s = colorsys.rgb_to_hls(r, g, b)
+    alpha = lambda a: "%02x" % round(a * 255)
+    line = c["text"] + alpha(0.12 if c["light"] else 0.08)
+    line_hover = c["text"] + alpha(0.2 if c["light"] else 0.14)
     v = {
         # Obsidian works out its accent shades from these
         "--accent-h": "%d" % round(h * 360), "--accent-s": "%d%%" % round(s * 100), "--accent-l": "%d%%" % round(l * 100),
         "--background-primary": c["bg"], "--background-primary-alt": c["between"],
         "--background-secondary": c["surface"], "--background-secondary-alt": c["between"],
-        "--background-modifier-border": c["divider"], "--background-modifier-border-hover": c["box"],
+        # Lines (borders, between panes, round tabs): a faint wash of the text colour, gentle on
+        # any background, rather than a solid grey
+        "--background-modifier-border": line, "--background-modifier-border-hover": line_hover,
+        "--divider-color": line, "--divider-color-hover": c["accent"], "--tab-outline-color": line,
+        "--tab-divider-color": line, "--titlebar-border-color": line, "--table-border-color": line,
+        "--hr-color": line, "--metadata-divider-color": line, "--prompt-border-color": line,
+        "--modal-border-color": line, "--embed-border-left": "2px solid " + line, "--file-line-width": "1px",
         "--background-modifier-border-focus": c["accent"], "--background-modifier-hover": c["accent"] + "14",
         "--background-modifier-active-hover": c["accent"] + "1f", "--background-modifier-form-field": c["surface"],
         "--background-modifier-message": c["surface"],
