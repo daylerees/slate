@@ -679,7 +679,7 @@ def vim(ctx):
         rc = first_existing(os.path.join(HOME, ".vimrc"), os.path.join(HOME, ".vim", "vimrc"))
         if rc is None:
             rc = os.path.join(HOME, ".vimrc")
-            ctx.start(rc, "\" Vim's usual defaults (a vimrc of your own turns them off)\nsource $VIMRUNTIME/defaults.vim\n")
+            ctx.start(rc, starting("vimrc"))
         ctx.line(rc, use, present=r"^\s*colorscheme\s")
     if have("nvim"):
         ctx.file(cfg("nvim", "colors", VIM_NAME + ".vim"), text)
@@ -691,7 +691,7 @@ def vim(ctx):
         elif os.path.exists(vimrc):
             ctx.line(vimrc, use, present=r"^\s*colorscheme\s")
         else:
-            ctx.start(lua, "-- Neovim config\n")
+            ctx.start(lua, starting("nvim-init.lua"))
             ctx.line(lua, 'vim.cmd.colorscheme("%s")' % VIM_NAME)
 
 
@@ -799,7 +799,7 @@ def yazi(ctx):
 def cava(ctx):
     c = ctx.c
     conf = cfg("cava", "config")
-    ctx.start(conf, "# cava config (see https://github.com/karlstav/cava)\n")
+    ctx.start(conf, starting("cava.conf"))
     ctx.ini_many(conf, [("color", k, v) for k, v in (
         ("gradient", "1"), ("gradient_count", "3"), ("gradient_color_1", "'%s'" % c["tertiary"]),
         ("gradient_color_2", "'%s'" % c["accent"]), ("gradient_color_3", "'%s'" % c["magenta"]))], sep=" = ")

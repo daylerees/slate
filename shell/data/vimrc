@@ -1,0 +1,11 @@
+" Slate's starting Vim config
+"
+" Slate made this because you had no vimrc of your own (Settings → Appearance → App
+" theming). It's yours now: change anything. Switching Vim off in App theming deletes
+" this file if you haven't changed it, or just the colorscheme line if you have.
+
+" Vim's usual defaults (having any vimrc of your own turns them off, so load them here)
+source $VIMRUNTIME/defaults.vim
+
+" Slate's colours (colors/slate-desktop.vim), rewritten whenever Slate's theme changes
+colorscheme slate-desktop

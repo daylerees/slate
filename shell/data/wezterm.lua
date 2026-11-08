@@ -1,12 +1,20 @@
--- Slate's starting WezTerm config, made because you had none. It's yours now: change
--- anything. The "Slate" colour scheme (colors/slate.toml) is rewritten by Slate when its
--- theme changes (Settings → Appearance → App theming).
+-- Slate's starting WezTerm config
+--
+-- Slate made this because you had no WezTerm config of your own (Settings → Appearance →
+-- App theming). It's yours now: change anything. Switching WezTerm off in App theming
+-- deletes this file if you haven't changed it, or just the colour scheme line if you have.
+
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
+-- Slate's colours (colors/slate.toml), rewritten whenever Slate's theme changes
 config.color_scheme = "Slate"
-config.window_background_opacity = 0.8
-config.window_padding = { left = 20, right = 20, top = 20, bottom = 20 }
+
+-- See-through, so Hyprland's blur shows behind the window
+config.window_background_opacity = 0.6
+-- Room between the text and the window's edges (pixels)
+config.window_padding = { left = 25, right = 25, top = 25, bottom = 25 }
+-- One window per terminal: Hyprland arranges the windows, so no tab bar
 config.enable_tab_bar = false
 
 return config
