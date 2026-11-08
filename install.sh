@@ -231,9 +231,9 @@ ok "Icon font: bundled with Slate"
 
 # ---- 4. Slate itself ------------------------------------------------------------------
 # ~/.config/slate holds Slate's code plus your own files, which are always kept:
-#   settings.json (Slate's settings) and hypr/ (your Hyprland tweaks)
+#   settings.json (Slate's settings), hypr/ (your Hyprland tweaks) and user/ (your own QML)
 step "4. Slate"
-KEEP=(settings.json hypr)
+KEEP=(settings.json hypr user)
 mkdir -p "$(dirname "$DEST")"
 # Slate used to live in ~/.config/quickshell/slate: bring its settings along
 if [ -d "$OLD_DEST" ] && [ ! -L "$OLD_DEST" ] && [ ! -e "$DEST/settings.json" ] && [ -f "$OLD_DEST/settings.json" ]; then
@@ -256,9 +256,11 @@ else
     fi
     if [ -n "$keep" ]; then
         for k in "${KEEP[@]}"; do [ -e "$keep/$k" ] && cp -a "$keep/$k" "$DEST/"; done
-        rm -rf "$keep"; ok "Kept your settings and Hyprland tweaks"
+        rm -rf "$keep"; ok "Kept your settings and your own tweaks"
     fi
 fi
+# Files for your own tweaks, with instructions in them, where they don't exist yet
+sh "$DEST/scripts/user-files.sh" "$DEST" >/dev/null && ok "Your own tweaks go in $DEST/hypr and $DEST/user (instructions inside)"
 chmod +x "$DEST"/bin/* "$DEST"/scripts/*.sh "$DEST"/scripts/*.py "$DEST"/greeter/run-greeter.sh "$DEST"/session/slate-session 2>/dev/null || true
 mkdir -p "$(dirname "$BIN_LINK")"
 ln -sfn "$DEST/bin/slate" "$BIN_LINK"; ok "The slate command: $BIN_LINK"

@@ -218,8 +218,11 @@ ShellRoot {
         bar: topBar
         onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); }
     }
+    // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
+    // if missing; saving one reloads Hyprland's config or Slate)
+    UserFiles {}
     // A space's colour and icon on the windows it opened (Settings → Menu bar → Mark windows from a space)
-    SpaceBadges { suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
+    SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
 
     PanelWindow {
         id: win

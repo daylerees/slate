@@ -32,6 +32,8 @@ shell.qml               root: creates everything below, plus the dock itself
 Config.qml              singleton: settings.json + theme helpers (accent, tint()), window
                         rounding (windowRounding, windowRadius()) for previews and borders
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
+UserFiles.qml           your hypr/*.lua and user/shell.qml: made if missing, reload on save
+Screensaver.qml         idle screensaver, before the lock ("slate-screensaver")
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview

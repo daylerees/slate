@@ -88,7 +88,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Log | `~/.cache/slate.log` |
 | Your own Hyprland config (other sessions) | `~/.config/hypr/` — not used by the Slate session |
 | Slate session's Hyprland config | `~/.config/slate/session/hypr/` |
-| Personal overrides for the Slate session | `~/.config/slate/hypr/` (`variables.lua`, `hyprland.lua`) |
+| Your own tweaks for the Slate session (made with instructions; reloaded as you save) | `~/.config/slate/hypr/` (`env`, `variables`, `monitors`, `binds`, `rules`, `autostart`, `hyprland` `.lua`) and `~/.config/slate/user/shell.qml` (QML loaded into Slate) |
 | Session launcher + login entry (installed) | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` |
 | Login screen code (root-owned copy) | `/usr/local/share/slate-greeter/` |
 | Login screen appearance (synced) | `/var/lib/slate-greeter/` |

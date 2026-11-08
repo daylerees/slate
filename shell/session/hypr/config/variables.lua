@@ -1,5 +1,6 @@
 -- Default apps, monitors and workspaces for the Slate session. Each one keeps a value
--- already set in ~/.config/slate/hypr/variables.lua, so change them there.
+-- already set in ~/.config/slate/hypr/variables.lua (made for you, with instructions), so
+-- change them there.
 
 -- Apps opened by the keyboard shortcuts in binds.lua
 TERMINAL     = TERMINAL     or "kitty"                            -- Super+Return

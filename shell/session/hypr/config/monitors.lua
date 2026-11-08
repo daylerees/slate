@@ -1,8 +1,8 @@
 -- Monitors: https://wiki.hypr.land/Configuring/Basics/Monitors/
 -- By default the first monitor uses its preferred mode and scale. To name your monitors,
 -- set MONITOR1… in ~/.config/slate/hypr/variables.lua (`hyprctl monitors` lists them);
--- for a specific mode, position or scale, add hl.monitor() to
--- ~/.config/slate/hypr/hyprland.lua, for example:
+-- for a specific mode, position or scale, use Settings → Displays, or add hl.monitor() to
+-- ~/.config/slate/hypr/monitors.lua, for example:
 --   hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = "1" })
 
 hl.monitor({

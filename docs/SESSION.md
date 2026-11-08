@@ -10,10 +10,11 @@ session at login. This is how Slate is meant to be installed for other people.
 login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
    └─ uwsm start -e -D Hyprland -N Slate -- start-hyprland -- -c <slate>/session/hypr/hyprland.lua
       (plain start-hyprland when uwsm isn't installed)
-         ├─ ~/.config/slate/hypr/variables.lua   (optional, first)
+         ├─ ~/.config/slate/hypr/env.lua, variables.lua        (yours, first)
          ├─ Slate's config: colors, variables, animations, autostart, decorations,
          │  inputs, binds, misc, monitors, windowrules, workspaces
-         ├─ ~/.config/slate/hypr/hyprland.lua    (optional, last; overrides)
+         ├─ ~/.config/slate/hypr/monitors.lua, binds.lua, rules.lua,
+         │  autostart.lua, hyprland.lua                        (yours, last; they win)
          └─ autostart: slate
 ```
 
@@ -25,10 +26,24 @@ login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
 | `~/.config/slate/session/slate-session` | launcher (source) |
 | `~/.config/slate/session/slate.desktop` | login entry (source) |
 | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` | installed copies |
-| `~/.config/slate/hypr/variables.lua` | optional: `TERMINAL`, `BROWSER`, `FILE_MANAGER`, `EDITOR`, `CALCULATOR`, `MONITOR1..3`, `NUM_WPM` |
-| `~/.config/slate/hypr/hyprland.lua` | optional: keyboard layout, monitors, device tweaks, extra binds, startup apps |
+| `~/.config/slate/hypr/env.lua` | yours: `hl.env(...)` environment variables for apps (loaded first) |
+| `~/.config/slate/hypr/variables.lua` | yours: `TERMINAL`, `BROWSER`, `FILE_MANAGER`, `EDITOR`, `CALCULATOR`, `MONITOR1..3`, `NUM_WPM`, cursor |
+| `~/.config/slate/hypr/monitors.lua` | yours: `hl.monitor(...)`, monitor workspace rules (after Settings → Displays) |
+| `~/.config/slate/hypr/binds.lua` | yours: extra or replaced shortcuts, `hl.unbind(...)` |
+| `~/.config/slate/hypr/rules.lua` | yours: window and workspace rules |
+| `~/.config/slate/hypr/autostart.lua` | yours: commands at login (`hl.on("hyprland.start", …)`) |
+| `~/.config/slate/hypr/hyprland.lua` | yours, loaded last: anything else (keyboard layout, devices…); wins over everything |
+| `~/.config/slate/user/shell.qml` | yours: QML loaded into Slate itself (extra widgets, IPC handlers) |
+| `~/.local/state/slate/keyset.lua` | written by Settings → Shortcuts: `KEYSET = "slate"`, `"hyprland"` (Hyprland's default shortcuts) or `"hyprland-extras"` (those plus Slate's on free keys); read by `binds.lua`, which then binds that set |
 | `~/.local/state/slate/displays.lua` | written by Settings → Displays (loaded by `monitors.lua`; your `hyprland.lua` loads later and wins) |
 | `config/slate.lua` | `slateApply({...})`: Slate sends the keyboard, mouse, touchpad, focus, cursor, animation, default-app, lid and power-button settings changed in Settings (only those; the rest stay as your files set them). Putting one back with Restore defaults reloads the config |
+
+Your files are made by Slate (`scripts/user-files.sh`, at startup and by the installer)
+with instructions inside, only where they don't exist yet, and the installer keeps them
+(`hypr/`, `user/`). Saving one reloads it: Hyprland's config for the `.lua` files, Slate
+itself for `shell.qml` (`UserFiles.qml`). A mistake in a `.lua` file skips that file (the
+rest still loads) and Slate shows it in a notification, with Hyprland's own config errors;
+a mistake in `shell.qml` leaves Slate running without it, and is shown the same way.
 
 `slate-session` looks for the config in `$XDG_CONFIG_HOME/slate/session/hypr/`
 first, then `/usr/share/slate/session/hypr/` (for a system-wide package).
