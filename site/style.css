@@ -8,7 +8,7 @@
 }
 @font-face {
   font-family: "Tabler";
-  src: url("fonts/tabler.ttf") format("truetype");
+  src: url("fonts/tabler.ttf?v=2") format("truetype");
   font-display: block;
 }
 
