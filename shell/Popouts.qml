@@ -940,90 +940,136 @@ PanelWindow {
                 text: "Set up your apps across workspaces the way you like them, then save them as a space to bring them all back in one click."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
-            Column {
+            // The saved spaces. Past five they scroll (about four and a half show, to say
+            // there's more), with a soft shadow at an edge that has more beyond it
+            Item {
+                id: spListBox
                 visible: spp.mode === "list" && Spaces.list.length > 0
                 width: parent.width
-                spacing: 6
-                Repeater {
-                    model: Spaces.list
-                    delegate: RowButton {
-                        id: spRow
-                        required property var modelData
-                        readonly property bool busy: Spaces.restoring === modelData.id
-                        readonly property var appIds: Spaces.apps(modelData)
-                        width: parent.width
-                        height: 52
-                        onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
-                        HoverHandler { id: spRowHover }
-                        Rectangle {
-                            id: spBadge
-                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: 34; height: 34; radius: 9
-                            color: spRow.modelData.colour
-                            Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spp.inkColour; font.pixelSize: 19 }
-                        }
-                        Column {
-                            anchors { left: spBadge.right; leftMargin: 10; right: spSide.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            spacing: 2
-                            Label { width: parent.width; text: spRow.modelData.name }
-                            Label {
+                readonly property real rowH: 52
+                readonly property bool overflow: Spaces.list.length > 5
+                height: overflow ? Math.round(rowH * 4.5 + 6 * 4) : spListCol.height
+                Flickable {
+                    id: spListFlick
+                    anchors.fill: parent
+                    contentHeight: spListCol.height
+                    clip: true
+                    interactive: spListBox.overflow
+                    boundsBehavior: Flickable.StopAtBounds
+                    SmoothWheel { flick: spListFlick; enabled: spListBox.overflow }
+                    Column {
+                        id: spListCol
+                        width: spListBox.width - (spListBox.overflow ? 14 : 0)
+                        spacing: 6
+                        Repeater {
+                            model: Spaces.list
+                            delegate: RowButton {
+                                id: spRow
+                                required property var modelData
+                                readonly property bool busy: Spaces.restoring === modelData.id
+                                readonly property var appIds: Spaces.apps(modelData)
                                 width: parent.width
-                                readonly property int nWs: (spRow.modelData.workspaces || []).length
-                                readonly property int nApps: Spaces.appCount(spRow.modelData)
-                                text: spRow.busy ? "Opening…"
-                                    : (nWs === 1 ? "1 workspace" : nWs + " workspaces") + " · " + (nApps === 1 ? "1 app" : nApps + " apps")
-                                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
-                            }
-                        }
-                        // Its apps, or, under the pointer, a delete button (asks first, in
-                        // the middle of the screen)
-                        Item {
-                            id: spSide
-                            anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: spRowHover.hovered ? spDel.width : spApps.width
-                            height: 28
-                            Row {
-                                id: spApps
-                                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                visible: !spRowHover.hovered
-                                spacing: -5
-                                Repeater {
-                                    model: spRow.appIds.slice(0, 4)
-                                    AppTile { required property string modelData; app: modelData; width: 22; height: 22 }
+                                height: 52
+                                onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
+                                HoverHandler { id: spRowHover }
+                                Rectangle {
+                                    id: spBadge
+                                    anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                                    width: 34; height: 34; radius: 9
+                                    color: spRow.modelData.colour
+                                    Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spp.inkColour; font.pixelSize: 19 }
                                 }
-                                Label {
-                                    visible: spRow.appIds.length > 4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    leftPadding: 8
-                                    text: "+" + (spRow.appIds.length - 4)
-                                    color: pop.dim; font.pixelSize: 11
+                                Column {
+                                    anchors { left: spBadge.right; leftMargin: 10; right: spSide.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                    spacing: 2
+                                    Label { width: parent.width; text: spRow.modelData.name }
+                                    Label {
+                                        width: parent.width
+                                        readonly property int nWs: (spRow.modelData.workspaces || []).length
+                                        readonly property int nApps: Spaces.appCount(spRow.modelData)
+                                        text: spRow.busy ? "Opening…"
+                                            : (nWs === 1 ? "1 workspace" : nWs + " workspaces") + " · " + (nApps === 1 ? "1 app" : nApps + " apps")
+                                        color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
+                                    }
                                 }
-                            }
-                            Rectangle {
-                                id: spDel
-                                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                visible: !spApps.visible
-                                width: 28; height: 28; radius: 7
-                                color: spDelHover.hovered ? Config.hover : "transparent"
-                                Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
-                                HoverHandler { id: spDelHover }
-                                // A MouseArea, so the click stops here rather than also opening the space
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        const sp = spRow.modelData;
-                                        pop.close();
-                                        if (!pop.powerConfirm) return;
-                                        pop.powerConfirm.confirmWith({
-                                            title: "Delete \u201c" + sp.name + "\u201d?",
-                                            body: "The space is forgotten. Its apps and windows that are open now stay as they are.",
-                                            button: "Delete", code: 0xEB41, danger: true
-                                        }, () => Spaces.remove(sp.id));
+                                // Its apps, or, under the pointer, a delete button (asks first, in
+                                // the middle of the screen)
+                                Item {
+                                    id: spSide
+                                    anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                    width: spRowHover.hovered ? spDel.width : spApps.width
+                                    height: 28
+                                    Row {
+                                        id: spApps
+                                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                                        visible: !spRowHover.hovered
+                                        spacing: -5
+                                        Repeater {
+                                            model: spRow.appIds.slice(0, 4)
+                                            AppTile { required property string modelData; app: modelData; width: 22; height: 22 }
+                                        }
+                                        Label {
+                                            visible: spRow.appIds.length > 4
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            leftPadding: 8
+                                            text: "+" + (spRow.appIds.length - 4)
+                                            color: pop.dim; font.pixelSize: 11
+                                        }
+                                    }
+                                    Rectangle {
+                                        id: spDel
+                                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                                        visible: !spApps.visible
+                                        width: 28; height: 28; radius: 7
+                                        color: spDelHover.hovered ? Config.hover : "transparent"
+                                        Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
+                                        HoverHandler { id: spDelHover }
+                                        // A MouseArea, so the click stops here rather than also opening the space
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                const sp = spRow.modelData;
+                                                pop.close();
+                                                if (!pop.powerConfirm) return;
+                                                pop.powerConfirm.confirmWith({
+                                                    title: "Delete \u201c" + sp.name + "\u201d?",
+                                                    body: "The space is forgotten. Its apps and windows that are open now stay as they are.",
+                                                    button: "Delete", code: 0xEB41, danger: true
+                                                }, () => Spaces.remove(sp.id));
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                }
+                // Scroll shadows, as in Settings: at the top once scrolled down, and at the
+                // bottom while there's more below
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; top: parent.top }
+                    height: 18
+                    opacity: spListBox.overflow && !spListFlick.atYBeginning ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
+                        GradientStop { position: 1; color: "transparent" }
+                    }
+                }
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; bottom: parent.bottom }
+                    height: 24
+                    opacity: spListBox.overflow && !spListFlick.atYEnd ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "transparent" }
+                        GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
+                    }
+                }
+                ThinScrollbar {
+                    flick: spListFlick
+                    color: pop.text
+                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                 }
             }
             Divider { visible: spp.mode === "list" }
@@ -2404,8 +2450,20 @@ PanelWindow {
                     anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                 }
 
-                // Shadow at the bottom while there's more to scroll to. Parented to the
-                // list itself (not its scrolling content) so it stays put.
+                // Shadow at the top once scrolled down. Parented to the list itself (not its
+                // scrolling content) so it stays put.
+                Rectangle {
+                    parent: nList
+                    anchors { left: parent.left; right: parent.right; top: parent.top }
+                    height: 36
+                    opacity: nList.contentHeight > nList.height && !nList.atYBeginning ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: pop.bg }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+                // …and at the bottom while there's more to scroll to
                 Rectangle {
                     parent: nList
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
