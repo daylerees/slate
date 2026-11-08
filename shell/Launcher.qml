@@ -19,6 +19,12 @@ PanelWindow {
     readonly property real gridCellSize: Math.floor((panelWidth - 36) / gridColumns)
     readonly property real panelHeight: Math.max(260, Math.min(gridMode ? 134 + gridRows * gridCellSize : 520, height - 120))
     readonly property real rowHeight: 52
+    // As tall as the results need (never taller than panelHeight), so it shrinks as a search
+    // narrows them: the search box and margins (and the grid's name strip), then a row per
+    // result in the list or per row of icons in the grid, and at least one row
+    readonly property real chromeHeight: gridMode ? 134 : 86
+    readonly property real fittedHeight: Math.min(panelHeight,
+        chromeHeight + Math.max(1, Math.ceil(results.length / (gridMode ? gridColumns : 1))) * (gridMode ? gridCellSize : rowHeight))
     // List or grid (Settings → Launcher → Layout). The grid shows just bigger icons; the
     // selected one's name is in a strip along the bottom of the launcher
     readonly property bool gridMode: Config.s.launcherLayout === "grid"
@@ -396,8 +402,12 @@ PanelWindow {
     Rectangle {
         id: panel
         width: root.panelWidth
-        height: root.panelHeight
-        anchors.centerIn: parent
+        // Shrinks and grows with the results, smoothly; the top stays put (where a full-height
+        // launcher's would be), so the search box doesn't move while typing
+        height: root.fittedHeight
+        Behavior on height { enabled: root.shown; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
         color: root.barColor
         opacity: root.fade
