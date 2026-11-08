@@ -11,7 +11,9 @@ Rectangle {
     id: g
     property real strength: 1
     anchors.fill: parent
-    visible: Config.glassGloss && opacity > 0
+    // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
+    // drawing), so its effect isn't rebuilt each time it shows
+    visible: Config.glassGloss
     color: "transparent"
     // Hover highlights set opacity to show it while pointed at: it fades in and out in step
     // with their colour (appearing at once, the top half showed before the rest)
@@ -34,7 +36,10 @@ Rectangle {
     // fading out a little way down the sides
     Item {
         anchors.fill: parent
-        layer.enabled: g.visible
+        // Set up once (while gloss is on), not each time the gloss shows: on hover-only gloss
+        // that rebuilt the effect every time the pointer crossed an item, and moving the mouse
+        // over a row of them was choppy
+        layer.enabled: Config.glassGloss
         layer.effect: MultiEffect { maskEnabled: true; maskSource: rimFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
         Rectangle {
             anchors.fill: parent
@@ -48,7 +53,7 @@ Rectangle {
         id: rimFade
         anchors.fill: parent
         visible: false
-        layer.enabled: true
+        layer.enabled: Config.glassGloss
         Rectangle {
             id: rimGrad
             anchors.fill: parent

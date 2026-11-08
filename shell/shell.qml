@@ -808,7 +808,7 @@ ShellRoot {
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
                                 Gloss {
-                                    visible: Config.glassGloss && Config.s.iconShape !== "original" && opacity > 0
+                                    visible: Config.glassGloss && Config.s.iconShape !== "original"
                                     radius: parent.width * win.iconCorner / Math.max(1, win.base)
                                 }
                             }
