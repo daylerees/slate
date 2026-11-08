@@ -2106,7 +2106,9 @@ PanelWindow {
                 Item {
                     anchors.fill: parent
                     layer.enabled: true
-                    layer.effect: MultiEffect { maskEnabled: true; maskSource: profileMask }
+                    // (maskSpreadAtMin: the mask's see-through parts blend rather than cut off,
+                    // so glass's fading mask works)
+                    layer.effect: MultiEffect { maskEnabled: true; maskSource: profileMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                     Image {
                         anchors.fill: parent
                         // Loaded ahead of time (profileWallpaper), so loading it here is instant
@@ -2117,7 +2119,10 @@ PanelWindow {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: false
                     }
+                    // (With glass the card is see-through, so a fade in its colour wouldn't
+                    // show: the picture itself fades in instead, through the mask below)
                     Rectangle {
+                        visible: !Config.glass
                         anchors.fill: parent
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
@@ -2132,7 +2137,19 @@ PanelWindow {
                     anchors.fill: parent
                     visible: false
                     layer.enabled: true
-                    Rectangle { anchors.fill: parent; radius: profileCard.radius }
+                    Rectangle {
+                        anchors.fill: parent; radius: profileCard.radius
+                        // Glass: the wallpaper fades in from the left, over the frosted card
+                        gradient: Config.glass ? glassFade : null
+                        color: "white"
+                        Gradient {
+                            id: glassFade
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 0.35; color: Qt.rgba(1, 1, 1, 0.08) }
+                            GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.65) }
+                        }
+                    }
                 }
                 RoundImage {
                     id: avatar
@@ -2175,7 +2192,10 @@ PanelWindow {
                         delegate: RowButton {
                             required property var modelData
                             width: 34; height: 34
-                            color: hovered2.hovered ? Config.hoverOn(pop.bg) : Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.55)
+                            // Over the wallpaper: the solid card colour, half see-through (not the
+                            // glass card colour, which is already see-through white)
+                            readonly property color base: Config.tint("#1d222a")
+                            color: hovered2.hovered ? Config.hoverOn(Config.tint("#0f1216")) : Qt.rgba(base.r, base.g, base.b, 0.55)
                             HoverHandler { id: hovered2 }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }

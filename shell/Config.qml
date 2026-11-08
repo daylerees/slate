@@ -250,7 +250,8 @@ Singleton {
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
             // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
             // blur size if one's picked
-            + `if not SLATE_GLASS then SLATE_GLASS = hl.layer_rule({ name = "slate-glass", match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = 0.05 }) end; `
+            + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
+            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
             + `SLATE_GLASS:set_enabled(${s.glass ? "true" : "false"})`
             + (s.glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "");
     }
@@ -414,6 +415,11 @@ Singleton {
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
     // solid grey (so the glass shows through them too)
     function raised(c) { return glass ? (s.lightMode ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.07)) : c; }
+    // Where Hyprland's blur stops: just under the surfaces' own opacity. It goes by each pixel
+    // (no smoothing), so along rounded edges it steps; stopping where the surface is nearly
+    // solid hides that, where stopping at its faint edge showed it ("pixely" against a bright
+    // window border)
+    readonly property real glassCut: Math.max(0.05, glassOpacity * 0.85)
     // The shine: a thin light rim around glass surfaces
     readonly property bool glassShine: glass && s.glassShine
     readonly property color glassEdge: s.lightMode ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(1, 1, 1, 0.13)
