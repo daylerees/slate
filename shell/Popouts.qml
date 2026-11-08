@@ -807,7 +807,7 @@ PanelWindow {
         id: spacesPanel
         Column {
             id: spp
-            width: 340
+            width: 440
             spacing: 10
             property string mode: "list"          // list, or new (saving the workspaces now)
             property string confirmDelete: ""     // a space whose delete button was clicked once
@@ -984,83 +984,104 @@ PanelWindow {
                 text: "No workspace has apps open yet: open the apps you want, arranged how you like, then come back here."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
-            // Each workspace with apps, drawn small over the wallpaper; click to pick it
-            Flow {
+            // Each workspace with apps, drawn small over the wallpaper; click to pick it.
+            // Three to a row; past two rows the rest scroll (a little of the third shows,
+            // to say there's more)
+            Item {
+                id: wsBox
                 visible: spp.mode === "new" && Spaces.live.length > 0
                 width: parent.width
-                spacing: 8
-                Repeater {
-                    model: Spaces.live
-                    delegate: Column {
-                        id: wsCard
-                        required property var modelData
-                        readonly property bool on: spp.picked.includes(modelData.id)
-                        width: (spp.width - 8) / 2
-                        spacing: 5
-                        Rectangle {
-                            id: wsShot
-                            width: parent.width
-                            height: Math.round(width / Math.max(1, wsCard.modelData.aspect || 1.6))
-                            radius: 8
-                            color: Config.tint("#0b0d10")
-                            clip: true
-                            Image {
-                                anchors.fill: parent
-                                source: Config.wallpaper ? "file://" + Config.wallpaper : ""
-                                sourceSize: Qt.size(320, 200)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                opacity: wsCard.on ? 0.75 : 0.4
-                                Behavior on opacity { NumberAnimation { duration: 150 } }
-                            }
-                            Repeater {
-                                // Tiled first, floating ones on top
-                                model: wsCard.modelData.windows.slice().sort((a, b) => a.floating - b.floating)
-                                delegate: Rectangle {
-                                    id: wsWin
-                                    required property var modelData
-                                    x: wsShot.width * modelData.x; y: wsShot.height * modelData.y
-                                    width: Math.max(6, wsShot.width * modelData.w - 1); height: Math.max(6, wsShot.height * modelData.h - 1)
-                                    radius: 3
-                                    color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.92)
-                                    border.width: 1
-                                    border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.12)
-                                    AppTile {
-                                        anchors.centerIn: parent
-                                        app: wsWin.modelData.desktopId || wsWin.modelData["class"]
-                                        width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
+                readonly property bool overflow: Math.ceil(Spaces.live.length / 3) > 2
+                readonly property real cardW: Math.floor((width - 16 - (overflow ? 14 : 0)) / 3)
+                readonly property real rowH: Math.round(cardW / Math.max(1, (Spaces.live[0] || {}).aspect || 1.6)) + 5 + 17 + 8
+                height: overflow ? Math.round(rowH * 2.4) : wsFlow.height
+                Flickable {
+                    id: wsFlick
+                    anchors.fill: parent
+                    contentHeight: wsFlow.height
+                    clip: true
+                    interactive: wsBox.overflow
+                    boundsBehavior: Flickable.StopAtBounds
+                    SmoothWheel { flick: wsFlick; enabled: wsBox.overflow }
+                    Flow {
+                        id: wsFlow
+                        width: wsBox.width - (wsBox.overflow ? 14 : 0)
+                        spacing: 8
+                        Repeater {
+                            model: Spaces.live
+                            delegate: Column {
+                                id: wsCard
+                                required property var modelData
+                                readonly property bool on: spp.picked.includes(modelData.id)
+                                width: wsBox.cardW
+                                spacing: 5
+                                Rectangle {
+                                    id: wsShot
+                                    width: parent.width
+                                    height: Math.round(width / Math.max(1, wsCard.modelData.aspect || 1.6))
+                                    radius: 8
+                                    color: Config.tint("#0b0d10")
+                                    clip: true
+                                    Image {
+                                        anchors.fill: parent
+                                        source: Config.wallpaper ? "file://" + Config.wallpaper : ""
+                                        sourceSize: Qt.size(320, 200)
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        opacity: wsCard.on ? 0.75 : 0.4
+                                        Behavior on opacity { NumberAnimation { duration: 150 } }
                                     }
+                                    Repeater {
+                                        // Tiled first, floating ones on top
+                                        model: wsCard.modelData.windows.slice().sort((a, b) => a.floating - b.floating)
+                                        delegate: Rectangle {
+                                            id: wsWin
+                                            required property var modelData
+                                            x: wsShot.width * modelData.x; y: wsShot.height * modelData.y
+                                            width: Math.max(6, wsShot.width * modelData.w - 1); height: Math.max(6, wsShot.height * modelData.h - 1)
+                                            radius: 3
+                                            color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.92)
+                                            border.width: 1
+                                            border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.12)
+                                            AppTile {
+                                                anchors.centerIn: parent
+                                                app: wsWin.modelData.desktopId || wsWin.modelData["class"]
+                                                width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
+                                            }
+                                        }
+                                    }
+                                    // Picked: an accent ring and a tick
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: parent.radius
+                                        color: "transparent"
+                                        border.width: wsCard.on ? 2 : 1
+                                        border.color: wsCard.on ? pop.accent : wsShotHover.hovered ? pop.dim : Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.1)
+                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                                    }
+                                    Rectangle {
+                                        anchors { top: parent.top; right: parent.right; margins: 5 }
+                                        width: 18; height: 18; radius: 9
+                                        color: wsCard.on ? pop.accent : Qt.rgba(0, 0, 0, 0.45)
+                                        border.width: wsCard.on ? 0 : 1.5
+                                        border.color: Qt.rgba(1, 1, 1, 0.7)
+                                        Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
+                                    }
+                                    HoverHandler { id: wsShotHover; cursorShape: Qt.PointingHandCursor }
+                                    TapHandler { onTapped: spp.toggle(wsCard.modelData.id) }
+                                }
+                                Label {
+                                    width: parent.width
+                                    readonly property int n: wsCard.modelData.windows.length
+                                    text: "Workspace " + wsCard.modelData.id + " · " + (n === 1 ? "1 app" : n + " apps")
+                                    color: wsCard.on ? pop.text : pop.dim
+                                    font.weight: Font.Normal; font.pixelSize: 12
                                 }
                             }
-                            // Picked: an accent ring and a tick
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: parent.radius
-                                color: "transparent"
-                                border.width: wsCard.on ? 2 : 1
-                                border.color: wsCard.on ? pop.accent : wsShotHover.hovered ? pop.dim : Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.1)
-                                Behavior on border.color { ColorAnimation { duration: 120 } }
-                            }
-                            Rectangle {
-                                anchors { top: parent.top; right: parent.right; margins: 5 }
-                                width: 18; height: 18; radius: 9
-                                color: wsCard.on ? pop.accent : Qt.rgba(0, 0, 0, 0.45)
-                                border.width: wsCard.on ? 0 : 1.5
-                                border.color: Qt.rgba(1, 1, 1, 0.7)
-                                Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
-                            }
-                            HoverHandler { id: wsShotHover; cursorShape: Qt.PointingHandCursor }
-                            TapHandler { onTapped: spp.toggle(wsCard.modelData.id) }
-                        }
-                        Label {
-                            width: parent.width
-                            readonly property int n: wsCard.modelData.windows.length
-                            text: "Workspace " + wsCard.modelData.id + " · " + (n === 1 ? "1 app" : n + " apps")
-                            color: wsCard.on ? pop.text : pop.dim
-                            font.weight: Font.Normal; font.pixelSize: 12
                         }
                     }
                 }
+                ThinScrollbar { flick: wsFlick; color: pop.text; anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
             }
 
             Label { visible: spp.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
@@ -1102,7 +1123,7 @@ PanelWindow {
             Label { visible: spp.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Grid {
                 visible: spp.mode === "new"
-                columns: 11
+                columns: 15
                 spacing: 2
                 Repeater {
                     model: Spaces.icons
@@ -1110,7 +1131,7 @@ PanelWindow {
                         id: icCell
                         required property int modelData
                         readonly property bool on: spp.icon === modelData
-                        width: (spp.width - 20) / 11; height: width; radius: 7
+                        width: (spp.width - 28) / 15; height: width; radius: 7
                         color: on ? spp.colour : icHover.hovered ? pop.card : "transparent"
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
@@ -1125,7 +1146,8 @@ PanelWindow {
                 visible: spp.mode === "new"
                 columns: 9
                 readonly property real cell: 28
-                spacing: (spp.width - cell * 9) / 8
+                columnSpacing: (spp.width - cell * 9) / 8
+                rowSpacing: 10
                 Repeater {
                     // The pastels, then your own colour
                     model: Spaces.colours.concat(["custom"])
