@@ -8,3 +8,5 @@ shell/user/
 *.removed-*
 __pycache__/
 *.pyc
+shell/VERSION
+shell/.manifest

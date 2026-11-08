@@ -148,6 +148,7 @@ FloatingWindow {
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
+        updates: ["updateCheck"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -190,7 +191,8 @@ FloatingWindow {
         { id: "startup", label: "Startup apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
         { id: "datetime", label: "Date & time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
-        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Version, updates and Slate's files" }
+        { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
+        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
     ]
     readonly property var sidebarSections: [{ id: "overview", label: "Overview", icon: 0xEDBA }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
@@ -359,7 +361,7 @@ FloatingWindow {
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
                 }
             }
@@ -4185,6 +4187,155 @@ FloatingWindow {
                                 destructive: true
                                 onClicked: d.forget()
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: updatesPage
+        Column {
+            id: upd
+            spacing: 4
+            // A second click confirms (updating over files you've changed; going back)
+            property bool confirmUpdate: false
+            property bool confirmRevert: false
+            readonly property var mod: Updates.modified
+            readonly property var touched: mod && mod.known ? mod.changed.concat(mod.added) : []
+            readonly property string latest: Updates.latest
+            function when(iso) { return iso ? Qt.formatDate(new Date(iso), "d MMMM yyyy") : ""; }
+            function ago(ms) {
+                const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
+                return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Qt.formatDate(new Date(ms), "d MMM");
+            }
+            // "v0.4.2-15-gabc123" (a copy of the code past a release) reads as "v0.4.2 + 15 changes"
+            function nice(v) {
+                const m = /^(v[\d.]+)-(\d+)-g/.exec(v || "");
+                return m ? m[1] + " + " + m[2] + " changes" : v;
+            }
+            Component.onCompleted: { Updates.check(false); Updates.findModified(); }
+
+            PageTitle { text: "Updates" }
+            Text {
+                width: Math.min(parent.width, win.introMeasure)
+                text: "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it."
+                color: win.dim; font.family: win.font; font.pixelSize: 13
+                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
+            }
+            Group {
+                SettingRow {
+                    label: "Installed version"
+                    detail: Updates.installed === "" ? "Unknown: this copy of Slate wasn't installed with a version"
+                        : upd.nice(Updates.installed)
+                }
+                Separator {}
+                SettingRow {
+                    label: Updates.available ? "Slate " + upd.latest + " is available" : "Latest version"
+                    detail: Updates.checking ? "Checking…"
+                        : Updates.error !== "" && Updates.status !== "failed" ? Updates.error
+                        : upd.latest === "" ? "Not checked yet"
+                        : (Updates.available ? "Released " + upd.when(Updates.state.published) : upd.latest + ": you're up to date")
+                          + (Updates.checkedAt > 0 ? " · checked " + upd.ago(Updates.checkedAt) : "")
+                    Button { label: Updates.checking ? "Checking…" : "Check now"; icon: 0xEB13; onClicked: Updates.check(true) }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Check for updates"
+                    detail: "Once a day, with a notification when there's a new version"
+                    Toggle { checked: Config.s.updateCheck; onToggled: v => Config.s.updateCheck = v }
+                }
+            }
+
+            // ---- A new version: what's new, and updating ----
+            GroupLabel {
+                visible: Updates.available || Updates.busy || Updates.status === "failed"
+                text: "What's new in " + upd.latest
+            }
+            Group {
+                visible: Updates.available || Updates.busy || Updates.status === "failed"
+                Text {
+                    x: 16; width: parent.width - 32
+                    visible: Updates.notes !== ""
+                    topPadding: 12; bottomPadding: 8
+                    text: Updates.notes
+                    textFormat: Text.MarkdownText
+                    color: win.text; linkColor: win.accent
+                    font.family: win.font; font.pixelSize: 13
+                    wrapMode: Text.Wrap
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
+                Separator { visible: Updates.notes !== "" }
+                // Slate's own files changed by hand: an update replaces them (the old copy is kept)
+                Text {
+                    x: 16; width: parent.width - 32
+                    visible: upd.touched.length > 0 && !Updates.busy
+                    topPadding: 12; bottomPadding: 4
+                    text: "You've changed some of Slate's own files, outside settings.json, hypr/ and user/. Updating replaces them; your versions stay in ~/.config/slate.previous:\n"
+                        + upd.touched.slice(0, 8).map(f => "  · " + f).join("\n")
+                        + (upd.touched.length > 8 ? "\n  · and " + (upd.touched.length - 8) + " more" : "")
+                    color: win.danger; font.family: win.font; font.pixelSize: 12
+                    wrapMode: Text.Wrap
+                }
+                SettingRow {
+                    label: Updates.status === "downloading" ? "Downloading " + upd.latest + "…"
+                        : Updates.status === "installing" ? "Installing " + upd.latest + "…"
+                        : Updates.status === "failed" ? "The update didn't finish"
+                        : "Update to " + upd.latest
+                    detail: Updates.status === "installing" ? "Slate restarts on the new version when it's done"
+                        : Updates.status === "failed" ? Updates.error
+                        : upd.confirmUpdate ? "Your changed files above will be replaced. Click again to update"
+                        : "Takes a moment; Slate restarts on the new version"
+                    Row {
+                        spacing: 8
+                        Button { visible: Updates.url !== ""; label: "Release page"; icon: 0xEA99; onClicked: Qt.openUrlExternally(Updates.url) }
+                        Button {
+                            visible: Updates.status === "failed" && Updates.state.log !== undefined
+                            label: "Show log"
+                            onClicked: Quickshell.execDetached(["xdg-open", Updates.state.log])
+                        }
+                        Button {
+                            visible: !Updates.busy
+                            primary: true
+                            icon: 0xEA96
+                            label: Updates.status === "failed" ? "Try again" : upd.confirmUpdate ? "Update anyway" : "Update now"
+                            onClicked: {
+                                if (upd.touched.length > 0 && !upd.confirmUpdate) { upd.confirmUpdate = true; return; }
+                                upd.confirmUpdate = false;
+                                Updates.install();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- Just updated, or went back ----
+            Group {
+                visible: Updates.status === "done" || Updates.status === "reverted"
+                SettingRow {
+                    label: Updates.status === "done" ? "Updated to " + upd.nice(Updates.installed) : "Back on " + upd.nice(Updates.installed)
+                    detail: Updates.status === "done" ? (Updates.note !== "" ? Updates.note : "Your settings and tweaks came along. The version before is kept, below")
+                        : "Your settings and tweaks stayed as they were. The version you left is kept, below"
+                    Button { visible: Updates.status === "done" && Updates.url !== ""; label: "What's new"; icon: 0xEA99; onClicked: Qt.openUrlExternally(Updates.url) }
+                }
+            }
+
+            // ---- The version kept as a backup ----
+            GroupLabel { visible: Updates.previous !== ""; text: "Previous version" }
+            Group {
+                visible: Updates.previous !== ""
+                SettingRow {
+                    label: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : upd.nice(Updates.previous))
+                    detail: upd.confirmRevert ? "Click again to switch. Your settings and tweaks stay as they are now"
+                        : "Kept in ~/.config/slate.previous. Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
+                    Button {
+                        enabled: !Updates.busy
+                        label: upd.confirmRevert ? "Go back now" : "Go back"
+                        onClicked: {
+                            if (!upd.confirmRevert) { upd.confirmRevert = true; return; }
+                            upd.confirmRevert = false;
+                            Updates.revert();
                         }
                     }
                 }

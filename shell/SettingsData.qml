@@ -150,6 +150,8 @@ JsonAdapter {
     property bool screensaverClock: true         // the clock on drift and slideshow
     property int screensaverSlideSeconds: 20     // slideshow: each picture's time
     property bool screensaverLock: false         // waking it locks the screen
+    // Updates (Settings → Updates): look for new versions daily, with a notification
+    property bool updateCheck: true
     // Keyboard shortcuts (Settings → Shortcuts): slate, hyprland or hyprland-extras
     property string keyset: "slate"
     // Lock & idle (minutes; 0 = never)

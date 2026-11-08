@@ -221,6 +221,8 @@ ShellRoot {
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)
     UserFiles {}
+    // New releases: checked daily, a notification when one's out (Settings → Updates)
+    readonly property bool updateAvailable: Updates.available
     // A space's colour and icon on the windows it opened (Settings → Menu bar → Mark windows from a space)
     SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
 

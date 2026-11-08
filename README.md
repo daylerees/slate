@@ -57,6 +57,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | On-screen indicators | Volume, mic, brightness, keyboard backlight, workspace dots (Super+Left/Right) | `OSD.qml` |
 | Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, about | `SettingsWindow.qml` |
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
+| Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
 | Screensaver | Clock on drifting wallpaper, wallpaper slideshow or clock on black; starts before the lock, optional lock on wake (Settings → Screensaver; `slate ipc call screensaver start`) | `Screensaver.qml` |
 | Login screen | greetd greeter in a minimal Hyprland, same design as the lock screen | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |

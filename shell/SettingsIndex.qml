@@ -16,16 +16,18 @@ Singleton {
 
     readonly property var pageIcons: ({ input: 0xEBD6, sound: 0xEB51, power: 0xEA38, shortcuts: 0xEA78, apps: 0xEBB6,
         startup: 0xEC45, datetime: 0xEA70, screenshots: 0xF201, general: 0xEB20, appearance: 0xEB01, bar: 0xEAD7, dock: 0xEAD3, launcher: 0xEB1C, spaces: 0xEEF6,
-        windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, lock: 0xEAE2, screensaver: 0xEAF8, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
+        windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, lock: 0xEAE2, screensaver: 0xEAF8, updates: 0xEA96, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
     readonly property var pageNames: ({ input: "Keyboard & mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
         apps: "Default apps", startup: "Startup apps", datetime: "Date & time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
-        windows: "Windows", displays: "Displays", hotcorners: "Hot corners", notifications: "Notifications", lock: "Lock & idle", screensaver: "Screensaver", wifi: "Wi-Fi",
+        windows: "Windows", displays: "Displays", hotcorners: "Hot corners", notifications: "Notifications", lock: "Lock & idle", screensaver: "Screensaver", updates: "Updates", wifi: "Wi-Fi",
         bluetooth: "Bluetooth", about: "About" })
     readonly property var curated: [
         // [name, page, extra search words]
         ["General settings", "general", "settings preferences account"],
         ["Appearance", "appearance", "look theme colours colors style fonts"],
         ["Screensaver", "screensaver", "screen saver idle clock slideshow away burn-in oled"],
+        ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],
+        ["Check for updates", "updates", "update notification daily automatic new version"],
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],
         ["Theme (dark, light or auto)", "appearance", "dark mode light mode auto appearance"],
         ["Accent colour", "appearance", "color highlight"],

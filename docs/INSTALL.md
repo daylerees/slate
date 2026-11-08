@@ -123,8 +123,9 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    floating mode (Settings → Windows → Window mode). It's optional: without it (or without
    Slate's patch to it) Slate tiles windows and Settings doesn't offer floating mode.
    Rebuild it after Hyprland updates with `slate build-hyprbars`.
-4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is moved
-   aside to `slate.backup-<date>` first (your `settings.json` is carried over).
+4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is kept as
+   `slate.previous` (one version back; your `settings.json`, `hypr/` and `user/` are
+   carried over).
 5. **Login entry** — adds two files so login screens list "Slate":
    `/usr/local/bin/slate-session` and `/usr/share/wayland-sessions/slate.desktop`. This
    works with GDM, SDDM, LightDM and greetd login screens.
@@ -182,6 +183,23 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 All keys are in `shell/session/hypr/config/binds.lua`.
 
 ## Updating
+
+Slate looks for a new release once a day and shows a notification when one is out
+(turn it off in Settings → Updates). **Settings → Updates** shows what's new and updates in
+one click: it downloads the release and runs its `./install.sh --update`, which puts the new
+version in place without questions or `sudo`. Your settings and overrides are always kept:
+`settings.json`, `hypr/` and `user/` in `~/.config/slate`.
+
+- The version you had is kept in `~/.config/slate.previous` (one version back), and
+  Settings → Updates can go back to it. Your settings and overrides stay as they are when
+  you switch, and the version you leave becomes the backup, so you can switch back again.
+- Changes made by hand to Slate's own files (outside `settings.json`, `hypr/` and `user/`)
+  are listed before updating, since the update replaces them (they stay in the backup).
+- A release that needs new packages, or newer Hyprland or Quickshell, stops before changing
+  anything and asks you to run its full installer. If it changes the login session, the
+  Updates page shows the one `sudo` command left to run.
+
+From a copy of the code instead:
 
 ```sh
 cd slate && git pull

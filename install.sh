@@ -7,6 +7,9 @@
 #   ./install.sh --login-screen   also make Slate's login screen the system's (greetd)
 #   ./install.sh --no-deps        skip installing packages (you've done it yourself)
 #   ./install.sh --link           link ~/.config/slate to this folder (for development)
+#   ./install.sh --update         just put this version of Slate in place, keeping your files, with
+#                                 no questions or sudo (Settings → Updates runs this); stops with
+#                                 code 3 if it needs new packages or more (run it in full then)
 #   ./install.sh --uninstall      remove Slate (keeps packages and your settings backup)
 #
 # What it does:
@@ -26,15 +29,16 @@ BIN_LINK="$HOME/.local/bin/slate"
 HYPR_MIN="0.57"
 QS_MIN="0.3"
 
-YES=0; DEPS=1; LINK=0; LOGIN=0; UNINSTALL=0
+YES=0; DEPS=1; LINK=0; LOGIN=0; UNINSTALL=0; UPDATE=0
 for a in "$@"; do
     case "$a" in
+        --update) UPDATE=1; DEPS=0 ;;
         -y|--yes) YES=1 ;;
         --no-deps) DEPS=0 ;;
         --link) LINK=1 ;;
         --login-screen) LOGIN=1 ;;
         --uninstall) UNINSTALL=1 ;;
-        -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $a (see ./install.sh --help)" >&2; exit 1 ;;
     esac
 done
@@ -45,7 +49,8 @@ step() { echo; echo "${B}==> $*${N}"; }
 ok()   { echo "  ${G}✓${N} $*"; }
 warn() { echo "  ${Y}!${N} $*"; }
 die()  { echo "${R}Error:${N} $*" >&2; exit 1; }
-ask() {   # ask "Question?" → 0 for yes. Default yes.
+ask() {   # ask "Question?" → 0 for yes. Default yes. (--update never asks: always no)
+    [ "$UPDATE" -eq 1 ] && return 1
     [ "$YES" -eq 1 ] && return 0
     local r; read -r -p "  $1 [Y/n] " r </dev/tty || r=""
     case "$r" in [nN]*) return 1 ;; *) return 0 ;; esac
@@ -55,7 +60,7 @@ have() { command -v "$1" >/dev/null 2>&1; }
 version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
 [ "$(id -u)" -ne 0 ] || die "Run this as your normal user, not root (it uses sudo when needed)."
-have sudo || die "sudo is needed for the system steps."
+[ "$UPDATE" -eq 1 ] || have sudo || die "sudo is needed for the system steps."
 
 # ---- Uninstall ------------------------------------------------------------------------
 if [ "$UNINSTALL" -eq 1 ]; then
@@ -166,6 +171,24 @@ if [ -n "$too_old" ]; then
     ask "Try anyway?" || exit 1
 fi
 
+# --update: this version may need packages the last one didn't. If any are missing, stop
+# (code 3) so the full installer can be run instead.
+needs_installer() { echo; warn "$*"; warn "Run ./install.sh from this version of Slate to finish updating."; exit 3; }
+if [ "$UPDATE" -eq 1 ]; then
+    step "1. Packages"
+    missing=()
+    while read -r p; do
+        case "$p" in \?*) continue ;; esac
+        case "$family" in
+            arch) pacman -T "$p" >/dev/null 2>&1 || missing+=("$p") ;;
+            debian) dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p") ;;
+            fedora|opensuse) rpm -q --whatprovides "$p" >/dev/null 2>&1 || missing+=("$p") ;;
+        esac
+    done < <(case "$family" in arch|debian|fedora|opensuse) read_list "$family" ;; esac)
+    [ "${#missing[@]}" -eq 0 ] || needs_installer "This version needs packages you don't have: ${missing[*]}"
+    ok "Everything this version needs is installed"
+fi
+
 if [ "$DEPS" -eq 1 ]; then
     step "1. Packages"
     case "$family" in
@@ -211,6 +234,7 @@ else
     fi
 fi
 if [ "$problems" -ne 0 ]; then
+    [ "$UPDATE" -eq 1 ] && needs_installer "Some requirements are missing (above)."
     echo
     ask "Some requirements are missing (above). Carry on and put Slate in place anyway?" || exit 1
 fi
@@ -243,16 +267,28 @@ if [ -L "$DEST" ] && [ "$(readlink -f "$DEST")" = "$ROOT/shell" ]; then
     ok "$DEST already links to this folder"
 else
     keep=""
-    if [ -e "$DEST" ]; then
+    # The new copy is made next to the old one first, so a failed copy leaves the old in place
+    if [ "$LINK" -eq 0 ]; then
+        rm -rf "$DEST.new"
+        cp -a "$ROOT/shell" "$DEST.new"
+        # Its version (a release's, or this checkout's) and a fingerprint of each of its files,
+        # so Settings → Updates can tell you which you've changed before an update replaces them
+        [ -f "$DEST.new/VERSION" ] || { v=$(git -C "$ROOT" describe --tags 2>/dev/null || true); [ -z "$v" ] || echo "$v" > "$DEST.new/VERSION"; }
+        (cd "$DEST.new" && find . -type f ! -path '*/.*' ! -path '*/__pycache__/*' ! -path ./VERSION \
+            ! -path ./settings.json ! -path './hypr/*' ! -path './user/*' -printf '%P\0' | sort -z | xargs -0 sha256sum) > "$DEST.new/.manifest"
+    fi
+    if [ -e "$DEST" ] || [ -L "$DEST" ]; then
         keep=$(mktemp -d)
         for k in "${KEEP[@]}"; do [ -e "$DEST/$k" ] && cp -a "$DEST/$k" "$keep/"; done
-        b="$DEST.backup-$(date +%Y%m%d-%H%M%S)"
-        mv "$DEST" "$b"; ok "Backed up the previous Slate to $b"
+        # One backup, of the version before this one (Settings → Updates can go back to it)
+        b="$DEST.previous"
+        rm -rf "$b"
+        mv "$DEST" "$b"; ok "Kept the previous Slate in $b"
     fi
     if [ "$LINK" -eq 1 ]; then
         ln -s "$ROOT/shell" "$DEST"; ok "Linked $DEST -> $ROOT/shell"
     else
-        cp -a "$ROOT/shell" "$DEST"; ok "Copied Slate to $DEST"
+        mv "$DEST.new" "$DEST"; ok "Copied Slate to $DEST"
     fi
     if [ -n "$keep" ]; then
         for k in "${KEEP[@]}"; do [ -e "$keep/$k" ] && cp -a "$keep/$k" "$DEST/"; done
@@ -278,7 +314,9 @@ mkdir -p "$data/icons"
 ln -sfn "$DEST/cursors/Slate-Cursors" "$data/icons/Slate-Cursors"; ok "Slate Cursors"
 # hyprbars: title bars for floating windows (Settings → Windows → Window mode), built for
 # this Hyprland into ~/.local/share/slate/plugins. Optional: without it, no title bars.
-if have g++ && have git && have make; then
+if [ "$UPDATE" -eq 1 ]; then
+    ok "hyprbars: kept as built (rebuild with: slate build-hyprbars)"
+elif have g++ && have git && have make; then
     echo "  Building hyprbars (title bars for floating windows)…"
     if "$DEST/bin/slate-build-hyprbars" >/tmp/slate-hyprbars.log 2>&1; then ok "hyprbars built"
     else warn "Couldn't build hyprbars (see /tmp/slate-hyprbars.log); floating windows won't have title bars. Retry later with: slate build-hyprbars"; fi
@@ -287,7 +325,7 @@ else
 fi
 # Icon theme: Papirus-Dark (its coloured folders back Settings → Appearance → Folder colour),
 # unless you've already picked an icon theme of your own
-if have gsettings && { [ -d /usr/share/icons/Papirus-Dark ] || [ -d /run/current-system/sw/share/icons/Papirus-Dark ]; }; then
+if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark ] || [ -d /run/current-system/sw/share/icons/Papirus-Dark ]; }; then
     cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")
     case "$cur" in
         ""|Adwaita|AdwaitaLegacy|hicolor|default|gnome|breeze|breeze-dark|Yaru*|elementary)
@@ -300,6 +338,16 @@ fi
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin isn't on your PATH; add it to use the slate command in a terminal" ;; esac
 # If Slate is running (updating from inside it), restart it on the new code
 if have qs && pgrep -x qs >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then "$DEST/bin/slate" restart && ok "Restarted Slate"; fi
+
+# --update: the login session's two files are copied into place with sudo, so they can't be
+# updated here. Done, unless this version changed them.
+if [ "$UPDATE" -eq 1 ]; then
+    if [ -f /usr/local/bin/slate-session ] && ! cmp -s /usr/local/bin/slate-session "$DEST/session/slate-session"; then
+        warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install"
+    fi
+    echo; echo "${G}${B}Slate is updated.${N}"
+    exit 0
+fi
 
 # ---- 5. Login session -----------------------------------------------------------------
 step "5. \"Slate\" on the login screen"

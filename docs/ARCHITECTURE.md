@@ -34,12 +34,16 @@ Config.qml              singleton: settings.json + theme helpers (accent, tint()
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
 UserFiles.qml           your hypr/*.lua and user/shell.qml: made if missing, reload on save
 Screensaver.qml         idle screensaver, before the lock ("slate-screensaver")
+Updates.qml             singleton: new releases (scripts/update.py): daily check, notification,
+                        install and go back (Settings → Updates)
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
+scripts/update.py             GitHub releases: check, list hand-changed files (against the
+                              installed .manifest), install (install.sh --update), go back
 shaders/mono.frag(.qsb)       tray icons → single theme colour
 greeter/                the login screen (see LOCK-AND-LOGIN.md)
 ```
