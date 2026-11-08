@@ -23,6 +23,17 @@ message:
   `BREAKING CHANGE:` footer saying what users need to do.
 - One logical change per commit; don't mix a fix with unrelated changes.
 
+## Docs and the site
+
+After any change that adds, removes or changes something users can see or do, update the
+docs and the site to match, in the same commit or one right after it:
+
+- `site/features.html`: the full feature list (settings, panels, shortcuts and so on).
+- `site/index.html`: the feature cards and tour, when it's a headline feature.
+- `README.md` and `docs/` (INSTALL, ARCHITECTURE, SESSION, …) wherever they describe it.
+
+Only the text: screenshots and recordings are retaken only when asked.
+
 ## Releases
 
 Releases are tagged with [Semantic Versioning](https://semver.org/): annotated tags named
