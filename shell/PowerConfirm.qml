@@ -1,8 +1,12 @@
-// Confirmation dialog for log out / restart / shut down, in the middle of the screen
-// over a dimmed desktop. Keyboard: Left/Right or Tab pick a button (the action is picked
-// first), Enter or Space presses it, Escape or a click outside cancels.
+// Confirmation dialog in the middle of the screen over a dimmed desktop: for log out /
+// restart / shut down, and for anything else that needs a yes first (deleting a space…).
+// Keyboard: Left/Right or Tab pick a button (the action is picked first), Enter or Space
+// presses it, Escape or a click outside cancels.
 // Open with powerConfirm.ask("<logout|reboot|shutdown>"), or from anywhere with:
 //   slate ipc call power confirm shutdown
+// For other questions:
+//   powerConfirm.confirmWith({ title: "Delete “Work”?", body: "…", button: "Delete",
+//                              code: 0xEB41, danger: true }, () => { … })
 
 import QtQuick
 import Quickshell
@@ -31,13 +35,25 @@ PanelWindow {
         shutdown: { title: "Shut down?", body: "Your apps will close and the computer will turn off.",         button: "Shut down", code: 0xEB0D, danger: true }
     })
 
-    property string action: ""                 // action being asked about
+    property string action: ""                 // action being asked about ("custom": confirmWith)
     property bool shown: false
-    readonly property var info: actions[action] ?? actions.shutdown
+    property var custom: null                  // confirmWith: what to show, and what to run
+    property var customAction: null
+    readonly property var info: action === "custom" && custom ? custom : (actions[action] ?? actions.shutdown)
 
     property int focusedButton: 1          // 0 = Cancel, 1 = the action
     function ask(name) {
         if (!actions[name]) return;
+        open(name);
+    }
+    // Any other question: spec is { title, body, button, code, danger }; onConfirm runs on yes
+    function confirmWith(spec, onConfirm) {
+        custom = spec;
+        customAction = onConfirm;
+        open("custom");
+        focusedButton = 0;                 // Cancel first: Enter alone doesn't delete things
+    }
+    function open(name) {
         screen = Config.focusedScreen;     // open on the focused screen
         action = name;
         focusedButton = 1;
@@ -45,10 +61,16 @@ PanelWindow {
         Qt.callLater(() => keys.forceActiveFocus());
     }
     function press() { if (focusedButton === 0) cancel(); else confirm(); }
-    function cancel() { shown = false; }
+    function cancel() { shown = false; customAction = null; }
     function confirm() {
         if (!shown) return;
         shown = false;
+        if (action === "custom") {
+            const f = customAction;
+            customAction = null;
+            if (f) f();
+            return;
+        }
         Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action]);
     }
 

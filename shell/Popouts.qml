@@ -810,7 +810,6 @@ PanelWindow {
             width: 440
             spacing: 10
             property string mode: "list"          // list, or new (saving the workspaces now)
-            property string confirmDelete: ""     // a space whose delete button was clicked once
             // New Space
             property var picked: []               // workspace ids
             property string name: ""
@@ -842,7 +841,7 @@ PanelWindow {
             }
             Connections {
                 target: pop
-                function onCurrentChanged() { if (pop.current === "spaces") { spp.mode = "list"; spp.confirmDelete = ""; } }
+                function onCurrentChanged() { if (pop.current === "spaces") { spp.mode = "list"; } }
             }
 
             // ---- The saved spaces ----
@@ -877,7 +876,7 @@ PanelWindow {
                         width: parent.width
                         height: 52
                         onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
-                        HoverHandler { id: spRowHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (!hovered && spp.confirmDelete === spRow.modelData.id) spp.confirmDelete = "" }
+                        HoverHandler { id: spRowHover; cursorShape: Qt.PointingHandCursor }
                         Rectangle {
                             id: spBadge
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -898,16 +897,17 @@ PanelWindow {
                                 color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
                             }
                         }
-                        // Its apps, or, under the pointer, a delete button (click twice)
+                        // Its apps, or, under the pointer, a delete button (asks first, in
+                        // the middle of the screen)
                         Item {
                             id: spSide
                             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: spRowHover.hovered || spp.confirmDelete === spRow.modelData.id ? spDel.width : spApps.width
+                            width: spRowHover.hovered ? spDel.width : spApps.width
                             height: 28
                             Row {
                                 id: spApps
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                visible: !spRowHover.hovered && spp.confirmDelete !== spRow.modelData.id
+                                visible: !spRowHover.hovered
                                 spacing: -5
                                 Repeater {
                                     model: spRow.appIds.slice(0, 4)
@@ -925,22 +925,22 @@ PanelWindow {
                                 id: spDel
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                 visible: !spApps.visible
-                                readonly property bool armed: spp.confirmDelete === spRow.modelData.id
-                                width: armed ? spDelText.implicitWidth + 36 : 28; height: 28; radius: 7
-                                color: armed ? pop.danger : spDelHover.hovered ? Config.tint("#2a313c") : "transparent"
-                                Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                                Icon { id: spDelIcon; anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                    code: 0xEB41; font.pixelSize: 16; color: spDel.armed ? pop.accentText : pop.danger }
-                                Label { id: spDelText; visible: spDel.armed; anchors { left: spDelIcon.right; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                                    text: "Delete"; color: pop.accentText; font.pixelSize: 12 }
+                                width: 28; height: 28; radius: 7
+                                color: spDelHover.hovered ? Config.tint("#2a313c") : "transparent"
+                                Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                 HoverHandler { id: spDelHover; cursorShape: Qt.PointingHandCursor }
                                 // A MouseArea, so the click stops here rather than also opening the space
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        // Clear first: removing the space takes this row away
-                                        if (spDel.armed) { const id = spRow.modelData.id; spp.confirmDelete = ""; Spaces.remove(id); }
-                                        else spp.confirmDelete = spRow.modelData.id;
+                                        const sp = spRow.modelData;
+                                        pop.close();
+                                        if (!pop.powerConfirm) return;
+                                        pop.powerConfirm.confirmWith({
+                                            title: "Delete \u201c" + sp.name + "\u201d?",
+                                            body: "The space is forgotten. Its apps and windows that are open now stay as they are.",
+                                            button: "Delete", code: 0xEB41, danger: true
+                                        }, () => Spaces.remove(sp.id));
                                     }
                                 }
                             }
