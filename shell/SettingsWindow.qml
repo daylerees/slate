@@ -150,7 +150,7 @@ FloatingWindow {
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
@@ -3459,6 +3459,13 @@ FloatingWindow {
                     label: "Gloss"
                     detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
                     ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Gloss colour"
+                    detail: "How much colour the sheen takes from what it's on: the wallpaper's colour on glass, a selection's own. 0% for plain white"
+                    ValueSlider { from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossTint * 100); onMoved: v => Config.s.glassGlossTint = v / 100 }
                 }
             }
             GroupLabel { text: "Blur" }

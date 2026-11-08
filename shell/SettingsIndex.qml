@@ -33,6 +33,7 @@ Singleton {
         ["Blur", "appearance", "glass blur strength frosted"],
         ["Shine", "appearance", "glass rim edge highlight"],
         ["Gloss", "appearance", "glass glossy sheen shiny highlight"],
+        ["Gloss colour", "appearance", "glass gloss tint hue colour color wallpaper sheen"],
         ["Fast blur", "appearance", "blur performance smooth lag xray wallpaper"],
         ["Blur quality", "appearance", "blur passes smooth performance"],
         ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],

@@ -433,6 +433,7 @@ Singleton {
     // Gloss: a sheen on the bar's containers, hover highlights and tooltips (Gloss.qml)
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0
+    readonly property real glossTint: Math.max(0, Math.min(1, Number(s.glassGlossTint)))
     readonly property color glassEdge: s.lightMode ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(1, 1, 1, 0.13)
     // Hyprland's blur (behind see-through windows), for drawing it in previews too. Read at
     // start, when Hyprland reloads its config, and after Slate changes it (glass)

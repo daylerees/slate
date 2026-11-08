@@ -25,7 +25,9 @@ Rectangle {
         if (c === undefined || c.a < 0.5) return 1;
         return 1 + 3 * Math.max(0, c.hslLightness - 0.45);
     }
-    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost
+    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost * tinted
+    // A coloured sheen is a little stronger, so its colour shows rather than reading as grey
+    readonly property real tinted: hintAmount > 0 ? 1.35 : 1
     // The sheen's colour: light, with a hint of what it's on. A coloured fill (an accent-filled
     // selection, a space's colour) lends its colour; on see-through glass, the wallpaper's
     // overall colour (the scene showing through); otherwise plain white
@@ -33,12 +35,14 @@ Rectangle {
         const c = parent ? parent.color : undefined;
         if (c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2) return c;
         if (c !== undefined && c.a < 0.95) {
-            const t = Config.wallpaperTone || Config.wallpaperAccent;
+            // The wallpaper's vivid colour (the one an accent from the wallpaper uses); its
+            // overall tone averages the whole picture and came out too grey
+            const t = Config.wallpaperAccent || Config.wallpaperTone;
             if (t) return Qt.color(t);
         }
         return "white";
     }
-    readonly property real hintAmount: 0.4
+    readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint : 0    // Settings → Glass → Gloss colour
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
     gradient: Gradient {
