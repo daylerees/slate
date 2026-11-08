@@ -9,7 +9,7 @@
 <meta property="og:description" content="Aesthetically pleasing yet understated, opinionated yet configurable, desktop environment for Linux.">
 <meta property="og:image" content="assets/icon.png">
 <link rel="icon" href="assets/icon.png">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       </svg>
     </div>
     <!-- Apps: three soft rounded bars -->
-    <div class="cap btn"><span class="burger"><i></i><i></i><i></i></span></div>
+    <div class="cap btn apps"><span class="burger"><i></i><i></i><i></i></span></div>
     <!-- Workspaces: occupied, active (accent), occupied, empty -->
     <div class="cap ws"><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></div>
     <!-- The focused window: its app tile, then its title -->
@@ -63,7 +63,7 @@
     <!-- Notifications | Wi-Fi | Bluetooth | volume | battery -->
     <div class="cap status">
       <span><i class="ti">&#xEA35;</i> 2</span><b></b>
-      <span><i class="ti">&#xEB52;</i> Home</span><b></b>
+      <span><i class="ti">&#xEB52;</i> <em class="val">Home</em></span><b></b>
       <span><i class="ti">&#xEA37;</i> 1</span><b></b>
       <span><i class="ti">&#xEB51;</i> 40%</span><b></b>
       <span><i class="ti">&#xEA32;</i> 82%</span>
@@ -199,8 +199,8 @@
         switched on all shift together, light or dark. It's optional: keep your own accent
         if you prefer. The wallpaper can change by itself, on a timer or at login.</p>
     </div>
-    <figure class="tilt"><video src="shots/wallpaper-theme.mp4?v=4" poster="shots/wallpaper-theme-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="Choosing a new wallpaper in Settings: the desktop crossfades from snowy mountains to an autumn lake, and Slate's colours shift from blue to orange"></video></figure>
+    <figure class="tilt"><video data-src="shots/wallpaper-theme.mp4?v=4" data-small="shots/wallpaper-theme-small.mp4?v=1" poster="shots/wallpaper-theme-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="Choosing a new wallpaper in Settings: the desktop crossfades from snowy mountains to an autumn lake, and Slate's colours shift from blue to orange"></video></figure>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -210,8 +210,8 @@
         swap windows, flip a split or resize, all from the keyboard, and everything slides
         smoothly into place.</p>
     </div>
-    <figure class="tilt"><video src="shots/tiling.mp4?v=2" poster="shots/tiling-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="Terminals and text editors open and tile themselves across the screen, then focus moves between them, two swap places, a split flips, one is resized, and they close one by one"></video></figure>
+    <figure class="tilt"><video data-src="shots/tiling.mp4?v=2" data-small="shots/tiling-small.mp4?v=1" poster="shots/tiling-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="Terminals and text editors open and tile themselves across the screen, then focus moves between them, two swap places, a split flips, one is resized, and they close one by one"></video></figure>
   </div>
   <div class="row">
     <div class="copy">
@@ -222,8 +222,8 @@
         close it with a click, much like on Windows. It's optional, and uses the hyprbars
         plugin, which Slate builds for you.</p>
     </div>
-    <figure class="tilt"><video src="shots/floating.mp4?v=1" poster="shots/floating-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="Two floating windows with title bars: one is dragged across the screen, resized from its corner and dragged back, then the other is maximised and restored"></video></figure>
+    <figure class="tilt"><video data-src="shots/floating.mp4?v=1" data-small="shots/floating-small.mp4?v=1" poster="shots/floating-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="Two floating windows with title bars: one is dragged across the screen, resized from its corner and dragged back, then the other is maximised and restored"></video></figure>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -232,8 +232,8 @@
       <p>Your apps, most used first, narrowing as you type. Every setting is searchable from
         here too, and it does sums: type one and the answer is ready to copy.</p>
     </div>
-    <figure class="tilt"><video src="shots/launcher.mp4?v=1" poster="shots/launcher-poster.webp" width="1280" height="800"
-      autoplay muted loop playsinline preload="metadata" aria-label="The launcher opens over the desktop, narrows to Calendar and Calculator as 'cal' is typed, then answers 24*7 with 168"></video></figure>
+    <figure class="tilt"><video data-src="shots/launcher.mp4?v=1" data-small="shots/launcher-small.mp4?v=1" poster="shots/launcher-poster.webp" width="1280" height="800"
+      muted loop playsinline preload="none" aria-label="The launcher opens over the desktop, narrows to Calendar and Calculator as 'cal' is typed, then answers 24*7 with 168"></video></figure>
   </div>
   <div class="row">
     <div class="copy">
@@ -252,8 +252,8 @@
       <p>Power, the calendar and forecast, battery and power mode, sound devices, Bluetooth,
         keyboard layouts and Wi-Fi: each item on the bar drops down its own panel.</p>
     </div>
-    <figure class="tilt"><video src="shots/panels.mp4?v=1" poster="shots/panels-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="The pointer moves along the menu bar, opening the power, calendar, battery, sound, Bluetooth, keyboard and Wi-Fi panels in turn"></video></figure>
+    <figure class="tilt"><video data-src="shots/panels.mp4?v=1" data-small="shots/panels-small.mp4?v=1" poster="shots/panels-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="The pointer moves along the menu bar, opening the power, calendar, battery, sound, Bluetooth, keyboard and Wi-Fi panels in turn"></video></figure>
   </div>
   <div class="row">
     <div class="copy">
@@ -262,8 +262,8 @@
       <p>Super+Down lays out your workspaces as large live cards. Jump to one, or
         rearrange them.</p>
     </div>
-    <figure class="tilt"><video src="shots/overview.mp4?v=1" poster="shots/overview-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="The workspace overview opens as a row of live workspace cards, slides along to the next two workspaces and back, then closes"></video></figure>
+    <figure class="tilt"><video data-src="shots/overview.mp4?v=1" data-small="shots/overview-small.mp4?v=1" poster="shots/overview-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="The workspace overview opens as a row of live workspace cards, slides along to the next two workspaces and back, then closes"></video></figure>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -272,8 +272,8 @@
       <p>Pop-ups slide in where you want them, with a history in the bar to catch up on
         and Do not disturb for when you're busy.</p>
     </div>
-    <figure class="tilt"><video src="shots/notifications.mp4?v=1" poster="shots/notifications-poster.webp" width="1280" height="800"
-      autoplay muted loop playsinline preload="metadata" aria-label="Four notifications slide in under the menu bar, stack up, then leave one by one"></video></figure>
+    <figure class="tilt"><video data-src="shots/notifications.mp4?v=1" data-small="shots/notifications-small.mp4?v=1" poster="shots/notifications-poster.webp" width="1280" height="800"
+      muted loop playsinline preload="none" aria-label="Four notifications slide in under the menu bar, stack up, then leave one by one"></video></figure>
   </div>
   <div class="row">
     <div class="copy">
@@ -282,8 +282,8 @@
       <p>A magnifying dock for pinned and running apps. Right-click an icon for its
         windows, its actions, or to pin it.</p>
     </div>
-    <figure class="tilt"><video src="shots/dock.mp4?v=1" poster="shots/dock-poster.webp" width="1280" height="800"
-      autoplay muted loop playsinline preload="metadata" aria-label="The pointer runs along the dock, magnifying the icons it passes, then a menu opens over Steam"></video></figure>
+    <figure class="tilt"><video data-src="shots/dock.mp4?v=1" data-small="shots/dock-small.mp4?v=1" poster="shots/dock-poster.webp" width="1280" height="800"
+      muted loop playsinline preload="none" aria-label="The pointer runs along the dock, magnifying the icons it passes, then a menu opens over Steam"></video></figure>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -292,8 +292,8 @@
       <p>The lock screen and the greetd login screen match, with your wallpaper and
         picture. Lock, dim or suspend when you step away.</p>
     </div>
-    <figure class="tilt"><video src="shots/login.mp4?v=1" poster="shots/login-poster.webp" width="1440" height="900"
-      autoplay muted loop playsinline preload="metadata" aria-label="The login screen over the mountain wallpaper, with a password being typed into the field"></video></figure>
+    <figure class="tilt"><video data-src="shots/login.mp4?v=1" data-small="shots/login-small.mp4?v=1" poster="shots/login-poster.webp" width="1440" height="900"
+      muted loop playsinline preload="none" aria-label="The login screen over the mountain wallpaper, with a password being typed into the field"></video></figure>
   </div>
 </section>
 
@@ -332,6 +332,6 @@ cd slate
   <p><a href="https://github.com/daylerees/slate">github.com/daylerees/slate</a></p>
 </footer>
 
-<script src="site.js?v=2" defer></script>
+<script src="site.js?v=3" defer></script>
 </body>
 </html>

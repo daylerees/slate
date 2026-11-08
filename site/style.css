@@ -168,6 +168,7 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .bar-demo .status span { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
 .bar-demo .status b { width: 1px; height: 13.5px; background: #444c58; }
 .bar-demo .clock { padding: 0 10px; }
+.bar-demo .val { font-style: normal; }
 .bar-demo .power { color: #f28b8b; }
 .bar-demo .power .ti { font-size: 17px; }
 
@@ -283,7 +284,16 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
   .tour { gap: 56px; }
   .row, .row.flip { grid-template-columns: 1fr; gap: 24px; }
   .row.flip .copy { order: 0; }
-  .tilt img, .flip .tilt img, .tilt video, .flip .tilt video { transform: rotateY(-8deg) rotateX(4deg); }
+  /* Phones: flat, with no blurred glow, so the clips play smoothly */
+  /* The example bar: room for the power button */
+  .bar-demo .val { display: none; }
+  .tilt { perspective: none; }
+  .tilt::before { display: none; }
+  .tilt img, .flip .tilt img, .tilt video, .flip .tilt video,
+  .tilt:hover img, .flip .tilt:hover img, .tilt:hover video, .flip .tilt:hover video {
+    transform: none; transition: none;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 12px 28px -12px rgba(0, 0, 0, .6);
+  }
   .top nav a:not(.button) { display: none; }
   .what .cols { grid-template-columns: 1fr; gap: 16px; }
   main section { padding: 52px 16px; }
@@ -337,3 +347,8 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
 .fp-keys dd { margin: 0; color: var(--dim); }
 .fp + footer { margin-top: 72px; }
 .all-features { margin-top: 24px; text-align: center; }
+
+/* Narrow phones: the example bar also drops its apps button */
+@media (max-width: 400px) {
+  .bar-demo .apps { display: none; }
+}
