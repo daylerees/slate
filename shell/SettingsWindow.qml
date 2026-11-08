@@ -619,7 +619,7 @@ FloatingWindow {
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
         HoverHandler { id: tgHover }
-        Gloss { radius: parent.radius; opacity: tg.checked ? 1 : 0 }   // glass: a sheen when on
+        Gloss { radius: parent.radius }   // glass: a sheen
         Rectangle {
             width: 18; height: 18; radius: 9
             anchors.verticalCenter: parent.verticalCenter
@@ -675,6 +675,7 @@ FloatingWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.frac * (parent.width - 16)
                 color: win.text
+                Gloss { radius: parent.radius; strength: 0.6 }   // glass: a sheen
                 scale: sliderBox.hot ? 1.15 : 1
                 Behavior on scale { NumberAnimation { duration: 120 } }
             }
@@ -704,6 +705,7 @@ FloatingWindow {
             : btnHover.hovered ? Config.tint("#323a46") : Config.tint("#2a313c")
         Behavior on color { ColorAnimation { duration: 100 } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
+        Gloss { radius: parent.radius }   // glass: a sheen
         Row {
             id: btnRow
             anchors.centerIn: parent
@@ -909,7 +911,7 @@ FloatingWindow {
             readonly property bool open: dropLayer.owner === dd
             width: Math.max(150, ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)); height: 32; radius: 8
             color: open || ddHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
-            Gloss { radius: parent.radius; opacity: (open || ddHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+            Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: 100 } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
@@ -1869,6 +1871,7 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
                             color: win.accent
+                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -2888,6 +2891,7 @@ FloatingWindow {
                             width: 100 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.windowMode)) * 100
                             color: win.accent
+                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -3061,6 +3065,7 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
                             color: win.accent
+                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -3223,6 +3228,7 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
                             color: win.accent
+                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                         }
                         Row {

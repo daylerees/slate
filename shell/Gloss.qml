@@ -16,7 +16,14 @@ Rectangle {
     // Hover highlights set opacity to show it while pointed at: it fades in and out in step
     // with their colour (appearing at once, the top half showed before the rest)
     Behavior on opacity { NumberAnimation { duration: 100 } }
-    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount
+    // Stronger on light colours (an accent-filled selection), where a faint white sheen
+    // barely shows; as it is on dark ones
+    readonly property real boost: {
+        const c = parent ? parent.color : undefined;
+        if (c === undefined || c.a < 0.5) return 1;
+        return 1 + 3 * Math.max(0, c.hslLightness - 0.45);
+    }
+    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost
     gradient: Gradient {
         GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, g.a) }
         GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, g.a * 0.25) }

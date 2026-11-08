@@ -384,6 +384,7 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             x: Math.min(1, sl.value) * (sl.width - width)
             color: pop.text
+            Gloss { radius: parent.radius; strength: 0.6 }   // glass: a sheen
         }
         MouseArea {
             anchors.fill: parent
@@ -522,6 +523,7 @@ PanelWindow {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     width: 40; height: 22; radius: 11
                     color: Networking.wifiEnabled ? pop.accent : pop.card
+                    Gloss { radius: parent.radius }   // glass: a sheen
                     Rectangle {
                         width: 16; height: 16; radius: 8
                         anchors.verticalCenter: parent.verticalCenter
@@ -1639,6 +1641,7 @@ PanelWindow {
                     visible: !!btp.adapter
                     width: 40; height: 22; radius: 11
                     color: btp.on ? pop.accent : pop.card
+                    Gloss { radius: parent.radius }   // glass: a sheen
                     Rectangle {
                         width: 16; height: 16; radius: 8
                         anchors.verticalCenter: parent.verticalCenter
@@ -2430,6 +2433,7 @@ PanelWindow {
                         width: 40; height: 22; radius: 11
                         readonly property bool on: pop.notifs ? pop.notifs.dnd : false
                         color: on ? pop.accent : pop.card
+                        Gloss { radius: parent.radius }   // glass: a sheen
                         Rectangle {
                             width: 16; height: 16; radius: 8
                             anchors.verticalCenter: parent.verticalCenter
