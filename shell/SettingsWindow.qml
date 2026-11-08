@@ -683,7 +683,10 @@ FloatingWindow {
                 width: parent.width; height: 6; radius: 3
                 color: sliderBox.hot ? Config.tint("#38414e") : Config.tint("#2a313c")
                 Behavior on color { ColorAnimation { duration: 120 } }
-                Rectangle { width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent }
+                Rectangle {
+                    width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
+                    Gloss { radius: parent.radius }   // glass: a sheen
+                }
             }
             // Hover: an accent halo behind the knob, which grows a little
             Rectangle {
@@ -4634,6 +4637,7 @@ FloatingWindow {
                                     width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
                                     height: parent.height; radius: 3
                                     color: parent.parent.frac > 0.8 ? win.danger : win.accent
+                                    Gloss { radius: parent.radius }   // glass: a sheen
                                     Behavior on color { ColorAnimation { duration: 300 } }
                                 }
                             }

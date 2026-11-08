@@ -23,7 +23,7 @@ Rectangle {
     readonly property real boost: {
         const c = parent ? parent.color : undefined;
         if (c === undefined || c.a < 0.5) return 1;
-        return 1 + 3 * Math.max(0, c.hslLightness - 0.45);
+        return 1 + 6 * Math.max(0, c.hslLightness - 0.4);
     }
     readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost * tinted
     // A coloured sheen is a little stronger, so its colour shows rather than reading as grey
@@ -42,7 +42,10 @@ Rectangle {
         }
         return "white";
     }
-    readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint : 0    // Settings → Glass → Gloss colour
+    // Settings → Glass → Gloss colour. On a coloured fill at most 40% of it, so the sheen stays
+    // a lighter tint of the fill (at full strength it was the fill's own colour, and vanished)
+    readonly property bool onFill: { const c = parent ? parent.color : undefined; return c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2; }
+    readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : 1) : 0
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
     gradient: Gradient {
