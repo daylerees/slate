@@ -611,11 +611,11 @@ PanelWindow {
                         width: 16; height: 16
                         source: appTile.showImage ? titleArea.s.hoverImage : ""
                         sourceSize: Qt.size(32, 32)
-                        visible: false
+                        visible: appTile.showImage && Config.colourful     // Colourful: its own colours
                     }
                     ShaderEffect {
                         anchors.fill: hoverImg
-                        visible: appTile.showImage
+                        visible: appTile.showImage && !Config.colourful
                         property variant source: hoverImg
                         property real threshold: 0.45
                         property color tint: bar.textColor
@@ -713,7 +713,8 @@ PanelWindow {
                             }
                             HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
                             // Icon drawn in high-contrast black and white (light parts white,
-                            // dark/coloured parts black) to match the rest of the bar
+                            // dark/coloured parts black) to match the rest of the bar; in the
+                            // Colourful look, in its own colours
                             Image {
                                 id: trayIcon
                                 anchors.centerIn: parent
@@ -721,9 +722,10 @@ PanelWindow {
                                 source: trayItem.modelData.icon
                                 sourceSize: Qt.size(36, 36)
                                 smooth: true
-                                visible: false
+                                visible: Config.colourful
                             }
                             ShaderEffect {
+                                visible: !Config.colourful
                                 anchors.fill: trayIcon
                                 property variant source: trayIcon
                                 property real threshold: 0.45      // brighter than this takes the text colour
