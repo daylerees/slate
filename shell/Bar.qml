@@ -956,6 +956,7 @@ PanelWindow {
             opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
+        Gloss { radius: cap.radius }          // glass: a sheen
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
         TapHandler { onTapped: cap.clicked() }
     }

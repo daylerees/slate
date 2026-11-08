@@ -571,6 +571,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 radius: 7
                                 color: rowHover.hovered ? Config.hover : "transparent"
+                                Gloss { radius: parent.radius; visible: Config.glassGloss && (rowHover.hovered) }   // glass: a sheen while hovered
                                 Behavior on color { ColorAnimation { duration: 90 } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
@@ -839,6 +840,7 @@ ShellRoot {
                     height: labelText.implicitHeight + 8
                     radius: 6
                     color: win.bgColor
+                    Gloss { radius: parent.radius }   // glass: a sheen
                     x: row.x + win.cellX(Math.max(0, win.hoveredIndex)) + iconSize / 2 - width / 2
                     // On a side dock the label is turned upright, so its width runs across the strip
                     readonly property real across: win.vertical ? width : height

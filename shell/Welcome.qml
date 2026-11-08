@@ -156,6 +156,7 @@ PanelWindow {
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: 14
                                 color: modeHover.hovered && usable ? Config.hoverOn(w.card) : w.card
+                                Gloss { radius: parent.radius; visible: Config.glassGloss && (modeHover.hovered && usable) }   // glass: a sheen while hovered
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 opacity: usable ? 1 : 0.5
@@ -239,6 +240,7 @@ PanelWindow {
                                 readonly property bool on: (Config.s.themeMode || (Config.s.lightMode ? "light" : "dark")) === modelData.mode
                                 width: themeRow.implicitWidth + 28; height: 38; radius: 10
                                 color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
+                                Gloss { radius: parent.radius; visible: Config.glassGloss && (themeHover.hovered) }   // glass: a sheen while hovered
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 Row {
                                     id: themeRow
@@ -273,6 +275,7 @@ PanelWindow {
                                 readonly property bool on: Config.s.accentFromWallpaper === modelData.wall
                                 width: (parent.width - 12) / 2; height: 112; radius: 12
                                 color: accHover.hovered ? Config.hoverOn(w.card) : w.card
+                                Gloss { radius: parent.radius; visible: Config.glassGloss && (accHover.hovered) }   // glass: a sheen while hovered
                                 border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 Column {
@@ -483,6 +486,7 @@ PanelWindow {
                             readonly property bool on: Config.s.keyset === modelData.key
                             width: parent.width; height: 70; radius: 12
                             color: keyHover.hovered ? Config.hoverOn(w.card) : w.card
+                            Gloss { radius: parent.radius; visible: Config.glassGloss && (keyHover.hovered) }   // glass: a sheen while hovered
                             border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Column {
@@ -666,6 +670,7 @@ PanelWindow {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 width: backText.implicitWidth + 32; height: 38; radius: 10
                 color: backHover.hovered ? Config.hoverOn(w.card) : w.card
+                Gloss { radius: parent.radius; visible: Config.glassGloss && (backHover.hovered) }   // glass: a sheen while hovered
                 Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                 HoverHandler { id: backHover }
                 TapHandler { onTapped: w.page-- }
@@ -678,6 +683,7 @@ PanelWindow {
                     visible: w.page === w.pages - 1
                     width: setText.implicitWidth + 32; height: 38; radius: 10
                     color: setHover.hovered ? Config.hoverOn(w.card) : w.card
+                    Gloss { radius: parent.radius; visible: Config.glassGloss && (setHover.hovered) }   // glass: a sheen while hovered
                     Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                     HoverHandler { id: setHover }
                     TapHandler {

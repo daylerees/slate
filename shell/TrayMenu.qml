@@ -94,6 +94,7 @@ PanelWindow {
                 Rectangle {
                     anchors.fill: parent; radius: 7
                     color: backHover.hovered ? Config.hover : "transparent"
+                    Gloss { radius: parent.radius; visible: Config.glassGloss && (backHover.hovered) }   // glass: a sheen while hovered
                     Text {
                         id: backArrow
                         anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -139,6 +140,7 @@ PanelWindow {
                         anchors.fill: parent
                         radius: 7
                         color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
+                        Gloss { radius: parent.radius; visible: Config.glassGloss && (entryHover.hovered && entryRow.e.enabled) }   // glass: a sheen while hovered
                         Behavior on color { ColorAnimation { duration: 90 } }
                         // Tick for a checked checkbox or radio item
                         Text {

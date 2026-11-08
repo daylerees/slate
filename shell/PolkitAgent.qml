@@ -213,6 +213,7 @@ PanelWindow {
                             readonly property bool current: root.selected === modelData
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
+                            Gloss { radius: parent.radius; visible: Config.glassGloss && (chipHover.hovered) }   // glass: a sheen while hovered
                             Behavior on color { ColorAnimation { duration: 100 } }
                             HoverHandler { id: chipHover }
                             TapHandler {
@@ -315,6 +316,7 @@ PanelWindow {
         radius: 10
         readonly property color base: primary ? root.accent : root.fieldColor
         color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
+        Gloss { radius: parent.radius; visible: Config.glassGloss && (hh.hovered) }   // glass: a sheen while hovered
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: 100 } }
         Behavior on opacity { NumberAnimation { duration: 100 } }

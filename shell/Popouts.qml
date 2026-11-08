@@ -403,6 +403,7 @@ PanelWindow {
         height: 36
         radius: 8
         color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
+        Gloss { radius: parent.radius; visible: Config.glassGloss && (rbHover.hovered) }   // glass: a sheen while hovered
         Behavior on color { ColorAnimation { duration: 100 } }
         HoverHandler { id: rbHover }
         TapHandler { onTapped: rb.clicked() }
@@ -709,6 +710,7 @@ PanelWindow {
                         height: 46
                         radius: 9
                         color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
+                        Gloss { radius: parent.radius; visible: Config.glassGloss && (tileHover.hovered && modelData.copy) }   // glass: a sheen while hovered
                         Behavior on color { ColorAnimation { duration: 100 } }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
@@ -1025,6 +1027,7 @@ PanelWindow {
                                         visible: !spApps.visible
                                         width: 28; height: 28; radius: 7
                                         color: spDelHover.hovered ? Config.hover : "transparent"
+                                        Gloss { radius: parent.radius; visible: Config.glassGloss && (spDelHover.hovered) }   // glass: a sheen while hovered
                                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                         HoverHandler { id: spDelHover }
                                         // A MouseArea, so the click stops here rather than also opening the space
@@ -1100,6 +1103,7 @@ PanelWindow {
                     id: spBack
                     width: 26; height: 26; radius: 7
                     color: spBackHover.hovered ? Config.hover : "transparent"
+                    Gloss { radius: parent.radius; visible: Config.glassGloss && (spBackHover.hovered) }   // glass: a sheen while hovered
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover }
                     TapHandler { onTapped: spp.mode = "list" }
@@ -1315,6 +1319,7 @@ PanelWindow {
                         readonly property bool on: spp.icon === modelData
                         width: (spp.width - 28) / 15; height: width; radius: 7
                         color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
+                        Gloss { radius: parent.radius; visible: Config.glassGloss && (icHover.hovered) }   // glass: a sheen while hovered
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
@@ -1457,6 +1462,7 @@ PanelWindow {
                 Rectangle {
                     width: spCancel.implicitWidth + 28; height: 32; radius: 8
                     color: spCancelHover.hovered ? Config.hover : "transparent"
+                    Gloss { radius: parent.radius; visible: Config.glassGloss && (spCancelHover.hovered) }   // glass: a sheen while hovered
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover }
                     TapHandler { onTapped: spp.mode = "list" }
@@ -1501,6 +1507,7 @@ PanelWindow {
                         width: (shp.width - 16) / 3; height: 76
                         radius: 10
                         color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                        Gloss { radius: parent.radius; visible: Config.glassGloss && (shotHover.hovered) }   // glass: a sheen while hovered
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Column {
                             anchors.centerIn: parent
@@ -2198,6 +2205,7 @@ PanelWindow {
                             // glass card colour, which is already see-through white)
                             readonly property color base: Config.tint("#1d222a")
                             color: hovered2.hovered ? Config.hoverOn(Config.tint("#0f1216")) : Qt.rgba(base.r, base.g, base.b, 0.55)
+                            Gloss { radius: parent.radius; visible: Config.glassGloss && (hovered2.hovered) }   // glass: a sheen while hovered
                             HoverHandler { id: hovered2 }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }
@@ -2365,6 +2373,7 @@ PanelWindow {
                             radius: 12
                             selected: modelData.on
                             color: selected ? pop.accent : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                            Gloss { radius: parent.radius; visible: Config.glassGloss && (tileHover.hovered) }   // glass: a sheen while hovered
                             HoverHandler { id: tileHover }
                             onClicked: {
                                 switch (modelData.id) {
