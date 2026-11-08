@@ -1,0 +1,335 @@
+/* Slate's site, in Slate's default dark theme (the same colours as the desktop: Config.qml) */
+
+@font-face {
+  font-family: "Geist";
+  src: url("fonts/Geist-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Tabler";
+  src: url("fonts/tabler.ttf") format("truetype");
+  font-display: block;
+}
+
+:root {
+  --bg: #0f1216;          /* the bar, and the page */
+  --stripe: #1a1f27;      /* the band behind the desktop example */
+  --surface: #151920;     /* Settings' page background */
+  --card: #1d222a;        /* capsules and cards */
+  --raised: #262c35;      /* hover */
+  --line: #2a313c;
+  --text: #eef1f5;
+  --dim: #8b94a3;
+  --accent: #8fb3e8;      /* Slate's default accent */
+  --accent-text: #12151a;
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }   /* jumps to a section stop below the sticky header */
+body {
+  margin: 0;
+  padding-top: 62px;          /* the fixed header's height (site.js keeps it exact) */
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Geist", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.ti {
+  font-family: "Tabler";
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+
+/* ---- Header ---- */
+/* Fixed, not sticky: Firefox could leave a sticky header tucked a little under the top
+   after scrolling. The page leaves its height free at the top (body padding). */
+.top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  padding: 12px max(20px, calc((100vw - 1080px) / 2));
+  background: color-mix(in srgb, var(--bg) 96%, transparent);   /* no backdrop blur: Firefox misplaces sticky blurred headers while scrolling */
+  transition: box-shadow .2s;
+}
+/* Once content scrolls up under it (site.js) */
+.top.covering { box-shadow: 0 4px 18px rgba(0, 0, 0, .22); }
+.brand img { display: block; height: 34px; width: auto; }
+nav { display: flex; align-items: center; gap: 22px; }
+nav a { color: var(--dim); font-weight: 500; font-size: 15px; }
+nav a:hover { color: var(--text); text-decoration: none; }
+
+.button {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 500;
+  border: 1px solid var(--line);
+  transition: background .12s;
+}
+.button:hover { background: var(--raised); text-decoration: none; }
+.button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+.button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, white); }
+.button.small { padding: 7px 12px; font-size: 14px; }
+nav .button { color: var(--text); }
+
+/* ---- Sections ---- */
+main section {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 72px 20px;
+}
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.01em; }
+h2 { font-size: 30px; font-weight: 600; margin: 0 0 28px; }
+h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
+
+.hero { text-align: center; padding-top: 88px; padding-bottom: 64px; }
+.hero-mark { display: block; height: 132px; width: auto; margin: 0 auto 30px; }
+/* A lighter band across the page, holding the desktop example, with room around it */
+.stripe { background: var(--stripe); padding: 88px 20px; }
+.hero h1 { font-size: clamp(34px, 5.5vw, 56px); font-weight: 650; margin: 0 auto 18px; max-width: 760px; }
+.lead { color: var(--dim); font-size: 19px; max-width: 680px; margin: 0 auto 32px; }
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Slate's menu bar, with its real sizes: a 40px bar, 27px capsules (radius 6) 6px apart */
+/* A bit of a desktop: a wallpaper with the bar along its top edge, as on the screen (the
+   bar runs edge to edge, flaring into the sides with concave corners under it) */
+.screen {
+  position: relative;
+  margin: 0 auto;
+  max-width: 980px;
+  height: 170px;
+  border-radius: 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 85% 110%, rgba(143, 179, 232, .38), transparent 55%),
+    radial-gradient(90% 120% at 10% 100%, rgba(122, 104, 170, .30), transparent 60%),
+    linear-gradient(170deg, #2a3446 0%, #1b2230 55%, #161b24 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+  text-align: left;
+}
+.bar-demo {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 40px;
+  padding: 0 6.5px;
+  background: var(--bg);
+  font-size: 13px; font-weight: 500;
+}
+.bar-demo::before, .bar-demo::after {
+  content: "";
+  position: absolute; top: 40px;
+  width: 12px; height: 12px;
+}
+.bar-demo::before { left: 0;  background: radial-gradient(circle at 100% 100%, transparent 11.5px, var(--bg) 12px); }
+.bar-demo::after  { right: 0; background: radial-gradient(circle at 0 100%, transparent 11.5px, var(--bg) 12px); }
+.bar-demo .cap {
+  display: flex; align-items: center; justify-content: center;
+  height: 27px;
+  background: var(--card);
+  border-radius: 6px;
+  white-space: nowrap;
+  flex: none;
+}
+.bar-demo .ti { font-size: 16px; vertical-align: 0; }
+.bar-demo .btn { width: 35px; }
+.bar-demo .burger { display: grid; gap: 3px; }
+.bar-demo .burger i { display: block; width: 14px; height: 2.4px; border-radius: 1.2px; background: var(--text); }
+/* Workspace dots: 14px rounded squares, 5px apart; the active one in the accent */
+.bar-demo .ws { gap: 5px; padding: 0 8px; }
+.bar-demo .ws span { width: 14px; height: 14px; border-radius: 3.9px; background: #4f5866; }
+.bar-demo .ws span.occ { background: #aeb6c2; }
+.bar-demo .ws span.on { background: var(--accent); }
+/* The focused window's app, on its tile, then its title */
+.bar-demo .app { width: 27px; }
+.bar-demo .tile {
+  display: grid; place-items: center;
+  width: 21px; height: 21px; border-radius: 4.7px;
+  background: #2a313c;
+}
+.bar-demo .tile .ti { font-size: 14px; }
+.bar-demo .title { padding: 0 4px; white-space: nowrap; }
+.bar-demo .spacer { flex: 1; }
+.bar-demo .tray { gap: 2px; padding: 0 5px; }
+.bar-demo .tray .ti { display: grid; place-items: center; width: 26px; height: 22px; font-size: 18px; }
+/* One container; short separators between its sections */
+.bar-demo .status span { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+.bar-demo .status b { width: 1px; height: 13.5px; background: #444c58; }
+.bar-demo .clock { padding: 0 10px; }
+.bar-demo .power { color: #f28b8b; }
+.bar-demo .power .ti { font-size: 17px; }
+
+.what .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.what p { color: var(--dim); margin: 0; }
+.what strong { color: var(--text); }
+
+.features { background: transparent; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.grid article {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.grid .icon {
+  display: inline-grid; place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 21px;
+}
+.grid p { color: var(--dim); margin: 0; font-size: 15px; }
+
+/* ---- Previews ---- */
+.previews { padding-bottom: 8px; }
+.previews .sub { color: var(--dim); max-width: 640px; margin: -12px 0 0; }
+.previews .note {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 18px 0 0; padding: 8px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #e6cf8e 12%, transparent);
+  color: #e6cf8e; font-size: 14px;
+}
+.previews .note .ti { font-size: 16px; vertical-align: 0; }
+.shot-frame, .tilt img, .tilt video {
+  display: block; width: 100%; height: auto;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 30px 60px -20px rgba(0, 0, 0, .7), 0 18px 36px -18px rgba(0, 0, 0, .6);
+}
+
+/* The tour: text beside a tilted screenshot, alternating sides */
+.tour { display: grid; gap: 96px; padding-top: 24px; }
+.row { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
+.row.flip { grid-template-columns: 7fr 5fr; }
+.row.flip .copy { order: 2; }
+.kicker {
+  color: var(--accent); font-size: 13px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.row h3 { font-size: 26px; margin: 8px 0 12px; }
+.row p { color: var(--dim); margin: 0; }
+.tilt { margin: 0; position: relative; perspective: 1600px; }
+.tilt::before {                     /* a glow under each screenshot */
+  content: ""; position: absolute; inset: 12% 8% -6%;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  filter: blur(60px); opacity: .55; z-index: -1;
+}
+.tilt img, .tilt video {
+  transform: rotateY(-16deg) rotateX(6deg) rotateZ(1.5deg);
+  transition: transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+.flip .tilt img, .flip .tilt video { transform: rotateY(16deg) rotateX(6deg) rotateZ(-1.5deg); }
+.tilt:hover img, .flip .tilt:hover img, .tilt:hover video, .flip .tilt:hover video { transform: rotateY(0) rotateX(0) rotateZ(0) scale(1.02); }
+
+.more { padding-top: 0; }
+.credit { color: var(--dim); font-size: 13px; text-align: center; margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .tilt img, .tilt video { transition: none; }
+}
+
+.install p { color: var(--dim); max-width: 720px; }
+.install strong { color: var(--text); }
+pre {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  max-width: 720px;
+}
+code { font-family: "Geist Mono", ui-monospace, monospace; font-size: 14px; color: var(--text); }
+.facts { list-style: none; padding: 0; margin: 20px 0; color: var(--dim); }
+.facts li { margin: 6px 0; }
+.facts .ti { color: var(--accent); margin-right: 8px; }
+
+footer {
+  border-top: 1px solid var(--line);
+  padding: 32px 20px 48px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 14px;
+}
+footer p { margin: 4px 0; }
+footer .ai {
+  max-width: 620px; margin: 0 auto 18px; padding: 12px 18px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  font-size: 13.5px; line-height: 1.55;
+}
+footer .ai .ti { color: var(--accent); margin-right: 4px; }
+
+/* ---- Phones ---- */
+@media (max-width: 760px) {
+  .tour { gap: 56px; }
+  .row, .row.flip { grid-template-columns: 1fr; gap: 24px; }
+  .row.flip .copy { order: 0; }
+  .tilt img, .flip .tilt img, .tilt video, .flip .tilt video { transform: rotateY(-8deg) rotateX(4deg); }
+  .top nav a:not(.button) { display: none; }
+  .what .cols { grid-template-columns: 1fr; gap: 16px; }
+  main section { padding: 52px 16px; }
+  .hero { padding-top: 56px; }
+  .hero-mark { height: 96px; margin-bottom: 22px; }
+  .bar-demo .title, .bar-demo .clock, .bar-demo .tray, .bar-demo .app,
+  .bar-demo .status span:nth-of-type(n+3), .bar-demo .status b:nth-of-type(n+2) { display: none; }
+}
+
+/* ---- Every feature (features.html) ---- */
+.fp section { padding-top: 0; padding-bottom: 0; }
+.fp-hero { padding-top: 64px !important; padding-bottom: 24px !important; }
+.fp-hero h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 650; margin: 18px 0 12px; }
+.fp-hero .lead { margin: 0 0 18px; text-align: left; }
+.fp-hero .note {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 26px; padding: 8px 14px;
+  border-radius: 10px; background: color-mix(in srgb, #e6cf8e 12%, transparent); color: #e6cf8e; font-size: 14px;
+}
+.fp-hero .note .ti { vertical-align: 0; }
+.back { color: var(--dim); font-size: 14px; font-weight: 500; }
+.back:hover { color: var(--text); text-decoration: none; }
+.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+.jump a {
+  padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line);
+  color: var(--dim); font-size: 14px; font-weight: 500;
+}
+.jump a:hover { color: var(--text); background: var(--raised); text-decoration: none; }
+.fp-section { padding-top: 56px !important; scroll-margin-top: 70px; }
+.fp-section h2 { display: flex; align-items: center; gap: 12px; font-size: 26px; margin-bottom: 18px; }
+.fp-section h2 .ti {
+  display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-size: 20px; vertical-align: 0;
+}
+.fp-intro { color: var(--dim); max-width: 760px; margin: -6px 0 18px; }
+.fp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.fp-keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(480px, 100%), 1fr)); gap: 14px; align-items: start; }
+.fp-grid article, .fp-keys article {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px;
+}
+.fp-grid h3, .fp-keys h3 { margin: 0 0 10px; font-size: 16px; }
+.fp-grid ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 15px; }
+.fp-grid li { margin: 5px 0; }
+.fp-grid li::marker { color: var(--accent); }
+.fp-grid strong, .fp-grid em { color: var(--text); }
+.fp-grid code, .fp-intro code { font-size: 13px; background: var(--surface); padding: 1px 6px; border-radius: 6px; }
+.fp-keys dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; font-size: 14px; }
+.fp-keys dt {
+  font-family: "Geist Mono", ui-monospace, monospace; font-size: 12.5px; color: var(--text); white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; align-self: start;
+}
+.fp-keys dd { margin: 0; color: var(--dim); }
+.fp + footer { margin-top: 72px; }
+.all-features { margin-top: 24px; text-align: center; }

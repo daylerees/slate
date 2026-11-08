@@ -1,0 +1,52 @@
+# Slate packages for Fedora 44 and newer. Hyprland and Quickshell come from COPRs
+# (Fedora doesn't ship Hyprland; its own quickshell is too old).
+copr:sdegler/hyprland
+copr:errornointernet/quickshell
+hyprland
+?hyprland-guiutils
+quickshell
+
+# Scripts and images
+python3
+python3-pillow
+ImageMagick
+wl-clipboard
+
+# System services
+pipewire
+wireplumber
+pipewire-utils      # pw-play: volume key sound
+NetworkManager
+bluez
+upower
+polkit
+pam
+systemd
+util-linux
+dbus-tools
+glib2
+procps-ng
+libnotify
+fontconfig
+curl
+unzip
+xdg-utils
+
+# Features
+grim
+slurp
+?hyprpicker
+?uwsm
+brightnessctl
+?power-profiles-daemon      # skipped if tuned-ppd (Fedora Workstation's) is there; it does the same job
+?adw-gtk3-theme
+?qt6ct
+papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
+# hyprbars: title bars in floating mode, built by Slate (slate build-hyprbars)
+?hyprland-devel
+git
+make
+gcc-c++
+pkgconf
+?greetd
+?vercel-geist-fonts

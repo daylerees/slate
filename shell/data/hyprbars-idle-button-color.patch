@@ -1,0 +1,93 @@
+diff --git a/hyprbars/barDeco.cpp b/hyprbars/barDeco.cpp
+index e57f77b..e1eb3a7 100644
+--- a/hyprbars/barDeco.cpp
++++ b/hyprbars/barDeco.cpp
+@@ -153,7 +153,7 @@ void CHyprBar::onTouchUp(Event::SCallbackInfo& info, ITouch::SUpEvent e) {
+ 
+ void CHyprBar::onMouseMove(Vector2D coords) {
+     // ensure proper redraws of button icons on hover when using hardware cursors
+-    if (g_pGlobalState->config.iconOnHover->value())
++    if (g_pGlobalState->config.iconOnHover->value() || g_pGlobalState->config.idleButtonColor->value() > 0)
+         damageOnButtonHover();
+ 
+     // buttons_on_hover: the buttons only exist while the cursor is over the bar,
+@@ -362,6 +362,7 @@ void CHyprBar::renderBarButtons(Render::CRenderContext& ctx, CBox* barBox, const
+     const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
+     const auto ALIGNBUTTONS     = g_pGlobalState->config.barButtonsAlignment->value();
+     const auto INACTIVECOLOR    = g_pGlobalState->config.inactiveButtonColor->value();
++    const auto IDLECOLOR        = g_pGlobalState->config.idleButtonColor->value();
+ 
+     const bool BUTTONSRIGHT    = ALIGNBUTTONS != "left";
+     const auto visibleCount    = getVisibleButtonCount(BARBUTTONPADDING, BARPADDING, Vector2D{barBox->w, barBox->h}, scale);
+@@ -381,6 +382,10 @@ void CHyprBar::renderBarButtons(Render::CRenderContext& ctx, CBox* barBox, const
+                 button.iconTex = nullptr;
+         }
+ 
++        // idle_button_color: a button takes it until the cursor is over it
++        if (IDLECOLOR > 0 && (m_iButtonHoverState & (1 << i)) == 0 && (m_bWindowHasFocus || INACTIVECOLOR <= 0))
++            color = configColor(IDLECOLOR);
++
+         color.a *= a;
+ 
+         CBox buttonBox = {barBox->x + (BUTTONSRIGHT ? barBox->w - offset - scaledButtonSize : offset), barBox->y + (barBox->h - scaledButtonSize) / 2.0, scaledButtonSize,
+@@ -421,6 +426,12 @@ void CHyprBar::renderBarButtonsText(Render::CRenderContext& ctx, CBox* barBox, c
+         bool       hovering   = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + button.size + BARBUTTONPADDING, currentPos.y + button.size);
+         noScaleOffset += BARBUTTONPADDING + button.size;
+ 
++        // track hover before the icon checks below, so buttons without an icon still get it
++        if (hovering != ((m_iButtonHoverState & (1 << i)) != 0)) {
++            m_iButtonHoverState ^= (1 << i);
++            damageEntire();
++        }
++
+         const bool NEEDICON = !button.icon.empty() &&
+             (!button.iconTex || button.iconTex->m_texID == 0 || !button.m_fIconScale.has_value() || std::abs(button.m_fIconScale.value_or(0.F) - scale) > 1e-6);
+         if (NEEDICON) {
+@@ -443,13 +454,6 @@ void CHyprBar::renderBarButtonsText(Render::CRenderContext& ctx, CBox* barBox, c
+         if (!ICONONHOVER || (ICONONHOVER && m_iButtonHoverState > 0))
+             g_pHyprOpenGL->renderTexture(ctx, button.iconTex, pos, {.a = a});
+         offset += scaledButtonsPad + scaledButtonSize;
+-
+-        bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
+-        if (hovering != currentBit) {
+-            m_iButtonHoverState ^= (1 << i);
+-            // damage to get rid of some artifacts when icons are "hidden"
+-            damageEntire();
+-        }
+     }
+ }
+ 
+diff --git a/hyprbars/globals.hpp b/hyprbars/globals.hpp
+index 2911644..0c5c3b3 100644
+--- a/hyprbars/globals.hpp
++++ b/hyprbars/globals.hpp
+@@ -33,7 +33,7 @@ struct SGlobalState {
+     uint32_t                  titleColorRuleIdx = 0;
+ 
+     struct {
+-        SP<Config::Values::CColorValue>      barColor, textColor, inactiveButtonColor;
++        SP<Config::Values::CColorValue>      barColor, textColor, inactiveButtonColor, idleButtonColor;
+         SP<Config::Values::CIntValue>        barHeight;
+         SP<Config::Values::CIntValue>        barTextSize;
+         SP<Config::Values::CFontWeightValue> barTextWeight;
+diff --git a/hyprbars/main.cpp b/hyprbars/main.cpp
+index 3d88b57..559ec94 100644
+--- a/hyprbars/main.cpp
++++ b/hyprbars/main.cpp
+@@ -177,6 +177,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+     g_pGlobalState->config.textColor           = makeShared<Config::Values::CColorValue>("plugin:hyprbars:col.text", "Change the text color", 0xffffffff);
+     g_pGlobalState->config.inactiveButtonColor = makeShared<Config::Values::CColorValue>(
+         "plugin:hyprbars:inactive_button_color", "Change the inactive button's color. 0x00000000 means unset", 0x00000000);
++    g_pGlobalState->config.idleButtonColor = makeShared<Config::Values::CColorValue>(
++        "plugin:hyprbars:idle_button_color", "The buttons' color until the cursor is over them. 0x00000000 means unset", 0x00000000);
+     g_pGlobalState->config.barHeight       = makeShared<Config::Values::CIntValue>("plugin:hyprbars:bar_height", "Change the bar's height", 15);
+     g_pGlobalState->config.barTextSize     = makeShared<Config::Values::CIntValue>("plugin:hyprbars:bar_text_size", "Change the bar's text size", 10);
+     g_pGlobalState->config.barTextWeight   = makeShared<Config::Values::CFontWeightValue>("plugin:hyprbars:bar_text_weight", "Bar's title text weight (e.g. \"bold\" or an integer 100-1000)", 400);
+@@ -200,6 +202,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barColor);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.textColor);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.inactiveButtonColor);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.idleButtonColor);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barHeight);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barTextSize);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barTextWeight);

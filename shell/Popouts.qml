@@ -1,0 +1,1632 @@
+// Drop-down panels attached to the top bar: volume, Wi-Fi, battery & power,
+// calendar and session. Each opens under the button that was clicked, joins the
+// bar with curved corners, and slides out of it.
+//
+// Open from the bar with bar.openPopout("<name>", item). Close by clicking outside,
+// pressing Escape, or clicking the same button again.
+
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import Quickshell.Wayland
+import Quickshell.Services.UPower
+import Quickshell.Services.Pipewire
+import Quickshell.Networking
+import Quickshell.Bluetooth
+import Quickshell.Services.Mpris
+import QtQuick.Effects
+
+PanelWindow {
+    id: pop
+    required property var bar
+    property var notifs: null
+    property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
+
+    // ---- State -------------------------------------------------------------
+    property string current: ""          // panel being shown ("" = closed)
+    property string displayed: ""        // panel drawn (kept while fading out)
+    property real anchorX: 0             // centre of the button that opened it
+    property real anchorY: 0
+    readonly property bool shown: current !== ""
+
+    // scr: the screen of the bar that opened it (the panel moves there)
+    function toggle(name, x, y, scr) {
+        const target = scr || Config.focusedScreen;
+        if (target && screen !== target) { current = ""; screen = target; }
+        else if (current === name) { close(); return; }
+        anchorX = x;
+        anchorY = y === undefined ? 0 : y;
+        displayed = name;
+        current = name;
+    }
+    function close() { current = ""; }
+
+    // e.g.  slate ipc call popout toggle volume 1250
+    IpcHandler {
+        target: "popout"
+        function toggle(name: string, x: real): void { pop.toggle(name, x, 0); }
+        function close(): void { pop.close(); }
+    }
+
+    property real fade: shown ? 1 : 0
+    Behavior on fade { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+    // ---- Window ------------------------------------------------------------
+    visible: fade > 0
+    anchors { top: true; bottom: true; left: true; right: true }
+    // Panels come out of the bar: down from a top bar, up from a bottom one, sideways from a
+    // side bar, next to the button that opened them
+    readonly property string side: Config.barEdge
+    readonly property bool sideways: side === "left" || side === "right"
+    readonly property bool fromBottom: side === "bottom"
+    margins.top: side === "top" ? bar.barHeight : 0
+    margins.bottom: side === "bottom" ? bar.barHeight : 0
+    margins.left: side === "left" ? bar.barHeight : 0
+    margins.right: side === "right" ? bar.barHeight : 0
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "slate-popout"
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // While closing, let clicks through so the desktop is usable straight away
+    mask: Region { item: shown ? catcher : panelArea }
+
+    Item { id: catcher; anchors.fill: parent }
+
+    // Click outside the panel to close
+    MouseArea {
+        anchors.fill: parent
+        enabled: pop.shown
+        onClicked: pop.close()
+    }
+
+    // ---- Look --------------------------------------------------------------
+    readonly property color bg: bar.barColor
+    readonly property color card: bar.capsuleColor
+    readonly property color text: bar.textColor
+    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color accent: bar.accent
+    readonly property color accentText: Config.tint("#12151a")
+    readonly property color danger: bar.errorColor
+    readonly property real radius: 14
+    readonly property real pad: 14
+
+    // ---- Drop shadow under the panel: a copy of the panel's shape as far as it has slid
+    // out (the panel clips itself, so it can't cast one), cast away from the bar
+    Rectangle {
+        readonly property real offX: Math.abs(body.x)
+        readonly property real offY: Math.abs(body.y)
+        x: panelArea.x + Math.max(0, body.x)
+        y: panelArea.y + Math.max(0, body.y)
+        width: Math.max(0, panelArea.width - offX)
+        height: Math.max(0, panelArea.height - offY)
+        color: pop.bg
+        topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
+        bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
+        opacity: pop.fade
+        visible: width > 0 && height > 0
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "black"
+            shadowOpacity: Config.s.lightMode ? 0.22 : 0.5
+            shadowBlur: 0.9
+            blurMax: 24
+            shadowHorizontalOffset: pop.sideways ? (pop.side === "left" ? 4 : -4) : 0
+            shadowVerticalOffset: pop.sideways ? 4 : (pop.fromBottom ? -4 : 4)
+        }
+    }
+
+    // ---- Panel body --------------------------------------------------------
+    // The control centre opens from the bar's first button and the power menu (session) from
+    // its last, so they sit flush against the start / end of the screen, rounded only on
+    // their one corner out in the screen
+    readonly property bool atScreenStart: displayed === "control"
+    readonly property bool atScreenEnd: displayed === "session"
+    Item {
+        id: panelArea
+        readonly property real bodyW: (content.item ? content.item.implicitWidth : 280) + pop.pad * 2
+        readonly property real bodyH: (content.item ? content.item.implicitHeight : 100) + pop.pad * 2
+        width: bodyW
+        height: bodyH
+        x: pop.sideways ? (pop.side === "left" ? 0 : pop.width - width)
+            : pop.atScreenStart ? 0 : pop.atScreenEnd ? pop.width - width
+            : Math.max(bar.cornerRadius + 2, Math.min(pop.width - width - bar.cornerRadius - 2, pop.anchorX - width / 2))
+        y: pop.sideways ? (pop.atScreenStart ? 0 : pop.atScreenEnd ? pop.height - height
+                : Math.max(bar.cornerRadius + 2, Math.min(pop.height - height - bar.cornerRadius - 2, pop.anchorY - height / 2)))
+            : (pop.fromBottom ? pop.height - height : 0)
+        clip: true
+
+        // Swallow clicks inside the panel
+        MouseArea { anchors.fill: parent }
+
+        Rectangle {
+            id: body
+            width: parent.width
+            height: parent.height
+            // Slides out of the bar; rounded on the corners away from it
+            x: pop.sideways ? (pop.side === "left" ? -1 : 1) * width * (1 - pop.fade) : 0
+            y: pop.sideways ? 0 : (pop.fromBottom ? 1 : -1) * height * (1 - pop.fade)
+            color: pop.bg
+            // Flush with the start or end of the screen: not on the corner against it
+            topLeftRadius: (pop.side === "bottom" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenStart) ? pop.radius : 0
+            topRightRadius: (pop.side === "bottom" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenStart) ? pop.radius : 0
+            bottomLeftRadius: (pop.side === "top" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenEnd) ? pop.radius : 0
+            bottomRightRadius: (pop.side === "top" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenEnd) ? pop.radius : 0
+            opacity: Math.min(1, pop.fade * 1.5)
+
+            FocusScope {
+                anchors.fill: parent
+                anchors.margins: pop.pad
+                focus: pop.shown
+                Keys.onEscapePressed: pop.close()
+                Loader {
+                    id: content
+                    focus: true
+                    sourceComponent: pop.displayed === "volume" ? volumePanel
+                        : pop.displayed === "wifi" ? wifiPanel
+                        : pop.displayed === "keyboard" ? keyboardPanel
+                        : pop.displayed === "bluetooth" ? bluetoothPanel
+                        : pop.displayed === "battery" ? batteryPanel
+                        : pop.displayed === "calendar" ? calendarPanel
+                        : pop.displayed === "session" ? sessionPanel
+                        : pop.displayed === "control" ? controlPanel
+                        : pop.displayed === "notifications" ? notificationsPanel : null
+                }
+            }
+        }
+    }
+
+    // Curved joins between the bar and the panel's sides
+    Repeater {
+        model: 2
+        Canvas {
+            required property int index
+            width: bar.cornerRadius; height: bar.cornerRadius
+            // None at the screen's edge, for a panel flush against it
+            visible: !(pop.atScreenEnd && index === 1) && !(pop.atScreenStart && index === 0)
+            // Either side of the panel where it meets the bar (above and below it on a side bar).
+            // The shape is drawn for a top bar's left join and mirrored for the others.
+            x: pop.sideways ? (pop.side === "left" ? 0 : pop.width - width)
+                : (index === 0 ? panelArea.x - width : panelArea.x + panelArea.width)
+            y: pop.sideways ? (index === 0 ? panelArea.y - height : panelArea.y + panelArea.height)
+                : (pop.fromBottom ? pop.height - height : 0)
+            opacity: pop.fade
+            transform: Scale {
+                xScale: pop.sideways ? (pop.side === "left" ? -1 : 1) : (index === 0 ? 1 : -1)
+                yScale: pop.sideways ? (index === 0 ? -1 : 1) : (pop.fromBottom ? -1 : 1)
+                origin.x: bar.cornerRadius / 2; origin.y: bar.cornerRadius / 2
+            }
+            readonly property color fill: pop.bg
+            onFillChanged: requestPaint()
+            onAvailableChanged: if (available) requestPaint()
+            onPaint: {
+                const r = bar.cornerRadius, ctx = getContext("2d");
+                ctx.reset();
+                ctx.fillStyle = fill;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(r, 0);
+                ctx.lineTo(r, r);
+                ctx.arc(0, r, r, 0, -Math.PI / 2, true);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+    }
+
+    // ---- Control centre state ----------------------------------------------
+    // Caffeine: keeps the session awake (Slate's idle lock and other idle watchers respect it)
+    property bool caffeine: false
+    IdleInhibitor { window: pop.bar; enabled: pop.caffeine }
+    readonly property bool nightLight: Config.s.nightLight   // NightLight.qml applies it
+    onCurrentChanged: {
+        if (current === "control") uptimeFile.reload();
+        if (current === "notifications" && notifs) notifs.markRead();
+    }
+
+    // Weather from Open-Meteo for Settings' location (Config.s.latitude/longitude), every 30 min
+    property var weather: null
+    property var forecast: null       // daily: time[], weather_code[], temperature_2m_max[], temperature_2m_min[]
+    Process {
+        id: weatherFetch
+        command: ["curl", "-sf", "--max-time", "10",
+            "https://api.open-meteo.com/v1/forecast?latitude=" + Config.s.latitude + "&longitude=" + Config.s.longitude + "&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto"]
+        stdout: StdioCollector {
+            onStreamFinished: { try { const j = JSON.parse(text); pop.weather = j.current; pop.forecast = j.daily; } catch (e) {} }
+        }
+    }
+    // Only once a location is set (Settings → General → Location); again when it changes
+    readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude
+    onWeatherPlaceChanged: { weather = null; forecast = null; if (weatherPlace !== "") weatherFetch.running = true; }
+    Timer { interval: 30 * 60 * 1000; running: true; repeat: true; triggeredOnStart: true; onTriggered: if (pop.weatherPlace !== "") weatherFetch.running = true }
+    function weatherInfo(code) {
+        if (code === 0) return { text: "Clear", icon: 0xEB30 };
+        if (code <= 2) return { text: "Partly cloudy", icon: 0xEC6D };
+        if (code === 3) return { text: "Overcast", icon: 0xEA76 };
+        if (code <= 48) return { text: "Fog", icon: 0xECD9 };
+        if (code <= 67 || (code >= 80 && code <= 82)) return { text: "Rain", icon: 0xEA72 };
+        if (code <= 77 || code === 85 || code === 86) return { text: "Snow", icon: 0xEC0B };
+        return { text: "Thunderstorm", icon: 0xEA74 };
+    }
+
+    FileView { id: uptimeFile; path: "/proc/uptime" }
+    // Your name from the account (as on the lock screen), else the user name
+    property string fullName: Quickshell.env("USER")
+    Process {
+        running: true
+        command: ["getent", "passwd", Quickshell.env("USER")]
+        stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) pop.fullName = n; } }
+    }
+    FileView { id: hostFile; path: "/etc/hostname" }
+    property string hyprVersion: ""
+    Process {
+        running: true
+        command: ["hyprctl", "version", "-j"]
+        stdout: StdioCollector { onStreamFinished: { try { pop.hyprVersion = JSON.parse(text).tag.replace(/^v/, ""); } catch (e) {} } }
+    }
+    function uptimeText() {
+        const sec = parseFloat((uptimeFile.text() || "0").split(" ")[0]);
+        const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+        return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + h + " h " + m + " min";
+    }
+
+    // ---- Shared pieces -----------------------------------------------------
+    function glyph(code) { return String.fromCodePoint(code); }
+
+    component Label: Text {
+        color: pop.text
+        font.family: bar.fontFamily
+        font.pixelSize: 13
+        font.weight: Font.Medium
+        elide: Text.ElideRight
+    }
+    component Icon: Text {
+        property int code: 0
+        text: pop.glyph(code)
+        color: pop.text
+        font.family: bar.iconFont
+        font.pixelSize: 18
+    }
+    component Divider: Rectangle { width: parent ? parent.width : 0; height: 1; color: pop.card }
+
+    // Horizontal slider, 0..1
+    component Slider: Item {
+        id: sl
+        property real value: 0
+        property bool muted: false
+        signal moved(real v)
+        implicitHeight: 22
+        Rectangle {
+            id: track
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width; height: 6; radius: 3
+            color: pop.card
+            Rectangle {
+                width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: 3
+                color: sl.muted ? pop.dim : pop.accent
+            }
+        }
+        Rectangle {
+            width: 16; height: 16; radius: 8
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.min(1, sl.value) * (sl.width - width)
+            color: pop.text
+        }
+        MouseArea {
+            anchors.fill: parent
+            function set(mx) { sl.moved(Math.max(0, Math.min(1, mx / width))); }
+            onPressed: m => set(m.x)
+            onPositionChanged: m => { if (pressed) set(m.x); }
+            onWheel: w => sl.moved(Math.max(0, Math.min(1, sl.value + (w.angleDelta.y > 0 ? 0.05 : -0.05))))
+        }
+    }
+
+    // A row you can click, highlighted on hover (or blue when selected)
+    component RowButton: Rectangle {
+        id: rb
+        property bool selected: false
+        property bool danger: false
+        signal clicked()
+        height: 36
+        radius: 8
+        color: selected ? pop.accent : rbHover.hovered ? pop.card : "transparent"
+        Behavior on color { ColorAnimation { duration: 100 } }
+        HoverHandler { id: rbHover }
+        TapHandler { onTapped: rb.clicked() }
+    }
+
+    // ---- Volume ------------------------------------------------------------
+    Component {
+        id: volumePanel
+        Column {
+            id: vol
+            width: 300
+            spacing: 12
+            readonly property var sink: Pipewire.defaultAudioSink
+            readonly property var source: Pipewire.defaultAudioSource
+            readonly property var sinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream && n.audio)
+            PwObjectTracker { objects: [vol.sink, vol.source].concat(vol.sinks) }
+
+            Repeater {
+                model: [
+                    { node: vol.sink, title: "Output", on: 0xEB51, off: 0xF1C3 },
+                    { node: vol.source, title: "Input", on: 0xEAF0, off: 0xED16 }
+                ]
+                delegate: Column {
+                    required property var modelData
+                    readonly property var a: modelData.node && modelData.node.audio ? modelData.node.audio : null
+                    visible: a !== null
+                    width: vol.width
+                    spacing: 6
+                    Item {
+                        width: parent.width; height: 22
+                        Icon {
+                            id: muteIcon
+                            code: parent.parent.a && parent.parent.a.muted ? parent.parent.modelData.off : parent.parent.modelData.on
+                            color: parent.parent.a && parent.parent.a.muted ? pop.danger : pop.text
+                            anchors.verticalCenter: parent.verticalCenter
+                            TapHandler { onTapped: { const a = muteIcon.parent.parent.a; if (a) a.muted = !a.muted; } }
+                        }
+                        Label {
+                            anchors { left: muteIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            text: parent.parent.modelData.title
+                        }
+                        Label {
+                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                            text: parent.parent.a ? Math.round(parent.parent.a.volume * 100) + "%" : ""
+                            color: pop.dim
+                        }
+                    }
+                    Slider {
+                        width: parent.width
+                        value: parent.a ? parent.a.volume : 0
+                        muted: parent.a ? parent.a.muted : false
+                        onMoved: v => { const a = parent.a; if (a) { a.muted = false; a.volume = v; } }
+                    }
+                }
+            }
+
+            Divider { visible: vol.sinks.length > 1 }
+            Label { visible: vol.sinks.length > 1; text: "Output device"; color: pop.dim; font.pixelSize: 12 }
+            Column {
+                visible: vol.sinks.length > 1
+                width: parent.width
+                spacing: 2
+                Repeater {
+                    model: vol.sinks
+                    delegate: RowButton {
+                        required property var modelData
+                        width: parent.width
+                        selected: vol.sink && vol.sink.id === modelData.id
+                        // Short name ("Speaker", "Headphones") rather than the sound card's long one
+                        readonly property string shortName: (modelData.properties && modelData.properties["device.profile.description"])
+                            || modelData.nickname || modelData.description || modelData.name
+                        onClicked: Pipewire.preferredDefaultAudioSink = modelData
+                        Icon {
+                            id: devIcon
+                            code: parent.shortName.toLowerCase().includes("head") ? 0xEABD : 0xEA8B
+                            color: parent.selected ? pop.accentText : pop.text
+                            font.pixelSize: 16
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        }
+                        Label {
+                            anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            text: parent.shortName
+                            color: parent.selected ? pop.accentText : pop.text
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ---- Wi-Fi -------------------------------------------------------------
+    Component {
+        id: wifiPanel
+        Column {
+            id: wf
+            width: 320
+            spacing: 10
+            readonly property var dev: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
+            readonly property var nets: {
+                if (!dev) return [];
+                const seen = new Set();
+                return dev.networks.values
+                    .filter(n => n.name && !seen.has(n.name) && seen.add(n.name))
+                    .sort((a, b) => (b.connected - a.connected) || (b.signalStrength - a.signalStrength));
+            }
+            property string askingFor: ""      // network waiting for a password
+            // Scan while the panel is open
+            Binding { target: wf.dev; property: "scannerEnabled"; value: true; when: wf.dev !== null && pop.shown }
+
+            Item {
+                width: parent.width; height: 26
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Wi-Fi"; font.pixelSize: 15 }
+                // On/off switch
+                Rectangle {
+                    id: sw
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    width: 40; height: 22; radius: 11
+                    color: Networking.wifiEnabled ? pop.accent : pop.card
+                    Rectangle {
+                        width: 16; height: 16; radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: Networking.wifiEnabled ? parent.width - width - 3 : 3
+                        color: Networking.wifiEnabled ? pop.accentText : pop.text
+                        Behavior on x { NumberAnimation { duration: 120 } }
+                    }
+                    TapHandler { onTapped: Networking.wifiEnabled = !Networking.wifiEnabled }
+                }
+            }
+
+            // ---- Connection details (scripts/netinfo.sh), refreshed while the panel is open
+            property var info: ({})
+            readonly property var connected: nets.find(n => n.connected) ?? null
+            Process {
+                id: netInfo
+                command: [Quickshell.shellPath("scripts/netinfo.sh")]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        const o = {};
+                        for (const line of text.split("\n")) {
+                            const i = line.indexOf("=");
+                            if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
+                        }
+                        wf.info = o;
+                    }
+                }
+            }
+            Timer {
+                interval: 5000; repeat: true; triggeredOnStart: true
+                running: pop.shown && pop.displayed === "wifi"
+                onTriggered: if (!netInfo.running) netInfo.running = true
+            }
+            function band(freq) {
+                const mhz = parseInt(freq);
+                return isNaN(mhz) ? "" : mhz >= 5925 ? "6 GHz" : mhz >= 4900 ? "5 GHz" : "2.4 GHz";
+            }
+
+            Label {
+                visible: !Networking.wifiEnabled || wf.nets.length === 0
+                text: Networking.wifiEnabled ? "Searching…" : "Wi-Fi is off"
+                color: pop.dim
+            }
+
+            ListView {
+                id: netList
+                visible: Networking.wifiEnabled && wf.nets.length > 0
+                width: parent.width
+                height: Math.min(contentHeight, 320)
+                clip: true
+                spacing: 2
+                boundsBehavior: Flickable.StopAtBounds
+                model: wf.nets
+                delegate: Column {
+                    id: netRow
+                    required property var modelData
+                    readonly property bool secure: modelData.security !== undefined && modelData.security !== WifiSecurityType.Open
+                    width: netList.width
+                    spacing: 4
+                    RowButton {
+                        width: parent.width
+                        selected: netRow.modelData.connected
+                        onClicked: {
+                            const n = netRow.modelData;
+                            if (n.connected) return;
+                            if (n.known || !netRow.secure) { n.connect(); wf.askingFor = ""; }
+                            else wf.askingFor = (wf.askingFor === n.name ? "" : n.name);
+                        }
+                        Icon {
+                            id: sig
+                            readonly property real s: netRow.modelData.signalStrength
+                            code: s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4
+                            color: parent.selected ? pop.accentText : pop.text
+                            font.pixelSize: 16
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        }
+                        Label {
+                            anchors { left: sig.right; leftMargin: 10; right: status.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            text: netRow.modelData.name
+                            color: parent.selected ? pop.accentText : pop.text
+                        }
+                        Row {
+                            id: status
+                            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            spacing: 6
+                            Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: netRow.modelData.connected ? "Connected"
+                                    : netRow.modelData.stateChanging ? "Connecting…"
+                                    : netRow.modelData.known ? "Saved" : ""
+                                color: netRow.modelData.connected ? pop.accentText : pop.dim
+                                font.pixelSize: 12
+                            }
+                            Icon {
+                                visible: netRow.secure
+                                code: 0xEAE2
+                                font.pixelSize: 13
+                                color: netRow.modelData.connected ? pop.accentText : pop.dim
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+                    // Password entry for a new secured network
+                    Rectangle {
+                        visible: wf.askingFor === netRow.modelData.name
+                        width: parent.width; height: 34; radius: 8
+                        color: pop.card
+                        TextInput {
+                            id: psk
+                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                            verticalAlignment: TextInput.AlignVCenter
+                            echoMode: TextInput.Password
+                            color: pop.text
+                            font.family: bar.fontFamily
+                            font.pixelSize: 13
+                            focus: parent.visible
+                            onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
+                            onAccepted: { netRow.modelData.connectWithPsk(text); wf.askingFor = ""; }
+                            Keys.onEscapePressed: wf.askingFor = ""
+                        }
+                        Label {
+                            visible: psk.text === ""
+                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            text: "Password, then Enter"
+                            color: pop.dim
+                        }
+                    }
+                }
+            }
+
+            // ---- Connection: signal, then details as small tiles (click to copy) ----
+            readonly property bool showInfo: Networking.wifiEnabled && wf.connected !== null && wf.info.ip !== undefined
+            Divider { visible: wf.showInfo }
+            Label { visible: wf.showInfo; text: "Connection"; color: pop.dim; font.pixelSize: 12 }
+            // Signal strength, as a meter like the battery panel's
+            Column {
+                visible: wf.showInfo
+                width: parent.width
+                spacing: 5
+                // Glides between readings (the bar and the number together)
+                property real sig: wf.connected ? wf.connected.signalStrength : 0
+                Behavior on sig { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+                Item {
+                    width: parent.width; height: sigLabel.height
+                    Label { id: sigLabel; text: "Signal"; font.pixelSize: 12 }
+                    Label {
+                        anchors.right: parent.right
+                        text: Math.round(parent.parent.sig * 100) + "%" + (wf.info.security ? " · " + wf.info.security : "")
+                        color: pop.dim; font.pixelSize: 12
+                    }
+                }
+                Rectangle {
+                    width: parent.width; height: 6; radius: 3
+                    color: pop.card
+                    Rectangle {
+                        width: Math.max(height, parent.width * parent.parent.sig)
+                        height: parent.height; radius: 3
+                        color: parent.parent.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
+                        Behavior on color { ColorAnimation { duration: 300 } }
+                    }
+                }
+            }
+            // Details: two columns of tiles
+            Grid {
+                visible: wf.showInfo
+                width: parent.width
+                columns: 2
+                spacing: 6
+                Repeater {
+                    model: {
+                        const ip = (wf.info.ip || "").split("/")[0];
+                        const t = [
+                            { k: "Band", v: [wf.band(wf.info.freq), wf.info.channel ? "ch " + wf.info.channel : ""].filter(x => x).join(" · "), copy: false },
+                            { k: "Link speed", v: wf.info.rate || "", copy: false },
+                            { k: "IP address", v: ip, copy: true },
+                            { k: "Gateway", v: wf.info.gateway || "", copy: true }
+                        ];
+                        if (wf.info.dns && wf.info.dns !== wf.info.gateway) t.push({ k: "DNS", v: wf.info.dns, copy: true });
+                        return t.filter(x => x.v);
+                    }
+                    delegate: Rectangle {
+                        id: tile
+                        required property var modelData
+                        width: (wf.width - 6) / 2
+                        height: 46
+                        radius: 9
+                        color: tileHover.hovered && modelData.copy ? Qt.lighter(pop.card, 1.15) : pop.card
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        property bool copied: false
+                        Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
+                        Column {
+                            anchors { left: parent.left; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            spacing: 2
+                            Label { text: tile.modelData.k; color: pop.dim; font.pixelSize: 11 }
+                            Label {
+                                width: parent.width
+                                text: tile.copied ? "Copied" : tile.modelData.v
+                                color: tile.copied ? pop.accent : pop.text
+                                font.pixelSize: 13
+                            }
+                        }
+                        HoverHandler { id: tileHover; cursorShape: tile.modelData.copy ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                        TapHandler {
+                            enabled: tile.modelData.copy
+                            onTapped: { Quickshell.execDetached(["wl-copy", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
+                        }
+                    }
+                }
+            }
+            // VPN, when one is active
+            Rectangle {
+                visible: wf.showInfo && !!wf.info.vpn
+                width: parent.width; height: 36; radius: 9
+                color: Qt.rgba(pop.accent.r, pop.accent.g, pop.accent.b, 0.14)
+                Row {
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    spacing: 8
+                    Icon { anchors.verticalCenter: parent.verticalCenter; code: 0xED58; color: pop.accent; font.pixelSize: 16 }
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: "VPN"; color: pop.accent; font.pixelSize: 12 }
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: wf.info.vpn || ""; font.pixelSize: 12 }
+                }
+            }
+
+            // Disconnect from the current network
+            RowButton {
+                readonly property var cur: wf.nets.find(n => n.connected) ?? null
+                visible: cur !== null
+                width: parent.width
+                onClicked: if (cur) cur.disconnect()
+                Label {
+                    anchors.centerIn: parent
+                    text: "Disconnect"
+                    color: pop.dim
+                }
+            }
+        }
+    }
+
+    // ---- Keyboard layout --------------------------------------------------
+    // The layouts from Settings → Keyboard & mouse; click one to switch to it
+    Component {
+        id: keyboardPanel
+        Column {
+            id: kbp
+            width: 280
+            spacing: 10
+            Label { text: "Keyboard layout"; font.pixelSize: 15 }
+            Column {
+                width: parent.width
+                spacing: 2
+                Repeater {
+                    model: Config.kbLayoutList
+                    delegate: RowButton {
+                        id: layoutBtn
+                        required property var modelData
+                        required property int index
+                        width: parent.width
+                        selected: index === Config.kbActive
+                        onClicked: Config.switchLayout(index)
+                        // The short code in a little key cap, then the full name
+                        Rectangle {
+                            id: codeCap
+                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            width: Math.max(28, codeText.implicitWidth + 10); height: 22; radius: 5
+                            color: layoutBtn.selected ? Qt.rgba(0, 0, 0, 0.15) : pop.card
+                            Text {
+                                id: codeText
+                                anchors.centerIn: parent
+                                text: layoutBtn.modelData.code
+                                color: layoutBtn.selected ? pop.accentText : pop.text
+                                font.family: bar.fontFamily; font.pixelSize: 11; font.weight: Font.Bold
+                            }
+                        }
+                        Label {
+                            anchors { left: codeCap.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            text: layoutBtn.modelData.name
+                            color: layoutBtn.selected ? pop.accentText : pop.text
+                        }
+                    }
+                }
+            }
+            Divider {}
+            RowButton {
+                width: parent.width
+                onClicked: {
+                    pop.close();
+                    Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "input"]);
+                }
+                Icon {
+                    id: kbSettingsIcon
+                    code: 0xEB20; font.pixelSize: 16; color: pop.dim
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                }
+                Label {
+                    anchors { left: kbSettingsIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Keyboard settings"
+                    font.weight: Font.Normal
+                }
+            }
+        }
+    }
+
+    // ---- Bluetooth --------------------------------------------------------
+    // On/off, then paired devices (click one to connect or disconnect), then Settings for
+    // finding and pairing new ones
+    Component {
+        id: bluetoothPanel
+        Column {
+            id: btp
+            width: 300
+            spacing: 10
+            readonly property var adapter: Bluetooth.defaultAdapter
+            readonly property bool on: !!adapter && adapter.enabled
+            readonly property var devices: on ? adapter.devices.values.filter(d => d.paired || d.bonded || d.connected).slice()
+                .sort((a, b) => (b.connected - a.connected) || (a.name || "").localeCompare(b.name || "")) : []
+            function iconFor(d) {
+                const i = (d.icon || "").toLowerCase();
+                if (i.includes("headset") || i.includes("headphone") || i.includes("audio")) return 0xEABD;
+                if (i.includes("gam") || i.includes("joystick")) return 0xF1D2;
+                if (i.includes("mouse")) return 0xEAF9;
+                if (i.includes("keyboard")) return 0xEBD6;
+                if (i.includes("phone")) return 0xEA8A;
+                return 0xEA37;
+            }
+
+            Item {
+                width: parent.width; height: 26
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Bluetooth"; font.pixelSize: 15 }
+                // On/off switch
+                Rectangle {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    visible: !!btp.adapter
+                    width: 40; height: 22; radius: 11
+                    color: btp.on ? pop.accent : pop.card
+                    Rectangle {
+                        width: 16; height: 16; radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: btp.on ? parent.width - width - 3 : 3
+                        color: btp.on ? pop.accentText : pop.text
+                        Behavior on x { NumberAnimation { duration: 120 } }
+                    }
+                    TapHandler { onTapped: if (btp.adapter) btp.adapter.enabled = !btp.adapter.enabled }
+                }
+            }
+
+            Label {
+                visible: !btp.on || btp.devices.length === 0
+                width: parent.width
+                wrapMode: Text.Wrap
+                color: pop.dim
+                font.pixelSize: 12
+                font.weight: Font.Normal
+                text: !btp.adapter ? "No Bluetooth adapter found" : !btp.on ? "Bluetooth is off"
+                    : "No paired devices yet. Pair one in Bluetooth settings"
+            }
+            Column {
+                visible: btp.on && btp.devices.length > 0
+                width: parent.width
+                spacing: 2
+                Repeater {
+                    model: btp.devices
+                    delegate: RowButton {
+                        id: devRow
+                        required property var modelData
+                        readonly property var d: modelData
+                        readonly property bool busy: d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting
+                        width: parent.width
+                        height: 44
+                        selected: d.connected
+                        onClicked: d.connected ? d.disconnect() : d.connect()
+                        Icon {
+                            id: devIcon
+                            code: btp.iconFor(devRow.d)
+                            color: devRow.selected ? pop.accentText : pop.text
+                            font.pixelSize: 17
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        }
+                        Column {
+                            anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            spacing: 1
+                            Label {
+                                width: parent.width
+                                text: devRow.d.name || devRow.d.deviceName || devRow.d.address
+                                color: devRow.selected ? pop.accentText : pop.text
+                            }
+                            Label {
+                                width: parent.width
+                                font.pixelSize: 11; font.weight: Font.Normal
+                                color: devRow.selected ? pop.accentText : pop.dim
+                                opacity: devRow.selected ? 0.8 : 1
+                                text: devRow.busy ? (devRow.d.connected ? "Disconnecting…" : "Connecting…")
+                                    : devRow.d.connected ? "Connected" + (devRow.d.batteryAvailable ? " · " + Math.round(devRow.d.battery * 100) + "% battery" : "")
+                                    : "Not connected"
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider {}
+            RowButton {
+                width: parent.width
+                onClicked: {
+                    pop.close();
+                    Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "bluetooth"]);
+                }
+                Icon {
+                    id: btSettingsIcon
+                    code: 0xEB20; font.pixelSize: 16; color: pop.dim
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                }
+                Label {
+                    anchors { left: btSettingsIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Bluetooth settings"
+                    font.weight: Font.Normal
+                }
+            }
+        }
+    }
+
+    // ---- Battery & power ---------------------------------------------------
+    Component {
+        id: batteryPanel
+        Column {
+            id: bat
+            width: 300
+            spacing: 12
+            readonly property var dev: UPower.displayDevice
+            readonly property real pct: dev && dev.ready ? dev.percentage : 0
+            readonly property int st: dev ? dev.state : 0
+            function duration(sec) {
+                if (!sec || sec <= 0) return "";
+                const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+                return h > 0 ? `${h} h ${m} min` : `${m} min`;
+            }
+            readonly property string stateText:
+                st === UPowerDeviceState.Charging ? "Charging" + (duration(dev.timeToFull) ? " · full in " + duration(dev.timeToFull) : "")
+                : st === UPowerDeviceState.FullyCharged ? "Fully charged"
+                : st === UPowerDeviceState.Discharging ? "On battery" + (duration(dev.timeToEmpty) ? " · " + duration(dev.timeToEmpty) + " left" : "")
+                : UPower.onBattery ? "On battery" : "Plugged in"
+
+            Row {
+                spacing: 10
+                Icon {
+                    code: UPower.onBattery ? 0xEA34 : 0xEA33
+                    font.pixelSize: 24
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    Label { text: Math.round(bat.pct * 100) + "%"; font.pixelSize: 20 }
+                    Label { text: bat.stateText; color: pop.dim; font.pixelSize: 12 }
+                }
+            }
+            // Charge bar
+            Rectangle {
+                width: parent.width; height: 6; radius: 3
+                color: pop.card
+                Rectangle {
+                    width: parent.width * bat.pct; height: parent.height; radius: 3
+                    color: bat.pct < 0.15 && UPower.onBattery ? pop.danger : pop.accent
+                }
+            }
+
+            Divider {}
+            Label { text: "Power mode"; color: pop.dim; font.pixelSize: 12 }
+            Row {
+                width: parent.width
+                spacing: 6
+                Repeater {
+                    model: [
+                        { p: PowerProfile.PowerSaver, label: "Saver", code: 0xED4F },
+                        { p: PowerProfile.Balanced, label: "Balanced", code: 0xEBC2 },
+                        { p: PowerProfile.Performance, label: "Performance", code: 0xEC45 }
+                    ].filter(x => x.p !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
+                    delegate: RowButton {
+                        required property var modelData
+                        width: (bat.width - 12) / 3
+                        height: 56
+                        selected: PowerProfiles.profile === modelData.p
+                        onClicked: PowerProfiles.profile = modelData.p
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 2
+                            Icon {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                code: parent.parent.modelData.code
+                                font.pixelSize: 18
+                                color: parent.parent.selected ? pop.accentText : pop.text
+                            }
+                            Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: parent.parent.modelData.label
+                                font.pixelSize: 12
+                                color: parent.parent.selected ? pop.accentText : pop.text
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- System: CPU, memory and the main drive, refreshed while the panel is open
+            Divider {}
+            Label { text: "System"; color: pop.dim; font.pixelSize: 12 }
+            property real cpu: 0                 // 0..1
+            property var lastCpu: null           // [busy, total] from the previous reading
+            property real memUsed: 0
+            property real memTotal: 0
+            property real diskUsed: 0
+            property real diskTotal: 0
+            FileView { id: statFile; path: "/proc/stat" }
+            FileView { id: memFile; path: "/proc/meminfo" }
+            Process {
+                id: diskInfo
+                command: ["df", "-B1", "--output=size,used", "/"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        const f = text.trim().split("\n").pop().trim().split(/\s+/).map(Number);
+                        if (f.length === 2 && !isNaN(f[0])) { bat.diskTotal = f[0]; bat.diskUsed = f[1]; }
+                    }
+                }
+            }
+            function sample() {
+                statFile.reload(); memFile.reload();
+                const c = (statFile.text().split("\n")[0] || "").trim().split(/\s+/).slice(1).map(Number);
+                if (c.length >= 4) {
+                    const idle = c[3] + (c[4] || 0), total = c.reduce((a, b) => a + b, 0);
+                    if (lastCpu) {
+                        const dt = total - lastCpu[1], dbusy = (total - idle) - lastCpu[0];
+                        if (dt > 0) cpu = Math.max(0, Math.min(1, dbusy / dt));
+                    }
+                    lastCpu = [total - idle, total];
+                }
+                const mem = {};
+                for (const line of memFile.text().split("\n")) {
+                    const mm = /^(\w+):\s+(\d+)/.exec(line);
+                    if (mm) mem[mm[1]] = Number(mm[2]) * 1024;
+                }
+                if (mem.MemTotal) { memTotal = mem.MemTotal; memUsed = mem.MemTotal - (mem.MemAvailable || mem.MemFree || 0); }
+                if (!diskInfo.running) diskInfo.running = true;
+            }
+            Timer {
+                interval: 2000; repeat: true; triggeredOnStart: true
+                running: pop.shown && pop.displayed === "battery"
+                onTriggered: bat.sample()
+            }
+            // Shown values glide from one reading to the next (readings come every 2s)
+            property real cpuShown: cpu
+            property real memShown: memTotal ? memUsed / memTotal : 0
+            property real diskShown: diskTotal ? diskUsed / diskTotal : 0
+            Behavior on cpuShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+            Behavior on memShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+            Behavior on diskShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+            function gb(bytes) {
+                const g = bytes / 1e9;
+                return g >= 1000 ? (g / 1000).toFixed(1) + " TB" : g >= 100 ? Math.round(g) + " GB" : g.toFixed(1) + " GB";
+            }
+            // A fixed list, so the meters stay put (and animate) as the readings change
+            Repeater {
+                model: ["CPU", "Memory", "Disk"]
+                delegate: Column {
+                    required property string modelData
+                    readonly property real frac: modelData === "CPU" ? bat.cpuShown : modelData === "Memory" ? bat.memShown : bat.diskShown
+                    readonly property string value: modelData === "CPU" ? Math.round(bat.cpuShown * 100) + "%"
+                        : modelData === "Memory" ? (bat.memTotal ? (bat.memShown * bat.memTotal / 1e9).toFixed(1) + " / " + (bat.memTotal / 1e9).toFixed(1) + " GB" : "")
+                        : (bat.diskTotal ? bat.gb(bat.diskShown * bat.diskTotal) + " / " + bat.gb(bat.diskTotal) : "")
+                    width: bat.width
+                    spacing: 5
+                    Item {
+                        width: parent.width; height: meterLabel.height
+                        Label { id: meterLabel; text: parent.parent.modelData; font.pixelSize: 12 }
+                        Label {
+                            anchors.right: parent.right
+                            text: parent.parent.value
+                            color: pop.dim; font.pixelSize: 12
+                        }
+                    }
+                    Rectangle {
+                        width: parent.width; height: 6; radius: 3
+                        color: pop.card
+                        Rectangle {
+                            width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
+                            height: parent.height; radius: 3
+                            // Red when above 80%
+                            color: parent.parent.frac > 0.8 ? pop.danger : pop.accent
+                            Behavior on color { ColorAnimation { duration: 300 } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ---- Calendar ----------------------------------------------------------
+    Component {
+        id: calendarPanel
+        Column {
+            id: cal
+            width: 280
+            spacing: 10
+            SystemClock { id: calClock; precision: SystemClock.Minutes }
+            readonly property date today: calClock.date
+            property int monthOffset: 0
+            readonly property date shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+
+            // Weather, when a location is set (Settings → General → Location) and it has loaded
+            readonly property bool hasWeather: Config.s.locationName !== "" && pop.weather !== null
+
+            Item {
+                width: parent.width
+                height: Math.max(timeCol.height, nowWeather.height)
+                Column {
+                    id: timeCol
+                    spacing: 2
+                    Label { text: Qt.formatTime(cal.today, "h:mm AP"); font.pixelSize: 22 }
+                    Label { text: Qt.formatDate(cal.today, "dddd, d MMMM yyyy"); color: pop.dim; font.pixelSize: 12 }
+                }
+                // Now: icon and temperature, conditions and place underneath
+                Column {
+                    id: nowWeather
+                    visible: cal.hasWeather
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    spacing: 2
+                    Row {
+                        anchors.right: parent.right
+                        spacing: 6
+                        Icon {
+                            anchors.verticalCenter: parent.verticalCenter
+                            code: pop.weather ? pop.weatherInfo(pop.weather.weather_code).icon : 0
+                            color: pop.accent
+                            font.pixelSize: 20
+                        }
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: pop.weather ? Math.round(pop.weather.temperature_2m) + "°" : ""
+                            font.pixelSize: 20
+                        }
+                    }
+                    Label {
+                        anchors.right: parent.right
+                        text: pop.weather ? pop.weatherInfo(pop.weather.weather_code).text + " · " + Config.s.locationName : ""
+                        color: pop.dim; font.pixelSize: 11
+                        width: Math.min(implicitWidth, 130)
+                        horizontalAlignment: Text.AlignRight
+                    }
+                }
+            }
+            Divider {}
+            Item {
+                width: parent.width; height: 26
+                Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Qt.formatDate(cal.shownMonth, "MMMM yyyy")
+                    font.pixelSize: 14
+                }
+                Row {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    spacing: 4
+                    Repeater {
+                        model: [{ code: 0xEA60, d: -1 }, { code: 0xEA61, d: 1 }]
+                        delegate: RowButton {
+                            required property var modelData
+                            width: 28; height: 26
+                            onClicked: cal.monthOffset += modelData.d
+                            Icon { anchors.centerIn: parent; code: parent.modelData.code; font.pixelSize: 15 }
+                        }
+                    }
+                }
+            }
+            Grid {
+                id: grid
+                columns: 7
+                readonly property real cell: cal.width / 7
+                // Weekday initials, Monday first
+                Repeater {
+                    model: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+                    delegate: Label {
+                        required property string modelData
+                        width: grid.cell; height: 22
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData
+                        color: pop.dim
+                        font.pixelSize: 11
+                    }
+                }
+                Repeater {
+                    model: 42
+                    delegate: Item {
+                        required property int index
+                        readonly property int lead: (cal.shownMonth.getDay() + 6) % 7
+                        readonly property date day: new Date(cal.shownMonth.getFullYear(), cal.shownMonth.getMonth(), index - lead + 1)
+                        readonly property bool inMonth: day.getMonth() === cal.shownMonth.getMonth()
+                        readonly property bool isToday: day.toDateString() === cal.today.toDateString()
+                        width: grid.cell; height: 32
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 28; height: 28; radius: 14
+                            color: parent.isToday ? pop.accent : "transparent"
+                        }
+                        Label {
+                            anchors.centerIn: parent
+                            text: parent.day.getDate()
+                            color: parent.isToday ? pop.accentText : parent.inMonth ? pop.text : Config.tint("#4f5866")
+                            font.pixelSize: 12
+                        }
+                    }
+                }
+            }
+            // The next few days
+            Divider { visible: cal.hasWeather && pop.forecast !== null }
+            Row {
+                visible: cal.hasWeather && pop.forecast !== null
+                width: parent.width
+                spacing: 6
+                Repeater {
+                    model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
+                    delegate: Rectangle {
+                        required property int index
+                        readonly property int day: index + 1
+                        width: (cal.width - 18) / 4; height: 64; radius: 9
+                        color: pop.card
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 3
+                            Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: Qt.formatDate(new Date(pop.forecast.time[parent.parent.day] + "T12:00"), "ddd")
+                                color: pop.dim; font.pixelSize: 11
+                            }
+                            Icon {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                code: pop.weatherInfo(pop.forecast.weather_code[parent.parent.day]).icon
+                                font.pixelSize: 16
+                            }
+                            Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: Math.round(pop.forecast.temperature_2m_max[parent.parent.day]) + "° "
+                                    + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[parent.parent.day]) + "°</font>"
+                                textFormat: Text.StyledText
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+                }
+            }
+            // Reset to the current month each time the panel opens
+            Connections { target: pop; function onCurrentChanged() { if (pop.current === "calendar") cal.monthOffset = 0; } }
+        }
+    }
+
+    // ---- Session -----------------------------------------------------------
+    Component {
+        id: sessionPanel
+        Column {
+            id: ses
+            width: 220
+            spacing: 2
+            Repeater {
+                model: [
+                    { id: "lock", label: "Lock", code: 0xEAE2, confirm: false },
+                    { id: "lock_and_suspend", label: "Suspend", code: 0xF228, confirm: false },
+                    { id: "logout", label: "Log out", code: 0xEBA8, confirm: true },
+                    { id: "reboot", label: "Restart", code: 0xEB13, confirm: true },
+                    { id: "shutdown", label: "Shut down", code: 0xEB0D, confirm: true }
+                ]
+                delegate: RowButton {
+                    required property var modelData
+                    width: ses.width
+                    height: 40
+                    onClicked: {
+                        pop.close();
+                        if (modelData.confirm && pop.powerConfirm) pop.powerConfirm.ask(modelData.id);
+                        else if (modelData.id === "lock") Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "lock"]);
+                        else if (modelData.id === "lock_and_suspend")   // lock first, then sleep
+                            Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Quickshell.shellPath("bin/slate")]);
+                        else Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), modelData.id]);
+                    }
+                    Icon {
+                        id: sIcon
+                        code: parent.modelData.code
+                        color: parent.modelData.id === "shutdown" ? pop.danger : pop.text
+                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    }
+                    Label {
+                        anchors { left: sIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        text: parent.modelData.label
+                    }
+                }
+            }
+        }
+    }
+
+    // ---- Control centre ----------------------------------------------------
+    Component {
+        id: controlPanel
+        Column {
+            id: cc
+            width: 470
+            spacing: 12
+            readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
+
+            // Profile
+            Rectangle {
+                id: profileCard
+                width: parent.width; height: 80; radius: 12
+                color: pop.card
+                // Wallpaper behind the card, fading into it from the left
+                Item {
+                    anchors.fill: parent
+                    layer.enabled: true
+                    layer.effect: MultiEffect { maskEnabled: true; maskSource: profileMask }
+                    Image {
+                        anchors.fill: parent
+                        source: Config.wallpaper ? "file://" + Config.wallpaper : ""
+                        sourceSize.width: 940
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        opacity: status === Image.Ready ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 300 } }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: pop.card }
+                            GradientStop { position: 0.35; color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.92) }
+                            GradientStop { position: 1.0; color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.35) }
+                        }
+                    }
+                }
+                Item {
+                    id: profileMask
+                    anchors.fill: parent
+                    visible: false
+                    layer.enabled: true
+                    Rectangle { anchors.fill: parent; radius: profileCard.radius }
+                }
+                RoundImage {
+                    id: avatar
+                    width: 56; height: 56; radius: 28
+                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    source: Config.avatarUrl
+                    // Hover: greyed and dimmed with a pencil; click to change the picture
+                    saturation: avatarHover.hovered ? -1 : 0
+                    brightness: avatarHover.hovered ? -0.45 : 0
+                    Behavior on saturation { NumberAnimation { duration: 150 } }
+                    Behavior on brightness { NumberAnimation { duration: 150 } }
+                    Icon {
+                        anchors.centerIn: parent
+                        code: 0xEB04
+                        color: "white"
+                        opacity: avatarHover.hovered ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                    }
+                    HoverHandler { id: avatarHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler {
+                        onTapped: {
+                            pop.close();
+                            Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "avatar"]);
+                        }
+                    }
+                }
+                Column {
+                    anchors { left: avatar.right; leftMargin: 14; verticalCenter: parent.verticalCenter; right: ccButtons.left; rightMargin: 8 }
+                    spacing: 2
+                    Label { width: parent.width; text: pop.fullName; font.pixelSize: 16 }
+                    Label { width: parent.width; text: Quickshell.env("USER") + "@" + hostFile.text().trim(); color: pop.dim; font.pixelSize: 12 }
+                    Label { width: parent.width; text: pop.uptimeText() + (pop.hyprVersion ? " · Hyprland " + pop.hyprVersion : ""); color: pop.dim; font.pixelSize: 12 }
+                }
+                Row {
+                    id: ccButtons
+                    anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    spacing: 6
+                    Repeater {
+                        model: [{ code: 0xEB20, act: "settings" }, { code: 0xEB0D, act: "session" }]
+                        delegate: RowButton {
+                            required property var modelData
+                            width: 34; height: 34
+                            color: hovered2.hovered ? pop.bg : Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.55)
+                            HoverHandler { id: hovered2 }
+                            onClicked: {
+                                if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }
+                                else { pop.anchorX = pop.width - 40; pop.displayed = "session"; pop.current = "session"; }
+                            }
+                            Icon { anchors.centerIn: parent; code: parent.modelData.code; color: parent.modelData.act === "session" ? pop.danger : pop.text }
+                        }
+                    }
+                }
+            }
+
+            Row {
+                spacing: 12
+                // Left: media, then clock & weather
+                Column {
+                    id: ccLeft
+                    width: 262
+                    spacing: 12
+
+                    Rectangle {
+                        visible: cc.player !== null
+                        width: parent.width; height: 104; radius: 12
+                        color: pop.card
+                        Item {
+                            visible: cc.player !== null
+                            anchors { fill: parent; margins: 12 }
+                            RoundImage {
+                                id: art
+                                width: 80; height: 80; radius: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: cc.player ? cc.player.trackArtUrl : ""
+                                visible: cc.player && cc.player.trackArtUrl !== ""
+                            }
+                            Column {
+                                anchors { left: art.visible ? art.right : parent.left; leftMargin: art.visible ? 12 : 0; right: parent.right; verticalCenter: parent.verticalCenter }
+                                spacing: 2
+                                Label { width: parent.width; text: cc.player ? (cc.player.trackTitle || cc.player.identity) : "" }
+                                Label { width: parent.width; text: cc.player ? (cc.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
+                                Row {
+                                    spacing: 4
+                                    topPadding: 6
+                                    Repeater {
+                                        model: [
+                                            { code: 0xF693, act: "prev" },
+                                            { code: cc.player && cc.player.isPlaying ? 0xF690 : 0xF691, act: "play" },
+                                            { code: 0xF694, act: "next" }
+                                        ]
+                                        delegate: RowButton {
+                                            required property var modelData
+                                            width: 32; height: 30
+                                            onClicked: {
+                                                const p = cc.player; if (!p) return;
+                                                if (modelData.act === "prev") p.previous();
+                                                else if (modelData.act === "next") p.next();
+                                                else p.togglePlaying();
+                                            }
+                                            Icon { anchors.centerIn: parent; code: parent.modelData.code; font.pixelSize: 16 }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: clockCard
+                        // Nothing playing: take the media card's space too
+                        readonly property bool roomy: cc.player === null
+                        width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: 12
+                        color: pop.card
+                        SystemClock { id: ccClock; precision: SystemClock.Minutes }
+                        Column {
+                            anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
+                            anchors.verticalCenter: clockCard.roomy ? undefined : parent.verticalCenter
+                            anchors.top: clockCard.roomy ? parent.top : undefined
+                            anchors.topMargin: 14
+                            spacing: 2
+                            Label { text: Qt.formatTime(ccClock.date, "h:mm AP"); font.pixelSize: clockCard.roomy ? 32 : 24 }
+                            Label { text: Qt.formatDate(ccClock.date, "dddd, d MMMM"); color: pop.dim; font.pixelSize: 12 }
+                            Row {
+                                visible: pop.weather !== null
+                                spacing: 6
+                                topPadding: 2
+                                Icon {
+                                    code: pop.weather ? pop.weatherInfo(pop.weather.weather_code).icon : 0
+                                    font.pixelSize: 14; color: pop.dim
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                Label {
+                                    text: !pop.weather ? ""
+                                        : Math.round(pop.weather.temperature_2m) + "°C · " + pop.weatherInfo(pop.weather.weather_code).text
+                                          + (clockCard.roomy && pop.weather.apparent_temperature !== undefined
+                                             ? " · feels " + Math.round(pop.weather.apparent_temperature) + "°" : "")
+                                    color: pop.dim; font.pixelSize: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+                            Label {
+                                visible: clockCard.roomy && pop.forecast !== null
+                                text: pop.forecast ? "High " + Math.round(pop.forecast.temperature_2m_max[0]) + "° · Low " + Math.round(pop.forecast.temperature_2m_min[0]) + "°" : ""
+                                color: pop.dim; font.pixelSize: 12
+                            }
+                        }
+                        // Next few days
+                        Row {
+                            visible: clockCard.roomy && pop.forecast !== null
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8 }
+                            spacing: 6
+                            Repeater {
+                                model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
+                                delegate: Rectangle {
+                                    required property int index
+                                    readonly property int day: index + 1
+                                    width: (parent.width - 18) / 4; height: 76; radius: 9
+                                    color: Qt.rgba(1, 1, 1, 0.03)
+                                    border.width: 0
+                                    Column {
+                                        anchors.centerIn: parent
+                                        spacing: 4
+                                        Label {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            text: Qt.formatDate(new Date(pop.forecast.time[parent.parent.day] + "T12:00"), "ddd")
+                                            color: pop.dim; font.pixelSize: 11
+                                        }
+                                        Icon {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            code: pop.weatherInfo(pop.forecast.weather_code[parent.parent.day]).icon
+                                            font.pixelSize: 18
+                                        }
+                                        Label {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            text: Math.round(pop.forecast.temperature_2m_max[parent.parent.day]) + "° "
+                                                + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[parent.parent.day]) + "°</font>"
+                                            textFormat: Text.StyledText
+                                            font.pixelSize: 12
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Right: quick toggles, as tall as the column beside them
+                Grid {
+                    id: ccTiles
+                    columns: 2
+                    spacing: 8
+                    readonly property real tileW: (cc.width - 262 - 12 - 8) / 2
+                    readonly property int rowCount: Math.ceil(6 / columns)
+                    readonly property real tileH: (ccLeft.height - spacing * (rowCount - 1)) / rowCount
+                    Repeater {
+                        model: [
+                            { id: "wifi", label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                            { id: "bt", label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                            { id: "caffeine", label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                            { id: "night", label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                            { id: "dnd", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                            { id: "perf", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
+                        ]
+                        delegate: RowButton {
+                            required property var modelData
+                            width: ccTiles.tileW
+                            height: ccTiles.tileH
+                            radius: 12
+                            selected: modelData.on
+                            color: selected ? pop.accent : tileHover.hovered ? Qt.lighter(pop.card, 1.25) : pop.card
+                            HoverHandler { id: tileHover }
+                            onClicked: {
+                                switch (modelData.id) {
+                                case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
+                                case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
+                                case "caffeine": pop.caffeine = !pop.caffeine; break;
+                                case "night": Config.s.nightLight = !Config.s.nightLight; break;
+                                case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
+                                case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
+                                }
+                            }
+                            Column {
+                                anchors.centerIn: parent
+                                width: parent.width - 12
+                                spacing: 3
+                                Icon {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    code: parent.parent.modelData.code
+                                    color: parent.parent.selected ? pop.accentText : pop.text
+                                }
+                                Label {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: parent.parent.modelData.label
+                                    font.pixelSize: 11
+                                    color: parent.parent.selected ? pop.accentText : pop.text
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ---- Notifications -----------------------------------------------------
+    Component {
+        id: notificationsPanel
+        Column {
+            id: np
+            width: 380
+            spacing: 10
+            readonly property var list: pop.notifs ? pop.notifs.history : []
+
+            Item {
+                width: parent.width; height: 28
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Notifications"; font.pixelSize: 15 }
+                Row {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    spacing: 8
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: "Do not disturb"; color: pop.dim; font.pixelSize: 12 }
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 40; height: 22; radius: 11
+                        readonly property bool on: pop.notifs ? pop.notifs.dnd : false
+                        color: on ? pop.accent : pop.card
+                        Rectangle {
+                            width: 16; height: 16; radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: parent.on ? parent.width - width - 3 : 3
+                            color: parent.on ? pop.accentText : pop.text
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                        TapHandler { onTapped: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd }
+                    }
+                    RowButton {
+                        visible: np.list.length > 0
+                        width: 30; height: 28
+                        onClicked: if (pop.notifs) pop.notifs.clearAll()
+                        Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.dim }
+                    }
+                }
+            }
+
+            Item {
+                visible: np.list.length === 0
+                width: parent.width; height: 120
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 8
+                    Icon { anchors.horizontalCenter: parent.horizontalCenter; code: 0xEA35; font.pixelSize: 26; color: pop.dim }
+                    Label { anchors.horizontalCenter: parent.horizontalCenter; text: "No notifications"; color: pop.dim }
+                }
+            }
+
+            ListView {
+                id: nList
+                visible: np.list.length > 0
+                width: parent.width
+                height: Math.min(contentHeight, 480)
+                clip: true
+                spacing: 6
+                boundsBehavior: Flickable.StopAtBounds
+                model: np.list
+                readonly property bool overflowing: contentHeight > height
+                SmoothWheel { flick: nList }
+                delegate: NotificationCard {
+                    required property var modelData
+                    width: nList.width - (nList.overflowing ? 10 : 0)   // room for the scrollbar
+                    bar: pop.bar
+                    inPanel: true
+                    entry: modelData
+                    notif: pop.notifs ? (pop.notifs.live[modelData.key] ?? null) : null
+                    onActivated: { pop.notifs.activate(modelData.key); pop.close(); }
+                    onClosed: pop.notifs.remove(modelData.key)
+                    onAction: id => { pop.notifs.invokeAction(modelData.key, id); pop.close(); }
+                }
+                remove: Transition { NumberAnimation { property: "opacity"; to: 0; duration: 150 } }
+                displaced: Transition { NumberAnimation { property: "y"; duration: 180; easing.type: Easing.OutCubic } }
+
+                // Scrollbar (ThinScrollbar, as everywhere), only when the list overflows
+                ThinScrollbar {
+                    parent: nList
+                    flick: nList
+                    color: pop.text
+                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+                }
+
+                // Shadow at the bottom while there's more to scroll to. Parented to the
+                // list itself (not its scrolling content) so it stays put.
+                Rectangle {
+                    parent: nList
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: 36
+                    opacity: nList.contentHeight > nList.height && !nList.atYEnd ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 1.0; color: pop.bg }
+                    }
+                }
+            }
+        }
+    }
+}

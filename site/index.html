@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slate · a desktop for Hyprland</title>
+<meta name="description" content="Slate is an aesthetically pleasing yet understated desktop for Linux, built on Hyprland and Quickshell: menu bar, dock, launcher, switchers, notifications, lock and login screens, and a full Settings app.">
+<meta property="og:title" content="Slate · a desktop for Hyprland">
+<meta property="og:description" content="Aesthetically pleasing yet understated, opinionated yet configurable, desktop environment for Linux.">
+<meta property="og:image" content="assets/icon.png">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="style.css?v=21">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#"><img src="assets/logo.png?v=4" alt="Slate" height="34"></a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#previews">Previews</a>
+    <a href="#install">Install</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="hero">
+  <img class="hero-mark" src="assets/mark.png" alt="" width="313" height="360">
+  <h1>A calm, complete desktop for&nbsp;Hyprland.</h1>
+  <p class="lead">Aesthetically pleasing yet understated, opinionated yet configurable.
+    Slate turns Hyprland into a full desktop: a menu bar, a dock, a launcher, switchers,
+    notifications, lock and login screens, and a Settings app for all of it.</p>
+  <div class="actions">
+    <a class="button primary" href="#install"><i class="ti">&#xEA96;</i> Install Slate</a>
+    <a class="button" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> View on GitHub</a>
+  </div>
+
+</section>
+
+<!-- A lighter stripe across the page, holding a bit of Slate's desktop -->
+<div class="stripe">
+  <!-- Slate's menu bar, drawn with its own shapes and sizes (Bar.qml), in the default theme -->
+  <div class="screen" aria-hidden="true">
+  <div class="bar-demo">
+    <!-- Control centre: the slate mark (SlateMark.qml) -->
+    <div class="cap btn">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path d="M3.4 7.6 L14.6 4.6 L14.6 13.4 L3.4 16.4 Z" fill="#566173" stroke="#566173" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M3.3 6.4 L14.7 3.4" stroke="#8fb3e8" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- Apps: three soft rounded bars -->
+    <div class="cap btn"><span class="burger"><i></i><i></i><i></i></span></div>
+    <!-- Workspaces: occupied, active (accent), occupied, empty -->
+    <div class="cap ws"><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></div>
+    <!-- The focused window: its app tile, then its title -->
+    <div class="cap app"><span class="tile"><i class="ti">&#xEBEF;</i></span></div>
+    <div class="title">Terminal</div>
+    <div class="spacer"></div>
+    <!-- Tray -->
+    <div class="cap tray"><i class="ti">&#xEA76;</i><i class="ti">&#xEAFC;</i></div>
+    <!-- Notifications | Wi-Fi | Bluetooth | volume | battery -->
+    <div class="cap status">
+      <span><i class="ti">&#xEA35;</i> 2</span><b></b>
+      <span><i class="ti">&#xEB52;</i> Home</span><b></b>
+      <span><i class="ti">&#xEA37;</i> 1</span><b></b>
+      <span><i class="ti">&#xEB51;</i> 40%</span><b></b>
+      <span><i class="ti">&#xEA32;</i> 82%</span>
+    </div>
+    <div class="cap clock">9:41 AM</div>
+    <div class="cap btn power"><i class="ti">&#xEB0D;</i></div>
+  </div>
+  </div>
+</div>
+
+<section class="what">
+  <h2>What is Slate?</h2>
+  <div class="cols">
+    <p>Slate is a desktop shell for <a href="https://hypr.land">Hyprland</a>, the tiling
+      Wayland compositor, built with <a href="https://quickshell.org">Quickshell</a> (QML).
+      It adds everything you'd expect from a desktop around Hyprland's window management,
+      in one consistent dark-slate design with the Geist font and Tabler icons.</p>
+    <p>It installs as its own <strong>Slate</strong> session, so your existing Hyprland setup
+      is left alone: pick Slate on the login screen to use it, or your old desktop to go back.
+      Everything is set from Settings, and anything you'd rather write by hand still goes in
+      your own config files, which Slate never overwrites.</p>
+  </div>
+</section>
+
+<section id="features" class="features">
+  <h2>Everything a desktop needs</h2>
+  <div class="grid">
+    <article>
+      <i class="ti icon">&#xEAD7;</i>
+      <h3>Menu bar</h3>
+      <p>Workspaces, the window title, app tray icons (tuck them away behind one button),
+        notifications, Wi-Fi, Bluetooth, keyboard layout, volume, battery and the clock. Every
+        item drops down its own panel. Top, bottom or either side.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEAD3;</i>
+      <h3>Magnifying dock</h3>
+      <p>Pinned and running apps that grow under the pointer, bounce while they open, and
+        have right-click menus for their windows and actions. Hides when a window needs the room.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEB1C;</i>
+      <h3>Launcher</h3>
+      <p>Tap Super and type. A list or a grid of apps, sorted by how often you use them;
+        every setting is searchable from it too, and it does sums. Open apps on a new
+        workspace with a key.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEFE6;</i>
+      <h3>Switchers and overview</h3>
+      <p>Super+Tab switches windows with live previews; Super+Down shows every workspace
+        as a large live card to jump to or rearrange. Super alone opens the launcher, and
+        every shortcut is listed and searchable in Settings.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEB20;</i>
+      <h3>Control centre, panels and notifications</h3>
+      <p>Your profile, media, the weather and quick toggles, plus panels for networks,
+        devices, sound, battery and the calendar. Notifications pop up where you want them,
+        with a history and Do not disturb.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEB01;</i>
+      <h3>Theming that follows your wallpaper</h3>
+      <p>Light, dark or automatic by sunset. The accent and background tint can come from
+        the wallpaper, which can change by itself. App icons come in tile, squircle, circle
+        and more.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEA89;</i>
+      <h3>Displays</h3>
+      <p>Arrange monitors by dragging, pick resolution, rotation and per-monitor scale,
+        choose the main display, and size Slate itself. Changes revert by themselves unless
+        you keep them.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEAE2;</i>
+      <h3>Lock and login screens</h3>
+      <p>A matching lock screen and greetd login screen with your wallpaper and picture.
+        Lock, turn the screen off or suspend when you're away, and lock before sleep.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEBD6;</i>
+      <h3>A Settings app for everything</h3>
+      <p>Appearance, displays, keyboard and mouse, sound, power, windows, shortcuts, default
+        and startup apps, date and time, and more, with search across them all.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEAF8;</i>
+      <h3>The little things</h3>
+      <p>Night light on a schedule, hot corners, clipboard history, an emoji picker,
+        screenshots, a right-click desktop menu, and password prompts that look the part.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEBB8;</i>
+      <h3>Your apps, in Slate's colours</h3>
+      <p>Switch on the apps you want to match: GTK and Qt apps, kitty, Alacritty, Ghostty,
+        foot, WezTerm, VS Code, Zed, Helix, Vim, bat, fzf, Yazi, btop, Discord, Spotify,
+        Firefox and more. They follow light, dark and your accent. Configs are backed up, and
+        switching an app off puts it back.</p>
+    </article>
+    <article>
+      <i class="ti icon">&#xEF06;</i>
+      <h3>Tiling or traditional windows</h3>
+      <p>Windows tile themselves by default. Prefer the classic way? Switch to floating
+        windows with title bars you can drag, plus close and maximise buttons (and
+        double-click to maximise), in Settings → Windows.</p>
+    </article>
+  </div>
+  <p class="all-features"><a class="button" href="features.html"><i class="ti">&#xEF40;</i> See every feature</a></p>
+</section>
+
+<section id="previews" class="previews">
+  <h2>Previews</h2>
+  <p class="sub">Nothing here is a mock-up: these are real screenshots and recordings of
+    Slate.</p>
+  <p class="note"><i class="ti">&#xEAC5;</i> Slate is moving quickly, so these screenshots may be a
+    little behind the latest version.</p>
+</section>
+
+<!-- A tour: alternating rows, each screenshot tilted toward its text -->
+<section class="tour">
+  <div class="row">
+    <div class="copy">
+      <span class="kicker">Theming</span>
+      <h3>Colours that follow your wallpaper</h3>
+      <p>Pick a wallpaper and Slate takes its accent and a gentle tint from it: the bar,
+        panels, Settings and the apps you've switched on all shift together, light or dark.
+        The wallpaper can change by itself, on a timer or at login.</p>
+    </div>
+    <figure class="tilt"><video src="shots/wallpaper-theme.mp4?v=4" poster="shots/wallpaper-theme-poster.webp" width="1440" height="900"
+      autoplay muted loop playsinline preload="metadata" aria-label="Choosing a new wallpaper in Settings: the desktop crossfades from snowy mountains to an autumn lake, and Slate's colours shift from blue to orange"></video></figure>
+  </div>
+  <div class="row flip">
+    <div class="copy">
+      <span class="kicker">Launcher</span>
+      <h3>Tap Super and type</h3>
+      <p>Your apps, most used first, narrowing as you type. Every setting is searchable from
+        here too, and it does sums: type one and the answer is ready to copy.</p>
+    </div>
+    <figure class="tilt"><video src="shots/launcher.mp4?v=1" poster="shots/launcher-poster.webp" width="1280" height="800"
+      autoplay muted loop playsinline preload="metadata" aria-label="The launcher opens over the desktop, narrows to Calendar and Calculator as 'cal' is typed, then answers 24*7 with 168"></video></figure>
+  </div>
+  <div class="row">
+    <div class="copy">
+      <span class="kicker">Control centre</span>
+      <h3>Everything at a glance</h3>
+      <p>Your profile, the time and the week's weather, with quick toggles for Wi-Fi,
+        Bluetooth, caffeine, night light, Do not disturb and power mode. One click on the
+        slate in the corner of the bar.</p>
+    </div>
+    <figure class="tilt"><img src="shots/control.webp?v=2" alt="The control centre" width="1280" height="800" loading="lazy"></figure>
+  </div>
+  <div class="row flip">
+    <div class="copy">
+      <span class="kicker">Menu bar</span>
+      <h3>Every item opens a panel</h3>
+      <p>Power, the calendar and forecast, battery and power mode, sound devices, Bluetooth,
+        keyboard layouts and Wi-Fi: each item on the bar drops down its own panel.</p>
+    </div>
+    <figure class="tilt"><video src="shots/panels.mp4?v=1" poster="shots/panels-poster.webp" width="1440" height="900"
+      autoplay muted loop playsinline preload="metadata" aria-label="The pointer moves along the menu bar, opening the power, calendar, battery, sound, Bluetooth, keyboard and Wi-Fi panels in turn"></video></figure>
+  </div>
+  <div class="row">
+    <div class="copy">
+      <span class="kicker">Overview</span>
+      <h3>Every workspace, live</h3>
+      <p>Super+Down lays out your workspaces as large live cards. Jump to one, or
+        rearrange them.</p>
+    </div>
+    <figure class="tilt"><video src="shots/overview.mp4?v=1" poster="shots/overview-poster.webp" width="1440" height="900"
+      autoplay muted loop playsinline preload="metadata" aria-label="The workspace overview opens as a row of live workspace cards, slides along to the next two workspaces and back, then closes"></video></figure>
+  </div>
+  <div class="row flip">
+    <div class="copy">
+      <span class="kicker">Notifications</span>
+      <h3>Quiet until they matter</h3>
+      <p>Pop-ups slide in where you want them, with a history in the bar to catch up on
+        and Do not disturb for when you're busy.</p>
+    </div>
+    <figure class="tilt"><video src="shots/notifications.mp4?v=1" poster="shots/notifications-poster.webp" width="1280" height="800"
+      autoplay muted loop playsinline preload="metadata" aria-label="Four notifications slide in under the menu bar, stack up, then leave one by one"></video></figure>
+  </div>
+  <div class="row">
+    <div class="copy">
+      <span class="kicker">Dock</span>
+      <h3>Apps, windows and actions</h3>
+      <p>A magnifying dock for pinned and running apps. Right-click an icon for its
+        windows, its actions, or to pin it.</p>
+    </div>
+    <figure class="tilt"><video src="shots/dock.mp4?v=1" poster="shots/dock-poster.webp" width="1280" height="800"
+      autoplay muted loop playsinline preload="metadata" aria-label="The pointer runs along the dock, magnifying the icons it passes, then a menu opens over Steam"></video></figure>
+  </div>
+  <div class="row flip">
+    <div class="copy">
+      <span class="kicker">Lock and login</span>
+      <h3>A calm way in</h3>
+      <p>The lock screen and the greetd login screen match, with your wallpaper and
+        picture. Lock, dim or suspend when you step away.</p>
+    </div>
+    <figure class="tilt"><video src="shots/login.mp4?v=1" poster="shots/login-poster.webp" width="1440" height="900"
+      autoplay muted loop playsinline preload="metadata" aria-label="The login screen over the mountain wallpaper, with a password being typed into the field"></video></figure>
+  </div>
+</section>
+
+<section class="more">
+  <p class="credit">Wallpapers: <a href="https://unsplash.com/photos/a-mountain-covered-in-snow-under-a-cloudy-sky-Fe43KPhwNA8">mountains</a>
+    by <a href="https://unsplash.com/@exploromann">Lukas Mann</a> on Unsplash;
+    <a href="https://www.pexels.com/photo/six-assorted-colored-row-boats-1571855/">boats</a>
+    by <a href="https://www.pexels.com/@david-bartus-43782/">David Bartus</a> on Pexels.</p>
+</section>
+
+<section id="install" class="install">
+  <h2>Install</h2>
+  <p>Clone the repository and run the installer as your normal user. It installs what's
+    needed for your distro, asks for your password for the system steps, and adds
+    <strong>Slate</strong> to your login screen.</p>
+  <pre><code>git clone https://github.com/daylerees/slate.git
+cd slate
+./install.sh</code></pre>
+  <p>Then log out, pick <strong>Slate</strong> on the login screen and log in.</p>
+  <ul class="facts">
+    <li><i class="ti">&#xEA5E;</i> Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS</li>
+    <li><i class="ti">&#xEA5E;</i> Needs Hyprland 0.57 or newer and Quickshell 0.3 or newer</li>
+    <li><i class="ti">&#xEA5E;</i> Your current desktop and Hyprland config stay as they are</li>
+  </ul>
+  <p><a href="https://github.com/daylerees/slate/blob/master/docs/INSTALL.md">Full install guide →</a></p>
+</section>
+
+</main>
+
+<footer>
+  <p class="ai"><i class="ti">&#xF6D7;</i> Built with Claude, Anthropic's AI model, by Dayle Rees: an experienced software
+    engineer and Linux user who's open to embracing new and emerging technologies, and to
+    understanding them better.</p>
+  <p>Slate is open source under the MIT licence. Made by Dayle Rees.</p>
+  <p>Wallpapers by <a href="https://unsplash.com/@exploromann">Lukas Mann</a> (Unsplash) and <a href="https://www.pexels.com/@david-bartus-43782/">David Bartus</a> (Pexels).</p>
+  <p><a href="https://github.com/daylerees/slate">github.com/daylerees/slate</a></p>
+</footer>
+
+<script src="site.js?v=2" defer></script>
+</body>
+</html>

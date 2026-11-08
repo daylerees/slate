@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Install or update the Slate login screen. Run with sudo:
+#   sudo ~/.config/slate/bin/slate-greeter-install            install / update the code, switch greetd to it
+#   sudo ~/.config/slate/bin/slate-greeter-install --revert   switch greetd back to what it was before
+#   pkexec ~/.config/slate/bin/slate-greeter-install --code-only
+#                                         update only the code (Slate offers this, asking
+#                                         for your password, when the design has changed)
+#
+# Code goes to /usr/local/share/slate-greeter, owned by root (re-run this after
+# changing the login screen's design). Appearance (wallpaper, theme, avatar, fonts)
+# lives in /var/lib/slate-greeter, which Slate keeps in sync without sudo.
+#
+# It never restarts greetd (that would end your session); the change shows at the
+# next logout or reboot. If the login screen ever fails, log in on a text console
+# (Ctrl+Alt+F3) and run:  sudo ~/.config/slate/bin/slate-greeter-install --revert
+set -euo pipefail
+
+CONF=/etc/greetd/config.toml
+BACKUP=/etc/greetd/config.toml.before-slate
+CODE=/usr/local/share/slate-greeter
+DATA=/var/lib/slate-greeter
+CACHE=/var/cache/slate-greeter
+GREETER_USER=greeter
+
+[ "$(id -u)" -eq 0 ] || { echo "Run with sudo: sudo $0 ${1:-}" >&2; exit 1; }
+OWNER="${SUDO_USER:-}"
+[ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec
+[ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
+HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
+SRC="$HOMEDIR/.config/slate"
+
+if [ "${1:-}" = "--revert" ]; then
+    [ -f "$BACKUP" ] || { echo "No backup at $BACKUP; nothing to revert." >&2; exit 1; }
+    cp -f "$BACKUP" "$CONF"
+    echo "greetd is back to its previous login screen (takes effect at next logout/reboot)."
+    exit 0
+fi
+
+id "$GREETER_USER" >/dev/null 2>&1 || { echo "No '$GREETER_USER' user; is greetd installed?" >&2; exit 1; }
+[ -f "$SRC/greeter/shell.qml" ] || { echo "Can't find $SRC/greeter/shell.qml" >&2; exit 1; }
+
+# 1. Code: a fresh root-owned copy, swapped in whole. Files are read with your own
+#    permissions (never root's), so a symlink in your folder can't pull in a private file.
+readas() { runuser -u "$OWNER" -- cat -- "$1"; }
+put() {    # put <source> <dest> <mode>
+    readas "$1" > "$2" && chmod "$3" "$2"
+}
+stage=$(mktemp -d /usr/local/share/.slate-greeter.XXXXXX)
+trap 'rm -rf "$stage"' EXIT
+for f in greeter/shell.qml greeter/fonts.conf LoginScreen.qml Config.qml RoundImage.qml; do
+    put "$SRC/$f" "$stage/$(basename "$f")" 644
+done
+put "$SRC/greeter/run-greeter.sh" "$stage/run-greeter.sh" 755
+install -d -m 755 "$stage/scripts"
+put "$SRC/scripts/wallpaper-accent.py" "$stage/scripts/wallpaper-accent.py" 755
+# Keyboard layout: recorded by slate-greeter-sync (from your running Hyprland)
+layout=$(grep -oP '"kb_layout":\s*"\K[A-Za-z0-9_,-]+' "$DATA/user.json" 2>/dev/null | head -1 || true)
+readas "$SRC/greeter/hyprland.lua" | sed "s/__KB_LAYOUT__/${layout:-us}/" > "$stage/hyprland.lua"; chmod 644 "$stage/hyprland.lua"
+ln -s "$DATA/settings.json" "$stage/settings.json"      # Config.qml reads its settings from next to itself
+chown -R root:root "$stage"; chmod 755 "$stage"
+# Keep the copy being replaced as .previous: run-greeter.sh falls back to it if the
+# new one fails to load
+rm -rf "$CODE.previous"; [ -d "$CODE" ] && mv "$CODE" "$CODE.previous"
+mv "$stage" "$CODE"; trap - EXIT
+
+if [ "${1:-}" = "--code-only" ]; then
+    echo "Login screen code updated (shows at your next logout or reboot)."
+    exit 0
+fi
+
+# 2. Appearance folder (yours, so Slate can sync it) and the greeter's writable cache
+install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
+install -d -m 755 -o "$GREETER_USER" -g "$GREETER_USER" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
+sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
+
+# 3. Point greetd at it (keeping a backup of the original config, once)
+[ -f "$BACKUP" ] || cp -f "$CONF" "$BACKUP"
+cat > "$CONF" <<EOF
+# Slate login screen (set up by slate-greeter-install; previous config: $BACKUP)
+[terminal]
+vt = 1
+
+[default_session]
+command = "dbus-run-session -- start-hyprland -- -c $CODE/hyprland.lua"
+user = "$GREETER_USER"
+EOF
+
+echo
+echo "Done. The Slate login screen will appear at your next logout or reboot."
+echo "After changing its design, run this again to update the installed copy."
+echo "If it ever fails: Ctrl+Alt+F3, log in, then: sudo ~/.config/slate/bin/slate-greeter-install --revert"

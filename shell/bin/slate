@@ -1,0 +1,56 @@
+#!/bin/sh
+# The slate command: run and talk to Slate without knowing it's built on Quickshell.
+#   slate                  start Slate (if it isn't running)
+#   slate restart          restart it (reloads in place; --full stops and starts it again)
+#   slate stop             stop it
+#   slate ipc call <target> <function> [args]   e.g. slate ipc call settings toggle
+#   slate ipc show         list what can be called
+#   slate log              follow Slate's log
+#   slate dir              print where Slate is installed
+#   slate build-hyprbars   build the title-bar plugin for floating windows (after Hyprland updates)
+# Slate's folder is the one this script lives in (bin/..), or $SLATE_DIR.
+SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate.log"
+
+# Settings → Appearance → Interface size (uiScale in settings.json): Qt scales all of Slate
+ui_scale() {
+    s=$(sed -n 's/.*"uiScale": *\([0-9.]*\).*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)
+    case "$s" in ""|1|1.0|1.00) ;; *) echo "$s" ;; esac
+}
+
+start() {
+    mkdir -p "$(dirname "$LOG")"
+    scale=$(ui_scale)
+    # -n: don't start a second copy. Detach with setsid rather than qs -d, which can leave
+    # two copies running.
+    if [ -n "$scale" ]; then
+        QT_SCALE_FACTOR="$scale" setsid qs -n -p "$SLATE_DIR" >"$LOG" 2>&1 </dev/null &
+    else
+        env -u QT_SCALE_FACTOR setsid qs -n -p "$SLATE_DIR" >"$LOG" 2>&1 </dev/null &
+    fi
+}
+
+# PIDs of running copies of this Slate
+pids() { qs list -p "$SLATE_DIR" 2>/dev/null | sed -n 's/^ *Process ID: *//p'; }
+# Stop every copy. SIGKILL, because Quickshell can crash while shutting down and its crash
+# handler then starts it again.
+stop() {
+    for p in $(pids); do kill -KILL "$p" 2>/dev/null; done
+    for _ in 1 2 3 4 5 6 7 8 9 10; do [ -z "$(pids)" ] && return 0; sleep 0.2; done
+}
+
+case "${1:-start}" in
+    start) start ;;
+    # Reload in place when running (no shutdown); start it otherwise
+    restart)
+        if [ "$2" = "--full" ]; then stop; start
+        elif [ -n "$(pids)" ]; then qs -p "$SLATE_DIR" ipc call shell reload >/dev/null 2>&1 || { stop; start; }
+        else start; fi ;;
+    stop) stop ;;
+    ipc) shift; exec qs -p "$SLATE_DIR" ipc "$@" ;;
+    log) exec tail -f "$LOG" ;;
+    dir) echo "$SLATE_DIR" ;;
+    build-hyprbars) exec "$SLATE_DIR/bin/slate-build-hyprbars" ;;
+    -h|--help|help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) echo "slate: unknown command '$1' (see slate --help)" >&2; exit 1 ;;
+esac

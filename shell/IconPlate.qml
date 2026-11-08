@@ -1,0 +1,50 @@
+// The tile behind an app icon when icons don't fill their shape (Settings → Appearance →
+// App icons → Fill the shape off): the shape in the theme's colour, drawn here rather than
+// into the icon files, so it follows light/dark and the wallpaper tint straight away.
+// Put it inside the icon's Image:  IconPlate { anchors.fill: parent; z: -1 }
+// (z -1 draws it behind the image, and it moves with any transform on the image).
+
+import QtQuick
+
+Canvas {
+    id: plate
+    property string shape: Config.s.iconShape
+    property bool fill: Config.s.iconFill
+    property color color: Config.iconPlateColor
+    visible: !fill && shape !== "original"
+
+    onShapeChanged: requestPaint()
+    onColorChanged: requestPaint()
+    onVisibleChanged: if (visible) requestPaint()
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
+    onAvailableChanged: if (available) requestPaint()
+
+    // The same outlines scripts/appicon.py cuts the filled icons to
+    onPaint: {
+        const ctx = getContext("2d");
+        ctx.reset();
+        if (!visible) return;
+        const w = width, h = height;
+        ctx.fillStyle = plate.color;
+        ctx.beginPath();
+        if (shape === "circle") {
+            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, 2 * Math.PI);
+        } else if (shape === "square") {
+            ctx.rect(0, 0, w, h);
+        } else if (shape === "squircle") {
+            // Superellipse |x|^n + |y|^n = 1
+            const n = 4.5, steps = 180;
+            for (let i = 0; i <= steps; i++) {
+                const t = 2 * Math.PI * i / steps, c = Math.cos(t), s = Math.sin(t);
+                const x = w / 2 + w / 2 * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+                const y = h / 2 + h / 2 * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+        } else {
+            ctx.roundedRect(0, 0, w, h, w * 0.225, h * 0.225);    // tile: a rounded square
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
+}

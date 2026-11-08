@@ -1,0 +1,20 @@
+#!/bin/sh
+# Start a Slate desktop: Hyprland with Slate's own config, under uwsm when it's installed.
+# Installed as /usr/local/bin/slate-session by slate-session-install and listed on the
+# login screen as "Slate". Your normal Hyprland session (~/.config/hypr) is untouched.
+
+# Slate's Hyprland config: the user's install, an install from before Slate moved to
+# ~/.config/slate, or a system-wide package
+conf=""
+for c in "${XDG_CONFIG_HOME:-$HOME/.config}/slate/session/hypr/hyprland.lua" \
+         "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/slate/session/hypr/hyprland.lua" \
+         /usr/share/slate/session/hypr/hyprland.lua; do
+    [ -f "$c" ] && { conf="$c"; break; }
+done
+[ -n "$conf" ] || { echo "slate-session: Slate isn't installed for $USER" >&2; exit 1; }
+
+export SLATE_SESSION=1
+if command -v uwsm >/dev/null 2>&1; then
+    exec uwsm start -e -D Hyprland -N Slate -C "Slate desktop on Hyprland" -- start-hyprland -- -c "$conf"
+fi
+exec start-hyprland -- -c "$conf"

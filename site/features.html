@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Every feature · Slate</title>
+<meta name="description" content="The full list of what Slate does: the menu bar, dock, launcher, window management, notifications, theming, displays, input, sound, power, lock and login, and every keyboard shortcut.">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="style.css?v=21">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html"><img src="assets/logo.png?v=4" alt="Slate" height="34"></a>
+  <nav>
+    <a href="index.html#features">Features</a>
+    <a href="index.html#previews">Previews</a>
+    <a href="index.html#install">Install</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<main class="fp">
+
+<section class="fp-hero">
+  <a class="back" href="index.html"><i class="ti">&#xEA19;</i> Back to the overview</a>
+  <h1>Every feature</h1>
+  <p class="lead">Everything Slate does, area by area, down to each setting and shortcut. Almost all
+    of it is set from the Settings app, and every setting is searchable there.</p>
+  <p class="note"><i class="ti">&#xEAC5;</i> Slate is moving quickly, so this list may be a step behind
+    the latest version.</p>
+  <nav class="jump" aria-label="Sections">
+    <a href="#session">Session</a><a href="#bar">Menu bar</a><a href="#panels">Panels</a>
+    <a href="#dock">Dock</a><a href="#launcher">Launcher</a><a href="#windows">Windows</a>
+    <a href="#workspaces">Workspaces</a><a href="#notifications">Notifications</a>
+    <a href="#desktop">Desktop</a><a href="#appearance">Appearance</a><a href="#app-theming">App theming</a>
+    <a href="#displays">Displays</a><a href="#input">Keyboard and mouse</a><a href="#sound">Sound</a>
+    <a href="#power">Power</a><a href="#lock">Lock and login</a><a href="#apps">Apps</a>
+    <a href="#tools">Tools</a><a href="#settings">Settings app</a><a href="#shortcuts">Shortcuts</a>
+    <a href="#under-the-hood">Under the hood</a>
+  </nav>
+</section>
+
+<section id="session" class="fp-section">
+  <h2><i class="ti">&#xEA89;</i> Session</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Its own session</h3>
+      <ul>
+        <li>Installs as a <strong>Slate</strong> entry on any login screen; your existing desktop stays as it is</li>
+        <li>Runs Hyprland with Slate's own config, separate from <code>~/.config/hypr</code></li>
+        <li>Your own tweaks go in <code>~/.config/slate/hypr/</code> and are never overwritten</li>
+        <li>Slate restarts itself on its own code changes; <em>Restart the shell</em> in Settings → About</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Password prompts</h3>
+      <ul>
+        <li>A built-in authentication agent, so admin prompts (pkexec, system settings) appear in Slate's style</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="bar" class="fp-section">
+  <h2><i class="ti">&#xEAD7;</i> Menu bar</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Placement</h3>
+      <ul>
+        <li>Top, bottom, left or right of the screen</li>
+        <li>Auto-hide, revealed at the screen edge</li>
+        <li>Flares into the screen with rounded corners</li>
+        <li>Dimmed on monitors you aren't using</li>
+        <li>Hover descriptions: point at anything for what it does</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Left side</h3>
+      <ul>
+        <li>Control centre button (the slate mark)</li>
+        <li>Apps button, with right-click shortcuts to Settings pages</li>
+        <li>Workspaces as dots, with a springy indicator</li>
+        <li>The focused window's icon and title</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Right side</h3>
+      <ul>
+        <li>App tray icons, with menus styled like the dock's; optionally tucked behind one button</li>
+        <li>Notifications, Wi-Fi, keyboard layout, Bluetooth, volume and battery, each optional</li>
+        <li>Optional values beside them: network name, layout code, connected devices, volume and battery percentages</li>
+        <li>Clock: 12 or 24 hour, seconds, the date</li>
+        <li>Power button</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="panels" class="fp-section">
+  <h2><i class="ti">&#xEB20;</i> Panels and the control centre</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Control centre</h3>
+      <ul>
+        <li>Your profile: name, picture over the wallpaper, user and host, uptime</li>
+        <li>Media controls for whatever's playing</li>
+        <li>The time and date with today's weather and a four-day forecast</li>
+        <li>Quick toggles: Wi-Fi, Bluetooth, Caffeine (stay awake), Night light, Do not disturb, Performance mode</li>
+        <li>Shortcuts to Settings and the power menu</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Panels from the bar</h3>
+      <ul>
+        <li>Wi-Fi: networks to join, on/off</li>
+        <li>Bluetooth: devices to connect, on/off</li>
+        <li>Keyboard layout: switch between your layouts</li>
+        <li>Sound: volume and output</li>
+        <li>Battery: charge and power mode (Saver, Balanced, Performance)</li>
+        <li>Calendar: a month view with the forecast</li>
+        <li>Notifications: the history</li>
+        <li>Power: lock, log out, restart, shut down; anything that ends the session asks first</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="dock" class="fp-section">
+  <h2><i class="ti">&#xEAD3;</i> Dock</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Apps</h3>
+      <ul>
+        <li>Pinned and running apps, with a dot under running ones</li>
+        <li>Magnifies under the pointer: icon size, magnification and spread are adjustable</li>
+        <li>Icons bounce while their app opens</li>
+        <li>Bottom, top, left or right; auto-hides when a window needs the room</li>
+        <li>Its corners follow your icon shape</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Right-click menus</h3>
+      <ul>
+        <li>The app's open windows, to jump to</li>
+        <li>The app's own actions (a new private window, and so on)</li>
+        <li>New Window, Pin to Dock / Unpin from Dock</li>
+        <li>Close Window, or Close 2 Windows</li>
+        <li>Centred on the icon, with a pointer to it</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="launcher" class="fp-section">
+  <h2><i class="ti">&#xEB1C;</i> Launcher</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Find anything</h3>
+      <ul>
+        <li>Tap Super on its own, or Super+Space, and type</li>
+        <li>Apps sorted by how often you use them (optional)</li>
+        <li>Every setting in Settings is searchable from here</li>
+        <li>Does sums as you type</li>
+        <li>Open an app on a new workspace, to the left or the right, with a key</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Layout</h3>
+      <ul>
+        <li>A list, with or without descriptions</li>
+        <li>Or a grid of icons: columns and rows are adjustable, icons scale to fit, and the name shows at the bottom</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="windows" class="fp-section">
+  <h2><i class="ti">&#xEF06;</i> Windows</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Tiling or traditional</h3>
+      <ul>
+        <li>Windows tile themselves by default</li>
+        <li>Or floating windows with title bars: drag to move, close and maximise buttons, double-click to maximise and click again to restore</li>
+        <li>Float or tile any window with a key</li>
+        <li>Maximise, full screen, split the other way, resize with the arrow keys</li>
+        <li>Move and resize with Super and the mouse</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Look and feel</h3>
+      <ul>
+        <li>Window borders, spacing between windows, and space around a lone window</li>
+        <li>Dim inactive windows</li>
+        <li>Focus follows the pointer (optional)</li>
+        <li>Picture-in-picture videos float and stay on top</li>
+        <li>Games (Steam and gamescope) go full screen on their own workspace</li>
+        <li>Terminals step aside for the apps they open</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Switcher</h3>
+      <ul>
+        <li>Super+Tab: every window in a circular strip, with live previews (optional)</li>
+        <li>Alt+Tab for the next window</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="workspaces" class="fp-section">
+  <h2><i class="ti">&#xEFE6;</i> Workspaces</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Overview</h3>
+      <ul>
+        <li>Super+Down: every workspace as a large live card</li>
+        <li>Jump to one, or hold Shift to lift a card and move it along</li>
+        <li>Card size is adjustable</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Moving around</h3>
+      <ul>
+        <li>Next and previous workspace, with an on-screen indicator</li>
+        <li>Go to, or move a window to, workspace 1–9 (per monitor too)</li>
+        <li>Move a window to an empty workspace</li>
+        <li>Always keep an empty workspace, last in the row (optional)</li>
+        <li>A secret workspace, to show or hide over the others</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="notifications" class="fp-section">
+  <h2><i class="ti">&#xEA35;</i> Notifications and indicators</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Notifications</h3>
+      <ul>
+        <li>Slate's own notification server</li>
+        <li>Pop-ups: position, how long they stay, and how many at once</li>
+        <li>A history to catch up on, and clear</li>
+        <li>Do not disturb</li>
+        <li>Shown on your main display</li>
+      </ul>
+    </article>
+    <article>
+      <h3>On-screen indicators</h3>
+      <ul>
+        <li>Volume, microphone, brightness and keyboard backlight</li>
+        <li>The workspace dots when you switch</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="desktop" class="fp-section">
+  <h2><i class="ti">&#xEB0A;</i> Desktop</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Wallpaper</h3>
+      <ul>
+        <li>Pick from a folder of your own, shown as thumbnails in Settings</li>
+        <li>Crossfades when it changes</li>
+        <li>Changes by itself on a timer or at each login, in a shuffled order (optional)</li>
+        <li>Leaves out small pictures (icons, avatars), with a minimum size</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Right-click menu</h3>
+      <ul>
+        <li>App launcher, Terminal, Files</li>
+        <li>Change wallpaper, Next wallpaper</li>
+        <li>Display settings, Settings</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Hot corners</h3>
+      <ul>
+        <li>Each corner can lock the screen, open the launcher, the workspace overview, the control centre or notifications, or turn the screen off</li>
+        <li>An adjustable delay; disarmed while locked</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Night light</h3>
+      <ul>
+        <li>A warmer screen in the evening, with adjustable warmth</li>
+        <li>On by hand, sunset to sunrise for your location, or a custom schedule</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="appearance" class="fp-section">
+  <h2><i class="ti">&#xEB01;</i> Appearance</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Theme and colour</h3>
+      <ul>
+        <li>Dark, light, or automatic by sunset</li>
+        <li>Accent colour from the wallpaper, a preset, or any colour you like</li>
+        <li>Background tint from the wallpaper (optional)</li>
+        <li>Everything (bar, panels, Settings, themed apps) shifts together when the wallpaper changes</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Style</h3>
+      <ul>
+        <li>Rounded screen corners</li>
+        <li>Workspace indicators as circles or squares</li>
+        <li>Folder colour for the icon theme</li>
+        <li>App icons as tiles, squircles, circles, squares or their original shape, filled or not, optionally tinted with the accent</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fonts, size and motion</h3>
+      <ul>
+        <li>Interface font (Geist by default) and code font</li>
+        <li>Interface size, 75–150%</li>
+        <li>Animations: normal, faster or off</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="app-theming" class="fp-section">
+  <h2><i class="ti">&#xEBB8;</i> App theming</h2>
+  <p class="fp-intro">Opt-in, app by app, in Settings → Appearance → App theming. Each app you switch on
+    follows Slate's colours, light or dark, and the accent. Slate backs up a config before it first
+    changes it, and switching an app off puts it back the way it was, keeping your own edits.</p>
+  <div class="fp-grid">
+    <article>
+      <h3>Desktop apps</h3>
+      <ul><li>GTK apps (GNOME and others)</li><li>Qt apps (qt6ct)</li><li>KDE apps</li><li>GNOME Text Editor</li><li>Firefox (toolbars, tabs and menus)</li><li>Discord (Vencord, Vesktop, Equicord)</li><li>Spotify (Spicetify)</li></ul>
+    </article>
+    <article>
+      <h3>Terminals</h3>
+      <ul><li>kitty</li><li>Alacritty</li><li>Ghostty</li><li>foot</li><li>WezTerm</li><li>Each gets a see-through starting config if it has none</li></ul>
+    </article>
+    <article>
+      <h3>Editors and tools</h3>
+      <ul><li>VS Code, Code - OSS and VSCodium</li><li>Zed</li><li>Helix</li><li>Vim and Neovim</li><li>bat, fzf, Yazi, btop, cava and zathura</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="displays" class="fp-section">
+  <h2><i class="ti">&#xEA89;</i> Displays</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Monitors</h3>
+      <ul>
+        <li>Arrange them by dragging</li>
+        <li>Turn each on or off; resolution, refresh rate, scale and rotation per monitor</li>
+        <li>Choose the main display, where notifications appear</li>
+        <li>Changes revert by themselves unless you keep them</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="input" class="fp-section">
+  <h2><i class="ti">&#xEBD6;</i> Keyboard, mouse and touchpad</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Keyboard</h3>
+      <ul>
+        <li>Several layouts, with a shortcut to switch between them and a menu bar item</li>
+        <li>Caps Lock as itself, another Ctrl, Escape, nothing, or the layout switcher</li>
+        <li>Repeat delay and speed</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Mouse</h3>
+      <ul><li>Pointer speed and acceleration</li><li>Natural scrolling</li><li>Pointer size, with Slate's own cursor</li></ul>
+    </article>
+    <article>
+      <h3>Touchpad</h3>
+      <ul><li>Speed and scroll speed</li><li>Tap to click</li><li>Ignore while typing</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="sound" class="fp-section">
+  <h2><i class="ti">&#xEB51;</i> Sound</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Output and input</h3>
+      <ul><li>Choose the speakers or headphones, volume, mute</li><li>Choose the microphone, input level, mute</li></ul>
+    </article>
+    <article>
+      <h3>Sound effects</h3>
+      <ul><li>A sound when you change the volume (optional)</li><li>Effects volume</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="power" class="fp-section">
+  <h2><i class="ti">&#xEA32;</i> Power</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Lid and power button</h3>
+      <ul><li>Closing the lid: suspend, lock, turn the screen off, or nothing</li><li>Power button: show the power menu, suspend, shut down (asks first), lock, or nothing</li></ul>
+    </article>
+    <article>
+      <h3>Power mode</h3>
+      <ul><li>Saver, Balanced or Performance, chosen separately for on battery and plugged in</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="lock" class="fp-section">
+  <h2><i class="ti">&#xEAE2;</i> Lock and login</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Lock screen</h3>
+      <ul>
+        <li>Your wallpaper and picture, and your account password</li>
+        <li>A countdown after too many tries</li>
+        <li>A power menu on the lock screen (optional)</li>
+        <li>Lock before sleep</li>
+      </ul>
+    </article>
+    <article>
+      <h3>When you're away</h3>
+      <ul><li>Lock, turn the screen off, and suspend after times you choose</li><li>Waits while media plays</li></ul>
+    </article>
+    <article>
+      <h3>Login screen</h3>
+      <ul><li>A matching greetd login screen, with your wallpaper and picture</li><li>Kept in step with your look, after a password prompt</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="apps" class="fp-section">
+  <h2><i class="ti">&#xEBB6;</i> Apps, startup and time</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Default apps</h3>
+      <ul><li>Terminal, web browser, files, text editor and calculator, used by the shortcuts and menus</li></ul>
+    </article>
+    <article>
+      <h3>Startup apps</h3>
+      <ul><li>Apps to open at each login</li></ul>
+    </article>
+    <article>
+      <h3>Date, time and location</h3>
+      <ul><li>Time zone, and setting the time automatically</li><li>Your location, for the weather and sunset times</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="tools" class="fp-section">
+  <h2><i class="ti">&#xEBCA;</i> Built-in tools</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Screenshots</h3>
+      <ul>
+        <li>An area (the screen freezes while you pick it), or the whole screen</li>
+        <li>What happens next, where they're saved, and how they're named</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Clipboard, emoji and colours</h3>
+      <ul>
+        <li>Clipboard history, text and images (Super+V)</li>
+        <li>An emoji picker (Super+.)</li>
+        <li>Pick a colour from anywhere on screen (Super+P), copied</li>
+        <li>Zoom in and out of the screen</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="settings" class="fp-section">
+  <h2><i class="ti">&#xEA03;</i> The Settings app</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Finding things</h3>
+      <ul>
+        <li>Opens on an overview of every page, with a search across all settings</li>
+        <li>Pages: General, Appearance, Displays, Keyboard and mouse, Sound, Power, Windows, Notifications, Wi-Fi, Bluetooth, Menu bar, Dock, Launcher, Hot corners, Lock and idle, Shortcuts, Default apps, Startup apps, Date and time, Screenshots, About</li>
+        <li>Restore defaults on each page</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Shortcuts page</h3>
+      <ul><li>Every keyboard shortcut, searchable, including ones you add to your own Hyprland config</li></ul>
+    </article>
+    <article>
+      <h3>Wi-Fi and Bluetooth</h3>
+      <ul><li>Networks to join, with passwords</li><li>Devices to connect, and finding new ones</li></ul>
+    </article>
+  </div>
+</section>
+
+<section id="shortcuts" class="fp-section">
+  <h2><i class="ti">&#xEA78;</i> Keyboard shortcuts</h2>
+  <p class="fp-intro">The defaults. All of them are listed, and searchable, in Settings → Shortcuts.</p>
+  <div class="fp-keys">
+    <article>
+      <h3>Apps and Slate</h3>
+      <dl>
+        <dt>Super</dt><dd>App launcher (tap on its own)</dd>
+        <dt>Super Space</dt><dd>App launcher</dd>
+        <dt>Super Return</dt><dd>Terminal</dd>
+        <dt>Super E</dt><dd>Files</dd>
+        <dt>Super T</dt><dd>Text editor</dd>
+        <dt>Super C</dt><dd>Calculator</dd>
+        <dt>Ctrl Shift Esc</dt><dd>System monitor</dd>
+        <dt>Super Z</dt><dd>Settings</dd>
+        <dt>Super X</dt><dd>Control centre</dd>
+        <dt>Super A</dt><dd>Notifications</dd>
+        <dt>Super Alt C</dt><dd>Power menu</dd>
+        <dt>Super L</dt><dd>Lock the screen</dd>
+        <dt>Super V</dt><dd>Clipboard history</dd>
+        <dt>Super .</dt><dd>Emoji</dd>
+        <dt>Super Shift W</dt><dd>Change the wallpaper</dd>
+        <dt>Super P</dt><dd>Pick a colour from the screen</dd>
+        <dt>Print</dt><dd>Screenshot of an area</dd>
+        <dt>Super Print</dt><dd>Screenshot of the screen</dd>
+        <dt>Super − / +</dt><dd>Zoom out / in</dd>
+      </dl>
+    </article>
+    <article>
+      <h3>Windows</h3>
+      <dl>
+        <dt>Super Q</dt><dd>Close the window</dd>
+        <dt>Super Esc</dt><dd>Force-quit an app (click its window)</dd>
+        <dt>Super Tab</dt><dd>Switch windows (hold Super)</dd>
+        <dt>Alt Tab</dt><dd>Next window</dd>
+        <dt>Super Alt Space</dt><dd>Float or tile the window</dd>
+        <dt>Super D</dt><dd>Maximise</dd>
+        <dt>Super F</dt><dd>Full screen</dd>
+        <dt>Super J</dt><dd>Split the other way</dd>
+        <dt>Super R</dt><dd>Resize with the arrow keys</dd>
+        <dt>Super Alt arrows</dt><dd>Focus the window in that direction</dd>
+        <dt>Super Shift arrows</dt><dd>Move the window in that direction</dd>
+        <dt>Super drag</dt><dd>Move a window</dd>
+        <dt>Super right-drag</dt><dd>Resize a window</dd>
+      </dl>
+    </article>
+    <article>
+      <h3>Workspaces and monitors</h3>
+      <dl>
+        <dt>Super ← / →</dt><dd>Previous / next workspace</dd>
+        <dt>Super ↓</dt><dd>Workspace overview</dd>
+        <dt>Super ↑ or S</dt><dd>Show or hide the secret workspace</dd>
+        <dt>Super Shift S</dt><dd>Move the window to the secret workspace</dd>
+        <dt>Super W</dt><dd>Move the window to an empty workspace</dd>
+        <dt>Super Ctrl ← / →</dt><dd>Move the window to the previous / next workspace</dd>
+        <dt>Super Alt 1–9</dt><dd>Go to workspace</dd>
+        <dt>Super Ctrl 1–9</dt><dd>Go to this monitor's workspace</dd>
+        <dt>Super Shift Ctrl 1–9</dt><dd>Move the window to this monitor's workspace</dd>
+        <dt>Super Shift Alt 1–9</dt><dd>Send the window there, staying here</dd>
+        <dt>Super 1–9</dt><dd>Focus monitor</dd>
+        <dt>Super Shift 1–9</dt><dd>Move the window to monitor</dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section id="under-the-hood" class="fp-section">
+  <h2><i class="ti">&#xEA77;</i> Under the hood</h2>
+  <div class="fp-grid">
+    <article>
+      <h3>Built on</h3>
+      <ul><li>Hyprland 0.57 or newer, with its Lua config</li><li>Quickshell 0.3 or newer (QML)</li><li>Geist and Tabler icons, bundled</li></ul>
+    </article>
+    <article>
+      <h3>Scriptable</h3>
+      <ul><li>Everything is reachable from a terminal: <code>slate ipc call settings page displays</code>, <code>… launcher open</code>, <code>… wallpaper set &lt;file&gt;</code> and more</li><li>Settings live in one JSON file</li></ul>
+    </article>
+    <article>
+      <h3>Installs on</h3>
+      <ul><li>Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS, with one installer</li><li>Open source under the MIT licence</li></ul>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p class="ai"><i class="ti">&#xF6D7;</i> Built with Claude, Anthropic's AI model, by Dayle Rees: an experienced software
+    engineer and Linux user who's open to embracing new and emerging technologies, and to
+    understanding them better.</p>
+  <p>Slate is open source under the MIT licence. Made by Dayle Rees.</p>
+  <p><a href="index.html">Overview</a> · <a href="https://github.com/daylerees/slate">github.com/daylerees/slate</a></p>
+</footer>
+
+<script src="site.js?v=2" defer></script>
+</body>
+</html>

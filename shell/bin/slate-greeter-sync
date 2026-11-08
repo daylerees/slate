@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Keep the Slate login screen's appearance in step with your desktop, without sudo.
+# Copies data only (no code) into /var/lib/slate-greeter, which the "greeter" user
+# can read: your Slate settings, the current wallpaper, avatar, name, session and
+# interface font. Slate runs this automatically when the wallpaper or settings change.
+#
+# The login screen's code is a root-owned copy in /usr/local/share/slate-greeter,
+# installed/updated with:  sudo ~/.config/slate/bin/slate-greeter-install
+#
+#   slate-greeter-sync           update the appearance
+#   slate-greeter-sync --check   report whether the installed code matches yours
+#   slate-greeter-sync --prompt  if the code is out of date, offer to update it (a
+#                                notification with an Update button, then your password).
+#                                Asks once per version of the code. Slate runs this.
+set -euo pipefail
+
+DEST="${SLATE_GREETER_DIR:-/var/lib/slate-greeter}"      # override only for testing
+CODE=/usr/local/share/slate-greeter
+SRC="$HOME/.config/slate"
+
+# Files making up the login screen's code: <installed name> <source path>
+code_files() {
+    cat <<EOF
+shell.qml $SRC/greeter/shell.qml
+run-greeter.sh $SRC/greeter/run-greeter.sh
+fonts.conf $SRC/greeter/fonts.conf
+LoginScreen.qml $SRC/LoginScreen.qml
+Config.qml $SRC/Config.qml
+RoundImage.qml $SRC/RoundImage.qml
+scripts/wallpaper-accent.py $SRC/scripts/wallpaper-accent.py
+EOF
+}
+
+# Your keyboard layout, from the running Hyprland (the login screen uses the same one)
+kb_layout() {
+    local l
+    l=$(hyprctl getoption input:kb_layout -j 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("str",""))' 2>/dev/null || true)
+    case "$l" in ""|"[[EMPTY]]") l=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("kb_layout",""))' "$DEST/user.json" 2>/dev/null || true) ;; esac
+    echo "${l:-us}"
+}
+# The installed hyprland.lua has your keyboard layout filled in
+hypr_expected() {
+    sed "s/__KB_LAYOUT__/$(kb_layout)/" "$SRC/greeter/hyprland.lua"
+}
+state() {
+    [ -d "$CODE" ] || { echo "not-installed"; return; }
+    while read -r name src; do
+        cmp -s "$src" "$CODE/$name" || { echo "outdated"; return; }
+    done < <(code_files)
+    hypr_expected | cmp -s - "$CODE/hyprland.lua" || { echo "outdated"; return; }
+    echo "current"
+}
+
+if [ "${1:-}" = "--check" ]; then state; exit 0; fi
+
+if [ "${1:-}" = "--prompt" ]; then
+    [ "$(state)" = outdated ] || exit 0
+    # Ask once per version of the code: "Later" waits for the next change
+    asked="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-asked"
+    version=$( { while read -r _ src; do cat "$src"; done < <(code_files); hypr_expected; } | md5sum | cut -d' ' -f1)
+    [ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
+    mkdir -p "$(dirname "$asked")"; echo "$version" > "$asked"
+    choice=$(notify-send -a Slate -i system-lock-screen -A update=Update -A later=Later \
+        "Login screen out of date" \
+        "Its design has changed. Update it now? You'll be asked for your password." || true)
+    [ "$choice" = update ] || exit 0
+    if pkexec "$SRC/bin/slate-greeter-install" --code-only; then
+        notify-send -a Slate -i system-lock-screen "Login screen updated" "You'll see it at your next logout or restart."
+    else
+        rm -f "$asked"      # cancelled or failed: ask again next time
+        notify-send -a Slate -i dialog-warning "Login screen not updated" "Run: sudo ~/.config/slate/bin/slate-greeter-install --code-only"
+    fi
+    exit 0
+fi
+
+if [ ! -d "$DEST" ] || [ ! -w "$DEST" ]; then
+    echo "slate-greeter-sync: $DEST isn't set up yet; run: sudo ~/.config/slate/bin/slate-greeter-install" >&2
+    exit 1
+fi
+
+# Copy into place via a temporary file + rename, so the greeter never sees half a file
+put() {   # put <source> <name in DEST>
+    local tmp="$DEST/.$(basename "$2").tmp"
+    mkdir -p "$(dirname "$DEST/$2")"
+    cp -f "$1" "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$DEST/$2"
+}
+write() {  # write <name in DEST>  (contents on stdin)
+    local tmp="$DEST/.$1.tmp"
+    cat > "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$DEST/$1"
+}
+
+# Theme settings (accent, light/dark, tint, fonts, rounded corners…)
+put "$SRC/settings.json" settings.json
+
+# Wallpaper (Slate's wallpaper setting); without it the login screen uses plain slate
+wall=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaper",""))' "$SRC/settings.json" 2>/dev/null || true)
+if [ -n "$wall" ] && [ -f "$wall" ]; then put "$wall" wallpaper; else rm -f "$DEST/wallpaper"; fi
+
+# Avatar
+for a in "/var/lib/AccountsService/icons/$USER" "$HOME/.face"; do
+    if [ -f "$a" ]; then put "$a" avatar; break; fi
+done
+
+# Who logs in, and the session they use now (Slate, uwsm-managed or plain Hyprland)
+name=$(getent passwd "$USER" | cut -d: -f5 | cut -d, -f1)
+if [ -n "${SLATE_SESSION:-}" ]; then session=slate
+elif pgrep -u "$USER" -f 'uwsm/signal-handler' >/dev/null 2>&1; then session=hyprland-uwsm; else session=hyprland; fi
+printf '{ "user": "%s", "name": "%s", "session": "%s", "kb_layout": "%s" }\n' "$USER" "${name:-$USER}" "$session" "$(kb_layout)" | write user.json
+
+# Fonts: your interface font's files, and the icon font
+mkdir -p "$DEST/fonts"
+family=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("fontFamily","Geist"))' "$SRC/settings.json" 2>/dev/null || echo Geist)
+find "$DEST/fonts" -type f ! -name tabler.ttf ! -name 'Geist*-Variable.ttf' -delete
+fc-list --format '%{file}\n' ":family=$family" 2>/dev/null | sort -u | while read -r f; do
+    case "$f" in /usr/share/*) ;; *) [ -f "$f" ] && put "$f" "fonts/$(basename "$f")" ;; esac   # system fonts are already readable
+done
+put "$SRC/fonts/tabler.ttf" fonts/tabler.ttf
+for f in "$SRC"/fonts/Geist*-Variable.ttf; do [ -f "$f" ] && put "$f" "fonts/$(basename "$f")"; done   # bundled Geist
+
+chmod -R a+rX "$DEST"
+echo "slate-greeter-sync: login screen appearance updated"

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Slate Settings
+Comment=Theme, wallpaper, menu bar, dock, notifications and more
+Icon=slate-settings
+Exec=@SLATE@ ipc call settings open
+Categories=Settings;
+Keywords=slate;settings;preferences;
+StartupWMClass=slate-settings
+# The launcher has its own entry for Slate Settings; this one gives the window its icon
+NoDisplay=true

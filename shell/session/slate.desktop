@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Slate
+Comment=The Slate desktop on Hyprland
+Exec=/usr/local/bin/slate-session
+TryExec=/usr/local/bin/slate-session
+Type=Application
+DesktopNames=Hyprland
+Keywords=slate;hyprland;wayland;

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Add "Slate" as its own session on the login screen. Run with sudo:
+#   sudo ~/.config/slate/bin/slate-session-install            add / update the Slate session
+#   sudo ~/.config/slate/bin/slate-session-install --remove   take it off the login screen
+#
+# Installs two small files and nothing else:
+#   /usr/local/bin/slate-session                  starts Hyprland with Slate's config
+#   /usr/share/wayland-sessions/slate.desktop     the "Slate" entry login screens list
+# Your existing sessions and ~/.config/hypr are not touched, so you can try Slate and
+# go back by picking your usual session at login. Works with any login screen that
+# reads wayland-sessions (greetd greeters, SDDM, GDM, the Slate login screen).
+set -euo pipefail
+
+BIN=/usr/local/bin/slate-session
+ENTRY=/usr/share/wayland-sessions/slate.desktop
+
+[ "$(id -u)" -eq 0 ] || { echo "Run with sudo: sudo $0 ${1:-}" >&2; exit 1; }
+
+if [ "${1:-}" = "--remove" ]; then
+    rm -f "$ENTRY" "$BIN"
+    echo "Slate session removed from the login screen."
+    exit 0
+fi
+
+OWNER="${SUDO_USER:-}"
+[ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
+HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
+SRC="$HOMEDIR/.config/slate/session"
+[ -f "$SRC/hypr/hyprland.lua" ] || { echo "Can't find $SRC/hypr/hyprland.lua" >&2; exit 1; }
+command -v start-hyprland >/dev/null || echo "Warning: start-hyprland not found; is Hyprland installed?" >&2
+
+install -D -m 755 -o root -g root "$SRC/slate-session" "$BIN"
+install -D -m 644 -o root -g root "$SRC/slate.desktop" "$ENTRY"
+
+echo "Done. Pick \"Slate\" on the login screen next time you log in."
+echo "Personal settings (keyboard layout, monitors, startup apps): ~/.config/slate/hypr/hyprland.lua"
+echo "To remove: sudo ~/.config/slate/bin/slate-session-install --remove"

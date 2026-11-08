@@ -1,0 +1,54 @@
+# Slate packages for Arch and derivatives (CachyOS, EndeavourOS, Manjaro…)
+# One per line. "?" = optional (installed if available, AUR via paru/yay if present)
+
+# Compositor and shell
+hyprland
+hyprland-guiutils
+quickshell
+qt6-declarative
+qt6-shadertools
+
+# Scripts and images
+python
+python-pillow
+imagemagick
+wl-clipboard
+
+# System services Slate shows or controls
+pipewire
+wireplumber
+pipewire-audio      # pw-play: volume key sound
+networkmanager
+bluez
+bluez-utils
+upower
+polkit
+pam
+systemd
+util-linux
+dbus
+glib2
+procps-ng
+libnotify
+fontconfig
+curl
+xdg-utils
+unzip
+
+# Features
+grim
+slurp
+hyprpicker
+uwsm
+brightnessctl
+power-profiles-daemon
+adw-gtk-theme
+qt6ct
+papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
+# hyprbars: title bars in floating mode, built by Slate (slate build-hyprbars) — Hyprland ships its headers
+git
+make
+gcc
+?swash
+?otf-geist
+?greetd

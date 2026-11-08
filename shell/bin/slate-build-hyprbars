@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Build hyprbars (title bars for Settings → Windows → Window mode → Floating) for the
+# Hyprland you're running, into ~/.local/share/slate/plugins. No root needed. The Slate
+# session loads it from there (session/hypr/config/hyprbars.lua).
+#
+#   slate build-hyprbars        (or bin/slate-build-hyprbars)
+#
+# Hyprland plugins only work with the exact Hyprland they were built for: run this again
+# after Hyprland updates (until then floating windows just have no title bars).
+# Needs git, make, g++ and Hyprland's headers (which come with its package on Arch; the
+# Hyprland "-devel"/"-dev" package elsewhere).
+set -euo pipefail
+
+REPO="https://github.com/hyprwm/hyprland-plugins"
+OUT="${XDG_DATA_HOME:-$HOME/.local/share}/slate/plugins"
+WORK="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprland-plugins"
+
+for c in git make g++ pkg-config; do
+    command -v "$c" >/dev/null || { echo "slate-build-hyprbars: needs $c" >&2; exit 1; }
+done
+pkg-config --exists hyprland || { echo "slate-build-hyprbars: Hyprland's headers aren't installed (pkg-config hyprland)" >&2; exit 1; }
+
+# The plugins' release for this Hyprland (vMAJOR.MINOR.0), else their latest code
+ver=$(pkg-config --modversion hyprland)
+tag="v$(echo "$ver" | cut -d. -f1-2).0"
+rm -rf "$WORK"
+git clone -q "$REPO" "$WORK"
+if git -C "$WORK" rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+    git -C "$WORK" checkout -q "$tag"
+else
+    echo "No hyprland-plugins release $tag yet; building their latest code" >&2
+fi
+
+# Slate's tweak: buttons in a dull colour until hovered (idle_button_color). If it no
+# longer applies to this release, build without it (the buttons then keep their colours)
+PATCH="$(dirname "$(readlink -f "$0")")/../data/hyprbars-idle-button-color.patch"
+if [ -f "$PATCH" ] && ! git -C "$WORK" apply "$PATCH"; then
+    echo "Slate's hyprbars patch doesn't apply to this release; building without it" >&2
+fi
+
+make -C "$WORK/hyprbars" all
+mkdir -p "$OUT"
+install -m 755 "$WORK/hyprbars/hyprbars.so" "$OUT/hyprbars.so"
+echo "hyprbars for Hyprland $ver -> $OUT/hyprbars.so"
+echo "It loads with the Slate session (or now: hyprctl reload)."

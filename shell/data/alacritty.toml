@@ -1,0 +1,14 @@
+# Slate's starting Alacritty config, made because you had none. It's yours now: change
+# anything. Slate's colours come from themes/slate.toml, which Slate rewrites when its
+# theme changes (Settings → Appearance → App theming).
+[general]
+import = ["~/.config/alacritty/themes/slate.toml"]
+live_config_reload = true
+
+[window]
+opacity = 0.8          # see-through, so Hyprland's blur shows behind it
+padding = { x = 20, y = 20 }
+dynamic_padding = true
+
+[selection]
+save_to_clipboard = true

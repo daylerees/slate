@@ -1,0 +1,9 @@
+# Your own files when ~/.config/slate links here (./install.sh --link)
+shell/settings.json
+shell/hypr/
+# Backups and caches
+*.bak*
+*.backup-*
+*.removed-*
+__pycache__/
+*.pyc

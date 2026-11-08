@@ -1,0 +1,50 @@
+# Slate packages for openSUSE Tumbleweed. Quickshell isn't packaged: the installer builds
+# it from source (packaging/build-quickshell.sh).
+hyprland
+?hyprland-guiutils
+qt6-declarative-imports
+libQt6Svg6
+
+# Scripts and images
+python3
+python3-Pillow
+ImageMagick
+wl-clipboard
+
+# System services
+pipewire
+wireplumber
+pipewire-tools      # pw-play: volume key sound
+NetworkManager
+bluez
+upower
+polkit
+pkexec
+pam
+systemd
+util-linux
+dbus-1-tools
+glib2-tools
+procps
+libnotify-tools
+fontconfig
+curl
+unzip
+xdg-utils
+
+# Features
+grim
+slurp
+?hyprpicker
+?uwsm
+brightnessctl
+?power-profiles-daemon
+?qt6ct
+papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
+# hyprbars: title bars in floating mode, built by Slate (slate build-hyprbars)
+?hyprland-devel
+git
+make
+gcc-c++
+pkg-config
+?greetd
