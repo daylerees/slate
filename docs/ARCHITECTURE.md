@@ -159,8 +159,9 @@ The marks survive Slate reloads and Hyprland config reloads. `Spaces.qml` reads 
 (`Spaces.owners`); `SpaceBadges.qml` also keeps `Spaces.spaceOfAddress` (window address →
 space), which the bar uses to put the focused window's icon on its space's colour, and the
 window switcher and workspace overview use to badge those windows (`SpaceBadge.qml`). `SpaceBadges.qml` puts a Top-layer strip along
-the top edge of each such window, drawing a 3 px border in the space's colour (shaped to the
-window's rounding, from `decoration:rounding`; square for a lone tiled or maximised window) that's on a showing workspace (clear, and taking the
+the top edge of each such window, drawing a 3 px border in the space's colour that wraps down the curve at each end and tapers to
+a point: the window's rounded corner (`decoration:rounding`; none for a lone tiled or
+maximised window), or the bar's curve where the window sits under a top bar's curved end) that's on a showing workspace (clear, and taking the
 pointer only where the badge is), placed from `HyprlandToplevel.lastIpcObject` (re-read on
 window/workspace events, and every 0.5 s while there are any, since Hyprland sends no event
 for resizes or drags); which workspaces are showing comes from `hyprctl -j monitors`.

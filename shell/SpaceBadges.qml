@@ -10,6 +10,7 @@
 // (Hyprland sends no event when a window is resized or dragged).
 
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -19,6 +20,9 @@ Scope {
     id: root
     // A Slate overlay is open (launcher, panels, switchers): badges step aside
     property bool suppressed: false
+    // The main bar (Bar.qml): the curves it flares into the screen with, which a border along
+    // a window right under it follows
+    property var bar: null
     // Settings → Spaces. The bar's colouring and the switchers' badges use the window list
     // kept here too (Spaces.spaceOfAddress), so it's kept while any of them is on
     readonly property bool borders: Config.s.spaceBorders
@@ -60,6 +64,9 @@ Scope {
                     const m = {};
                     for (const x of JSON.parse(text))
                         m[x.id] = { name: x.name, x: x.x, y: x.y,
+                                    // width (Hyprland's units) and the space reserved at the top (the bar)
+                                    w: (x.transform || 0) % 2 ? x.height / (x.scale || 1) : x.width / (x.scale || 1),
+                                    top: (x.reserved || [0, 0, 0, 0])[1],
                                     active: (x.activeWorkspace && x.activeWorkspace.id) || 0,
                                     special: (x.specialWorkspace && x.specialWorkspace.id) || 0 };   // no id when none is open
                     root.mons = m;
@@ -124,8 +131,14 @@ Scope {
             // The border follows the window's corners (Config.windowRadius: lone tiled and
             // maximised windows are square)
             const radius = Config.windowRadius(o, tiled[wsId]);
+            const underBar = Config.s.roundedScreenCorners && Config.barEdge === "top" && mon.top > 0
+                && Math.abs(o.at[1] - mon.y - mon.top) <= 1;
             out[String(o.stableId)] = { screen: scr, x: (o.at[0] - mon.x) / k, y: (o.at[1] - mon.y) / k, w: w, h: h,
-                                        r: radius / k, space: space };
+                                        r: radius / k, space: space,
+                                        // Right under a top bar with curved ends, and reaching the screen's
+                                        // left / right edge: the border follows the bar's curve there
+                                        flareL: underBar && o.at[0] - mon.x <= 1,
+                                        flareR: underBar && Math.abs(o.at[0] + o.size[0] - (mon.x + mon.w)) <= 1 };
         }
         geo = out;
     }
@@ -199,20 +212,53 @@ Scope {
                 }
             }
 
-            // The top border: the top of a window-shaped rectangle, so it follows the
-            // window's rounded corners (takes no clicks: outside the mask)
-            Item {
-                visible: root.borders
+            // The top border: a band along the window's top that wraps down the curve at each
+            // end, getting thinner until it ends in a point. The curve is the window's own rounded
+            // corner, or, right under a top bar's curved end, the bar's curve; a square end
+            // stays square. Each curve is a quarter circle (radius r, centred r in and r down):
+            // the band's outer edge follows it, its inner edge is a flatter quarter ellipse that
+            // starts `line` below the top and meets the circle at the side. (Takes no clicks:
+            // outside the mask)
+            Shape {
+                id: border
+                visible: root.borders && !!badge.g
                 opacity: badge.reveal
-                width: parent.width; height: root.line
-                clip: true
-                Rectangle {
-                    width: parent.width
-                    height: Math.max(root.line, badge.g ? badge.g.r * 2 + root.line : root.line)
-                    radius: badge.g ? badge.g.r : 0
-                    color: badge.space ? badge.space.colour : "transparent"
+                width: parent.width
+                height: Math.max(rl, rr) + t
+                preferredRendererType: Shape.CurveRenderer
+                readonly property real t: root.line
+                readonly property real w: badge.width
+                // Each end's curve (0: square); too tight a curve for the band is drawn square
+                function curveOf(flared) {
+                    const r = !badge.g ? 0 : flared ? badge.curve : badge.g.r;
+                    return r > t + 0.5 ? r : 0;
+                }
+                readonly property real rl: curveOf(!!badge.g && badge.g.flareL)
+                readonly property real rr: curveOf(!!badge.g && badge.g.flareR)
+                ShapePath {
+                    strokeWidth: -1
+                    fillColor: badge.space ? badge.space.colour : "transparent"
+                    // Outer edge: down the left curve's foot, round to the top, along, round the right
+                    startX: 0
+                    startY: border.rl
+                    PathArc { x: border.rl; y: 0; radiusX: border.rl; radiusY: border.rl }
+                    PathLine { x: border.w - border.rr; y: 0 }
+                    PathArc { x: border.w; y: border.rr; radiusX: border.rr; radiusY: border.rr }
+                    // Inner edge, back: up the right curve, along, down the left
+                    PathArc {
+                        x: border.w - border.rr; y: border.t
+                        radiusX: border.rr; radiusY: Math.max(0, border.rr - border.t)
+                        direction: PathArc.Counterclockwise
+                    }
+                    PathLine { x: border.rl; y: border.t }
+                    PathArc {
+                        x: 0; y: border.rl
+                        radiusX: border.rl; radiusY: Math.max(0, border.rl - border.t)
+                        direction: PathArc.Counterclockwise
+                    }
                 }
             }
+            readonly property real curve: root.bar ? root.bar.cornerRadius : 12
 
             // The badge and the room around it that counts as "near"
             Item {
