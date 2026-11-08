@@ -385,8 +385,8 @@ FloatingWindow {
                 anchors { top: header.bottom; left: parent.left; right: parent.right }
                 height: 18
                 topLeftRadius: contentPane.radius; topRightRadius: contentPane.radius
-                opacity: scroller.contentY > 1 ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 150 } }
+                // Fades with the distance from the edge, gone just as you reach it
+                opacity: Math.max(0, Math.min(1, (scroller.contentY - scroller.originY) / 24))
                 gradient: Gradient {
                     GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
                     GradientStop { position: 1; color: "transparent" }
@@ -397,8 +397,7 @@ FloatingWindow {
                 anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
                 height: 24
                 bottomLeftRadius: contentPane.radius; bottomRightRadius: contentPane.radius
-                opacity: scroller.contentY < scroller.contentHeight - scroller.height - 1 ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 150 } }
+                opacity: Math.max(0, Math.min(1, (scroller.originY + scroller.contentHeight - scroller.height - scroller.contentY) / 24))
                 gradient: Gradient {
                     GradientStop { position: 0; color: "transparent" }
                     GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }

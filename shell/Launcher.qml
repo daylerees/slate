@@ -745,8 +745,8 @@ PanelWindow {
         Rectangle {
             anchors { left: list.left; right: list.right; bottom: list.bottom }
             height: 36
-            opacity: list.contentHeight > list.height && !list.atYEnd ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            // Fades with the distance from the end, gone just as you reach it
+            opacity: Math.max(0, Math.min(1, (list.originY + list.contentHeight - list.height - list.contentY) / 24))
             gradient: Gradient {
                 GradientStop { position: 0.0; color: "transparent" }
                 GradientStop { position: 1.0; color: root.barColor }

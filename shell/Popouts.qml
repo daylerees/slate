@@ -1049,8 +1049,8 @@ PanelWindow {
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; top: parent.top }
                     height: 18
-                    opacity: spListBox.overflow && !spListFlick.atYBeginning ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    // Fades with the distance from the edge, gone just as you reach it
+                    opacity: Math.max(0, Math.min(1, (spListFlick.contentY - spListFlick.originY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
                         GradientStop { position: 1; color: "transparent" }
@@ -1059,8 +1059,7 @@ PanelWindow {
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; bottom: parent.bottom }
                     height: 24
-                    opacity: spListBox.overflow && !spListFlick.atYEnd ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    opacity: Math.max(0, Math.min(1, (spListFlick.originY + spListFlick.contentHeight - spListFlick.height - spListFlick.contentY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0; color: "transparent" }
                         GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
@@ -2456,8 +2455,8 @@ PanelWindow {
                     parent: nList
                     anchors { left: parent.left; right: parent.right; top: parent.top }
                     height: 36
-                    opacity: nList.contentHeight > nList.height && !nList.atYBeginning ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    // Fades with the distance from the edge, gone just as you reach it
+                    opacity: Math.max(0, Math.min(1, (nList.contentY - nList.originY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: pop.bg }
                         GradientStop { position: 1.0; color: "transparent" }
@@ -2468,8 +2467,7 @@ PanelWindow {
                     parent: nList
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: 36
-                    opacity: nList.contentHeight > nList.height && !nList.atYEnd ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    opacity: Math.max(0, Math.min(1, (nList.originY + nList.contentHeight - nList.height - nList.contentY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: "transparent" }
                         GradientStop { position: 1.0; color: pop.bg }
