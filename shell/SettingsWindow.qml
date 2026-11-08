@@ -239,7 +239,7 @@ FloatingWindow {
                         required property var modelData
                         readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
                         width: parent.width; height: 38; radius: 9
-                        color: current ? win.card : navHover.hovered ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+                        color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Text {
                             id: navIcon
@@ -283,7 +283,7 @@ FloatingWindow {
                     visible: win.onMorePage
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                     width: 34; height: 34; radius: 17
-                    color: backHover.hovered ? Config.tint("#2a313c") : "transparent"
+                    color: backHover.hovered ? Config.hover : "transparent"
                     Behavior on color { ColorAnimation { duration: 100 } }
                     Text {
                         anchors.centerIn: parent
@@ -318,7 +318,7 @@ FloatingWindow {
                 z: 3
                 anchors { right: parent.right; rightMargin: 14; verticalCenter: header.verticalCenter }
                 width: 34; height: 34; radius: 17
-                color: closeHover.hovered ? Config.tint("#2a313c") : "transparent"
+                color: closeHover.hovered ? Config.hover : "transparent"
                 Behavior on color { ColorAnimation { duration: 100 } }
                 Text {
                     anchors.centerIn: parent
@@ -511,7 +511,7 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool current: dropLayer.owner && modelData.value === dropLayer.owner.value
                     width: menuList.width; height: dropLayer.rowH; radius: 8
-                    color: rowHover.hovered ? Config.tint("#2a313c") : "transparent"
+                    color: rowHover.hovered ? Config.hover : "transparent"
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
@@ -811,7 +811,7 @@ FloatingWindow {
                     required property string modelData
                     readonly property bool current: fs.value === modelData
                     width: ListView.view.width; height: 36; radius: 8
-                    color: current ? win.accent : fontHover.hovered ? Config.tint("#2a313c") : "transparent"
+                    color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         text: parent.modelData
@@ -864,7 +864,7 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool on: modelData.value === ch.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
-                    color: on ? win.accent : optHover.hovered ? Config.tint("#323a46") : Config.tint("#2a313c")
+                    color: on ? win.accent : optHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
@@ -892,7 +892,7 @@ FloatingWindow {
             id: ddButton
             readonly property bool open: dropLayer.owner === dd
             width: Math.max(150, ddText.implicitWidth + 44); height: 32; radius: 8
-            color: open || ddHover.hovered ? Config.tint("#323a46") : Config.tint("#2a313c")
+            color: open || ddHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: 100 } }
             Text {
@@ -983,7 +983,7 @@ FloatingWindow {
                     delegate: Rectangle {
                         required property var modelData
                         width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: 6
-                        color: pickHover.hovered ? Config.tint("#2a313c") : "transparent"
+                        color: pickHover.hovered ? Config.hover : "transparent"
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             Text { width: parent.width; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
@@ -1100,7 +1100,7 @@ FloatingWindow {
                         readonly property bool chosen: index === ovPage.pick
                         width: parent.width; height: hitCol.implicitHeight + 18
                         radius: 9
-                        color: chosen ? Config.tint("#262c35") : hitHover.hovered ? Qt.rgba(1, 1, 1, 0.03) : "transparent"
+                        color: chosen ? Config.tint("#262c35") : hitHover.hovered ? Config.hover : "transparent"
                         Text {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
@@ -1149,7 +1149,7 @@ FloatingWindow {
                         width: tiles.tileW
                         height: 112
                         radius: 12
-                        color: tileHover.hovered ? Config.tint("#262c35") : win.card
+                        color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Rectangle {
                             x: 14; y: 14
@@ -1421,7 +1421,7 @@ FloatingWindow {
                                 required property var modelData
                                 readonly property string place: [modelData.name, modelData.admin1, modelData.country].filter(x => x).join(", ")
                                 width: placeText.implicitWidth + 26; height: 32; radius: 8
-                                color: placeHover.hovered ? Config.tint("#323a46") : Config.tint("#2a313c")
+                                color: placeHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
                                 Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                 HoverHandler { id: placeHover; cursorShape: Qt.PointingHandCursor }
                                 TapHandler {
@@ -1852,8 +1852,8 @@ FloatingWindow {
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
                                         radius: 7
-                                        color: win.text
-                                        opacity: !layoutOpt.on && layoutHover.hovered ? 0.07 : 0
+                                        color: win.accent
+                                        opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
                                     HoverHandler { id: layoutHover; cursorShape: Qt.PointingHandCursor }
@@ -2872,8 +2872,8 @@ FloatingWindow {
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
                                         radius: 7
-                                        color: win.text
-                                        opacity: !modeOpt.on && modeHover.hovered ? 0.07 : 0
+                                        color: win.accent
+                                        opacity: !modeOpt.on && modeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
                                     HoverHandler { id: modeHover; cursorShape: Qt.PointingHandCursor }
@@ -3032,7 +3032,7 @@ FloatingWindow {
                                 width: 44; height: 22; radius: 6
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
-                                color: current ? win.accent : spotHover.hovered ? Config.tint("#3a424e") : Config.tint("#262c35")
+                                color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 HoverHandler { id: spotHover; cursorShape: Qt.PointingHandCursor }
                                 TapHandler { onTapped: Config.s.notificationPosition = parent.modelData }
@@ -3108,8 +3108,8 @@ FloatingWindow {
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
                                         radius: 7
-                                        color: win.text
-                                        opacity: !parent.on && themeHover.hovered ? 0.07 : 0
+                                        color: win.accent
+                                        opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
                                     HoverHandler { id: themeHover; cursorShape: Qt.PointingHandCursor }
@@ -3299,8 +3299,8 @@ FloatingWindow {
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
                                         radius: 7
-                                        color: win.text
-                                        opacity: !parent.on && shapeHover.hovered ? 0.07 : 0
+                                        color: win.accent
+                                        opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
                                     HoverHandler { id: shapeHover; cursorShape: Qt.PointingHandCursor }
@@ -3422,7 +3422,7 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: 12
-                            color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.tint("#2a313c") : Config.tint("#151920")
+                            color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(Config.tint("#151920")) : Config.tint("#151920")
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Image {
@@ -3569,7 +3569,7 @@ FloatingWindow {
                                 required property string fileName
                                 required property string filePath
                                 width: dirList.width; height: 32; radius: 6
-                                color: dirHover.hovered ? Config.tint("#2a313c") : "transparent"
+                                color: dirHover.hovered ? Config.hover : "transparent"
                                 Text {
                                     id: dirIcon
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }

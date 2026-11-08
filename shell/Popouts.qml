@@ -399,7 +399,7 @@ PanelWindow {
         signal clicked()
         height: 36
         radius: 8
-        color: selected ? pop.accent : rbHover.hovered ? pop.card : "transparent"
+        color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
         Behavior on color { ColorAnimation { duration: 100 } }
         HoverHandler { id: rbHover }
         TapHandler { onTapped: rb.clicked() }
@@ -704,7 +704,7 @@ PanelWindow {
                         width: (wf.width - 6) / 2
                         height: 46
                         radius: 9
-                        color: tileHover.hovered && modelData.copy ? Qt.lighter(pop.card, 1.15) : pop.card
+                        color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
                         Behavior on color { ColorAnimation { duration: 100 } }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
@@ -1003,7 +1003,7 @@ PanelWindow {
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                 visible: !spApps.visible
                                 width: 28; height: 28; radius: 7
-                                color: spDelHover.hovered ? Config.tint("#2a313c") : "transparent"
+                                color: spDelHover.hovered ? Config.hover : "transparent"
                                 Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                 HoverHandler { id: spDelHover; cursorShape: Qt.PointingHandCursor }
                                 // A MouseArea, so the click stops here rather than also opening the space
@@ -1050,7 +1050,7 @@ PanelWindow {
                 Rectangle {
                     id: spBack
                     width: 26; height: 26; radius: 7
-                    color: spBackHover.hovered ? pop.card : "transparent"
+                    color: spBackHover.hovered ? Config.hover : "transparent"
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: spp.mode = "list" }
@@ -1254,7 +1254,7 @@ PanelWindow {
                         required property int modelData
                         readonly property bool on: spp.icon === modelData
                         width: (spp.width - 28) / 15; height: width; radius: 7
-                        color: on ? spp.colour : icHover.hovered ? pop.card : "transparent"
+                        color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover; cursorShape: Qt.PointingHandCursor }
@@ -1397,7 +1397,7 @@ PanelWindow {
                 spacing: 8
                 Rectangle {
                     width: spCancel.implicitWidth + 28; height: 32; radius: 8
-                    color: spCancelHover.hovered ? pop.card : "transparent"
+                    color: spCancelHover.hovered ? Config.hover : "transparent"
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: spp.mode = "list" }
@@ -1441,7 +1441,7 @@ PanelWindow {
                         required property var modelData
                         width: (shp.width - 16) / 3; height: 76
                         radius: 10
-                        color: shotHover.hovered ? Config.tint("#262c35") : pop.card
+                        color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Column {
                             anchors.centerIn: parent
@@ -2118,7 +2118,7 @@ PanelWindow {
                         delegate: RowButton {
                             required property var modelData
                             width: 34; height: 34
-                            color: hovered2.hovered ? pop.bg : Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.55)
+                            color: hovered2.hovered ? Config.hoverOn(pop.bg) : Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.55)
                             HoverHandler { id: hovered2 }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }
@@ -2285,7 +2285,7 @@ PanelWindow {
                             height: ccTiles.tileH
                             radius: 12
                             selected: modelData.on
-                            color: selected ? pop.accent : tileHover.hovered ? Qt.lighter(pop.card, 1.25) : pop.card
+                            color: selected ? pop.accent : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
                             HoverHandler { id: tileHover }
                             onClicked: {
                                 switch (modelData.id) {

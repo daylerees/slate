@@ -19,7 +19,6 @@ PanelWindow {
     // ---- Look --------------------------------------------------------------
     readonly property color cardColor: Config.tint("#0f1216")     // same as the top bar
     readonly property color fieldColor: Config.tint("#1d222a")    // bar capsules
-    readonly property color buttonHover: Config.tint("#262c35")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color accent: Config.accent
@@ -213,7 +212,7 @@ PanelWindow {
                             required property var modelData
                             readonly property bool current: root.selected === modelData
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
-                            color: current ? root.accent : chipHover.hovered ? root.buttonHover : root.fieldColor
+                            color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                             Behavior on color { ColorAnimation { duration: 100 } }
                             HoverHandler { id: chipHover; cursorShape: Qt.PointingHandCursor }
                             TapHandler {
@@ -315,7 +314,7 @@ PanelWindow {
         height: 40
         radius: 10
         readonly property color base: primary ? root.accent : root.fieldColor
-        color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? root.buttonHover : base)
+        color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: 100 } }
         Behavior on opacity { NumberAnimation { duration: 100 } }

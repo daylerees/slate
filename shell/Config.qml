@@ -21,6 +21,11 @@ Singleton {
         // Light mode: a deeper shade so it stands out on light backgrounds
         return s.lightMode ? Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, Math.max(a.hslSaturation, 0.45), 0.42, 1) : a;
     }
+    // Hover highlight, everywhere in Slate: the accent, lightly. `hover` is see-through, for
+    // things with no background of their own; hoverOn(base) is it laid over a solid colour
+    readonly property real hoverStrength: 0.22
+    readonly property color hover: Qt.rgba(accent.r, accent.g, accent.b, hoverStrength)
+    function hoverOn(base) { return Qt.tint(base, hover); }
     property string wallpaper: s.wallpaper
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper

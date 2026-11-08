@@ -926,9 +926,9 @@ PanelWindow {
 
     // ---- Building blocks ---------------------------------------------------
 
-    // Hover highlight behind bar items: the accent colour, lightly
+    // Hover highlight behind bar items: the accent colour, lightly (as everywhere: Config.hover)
     readonly property color hoverFill: bar.accent
-    readonly property real hoverStrength: 0.22
+    readonly property real hoverStrength: Config.hoverStrength
 
     // Rounded container with a soft hover tint and click handling
     component Capsule: Rectangle {

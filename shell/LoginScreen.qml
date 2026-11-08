@@ -54,7 +54,6 @@ Item {
     readonly property color accentText: Config.tint("#12151a")
     readonly property color frame: Config.tint("#0f1216")
     readonly property color field: Config.tint("#1d222a")
-    readonly property color hover: Config.tint("#262c35")
     readonly property color text: Config.tint("#eef1f5")
     readonly property color dim: Config.tint("#8b94a3")
     readonly property color error: Config.tint("#f28b8b")
@@ -282,7 +281,7 @@ Item {
         height: 44
         width: label ? pillRow.implicitWidth + 30 : 44
         radius: 22
-        color: active ? ls.accent : pillHover.hovered ? ls.hover : ls.frame
+        color: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
         Behavior on color { ColorAnimation { duration: 100 } }
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: 0.7; shadowVerticalOffset: 4; blurMax: 32 }
@@ -316,7 +315,7 @@ Item {
                 delegate: Rectangle {
                     required property var modelData
                     width: parent.width; height: 40; radius: 10
-                    color: modelData.current ? ls.accent : itemHover.hovered ? ls.hover : "transparent"
+                    color: modelData.current ? ls.accent : itemHover.hovered ? Config.hover : "transparent"
                     Row {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 10

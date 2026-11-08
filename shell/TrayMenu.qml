@@ -93,7 +93,7 @@ PanelWindow {
                 width: menuCol.width; height: visible ? 30 : 0
                 Rectangle {
                     anchors.fill: parent; radius: 7
-                    color: backHover.hovered ? tm.rowHover : "transparent"
+                    color: backHover.hovered ? Config.hover : "transparent"
                     Text {
                         id: backArrow
                         anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -138,7 +138,7 @@ PanelWindow {
                         visible: !entryRow.sep
                         anchors.fill: parent
                         radius: 7
-                        color: entryHover.hovered && entryRow.e.enabled ? tm.rowHover : "transparent"
+                        color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: 90 } }
                         // Tick for a checked checkbox or radio item
                         Text {

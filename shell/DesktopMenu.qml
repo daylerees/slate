@@ -65,7 +65,7 @@ PanelWindow {
                         visible: !row.modelData.separator
                         anchors.fill: parent
                         radius: 7
-                        color: itemHover.hovered ? dm.rowHover : "transparent"
+                        color: itemHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: 90 } }
                         Text {
                             id: rowIcon

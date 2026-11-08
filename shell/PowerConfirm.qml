@@ -19,7 +19,6 @@ PanelWindow {
     // ---- Look --------------------------------------------------------------
     readonly property color cardColor: Config.tint("#0f1216")     // same as the top bar
     readonly property color buttonColor: Config.tint("#1d222a")   // bar capsules
-    readonly property color buttonHover: Config.tint("#262c35")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color accent: Config.accent
@@ -203,7 +202,7 @@ PanelWindow {
         height: 40
         radius: 10
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
-        color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? root.buttonHover : base)
+        color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
         Behavior on color { ColorAnimation { duration: 100 } }
         HoverHandler { id: hh; cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button

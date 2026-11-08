@@ -566,7 +566,7 @@ ShellRoot {
                                 visible: menuRow.modelData.kind !== "sep"
                                 anchors.fill: parent
                                 radius: 7
-                                color: rowHover.hovered ? win.tileColor : "transparent"
+                                color: rowHover.hovered ? Config.hover : "transparent"
                                 Behavior on color { ColorAnimation { duration: 90 } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active

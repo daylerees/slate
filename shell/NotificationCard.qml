@@ -39,7 +39,7 @@ Rectangle {
     implicitHeight: band + content.height + 24 + (hasTimer ? 14 : 0)
     height: implicitHeight
     radius: 9
-    color: inPanel ? (cardHover.hovered ? Qt.lighter(bar.capsuleColor, 1.15) : bar.capsuleColor) : bar.barColor
+    color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     Behavior on color { ColorAnimation { duration: 100 } }
     // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
     // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
