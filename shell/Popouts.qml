@@ -820,10 +820,22 @@ PanelWindow {
             readonly property bool canSave: name.trim() !== "" && picked.length > 0
             readonly property color inkColour: "#1b1f26"      // icons on a pastel
 
+            // The workspace you're on starts picked, once the list of workspaces with apps is in,
+            // and only if it's on it (an empty one has nothing to save)
+            property int autoPick: -1
+            Connections {
+                target: Spaces
+                function onLiveChanged() {
+                    if (spp.autoPick < 0) return;
+                    spp.picked = Spaces.live.some(w => w.id === spp.autoPick) ? [spp.autoPick] : [];
+                    spp.autoPick = -1;
+                }
+            }
             function startNew() {
-                Spaces.refreshLive();
                 const ws = Hyprland.focusedWorkspace;
-                picked = ws ? [ws.id] : [];
+                picked = [];
+                autoPick = ws ? ws.id : -1;
+                Spaces.refreshLive();
                 name = "";
                 custom = false;
                 // A colour and icon no saved space uses yet
