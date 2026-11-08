@@ -124,12 +124,12 @@ FloatingWindow {
     // The settings each page can restore to their defaults. Left out on purpose: your
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
     readonly property var pageKeys: ({
-        general: ["nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
+        general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle",
-            "barShowTray", "barShowNotifications", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
+            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
@@ -1325,6 +1325,28 @@ FloatingWindow {
                     onAccepted: { Config.setAvatar(selectedFile.toString()); win.avatarPicking = false; }
                 }
             }
+            GroupLabel { text: "Clipboard" }
+            Group {
+                SettingRow {
+                    label: "Clipboard history"
+                    detail: Config.s.clipboardHistory
+                        ? "Keep the last 100 things you copy, text and images (Super+V, or the bar's clipboard). Passwords copied from password managers are never kept"
+                        : "Off: nothing you copy is kept. Anything kept before stays until you clear it"
+                    Toggle { checked: Config.s.clipboardHistory; onToggled: v => Config.s.clipboardHistory = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Clear clipboard history"
+                    detail: Config.clipCount === 0 ? "It's empty"
+                        : Config.clipCount === 1 ? "Forget the 1 item it holds" : "Forget the " + Config.clipCount + " items it holds"
+                    Button {
+                        icon: 0xEB41; label: "Clear"; destructive: true
+                        enabled: Config.clipCount > 0
+                        opacity: enabled ? 1 : 0.5
+                        onClicked: Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/clipstore.py"), "clear"])
+                    }
+                }
+            }
             GroupLabel { text: "Location" }
             Group {
                 // Search a place by name (Open-Meteo's free geocoding), then pick a result
@@ -1527,6 +1549,18 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
+                    label: "Clipboard"
+                    detail: "What you've copied recently; click to copy something again"
+                    Toggle { checked: Config.s.barShowClipboard; onToggled: v => Config.s.barShowClipboard = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Screenshot"
+                    detail: "Click to take one of an area, a window or the screen"
+                    Toggle { checked: Config.s.barShowScreenshot; onToggled: v => Config.s.barShowScreenshot = v }
+                }
+                Separator {}
+                SettingRow {
                     label: "Wi-Fi"
                     detail: "Signal strength; click for networks"
                     Toggle { checked: Config.s.barShowWifi; onToggled: v => Config.s.barShowWifi = v }
@@ -1555,6 +1589,12 @@ FloatingWindow {
                     label: "Battery"
                     detail: "Charge level; click for power profiles. Hidden on computers without a battery"
                     Toggle { checked: Config.s.barShowBattery; onToggled: v => Config.s.barShowBattery = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Clipboard items"
+                    detail: "How many items the clipboard history holds, beside its icon"
+                    Toggle { checked: Config.s.barValueClipboard; onToggled: v => Config.s.barValueClipboard = v }
                 }
                 Separator {}
                 SettingRow {
@@ -2611,8 +2651,9 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "After taking one"
-                    detail: shp.hasSwash ? "" : "swash (for marking up) isn't installed, so they're saved"
-                    options: [{ value: "edit", label: "Open it to mark up" }, { value: "save", label: "Save it and copy it" }]
+                    detail: shp.hasSwash ? "Every screenshot is saved to the folder below and copied. Marking one up and saving updates that file"
+                        : "Every screenshot is saved to the folder below and copied (swash, for marking up, isn't installed)"
+                    options: [{ value: "edit", label: "Open it to mark up" }, { value: "save", label: "Just show a notification" }]
                     value: Config.s.screenshotAfter
                     onPicked: v => Config.s.screenshotAfter = v
                 }

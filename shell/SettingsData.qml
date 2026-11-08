@@ -75,6 +75,7 @@ JsonAdapter {
     property string screenshotFolder: ""      // "" = ~/Pictures/Screenshots
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)
     property string screenshotAfter: "edit"   // edit (swash, when installed) or save
+    property bool clipboardHistory: true      // keep a history of what you copy (Super+V)
     property bool keepEmptyWorkspace: false   // Settings → Windows: always an empty workspace after the last one in use
     property string windowMode: "tiling"       // tiling, or floating (every window floats, like a traditional desktop)
     property string titleButtons: "right"     // floating windows' title bar buttons: left or right
@@ -94,12 +95,15 @@ JsonAdapter {
     property bool barShowTitle: true          // focused window's title
     property bool barShowTray: true           // app tray icons
     property bool barShowNotifications: true
+    property bool barShowClipboard: false     // clipboard history, with how many items it holds
+    property bool barShowScreenshot: false    // screenshot buttons (area, window, screen)
     property bool barShowWifi: true
     property bool barShowKeyboard: true       // keyboard layout switcher (when there's more than one layout)
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)
     property bool barShowVolume: true
     property bool barShowBattery: true
     property bool barShowValues: true         // (replaced by the three below; no longer used)
+    property bool barValueClipboard: true     // how many items are in the clipboard history
     property bool barValueWifi: true          // the network name beside the Wi-Fi icon
     property bool barValueKeyboard: true      // the active layout's code (GB, FR…) beside the keyboard icon
     property bool barValueBluetooth: true     // how many devices are connected, beside the Bluetooth icon

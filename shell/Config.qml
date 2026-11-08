@@ -478,4 +478,16 @@ Singleton {
         for (const k of keys) if (defaults[k] !== undefined && !sameValue(root.s[k], defaults[k])) n++;
         return n;
     }
+
+    // ---- Clipboard history (scripts/clipstore.py): how many items it holds, for the bar ----
+    readonly property string clipIndex: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/clipboard/index.json"
+    property int clipCount: 0
+    FileView {
+        path: root.clipIndex
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: { try { root.clipCount = (JSON.parse(text()).entries || []).length; } catch (e) { root.clipCount = 0; } }
+        onLoadFailed: root.clipCount = 0
+    }
 }

@@ -442,6 +442,7 @@ PanelWindow {
             visible: root.view().count === 0
             text: root.mode === "emoji" ? "No emoji match"
                 : search.text !== "" ? "Nothing matches"
+                : !Config.s.clipboardHistory ? "Clipboard history is off (Settings → General)"
                 : "Nothing copied yet"
             color: root.dimTextColor
             font.family: root.fontFamily

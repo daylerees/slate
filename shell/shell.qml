@@ -37,11 +37,12 @@ ShellRoot {
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
         id: clipWatch
-        running: true
+        // Settings → General → Clipboard history: off stops recording (what's kept stays until cleared)
+        running: Config.s.clipboardHistory
         command: ["setpriv", "--pdeathsig", "TERM", "wl-paste", "--watch", "python3", Quickshell.shellPath("scripts/clipstore.py"), "store"]
-        onRunningChanged: if (!running) clipRestart.restart()
+        onRunningChanged: if (!running && Config.s.clipboardHistory) clipRestart.restart()
     }
-    Timer { id: clipRestart; interval: 2000; onTriggered: clipWatch.running = true }
+    Timer { id: clipRestart; interval: 2000; onTriggered: if (Config.s.clipboardHistory) clipWatch.running = true }
     // A bar on every screen. The main display's (topBar, Settings → Displays) is the main one: other pieces take
     // its look and sizes, and it answers `slate ipc call bar …` (passing it to the focused
     // screen's bar). The panels open on whichever screen's bar opened them.

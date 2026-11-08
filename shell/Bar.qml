@@ -123,7 +123,7 @@ PanelWindow {
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
         const button = ({ control: flameBtn, notifications: bellBtn, session: powerBtn,
-                          volume: volSeg, wifi: wifiSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, calendar: clockCap })[name];
+                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, calendar: clockCap })[name];
         if (button) openPopout(name, button);
     }
     // Tray apps with no "activate" of their own: Ayatana app indicators (Steam and others)
@@ -701,12 +701,19 @@ PanelWindow {
                 // Which sections are shown (Settings → Menu bar); the rounded hover ends and
                 // separators follow whichever are visible
                 readonly property bool hasBell: Config.s.barShowNotifications
+                readonly property bool hasClip: Config.s.barShowClipboard
+                readonly property bool hasShot: Config.s.barShowScreenshot
                 readonly property bool hasWifi: Config.s.barShowWifi
                 readonly property bool hasKb: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
                 readonly property bool hasBt: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
                 readonly property bool hasVol: Config.s.barShowVolume
                 readonly property bool hasBat: Config.s.barShowBattery && UPower.displayDevice && UPower.displayDevice.isPresent
-                visible: hasBell || hasWifi || hasKb || hasBt || hasVol || hasBat
+                // In order along the bar; first/last/separators follow whichever are shown
+                readonly property var shown: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat]
+                function isFirst(i) { return !shown.slice(0, i).some(x => x); }
+                function isLast(i) { return !shown.slice(i + 1).some(x => x); }
+                function sepBefore(i) { return shown[i] && !isFirst(i); }
+                visible: shown.some(x => x)
                 length: bar.vert ? statusRow.height : statusRow.width
                 Grid {
                     id: statusRow
@@ -721,7 +728,7 @@ PanelWindow {
                         id: bellBtn
                         visible: status.hasBell
                         first: true
-                        last: !status.hasWifi && !status.hasKb && !status.hasBt && !status.hasVol && !status.hasBat
+                        last: status.isLast(0)
                         iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
                         hoverText: !bar.notifs ? "Notifications"
                             : bar.notifs.dnd ? "Do not disturb is on"
@@ -732,12 +739,37 @@ PanelWindow {
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
                     }
-                    Separator { visible: status.hasWifi && status.hasBell }
+                    Separator { visible: status.sepBefore(1) }
+                    // Clipboard history: how many items it holds; click for the list
+                    Segment {
+                        id: clipSeg
+                        visible: status.hasClip
+                        first: status.isFirst(1)
+                        last: status.isLast(1)
+                        iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
+                        label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
+                        hoverText: !Config.s.clipboardHistory ? "Clipboard history is off"
+                            : Config.clipCount === 0 ? "Clipboard · empty"
+                            : "Clipboard · " + Config.clipCount + (Config.clipCount === 1 ? " item" : " items")
+                        onClicked: bar.openPopout("clipboard", clipSeg)
+                    }
+                    Separator { visible: status.sepBefore(2) }
+                    // Screenshots: click for area / window / screen
+                    Segment {
+                        id: shotSeg
+                        visible: status.hasShot
+                        first: status.isFirst(2)
+                        last: status.isLast(2)
+                        iconCode: 0xF201
+                        hoverText: "Screenshot"
+                        onClicked: bar.openPopout("screenshot", shotSeg)
+                    }
+                    Separator { visible: status.sepBefore(3) }
                     Segment {
                         id: wifiSeg
                         visible: status.hasWifi
-                        first: !status.hasBell
-                        last: !status.hasKb && !status.hasBt && !status.hasVol && !status.hasBat
+                        first: status.isFirst(3)
+                        last: status.isLast(3)
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
@@ -747,13 +779,13 @@ PanelWindow {
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
-                    Separator { visible: status.hasKb && (status.hasBell || status.hasWifi) }
+                    Separator { visible: status.sepBefore(4) }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
                         visible: status.hasKb
-                        first: !status.hasBell && !status.hasWifi
-                        last: !status.hasBt && !status.hasVol && !status.hasBat
+                        first: status.isFirst(4)
+                        last: status.isLast(4)
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
                         label: Config.s.barValueKeyboard && current ? current.code : ""
@@ -761,13 +793,13 @@ PanelWindow {
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
-                    Separator { visible: status.hasBt && (status.hasBell || status.hasWifi || status.hasKb) }
+                    Separator { visible: status.sepBefore(5) }
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
                         visible: status.hasBt
-                        first: !status.hasBell && !status.hasWifi && !status.hasKb
-                        last: !status.hasVol && !status.hasBat
+                        first: status.isFirst(5)
+                        last: status.isLast(5)
                         readonly property var adapter: Bluetooth.defaultAdapter
                         readonly property bool on: !!adapter && adapter.enabled
                         readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
@@ -778,12 +810,12 @@ PanelWindow {
                             : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
-                    Separator { visible: status.hasVol && (status.hasBell || status.hasWifi || status.hasKb || status.hasBt) }
+                    Separator { visible: status.sepBefore(6) }
                     Segment {
                         id: volSeg
                         visible: status.hasVol
-                        first: !status.hasBell && !status.hasWifi && !status.hasKb && !status.hasBt
-                        last: !status.hasBat
+                        first: status.isFirst(6)
+                        last: status.isLast(6)
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
                         readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
@@ -800,10 +832,10 @@ PanelWindow {
                         }
                         PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
                     }
-                    Separator { visible: status.hasBat && (status.hasBell || status.hasWifi || status.hasKb || status.hasBt || status.hasVol) }
+                    Separator { visible: status.sepBefore(7) }
                     Segment {
                         id: batSeg
-                        first: !status.hasBell && !status.hasWifi && !status.hasKb && !status.hasBt && !status.hasVol
+                        first: status.isFirst(7)
                         last: true
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0

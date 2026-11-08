@@ -166,6 +166,8 @@ PanelWindow {
                     sourceComponent: pop.displayed === "volume" ? volumePanel
                         : pop.displayed === "wifi" ? wifiPanel
                         : pop.displayed === "keyboard" ? keyboardPanel
+                        : pop.displayed === "clipboard" ? clipboardPanel
+                        : pop.displayed === "screenshot" ? screenshotPanel
                         : pop.displayed === "bluetooth" ? bluetoothPanel
                         : pop.displayed === "battery" ? batteryPanel
                         : pop.displayed === "calendar" ? calendarPanel
@@ -683,6 +685,179 @@ PanelWindow {
                     text: "Disconnect"
                     color: pop.dim
                 }
+            }
+        }
+    }
+
+    // ---- Clipboard history ------------------------------------------------
+    // The latest things copied (scripts/clipstore.py); click one to copy it again. Super+V
+    // (Show all) has the full, searchable list.
+    Component {
+        id: clipboardPanel
+        Column {
+            id: clp
+            width: 320
+            spacing: 10
+            readonly property string script: Quickshell.shellPath("scripts/clipstore.py")
+            readonly property string dir: Config.clipIndex.replace(/\/index\.json$/, "")
+            property var entries: []
+            FileView {
+                path: Config.clipIndex
+                watchChanges: true
+                printErrors: false
+                onFileChanged: reload()
+                onLoaded: { try { clp.entries = JSON.parse(text()).entries || []; } catch (e) { clp.entries = []; } }
+                onLoadFailed: clp.entries = []
+            }
+            function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
+
+            Item {
+                width: parent.width; height: 22
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Clipboard"; font.pixelSize: 15 }
+                Label {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    visible: Config.s.clipboardHistory
+                    text: clp.entries.length === 1 ? "1 item" : clp.entries.length + " items"
+                    color: pop.dim; font.weight: Font.Normal
+                }
+            }
+            Label {
+                width: parent.width
+                visible: !Config.s.clipboardHistory || clp.entries.length === 0
+                text: !Config.s.clipboardHistory ? "Clipboard history is off, so nothing you copy is kept."
+                    : "Nothing copied yet."
+                color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
+            }
+            Column {
+                width: parent.width
+                spacing: 2
+                visible: Config.s.clipboardHistory && clp.entries.length > 0
+                Repeater {
+                    model: clp.entries.slice(0, 8)
+                    delegate: RowButton {
+                        id: clipRow
+                        required property var modelData
+                        width: parent.width
+                        height: modelData.kind === "image" ? 52 : 36
+                        onClicked: { Quickshell.execDetached(["python3", clp.script, "copy", modelData.id]); pop.close(); }
+                        Image {
+                            id: clipThumb
+                            visible: clipRow.modelData.kind === "image"
+                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            width: visible ? 56 : 0; height: 40
+                            source: visible ? "file://" + clp.dir + "/" + clipRow.modelData.file : ""
+                            sourceSize: Qt.size(112, 80)
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                        }
+                        Icon {
+                            id: clipIcon
+                            visible: clipRow.modelData.kind !== "image"
+                            code: 0xF089; font.pixelSize: 16; color: pop.dim
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        }
+                        Label {
+                            anchors {
+                                left: clipRow.modelData.kind === "image" ? clipThumb.right : clipIcon.right; leftMargin: 10
+                                right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter
+                            }
+                            text: clipRow.modelData.kind === "image"
+                                ? "Image" + (clipRow.modelData.w ? " · " + clipRow.modelData.w + " × " + clipRow.modelData.h : "")
+                                : (clipRow.modelData.text || "").replace(/\s+/g, " ").trim()
+                            font.weight: Font.Normal
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+            Divider {}
+            RowButton {
+                width: parent.width
+                visible: Config.s.clipboardHistory
+                onClicked: { pop.close(); clp.slate(["picker", "clipboard"]); }
+                Icon { id: clpAllIcon; code: 0xEA6D; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: clpAllIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Show all and search (Super+V)"; font.weight: Font.Normal }
+            }
+            RowButton {
+                width: parent.width
+                visible: Config.s.clipboardHistory && clp.entries.length > 0
+                danger: true
+                onClicked: { clp.entries = []; Quickshell.execDetached(["python3", clp.script, "clear"]); }
+                Icon { id: clpClearIcon; code: 0xEB41; font.pixelSize: 16; color: pop.danger; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: clpClearIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Clear history"; color: pop.danger; font.weight: Font.Normal }
+            }
+            RowButton {
+                width: parent.width
+                onClicked: { pop.close(); clp.slate(["settings", "find", "general", "Clipboard history"]); }
+                Icon { id: clpSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: clpSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Clipboard settings"; font.weight: Font.Normal }
+            }
+        }
+    }
+
+    // ---- Screenshots ------------------------------------------------------
+    // Take one of an area, a window or the screen (scripts/screenshot.sh); the panel closes
+    // first so it isn't in the picture
+    Component {
+        id: screenshotPanel
+        Column {
+            id: shp
+            width: 300
+            spacing: 10
+            readonly property string folder: Config.s.screenshotFolder !== "" ? Config.s.screenshotFolder
+                : Quickshell.env("HOME") + "/Pictures/Screenshots"
+            function take(mode) {
+                pop.close();
+                Quickshell.execDetached(["sh", "-c", "sleep 0.35; exec \"$0\" \"$1\"", Quickshell.shellPath("scripts/screenshot.sh"), mode]);
+            }
+            Label { text: "Screenshot"; font.pixelSize: 15 }
+            Row {
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: [{ mode: "region", label: "Area", code: 0xEEAE },
+                            { mode: "window", label: "Window", code: 0xEFE6 },
+                            { mode: "screen", label: "Screen", code: 0xEA89 }]
+                    delegate: Rectangle {
+                        id: shotTile
+                        required property var modelData
+                        width: (shp.width - 16) / 3; height: 76
+                        radius: 10
+                        color: shotHover.hovered ? Config.tint("#262c35") : pop.card
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Icon { anchors.horizontalCenter: parent.horizontalCenter; code: shotTile.modelData.code; font.pixelSize: 22; color: pop.text }
+                            Label { anchors.horizontalCenter: parent.horizontalCenter; text: shotTile.modelData.label; font.weight: Font.Normal }
+                        }
+                        HoverHandler { id: shotHover; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: shp.take(shotTile.modelData.mode) }
+                    }
+                }
+            }
+            Label {
+                width: parent.width
+                text: "Saved to " + shp.folder.replace(Quickshell.env("HOME"), "~") + " and copied"
+                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; elide: Text.ElideMiddle
+            }
+            Divider {}
+            RowButton {
+                width: parent.width
+                onClicked: { pop.close(); Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && exec xdg-open \"$0\"", shp.folder]); }
+                Icon { id: shpFolderIcon; code: 0xEAAD; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: shpFolderIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Open screenshots folder"; font.weight: Font.Normal }
+            }
+            RowButton {
+                width: parent.width
+                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "screenshots"]); }
+                Icon { id: shpSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: shpSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Screenshot settings"; font.weight: Font.Normal }
             }
         }
     }

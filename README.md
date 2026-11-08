@@ -46,8 +46,8 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 
 | Part | What it does | File |
 |---|---|---|
-| Top bar | Workspaces (dots + spring indicator), active window title / hover descriptions, tray, notifications · Wi-Fi · volume · battery group, clock, power. Rounded top screen corners | `Bar.qml` |
-| Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications. Log out / restart / shut down ask in a centred dialog | `Popouts.qml`, `PowerConfirm.qml` |
+| Top bar | Workspaces (dots + spring indicator), active window title / hover descriptions, tray, notifications · clipboard · screenshot · Wi-Fi · keyboard · Bluetooth · volume · battery group (clipboard and screenshot off by default), clock, power. Rounded top screen corners | `Bar.qml` |
+| Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down ask in a centred dialog | `Popouts.qml`, `PowerConfirm.qml` |
 | Dock | macOS-style magnifying dock, pinned apps, right-click menus, auto-hide | `shell.qml` |
 | Launcher | App search (usage-sorted), calculator, open on a new workspace left/right | `Launcher.qml` |
 | Window switcher | Super+Tab, live previews, circular strip | `Switcher.qml` |
@@ -62,11 +62,11 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Screen corners | Rounded black screen corners | `ScreenCorners.qml`, `Bar.qml` |
 | Shared settings | `Config` singleton backed by `settings.json`; theme (accent, light/dark, wallpaper tint) | `Config.qml` |
 | Wallpaper | Drawn per screen on the background layer, cross-fades on change; picker in Settings (Super+Shift+W) | `Wallpaper.qml` |
-| Clipboard & emoji | Super+V clipboard history (text + images), Super+. emoji picker | `Picker.qml`, `scripts/clipstore.py`, `data/emoji.json` |
+| Clipboard & emoji | Super+V clipboard history (text + images; can be switched off in Settings → General), Super+. emoji picker | `Picker.qml`, `scripts/clipstore.py`, `data/emoji.json` |
 | Password prompts | Polkit agent (pkexec, system settings) in Slate's style | `PolkitAgent.qml` |
 | Night light | Warm screen via a Hyprland screen shader; manual, sunset-to-sunrise or custom schedule (Settings → General) | `NightLight.qml` |
 | App theming | Opt-in, per app (Settings → Appearance → App theming): GTK, Qt, KDE, terminals (kitty, Alacritty, Ghostty, foot, WezTerm), editors (Text Editor, VS Code, Zed, Helix, Vim/Neovim), bat, fzf, Yazi, cava, zathura, btop, Discord (Vencord), Spotify (Spicetify) and Firefox follow Slate's colours; configs are backed up and switching an app off puts them back | `scripts/apply-theme.py`, `slate_apps.py`, `slate_theme.py` |
-| Screenshots | Print (area, screen frozen) / Super+Print (screen) → swash | `scripts/screenshot.sh` |
+| Screenshots | Print (area, screen frozen) / Super+Print (screen), or area / window / screen from the bar → saved to the chosen folder and copied, then optionally opened in swash | `scripts/screenshot.sh` |
 
 ## Docs
 
