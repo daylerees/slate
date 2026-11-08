@@ -371,14 +371,13 @@ Singleton {
     // icons, and cached per style (the default keeps the original folder)
     readonly property string tileScript: Quickshell.shellPath("scripts/appicon.py")
     // The tile behind icons that don't fill their shape (IconPlate.qml): slate, following the theme
-    // With glass, a quarter of the wallpaper's colour mixed in (by Glass → Gloss colour), like
-    // the frosted containers, so icon tiles don't sit grey over a colourful scene
+    // With glass, the same frosted see-through layer as the bar's containers (raised()), a
+    // little stronger so it still reads as a tile; solid, they stood out lighter than the rest
     readonly property color iconPlateColor: {
         const base = tint("#2a313c");
-        const w = glass && wallpaperAccent ? Qt.color(wallpaperAccent) : null;
-        if (!w) return base;
-        const k = 0.25 * glossTint;
-        return Qt.rgba(base.r * (1 - k) + w.r * k, base.g * (1 - k) + w.g * k, base.b * (1 - k) + w.b * k, 1);
+        if (!glass) return base;
+        const f = raised(base);
+        return Qt.rgba(f.r, f.g, f.b, s.lightMode ? 0.5 : Math.min(1, f.a * 1.6));
     }
     readonly property string tileDir: Quickshell.env("HOME") + "/.cache/slate/tiles"
         + (s.iconShape === "tile" && s.iconFill ? "" : "/" + s.iconShape + (s.iconFill ? "" : "-whole"))
