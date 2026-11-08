@@ -248,7 +248,9 @@ PanelWindow {
             anchors.fill: parent
             // On the whole time a panel from this bar is shown (from before it slides), so the
             // shadow's blur is set up once, not as it slides (that held the slide up)
-            layer.enabled: bar.shadow > 0.01 || (!!bar.popouts && bar.popouts.active && bar.popouts.screen === bar.screen)
+            // Never with glass, which has no shadow: switching the layer on (on hover) changed how
+            // the see-through bar was drawn, and it lit up
+            layer.enabled: !Config.glass && (bar.shadow > 0.01 || (!!bar.popouts && bar.popouts.active && bar.popouts.screen === bar.screen))
             layer.effect: MultiEffect {
                 shadowEnabled: true
                 shadowColor: "black"

@@ -120,7 +120,9 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-popout"
-    WlrLayershell.layer: WlrLayer.Top
+    // Above the bar's layer, not beside it: under it, the bar's glass blur picked up the top of
+    // an open panel and smeared it up into the bar
+    WlrLayershell.layer: WlrLayer.Overlay
     // Takes the keyboard and the clicks from the start of opening, while it's still being
     // prepared: Hyprland's side of that took a frame or two, and done as the slide began it
     // held the slide up
