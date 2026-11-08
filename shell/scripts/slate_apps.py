@@ -946,12 +946,24 @@ def obsidian_css(c):
         "--link-color": c["accent"], "--link-color-hover": c["accent"], "--link-external-color": c["accent"],
         "--link-unresolved-color": c["secondary"], "--checkbox-color": c["accent"], "--checkbox-marker-color": c["accentText"],
         "--blockquote-border-color": c["accent"], "--code-background": c["surface"],
+        # Code: blocks and their syntax colours
+        "--code-normal": c["text"], "--code-comment": c["dim"], "--code-function": c["accent"],
+        "--code-keyword": c["magenta"], "--code-string": c["green"], "--code-value": c["orange"],
+        "--code-property": c["tertiary"], "--code-tag": c["red"], "--code-operator": c["onVariant"],
+        "--code-important": c["yellow"], "--code-punctuation": c["dim"],
         "--nav-item-background-active": c["selection"], "--nav-item-background-hover": c["accent"] + "14",
         "--scrollbar-thumb-bg": c["box"], "--scrollbar-active-thumb-bg": c["dim"],
         "--color-red": c["red"], "--color-green": c["green"], "--color-yellow": c["yellow"], "--color-orange": c["orange"],
     }
     body = "\n".join("    %s: %s !important;" % kv for kv in v.items())
-    return "/* %s */\nbody.theme-dark, body.theme-light, .theme-dark, .theme-light {\n%s\n}\n" % (GEN, body)
+    # Inline code (`like this`), styled directly as well: themes (like Things) give it their own
+    # colours that the variables above don't reach
+    inline = (".markdown-rendered code:not(pre code), .markdown-preview-view code:not(pre code),\n"
+              ".cm-s-obsidian span.cm-inline-code, .markdown-source-view.mod-cm6 .cm-inline-code {\n"
+              "    background-color: %s !important;\n    color: %s !important;\n}\n"
+              ".markdown-rendered pre, .markdown-source-view.mod-cm6 .HyperMD-codeblock {\n"
+              "    background-color: %s !important;\n}\n") % (c["surface"], c["accent"], c["surface"])
+    return "/* %s */\nbody.theme-dark, body.theme-light, .theme-dark, .theme-light {\n%s\n}\n%s" % (GEN, body, inline)
 
 @app("obsidian", "Obsidian", "A Slate CSS snippet in each of your vaults, switched on for you (reopen Obsidian once if it was open)",
      lambda: bool(obsidian_vaults()))
