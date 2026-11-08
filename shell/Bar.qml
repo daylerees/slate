@@ -670,8 +670,8 @@ PanelWindow {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 6
-                                color: bar.textColor
-                                opacity: trayHover.hovered ? 0.1 : 0
+                                color: bar.hoverFill
+                                opacity: trayHover.hovered ? bar.hoverStrength : 0
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
                             }
                             HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
@@ -724,8 +724,8 @@ PanelWindow {
                         Rectangle {
                             anchors.fill: parent
                             radius: 6
-                            color: bar.textColor
-                            opacity: toggleHover.hovered ? 0.1 : 0
+                            color: bar.hoverFill
+                            opacity: toggleHover.hovered ? bar.hoverStrength : 0
                             Behavior on opacity { NumberAnimation { duration: 120 } }
                         }
                         HoverHandler { id: toggleHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: bar.setHover(trayToggle, hovered) }
@@ -926,6 +926,10 @@ PanelWindow {
 
     // ---- Building blocks ---------------------------------------------------
 
+    // Hover highlight behind bar items: the accent colour, lightly
+    readonly property color hoverFill: bar.accent
+    readonly property real hoverStrength: 0.22
+
     // Rounded container with a soft hover tint and click handling
     component Capsule: Rectangle {
         id: cap
@@ -944,8 +948,8 @@ PanelWindow {
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
-            color: bar.textColor
-            opacity: cap.hoverTint && capHover.hovered ? 0.08 : 0
+            color: bar.hoverFill
+            opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
@@ -994,16 +998,16 @@ PanelWindow {
             readonly property real fade: Math.min(0.45, 12 / Math.max(1, width))   // ~12px soft edge
             gradient: Gradient {
                 orientation: bar.vert ? Gradient.Vertical : Gradient.Horizontal
-                GradientStop { position: 0.0; color: seg.first ? bar.textColor : "transparent" }
-                GradientStop { position: segFill.fade; color: bar.textColor }
-                GradientStop { position: 1 - segFill.fade; color: bar.textColor }
-                GradientStop { position: 1.0; color: seg.last ? bar.textColor : "transparent" }
+                GradientStop { position: 0.0; color: seg.first ? bar.hoverFill : "transparent" }
+                GradientStop { position: segFill.fade; color: bar.hoverFill }
+                GradientStop { position: 1 - segFill.fade; color: bar.hoverFill }
+                GradientStop { position: 1.0; color: seg.last ? bar.hoverFill : "transparent" }
             }
             topLeftRadius: seg.first ? bar.capsuleRadius : 0
             bottomLeftRadius: (bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0
             topRightRadius: (bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0
             bottomRightRadius: seg.last ? bar.capsuleRadius : 0
-            opacity: segHover.hovered ? 0.08 : 0
+            opacity: segHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
         Row {
