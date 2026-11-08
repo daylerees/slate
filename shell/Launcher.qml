@@ -540,14 +540,14 @@ PanelWindow {
             cellHeight: root.gridMode ? root.gridCellSize : root.rowHeight
             // Selection slides between items instead of jumping
             highlightFollowsCurrentItem: false
-            // The selected item shaded: in the accent colour in the grid
+            // The selected item shaded in the accent colour
             highlight: Rectangle {
                 // In the grid, just a little bigger than the icon, centred in its cell
                 readonly property real gridBox: Math.round(root.gridTile * 1.24)
                 width: root.gridMode ? gridBox : list.cellWidth
                 height: root.gridMode ? gridBox : list.cellHeight
                 radius: root.gridMode ? gridBox * 0.22 : 10
-                color: root.gridMode ? root.accent : root.selectColor
+                color: root.accent
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 x: (list.currentItem ? list.currentItem.x : 0) + (root.gridMode ? (list.cellWidth - gridBox) / 2 : 0)
                 y: (list.currentItem ? list.currentItem.y : 0) + (root.gridMode ? (list.cellHeight - gridBox) / 2 : 0)
@@ -602,6 +602,10 @@ PanelWindow {
                 readonly property string tilePath: root.tileDir + "/" + modelData.id.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
                 readonly property string detail: calc ? modelData.expr + " · Enter to copy" : (modelData.genericName || modelData.comment || "")
                 readonly property bool selected: GridView.isCurrentItem
+                // The list's text and calculator tile sit on the accent while selected; their
+                // colours fade over as the highlight slides in and out
+                readonly property bool onAccent: selected && !root.gridMode
+                readonly property int fadeMs: root.slideHighlight ? root.slideMs : 0
                 property int version: 0
                 property string tried: ""          // drawn once per icon file (a new icon style is a new file)
                 width: list.cellWidth
@@ -631,11 +635,14 @@ PanelWindow {
                     visible: row.calc
                     anchors.fill: tile
                     radius: 9
-                    color: root.accent
+                    // Swapped round on the accent highlight, so it doesn't vanish into it
+                    color: row.onAccent ? root.accentText : root.accent
+                    Behavior on color { ColorAnimation { duration: row.fadeMs } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB80)
-                        color: root.accentText
+                        color: row.onAccent ? root.accent : root.accentText
+                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
                         font.family: tabler.name
                         font.pixelSize: 20
                     }
@@ -678,7 +685,8 @@ PanelWindow {
                     Text {
                         width: parent.width
                         text: row.calc ? "= " + row.modelData.name : root.capitalised(row.modelData.name)
-                        color: root.textColor
+                        color: row.onAccent ? root.accentText : root.textColor
+                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
                         font.family: root.fontFamily
                         font.pixelSize: row.calc ? 16 : 14
                         font.weight: Font.Medium
@@ -688,7 +696,8 @@ PanelWindow {
                         width: parent.width
                         visible: row.calc || row.setting || row.action || (Config.s.launcherDescriptions && row.detail !== "" && row.detail !== row.modelData.name)
                         text: row.calc ? row.detail : root.capitalised(row.detail)
-                        color: root.dimTextColor
+                        color: row.onAccent ? Qt.rgba(root.accentText.r, root.accentText.g, root.accentText.b, 0.72) : root.dimTextColor
+                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
                         font.family: root.fontFamily
                         font.pixelSize: 12
                         elide: Text.ElideRight
