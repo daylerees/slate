@@ -1039,14 +1039,51 @@ PanelWindow {
                                             required property var modelData
                                             x: wsShot.width * modelData.x; y: wsShot.height * modelData.y
                                             width: Math.max(6, wsShot.width * modelData.w - 1); height: Math.max(6, wsShot.height * modelData.h - 1)
-                                            radius: 3
+                                            // The window's own rounding, scaled to the preview (but
+                                            // enough to see; a square window stays square)
+                                            radius: (modelData.rounding ?? 10) > 0
+                                                ? Math.max(2.5, (modelData.rounding ?? 10) * wsShot.width / Math.max(1, wsCard.modelData.width || 1440)) : 0
                                             color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.92)
                                             border.width: 1
                                             border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.12)
-                                            AppTile {
+                                            // The window itself, live while New Space is open
+                                            // (as in the workspace overview)
+                                            readonly property var toplevel: Hyprland.toplevels.values.find(t => "0x" + t.address === modelData.address || t.address === modelData.address) ?? null
+                                            ScreencopyView {
+                                                id: wsLive
+                                                anchors.fill: parent
+                                                anchors.margins: 1
+                                                captureSource: pop.shown && spp.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
+                                                live: pop.shown && spp.mode === "new"
+                                                smooth: true
+                                                // Clipped to the window's rounded corners
+                                                layer.enabled: wsWin.radius > 0
+                                                layer.effect: MultiEffect { maskEnabled: true; maskSource: wsLiveMask }
+                                            }
+                                            Item {
+                                                id: wsLiveMask
+                                                anchors.fill: wsLive
+                                                visible: false
+                                                layer.enabled: true
+                                                Rectangle { anchors.fill: parent; radius: Math.max(0, wsWin.radius - 1) }
+                                            }
+                                            // Its app's icon on top, with a soft shadow so it
+                                            // reads over whatever the window shows
+                                            Item {
                                                 anchors.centerIn: parent
-                                                app: wsWin.modelData.desktopId || wsWin.modelData["class"]
                                                 width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
+                                                layer.enabled: wsLive.hasContent
+                                                layer.effect: MultiEffect {
+                                                    shadowEnabled: true
+                                                    shadowColor: "black"
+                                                    shadowOpacity: 0.55
+                                                    shadowBlur: 0.6
+                                                    shadowVerticalOffset: 1
+                                                }
+                                                AppTile {
+                                                    anchors.fill: parent
+                                                    app: wsWin.modelData.desktopId || wsWin.modelData["class"]
+                                                }
                                             }
                                         }
                                     }

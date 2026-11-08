@@ -191,11 +191,19 @@ def snapshot():
     workspaces = {w["id"]: w for w in hypr("workspaces") if w.get("id", 0) > 0}
     clients = [c for c in hypr("clients") if c.get("mapped") and not c.get("hidden")
                and c.get("workspace", {}).get("id", 0) > 0]
+    # Window rounding, for the previews (a lone tiled window and a maximised one are square:
+    # see windowrules.lua)
+    opt = subprocess.run(["hyprctl", "-j", "getoption", "decoration:rounding"], capture_output=True, text=True).stdout
+    try:
+        rounding = json.loads(opt).get("int", 0)
+    except ValueError:
+        rounding = 0
     out = []
     for wid in sorted(workspaces):
         ws = workspaces[wid]
         mon = monitors.get(ws.get("monitor"))
         wins = [c for c in clients if c["workspace"]["id"] == wid]
+        tiled = sum(1 for c in wins if not c.get("floating"))
         if not mon or not wins:
             continue
         area = monitor_area(mon)
@@ -214,10 +222,12 @@ def snapshot():
                 "h": round(c["size"][1] / area["h"], 4),
                 "floating": bool(c.get("floating")),
                 "fullscreen": c.get("fullscreen", 0),
+                "address": c.get("address", ""),     # for live previews; not saved
+                "rounding": 0 if c.get("fullscreen") == 1 or (not c.get("floating") and tiled == 1) else rounding,
             }))
         if items:
             out.append({"id": wid, "monitor": mon["name"], "aspect": round(area["w"] / area["h"], 4),
-                        "windows": items})
+                        "width": area["w"], "windows": items})
     return out
 
 
@@ -248,7 +258,10 @@ def save(name, colour, icon, ids):
     space = {"id": old["id"] if old else uuid.uuid4().hex[:12], "name": name.strip(), "colour": colour,
              "icon": icon,
              "saved": int(time.time()),
-             "workspaces": [{k: w[k] for k in ("monitor", "aspect", "windows")} for w in workspaces]}
+             "workspaces": [{"monitor": w["monitor"], "aspect": w["aspect"],
+                             "windows": [{k: v for k, v in win.items() if k not in ("address", "rounding")}
+                                         for win in w["windows"]]}
+                            for w in workspaces]}
     if old:
         data["spaces"][data["spaces"].index(old)] = space
     else:
