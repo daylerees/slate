@@ -41,6 +41,7 @@ Singleton {
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],
         ["Theme (dark, light or auto)", "appearance", "dark mode light mode auto appearance"],
         ["Accent colour", "appearance", "color highlight"],
+        ["Colour", "appearance", "colourful colorful monotone monochrome pastel variety colours colors"],
         ["Interface font", "appearance", "typeface"],
         ["Interface size", "appearance", "scale scaling zoom bigger smaller text size font size dpi hidpi"],
         ["Rounded screen corners", "appearance", ""],

@@ -149,7 +149,7 @@ FloatingWindow {
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
-        appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
+        appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
@@ -275,7 +275,8 @@ FloatingWindow {
                             id: navIcon
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                             text: win.glyph(parent.modelData.icon)
-                            color: parent.current ? win.accent : win.dim
+                            // Colourful: each page its own colour; monotone: the accent when current
+                            color: Config.colourful ? Config.pageColour(parent.modelData.id) : parent.current ? win.accent : win.dim
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
                         Text {
@@ -1213,11 +1214,13 @@ FloatingWindow {
                         Rectangle {
                             x: 14; y: 14
                             width: 34; height: 34; radius: 10
-                            color: Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16)
+                            // The page's own colour when colourful, else the accent
+                            readonly property color pc: Config.pageColour(tile.modelData.id)
+                            color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
                             Text {
                                 anchors.centerIn: parent
                                 text: win.glyph(tile.modelData.icon)
-                                color: win.accent
+                                color: parent.pc
                                 font.family: win.bar.iconFont; font.pixelSize: 18
                             }
                         }
@@ -3294,6 +3297,15 @@ FloatingWindow {
                             }
                         }
                     }
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Colour"
+                    detail: Config.colourful ? "More variety of colour: soft pastels, like each Settings page in its own colour"
+                        : "The accent colour and greys throughout"
+                    options: [{ value: "monotone", label: "Monotone" }, { value: "colourful", label: "Colourful" }]
+                    value: Config.s.colourStyle || "monotone"
+                    onPicked: v => Config.s.colourStyle = v
                 }
                 Separator {}
                 SettingRow {

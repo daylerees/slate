@@ -420,6 +420,22 @@ Singleton {
     signal refreshThemes()
     property bool themesBusy: false
 
+    // ---- Colour (Settings → Appearance → Colour) -------------------------------------------
+    // Colourful: more variety of colour (pastels) where Monotone uses the accent and greys
+    readonly property bool colourful: s.colourStyle === "colourful"
+    // Each Settings page's own colour (its icon in the sidebar and on All Settings), a pastel,
+    // deepened in light mode by tint(); the accent when monotone
+    readonly property var pagePastels: ({
+        overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
+        input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
+        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8",
+        bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
+        hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
+        apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
+        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc"
+    })
+    function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
+
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).

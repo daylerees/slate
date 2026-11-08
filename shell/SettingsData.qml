@@ -57,6 +57,9 @@ JsonAdapter {
     property int cursorSize: 0                // px (0 = not set here)
     property string focusFollowsMouse: ""     // on / off (Settings → Windows)
     property string animations: ""            // normal, fast or off (Settings → Appearance)
+    // How much colour the interface uses (Settings → Appearance → Colour): "monotone" (the
+    // accent and greys) or "colourful" (pastels: each Settings page its own colour…)
+    property string colourStyle: "monotone"
     // How switching workspace looks: slidefade, slidefadevert, slide, slidevert, crossfade or none
     property string workspaceAnimation: "slidefade"
     // ---- Default apps (Settings → Default apps): desktop entry ids ("" = not set here)
