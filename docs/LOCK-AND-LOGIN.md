@@ -36,12 +36,14 @@ the gloss sheen like the bar's containers and no outline.
 ## Login screen (greetd)
 
 ```
-greetd ──runs as "greeter"──▶ dbus-run-session start-hyprland -c /usr/local/share/slate-greeter/hyprland.lua
+greetd ──runs as "greeter"──▶ systemd-cat dbus-run-session start-hyprland -c /usr/local/share/slate-greeter/hyprland.lua
                                 └─ run-greeter.sh ─▶ qs -p /usr/local/share/slate-greeter   (greeter/shell.qml)
                                      if it fails to load: slate-greeter.good, then emergency/
                                                       └─ Greetd: create_session → password → start_session
                                    when qs quits after launching: hyprctl dispatch hl.dsp.exit()
 ```
+
+The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tty1.
 
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
