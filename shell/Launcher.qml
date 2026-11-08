@@ -665,7 +665,13 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: row.glyphTile ? String.fromCodePoint(row.modelData.icon) : ""
-                        color: row.modelData.danger ? Config.tint("#f28b8b") : root.accent
+                        // Dark on the accent highlight when glass makes the tile see-through (a solid
+                        // tile keeps it readable); otherwise a setting's icon takes its page's
+                        // colour in colourful mode, as in Settings
+                        color: row.selected && Config.glass ? root.accentText
+                            : row.modelData.danger ? Config.tint("#f28b8b")
+                            : row.setting ? Config.pageColour(row.modelData.page) : root.accent
+                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
                         font.family: tabler.name
                         font.pixelSize: 19
                     }
