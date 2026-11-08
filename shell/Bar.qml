@@ -599,7 +599,7 @@ PanelWindow {
                         elide: Text.ElideRight
                         text: titleArea.s ? titleArea.s.hoverText
                             : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
-                        leftPadding: titleArea.s ? 8 : 0      // a little space when showing a hover description
+                        leftPadding: titleArea.s || !Config.s.barShowTitleIcon ? 8 : 0      // a little space for a hover description, or with no app icon
                         color: bar.textColor
                         font.family: bar.fontFamily
                         font.pixelSize: bar.fontSize
