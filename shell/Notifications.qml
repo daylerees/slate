@@ -153,8 +153,13 @@ Scope {
         readyFallback.restart();
     }
     function addToast(key) {
-        toastModel.insert(0, { key: key });
-        while (toastModel.count > maxToasts) toastModel.remove(toastModel.count - 1);
+        toastModel.insert(0, { key: key, leaving: false });
+        // Too many: the oldest still showing go (fading out like any other)
+        let showing = 0;
+        for (let i = 0; i < toastModel.count; i++) {
+            if (toastModel.get(i).leaving) continue;
+            if (++showing > maxToasts) toastModel.setProperty(i, "leaving", true);
+        }
     }
     function flushToasts() {
         const keys = pendingToasts;
@@ -163,7 +168,14 @@ Scope {
     }
     // In case the window's first frame is never reported
     Timer { id: readyFallback; interval: 200; onTriggered: if (!toastWin.ready && toastWin.showing) { toastWin.ready = true; notifs.flushToasts(); } }
+    // A pop-up going away fades out where it is first (its delegate does that), then comes
+    // out of the list, and the others close up. (The list's own remove animation was
+    // skipped for all but the last pop-up, so they vanished.)
     function dismissToast(key) {
+        for (let i = 0; i < toastModel.count; i++)
+            if (toastModel.get(i).key === key) { toastModel.setProperty(i, "leaving", true); return; }
+    }
+    function removeToastNow(key) {
         for (let i = 0; i < toastModel.count; i++)
             if (toastModel.get(i).key === key) { toastModel.remove(i); return; }
     }
@@ -238,17 +250,19 @@ Scope {
                     NumberAnimation { property: "y"; from: ViewTransition.destination.y + (toastWin.atTop ? -12 : 12); to: ViewTransition.destination.y; duration: 320; easing.type: Easing.OutCubic }
                 }
             }
-            remove: Transition {
-                ParallelAnimation {
-                    // Just fades, where it is (from the start: an ease-in held it opaque until it vanished)
-                    NumberAnimation { property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutQuad }
-                }
-            }
             displaced: Transition { NumberAnimation { property: "y"; duration: 220; easing.type: Easing.OutCubic } }
 
             delegate: Item {
                 id: toast
                 required property int key
+                required property bool leaving
+                // Going away: fade out where it is (from the start), then leave the list
+                onLeavingChanged: if (leaving) leaveAnim.start()
+                SequentialAnimation {
+                    id: leaveAnim
+                    NumberAnimation { target: toast; property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutQuad }
+                    ScriptAction { script: notifs.removeToastNow(toast.key) }
+                }
                 readonly property var item: notifs.itemFor(key)
                 readonly property var notif: notifs.live[key] ?? null
                 readonly property bool critical: item && item.urgency === NotificationUrgency.Critical
