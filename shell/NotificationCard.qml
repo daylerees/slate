@@ -41,15 +41,17 @@ Rectangle {
     radius: 9
     color: inPanel ? (cardHover.hovered ? Qt.lighter(bar.capsuleColor, 1.15) : bar.capsuleColor) : bar.barColor
     Behavior on color { ColorAnimation { duration: 100 } }
-    // Pop-ups float a little: a light drop shadow
-    layer.enabled: !inPanel
-    layer.effect: MultiEffect {
-        shadowEnabled: true
-        shadowColor: "#000000"
-        shadowOpacity: 0.38
-        shadowBlur: 0.7
-        shadowVerticalOffset: 4
-        blurMax: 24
+    // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
+    // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
+    // shadow first, as the pop-up faded in.)
+    RectangularShadow {
+        visible: !card.inPanel
+        z: -1
+        anchors.fill: parent
+        radius: card.radius
+        blur: 14
+        offset.y: 4
+        color: Qt.rgba(0, 0, 0, 0.38)
     }
 
     // A thick band across the top that wraps round the corners and tapers down the sides:

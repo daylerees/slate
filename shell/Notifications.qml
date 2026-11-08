@@ -142,10 +142,27 @@ Scope {
 
     // ---- Toasts ------------------------------------------------------------
     ListModel { id: toastModel }
+    // A new toast waits until its window is on screen: a window takes a moment to appear,
+    // and a toast added before then would be most of the way through fading in (and its
+    // first frame drawn rough) by the time it's seen
+    property var pendingToasts: []
     function showToast(item, n) {
-        toastModel.insert(0, { key: item.key });
+        if (toastWin.ready) { addToast(item.key); return; }
+        pendingToasts = pendingToasts.concat([item.key]);
+        toastWin.showing = true;
+        readyFallback.restart();
+    }
+    function addToast(key) {
+        toastModel.insert(0, { key: key });
         while (toastModel.count > maxToasts) toastModel.remove(toastModel.count - 1);
     }
+    function flushToasts() {
+        const keys = pendingToasts;
+        pendingToasts = [];
+        for (const k of keys) addToast(k);
+    }
+    // In case the window's first frame is never reported
+    Timer { id: readyFallback; interval: 200; onTriggered: if (!toastWin.ready && toastWin.showing) { toastWin.ready = true; notifs.flushToasts(); } }
     function dismissToast(key) {
         for (let i = 0; i < toastModel.count; i++)
             if (toastModel.get(i).key === key) { toastModel.remove(i); return; }
@@ -156,18 +173,33 @@ Scope {
         id: toastWin
         // On the main display (Settings → Displays), with the main bar
         screen: Config.primaryScreen
-        // Stays up a moment after the last one goes, so it can fade out rather than vanish
-        visible: toastModel.count > 0 || toastList.count > 0 || lingerAfterLast.running
-        Timer { id: lingerAfterLast; interval: 400 }
+        // Shows when a toast arrives and stays up a moment after the last one goes, so it can
+        // fade out rather than vanish. Set here rather than bound to the counts: a binding
+        // looped (the list's count follows the window) and hid the window at once
+        property bool showing: false
+        visible: showing
+        // On screen: its first frame has been drawn since it was shown
+        property bool ready: false
+        onShowingChanged: if (!showing) ready = false
+        Connections {
+            target: toastList.Window.window
+            function onFrameSwapped() {
+                if (toastWin.showing && !toastWin.ready) { toastWin.ready = true; notifs.flushToasts(); }
+            }
+        }
+        Timer { id: lingerAfterLast; interval: 500; onTriggered: toastWin.showing = toastModel.count > 0 || notifs.pendingToasts.length > 0 }
         Connections {
             target: toastModel
-            function onCountChanged() { if (toastModel.count === 0) lingerAfterLast.restart(); }
+            function onCountChanged() {
+                if (toastModel.count > 0) { lingerAfterLast.stop(); toastWin.showing = true; }
+                else lingerAfterLast.restart();
+            }
         }
         // Where pop-ups go (Settings → Notifications)
         readonly property bool atTop: !Config.s.notificationPosition.startsWith("bottom")
         readonly property string side: Config.s.notificationPosition.split("-")[1] || "right"
-        // Slide in from the nearest side edge; centred ones just fade and grow
-        readonly property real slideX: side === "right" ? notifs.toastWidth + 20 : side === "left" ? -(notifs.toastWidth + 20) : 0
+        // Fade in drifting a little from the nearest side edge; centred ones fade and grow
+        readonly property real slideX: side === "right" ? 16 : side === "left" ? -16 : 0
         anchors { top: atTop; bottom: !atTop; left: side === "left"; right: side === "right" }
         // Clear of the bar, and of the dock when it's on the same edge
         margins {
@@ -199,20 +231,17 @@ Scope {
 
             add: Transition {
                 ParallelAnimation {
-                    NumberAnimation { property: "x"; from: toastWin.slideX; to: 0; duration: 260; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "scale"; from: toastWin.side === "center" ? 0.92 : 1; to: 1; duration: 260; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 280; easing.type: Easing.OutQuad }
+                    NumberAnimation { property: "x"; from: toastWin.slideX; to: 0; duration: 320; easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "scale"; from: toastWin.side === "center" ? 0.92 : 1; to: 1; duration: 320; easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 320; easing.type: Easing.OutQuad }
                     // …and drops a little into place (rises, for pop-ups at the bottom)
                     NumberAnimation { property: "y"; from: ViewTransition.destination.y + (toastWin.atTop ? -12 : 12); to: ViewTransition.destination.y; duration: 320; easing.type: Easing.OutCubic }
                 }
             }
             remove: Transition {
                 ParallelAnimation {
-                    NumberAnimation { property: "x"; to: toastWin.slideX; duration: 260; easing.type: Easing.InCubic }
-                    NumberAnimation { property: "scale"; to: toastWin.side === "center" ? 0.92 : 1; duration: 260; easing.type: Easing.InCubic }
-                    NumberAnimation { property: "opacity"; to: 0; duration: 260; easing.type: Easing.InQuad }
-                    // …drifting down a little as it goes
-                    NumberAnimation { property: "y"; to: (ViewTransition.item ? ViewTransition.item.y : 0) + (toastWin.atTop ? 10 : -10); duration: 260; easing.type: Easing.InQuad }
+                    // Just fades, where it is (from the start: an ease-in held it opaque until it vanished)
+                    NumberAnimation { property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutQuad }
                 }
             }
             displaced: Transition { NumberAnimation { property: "y"; duration: 220; easing.type: Easing.OutCubic } }
