@@ -441,6 +441,11 @@ Singleton {
         keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0"
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }
+    // The bar's Apps button (its three bars) and Spaces button (its four squares), each part
+    // its own pastel
+    readonly property var appsPastels: ["#e8a6c8", "#e8c48f", "#8fc7e8"]
+    readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
+    function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and

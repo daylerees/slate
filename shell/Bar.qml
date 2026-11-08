@@ -435,7 +435,12 @@ PanelWindow {
                     spacing: 3
                     Repeater {
                         model: 3
-                        Rectangle { width: 14; height: 2.4; radius: height / 2; color: bar.textColor }
+                        // Colourful look: each bar its own pastel
+                        Rectangle {
+                            required property int index
+                            width: 14; height: 2.4; radius: height / 2
+                            color: Config.partColour(Config.appsPastels, index, bar.textColor)
+                        }
                     }
                 }
             }
@@ -463,7 +468,8 @@ PanelWindow {
                             width: 5.8; height: 5.8; radius: 1.6
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
-                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : bar.textColor
+                            // (Colourful look: each square its own pastel)
+                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, index, bar.textColor)
                             opacity: !busy || lit ? 1 : 0.35
                             Behavior on opacity { NumberAnimation { duration: 160 } }
                             Behavior on color { ColorAnimation { duration: 200 } }
