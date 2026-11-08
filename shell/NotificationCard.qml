@@ -63,16 +63,25 @@ Rectangle {
         anchors { left: parent.left; right: parent.right; top: parent.top }
         height: card.band + card.radius
         clip: true
+        // The red shape with the content area cut out of it (not covered in the card's colour,
+        // which glass makes see-through, so the red showed through)
         Rectangle {
             width: parent.width; height: card.height
             radius: card.radius
             color: card.critical ? card.bar.errorColor : card.accent
+            layer.enabled: true
+            layer.effect: MultiEffect { maskEnabled: true; maskInverted: true; maskSource: bandCut; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
         }
-        Rectangle {
-            y: card.band
+        Item {
+            id: bandCut
             width: parent.width; height: card.height
-            radius: card.radius
-            color: card.color
+            visible: false
+            layer.enabled: true
+            Rectangle {
+                y: card.band
+                width: parent.width; height: card.height
+                radius: card.radius
+            }
         }
     }
 
