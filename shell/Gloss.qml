@@ -26,9 +26,24 @@ Rectangle {
         return 1 + 3 * Math.max(0, c.hslLightness - 0.45);
     }
     readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost
+    // The sheen's colour: light, with a hint of what it's on. A coloured fill (an accent-filled
+    // selection, a space's colour) lends its colour; on see-through glass, the wallpaper's
+    // overall colour (the scene showing through); otherwise plain white
+    readonly property color hint: {
+        const c = parent ? parent.color : undefined;
+        if (c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2) return c;
+        if (c !== undefined && c.a < 0.95) {
+            const t = Config.wallpaperTone || Config.wallpaperAccent;
+            if (t) return Qt.color(t);
+        }
+        return "white";
+    }
+    readonly property real hintAmount: 0.4
+    readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
+                                           1 - hintAmount + hint.b * hintAmount, 1)
     gradient: Gradient {
-        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, g.a) }
-        GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, g.a * 0.25) }
+        GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
+        GradientStop { position: 0.5; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
         GradientStop { position: 0.55; color: "transparent" }
         GradientStop { position: 1.0; color: "transparent" }
     }
@@ -46,7 +61,7 @@ Rectangle {
             radius: g.radius
             color: "transparent"
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, Math.min(1, g.a * 1.6))
+            border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
         }
     }
     Item {
