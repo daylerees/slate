@@ -39,8 +39,6 @@ Rectangle {
     implicitHeight: band + content.height + 24 + (hasTimer ? 14 : 0)
     height: implicitHeight
     radius: 9
-    border.width: Config.glassShine && !inPanel ? 1 : 0     // glass: a thin light rim
-    border.color: Config.glassEdge
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     Gloss { radius: parent.radius }   // glass: a sheen
     Behavior on color { ColorAnimation { duration: 100 } }
