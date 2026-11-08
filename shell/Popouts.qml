@@ -938,7 +938,8 @@ PanelWindow {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        if (spDel.armed) { Spaces.remove(spRow.modelData.id); spp.confirmDelete = ""; }
+                                        // Clear first: removing the space takes this row away
+                                        if (spDel.armed) { const id = spRow.modelData.id; spp.confirmDelete = ""; Spaces.remove(id); }
                                         else spp.confirmDelete = spRow.modelData.id;
                                     }
                                 }
