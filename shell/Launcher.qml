@@ -38,8 +38,8 @@ PanelWindow {
     readonly property real tileSize: 36
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18   // how far the panel drops as it fades in
-    readonly property color barColor: Config.tint("#0f1216")      // same as the top bar
-    readonly property color fieldColor: Config.tint("#1d222a")    // bar capsules
+    readonly property color barColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+    readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))    // bar capsules
     readonly property color selectColor: Config.tint("#262c35")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
@@ -417,10 +417,13 @@ PanelWindow {
         color: root.barColor
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
+        // Glass: a thin light rim
+        border.width: Config.glassShine ? 1 : 0
+        border.color: Config.glassEdge
         // Soft drop shadow so it stands out over windows
         layer.enabled: true
         layer.effect: MultiEffect {
-            shadowEnabled: true
+            shadowEnabled: !Config.glass
             shadowColor: "#000000"
             shadowOpacity: 0.45
             shadowBlur: 1.0

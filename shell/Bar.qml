@@ -33,8 +33,9 @@ PanelWindow {
     readonly property real screenCornerShape: 3.0
     // Outside the rounded screen corners: always black, in both themes
     readonly property color screenCornerColor: "#000000"
-    readonly property color barColor: Config.tint("#0f1216")
-    readonly property color capsuleColor: Config.tint("#1d222a")
+    // (See-through with glass: Settings → Appearance → Glass)
+    readonly property color barColor: Config.surface(Config.tint("#0f1216"))
+    readonly property color capsuleColor: Config.raised(Config.tint("#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimColor: Config.tint("#c5ccd6")
     readonly property color accent: Config.accent
@@ -251,7 +252,7 @@ PanelWindow {
             layer.effect: MultiEffect {
                 shadowEnabled: true
                 shadowColor: "black"
-                shadowOpacity: (Config.s.lightMode ? 0.22 : 0.5) * bar.shadow
+                shadowOpacity: Config.glass ? 0 : (Config.s.lightMode ? 0.22 : 0.5) * bar.shadow
                 shadowBlur: 0.9
                 blurMax: 24
                 shadowHorizontalOffset: bar.vert ? (bar.atRight ? -4 : 4) : 0

@@ -28,7 +28,7 @@ PanelWindow {
     Item { focus: dm.visible; Keys.onEscapePressed: dm.close() }
 
     // Look: the dock menu's
-    readonly property color bgColor: Config.tint("#0f1216")
+    readonly property color bgColor: Config.surface(Config.tint("#0f1216"))
     readonly property color rowHover: Config.tint("#1d222a")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimColor: Config.tint("#8b94a3")

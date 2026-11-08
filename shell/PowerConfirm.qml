@@ -17,7 +17,7 @@ PanelWindow {
     id: root
 
     // ---- Look --------------------------------------------------------------
-    readonly property color cardColor: Config.tint("#0f1216")     // same as the top bar
+    readonly property color cardColor: Config.surface(Config.tint("#0f1216"))     // same as the top bar
     readonly property color buttonColor: Config.tint("#1d222a")   // bar capsules
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")

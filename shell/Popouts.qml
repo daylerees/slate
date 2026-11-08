@@ -164,7 +164,8 @@ PanelWindow {
         // Never quite 0 while shown: at 0 Qt drops it from the scene and rebuilds it on the
         // first frame of the slide, which held the slide up
         opacity: pop.active ? Math.max(0.01, pop.fade) : 0      // prepared with the panel (see pending)
-        visible: width > 0 && height > 0
+        // No shadow with glass: it would show through the panel (and get blurred behind it)
+        visible: width > 0 && height > 0 && !Config.glass
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true

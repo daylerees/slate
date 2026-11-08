@@ -247,10 +247,22 @@ Singleton {
         t.push(`lid_action = ${q(s.lidAction)}, power_key_action = ${q(s.powerKeyAction)}`);
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
-            + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end`;
+            + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
+            // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
+            // blur size if one's picked
+            + `if not SLATE_GLASS then SLATE_GLASS = hl.layer_rule({ name = "slate-glass", match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = 0.05 }) end; `
+            + `SLATE_GLASS:set_enabled(${s.glass ? "true" : "false"})`
+            + (s.glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "");
     }
     onHyprSettingsChanged: hyprPush.restart()
-    Timer { id: hyprPush; interval: 400; running: true; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings]) }
+    Timer {
+        id: hyprPush; interval: 400; running: true
+        onTriggered: {
+            Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings]);
+            if (root.blurOverride) root.blurOverridden = true;
+            blurLater.restart();          // the blur may have changed: read it again
+        }
+    }
     Connections {
         target: Hyprland
         function onRawEvent(event) { if (event.name === "configreloaded") hyprPush.restart(); }
@@ -392,6 +404,48 @@ Singleton {
     Process { id: keysetProc; onExited: root.keysetApplied() }
 
     // ---- Window rounding -----------------------------------------------------------
+    // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
+    // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
+    // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).
+    readonly property bool glass: s.glass
+    readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))
+    // A surface's colour: as it is, or see-through with glass
+    function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }
+    // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
+    // solid grey (so the glass shows through them too)
+    function raised(c) { return glass ? (s.lightMode ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.07)) : c; }
+    // The shine: a thin light rim around glass surfaces
+    readonly property bool glassShine: glass && s.glassShine
+    readonly property color glassEdge: s.lightMode ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(1, 1, 1, 0.13)
+    // Hyprland's blur (behind see-through windows), for drawing it in previews too. Read at
+    // start, when Hyprland reloads its config, and after Slate changes it (glass)
+    property var hyprBlur: ({ enabled: false, size: 8, passes: 1, contrast: 1, vibrancy: 0 })
+    Process {
+        id: blurProc
+        running: true
+        command: ["sh", "-c", "printf '['; for o in enabled size passes contrast vibrancy; do hyprctl -j getoption decoration:blur:$o; [ $o = vibrancy ] || printf ','; done; printf ']'"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const a = JSON.parse(text);
+                    root.hyprBlur = { enabled: !!(a[0].bool ?? a[0].int), size: a[1].int, passes: a[2].int,
+                                      contrast: a[3].float, vibrancy: a[4].float };
+                } catch (e) {}
+            }
+        }
+    }
+    function readBlur() { blurProc.running = false; blurProc.running = true; }
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) { if (event.name === "configreloaded") blurLater.restart(); }
+    }
+    Timer { id: blurLater; interval: 600; onTriggered: root.readBlur() }
+    // Glass's blur size put back to Hyprland's own (glass off, or "Hyprland's own" picked):
+    // reload Hyprland's config so its value comes back
+    property bool blurOverridden: false
+    readonly property bool blurOverride: s.glass && s.glassBlur > 0
+    onBlurOverrideChanged: if (!blurOverride && blurOverridden) { blurOverridden = false; hyprReload.restart(); }
+
     // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
     // drawing windows the way they look: previews, borders. A tiled window alone on its
     // workspace and a maximised one are square (windowrules.lua): see windowRadius().

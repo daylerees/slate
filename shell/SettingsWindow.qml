@@ -126,7 +126,7 @@ FloatingWindow {
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
-            "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
@@ -3542,6 +3542,36 @@ FloatingWindow {
                         value: Math.round(Config.s.uiScale * 100)
                         onMoved: v => { Config.s.uiScale = v / 100; Config.uiScaleEdited(); }
                     }
+                }
+            }
+            GroupLabel { text: "Glass" }
+            Group {
+                SettingRow {
+                    label: "Glass"
+                    detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
+                    Toggle { checked: Config.s.glass; onToggled: v => Config.s.glass = v }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Opacity"
+                    detail: "How much of their colour the surfaces keep: lower is clearer glass"
+                    ValueSlider { from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Blur"
+                    detail: Config.s.glassBlur > 0 ? "How strongly what's behind is blurred (Hyprland's blur, so see-through windows use it too)"
+                        : "Hyprland's own blur (size " + Config.hyprBlur.size + "); drag to make it stronger or softer"
+                    ValueSlider { from: 0; to: 20; stepSize: 1; value: Config.s.glassBlur; onMoved: v => Config.s.glassBlur = v }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Shine"
+                    detail: "A thin light rim around the glass, like the edge of a pane"
+                    Toggle { checked: Config.s.glassShine; onToggled: v => Config.s.glassShine = v }
                 }
             }
             GroupLabel { text: "Motion" }

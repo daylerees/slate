@@ -51,8 +51,8 @@ PanelWindow {
     WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     // ---- Look ------------------------------------------------------------------
-    readonly property color bg: Config.tint("#0f1216")
-    readonly property color card: Config.tint("#1d222a")
+    readonly property color bg: Config.surface(Config.tint("#0f1216"))
+    readonly property color card: Config.raised(Config.tint("#1d222a"))
     readonly property color line: Config.tint("#2a313c")
     readonly property color text: Config.tint("#eef1f5")
     readonly property color dim: Config.tint("#8b94a3")
@@ -73,7 +73,7 @@ PanelWindow {
         opacity: w.fade
         scale: 0.96 + 0.04 * w.fade
         layer.enabled: true
-        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.5; shadowBlur: 1; shadowVerticalOffset: 10; blurMax: 48 }
+        layer.effect: MultiEffect { shadowEnabled: !Config.glass; shadowColor: "black"; shadowOpacity: 0.5; shadowBlur: 1; shadowVerticalOffset: 10; blurMax: 48 }
 
         focus: w.shown
         Keys.onEscapePressed: w.finish()

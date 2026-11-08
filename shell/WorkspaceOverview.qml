@@ -100,23 +100,6 @@ PanelWindow {
             }
         }
     }
-    // Hyprland's blur behind see-through windows, so the cards can show it too (a translucent
-    // terminal over the plain wallpaper, then blurred once the overview goes, was a jump)
-    property var blurOpts: ({ enabled: false, size: 8, passes: 1, contrast: 1, vibrancy: 0 })
-    Process {
-        id: blurProc
-        running: true
-        command: ["sh", "-c", "printf '['; for o in enabled size passes contrast vibrancy; do hyprctl -j getoption decoration:blur:$o; [ $o = vibrancy ] || printf ','; done; printf ']'"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const a = JSON.parse(text);
-                    ov.blurOpts = { enabled: !!(a[0].bool ?? a[0].int), size: a[1].int, passes: a[2].int,
-                                    contrast: a[3].float, vibrancy: a[4].float };
-                } catch (e) {}
-            }
-        }
-    }
     // The cards' shape: the usable area of the screen the overview is on
     readonly property real areaAspect: {
         const a = areas[screen ? screen.name : ""];
@@ -164,7 +147,7 @@ PanelWindow {
     function open() {
         screen = Config.focusedScreen;     // open on the focused screen
         areaProc.running = false; areaProc.running = true;
-        blurProc.running = false; blurProc.running = true;
+        Config.readBlur();
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
         // Normal workspaces only (the secret / special workspace has a negative id)
@@ -549,14 +532,14 @@ PanelWindow {
                     // for the windows to show through, but never seen itself
                     MultiEffect {
                         id: wallBlur
-                        visible: ov.blurOpts.enabled
+                        visible: Config.hyprBlur.enabled
                         x: wallImg.x; y: wallImg.y; width: wallImg.width; height: wallImg.height
                         source: wallImg
                         blurEnabled: true
                         blur: 1
-                        blurMax: Math.max(4, Math.min(64, Math.round(ov.blurOpts.size * Math.pow(2, ov.blurOpts.passes) * card.sx)))
-                        contrast: ov.blurOpts.contrast - 1
-                        saturation: ov.blurOpts.vibrancy
+                        blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * card.sx)))
+                        contrast: Config.hyprBlur.contrast - 1
+                        saturation: Config.hyprBlur.vibrancy
                     }
                     // The wallpaper as the screen shows it: across the whole screen (behind the
                     // bar too), so the card shows the part in the usable area, just like the
@@ -598,7 +581,7 @@ PanelWindow {
                             // wallpaper (opaque windows simply cover it)
                             ShaderEffectSource {
                                 anchors.fill: parent
-                                visible: ov.blurOpts.enabled
+                                visible: Config.hyprBlur.enabled
                                 sourceItem: wallBlur
                                 sourceRect: Qt.rect(ovWin.x - wallImg.x, ovWin.y - wallImg.y, ovWin.width, ovWin.height)
                                 layer.enabled: ovWin.radius > 0

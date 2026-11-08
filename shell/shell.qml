@@ -285,8 +285,8 @@ ShellRoot {
         }
         readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
-        readonly property color bgColor: Config.tint("#0f1216")      // same as the top bar
-        readonly property color tileColor: Config.tint("#1d222a")
+        readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+        readonly property color tileColor: Config.raised(Config.tint("#1d222a"))
         readonly property color textColor: Config.tint("#eef1f5")
         readonly property color dotColor: Config.tint("#c5ccd6")
         readonly property color activeDotColor: Config.accent

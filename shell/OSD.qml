@@ -176,9 +176,12 @@ PanelWindow {
         height: 52; radius: 26
         color: osd.bar.barColor
         opacity: osd.fade
+        // Glass: a thin light rim
+        border.width: Config.glassShine ? 1 : 0
+        border.color: Config.glassEdge
         layer.enabled: true
         layer.effect: MultiEffect {
-            shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4
+            shadowEnabled: !Config.glass; shadowColor: "#000000"; shadowOpacity: 0.4
             shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 32
         }
 
