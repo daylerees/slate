@@ -6,6 +6,10 @@ Picking it starts Hyprland with Slate's own config. Your other sessions and
 `~/.config/hypr` are left alone, so you can try Slate and go back by picking your usual
 session at login. This is how Slate is meant to be installed for other people.
 
+Until Slate draws your wallpaper, the session shows a plain dark background in the login
+screen's colour (`misc.lua` turns off Hyprland's default wallpaper and logo, which some
+distros replace with their own), so nothing flashes up between the login screen and Slate.
+
 ```
 login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
    └─ uwsm start -e -D Hyprland -N Slate -- start-hyprland -- -c <slate>/session/hypr/hyprland.lua

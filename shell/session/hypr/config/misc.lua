@@ -12,6 +12,12 @@ hl.config({
         col = {
             splash = SLATE_ACCENT,
         },
+        -- While Slate starts, show a plain dark background (the login screen's colour)
+        -- rather than Hyprland's (or the distro's) default wallpaper and logo
+        force_default_wallpaper = 0,
+        disable_hyprland_logo = true,
+        disable_splash_rendering = true,
+        background_color = 0xff0f1216,
         middle_click_paste = false,
         -- An app that asks to be brought forward (a browser handed a link by another app, a
         -- file opened in an app that's already running) is switched to, on its workspace
