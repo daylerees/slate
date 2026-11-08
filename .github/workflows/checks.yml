@@ -1,0 +1,32 @@
+# Checks the login screen on every change to Slate: that its file list (shell/greeter/files)
+# has everything its code loads, and that it loads (offscreen, with the real Quickshell and
+# Hyprland), so a broken login screen never reaches a release.
+# Runs as a normal user: Hyprland refuses to run as root.
+name: Checks
+
+on:
+  push:
+    branches: [master]
+    paths: ["shell/**", "tools/check-greeter-files", ".github/workflows/checks.yml"]
+  pull_request:
+    paths: ["shell/**", "tools/check-greeter-files", ".github/workflows/checks.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  login-screen:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Quickshell and Hyprland
+        run: pacman -Syu --noconfirm --needed quickshell qt6-declarative hyprland python
+      - name: File list matches the code
+        run: python3 tools/check-greeter-files
+      - name: Login screen loads
+        run: |
+          useradd -m ci
+          cp -r . /home/ci/slate && chown -R ci: /home/ci/slate
+          su ci -c "/home/ci/slate/shell/bin/slate-greeter-check --source /home/ci/slate/shell"

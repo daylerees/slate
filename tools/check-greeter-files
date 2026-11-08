@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Check that the login screen's file list (shell/greeter/files) has everything it loads.
+
+The login screen runs from a root-owned copy of the files listed there, so a file it
+needs but the list forgets breaks the login screen. This reads every QML file on the
+list and checks that:
+  - each Slate type it uses (LoginScreen {…}, Config.s…) is installed next to it,
+  - each file it loads (shellPath("…"), resolvedUrl("…"), createComponent("…"),
+    "scripts/…") is installed, made by the installer ("+"), or listed with "-" as not needed,
+  - every source on the list exists, and every QML file under greeter/ is listed.
+
+Run from anywhere: tools/check-greeter-files. CI and the pre-commit hook run it too.
+"""
+import os
+import posixpath
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SHELL = os.path.join(ROOT, "shell")
+MANIFEST = "greeter/files"
+
+TYPE_USE = re.compile(r"(?<![\w.])([A-Z][A-Za-z0-9_]*)\s*(?:\{|\.)")
+INLINE_COMPONENT = re.compile(r"\bcomponent\s+([A-Z]\w*)\s*:")
+FILE_REFS = [
+    ("root", re.compile(r"shellPath\(\s*\"([^\"]+)\"")),          # relative to the shell's root
+    ("file", re.compile(r"resolvedUrl\(\s*\"([^\"]+)\"")),        # relative to this file
+    ("file", re.compile(r"createComponent\(\s*\"([^\"]+)\"")),
+    ("file", re.compile(r"^\s*import\s+\"([^\"]+)\"", re.M)),
+    ("root", re.compile(r"\"(scripts/[^\"\s]+)\"")),
+]
+
+
+def strip_comments(text):
+    """Remove // and /* */ comments, keeping string literals (which may hold "//")."""
+    out, i, quote = [], 0, None
+    while i < len(text):
+        c = text[i]
+        if quote:
+            out.append(c)
+            if c == "\\" and i + 1 < len(text):
+                out.append(text[i + 1]); i += 1
+            elif c == quote:
+                quote = None
+        elif c in "\"'`":
+            quote = c; out.append(c)
+        elif text.startswith("//", i):
+            while i < len(text) and text[i] != "\n":
+                i += 1
+            continue
+        elif text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            i = len(text) if end < 0 else end + 2
+            continue
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def read_manifest():
+    installed, skipped, made, errors = {}, set(), set(), []
+    with open(os.path.join(SHELL, MANIFEST)) as f:
+        for n, line in enumerate(f, 1):
+            parts = line.split("#", 1)[0].split()
+            if not parts:
+                continue
+            if len(parts) != 2:
+                errors.append(f"{MANIFEST}:{n}: expected '<installed path> <source>', '- <source>' or '+ <installed path>'")
+                continue
+            name, src = parts
+            if name == "+":
+                made.add(src)
+                continue
+            if not os.path.isfile(os.path.join(SHELL, src)):
+                errors.append(f"{MANIFEST}:{n}: {src} doesn't exist")
+            if name == "-":
+                skipped.add(src)
+            else:
+                installed[name] = src
+    return installed, skipped, made, errors
+
+
+def main():
+    installed, skipped, made, errors = read_manifest()
+    listed = set(installed.values()) | skipped
+
+    for name, src in installed.items():
+        if not name.endswith(".qml"):
+            continue
+        text = strip_comments(open(os.path.join(SHELL, src)).read())
+        inst_dir, src_dir = posixpath.dirname(name), posixpath.dirname(src)
+        # The shell this file runs in: the emergency screen is its own, the rest share the top
+        inst_root = name.split("/")[0] if "/" in name else ""
+        src_root = installed.get(posixpath.join(inst_root, "shell.qml"), "shell.qml")
+        src_root = posixpath.dirname(src_root) if inst_root else ""
+
+        # Slate types: any Name {…} or Name.x where Name.qml is a Slate file
+        local = set(INLINE_COMPONENT.findall(text))
+        for t in sorted(set(TYPE_USE.findall(text)) - local):
+            in_repo = any(os.path.isfile(os.path.join(SHELL, d, t + ".qml")) for d in (src_dir, ""))
+            if in_repo and posixpath.join(inst_dir, t + ".qml") not in installed:
+                errors.append(f"{src} uses {t}, but {MANIFEST} doesn't install {posixpath.join(inst_dir, t + '.qml')}")
+
+        # Files it loads
+        for base, pattern in FILE_REFS:
+            for ref in sorted(set(pattern.findall(text))):
+                if "://" in ref or ref.startswith("/") or not ref.strip():
+                    continue
+                inst = posixpath.normpath(posixpath.join(inst_root if base == "root" else inst_dir, ref))
+                source = posixpath.normpath(posixpath.join(src_root if base == "root" else src_dir, ref))
+                if inst in installed or inst.rstrip("/") in {posixpath.dirname(p) for p in installed}:
+                    continue
+                if source in skipped or inst in skipped or inst in made:
+                    continue
+                errors.append(f"{src} loads \"{ref}\" ({inst} in the installed copy), but {MANIFEST} "
+                              f"neither installs it nor lists it with \"-\" or \"+\"")
+
+    # Every QML file under greeter/ belongs on the list
+    for dirpath, _, files in os.walk(os.path.join(SHELL, "greeter")):
+        for f in files:
+            rel = os.path.relpath(os.path.join(dirpath, f), SHELL)
+            if f.endswith(".qml") and rel not in listed:
+                errors.append(f"{rel} isn't in {MANIFEST}")
+
+    if errors:
+        print("Login screen file list (shell/greeter/files) is out of step with the code:", file=sys.stderr)
+        for e in errors:
+            print("  " + e, file=sys.stderr)
+        return 1
+    print(f"Login screen files OK ({len(installed)} installed)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
