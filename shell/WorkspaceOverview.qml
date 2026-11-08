@@ -100,6 +100,23 @@ PanelWindow {
             }
         }
     }
+    // Hyprland's blur behind see-through windows, so the cards can show it too (a translucent
+    // terminal over the plain wallpaper, then blurred once the overview goes, was a jump)
+    property var blurOpts: ({ enabled: false, size: 8, passes: 1, contrast: 1, vibrancy: 0 })
+    Process {
+        id: blurProc
+        running: true
+        command: ["sh", "-c", "printf '['; for o in enabled size passes contrast vibrancy; do hyprctl -j getoption decoration:blur:$o; [ $o = vibrancy ] || printf ','; done; printf ']'"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const a = JSON.parse(text);
+                    ov.blurOpts = { enabled: !!(a[0].bool ?? a[0].int), size: a[1].int, passes: a[2].int,
+                                    contrast: a[3].float, vibrancy: a[4].float };
+                } catch (e) {}
+            }
+        }
+    }
     // The cards' shape: the usable area of the screen the overview is on
     readonly property real areaAspect: {
         const a = areas[screen ? screen.name : ""];
@@ -147,6 +164,7 @@ PanelWindow {
     function open() {
         screen = Config.focusedScreen;     // open on the focused screen
         areaProc.running = false; areaProc.running = true;
+        blurProc.running = false; blurProc.running = true;
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
         // Normal workspaces only (the secret / special workspace has a negative id)
@@ -526,10 +544,25 @@ PanelWindow {
                     layer.enabled: true
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: previewMask }
 
+                    // The wallpaper blurred as Hyprland blurs it behind see-through windows (its
+                    // size and passes, scaled to the card). Under the sharp one, so it's drawn
+                    // for the windows to show through, but never seen itself
+                    MultiEffect {
+                        id: wallBlur
+                        visible: ov.blurOpts.enabled
+                        x: wallImg.x; y: wallImg.y; width: wallImg.width; height: wallImg.height
+                        source: wallImg
+                        blurEnabled: true
+                        blur: 1
+                        blurMax: Math.max(4, Math.min(64, Math.round(ov.blurOpts.size * Math.pow(2, ov.blurOpts.passes) * card.sx)))
+                        contrast: ov.blurOpts.contrast - 1
+                        saturation: ov.blurOpts.vibrancy
+                    }
                     // The wallpaper as the screen shows it: across the whole screen (behind the
                     // bar too), so the card shows the part in the usable area, just like the
                     // workspace itself
                     Image {
+                        id: wallImg
                         x: -(card.mon.rl || 0) * card.sx
                         y: -(card.mon.rt || 0) * card.sx
                         width: (card.mon.fw || card.mon.w) * card.sx
@@ -561,6 +594,16 @@ PanelWindow {
                             readonly property real rounding: Config.windowRadius(modelData ? modelData.lastIpcObject : null,
                                 card.wins.filter(t => t.lastIpcObject && !t.lastIpcObject.floating).length)
                             readonly property real radius: rounding > 0 ? Math.max(2.5, rounding * card.sx) : 0
+                            // What a see-through window shows behind it on screen: the blurred
+                            // wallpaper (opaque windows simply cover it)
+                            ShaderEffectSource {
+                                anchors.fill: parent
+                                visible: ov.blurOpts.enabled
+                                sourceItem: wallBlur
+                                sourceRect: Qt.rect(ovWin.x - wallImg.x, ovWin.y - wallImg.y, ovWin.width, ovWin.height)
+                                layer.enabled: ovWin.radius > 0
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
+                            }
                             ShaderEffectSource {
                                 anchors.fill: parent
                                 sourceItem: ov.shotFor(parent.modelData.address)
