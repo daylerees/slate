@@ -296,7 +296,7 @@ FloatingWindow {
                         color: backHover.hovered ? win.text : win.dim
                         font.family: win.bar.iconFont; font.pixelSize: 18
                     }
-                    HoverHandler { id: backHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: backHover }
                     TapHandler { onTapped: win.section = "overview" }
                 }
                 Text {
@@ -331,7 +331,7 @@ FloatingWindow {
                     color: closeHover.hovered ? win.text : win.dim
                     font.family: win.bar.iconFont; font.pixelSize: 18
                 }
-                HoverHandler { id: closeHover; cursorShape: Qt.PointingHandCursor }
+                HoverHandler { id: closeHover }
                 TapHandler { onTapped: win.visible = false }
             }
 
@@ -538,7 +538,7 @@ FloatingWindow {
                         color: win.accent
                         font.family: win.bar.iconFont; font.pixelSize: 16
                     }
-                    HoverHandler { id: rowHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: rowHover }
                     // A MouseArea (not a TapHandler): the menu's own MouseArea underneath would otherwise
                     // take the click first and the pick would never happen
                     MouseArea {
@@ -615,7 +615,7 @@ FloatingWindow {
             opacity: tgHover.hovered ? 0.35 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
-        HoverHandler { id: tgHover; cursorShape: Qt.PointingHandCursor }
+        HoverHandler { id: tgHover }
         Rectangle {
             width: 18; height: 18; radius: 9
             anchors.verticalCenter: parent.verticalCenter
@@ -678,7 +678,6 @@ FloatingWindow {
                 id: sliderMouse
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
                 function set(mx) {
                     const raw = vs.from + Math.max(0, Math.min(1, mx / width)) * (vs.to - vs.from);
                     vs.moved(Math.round(raw / vs.stepSize) * vs.stepSize);
@@ -720,7 +719,7 @@ FloatingWindow {
                 font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
             }
         }
-        HoverHandler { id: btnHover; cursorShape: Qt.PointingHandCursor }
+        HoverHandler { id: btnHover }
         TapHandler { onTapped: btn.clicked() }
     }
     // A font choice: shows the current font, and opens a searchable list of
@@ -837,7 +836,7 @@ FloatingWindow {
                         color: parent.current ? win.accentText : win.dim
                         font.family: parent.modelData; font.pixelSize: 13
                     }
-                    HoverHandler { id: fontHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: fontHover }
                     TapHandler { onTapped: fs.choose(parent.modelData) }
                 }
             }
@@ -877,7 +876,7 @@ FloatingWindow {
                     width: optText.implicitWidth + 26; height: 32; radius: 8
                     color: on ? win.accent : optHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
-                    HoverHandler { id: optHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: optHover }
                     TapHandler { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
                 }
             }
@@ -926,7 +925,7 @@ FloatingWindow {
                 Behavior on rotation { NumberAnimation { duration: 120 } }
                 color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
             }
-            HoverHandler { id: ddHover; cursorShape: Qt.PointingHandCursor }
+            HoverHandler { id: ddHover }
             TapHandler { onTapped: dropLayer.owner = ddButton.open ? null : dd }
           }
         }
@@ -1007,7 +1006,7 @@ FloatingWindow {
                             Text { width: parent.width; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
                             Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
                         }
-                        HoverHandler { id: pickHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: pickHover }
                         TapHandler { onTapped: { sp.picked(parent.modelData.value); sp.open = false; } }
                     }
                     Text {
@@ -1095,7 +1094,7 @@ FloatingWindow {
                     text: win.glyph(0xEB55)
                     color: clearHover.hovered ? win.text : win.dim
                     font.family: win.bar.iconFont; font.pixelSize: 16
-                    HoverHandler { id: clearHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: clearHover }
                     TapHandler { onTapped: { findField.text = ""; findField.forceActiveFocus(); } }
                 }
             }
@@ -1145,7 +1144,7 @@ FloatingWindow {
                                 elide: Text.ElideRight
                             }
                         }
-                        HoverHandler { id: hitHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
+                        HoverHandler { id: hitHover; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
                         TapHandler { onTapped: ovPage.open(hitRow.modelData) }
                     }
                 }
@@ -1196,7 +1195,7 @@ FloatingWindow {
                                 wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight
                             }
                         }
-                        HoverHandler { id: tileHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: tileHover }
                         TapHandler { onTapped: win.section = tile.modelData.id }
                     }
                 }
@@ -1247,7 +1246,7 @@ FloatingWindow {
                             opacity: acctHover.hovered && !Config.avatarBusy ? 1 : 0
                             Behavior on opacity { NumberAnimation { duration: 150 } }
                         }
-                        HoverHandler { id: acctHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: acctHover }
                         TapHandler { onTapped: win.avatarPicking = !win.avatarPicking }
                     }
                     Column {
@@ -1334,7 +1333,7 @@ FloatingWindow {
                                     Rectangle { anchors.fill: parent; radius: width / 2 }
                                 }
                             }
-                            HoverHandler { id: pickHover; cursorShape: Qt.PointingHandCursor }
+                            HoverHandler { id: pickHover }
                             TapHandler { onTapped: { Config.setAvatar(filePath); win.avatarPicking = false; } }
                         }
                     }
@@ -1441,7 +1440,7 @@ FloatingWindow {
                                 width: placeText.implicitWidth + 26; height: 32; radius: 8
                                 color: placeHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
                                 Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
-                                HoverHandler { id: placeHover; cursorShape: Qt.PointingHandCursor }
+                                HoverHandler { id: placeHover }
                                 TapHandler {
                                     onTapped: {
                                         Config.s.latitude = parent.modelData.latitude;
@@ -1877,7 +1876,7 @@ FloatingWindow {
                                         opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
-                                    HoverHandler { id: layoutHover; cursorShape: Qt.PointingHandCursor }
+                                    HoverHandler { id: layoutHover }
                                     Row {
                                         anchors.centerIn: parent
                                         spacing: 6
@@ -2025,7 +2024,7 @@ FloatingWindow {
                                     font.family: win.font; font.pixelSize: 11
                                 }
                             }
-                            HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.PointingHandCursor }
+                            HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.ArrowCursor }
                             TapHandler { onTapped: dp.selected = tile.modelData.name }
                             DragHandler {
                                 id: drag
@@ -2897,7 +2896,7 @@ FloatingWindow {
                                         opacity: !modeOpt.on && modeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
-                                    HoverHandler { id: modeHover; cursorShape: Qt.PointingHandCursor }
+                                    HoverHandler { id: modeHover }
                                     Row {
                                         anchors.centerIn: parent
                                         spacing: 7
@@ -3068,7 +3067,7 @@ FloatingWindow {
                                         opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
-                                    HoverHandler { id: shapeHover; cursorShape: Qt.PointingHandCursor }
+                                    HoverHandler { id: shapeHover }
                                     Row {
                                         anchors.centerIn: parent
                                         spacing: 7
@@ -3151,7 +3150,7 @@ FloatingWindow {
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
                                 Behavior on color { ColorAnimation { duration: 100 } }
-                                HoverHandler { id: spotHover; cursorShape: Qt.PointingHandCursor }
+                                HoverHandler { id: spotHover }
                                 TapHandler { onTapped: Config.s.notificationPosition = parent.modelData }
                             }
                         }
@@ -3229,7 +3228,7 @@ FloatingWindow {
                                         opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: 100 } }
                                     }
-                                    HoverHandler { id: themeHover; cursorShape: Qt.PointingHandCursor }
+                                    HoverHandler { id: themeHover }
                                     Row {
                                         anchors.centerIn: parent
                                         spacing: 6
@@ -3488,7 +3487,7 @@ FloatingWindow {
                                 color: shapeCard.on ? win.text : win.dim
                                 font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
                             }
-                            HoverHandler { id: shapeHover; cursorShape: Qt.PointingHandCursor }
+                            HoverHandler { id: shapeHover }
                             TapHandler { onTapped: Config.s.iconShape = shapeCard.modelData.value }
                         }
                     }
@@ -3639,7 +3638,7 @@ FloatingWindow {
                                     color: win.text; font.family: win.font; font.pixelSize: 13
                                     elide: Text.ElideRight
                                 }
-                                HoverHandler { id: dirHover; cursorShape: Qt.PointingHandCursor }
+                                HoverHandler { id: dirHover }
                                 TapHandler { onTapped: wp.browseDir = parent.filePath }
                             }
                         }
@@ -3811,7 +3810,7 @@ FloatingWindow {
                             elide: Text.ElideMiddle
                             horizontalAlignment: Text.AlignHCenter
                         }
-                        HoverHandler { id: wallHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: wallHover }
                         TapHandler { onTapped: wp.setWallpaper(filePath) }
                     }
                 }

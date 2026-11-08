@@ -38,7 +38,7 @@ Rectangle {
             radius: 3
             color: current ? ep.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
             Behavior on color { ColorAnimation { duration: 100 } }
-            HoverHandler { id: spotHover; cursorShape: Qt.PointingHandCursor }
+            HoverHandler { id: spotHover }
             TapHandler { onTapped: ep.picked(spot.modelData) }
         }
     }

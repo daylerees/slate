@@ -260,7 +260,7 @@ Rectangle {
                             color: actHover.hovered ? Config.tint("#12151a") : card.accent
                             font.family: card.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
-                        HoverHandler { id: actHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: actHover }
                         TapHandler { onTapped: card.action(modelData.identifier) }
                     }
                 }

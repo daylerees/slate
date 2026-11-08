@@ -214,7 +214,7 @@ PanelWindow {
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                             Behavior on color { ColorAnimation { duration: 100 } }
-                            HoverHandler { id: chipHover; cursorShape: Qt.PointingHandCursor }
+                            HoverHandler { id: chipHover }
                             TapHandler {
                                 onTapped: {
                                     if (root.flow && !root.busy) root.flow.selectedIdentity = chip.modelData;
@@ -318,7 +318,7 @@ PanelWindow {
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: 100 } }
         Behavior on opacity { NumberAnimation { duration: 100 } }
-        HoverHandler { id: hh; cursorShape: Qt.PointingHandCursor }
+        HoverHandler { id: hh }
         TapHandler { onTapped: btn.clicked() }
         Text {
             anchors.centerIn: parent

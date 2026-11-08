@@ -485,7 +485,7 @@ PanelWindow {
                 width: clearLabel.implicitWidth + 24; height: 28; radius: 8
                 color: clearHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                 Behavior on color { ColorAnimation { duration: 100 } }
-                HoverHandler { id: clearHover; cursorShape: Qt.PointingHandCursor }
+                HoverHandler { id: clearHover }
                 TapHandler { onTapped: root.clearClips() }
                 Text {
                     id: clearLabel

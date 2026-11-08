@@ -468,7 +468,7 @@ PanelWindow {
                             readonly property int hoverCode: 0
                             readonly property string hoverTile: firstApp ? firstApp.id : ""
                             readonly property url hoverImage: ""
-                            HoverHandler { id: wsDotHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: bar.setHover(wsDot, hovered) }
+                            HoverHandler { id: wsDotHover; onHoveredChanged: bar.setHover(wsDot, hovered) }
                             width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
                             // Inactive workspaces are dimmed a little; the accent marker shows the active
                             // one. Brighter under the pointer
@@ -729,7 +729,7 @@ PanelWindow {
                             opacity: toggleHover.hovered ? bar.hoverStrength : 0
                             Behavior on opacity { NumberAnimation { duration: 120 } }
                         }
-                        HoverHandler { id: toggleHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: bar.setHover(trayToggle, hovered) }
+                        HoverHandler { id: toggleHover; onHoveredChanged: bar.setHover(trayToggle, hovered) }
                         Text {
                             anchors.centerIn: parent
                             // Points the way the icons open (away from the rest of the bar), or back when open

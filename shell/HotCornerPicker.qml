@@ -84,7 +84,7 @@ Rectangle {
                     }
                 }
             }
-            HoverHandler { id: cornerHover; cursorShape: Qt.PointingHandCursor }
+            HoverHandler { id: cornerHover }
             TapHandler { onTapped: hp.picked(corner.modelData.key) }
         }
     }

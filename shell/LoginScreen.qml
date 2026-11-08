@@ -292,7 +292,7 @@ Item {
             Text { anchors.verticalCenter: parent.verticalCenter; text: ls.glyph(pill.icon); color: pill.active ? ls.accentText : ls.text; font.family: tabler.name; font.pixelSize: 18 }
             Text { visible: pill.label !== ""; anchors.verticalCenter: parent.verticalCenter; text: pill.label; color: pill.active ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
         }
-        HoverHandler { id: pillHover; cursorShape: Qt.PointingHandCursor }
+        HoverHandler { id: pillHover }
         TapHandler { onTapped: pill.clicked() }
     }
     // A menu that opens upwards from a corner button
@@ -322,7 +322,7 @@ Item {
                         Text { anchors.verticalCenter: parent.verticalCenter; text: ls.glyph(parent.parent.modelData.icon); color: parent.parent.modelData.current ? ls.accentText : (parent.parent.modelData.danger ? ls.error : ls.text); font.family: tabler.name; font.pixelSize: 16 }
                         Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.modelData.current ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
                     }
-                    HoverHandler { id: itemHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: itemHover }
                     TapHandler { onTapped: m.chosen(parent.modelData) }
                 }
             }

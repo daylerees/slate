@@ -720,7 +720,7 @@ PanelWindow {
                                 font.pixelSize: 13
                             }
                         }
-                        HoverHandler { id: tileHover; cursorShape: tile.modelData.copy ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                        HoverHandler { id: tileHover }
                         TapHandler {
                             enabled: tile.modelData.copy
                             onTapped: { Quickshell.execDetached(["wl-copy", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
@@ -954,7 +954,7 @@ PanelWindow {
                         width: parent.width
                         height: 52
                         onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
-                        HoverHandler { id: spRowHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: spRowHover }
                         Rectangle {
                             id: spBadge
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -1006,7 +1006,7 @@ PanelWindow {
                                 width: 28; height: 28; radius: 7
                                 color: spDelHover.hovered ? Config.hover : "transparent"
                                 Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
-                                HoverHandler { id: spDelHover; cursorShape: Qt.PointingHandCursor }
+                                HoverHandler { id: spDelHover }
                                 // A MouseArea, so the click stops here rather than also opening the space
                                 MouseArea {
                                     anchors.fill: parent
@@ -1053,7 +1053,7 @@ PanelWindow {
                     width: 26; height: 26; radius: 7
                     color: spBackHover.hovered ? Config.hover : "transparent"
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
-                    HoverHandler { id: spBackHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: spBackHover }
                     TapHandler { onTapped: spp.mode = "list" }
                 }
                 Label { anchors { left: spBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
@@ -1190,7 +1190,7 @@ PanelWindow {
                                         border.color: Qt.rgba(1, 1, 1, 0.7)
                                         Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
                                     }
-                                    HoverHandler { id: wsShotHover; cursorShape: Qt.PointingHandCursor }
+                                    HoverHandler { id: wsShotHover }
                                     TapHandler { onTapped: spp.toggle(wsCard.modelData.id) }
                                 }
                                 Label {
@@ -1258,7 +1258,7 @@ PanelWindow {
                         color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
-                        HoverHandler { id: icHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: icHover }
                         TapHandler { onTapped: spp.icon = icCell.modelData }
                     }
                 }
@@ -1312,7 +1312,7 @@ PanelWindow {
                             }
                             Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spp.inkColour }
                         }
-                        HoverHandler { id: swHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: swHover }
                         TapHandler {
                             onTapped: {
                                 if (swatch.isCustom) {
@@ -1357,7 +1357,6 @@ PanelWindow {
                     }
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
                         function set(mx) {
                             const h = Math.max(0, Math.min(0.999, mx / width));
                             spp.colour = Qt.hsla(h, 0.65, 0.78, 1);
@@ -1400,14 +1399,14 @@ PanelWindow {
                     width: spCancel.implicitWidth + 28; height: 32; radius: 8
                     color: spCancelHover.hovered ? Config.hover : "transparent"
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
-                    HoverHandler { id: spCancelHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: spCancelHover }
                     TapHandler { onTapped: spp.mode = "list" }
                 }
                 Rectangle {
                     width: spSave.implicitWidth + 28; height: 32; radius: 8
                     color: spp.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
                     Label { id: spSave; anchors.centerIn: parent; text: spp.sameName ? "Replace" : "Save"; color: spp.canSave ? pop.accentText : pop.dim }
-                    HoverHandler { id: spSaveHover; cursorShape: spp.canSave ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    HoverHandler { id: spSaveHover }
                     TapHandler { onTapped: spp.save() }
                 }
             }
@@ -1450,7 +1449,7 @@ PanelWindow {
                             Icon { anchors.horizontalCenter: parent.horizontalCenter; code: shotTile.modelData.code; font.pixelSize: 22; color: pop.text }
                             Label { anchors.horizontalCenter: parent.horizontalCenter; text: shotTile.modelData.label; font.weight: Font.Normal }
                         }
-                        HoverHandler { id: shotHover; cursorShape: Qt.PointingHandCursor }
+                        HoverHandler { id: shotHover }
                         TapHandler { onTapped: shp.take(shotTile.modelData.mode) }
                     }
                 }
@@ -2095,7 +2094,7 @@ PanelWindow {
                         opacity: avatarHover.hovered ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 150 } }
                     }
-                    HoverHandler { id: avatarHover; cursorShape: Qt.PointingHandCursor }
+                    HoverHandler { id: avatarHover }
                     TapHandler {
                         onTapped: {
                             pop.close();

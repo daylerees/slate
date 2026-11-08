@@ -204,7 +204,7 @@ PanelWindow {
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
         color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
         Behavior on color { ColorAnimation { duration: 100 } }
-        HoverHandler { id: hh; cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
+        HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button
         Rectangle {
             anchors { fill: parent; margins: -4 }
