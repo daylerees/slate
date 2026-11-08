@@ -422,7 +422,14 @@ Singleton {
     function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
     // solid grey (so the glass shows through them too)
-    function raised(c) { return glass ? (s.lightMode ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.07)) : c; }
+    function raised(c) {
+        if (!glass) return c;
+        // White, with a hint of the wallpaper's colour (Glass → Gloss colour), like the sheen
+        const w = wallpaperAccent ? Qt.color(wallpaperAccent) : null;
+        const k = w ? glossTint : 0;
+        const r = 1 - k + (w ? w.r * k : 0), g = 1 - k + (w ? w.g * k : 0), b = 1 - k + (w ? w.b * k : 0);
+        return s.lightMode ? Qt.rgba(r, g, b, 0.4) : Qt.rgba(r, g, b, 0.07 + 0.04 * k);
+    }
     // Where Hyprland's blur stops: just under the surfaces' own opacity. It goes by each pixel
     // (no smoothing), so along rounded edges it steps; stopping where the surface is nearly
     // solid hides that, where stopping at its faint edge showed it ("pixely" against a bright
