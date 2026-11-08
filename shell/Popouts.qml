@@ -403,7 +403,7 @@ PanelWindow {
         height: 36
         radius: 8
         color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
-        Gloss { radius: parent.radius; opacity: (rbHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+        Gloss { radius: parent.radius; opacity: (selected || rbHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
         Behavior on color { ColorAnimation { duration: 100 } }
         HoverHandler { id: rbHover }
         TapHandler { onTapped: rb.clicked() }
@@ -1319,7 +1319,7 @@ PanelWindow {
                         readonly property bool on: spp.icon === modelData
                         width: (spp.width - 28) / 15; height: width; radius: 7
                         color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (icHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                        Gloss { radius: parent.radius; opacity: (on || icHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
@@ -2373,7 +2373,7 @@ PanelWindow {
                             radius: 12
                             selected: modelData.on
                             color: selected ? pop.accent : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                            Gloss { radius: parent.radius; opacity: (tileHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            Gloss { radius: parent.radius; opacity: (selected || tileHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             HoverHandler { id: tileHover }
                             onClicked: {
                                 switch (modelData.id) {

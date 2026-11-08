@@ -245,7 +245,7 @@ FloatingWindow {
                         readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
                         width: parent.width; height: 38; radius: 9
                         color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (navHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                        Gloss { radius: parent.radius; opacity: (current || navHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Text {
                             id: navIcon
@@ -619,6 +619,7 @@ FloatingWindow {
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
         HoverHandler { id: tgHover }
+        Gloss { radius: parent.radius; opacity: tg.checked ? 1 : 0 }   // glass: a sheen when on
         Rectangle {
             width: 18; height: 18; radius: 9
             anchors.verticalCenter: parent.verticalCenter
@@ -825,7 +826,7 @@ FloatingWindow {
                     readonly property bool current: fs.value === modelData
                     width: ListView.view.width; height: 36; radius: 8
                     color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (fontHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                    Gloss { radius: parent.radius; opacity: (current || fontHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         text: parent.modelData
@@ -879,7 +880,7 @@ FloatingWindow {
                     readonly property bool on: modelData.value === ch.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
                     color: on ? win.accent : optHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
-                    Gloss { radius: parent.radius; opacity: (optHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                    Gloss { radius: parent.radius; opacity: (on || optHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
                     TapHandler { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
@@ -1125,7 +1126,7 @@ FloatingWindow {
                         width: parent.width; height: hitCol.implicitHeight + 18
                         radius: 9
                         color: chosen ? Config.tint("#262c35") : hitHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (hitHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                        Gloss { radius: parent.radius; opacity: (chosen || hitHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                         Text {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
@@ -3159,7 +3160,7 @@ FloatingWindow {
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
-                                Gloss { radius: parent.radius; opacity: (spotHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                                Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 HoverHandler { id: spotHover }
                                 TapHandler { onTapped: Config.s.notificationPosition = parent.modelData }
@@ -3393,6 +3394,43 @@ FloatingWindow {
                     }
                 }
             }
+            GroupLabel { text: "Glass" }
+            Group {
+                SettingRow {
+                    label: "Glass"
+                    detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
+                    Toggle { checked: Config.s.glass; onToggled: v => Config.s.glass = v }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Opacity"
+                    detail: "How much of their colour the surfaces keep: lower is clearer glass"
+                    ValueSlider { from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Blur"
+                    detail: Config.s.glassBlur > 0 ? "How strongly what's behind is blurred (Hyprland's blur, so see-through windows use it too)"
+                        : "Hyprland's own blur (size " + Config.hyprBlur.size + "); drag to make it stronger or softer"
+                    ValueSlider { from: 0; to: 20; stepSize: 1; value: Config.s.glassBlur; onMoved: v => Config.s.glassBlur = v }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Shine"
+                    detail: "A thin light rim around the glass, like the edge of a pane"
+                    Toggle { checked: Config.s.glassShine; onToggled: v => Config.s.glassShine = v }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Gloss"
+                    detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
+                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
+                }
+            }
             GroupLabel { text: "Style" }
             Group {
                 SettingRow {
@@ -3480,7 +3518,7 @@ FloatingWindow {
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: 12
                             color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(Config.tint("#151920")) : Config.tint("#151920")
-                            Gloss { radius: parent.radius; opacity: (shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            Gloss { radius: parent.radius; opacity: (on || shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Image {
@@ -3555,43 +3593,6 @@ FloatingWindow {
                         value: Math.round(Config.s.uiScale * 100)
                         onMoved: v => { Config.s.uiScale = v / 100; Config.uiScaleEdited(); }
                     }
-                }
-            }
-            GroupLabel { text: "Glass" }
-            Group {
-                SettingRow {
-                    label: "Glass"
-                    detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
-                    Toggle { checked: Config.s.glass; onToggled: v => Config.s.glass = v }
-                }
-                Separator { visible: Config.s.glass }
-                SettingRow {
-                    visible: Config.s.glass
-                    label: "Opacity"
-                    detail: "How much of their colour the surfaces keep: lower is clearer glass"
-                    ValueSlider { from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
-                }
-                Separator { visible: Config.s.glass }
-                SettingRow {
-                    visible: Config.s.glass
-                    label: "Blur"
-                    detail: Config.s.glassBlur > 0 ? "How strongly what's behind is blurred (Hyprland's blur, so see-through windows use it too)"
-                        : "Hyprland's own blur (size " + Config.hyprBlur.size + "); drag to make it stronger or softer"
-                    ValueSlider { from: 0; to: 20; stepSize: 1; value: Config.s.glassBlur; onMoved: v => Config.s.glassBlur = v }
-                }
-                Separator { visible: Config.s.glass }
-                SettingRow {
-                    visible: Config.s.glass
-                    label: "Shine"
-                    detail: "A thin light rim around the glass, like the edge of a pane"
-                    Toggle { checked: Config.s.glassShine; onToggled: v => Config.s.glassShine = v }
-                }
-                Separator { visible: Config.s.glass }
-                SettingRow {
-                    visible: Config.s.glass
-                    label: "Gloss"
-                    detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
-                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
                 }
             }
             GroupLabel { text: "Motion" }

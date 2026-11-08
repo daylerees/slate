@@ -213,7 +213,7 @@ PanelWindow {
                             readonly property bool current: root.selected === modelData
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
-                            Gloss { radius: parent.radius; opacity: (chipHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            Gloss { radius: parent.radius; opacity: (current || chipHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             Behavior on color { ColorAnimation { duration: 100 } }
                             HoverHandler { id: chipHover }
                             TapHandler {

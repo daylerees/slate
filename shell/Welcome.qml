@@ -240,7 +240,7 @@ PanelWindow {
                                 readonly property bool on: (Config.s.themeMode || (Config.s.lightMode ? "light" : "dark")) === modelData.mode
                                 width: themeRow.implicitWidth + 28; height: 38; radius: 10
                                 color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
-                                Gloss { radius: parent.radius; opacity: (themeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                                Gloss { radius: parent.radius; opacity: (on || themeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 Row {
                                     id: themeRow

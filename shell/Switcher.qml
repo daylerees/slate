@@ -228,6 +228,7 @@ PanelWindow {
             width: sw.cardW; height: sw.cardH
             radius: 12
             color: sw.selectColor
+            Gloss { radius: parent.radius }   // glass: a sheen
         }
 
         // A circular strip: the selected window is always centred and the strip

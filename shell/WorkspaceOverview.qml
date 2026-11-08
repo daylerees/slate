@@ -517,6 +517,7 @@ PanelWindow {
                     Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: 150 } }
                     opacity: card.isSelected ? 1 - ov.zoomP : 0
                     Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: 180 } }
+                    Gloss { radius: parent.radius; strength: 0.7 }   // glass: a sheen over the selected card
                 }
 
                 // Miniature of the workspace: wallpaper, then each window in place
