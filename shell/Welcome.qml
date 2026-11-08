@@ -44,7 +44,7 @@ PanelWindow {
     Behavior on fade { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
-    color: Qt.rgba(0.02, 0.03, 0.04, 0.6 * fade)
+    color: Qt.rgba(0.02, 0.03, 0.04, 0.82 * fade)        // the desktop well dimmed behind it
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-welcome"
     WlrLayershell.layer: WlrLayer.Overlay
@@ -119,7 +119,7 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         lineHeight: 1.25
-                        text: "A calm, good-looking desktop for Hyprland: a bar, a dock, a launcher, switchers, panels and notifications that all fit together.\n\nLet's make a few choices to get you started. Each has a recommendation, and you can change any of them later in Settings (Super+Z)."
+                        text: "A calm, aesthetically pleasing desktop for Linux: a bar, a dock, a launcher, switchers, panels and notifications that all fit together.\n\nLet's make a few choices to get you started. Each has a recommendation, and you can change any of them later in Settings (Super+Z)."
                         color: w.dim; font.family: w.font; font.pixelSize: 14
                     }
                 }
@@ -536,12 +536,17 @@ PanelWindow {
                         text: "A few keys worth knowing:"
                         color: w.dim; font.family: w.font; font.pixelSize: 13; bottomPadding: 4
                     }
-                    // Keys for the chosen shortcuts
+                    // Keys for the chosen shortcuts. The key boxes all share the widest one's
+                    // width, so the descriptions line up
+                    FontMetrics { id: keyMetrics; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                     Grid {
+                        id: keyGrid
+                        readonly property real keyW: Math.max(96, ...keyRepeater.model.map(k => keyMetrics.advanceWidth(k[0]))) + 20
                         anchors.horizontalCenter: parent.horizontalCenter
                         columns: 2
                         columnSpacing: 28; rowSpacing: 10
                         Repeater {
+                            id: keyRepeater
                             model: Config.s.keyset === "slate" ? [
                                     ["Super", "Open apps"], ["Super+Tab", "Switch windows"],
                                     ["Super+Left/Right", "Next or previous workspace"], ["Super+Down", "See all workspaces"],
@@ -558,7 +563,7 @@ PanelWindow {
                                 spacing: 10
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: Math.max(96, keyLabel.implicitWidth + 16); height: 26; radius: 7
+                                    width: keyGrid.keyW; height: 26; radius: 7
                                     color: w.card
                                     border.width: 1; border.color: w.line
                                     Text { id: keyLabel; anchors.centerIn: parent; text: parent.parent.modelData[0]; color: w.text; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
