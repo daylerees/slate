@@ -192,7 +192,16 @@ ShellRoot {
         on: Config.s.themedApps || []
     })
     onThemeJsonChanged: themeApply.restart()
-    Timer { id: themeApply; interval: 1500; running: true; onTriggered: Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/apply-theme.py"), root.themeJson]) }
+    Timer { id: themeApply; interval: 1500; running: true; onTriggered: root.applyThemes() }
+    function applyThemes() {
+        themeProc.running = false;
+        themeProc.command = ["python3", Quickshell.shellPath("scripts/apply-theme.py"), root.themeJson];
+        themeProc.running = true;
+    }
+    Process { id: themeProc }
+    // Settings → App theming → Refresh: write every switched-on app's theme again now
+    Binding { target: Config; property: "themesBusy"; value: themeProc.running }
+    Connections { target: Config; function onRefreshThemes() { themeApply.stop(); root.applyThemes(); } }
 
     // When the login screen's code has changed, offer to install it (a notification
     // with an Update button, then a password prompt). Checked 20 s after Slate starts

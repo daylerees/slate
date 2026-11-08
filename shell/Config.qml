@@ -408,6 +408,11 @@ Singleton {
     Process { id: keysetProc; onExited: root.keysetApplied() }
 
     // ---- Window rounding -----------------------------------------------------------
+    // App theming (scripts/apply-theme.py, run by shell.qml): Settings → App theming → Refresh
+    // asks for every switched-on app's theme to be written again
+    signal refreshThemes()
+    property bool themesBusy: false
+
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).

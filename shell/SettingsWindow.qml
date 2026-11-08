@@ -3914,8 +3914,23 @@ FloatingWindow {
                     Config.s.themedApps = list;
                 }
                 SettingRow {
+                    id: themeRefresh
                     label: "Theme other apps"
-                    detail: "Apps you switch on follow Slate's colours, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back"
+                    detail: "Apps you switch on follow Slate's colours, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back. Refresh writes their themes again (after an app update or reset overwrote one)"
+                    property bool asked: false       // Refresh was clicked (shows Done when it finishes)
+                    property bool done: false
+                    Connections {
+                        target: Config
+                        function onThemesBusyChanged() {
+                            if (!Config.themesBusy && themeRefresh.asked) { themeRefresh.asked = false; themeRefresh.done = true; doneTimer.restart(); }
+                        }
+                    }
+                    Timer { id: doneTimer; interval: 2500; onTriggered: themeRefresh.done = false }
+                    Button {
+                        icon: themeRefresh.done ? 0xEA5E : 0xEB13
+                        label: Config.themesBusy && themeRefresh.asked ? "Refreshing…" : themeRefresh.done ? "Done" : "Refresh"
+                        onClicked: { if (Config.themesBusy) return; themeRefresh.done = false; themeRefresh.asked = true; Config.refreshThemes(); }
+                    }
                 }
                 Repeater {
                     model: appTheming.apps
