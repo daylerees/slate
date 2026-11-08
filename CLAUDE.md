@@ -44,3 +44,10 @@ Releases are tagged with [Semantic Versioning](https://semver.org/): annotated t
 - **PATCH** for fixes and everything else.
 
 While Slate is below 1.0.0, breaking changes bump MINOR instead of MAJOR.
+
+When asked to tag or release, do both: create and push the annotated tag, then a GitHub
+release for it with `gh release create <tag> --title <tag> --notes-file <notes>`. The tag
+message and the release notes both carry a summary of the changes since the previous tag
+(from `git log <previous>..HEAD`), grouped as Features, Fixes and Other, in plain words
+for people using Slate rather than a list of commit subjects. Leave out site- and
+docs-only changes unless they matter to users.
