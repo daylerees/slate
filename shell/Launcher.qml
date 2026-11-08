@@ -549,37 +549,41 @@ PanelWindow {
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 x: (list.currentItem ? list.currentItem.x : 0) + (root.gridMode ? (list.cellWidth - gridBox) / 2 : 0)
                 y: (list.currentItem ? list.currentItem.y : 0) + (root.gridMode ? (list.cellHeight - gridBox) / 2 : 0)
+                // Smoothed: a new target (the next key press) carries on at the current speed,
+                // where an eased slide restarted fast on each press and lurched when keys repeat
                 Behavior on x {
                     enabled: root.slideHighlight
-                    NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic }
+                    SmoothedAnimation { duration: root.slideMs; velocity: -1 }
                 }
                 Behavior on y {
                     enabled: root.slideHighlight
-                    NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic }
+                    SmoothedAnimation { duration: root.slideMs; velocity: -1 }
                 }
             }
 
             // Keep the selection on screen: scroll just enough when it moves past an edge
-            NumberAnimation {
+            SmoothedAnimation {
                 id: scrollAnim
                 target: list
                 property: "contentY"
                 duration: root.slideMs
-                easing.type: Easing.OutCubic
+                velocity: -1
             }
             onCurrentIndexChanged: {
                 if (currentIndex < 0) return;
                 const top = Math.floor(currentIndex / columns) * cellHeight;
                 const bottom = top + cellHeight;
-                let to = contentY;
-                if (top < contentY) to = top;
-                else if (bottom > contentY + height) to = bottom - height;
-                if (to === contentY) return;
-                scrollAnim.stop();
+                // From where it's already heading (keys pressed quickly), so the scroll carries on
+                const from = scrollAnim.running ? scrollAnim.to : contentY;
+                let to = from;
+                if (top < from) to = top;
+                else if (bottom > from + height) to = bottom - height;
+                if (to === from) return;
                 if (root.slideHighlight) {
                     scrollAnim.to = to;
-                    scrollAnim.start();
+                    scrollAnim.restart();       // a smoothed restart keeps its current speed
                 } else {
+                    scrollAnim.stop();
                     contentY = to;
                 }
             }

@@ -317,8 +317,8 @@ PanelWindow {
                 color: root.selectColor
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 y: list.currentItem ? list.currentItem.y : 0
-                Behavior on y { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
-                Behavior on height { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
+                Behavior on y { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
+                Behavior on height { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
             }
             NumberAnimation { id: listScroll; target: list; property: "contentY"; duration: root.slideMs; easing.type: Easing.OutCubic }
             onCurrentIndexChanged: panel.follow(list, listScroll)
@@ -415,8 +415,8 @@ PanelWindow {
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 x: grid.currentItem ? grid.currentItem.x : 0
                 y: grid.currentItem ? grid.currentItem.y : 0
-                Behavior on x { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
-                Behavior on y { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
+                Behavior on x { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
+                Behavior on y { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
             }
             NumberAnimation { id: gridScroll; target: grid; property: "contentY"; duration: root.slideMs; easing.type: Easing.OutCubic }
             onCurrentIndexChanged: panel.follow(grid, gridScroll)
