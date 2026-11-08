@@ -128,7 +128,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "spaceBadges", "barShowWorkspaces", "barShowTitle",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
@@ -142,7 +142,8 @@ FloatingWindow {
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
-        windows: ["windowMode", "keepEmptyWorkspace", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "overviewCardWidth"],
+        windows: ["windowMode", "keepEmptyWorkspace", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons", "overviewCardWidth", "overviewAppIcons"],
+        spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
@@ -178,6 +179,7 @@ FloatingWindow {
         { id: "bar", label: "Menu bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
         { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
         { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
+        { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
         { id: "hotcorners", label: "Hot corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
         { id: "lock", label: "Lock & idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
         { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
@@ -352,7 +354,7 @@ FloatingWindow {
                 Loader {
                     id: pageLoader
                     width: scroller.width
-                    sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage,
+                    sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
                         apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
@@ -1516,18 +1518,6 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
-                    label: "Spaces"
-                    detail: "Save the apps and layout of your workspaces, and bring them back in one click"
-                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
-                }
-                Separator {}
-                SettingRow {
-                    label: "Space badges on windows"
-                    detail: "Windows opened from a space show its icon in a corner, which moves out of the pointer's way"
-                    Toggle { checked: Config.s.spaceBadges; onToggled: v => Config.s.spaceBadges = v }
-                }
-                Separator {}
-                SettingRow {
                     label: "Workspaces"
                     detail: "A dot for each workspace; the highlighted one is where you are"
                     Toggle { checked: Config.s.barShowWorkspaces; onToggled: v => Config.s.barShowWorkspaces = v }
@@ -1706,6 +1696,54 @@ FloatingWindow {
                     label: "Magnification spread"
                     detail: "How many neighbouring icons rise in the arc"
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: spacesPage
+        Column {
+            spacing: 4
+            PageTitle { text: "Spaces" }
+            Text {
+                width: Math.min(parent.width, win.introMeasure)
+                text: "Save the apps on some workspaces, and where their windows sit, as a space; then bring them all back on new workspaces in one click from the Spaces button on the menu bar."
+                color: win.dim; font.family: win.font; font.pixelSize: 13
+                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
+            }
+            GroupLabel { text: "Menu bar" }
+            Group {
+                SettingRow {
+                    label: "Spaces button"
+                    detail: "Between Apps and the workspaces: your spaces, and New Space"
+                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Colour the window's icon"
+                    detail: "When the focused window came from a space, its icon on the menu bar sits on the space's colour"
+                    Toggle { checked: Config.s.spaceBarTint; onToggled: v => Config.s.spaceBarTint = v }
+                }
+            }
+            GroupLabel { text: "Windows from a space" }
+            Group {
+                SettingRow {
+                    label: "Top border"
+                    detail: "A thin line in the space's colour along the top of each window"
+                    Toggle { checked: Config.s.spaceBorders; onToggled: v => Config.s.spaceBorders = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Corner badge"
+                    detail: "The space's icon in the window's top left corner; it moves to the other corner when the pointer comes near"
+                    Toggle { checked: Config.s.spaceBadges; onToggled: v => Config.s.spaceBadges = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Badges in the switchers"
+                    detail: "The space's icon on its windows in the window switcher (Super+Tab) and the workspace overview (Super+Down)"
+                    Toggle { checked: Config.s.spaceSwitcherBadges; onToggled: v => Config.s.spaceSwitcherBadges = v }
                 }
             }
         }
@@ -2847,12 +2885,24 @@ FloatingWindow {
                     detail: "Show each window's contents; turn off to show app icons only"
                     Toggle { checked: Config.s.switcherPreviews; onToggled: v => Config.s.switcherPreviews = v }
                 }
+                Separator {}
+                SettingRow {
+                    label: "App icons on previews"
+                    detail: "A small app icon on the corner of each window's preview"
+                    Toggle { checked: Config.s.switcherAppIcons; onToggled: v => Config.s.switcherAppIcons = v }
+                }
             }
             GroupLabel { text: "Workspace overview (Super+Down)" }
             Group {
                 SettingRow {
                     label: "Card size"
                     ValueSlider { from: 480; to: 1000; stepSize: 8; suffix: " px"; value: Config.s.overviewCardWidth; onMoved: v => Config.s.overviewCardWidth = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "App icons on windows"
+                    detail: "Each window's app icon in the middle of it on the cards"
+                    Toggle { checked: Config.s.overviewAppIcons; onToggled: v => Config.s.overviewAppIcons = v }
                 }
             }
         }

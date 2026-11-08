@@ -29,10 +29,12 @@ shell.qml               root: creates everything below, plus the dock itself
 │  └─ LoginScreen.qml   the lock/login screen design (shared with the greeter)
 └─ HotCorners.qml       hot corners ("slate-hotcorner")
 
-Config.qml              singleton: settings.json + theme helpers (accent, tint())
+Config.qml              singleton: settings.json + theme helpers (accent, tint()), window
+                        rounding (windowRounding, windowRadius()) for previews and borders
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
+SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
@@ -151,13 +153,21 @@ are started floating, then moved and sized. Apps that don't open a window within
 skipped and named in a notification.
 
 Each window a restore opens is noted by its Hyprland `stableId` (addresses get reused) in
-`$XDG_RUNTIME_DIR/slate/space-windows.json`. `SpaceBadges.qml` puts a Top-layer strip along
-the top edge of each such window that's on a showing workspace (clear, and taking the
+`$XDG_RUNTIME_DIR/slate/space-windows.json`, stamped with `HYPRLAND_INSTANCE_SIGNATURE`
+(window ids start over in each Hyprland session, so another session's file is ignored).
+The marks survive Slate reloads and Hyprland config reloads. `Spaces.qml` reads the file
+(`Spaces.owners`); `SpaceBadges.qml` also keeps `Spaces.spaceOfAddress` (window address →
+space), which the bar uses to put the focused window's icon on its space's colour, and the
+window switcher and workspace overview use to badge those windows (`SpaceBadge.qml`). `SpaceBadges.qml` puts a Top-layer strip along
+the top edge of each such window, drawing a 3 px border in the space's colour (shaped to the
+window's rounding, from `decoration:rounding`; square for a lone tiled or maximised window) that's on a showing workspace (clear, and taking the
 pointer only where the badge is), placed from `HyprlandToplevel.lastIpcObject` (re-read on
 window/workspace events, and every 0.5 s while there are any, since Hyprland sends no event
 for resizes or drags); which workspaces are showing comes from `hyprctl -j monitors`.
 Hovering the badge fades it across to the other top corner, inside the strip, so Hyprland
-never animates it; a focus change puts it back.
+never animates it; a focus change puts it back. Hyprland gives no positions while a workspace
+switch slides, so borders and badges vanish when one starts and fade back in (220 ms) after the slide
+(500 ms, 300 ms with fast animations).
 
 ## Dependencies
 

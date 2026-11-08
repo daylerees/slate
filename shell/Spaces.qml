@@ -20,6 +20,39 @@ Singleton {
     property string restoring: ""         // id of the space being brought back ("" = none)
     readonly property var restoringSpace: list.find(s => s.id === restoring) ?? null
 
+    // Which open windows came from which space: stableId -> space id, from scripts/spaces.py
+    // (only this Hyprland session's: window ids start over each session; the first version of
+    // the file was a bare map). A file can only be watched once it exists, so it's made empty
+    // at start if missing; reloadOwners() reads it again for changes that slip past the watch
+    // (the script replaces the file rather than writing into it).
+    property var owners: ({})
+    // Window address (as Quickshell gives it) -> space id, for open windows that came from a
+    // space; kept up to date by SpaceBadges.qml (the bar uses it for the focused window)
+    property var spaceOfAddress: ({})
+    readonly property string ownersPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/space-windows.json"
+    function reloadOwners() { ownersFile.reload(); }
+    function spaceById(id) { return id ? list.find(s => s.id === id) ?? null : null; }
+    Process {
+        running: true
+        command: ["sh", "-c", "mkdir -p \"$(dirname \"$0\")\" && { [ -e \"$0\" ] || echo '{\"windows\":{}}' > \"$0\"; }", root.ownersPath]
+        onExited: ownersFile.reload()
+    }
+    FileView {
+        id: ownersFile
+        path: root.ownersPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text()) || {};
+                root.owners = d.windows === undefined ? d
+                    : d.instance === Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") ? d.windows : {};
+            } catch (e) { root.owners = {}; }
+        }
+        onLoadFailed: root.owners = {}
+    }
+
     // Pastel colours to pick from, and icons (Tabler codepoints)
     readonly property var colours: ["#f4a6a6", "#f7b9a1", "#f9cb9c", "#f6dc8e", "#e4e59a", "#c6e3a0",
         "#a8ddb5", "#9fd9cb", "#9ad4e0", "#a3c8f0", "#aab8f2", "#bca9ee", "#d3a8e8", "#eaa9d9",

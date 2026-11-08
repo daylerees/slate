@@ -957,6 +957,14 @@ PanelWindow {
                 Label { anchors { left: spNewIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                     text: "New Space"; font.weight: Font.Normal }
             }
+            RowButton {
+                visible: spp.mode === "list"
+                width: parent.width
+                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "spaces"]); }
+                Icon { id: spSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: spSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Spaces settings"; font.weight: Font.Normal }
+            }
 
             // ---- New Space ----
             Item {

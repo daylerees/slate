@@ -39,8 +39,10 @@ DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.lo
 STORE = os.path.join(DATA, "spaces.json")
 RUNTIME = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "slate")
 LOCK = os.path.join(RUNTIME, "spaces.lock")
-# Which open windows came from which space (window stableId -> space id), for the badges
-# Slate draws on them (SpaceBadges.qml). Windows that have closed are dropped on each write.
+# Which open windows came from which space, for the borders and badges Slate draws on them
+# (SpaceBadges.qml): {"instance": Hyprland's instance signature, "windows": {stableId: space
+# id}}. Hyprland numbers windows the same way each time it starts, so a file from another
+# Hyprland session is ignored. Windows that have closed are dropped on each write.
 OWNERS = os.path.join(RUNTIME, "space-windows.json")
 
 WINDOW_TIMEOUT = 15     # seconds to wait for an app's window
@@ -313,10 +315,15 @@ def first_leaf(node):
 
 def remember(stable_id, space_id):
     """Note that a window belongs to a space."""
+    instance = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
     try:
         with open(OWNERS, encoding="utf-8") as fh:
-            owners = json.load(fh)
-    except (OSError, ValueError):
+            data = json.load(fh)
+        if "windows" not in data:          # the first version: a bare map, from this session
+            owners = data
+        else:
+            owners = data["windows"] if data.get("instance") == instance else {}
+    except (OSError, ValueError, AttributeError):
         owners = {}
     alive = {str(c.get("stableId")) for c in hypr("clients")}
     owners = {k: v for k, v in owners.items() if k in alive}
@@ -324,7 +331,7 @@ def remember(stable_id, space_id):
     os.makedirs(RUNTIME, exist_ok=True)
     tmp = OWNERS + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(owners, fh)
+        json.dump({"instance": instance, "windows": owners}, fh)
     os.replace(tmp, OWNERS)
 
 

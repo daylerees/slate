@@ -442,12 +442,46 @@ PanelWindow {
                             y: g ? (g.at[1] - card.mon.y) * card.sx : 0
                             width: g ? g.size[0] * card.sx : 0
                             height: g ? g.size[1] * card.sx : 0
+                            // The window's own rounding, scaled to the card (but enough to see;
+                            // a square window stays square)
+                            readonly property real rounding: Config.windowRadius(modelData ? modelData.lastIpcObject : null,
+                                card.wins.filter(t => t.lastIpcObject && !t.lastIpcObject.floating).length)
+                            readonly property real radius: rounding > 0 ? Math.max(2.5, rounding * card.sx) : 0
                             ShaderEffectSource {
                                 anchors.fill: parent
                                 sourceItem: ov.shotFor(parent.modelData.address)
                                 live: true
                                 smooth: true
                                 mipmap: true
+                                layer.enabled: ovWin.radius > 0
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
+                            }
+                            Item {
+                                id: ovWinMask
+                                anchors.fill: parent
+                                visible: false
+                                layer.enabled: true
+                                Rectangle { anchors.fill: parent; radius: ovWin.radius }
+                            }
+                            // Its app's icon in the middle (Settings → Windows), with a soft shadow
+                            // so it reads over the window
+                            Item {
+                                visible: Config.s.overviewAppIcons
+                                anchors.centerIn: parent
+                                width: Math.round(Math.max(16, Math.min(44, parent.width * 0.28, parent.height * 0.4))); height: width
+                                layer.enabled: visible
+                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 1 }
+                                AppTile {
+                                    anchors.fill: parent
+                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? ov.lookup(parent.parent.modelData.wayland.appId) : null
+                                    app: entry ? entry.id : (parent.parent.modelData && parent.parent.modelData.wayland ? parent.parent.modelData.wayland.appId : "")
+                                }
+                            }
+                            // The window came from a space: its badge in the top left corner
+                            SpaceBadge {
+                                x: Math.round(size * 0.3); y: x
+                                size: Math.round(Math.max(14, Math.min(24, parent.width * 0.12, parent.height * 0.2)))
+                                space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[parent.modelData.address]) : null
                             }
                         }
                     }

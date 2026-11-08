@@ -47,15 +47,15 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Part | What it does | File |
 |---|---|---|
 | Top bar | Spaces button, workspaces (dots + spring indicator), active window title / hover descriptions, tray, notifications · clipboard · screenshot · Wi-Fi · keyboard · Bluetooth · volume · battery group (clipboard and screenshot off by default), clock, power. Rounded top screen corners | `Bar.qml` |
-| Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down ask in a centred dialog | `Popouts.qml`, `PowerConfirm.qml` |
+| Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down, and deleting a space, ask in a centred dialog | `Popouts.qml`, `PowerConfirm.qml` |
 | Dock | macOS-style magnifying dock, pinned apps, right-click menus, auto-hide | `shell.qml` |
 | Launcher | App search (usage-sorted), calculator, open on a new workspace left/right | `Launcher.qml` |
-| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces, each window wearing the space's icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `Popouts.qml`, `scripts/spaces.py` |
+| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces, each window wearing the space's colour along its top and its icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `SpaceBadge.qml`, `Popouts.qml`, `scripts/spaces.py` |
 | Window switcher | Super+Tab, live previews, circular strip | `Switcher.qml` |
 | Workspace overview | Super+Down, large live cards, reorder with Shift | `WorkspaceOverview.qml` |
 | Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml` |
 | On-screen indicators | Volume, mic, brightness, keyboard backlight, workspace dots (Super+Left/Right) | `OSD.qml` |
-| Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, about | `SettingsWindow.qml` |
+| Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, about | `SettingsWindow.qml` |
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
 | Login screen | greetd greeter in a minimal Hyprland, same design as the lock screen | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |

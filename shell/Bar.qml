@@ -524,6 +524,12 @@ PanelWindow {
                     readonly property string path: bar.tileDir + "/" + key.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
                     readonly property bool showGlyph: !!titleArea.s && key === "" && titleArea.s.hoverCode !== 0
                     readonly property bool showImage: !!titleArea.s && key === "" && !showGlyph && String(titleArea.s.hoverImage) !== ""
+                    // The focused window came from a space: its tile takes the space's colour
+                    // (the whole button, for icon styles with no tile behind the icon)
+                    readonly property var space: titleArea.s || !Config.s.spaceBarTint ? null
+                        : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
+                    color: space && !tilePlate.visible ? space.colour : bar.capsuleColor
+                    Behavior on color { ColorAnimation { duration: 200 } }
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
                     visible: !titleArea.s && !!focusedTop      // hover descriptions are text only
@@ -538,7 +544,13 @@ PanelWindow {
                         mipmap: true
                         layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                         onStatusChanged: if (status === Image.Error && !tileGen.running && appTile.tried !== appTile.path) { appTile.tried = appTile.path; tileGen.running = true; }
-                        IconPlate { anchors.fill: parent; z: -1 }   // the tile behind, in the theme's colour
+                        // The tile behind, in the theme's colour (or the space's)
+                        IconPlate {
+                            id: tilePlate
+                            anchors.fill: parent; z: -1
+                            color: appTile.space ? appTile.space.colour : Config.iconPlateColor
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
                     }
                     Process {
                         id: tileGen

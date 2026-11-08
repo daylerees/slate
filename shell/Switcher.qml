@@ -293,9 +293,15 @@ PanelWindow {
                         layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                         IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
                     }
-                    // Small app tile on the preview's corner
+                    // The window came from a space: its badge on the preview's top left corner
+                    SpaceBadge {
+                        x: shot.x - 6; y: shot.y - 6
+                        size: 24
+                        space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[card.modelData.address]) : null
+                    }
+                    // Small app tile on the preview's corner (Settings → Windows)
                     Image {
-                        visible: shot.hasContent
+                        visible: shot.hasContent && Config.s.switcherAppIcons
                         x: shot.x - 6; y: shot.y + shot.height - height + 6
                         width: 30; height: 30
                         source: card.key ? "file://" + card.tilePath + "?v=" + Config.tileVersion : ""

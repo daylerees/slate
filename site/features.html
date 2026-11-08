@@ -206,7 +206,7 @@
     <article>
       <h3>Switcher</h3>
       <ul>
-        <li>Super+Tab: every window in a circular strip, with live previews (optional)</li>
+        <li>Super+Tab: every window in a circular strip, with live previews and app icons on them (both optional)</li>
         <li>Alt+Tab for the next window</li>
       </ul>
     </article>
@@ -214,11 +214,11 @@
       <h3>Spaces</h3>
       <ul>
         <li>Save the apps on one or more workspaces, and where their windows sit, as a space, from the Spaces button on the bar</li>
-        <li>Pick the workspaces from small previews of them, then give the space a name, an icon and a colour (pastels, or any colour of your own)</li>
+        <li>Pick the workspaces from small live previews of them, then give the space a name, an icon and a colour (pastels, or any colour of your own)</li>
         <li>Click a space to bring it back: each workspace opens as a new one, its apps start, and their windows go back to the same tiles, floating spots and sizes</li>
-        <li>Windows opened from a space wear its icon and colour in their top left corner; the badge fades across to the other top corner when the pointer comes near (switch it off in Settings → Menu bar)</li>
-        <li>Saving under a name you already use replaces that space; delete one from its row</li>
-        <li>On by default; hide the button in Settings → Menu bar</li>
+        <li>Windows opened from a space get a thin top border in its colour and wear its icon in their top left corner; the badge fades across to the other top corner when the pointer comes near, the window's icon on the menu bar sits on the space's colour, and the badge shows on the window in the window switcher and the workspace overview (each can be switched off in Settings → Spaces)</li>
+        <li>Saving under a name you already use replaces that space; delete one from its row (it asks first, in the middle of the screen)</li>
+        <li>Settings → Spaces: the button on the menu bar, and each way their windows are marked</li>
         <li><code>slate ipc call spaces restore &lt;name&gt;</code> brings one back from a key binding or script</li>
       </ul>
     </article>
@@ -231,7 +231,7 @@
     <article>
       <h3>Overview</h3>
       <ul>
-        <li>Super+Down: every workspace as a large live card</li>
+        <li>Super+Down: every workspace as a large live card, optionally with each window's app icon on it</li>
         <li>Jump to one, or hold Shift to lift a card and move it along</li>
         <li>Card size is adjustable</li>
       </ul>
@@ -498,7 +498,7 @@
       <h3>Finding things</h3>
       <ul>
         <li>Opens on an overview of every page, with a search across all settings</li>
-        <li>Pages: General, Appearance, Displays, Keyboard and mouse, Sound, Power, Windows, Notifications, Wi-Fi, Bluetooth, Menu bar, Dock, Launcher, Hot corners, Lock and idle, Shortcuts, Default apps, Startup apps, Date and time, Screenshots, About</li>
+        <li>Pages: General, Appearance, Displays, Keyboard and mouse, Sound, Power, Windows, Notifications, Wi-Fi, Bluetooth, Menu bar, Dock, Launcher, Spaces, Hot corners, Lock and idle, Shortcuts, Default apps, Startup apps, Date and time, Screenshots, About</li>
         <li>Restore defaults on each page</li>
       </ul>
     </article>

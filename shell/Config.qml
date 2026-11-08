@@ -370,6 +370,29 @@ Singleton {
         onExited: root.tileVersion++
     }
 
+    // ---- Window rounding -----------------------------------------------------------
+    // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
+    // drawing windows the way they look: previews, borders. A tiled window alone on its
+    // workspace and a maximised one are square (windowrules.lua): see windowRadius().
+    // Read at start and again when Hyprland reloads its config.
+    property real windowRounding: 10
+    Process {
+        id: roundingProc
+        running: true
+        command: ["hyprctl", "-j", "getoption", "decoration:rounding"]
+        stdout: StdioCollector { onStreamFinished: { try { root.windowRounding = JSON.parse(text).int; } catch (e) {} } }
+    }
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) { if (event.name === "configreloaded") { roundingProc.running = false; roundingProc.running = true; } }
+    }
+    // A window's rounding (Hyprland's pixels) from its Hyprland data (lastIpcObject or
+    // hyprctl clients), given how many tiled windows share its workspace
+    function windowRadius(o, tiledOnWorkspace) {
+        if (!o) return windowRounding;
+        return o.fullscreen === 1 || (!o.floating && tiledOnWorkspace === 1) ? 0 : windowRounding;
+    }
+
     // ---- Interface size ---------------------------------------------------------
     // Settings → Appearance → Interface size scales all of Slate through Qt (QT_SCALE_FACTOR,
     // set by bin/slate when it starts Slate), so the scale in use is the one Slate started

@@ -92,7 +92,11 @@ JsonAdapter {
     // What the bar shows (Settings → Menu bar)
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
-    property bool spaceBadges: true           // a space's icon on the windows it opened
+    // Spaces (Settings → Spaces): how windows opened from a space are marked
+    property bool spaceBorders: true          // a top border in the space's colour
+    property bool spaceBadges: true           // the space's icon in the window's corner
+    property bool spaceSwitcherBadges: true   // its icon on the window in Super+Tab and Super+Down
+    property bool spaceBarTint: true          // the focused window's icon on the bar sits on its colour
     property bool barShowWorkspaces: true     // workspace dots
     property bool barShowTitle: true          // focused window's title
     property bool barShowTray: true           // app tray icons
@@ -132,6 +136,8 @@ JsonAdapter {
 
     // Switchers
     property bool switcherPreviews: true
+    property bool switcherAppIcons: true      // app icon on each window's preview in Super+Tab
+    property bool overviewAppIcons: false     // app icon on each window in Super+Down
     property real overviewCardWidth: 728
 
     // Notifications
