@@ -164,7 +164,8 @@ PanelWindow {
     function close() { shown = false; shiftHeld = false; }
     function move(step) {
         const n = strip.length;
-        if (n) index = (index + step + n) % n;
+        // Round from the last workspace to the first, unless that's turned off (Settings → Windows)
+        if (n) index = Config.s.wrapWorkspaces ? (index + step + n) % n : Math.max(0, Math.min(n - 1, index + step));
         list.currentIndex = index;
     }
     // Shift+Left/Right: move the selected workspace along by swapping its windows
@@ -174,6 +175,7 @@ PanelWindow {
     function reorder(step) {
         const n = spaces.length;
         if (n < 2 || swapping) return;
+        if (!Config.s.wrapWorkspaces && (selected + step < 0 || selected + step >= n)) return;
         const a = spaces[selected], b = spaces[(selected + step + n) % n];
         swapA = a.id; swapB = b.id; swapStep = step;
         swapProg = 0;

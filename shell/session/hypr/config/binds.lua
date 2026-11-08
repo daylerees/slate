@@ -463,6 +463,11 @@ local function cycleWorkspace(step)
         end
     end
     local wraps = (step > 0 and current.id == maxId) or (step < 0 and current.id == minId)
+    -- Wrapping turned off (Settings → Windows): stay on the last (or first) one
+    if wraps and WRAP_WORKSPACES == false then
+        hl.exec_cmd(slate("osd workspace"))
+        return
+    end
     hl.config({ animations = { workspace_wraparound = wraps } })
     hl.dispatch(hl.dsp.focus({ workspace = step > 0 and "m+1" or "m-1" }))
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's
