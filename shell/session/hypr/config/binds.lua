@@ -2,13 +2,37 @@
 -- Sections: helpers · windows · launching apps · hardware keys · utilities ·
 -- workspaces & monitors. Many shortcuts talk to Slate via `slate ipc call …` (see
 -- `slate ipc show` for everything it accepts). Add or override shortcuts in
--- ~/.config/slate/hypr/hyprland.lua; it's loaded after this file.
+-- ~/.config/slate/hypr/binds.lua; it's loaded after this file.
+--
+-- Three sets to choose from (Settings → Shortcuts): Slate's own (the default), Hyprland's
+-- default shortcuts, or Hyprland's with Slate's added on the keys they leave free. Each
+-- part below says which sets it's in; the hardware keys and mouse are in all of them.
 
 -----------------
 ---- HELPERS ----
 -----------------
 
 local mainMod = "SUPER"
+
+-- Which set (Settings → Shortcuts). Slate saves it in ~/.local/state/slate/keyset.lua and
+-- reloads this config when you change it:
+--   "slate"            Slate's own shortcuts
+--   "hyprland"         Hyprland's default shortcuts (as in its example config)
+--   "hyprland-extras"  Hyprland's defaults, plus Slate's shortcuts on keys they leave free
+KEYSET = "slate"
+do
+    local path = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/slate/keyset.lua"
+    local f = io.open(path, "r")
+    if f then
+        f:close()
+        local ok, err = pcall(dofile, path)
+        if not ok then print("[slate] error in " .. path .. ": " .. tostring(err)) end
+    end
+end
+local SLATE_KEYS = KEYSET ~= "hyprland" and KEYSET ~= "hyprland-extras"
+local HYPR_KEYS = not SLATE_KEYS
+local EXTRAS = KEYSET == "hyprland-extras"
+
 
 -- What each shortcut does, shown in Settings → Shortcuts ("Group: what it does"). Looked
 -- up by the exact keys given to hl.bind below, and only for the shortcuts in this file:
@@ -55,7 +79,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + SHIFT + Down"]       = "Windows: Move the window down",
     ["SUPER + mouse:272"]          = "Windows: Move a window (drag)",
     ["SUPER + mouse:273"]          = "Windows: Resize a window (right-drag)",
-    ["SUPER + W"]                  = "Workspaces: Move the window to an empty workspace",
+    ["SUPER + W"]                  = "Workspaces: Move the window to a new workspace at the end",
     ["SUPER + CONTROL + Right"]    = "Workspaces: Move the window to the next workspace",
     ["SUPER + CONTROL + Left"]     = "Workspaces: Move the window to the previous workspace",
     ["SUPER + Right"]              = "Workspaces: Next workspace",
@@ -65,6 +89,57 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + S"]                  = "Workspaces: Show or hide the secret workspace",
     ["SUPER + SHIFT + S"]          = "Workspaces: Move the window to the secret workspace",
 }
+-- Hyprland's default shortcuts (the "Hyprland Defaults" and "Hyprland + Slate Extras" sets)
+local HYPRLAND_DESCRIPTIONS = {
+    ["SUPER + Q"]                  = "Apps: A terminal",
+    ["SUPER + E"]                  = "Apps: Files",
+    ["SUPER + R"]                  = "Apps: The app launcher",
+    ["SUPER + C"]                  = "Windows: Close the window",
+    ["SUPER + V"]                  = "Windows: Float or tile the window",
+    ["SUPER + P"]                  = "Windows: Pseudo-tile the window",
+    ["SUPER + J"]                  = "Windows: Split the other way",
+    ["SUPER + Left"]               = "Windows: Focus the window to the left",
+    ["SUPER + Right"]              = "Windows: Focus the window to the right",
+    ["SUPER + Up"]                 = "Windows: Focus the window above",
+    ["SUPER + Down"]               = "Windows: Focus the window below",
+    ["SUPER + M"]                  = "Slate: Log out (asks first)",
+    ["SUPER + S"]                  = "Workspaces: Show or hide the secret workspace",
+    ["SUPER + SHIFT + S"]          = "Workspaces: Move the window to the secret workspace",
+    ["SUPER + mouse_down"]         = "Workspaces: Next workspace",
+    ["SUPER + mouse_up"]           = "Workspaces: Previous workspace",
+    ["SUPER + mouse:272"]          = "Windows: Move a window (drag)",
+    ["SUPER + mouse:273"]          = "Windows: Resize a window (right-drag)",
+}
+-- Slate's shortcuts that move to other keys in "Hyprland + Slate Extras" (theirs are taken)
+local EXTRA_DESCRIPTIONS = {
+    ["SUPER + SHIFT + V"]          = "Slate: Clipboard history",
+    ["SUPER + SHIFT + P"]          = "Slate: Pick a colour from the screen (copied)",
+    ["SUPER + CONTROL + Down"]     = "Workspaces: Workspace overview",
+}
+-- The descriptions for the set in use; the number-key ones are worked out from the keys
+local DESCRIPTIONS, DIGIT_DESCRIPTIONS
+if SLATE_KEYS then
+    DESCRIPTIONS = SHORTCUT_DESCRIPTIONS
+    DIGIT_DESCRIPTIONS = {
+        ["SUPER + ALT"]             = "Workspaces: Go to workspace %d",
+        ["SUPER + CONTROL"]         = "Workspaces: Go to this monitor's workspace %d",
+        ["SUPER + SHIFT + CONTROL"] = "Workspaces: Move the window to this monitor's workspace %d",
+        ["SUPER + SHIFT + ALT"]     = "Workspaces: Send the window to this monitor's workspace %d (staying here)",
+        ["SUPER"]                   = "Monitors: Focus monitor %d",
+        ["SUPER + SHIFT"]           = "Monitors: Move the window to monitor %d",
+    }
+else
+    DESCRIPTIONS = {}
+    if EXTRAS then
+        for k, v in pairs(SHORTCUT_DESCRIPTIONS) do DESCRIPTIONS[k] = v end
+        for k, v in pairs(EXTRA_DESCRIPTIONS) do DESCRIPTIONS[k] = v end
+    end
+    for k, v in pairs(HYPRLAND_DESCRIPTIONS) do DESCRIPTIONS[k] = v end
+    DIGIT_DESCRIPTIONS = {
+        ["SUPER"]         = "Workspaces: Go to workspace %d",
+        ["SUPER + SHIFT"] = "Workspaces: Move the window to workspace %d",
+    }
+end
 -- A Slate command, e.g. slate("launcher toggle")
 local function slate(args) return SLATE .. " ipc call " .. args end
 -- Start apps through uwsm when the session runs under it, otherwise directly
@@ -88,17 +163,10 @@ do
     hl.bind = function(keys, action, opts)
         -- Its description for Settings → Shortcuts. The number-key ones are worked out from
         -- the keys (code:10 is the 1 key … code:19 the 0 key)
-        local desc = inSlateBinds and SHORTCUT_DESCRIPTIONS[keys] or nil
+        local desc = inSlateBinds and DESCRIPTIONS[keys] or nil
         if inSlateBinds and not desc then
             local mods, code = keys:match("^(.-) %+ code:(%d+)$")
-            local what = mods and ({
-                ["SUPER + ALT"]             = "Workspaces: Go to workspace %d",
-                ["SUPER + CONTROL"]         = "Workspaces: Go to this monitor's workspace %d",
-                ["SUPER + SHIFT + CONTROL"] = "Workspaces: Move the window to this monitor's workspace %d",
-                ["SUPER + SHIFT + ALT"]     = "Workspaces: Send the window to this monitor's workspace %d (staying here)",
-                ["SUPER"]                   = "Monitors: Focus monitor %d",
-                ["SUPER + SHIFT"]           = "Monitors: Move the window to monitor %d",
-            })[mods]
+            local what = mods and DIGIT_DESCRIPTIONS[mods]
             if what then desc = string.format(what, tonumber(code) == 19 and 10 or tonumber(code) - 9) end
         end
         if desc and not (opts and opts.description) then
@@ -168,6 +236,8 @@ hl.on("window.close", function(win)
     end
 end)
 
+-- (Slate's set)
+if SLATE_KEYS then
 -- Window manipulation
 hl.bind(mainMod .. " + Escape",      hl.dsp.exec_cmd("hyprctl kill"))
 hl.bind(mainMod .. " + Q",           function() closeWindowSmart() end)
@@ -182,6 +252,9 @@ hl.bind(mainMod .. " + ALT + Right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + ALT + Up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + ALT + Down",  hl.dsp.focus({ direction = "down" }))
 hl.bind("ALT + Tab",           hl.dsp.window.cycle_next())
+end
+-- (Slate's set, and Hyprland + Slate Extras)
+if SLATE_KEYS or EXTRAS then
 -- Window switcher (Slate): hold Super, press Tab / Shift+Tab, let go of Super to switch
 hl.bind(mainMod .. " + Tab",           hl.dsp.exec_cmd(slate("switcher next")))
 hl.bind(mainMod .. " + SHIFT + Tab",   hl.dsp.exec_cmd(slate("switcher prev")))
@@ -202,6 +275,9 @@ hl.bind(mainMod .. " + SUPER_L", function()
     end
     superTap = false
 end, { release = true, non_consuming = true, ignore_mods = true })
+end
+-- (Slate's set)
+if SLATE_KEYS then
 
 -- Move active window around workspaces & monitors
 hl.bind(mainMod .. " + SHIFT + Up",                   hl.dsp.window.move({ direction = "u" }))
@@ -230,12 +306,16 @@ for i = 1, NUM_WPM do
     hl.bind(mainMod .. " + SHIFT + ALT + " .. digitCode(key), hl.dsp.window.move({ workspace = "m~" .. i, follow = false }))
 end
 
+end
 -- Move & Resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag())
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize())
 
+-- (Slate's set)
+if SLATE_KEYS then
 -- Resize mode: SUPER + R, then arrows to resize; Escape, Return or SUPER + R to exit
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
+end
 hl.define_submap("resize", function()
     hl.bind("Right", hl.dsp.window.resize({ x = 30,  y = 0,   relative = true }), { repeating = true })
     hl.bind("Left",  hl.dsp.window.resize({ x = -30, y = 0,   relative = true }), { repeating = true })
@@ -265,6 +345,8 @@ local function zoomfunction(value)
         hl.config({ cursor = { zoom_factor = zoomvalue + value } })
     end
 end
+-- (Slate's set, and Hyprland + Slate Extras)
+if SLATE_KEYS or EXTRAS then
 hl.bind(mainMod .. " + Minus", function() zoomfunction(-0.3) end, { repeating = true })
 hl.bind(mainMod .. " + Plus", function() zoomfunction(0.3) end, { repeating = true })
 
@@ -273,6 +355,9 @@ hl.bind(mainMod .. " + code:82", function() zoomfunction(-0.3) end, { repeating 
 hl.bind(mainMod .. " + code:86", function() zoomfunction(0.3) end, { repeating = true })
 
 
+end
+-- (Slate's set)
+if SLATE_KEYS then
 ------------------------
 ---- LAUNCHING APPS ----
 ------------------------
@@ -301,6 +386,7 @@ hl.bind(mainMod .. " + Space",       hl.dsp.exec_cmd(slate("launcher toggle")))
 hl.bind(mainMod .. " + period",     hl.dsp.exec_cmd(slate("picker toggle emoji")))
 hl.bind(mainMod .. " + L",          hl.dsp.exec_cmd(slate("lock lock")))
 hl.bind(mainMod .. " + ALT + C",    hl.dsp.exec_cmd(slate("bar panel session")))
+end
 ---------------------------
 ---- HARDWARE CONTROLS ----
 ---------------------------
@@ -324,6 +410,8 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(slate("osd brightness down")), 
 hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd(slate("osd keyboard up")),   { locked = true, repeating = true })
 hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd(slate("osd keyboard down")), { locked = true, repeating = true })
 
+-- (Slate's set)
+if SLATE_KEYS then
 -------------------
 ---- UTILITIES ----
 -------------------
@@ -402,6 +490,98 @@ hl.bind(mainMod .. " + Down", function()
     if hl.get_active_special_workspace() then hl.dispatch(hl.dsp.workspace.toggle_special())
     elseif not overviewIsOpen() then hl.exec_cmd(slate("overview open")) end
 end)
+end
+
+---------------------------------
+---- HYPRLAND'S OWN SHORTCUTS ----
+---------------------------------
+
+-- The "Hyprland Defaults" and "Hyprland + Slate Extras" sets: Hyprland's default shortcuts
+-- (its example hyprland.conf), with Slate's launcher for its app menu and Slate's log-out
+-- question for its exit
+if HYPR_KEYS then
+    hl.bind(mainMod .. " + Q", function() hl.exec_cmd(launchPrefix .. TERMINAL) end)
+    hl.bind(mainMod .. " + C", hl.dsp.window.close())
+    hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(slate("power confirm logout")))
+    hl.bind(mainMod .. " + E", function() hl.exec_cmd(launchPrefix .. FILE_MANAGER) end)
+    hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+    hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(slate("launcher toggle")))
+    hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+    hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
+    -- Focus; with Slate's extras, they drive the workspace overview while it's open
+    hl.bind(mainMod .. " + Left", function()
+        if EXTRAS and overviewIsOpen() then ov("prev") else hl.dispatch(hl.dsp.focus({ direction = "left" })) end
+    end)
+    hl.bind(mainMod .. " + Right", function()
+        if EXTRAS and overviewIsOpen() then ov("next") else hl.dispatch(hl.dsp.focus({ direction = "right" })) end
+    end)
+    hl.bind(mainMod .. " + Up", function()
+        if EXTRAS and overviewIsOpen() then ov("go") else hl.dispatch(hl.dsp.focus({ direction = "up" })) end
+    end)
+    hl.bind(mainMod .. " + Down", hl.dsp.focus({ direction = "down" }))
+    -- Workspaces 1 to 10, and moving the window to them
+    for i = 1, 10 do
+        hl.bind(mainMod .. " + " .. digitCode(i % 10), hl.dsp.focus({ workspace = i }))
+        hl.bind(mainMod .. " + SHIFT + " .. digitCode(i % 10), hl.dsp.window.move({ workspace = i }))
+    end
+    -- The secret (special) workspace, and scrolling through workspaces
+    hl.bind(mainMod .. " + S",          hl.dsp.workspace.toggle_special())
+    hl.bind(mainMod .. " + SHIFT + S",  hl.dsp.window.move({ workspace = "special" }))
+    hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+    hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+    hl.bind("XF86Calculator",           function() hl.exec_cmd(launchPrefix .. CALCULATOR) end)
+end
+
+-- "Hyprland + Slate Extras": Slate's shortcuts where Hyprland's leave the keys free (the
+-- tap of Super and Super+Tab are earlier on, with Slate's own set). Three move: clipboard
+-- history to Super+Shift+V, the colour picker to Super+Shift+P and the workspace overview
+-- to Super+Ctrl+Down
+if EXTRAS then
+    hl.bind("ALT + Tab",                hl.dsp.window.cycle_next())
+    hl.bind(mainMod .. " + Space",      hl.dsp.exec_cmd(slate("launcher toggle")))
+    hl.bind(mainMod .. " + Return", function()
+        if overviewIsOpen() then ov("go"); return end
+        if slateOverlayOpen("slate-launcher") then hl.exec_cmd(slate("launcher launchOnNewWorkspace")); return end
+        hl.exec_cmd(launchPrefix .. TERMINAL)
+    end)
+    hl.bind(mainMod .. " + T",          function() hl.exec_cmd(launchPrefix .. EDITOR) end)
+    hl.bind(mainMod .. " + W",          function()
+        local win = hl.get_active_window()
+        if win then hl.dispatch(hl.dsp.window.move({ workspace = newWorkspace(win.address) })) end
+    end)
+    hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(launchPrefix .. TERMINAL .. " -e btop") end)
+    hl.bind(mainMod .. " + Escape",     hl.dsp.exec_cmd("hyprctl kill"))
+    hl.bind(mainMod .. " + D",          hl.dsp.window.fullscreen({ mode = 1 }))
+    hl.bind(mainMod .. " + F",          hl.dsp.window.fullscreen())
+    hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(slate("settings toggle")))
+    hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(slate("bar panel control")))
+    hl.bind(mainMod .. " + A",          hl.dsp.exec_cmd(slate("bar panel notifications")))
+    hl.bind(mainMod .. " + ALT + C",    hl.dsp.exec_cmd(slate("bar panel session")))
+    hl.bind(mainMod .. " + L",          hl.dsp.exec_cmd(slate("lock lock")))
+    hl.bind(mainMod .. " + period",     hl.dsp.exec_cmd(slate("picker toggle emoji")))
+    hl.bind(mainMod .. " + SHIFT + V",  hl.dsp.exec_cmd(slate("picker toggle clipboard")))
+    hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd("hyprpicker -a -n"))
+    hl.bind(mainMod .. " + SHIFT + W",  hl.dsp.exec_cmd(slate("settings page wallpaper")))
+    hl.bind("Print",                    hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"))
+    hl.bind(mainMod .. " + Print",      hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"))
+    -- Moving the window: around this workspace, and to the next or previous workspace
+    hl.bind(mainMod .. " + SHIFT + Up",    hl.dsp.window.move({ direction = "u" }))
+    hl.bind(mainMod .. " + SHIFT + Down",  hl.dsp.window.move({ direction = "d" }))
+    hl.bind(mainMod .. " + SHIFT + Right", function()
+        if overviewIsOpen() then ov("moveRight") else hl.dispatch(hl.dsp.window.move({ direction = "r" })) end
+    end)
+    hl.bind(mainMod .. " + SHIFT + Left", function()
+        if overviewIsOpen() then ov("moveLeft") else hl.dispatch(hl.dsp.window.move({ direction = "l" })) end
+    end)
+    hl.bind(mainMod .. " + CONTROL + Right", hl.dsp.window.move({ workspace = "m+1" }))
+    hl.bind(mainMod .. " + CONTROL + Left",  hl.dsp.window.move({ workspace = "m-1" }))
+    -- The workspace overview (or leave the secret workspace if it's showing)
+    hl.bind(mainMod .. " + CONTROL + Down", function()
+        if hl.get_active_special_workspace() then hl.dispatch(hl.dsp.workspace.toggle_special())
+        elseif not overviewIsOpen() then hl.exec_cmd(slate("overview open")) end
+    end)
+end
+
 
 -- Slate's shortcuts are done: descriptions from here on are only ones given explicitly
 inSlateBinds = false

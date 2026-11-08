@@ -2459,6 +2459,7 @@ FloatingWindow {
             PageTitle { text: "Shortcuts" }
             property var binds: []
             Process {
+                id: bindsProc
                 running: true
                 command: ["hyprctl", "binds", "-j"]
                 stdout: StdioCollector { onStreamFinished: { try { scp.binds = JSON.parse(text).filter(b => b.has_description && b.description && b.submap === ""); } catch (e) {} } }
@@ -2481,6 +2482,12 @@ FloatingWindow {
                 if (k) keys.push(k);
                 return keys;
             }
+            // A different set: read the shortcuts again once Hyprland has reloaded with it
+            Connections {
+                target: Config
+                function onKeysetApplied() { bindsAgain.restart(); }
+            }
+            Timer { id: bindsAgain; interval: 500; onTriggered: { bindsProc.running = false; bindsProc.running = true; } }
             readonly property var order: ["Apps", "Slate", "Windows", "Workspaces", "Monitors"]
             readonly property var groups: {
                 const q = findKeys.text.toLowerCase().trim();
@@ -2496,6 +2503,22 @@ FloatingWindow {
                 }
                 return Object.keys(g).sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)).map(k => ({ name: k, rows: g[k] }));
             }
+
+            // Which set of shortcuts (binds.lua); changing it reloads Hyprland's config
+            Group {
+                DropdownSetting {
+                    label: "Shortcut set"
+                    options: [{ value: "slate", label: "Slate" },
+                              { value: "hyprland", label: "Hyprland Defaults" },
+                              { value: "hyprland-extras", label: "Hyprland + Slate Extras" }]
+                    value: Config.s.keyset
+                    onPicked: v => Config.setKeyset(v)
+                    detail: Config.s.keyset === "hyprland" ? "Hyprland's own default shortcuts (Super+Q terminal, Super+C close, Super+R launcher, Super+1–0 workspaces)"
+                        : Config.s.keyset === "hyprland-extras" ? "Hyprland's defaults, plus Slate's shortcuts where the keys are free (clipboard on Super+Shift+V, colour picker on Super+Shift+P, overview on Super+Ctrl+Down)"
+                        : "Slate's own shortcuts (Super+Q close, Super+Space or tap Super for the launcher, Super+Tab to switch windows)"
+                }
+            }
+            Item { width: 1; height: 6 }
 
             Rectangle {
                 width: parent.width; height: 40; radius: 10

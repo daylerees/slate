@@ -111,11 +111,13 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `polkit` | `preview`, `previewWrong`, `close` (preview only) |
 | `power` | `confirm <logout\|reboot\|shutdown>` (asks first), `cancel` |
 | `spaces` | `restore <name>`, `list` |
+| `screensaver` | `start` (a preview: any input puts it away), `stop` |
 
 ## Hyprland integration (`~/.config/hypr/config/*.lua`)
 
 - `autostart.lua` — starts `slate`.
-- `binds.lua` — Super tap → launcher; Super+Space launcher; Super+Tab switcher;
+- `binds.lua` — three sets (Settings → Shortcuts, `~/.local/state/slate/keyset.lua`): Slate's
+  (below), Hyprland's default shortcuts, or Hyprland's plus Slate's on free keys. Slate's set: Super tap → launcher; Super+Space launcher; Super+Tab switcher;
   Super+Down overview (arrows/Enter/Shift+arrows drive it while open); Super+Up go /
   special workspace; Super+Return new workspace launch; Super+X control centre;
   Super+A notifications; Super+Alt+C power; Super+Z settings; Super+L lock; media,

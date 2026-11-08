@@ -370,6 +370,20 @@ Singleton {
         onExited: root.tileVersion++
     }
 
+    // ---- Keyboard shortcuts set (Settings → Shortcuts) ------------------------------
+    // "slate", "hyprland" or "hyprland-extras": saved where binds.lua reads it
+    // (~/.local/state/slate/keyset.lua), then Hyprland's config reloads to use it
+    readonly property string keysetPath: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/keyset.lua"
+    signal keysetApplied()
+    function setKeyset(v) {
+        if (["slate", "hyprland", "hyprland-extras"].indexOf(v) < 0) return;
+        s.keyset = v;
+        keysetProc.command = ["sh", "-c", "mkdir -p \"$(dirname \"$0\")\" && printf 'KEYSET = \"%s\"\\n' \"$1\" > \"$0\" && hyprctl reload >/dev/null",
+                              keysetPath, v];
+        keysetProc.running = true;
+    }
+    Process { id: keysetProc; onExited: root.keysetApplied() }
+
     // ---- Window rounding -----------------------------------------------------------
     // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
     // drawing windows the way they look: previews, borders. A tiled window alone on its
