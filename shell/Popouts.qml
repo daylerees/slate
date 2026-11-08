@@ -1999,13 +1999,13 @@ PanelWindow {
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: profileMask }
                     Image {
                         anchors.fill: parent
-                        // Loaded ahead of time (profileWallpaper): ready as the panel opens
+                        // Loaded ahead of time (profileWallpaper), so loading it here is instant
+                        // from the cache: there as the panel opens. (Loaded in the background
+                        // instead, it wasn't ready for a frame and faded in.)
                         source: pop.profileWallpaper
                         sourceSize.width: pop.profileWallpaperWidth
                         fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        opacity: status === Image.Ready ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: 300 } }
+                        asynchronous: false
                     }
                     Rectangle {
                         anchors.fill: parent
