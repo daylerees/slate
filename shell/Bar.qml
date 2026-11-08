@@ -514,7 +514,7 @@ PanelWindow {
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
 
-                Item { id: tileSlotStart; width: childrenRect.width; height: childrenRect.height }
+                Item { id: tileSlotStart; visible: appTile.parent === tileSlotStart && appTile.visible; width: childrenRect.width; height: childrenRect.height }
                 Capsule {
                     id: appTile
                     // Before the title, except on a left bar, where the title reads upwards and
@@ -535,7 +535,8 @@ PanelWindow {
                     Behavior on color { ColorAnimation { duration: 200 } }
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
-                    visible: !titleArea.s && !!focusedTop      // hover descriptions are text only
+                    // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu bar)
+                    visible: !titleArea.s && !!focusedTop && Config.s.barShowTitleIcon
                     length: bar.capsuleHeight
                     hoverTint: false
                     Image {
@@ -605,7 +606,7 @@ PanelWindow {
                         font.weight: Font.Medium
                     }
                 }
-                Item { id: tileSlotEnd; width: childrenRect.width; height: childrenRect.height }
+                Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.visible; width: childrenRect.width; height: childrenRect.height }
             }
         }
 

@@ -99,6 +99,7 @@ JsonAdapter {
     property bool spaceBarTint: true          // the focused window's icon on the bar sits on its colour
     property bool barShowWorkspaces: true     // workspace dots
     property bool barShowTitle: true          // focused window's title
+    property bool barShowTitleIcon: true      // …with its app's icon before it
     property bool barShowTray: true           // app tray icons
     property bool barShowNotifications: true
     property bool barShowClipboard: false     // clipboard history, with how many items it holds

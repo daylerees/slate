@@ -128,7 +128,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
@@ -1530,6 +1530,13 @@ FloatingWindow {
                     label: "Window title"
                     detail: "The focused app's icon and title"
                     Toggle { checked: Config.s.barShowTitle; onToggled: v => Config.s.barShowTitle = v }
+                }
+                Separator { visible: Config.s.barShowTitle }
+                SettingRow {
+                    visible: Config.s.barShowTitle
+                    label: "App icon"
+                    detail: "The focused app's icon before its title"
+                    Toggle { checked: Config.s.barShowTitleIcon; onToggled: v => Config.s.barShowTitleIcon = v }
                 }
             }
             GroupLabel { text: "Right side" }
