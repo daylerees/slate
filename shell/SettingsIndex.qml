@@ -1,6 +1,6 @@
 pragma Singleton
 
-// Every Slate setting, for searching: Settings' Overview page and the app launcher.
+// Every Slate setting, for searching: Settings' All Settings page and the app launcher.
 //  - curated: pages and settings with extra words to find them by ("dpi" finds Interface
 //    size), kept by hand
 //  - each setting's label, description and heading, read from SettingsWindow.qml

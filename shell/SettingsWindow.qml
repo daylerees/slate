@@ -50,7 +50,7 @@ FloatingWindow {
         if (!visible && a && a.discovering) a.discovering = false;
         if (visible && !keepSection) section = "overview";
         // Cleared a moment later, not now: showing the window can report "visible" twice,
-        // and the second would otherwise send a requested page back to the Overview
+        // and the second would otherwise send a requested page back to All Settings
         if (visible) keepClear.restart(); else keepSection = false;
     }
 
@@ -84,7 +84,7 @@ FloatingWindow {
     function glyph(code) { return String.fromCodePoint(code); }
 
     property string section: "overview"
-    // Opening Settings starts on the Overview, unless it was asked for a page (keepSection)
+    // Opening Settings starts on All Settings, unless it was asked for a page (keepSection)
     property bool keepSection: false
     Timer { id: keepClear; interval: 600; onTriggered: win.keepSection = false }
     // A setting to scroll to and light up once its page has loaded (goTo)
@@ -167,20 +167,20 @@ FloatingWindow {
     FontMetrics { id: introMetrics; font.family: win.font; font.pixelSize: 13 }
     readonly property real detailMeasure: detailMetrics.averageCharacterWidth * 70
     readonly property real introMeasure: introMetrics.averageCharacterWidth * 70
-    // Every page. The ones used most are down the sidebar; the rest (more: true) are tiles on
-    // the Overview, the first page
+    // Every page, each a tile on All Settings (the first page). The ones used most are also
+    // down the sidebar; the rest (more: true) are reached from All Settings
     readonly property var sections: [
-        { id: "general", label: "General", icon: 0xEB20 },
-        { id: "appearance", label: "Appearance", icon: 0xEB01 },
-        { id: "displays", label: "Displays", icon: 0xEA89 },
-        { id: "input", label: "Keyboard & mouse", icon: 0xEBD6 },
-        { id: "sound", label: "Sound", icon: 0xEB51 },
-        { id: "power", label: "Power", icon: 0xEA38 },
-        { id: "windows", label: "Windows", icon: 0xEFE6 },
-        { id: "workspaces", label: "Workspaces", icon: 0xEDBA },
-        { id: "notifications", label: "Notifications", icon: 0xEA35 },
-        { id: "wifi", label: "Wi-Fi", icon: 0xEB52 },
-        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37 },
+        { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
+        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, icons, fonts, size and wallpaper" },
+        { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
+        { id: "input", label: "Keyboard & mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
+        { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
+        { id: "power", label: "Power", icon: 0xEA38, about: "Power mode, the lid and the power button" },
+        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling or floating, gaps, borders, focus and Super+Tab" },
+        { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
+        { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
+        { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
+        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
         { id: "bar", label: "Menu bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
         { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
         { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
@@ -197,9 +197,9 @@ FloatingWindow {
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
     ]
-    readonly property var sidebarSections: [{ id: "overview", label: "Overview", icon: 0xEDBA }].concat(sections.filter(x => !x.more))
+    readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
-    // A page opened from the Overview: the sidebar keeps Overview lit, and the title gets a back arrow
+    // A page opened from All Settings: the sidebar keeps All Settings lit, and the title gets a back arrow
     readonly property bool onMorePage: moreSections.some(x => x.id === section)
 
     Item {
@@ -283,7 +283,7 @@ FloatingWindow {
                 z: 2
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 height: 66
-                // Back to the Overview, from a page opened there
+                // Back to All Settings, from a page opened there
                 Rectangle {
                     id: backBtn
                     visible: win.onMorePage
@@ -1050,7 +1050,7 @@ FloatingWindow {
         Column {
             id: ovPage
             spacing: 4
-            PageTitle { text: "Overview" }
+            PageTitle { text: "All Settings" }
             // ---- Search every setting (SettingsIndex) ----------------------------------
             readonly property var found: SettingsIndex.search(findField.text, 30)
             property int pick: 0
@@ -1073,7 +1073,7 @@ FloatingWindow {
                     color: win.text; font.family: win.font; font.pixelSize: 14
                     selectionColor: win.accent; selectedTextColor: win.accentText
                     clip: true
-                    // Ready to type whenever the Overview shows: when the page loads and each time
+                    // Ready to type whenever All Settings shows: when the page loads and each time
                     // the window opens (after the window's own focus has settled), starting afresh
                     function ready() { Qt.callLater(() => Qt.callLater(() => { if (win.visible && win.section === "overview") findField.forceActiveFocus(); })); }
                     Component.onCompleted: ready()
@@ -1160,7 +1160,7 @@ FloatingWindow {
                     }
                 }
             }
-            GroupLabel { visible: findField.text.trim().length < 2; text: "More settings" }
+            GroupLabel { visible: findField.text.trim().length < 2; text: "Every page" }
             Flow {
                 id: tiles
                 visible: findField.text.trim().length < 2
@@ -1170,7 +1170,7 @@ FloatingWindow {
                 readonly property int across: width >= 560 ? 3 : width >= 340 ? 2 : 1
                 readonly property real tileW: (width - spacing * (across - 1)) / across
                 Repeater {
-                    model: win.moreSections
+                    model: win.sections
                     delegate: Rectangle {
                         id: tile
                         required property var modelData

@@ -149,7 +149,7 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 - **Keyboard & mouse** (layouts, Caps Lock, key repeat, pointer and touchpad), **Sound**,
   **Power** (lid, power button, power mode on battery and plugged in), **Default apps**,
   **Startup apps**, **Date & time**, **Screenshots** and a searchable list of **Shortcuts**
-  are all in Settings (Super+Z; the Overview page lists the less-used ones). Settings only
+  are all in Settings (Super+Z; All Settings, the first page, has a tile for every page). Settings only
   sets what you change there; anything else keeps what your own files say.
 - **Monitor rules, extra keys and anything else** go in your own files, which Slate loads
   on top of its config:
