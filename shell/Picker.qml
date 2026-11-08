@@ -304,7 +304,8 @@ PanelWindow {
         ListView {
             id: list
             visible: root.mode === "clipboard"
-            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: footer.top; margins: 14; bottomMargin: 6; rightMargin: 22 }
+            // Full width when everything fits (no scrollbar); room for it when it doesn't
+            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: footer.top; margins: 14; bottomMargin: 6; rightMargin: contentHeight <= height ? 14 : 22 }
             clip: true
             model: root.mode === "clipboard" ? root.clipResults : []
             SmoothWheel { flick: list }
@@ -400,7 +401,10 @@ PanelWindow {
         GridView {
             id: grid
             visible: root.mode === "emoji"
-            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: footer.top; margins: 14; bottomMargin: 6; rightMargin: 22 }
+            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: footer.top; margins: 14; bottomMargin: 6; rightMargin: fitsFull ? 14 : 22 }
+            // Full width when everything fits. Judged at full width: the cells size with the
+            // width, so judging at the width in use could flip the scrollbar on and off
+            readonly property bool fitsFull: Math.ceil(count / root.columns) * Math.floor((parent.width - 28) / root.columns) <= height
             clip: true
             cellWidth: Math.floor(width / root.columns)
             cellHeight: cellWidth

@@ -525,7 +525,9 @@ PanelWindow {
         // One GridView for both: in the list it has a single full-width column
         GridView {
             id: list
-            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: root.gridMode ? nameStrip.top : parent.bottom; margins: 14; rightMargin: 22 }
+            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: root.gridMode ? nameStrip.top : parent.bottom; margins: 14; rightMargin: listFits ? 14 : 22 }
+            // Rows use the full width when they all fit (no scrollbar); the grid's cells are a fixed size
+            readonly property bool listFits: !root.gridMode && contentHeight <= height
             anchors.bottomMargin: root.gridMode ? 4 : 14
             clip: true
             // A fresh copy when the layout changes, so every item is made again for it (items
