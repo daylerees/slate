@@ -1,0 +1,40 @@
+# The files that make up the login screen, copied to /usr/local/share/slate-greeter by
+# slate-greeter-install (and compared by slate-greeter-sync --check).
+#
+#   <installed path>  <source, relative to ~/.config/slate>
+#   -  <source>          used by code the login screen loads, but not needed there
+#   +  <installed path>  made by the installer, not copied
+#
+# The login screen can't read your home folder, so anything it loads must be listed
+# here. tools/check-greeter-files checks this list against the QML (CI runs it too),
+# and the installer test-loads the copy before installing it. hyprland.lua is filled in
+# by the installer (keyboard layout), so it's listed with "+".
+
+shell.qml                    greeter/shell.qml
+LoginWindow.qml              greeter/LoginWindow.qml
+run-greeter.sh               greeter/run-greeter.sh
+fonts.conf                   greeter/fonts.conf
+LoginScreen.qml              LoginScreen.qml
+Config.qml                   Config.qml
+SettingsData.qml             SettingsData.qml
+RoundImage.qml               RoundImage.qml
+scripts/wallpaper-accent.py  scripts/wallpaper-accent.py
+
+# The emergency login screen, used if the one above fails to load
+emergency/shell.qml          greeter/emergency/shell.qml
+emergency/Window.qml         greeter/emergency/Window.qml
+emergency/Box.qml            greeter/emergency/Box.qml
+
+# Config.qml runs these on the desktop (keyboard layout names, app icon tiles, avatar);
+# the login screen does without them
+-  scripts/hypr-options.py
+-  scripts/xkb-layouts.py
+-  scripts/appicon.py
+-  scripts/set-avatar.sh
+-  bin/slate  # restarts Slate when the interface size changes
+-  fonts/tabler.ttf  # the login screen passes the copy in /var/lib/slate-greeter
+
+# Made by the installer
++  hyprland.lua  # greeter/hyprland.lua with your keyboard layout
++  settings.json  # a link to /var/lib/slate-greeter/settings.json
++  version  # marks which copy has logged someone in

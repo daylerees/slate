@@ -2,8 +2,9 @@
 // Hyprland started by greetd. Uses the same LoginScreen.qml as the lock screen.
 //
 //   Code (root-owned, installed by: sudo slate-greeter-install):
-//     /usr/local/share/slate-greeter   this file, LoginScreen.qml, Config.qml, RoundImage.qml,
-//                                      scripts/, settings.json -> data/settings.json
+//     /usr/local/share/slate-greeter   this file and the others listed in greeter/files,
+//                                      settings.json -> data/settings.json, version
+//     /usr/local/share/slate-greeter.good   the last copy someone logged in with
 //   Appearance (yours, kept in sync by Slate via slate-greeter-sync; data only, no code):
 //     /var/lib/slate-greeter           settings.json wallpaper avatar user.json fonts/
 //   Greeter's own writable state (last session):  /var/cache/slate-greeter
@@ -11,13 +12,15 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import Quickshell.Services.Greetd
 
 ShellRoot {
     id: root
     readonly property string dir: Quickshell.env("SLATE_GREETER_DATA") || "/var/lib/slate-greeter"   // appearance data
     readonly property string stateDir: "/var/cache/slate-greeter"
+    // Check mode (slate-greeter-install runs it before installing): build the login screen
+    // without a window, then exit 0 if it loaded, so a broken copy is never installed
+    readonly property bool checking: Quickshell.env("SLATE_GREETER_CHECK") === "1"
 
     // ---- Who logs in (written by the sync) -------------------------------------
     property string user: ""
@@ -134,6 +137,9 @@ ShellRoot {
             const s = root.sessions[root.sessionIndex];
             if (!s) { root.fail("No session to start"); return; }
             lastSession.setText(s.id + "\n");
+            // This version works: the installer keeps it as the fallback (.good)
+            const v = version.text().trim();
+            if (v) proven.setText(v + "\n");
             root.message = "Starting " + s.name + "…"; root.messageIsError = false;
             Qt.callLater(gc);
             Greetd.launch(root.splitExec(s.exec),
@@ -142,44 +148,38 @@ ShellRoot {
         function onError(error) { root.fail("Login error: " + error); }
     }
 
+    // Which version this is (written by the installer), and the last one that logged someone in
+    FileView { id: version; path: Quickshell.shellPath("version"); blockLoading: true; printErrors: false }
+    FileView { id: proven; path: root.stateDir + "/proven"; blockWrites: true; printErrors: false }
+
     // ---- Power ------------------------------------------------------------------
     function power(action) { Quickshell.execDetached(["systemctl", action]); }
 
     // ---- Screens: the login box on the first screen, wallpaper on the others -----
+    // (LoginWindow.qml; not loaded in check mode, which has no display)
+    readonly property Component windowComponent: checking ? null : Qt.createComponent("LoginWindow.qml")
     Variants {
-        model: Quickshell.screens
-        PanelWindow {
-            id: win
-            required property var modelData
-            readonly property bool primary: modelData === Quickshell.screens[0]
-            screen: modelData
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.namespace: "slate-greeter"
-            WlrLayershell.keyboardFocus: primary ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            color: "#0f1216"
-            LoginScreen {
-                id: screen
-                anchors.fill: parent
-                mode: "login"
-                visible: true
-                wallpaper: root.haveWallpaper ? root.wallpaper : ""
-                avatar: root.dir + "/avatar"
-                displayName: root.displayName
-                sessions: root.sessions
-                sessionIndex: root.sessionIndex
-                onSessionIndexChanged: root.sessionIndex = sessionIndex
-                busy: root.busy
-                message: root.message
-                messageIsError: root.messageIsError
-                showPowerMenu: true
-                interactive: win.primary
-                iconFontSource: "file://" + root.dir + "/fonts/tabler.ttf"
-                onSubmitted: pw => root.submit(pw)
-                onPowerAction: a => root.power(a)
-                Connections { target: root; function onFailed(t) { screen.fail(t); } }
-            }
+        model: root.checking ? [] : Quickshell.screens.map(s => ({ screen: s, greeter: root }))
+        delegate: root.windowComponent
+    }
+    // If the window can't load there'd be no login screen at all: exit with an error so
+    // run-greeter.sh falls back to the last copy that worked
+    function checkWindow() {
+        if (windowComponent.status !== Component.Error) return;
+        console.error("slate-greeter: LoginWindow.qml failed to load: " + windowComponent.errorString());
+        Qt.exit(4);
+    }
+
+    // Check mode: the same login screen, with no window
+    Component { id: checkScreen; LoginScreen { mode: "login"; width: 1280; height: 800 } }
+    property var checked: null
+    Component.onCompleted: if (checking) checked = checkScreen.createObject(null); else checkWindow()
+    Timer {
+        running: root.checking
+        interval: 1500      // let it settle, so errors while it starts up are logged too
+        onTriggered: {
+            console.info(root.checked ? "slate-greeter-check: ok" : "slate-greeter-check: LoginScreen failed to load");
+            Qt.exit(root.checked ? 0 : 3);
         }
     }
 

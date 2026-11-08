@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Test-load the Slate login screen without a display, to catch a broken one before it's
+# installed (slate-greeter-install runs this first, and won't install a copy that fails).
+#
+#   slate-greeter-check <copy>               test an installed-style copy (the installer's)
+#   slate-greeter-check --source [<slate>]   build a copy from greeter/files and test it
+#                                            (default: the Slate this script is in; CI and
+#                                            the pre-commit hook use this)
+#
+# Checks the greeter's Hyprland config, run-greeter.sh, the login screen and the
+# emergency one. Runs as you, on a throwaway copy, cut off from your session (no Wayland,
+# Hyprland or D-Bus), so nothing it starts can change anything. Exit 0 if all is well;
+# otherwise says what failed.
+set -euo pipefail
+
+DATA="${SLATE_GREETER_DATA:-/var/lib/slate-greeter}"
+t=$(mktemp -d /tmp/slate-greeter-check.XXXXXX)      # short path: Quickshell's socket lives in it
+trap 'rm -rf "$t"' EXIT
+mkdir -p "$t/home" "$t/run"; chmod 700 "$t/run"
+
+if [ "${1:-}" = "--source" ]; then
+    src="${2:-$(cd "$(dirname "$0")/.." && pwd)}"
+    mkdir -p "$t/code"
+    sed 's/#.*//' "$src/greeter/files" | awk 'NF >= 2 && $1 != "-" && $1 != "+" { print $1, $2 }' |
+        while read -r name file; do
+            mkdir -p "$t/code/$(dirname "$name")"
+            cp "$src/$file" "$t/code/$name" || { echo "greeter/files lists $file, which doesn't exist"; exit 1; }
+        done
+    sed 's/__KB_LAYOUT__/us/' "$src/greeter/hyprland.lua" > "$t/code/hyprland.lua"
+elif [ -n "${1:-}" ] && [ -d "$1" ]; then
+    cp -r "$1/." "$t/code"
+else
+    sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0" >&2; exit 2
+fi
+# Its own copy of the settings (the installed copy links to the real ones)
+rm -f "$t/code/settings.json"
+[ ! -r "$DATA/settings.json" ] || cp "$DATA/settings.json" "$t/code/settings.json"
+
+isolated() {
+    env -i PATH=/usr/local/bin:/usr/bin:/bin HOME="$t/home" LANG=C.UTF-8 \
+        XDG_RUNTIME_DIR="$t/run" XDG_CACHE_HOME="$t/home/.cache" XDG_STATE_HOME="$t/home/.local/state" \
+        QT_QPA_PLATFORM=offscreen DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent \
+        DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent SLATE_GREETER_CHECK=1 SLATE_GREETER_DATA="$DATA" \
+        timeout 60 "$@" >"$t/log" 2>&1
+}
+nocolour() { sed 's/\x1b\[[0-9;]*m//g'; }
+
+if command -v Hyprland >/dev/null && ! isolated Hyprland --verify-config -c "$t/code/hyprland.lua"; then
+    echo "Its Hyprland config (greeter/hyprland.lua) has errors:"
+    sed -n '/Config parsing result/,$p' "$t/log" | grep -v -e 'Config parsing' -e '^=* *$' | nocolour | tail -5 | sed 's/^/  /'
+    exit 1
+fi
+if ! sh -n "$t/code/run-greeter.sh" 2>"$t/log"; then
+    echo "greeter/run-greeter.sh has a syntax error:"; sed 's/^/  /' "$t/log"
+    exit 1
+fi
+for entry in "login screen:." "emergency login screen:emergency"; do
+    if ! isolated qs -p "$t/code/${entry#*:}"; then
+        echo "The ${entry%%:*} failed to load:"
+        grep -E 'ERROR|caused by' "$t/log" | nocolour | sed 's/^ *//; s/^/  /' | head -12
+        exit 1
+    fi
+done
+echo "Login screen loads OK"

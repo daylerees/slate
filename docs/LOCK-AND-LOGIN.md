@@ -35,23 +35,37 @@ always; lock screen only if enabled). Rounded screen corners follow the setting.
 ```
 greetd ──runs as "greeter"──▶ dbus-run-session start-hyprland -c /usr/local/share/slate-greeter/hyprland.lua
                                 └─ run-greeter.sh ─▶ qs -p /usr/local/share/slate-greeter   (greeter/shell.qml)
+                                     if it fails to load: slate-greeter.good, then emergency/
                                                       └─ Greetd: create_session → password → start_session
                                    when qs quits after launching: hyprctl dispatch hl.dsp.exit()
 ```
 
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
-| `/usr/local/share/slate-greeter` (+ `.previous`) | root | `shell.qml` (from `greeter/`), `LoginScreen.qml`, `Config.qml`, `SettingsData.qml`, `RoundImage.qml`, `scripts/`, `hyprland.lua` (keyboard layout filled in), `run-greeter.sh`, `fonts.conf`, `settings.json` → symlink to the data folder | `sudo ~/.config/slate/bin/slate-greeter-install` |
+| `/usr/local/share/slate-greeter` (+ `.good`) | root | the files listed in `greeter/files` (`shell.qml`, `LoginWindow.qml`, `LoginScreen.qml`, `Config.qml`, … and the `emergency/` login screen), plus `hyprland.lua` (keyboard layout filled in), `version`, and `settings.json` → symlink to the data folder | `sudo ~/.config/slate/bin/slate-greeter-install` |
 | `/var/lib/slate-greeter` | you | appearance only: `settings.json`, `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
-| `/var/cache/slate-greeter` | greeter | `last-session`, logs, caches | the greeter |
+| `/var/cache/slate-greeter` | greeter | `last-session`, `proven` (version of the last copy someone logged in with), logs, caches | the greeter |
 
 - **Updating the code:** when the login screen's code changes, Slate shows a notification
   ("Login screen out of date") with an **Update** button that asks for your password
   (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
   code; "Later" waits for the next change. Settings → Lock & idle has the same Update button.
   Files are read with your own permissions, not root's.
-- **Safety net:** each update keeps the replaced copy as `/usr/local/share/slate-greeter.previous`.
-  If the new copy fails to load, `run-greeter.sh` starts the previous one instead.
+- **Safety net**, so a broken update never leaves anyone at a text console:
+  1. **Tested before it's installed.** `slate-greeter-install` test-loads the new copy with
+     `slate-greeter-check` (as you, offscreen, cut off from your session): the greeter's
+     Hyprland config, `run-greeter.sh`, the login screen and the emergency one. If any
+     fails, it says why and leaves the installed copy as it was (`--no-check` skips this,
+     for when the test itself is what's wrong).
+  2. **Last known good.** When someone logs in, the greeter writes its `version` to
+     `/var/cache/slate-greeter/proven`. On the next update, the copy being replaced becomes
+     `/usr/local/share/slate-greeter.good` only if it's proven (or there's no `.good` yet);
+     otherwise the existing `.good` stays.
+  3. **Fallbacks at boot.** If the copy fails to load (Quickshell exits with an error
+     within 10 s), `run-greeter.sh` starts `.good`, then `emergency/`: a basic login
+     screen (user name, password, session, restart / shut down) using only Quickshell's own
+     types, so the things that can break the real one can't break it. The log notes which
+     copy started.
 - The greeter can't read your home folder, hence the copies. Code is root-owned; the
   user-owned folder holds only data (images, fonts, setting values).
 - Settings → Lock & idle → "Slate login screen" shows whether the installed code
@@ -62,10 +76,34 @@ greetd ──runs as "greeter"──▶ dbus-run-session start-hyprland -c /usr/
 
 ### If the login screen doesn't come up
 
+The fallbacks above should cover this; if you see the emergency login screen, log in and
+update the login screen from Settings → Lock & idle. If even that fails:
+
 1. Ctrl+Alt+F3, log in on the text console.
 2. `sudo ~/.config/slate/bin/slate-greeter-install --revert` (restores the previous greeter).
 3. `sudo systemctl restart greetd` to get a graphical login now.
 4. Look at `/var/cache/slate-greeter/greeter.log` and `journalctl -b -u greetd`.
+
+### Changing what the login screen loads
+
+The login screen runs from a root-owned copy, so every file it loads must be listed in
+`shell/greeter/files` (`<installed path> <source>`; `- <source>` for files its code
+mentions but doesn't need at login, `+ <installed path>` for ones the installer makes).
+Three checks keep the list honest:
+
+- `tools/check-greeter-files` reads the login screen's QML and fails if a Slate type
+  (`SettingsData {…}`) or file (`shellPath("scripts/…")`) it uses isn't on the list, or a
+  QML file under `greeter/` isn't.
+- `shell/bin/slate-greeter-check --source` builds a copy from the list and test-loads it
+  offscreen, the same test the installer runs.
+- Both run in CI (`.github/workflows/checks.yml`, in an Arch container) and in the
+  pre-commit hook (turn it on with `git config core.hooksPath .githooks`).
+
+Check mode (`SLATE_GREETER_CHECK=1`, `QT_QPA_PLATFORM=offscreen`) builds the login screen
+without a window and exits 0 if it loaded. Windows can't be made without a display, which
+is why each screen's `PanelWindow` lives in its own file (`LoginWindow.qml`,
+`emergency/Window.qml`) that check mode doesn't load; if it fails to load for real, the
+greeter exits so the fallbacks take over.
 
 ### Testing without greetd
 

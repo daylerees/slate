@@ -45,7 +45,8 @@ scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
 shaders/mono.frag(.qsb)       tray icons → single theme colour
-greeter/                the login screen (see LOCK-AND-LOGIN.md)
+greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
+                        everything it's installed with, greeter/emergency/ is its fallback
 ```
 
 Only one of launcher / window switcher / workspace overview is open at once, and

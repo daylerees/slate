@@ -5,10 +5,17 @@
 #   pkexec ~/.config/slate/bin/slate-greeter-install --code-only
 #                                         update only the code (Slate offers this, asking
 #                                         for your password, when the design has changed)
+#   add --no-check to skip the test below (only if the test itself is what's failing)
 #
 # Code goes to /usr/local/share/slate-greeter, owned by root (re-run this after
-# changing the login screen's design). Appearance (wallpaper, theme, avatar, fonts)
-# lives in /var/lib/slate-greeter, which Slate keeps in sync without sudo.
+# changing the login screen's design); the files are listed in greeter/files.
+# Appearance (wallpaper, theme, avatar, fonts) lives in /var/lib/slate-greeter, which
+# Slate keeps in sync without sudo.
+#
+# Safety net, so a broken update never leaves you without a login screen:
+#  - The new copy is test-loaded first (slate-greeter-check); if it fails, nothing changes.
+#  - The last copy someone logged in with is kept as slate-greeter.good; run-greeter.sh
+#    falls back to it, then to a basic emergency login screen.
 #
 # It never restarts greetd (that would end your session); the change shows at the
 # next logout or reboot. If the login screen ever fails, log in on a text console
@@ -29,7 +36,17 @@ OWNER="${SUDO_USER:-}"
 HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
 SRC="$HOMEDIR/.config/slate"
 
-if [ "${1:-}" = "--revert" ]; then
+CHECK=1; MODE=full
+for a in "$@"; do
+    case "$a" in
+        --no-check) CHECK=0 ;;
+        --code-only) MODE=code ;;
+        --revert) MODE=revert ;;
+        *) echo "Unknown option: $a" >&2; exit 1 ;;
+    esac
+done
+
+if [ "$MODE" = revert ]; then
     [ -f "$BACKUP" ] || { echo "No backup at $BACKUP; nothing to revert." >&2; exit 1; }
     cp -f "$BACKUP" "$CONF"
     echo "greetd is back to its previous login screen (takes effect at next logout/reboot)."
@@ -37,33 +54,57 @@ if [ "${1:-}" = "--revert" ]; then
 fi
 
 id "$GREETER_USER" >/dev/null 2>&1 || { echo "No '$GREETER_USER' user; is greetd installed?" >&2; exit 1; }
-[ -f "$SRC/greeter/shell.qml" ] || { echo "Can't find $SRC/greeter/shell.qml" >&2; exit 1; }
+for f in greeter/shell.qml greeter/files; do
+    [ -f "$SRC/$f" ] || { echo "Can't find $SRC/$f" >&2; exit 1; }
+done
 
 # 1. Code: a fresh root-owned copy, swapped in whole. Files are read with your own
 #    permissions (never root's), so a symlink in your folder can't pull in a private file.
 readas() { runuser -u "$OWNER" -- cat -- "$1"; }
 put() {    # put <source> <dest> <mode>
-    readas "$1" > "$2" && chmod "$3" "$2"
+    readas "$1" > "$2" || { echo "Can't read $1; is your copy of Slate complete?" >&2; exit 1; }
+    chmod "$3" "$2"
 }
+# The login screen's files (greeter/files): <installed path> <source>, skipping "-" lines
+code_files() { readas "$SRC/greeter/files" | sed 's/#.*//' | awk 'NF >= 2 && $1 != "-" && $1 != "+" { print $1, $2 }'; }
+
 stage=$(mktemp -d /usr/local/share/.slate-greeter.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
-for f in greeter/shell.qml greeter/fonts.conf LoginScreen.qml Config.qml SettingsData.qml RoundImage.qml; do
-    put "$SRC/$f" "$stage/$(basename "$f")" 644
-done
-put "$SRC/greeter/run-greeter.sh" "$stage/run-greeter.sh" 755
-install -d -m 755 "$stage/scripts"
-put "$SRC/scripts/wallpaper-accent.py" "$stage/scripts/wallpaper-accent.py" 755
+while read -r name src; do
+    install -d -m 755 "$stage/$(dirname "$name")"
+    mode=644; runuser -u "$OWNER" -- test -x "$SRC/$src" && mode=755
+    put "$SRC/$src" "$stage/$name" "$mode"
+done < <(code_files)
 # Keyboard layout: recorded by slate-greeter-sync (from your running Hyprland)
 layout=$(grep -oP '"kb_layout":\s*"\K[A-Za-z0-9_,-]+' "$DATA/user.json" 2>/dev/null | head -1 || true)
 readas "$SRC/greeter/hyprland.lua" | sed "s/__KB_LAYOUT__/${layout:-us}/" > "$stage/hyprland.lua"; chmod 644 "$stage/hyprland.lua"
+# Which version this is: the greeter records it after a login, marking it as one that works
+(cd "$stage" && find . -type f ! -name version -print0 | sort -z | xargs -0 md5sum | md5sum | cut -c1-32) > "$stage/version"
 ln -s "$DATA/settings.json" "$stage/settings.json"      # Config.qml reads its settings from next to itself
-chown -R root:root "$stage"; chmod 755 "$stage"
-# Keep the copy being replaced as .previous: run-greeter.sh falls back to it if the
-# new one fails to load
-rm -rf "$CODE.previous"; [ -d "$CODE" ] && mv "$CODE" "$CODE.previous"
+chown -R root:root "$stage"; chmod -R a+rX "$stage"
+
+# Test-load it first (slate-greeter-check, run as you, without a display): if it fails,
+# nothing changes
+if [ "$CHECK" = 1 ] && ! report=$(runuser -u "$OWNER" -- "$SRC/bin/slate-greeter-check" "$stage" 2>&1); then
+    echo "Not installed: the new login screen failed its test, so the current one is unchanged." >&2
+    echo "$report" >&2
+    exit 1
+fi
+
+# Swap it in. The copy being replaced becomes the fallback (.good) if someone has logged
+# in with it (the greeter wrote its version to $CACHE/proven), or if there's no fallback
+# yet; otherwise the existing fallback stays, since it's known to work.
+version_of() { cat "$1/version" 2>/dev/null || true; }
+proven=$(cat "$CACHE/proven" 2>/dev/null || true)
+if [ -d "$CODE" ] && { [ ! -d "$CODE.good" ] || { [ -n "$proven" ] && [ "$(version_of "$CODE")" = "$proven" ]; }; }; then
+    rm -rf "$CODE.good"; mv "$CODE" "$CODE.good"
+else
+    rm -rf "$CODE"
+fi
+rm -rf "$CODE.previous"      # the fallback before there was a .good
 mv "$stage" "$CODE"; trap - EXIT
 
-if [ "${1:-}" = "--code-only" ]; then
+if [ "$MODE" = code ]; then
     echo "Login screen code updated (shows at your next logout or reboot)."
     exit 0
 fi

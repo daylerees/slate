@@ -37,9 +37,11 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/` | Slate itself: installed to `~/.config/slate` |
 | `shell/session/` | the "Slate" login session and its Hyprland config |
 | `shell/greeter/` | Slate's login screen (greetd) |
-| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync` |
+| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check` |
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
+| `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
+| `.githooks/` | pre-commit check for the login screen; turn on with `git config core.hooksPath .githooks` |
 | `docs/` | install, architecture, session, lock/login, redistribution notes |
 
 ## What's in it
@@ -129,6 +131,10 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
   - When the login screen's own code changes, Slate shows a **Login screen out of date**
     notification. **Update** asks for your password; until then you'll see the previous
     version at login. Settings → Lock & idle has the same button.
+  - Each update is test-loaded before it's installed; if it doesn't load, nothing changes.
+    If the login screen still fails at boot, the last version you logged in with takes
+    over, and failing that a basic emergency login screen, so you're never left at a
+    text console.
   - The lock screen is part of Slate itself, so it's always current.
 - **Floating mode's title bars need rebuilding after Hyprland updates.** Floating mode is
   optional: Slate tiles windows by default, and this only matters if you've switched to

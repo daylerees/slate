@@ -210,7 +210,9 @@ ShellRoot {
     Timer { id: greeterCodeCheck; interval: 20000; running: true; onTriggered: greeterPrompt.running = true }
     Process { id: greeterPrompt; command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--prompt"] }
     Variants {
-        model: ["greeter/shell.qml", "greeter/run-greeter.sh", "greeter/fonts.conf", "greeter/hyprland.lua", "scripts/wallpaper-accent.py"]
+        model: ["greeter/files", "greeter/shell.qml", "greeter/LoginWindow.qml", "greeter/run-greeter.sh", "greeter/fonts.conf",
+            "greeter/hyprland.lua", "greeter/emergency/shell.qml", "greeter/emergency/Window.qml", "greeter/emergency/Box.qml",
+            "scripts/wallpaper-accent.py"]
         FileView {
             required property var modelData
             path: Quickshell.shellPath(modelData)
