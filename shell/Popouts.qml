@@ -49,6 +49,18 @@ PanelWindow {
         function close(): void { pop.close(); }
     }
 
+    // The control centre's profile card shows the wallpaper behind it. Loaded here, ahead of
+    // time and at the same size, so it's already in the image cache when the card is made and
+    // is there as the panel opens (otherwise it loaded, and faded in, after the first opening)
+    readonly property string profileWallpaper: Config.wallpaper ? "file://" + Config.wallpaper : ""
+    readonly property int profileWallpaperWidth: 940
+    Image {
+        visible: false
+        source: pop.profileWallpaper
+        sourceSize.width: pop.profileWallpaperWidth
+        asynchronous: true
+    }
+
     property real fade: shown ? 1 : 0
     Behavior on fade { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
@@ -1987,8 +1999,9 @@ PanelWindow {
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: profileMask }
                     Image {
                         anchors.fill: parent
-                        source: Config.wallpaper ? "file://" + Config.wallpaper : ""
-                        sourceSize.width: 940
+                        // Loaded ahead of time (profileWallpaper): ready as the panel opens
+                        source: pop.profileWallpaper
+                        sourceSize.width: pop.profileWallpaperWidth
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         opacity: status === Image.Ready ? 1 : 0
