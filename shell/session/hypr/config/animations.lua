@@ -35,9 +35,39 @@ hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = sp(5), bezi
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })
 end
 defineLeaves()
+-- How switching workspace looks (Settings → Appearance → Workspace switching); Slate sets it
+-- with setWorkspaceAnimation(style) when it starts, when this config reloads and when it
+-- changes:
+--   slidefade      the new workspace slides in over the old, which fades underneath (default)
+--   slidefadevert  the same, up and down
+--   slide          both slide along together, like pages
+--   slidevert      the same, up and down
+--   crossfade      the new one fades in over the old
+--   none           straight there
+WORKSPACE_ANIM = WORKSPACE_ANIM or "slidefade"
+local function spd(x) return sp and sp(x) or x end
 local function slideWorkspaces()
-    hl.animation({ leaf = "workspacesIn",    enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefade 100%" })
-    hl.animation({ leaf = "workspacesOut",   enabled = true, speed = sp(3), bezier = "lingerFade", style = "fade" })
+    local a = WORKSPACE_ANIM
+    local function set(leaf, speed, bezier, style)
+        hl.animation({ leaf = leaf, enabled = true, speed = spd(speed), bezier = bezier, style = style })
+    end
+    if a == "none" then
+        hl.animation({ leaf = "workspacesIn",  enabled = false })
+        hl.animation({ leaf = "workspacesOut", enabled = false })
+    elseif a == "slide" or a == "slidevert" then
+        set("workspacesIn",  5, "easeOutQuint", a)
+        set("workspacesOut", 5, "easeOutQuint", a)
+    elseif a == "crossfade" then
+        set("workspacesIn",  3.5, "easeInOutCubic", "fade")
+        set("workspacesOut", 3.5, "lingerFade", "fade")
+    else
+        set("workspacesIn",  5, "easeOutQuint", a == "slidefadevert" and "slidefadevert 100%" or "slidefade 100%")
+        set("workspacesOut", 3, "lingerFade", "fade")
+    end
+end
+function setWorkspaceAnimation(style)
+    WORKSPACE_ANIM = style or "slidefade"
+    slideWorkspaces()
 end
 slideWorkspaces()
 -- Wrapping from the last workspace to the first (and back) slides in the direction of
@@ -69,10 +99,14 @@ function instantTo(dispatcher)
 end
 
 -- slideAwayTo(dispatcher): to an empty workspace, the windows slide away in the direction of
--- travel. (Normally the new workspace slides in over the old, which fades underneath; with
--- nothing coming in, the windows would just fade out where they are.)
+-- travel. (With Slide Fade the new workspace slides in over the old, which fades underneath;
+-- with nothing coming in, the windows would just fade out where they are.) The other styles
+-- already move the old workspace, so they switch as usual.
 function slideAwayTo(dispatcher)
-    hl.animation({ leaf = "workspacesOut",   enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefade 100%" })
+    local a = WORKSPACE_ANIM
+    if a ~= "slidefade" and a ~= "slidefadevert" then hl.dispatch(dispatcher); return end
+    hl.animation({ leaf = "workspacesOut", enabled = true, speed = spd(5), bezier = "easeOutQuint",
+                   style = a == "slidefadevert" and "slidefadevert 100%" or "slidefade 100%" })
     hl.dispatch(dispatcher)
     if restoreTimer then restoreTimer:set_enabled(false) end
     restoreTimer = hl.timer(function() restoreTimer = nil; slideWorkspaces() end, { timeout = 400, type = "oneshot" })

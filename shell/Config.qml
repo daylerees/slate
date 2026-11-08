@@ -246,7 +246,8 @@ Singleton {
         for (const k in apps) { const c = appCommand(apps[k]); if (c) t.push(`${k} = ${q(c)}`); }
         t.push(`lid_action = ${q(s.lidAction)}, power_key_action = ${q(s.powerKeyAction)}`);
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
-        return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}`;
+        return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
+            + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end`;
     }
     onHyprSettingsChanged: hyprPush.restart()
     Timer { id: hyprPush; interval: 400; running: true; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings]) }

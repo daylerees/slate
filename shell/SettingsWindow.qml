@@ -127,7 +127,7 @@ FloatingWindow {
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
-            "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
+            "wallpaperFolder", "wallpaperChange", "workspaceAnimation", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
@@ -3519,6 +3519,22 @@ FloatingWindow {
                     options: [{ value: "normal", label: "Normal" }, { value: "fast", label: "Faster" }, { value: "off", label: "Off" }]
                     value: Config.s.animations !== "" ? Config.s.animations : "normal"
                     onPicked: v => Config.s.animations = v
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Workspace switching"
+                    detail: Config.s.animations === "off" ? "Animations are off, so workspaces switch straight away"
+                        : ({ slidefade: "The new workspace slides in over the old one, which fades away underneath",
+                             slidefadevert: "The new workspace slides in from above or below over the old one, which fades away",
+                             slide: "Both slide along together, like turning pages",
+                             slidevert: "Both slide up or down together",
+                             crossfade: "The new workspace fades in over the old one",
+                             none: "Straight to the new workspace, with no animation" })[Config.s.workspaceAnimation] || ""
+                    options: [{ value: "slidefade", label: "Slide Fade" }, { value: "slide", label: "Slide" },
+                              { value: "crossfade", label: "Crossfade" }, { value: "slidefadevert", label: "Vertical Slide Fade" },
+                              { value: "slidevert", label: "Vertical Slide" }, { value: "none", label: "None" }]
+                    value: Config.s.workspaceAnimation || "slidefade"
+                    onPicked: v => Config.s.workspaceAnimation = v
                 }
             }
             GroupLabel { id: wallLabel; text: "Wallpaper" }
