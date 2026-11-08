@@ -146,6 +146,8 @@ FloatingWindow {
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
+        screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
+        shortcuts: ["keyset"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -182,6 +184,7 @@ FloatingWindow {
         { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
         { id: "hotcorners", label: "Hot corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
         { id: "lock", label: "Lock & idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
+        { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper or a slideshow while you're away" },
         { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
         { id: "apps", label: "Default apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
         { id: "startup", label: "Startup apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
@@ -356,7 +359,7 @@ FloatingWindow {
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
                 }
             }
@@ -1744,6 +1747,72 @@ FloatingWindow {
                     label: "Badges in the switchers"
                     detail: "The space's icon on its windows in the window switcher (Super+Tab) and the workspace overview (Super+Down)"
                     Toggle { checked: Config.s.spaceSwitcherBadges; onToggled: v => Config.s.spaceSwitcherBadges = v }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: screensaverPage
+        Column {
+            id: ssCol
+            spacing: 4
+            readonly property var minutes: [0, 1, 2, 3, 5, 10, 15, 20, 30].map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") }))
+            PageTitle { text: "Screensaver" }
+            Text {
+                width: Math.min(parent.width, win.introMeasure)
+                text: "Covers the screen while you're away, before the lock and screen-off times in Lock & idle. Any key, click or move of the pointer puts it away."
+                color: win.dim; font.family: win.font; font.pixelSize: 13
+                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
+            }
+            Group {
+                DropdownSetting {
+                    label: "Start after"
+                    detail: Config.s.idleLockMinutes > 0 && Config.s.screensaverMinutes >= Config.s.idleLockMinutes
+                        ? "The screen locks at " + Config.s.idleLockMinutes + " minutes (Lock & idle), so it won't show"
+                        : "Of no input. Video and apps that keep the screen awake hold it off"
+                    options: ssCol.minutes
+                    value: Config.s.screensaverMinutes
+                    onPicked: v => Config.s.screensaverMinutes = v
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Style"
+                    options: [{ value: "drift", label: "Clock on your wallpaper" },
+                              { value: "slideshow", label: "Wallpaper slideshow" },
+                              { value: "black", label: "Clock on black" }]
+                    value: Config.s.screensaverStyle
+                    onPicked: v => Config.s.screensaverStyle = v
+                    detail: Config.s.screensaverStyle === "drift" ? "Your wallpaper, dimmed and slowly drifting"
+                        : Config.s.screensaverStyle === "slideshow" ? "The pictures in your wallpaper folder, fading from one to the next"
+                        : "Moves now and then so nothing burns in; best for OLED screens"
+                }
+                Separator { visible: Config.s.screensaverStyle !== "black" }
+                SettingRow {
+                    visible: Config.s.screensaverStyle !== "black"
+                    label: "Show the clock"
+                    detail: "The time and date in the middle"
+                    Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
+                }
+                Separator { visible: Config.s.screensaverStyle === "slideshow" }
+                DropdownSetting {
+                    visible: Config.s.screensaverStyle === "slideshow"
+                    label: "Change picture every"
+                    options: [10, 20, 30, 60, 120, 300].map(s => ({ value: s, label: s < 60 ? s + " seconds" : (s / 60) + (s === 60 ? " minute" : " minutes") }))
+                    value: Config.s.screensaverSlideSeconds
+                    onPicked: v => Config.s.screensaverSlideSeconds = v
+                }
+                Separator {}
+                SettingRow {
+                    label: "Lock on wake"
+                    detail: "Waking it shows the lock screen, so you need your password to get back in"
+                    Toggle { checked: Config.s.screensaverLock; onToggled: v => Config.s.screensaverLock = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Preview"
+                    detail: "Shows it now; any key, click or pointer move puts it away (it doesn't lock)"
+                    Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "screensaver", "start"]); } }
                 }
             }
         }

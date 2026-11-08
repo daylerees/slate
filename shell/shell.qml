@@ -75,6 +75,7 @@ ShellRoot {
     }
     OSD { bar: topBar; popouts: popouts }
     LockScreen { id: lockScreen }
+    Screensaver { lock: lockScreen }
     HotCorners { lock: lockScreen }
 
     // Keep the login screen (/var/lib/slate-greeter) in step with the wallpaper and

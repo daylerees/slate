@@ -144,6 +144,14 @@ JsonAdapter {
     property real notificationSeconds: 5
     property int notificationMaxToasts: 4
 
+    // Screensaver (Settings → Screensaver): starts after this many idle minutes (0 = never)
+    property int screensaverMinutes: 5
+    property string screensaverStyle: "drift"    // drift, slideshow or black
+    property bool screensaverClock: true         // the clock on drift and slideshow
+    property int screensaverSlideSeconds: 20     // slideshow: each picture's time
+    property bool screensaverLock: false         // waking it locks the screen
+    // Keyboard shortcuts (Settings → Shortcuts): slate, hyprland or hyprland-extras
+    property string keyset: "slate"
     // Lock & idle (minutes; 0 = never)
     property bool lockBeforeSleep: true
     property bool lockScreenPowerMenu: false    // power button on the lock screen
