@@ -1,5 +1,5 @@
 // The slim scrollbar used across Slate (launcher, picker, notifications, Settings): a faint
-// rounded track with a rounded thumb, shown only when the view overflows. Hover widens the
+// rounded track with a rounded thumb in the accent colour, shown only when the view overflows. Hover widens the
 // thumb; drag it, or click the track, to scroll.
 //   ThinScrollbar { flick: myList; color: theme text colour; anchors { top: …; bottom: …; right: … } }
 // It's 10 px wide to be easy to grab; the track and thumb are centred in that.
@@ -27,8 +27,9 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: sb.active ? 6 : 4
         radius: width / 2
-        color: sb.color
-        opacity: sb.active ? 0.55 : 0.35
+        // The handle in the accent colour (the track behind it stays the faint neutral)
+        color: Config.accent
+        opacity: sb.active ? 1 : 0.7
         height: Math.max(24, sb.height * (sb.flick ? sb.flick.visibleArea.heightRatio : 1))
         y: sb.range > 0 ? (sb.height - height) * Math.max(0, Math.min(1, (sb.flick.contentY - sb.flick.originY) / sb.range)) : 0
         Behavior on width { NumberAnimation { duration: 100 } }
@@ -38,6 +39,7 @@ Item {
     MouseArea {
         id: drag
         anchors.fill: parent
+        preventStealing: true           // keep the drag once started, even if the pointer drifts off
         property real grab: 0           // where on the thumb it was picked up
         function scrollTo(my) {
             const travel = sb.height - thumb.height;
