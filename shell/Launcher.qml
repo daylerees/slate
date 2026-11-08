@@ -660,18 +660,17 @@ PanelWindow {
                     visible: row.glyphTile
                     anchors.fill: tile
                     radius: 9
-                    color: root.fieldColor
+                    // Solid on the highlight: with glass it's see-through, and its icon would
+                    // vanish into the accent behind it
+                    color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
+                    Behavior on color { ColorAnimation { duration: row.fadeMs } }
                     border.width: 1; border.color: root.selectColor
                     Text {
                         anchors.centerIn: parent
                         text: row.glyphTile ? String.fromCodePoint(row.modelData.icon) : ""
-                        // Dark on the accent highlight when glass makes the tile see-through (a solid
-                        // tile keeps it readable); otherwise a setting's icon takes its page's
-                        // colour in colourful mode, as in Settings
-                        color: row.selected && Config.glass ? root.accentText
-                            : row.modelData.danger ? Config.tint("#f28b8b")
+                        // A setting's icon takes its page's colour in colourful mode, as in Settings
+                        color: row.modelData.danger ? Config.tint("#f28b8b")
                             : row.setting ? Config.pageColour(row.modelData.page) : root.accent
-                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
                         font.family: tabler.name
                         font.pixelSize: 19
                     }
