@@ -16,6 +16,7 @@
 //   bring it back.
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -571,7 +572,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 radius: 7
                                 color: rowHover.hovered ? Config.hover : "transparent"
-                                Gloss { radius: parent.radius; visible: Config.glassGloss && (rowHover.hovered) }   // glass: a sheen while hovered
+                                Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Behavior on color { ColorAnimation { duration: 90 } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
@@ -722,6 +723,7 @@ ShellRoot {
                     bottomLeftRadius: 0     // flush with the screen edge
                     bottomRightRadius: 0
                     color: win.bgColor
+                    Gloss { radius: parent.radius }   // glass: a sheen
                 }
 
                 Row {
@@ -748,6 +750,8 @@ ShellRoot {
                                 fill: false
                                 color: win.tileColor
                             }
+                            // Glass: a sheen, rounded like the tile
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base) }
                             // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                             Column {
                                 id: burger
@@ -801,6 +805,24 @@ ShellRoot {
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                                 onStatusChanged: if (status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
                                 IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                                // Glass: a sheen, cut to the icon's own outline (so it fits any icon
+                                // shape, including icons shown as they come)
+                                Item {
+                                    anchors.fill: parent
+                                    visible: Config.glassGloss
+                                    layer.enabled: visible
+                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: glossMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                                    Gloss { radius: 0 }
+                                    Image {
+                                        id: glossMask
+                                        anchors.fill: parent
+                                        visible: false
+                                        layer.enabled: true
+                                        source: parent.visible ? tileImg.source : ""
+                                        sourceSize: tileImg.sourceSize
+                                        smooth: true; mipmap: true
+                                    }
+                                }
                             }
 
                             // Draw the tile the first time this app shows up

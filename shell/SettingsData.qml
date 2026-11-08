@@ -159,7 +159,7 @@ JsonAdapter {
     property real glassOpacity: 0.7           // how much of a surface's colour is kept (0.3–0.95)
     property int glassBlur: 0                 // Hyprland's blur size while glass is on; 0 = Hyprland's own
     property bool glassShine: true            // a thin light rim on glass surfaces
-    property bool glassGloss: true            // a glossy sheen on the bar's containers, hover highlights and tooltips
+    property real glassGloss: 1               // how much glossy sheen (bar containers, hover highlights, tooltips): 0 = none, 1 = normal, up to 2
     // The welcome has been seen (shown the first time Slate starts; again from Settings → About)
     property bool welcomeShown: false
     // Updates (Settings → Updates): look for new versions daily, with a notification

@@ -10,9 +10,12 @@ Rectangle {
     id: g
     property real strength: 1
     anchors.fill: parent
-    visible: Config.glassGloss
+    visible: Config.glassGloss && opacity > 0
     color: "transparent"
-    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength
+    // Hover highlights set opacity to show it while pointed at: it fades in and out in step
+    // with their colour (appearing at once, the top half showed before the rest)
+    Behavior on opacity { NumberAnimation { duration: 100 } }
+    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount
     gradient: Gradient {
         GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, g.a) }
         GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, g.a * 0.25) }

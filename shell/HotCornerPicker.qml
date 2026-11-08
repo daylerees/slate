@@ -44,7 +44,7 @@ Rectangle {
             bottomLeftRadius: !atRight && atBottom ? hp.radius - 4 : 6
             bottomRightRadius: atRight && atBottom ? hp.radius - 4 : 6
             color: cornerHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
-            Gloss { radius: parent.radius; visible: Config.glassGloss && (cornerHover.hovered) }   // glass: a sheen while hovered
+            Gloss { radius: parent.radius; opacity: (cornerHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
             border.width: current ? 2 : 0
             border.color: hp.accent
             Behavior on color { ColorAnimation { duration: 100 } }

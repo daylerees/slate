@@ -245,7 +245,7 @@ FloatingWindow {
                         readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
                         width: parent.width; height: 38; radius: 9
                         color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; visible: Config.glassGloss && (navHover.hovered) }   // glass: a sheen while hovered
+                        Gloss { radius: parent.radius; opacity: (navHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Text {
                             id: navIcon
@@ -290,7 +290,7 @@ FloatingWindow {
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                     width: 34; height: 34; radius: 17
                     color: backHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; visible: Config.glassGloss && (backHover.hovered) }   // glass: a sheen while hovered
+                    Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Behavior on color { ColorAnimation { duration: 100 } }
                     Text {
                         anchors.centerIn: parent
@@ -326,7 +326,7 @@ FloatingWindow {
                 anchors { right: parent.right; rightMargin: 14; verticalCenter: header.verticalCenter }
                 width: 34; height: 34; radius: 17
                 color: closeHover.hovered ? Config.hover : "transparent"
-                Gloss { radius: parent.radius; visible: Config.glassGloss && (closeHover.hovered) }   // glass: a sheen while hovered
+                Gloss { radius: parent.radius; opacity: (closeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Behavior on color { ColorAnimation { duration: 100 } }
                 Text {
                     anchors.centerIn: parent
@@ -519,7 +519,7 @@ FloatingWindow {
                     readonly property bool current: dropLayer.owner && modelData.value === dropLayer.owner.value
                     width: menuList.width; height: dropLayer.rowH; radius: 8
                     color: rowHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; visible: Config.glassGloss && (rowHover.hovered) }   // glass: a sheen while hovered
+                    Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     FolderSwatch {
                         id: rowFolder
                         visible: !!parent.modelData.folder
@@ -825,7 +825,7 @@ FloatingWindow {
                     readonly property bool current: fs.value === modelData
                     width: ListView.view.width; height: 36; radius: 8
                     color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; visible: Config.glassGloss && (fontHover.hovered) }   // glass: a sheen while hovered
+                    Gloss { radius: parent.radius; opacity: (fontHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         text: parent.modelData
@@ -879,7 +879,7 @@ FloatingWindow {
                     readonly property bool on: modelData.value === ch.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
                     color: on ? win.accent : optHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
-                    Gloss { radius: parent.radius; visible: Config.glassGloss && (optHover.hovered) }   // glass: a sheen while hovered
+                    Gloss { radius: parent.radius; opacity: (optHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
                     TapHandler { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
@@ -908,7 +908,7 @@ FloatingWindow {
             readonly property bool open: dropLayer.owner === dd
             width: Math.max(150, ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)); height: 32; radius: 8
             color: open || ddHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
-            Gloss { radius: parent.radius; visible: Config.glassGloss && (open || ddHover.hovered) }   // glass: a sheen while hovered
+            Gloss { radius: parent.radius; opacity: (open || ddHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: 100 } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
@@ -1007,7 +1007,7 @@ FloatingWindow {
                         required property var modelData
                         width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: 6
                         color: pickHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; visible: Config.glassGloss && (pickHover.hovered) }   // glass: a sheen while hovered
+                        Gloss { radius: parent.radius; opacity: (pickHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             Text { width: parent.width; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
@@ -1125,7 +1125,7 @@ FloatingWindow {
                         width: parent.width; height: hitCol.implicitHeight + 18
                         radius: 9
                         color: chosen ? Config.tint("#262c35") : hitHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; visible: Config.glassGloss && (hitHover.hovered) }   // glass: a sheen while hovered
+                        Gloss { radius: parent.radius; opacity: (hitHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Text {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
@@ -1175,7 +1175,7 @@ FloatingWindow {
                         height: 112
                         radius: 12
                         color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
-                        Gloss { radius: parent.radius; visible: Config.glassGloss && (tileHover.hovered) }   // glass: a sheen while hovered
+                        Gloss { radius: parent.radius; opacity: (tileHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Rectangle {
                             x: 14; y: 14
@@ -1448,7 +1448,7 @@ FloatingWindow {
                                 readonly property string place: [modelData.name, modelData.admin1, modelData.country].filter(x => x).join(", ")
                                 width: placeText.implicitWidth + 26; height: 32; radius: 8
                                 color: placeHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
-                                Gloss { radius: parent.radius; visible: Config.glassGloss && (placeHover.hovered) }   // glass: a sheen while hovered
+                                Gloss { radius: parent.radius; opacity: (placeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                 HoverHandler { id: placeHover }
                                 TapHandler {
@@ -3159,7 +3159,7 @@ FloatingWindow {
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
-                                Gloss { radius: parent.radius; visible: Config.glassGloss && (spotHover.hovered) }   // glass: a sheen while hovered
+                                Gloss { radius: parent.radius; opacity: (spotHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 HoverHandler { id: spotHover }
                                 TapHandler { onTapped: Config.s.notificationPosition = parent.modelData }
@@ -3480,7 +3480,7 @@ FloatingWindow {
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: 12
                             color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(Config.tint("#151920")) : Config.tint("#151920")
-                            Gloss { radius: parent.radius; visible: Config.glassGloss && (shapeHover.hovered) }   // glass: a sheen while hovered
+                            Gloss { radius: parent.radius; opacity: (shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: 100 } }
                             Image {
@@ -3590,8 +3590,8 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Gloss"
-                    detail: "A glossy sheen on the bar's containers, hover highlights and tooltips"
-                    Toggle { checked: Config.s.glassGloss; onToggled: v => Config.s.glassGloss = v }
+                    detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
+                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
                 }
             }
             GroupLabel { text: "Motion" }
@@ -3675,7 +3675,7 @@ FloatingWindow {
                                 required property string filePath
                                 width: dirList.width; height: 32; radius: 6
                                 color: dirHover.hovered ? Config.hover : "transparent"
-                                Gloss { radius: parent.radius; visible: Config.glassGloss && (dirHover.hovered) }   // glass: a sheen while hovered
+                                Gloss { radius: parent.radius; opacity: (dirHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Text {
                                     id: dirIcon
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }

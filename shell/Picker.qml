@@ -315,6 +315,7 @@ PanelWindow {
                 height: list.currentItem ? list.currentItem.height : root.rowHeight
                 radius: 10
                 color: root.selectColor
+                Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 y: list.currentItem ? list.currentItem.y : 0
                 Behavior on y { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
                 Behavior on height { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
@@ -411,6 +412,7 @@ PanelWindow {
                 width: grid.cellWidth; height: grid.cellHeight
                 radius: 10
                 color: root.selectColor
+                Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 x: grid.currentItem ? grid.currentItem.x : 0
                 y: grid.currentItem ? grid.currentItem.y : 0
                 Behavior on x { enabled: root.slideHighlight; NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
@@ -487,7 +489,7 @@ PanelWindow {
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                 width: clearLabel.implicitWidth + 24; height: 28; radius: 8
                 color: clearHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
-                Gloss { radius: parent.radius; visible: Config.glassGloss && (clearHover.hovered) }   // glass: a sheen while hovered
+                Gloss { radius: parent.radius; opacity: (clearHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Behavior on color { ColorAnimation { duration: 100 } }
                 HoverHandler { id: clearHover }
                 TapHandler { onTapped: root.clearClips() }

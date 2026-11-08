@@ -42,7 +42,7 @@ Rectangle {
     border.width: Config.glassShine && !inPanel ? 1 : 0     // glass: a thin light rim
     border.color: Config.glassEdge
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
-    Gloss { radius: parent.radius; visible: Config.glassGloss && (cardHover.hovered) }   // glass: a sheen while hovered
+    Gloss { radius: parent.radius; opacity: (cardHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
     Behavior on color { ColorAnimation { duration: 100 } }
     // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
     // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
@@ -199,7 +199,7 @@ Rectangle {
                     width: 20; height: 20
                     radius: 5
                     color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
-                    Gloss { radius: parent.radius; visible: Config.glassGloss && (closeHover.hovered) }   // glass: a sheen while hovered
+                    Gloss { radius: parent.radius; opacity: (closeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Behavior on color { ColorAnimation { duration: 100 } }
                     Text {
                         anchors.centerIn: parent
