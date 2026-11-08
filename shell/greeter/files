@@ -18,6 +18,9 @@ LoginScreen.qml              LoginScreen.qml
 Config.qml                   Config.qml
 SettingsData.qml             SettingsData.qml
 RoundImage.qml               RoundImage.qml
+WallBlur.qml                 WallBlur.qml
+Gloss.qml                    Gloss.qml
+GlassFill.qml                GlassFill.qml
 scripts/wallpaper-accent.py  scripts/wallpaper-accent.py
 
 # The emergency login screen, used if the one above fails to load

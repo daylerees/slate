@@ -141,13 +141,14 @@ Item {
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 132; height: 132; radius: 66
-            color: ls.frame
+            color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+            GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: parent.radius }
             Rectangle {
                 anchors { fill: parent; margins: 4 }
                 radius: width / 2
-                color: ls.field
+                color: Config.raised(ls.field)
                 Text {
                     anchors.centerIn: parent
                     visible: avatarImg.status !== Image.Ready
@@ -172,9 +173,10 @@ Item {
             width: 360
             height: boxCol.implicitHeight + 28
             radius: 18
-            color: ls.frame
+            color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+            GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: box.radius }
             transform: Translate { id: shakeX }
             SequentialAnimation {
                 id: shake
@@ -192,7 +194,7 @@ Item {
                 // Password field with a go button
                 Rectangle {
                     width: parent.width; height: 46; radius: 12
-                    color: ls.field
+                    color: Config.raised(ls.field)
                     border.width: password.activeFocus ? 1 : 0
                     border.color: ls.messageIsError ? ls.error : ls.accent
                     Text {
@@ -230,6 +232,7 @@ Item {
                         width: 34; height: 34; radius: 9
                         color: password.text !== "" ? ls.accent : "transparent"
                         Behavior on color { ColorAnimation { duration: 120 } }
+                        Gloss { radius: goBtn.radius; visible: Config.glassGloss && password.text !== "" }
                         Text {
                             anchors.centerIn: parent
                             text: ls.glyph(ls.busy ? 0xF226 : 0xEA1F)
@@ -281,10 +284,12 @@ Item {
         height: 44
         width: label ? pillRow.implicitWidth + 30 : 44
         radius: 22
-        color: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
+        readonly property color fill: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
+        color: Config.glass ? "transparent" : fill
         Behavior on color { ColorAnimation { duration: 100 } }
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: 0.7; shadowVerticalOffset: 4; blurMax: 32 }
+        GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }
         Row {
             id: pillRow
             anchors.centerIn: parent
@@ -303,9 +308,10 @@ Item {
         width: 220
         height: menuCol.implicitHeight + 12
         radius: 16
-        color: ls.frame
+        color: Config.glass ? "transparent" : ls.frame
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+        GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: m.radius }
         Column {
             id: menuCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
