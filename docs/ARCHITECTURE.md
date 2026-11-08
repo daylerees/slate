@@ -29,6 +29,8 @@ shell.qml               root: creates everything below, plus the dock itself
 └─ HotCorners.qml       hot corners ("slate-hotcorner")
 
 Config.qml              singleton: settings.json + theme helpers (accent, tint())
+Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
+AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
@@ -89,7 +91,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 
 | Target | Functions |
 |---|---|
-| `bar` | `panel <control\|notifications\|session\|volume\|wifi\|battery\|calendar>`, `setFilled <bool>`, `reveal` |
+| `bar` | `panel <control\|spaces\|notifications\|session\|volume\|wifi\|battery\|calendar>`, `setFilled <bool>`, `reveal` |
 | `popout` | `toggle <name> <x>`, `close` |
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight` |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
@@ -104,6 +106,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `nightlight` | `toggle`, `on`, `off` |
 | `polkit` | `preview`, `previewWrong`, `close` (preview only) |
 | `power` | `confirm <logout\|reboot\|shutdown>` (asks first), `cancel` |
+| `spaces` | `restore <name>`, `list` |
 
 ## Hyprland integration (`~/.config/hypr/config/*.lua`)
 
@@ -129,6 +132,19 @@ keyboard focus. Slate overlays first release the keyboard (`releasing`), then di
 `notifications.json` (history, DND). App icon tiles are drawn by
 `scripts/appicon.py --tile` into `~/.cache/slate/tiles/`. Clipboard history:
 `~/.local/state/slate/clipboard/`, recent emoji: `emoji.json`.
+Spaces: `~/.local/share/slate/spaces.json` (kept by the installer, unlike `~/.config/slate`).
+
+### Spaces
+
+`scripts/spaces.py` saves each window's start command (its `.desktop` Exec, else
+`/proc/<pid>/cmdline`) and its place as fractions of the screen's usable area. Restoring
+opens each workspace as a new one after the last in use, then rebuilds the dwindle tree:
+the tiled windows are cut along lines no window crosses into a binary tree; the first app
+opens alone, and for each cut the first window of the first half is focused,
+`hl.dsp.layout("preselect r|d")` is sent, the second half's first app is started (the script
+waits for its window), and the split is set with `splitratio … exact`. Floating windows
+are started floating, then moved and sized. Apps that don't open a window within 15 s are
+skipped and named in a notification.
 
 ## Dependencies
 

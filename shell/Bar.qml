@@ -122,7 +122,7 @@ PanelWindow {
     }
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
-        const button = ({ control: flameBtn, notifications: bellBtn, session: powerBtn,
+        const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn,
                           volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, calendar: clockCap })[name];
         if (button) openPopout(name, button);
     }
@@ -171,7 +171,7 @@ PanelWindow {
         function reveal(): void { bar.focusedBar().revealNow(); }
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
-        // names: control, notifications, session, volume, wifi, keyboard, bluetooth, battery, calendar
+        // names: control, spaces, notifications, session, volume, wifi, keyboard, bluetooth, battery, calendar
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
     }
 
@@ -397,6 +397,38 @@ PanelWindow {
                     Repeater {
                         model: 3
                         Rectangle { width: 14; height: 2.4; radius: height / 2; color: bar.textColor }
+                    }
+                }
+            }
+
+            // Spaces: four small squares (Spaces.qml). While a space is coming back they take
+            // its colour and light up in turn
+            Capsule {
+                id: spacesBtn
+                visible: Config.s.barShowSpaces
+                length: bar.capsuleHeight + 8
+                hoverText: Spaces.restoringSpace ? "Opening " + Spaces.restoringSpace.name + "…" : "Spaces"
+                hoverCode: 0xEDBA
+                onClicked: bar.openPopout("spaces", spacesBtn)
+                property int beat: 0
+                Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
+                Grid {
+                    anchors.centerIn: parent
+                    columns: 2
+                    spacing: 2.4
+                    Repeater {
+                        model: 4
+                        Rectangle {
+                            required property int index
+                            readonly property bool busy: Spaces.restoring !== ""
+                            width: 5.8; height: 5.8; radius: 1.6
+                            // Clockwise: top left, top right, bottom right, bottom left
+                            readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
+                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : bar.textColor
+                            opacity: !busy || lit ? 1 : 0.35
+                            Behavior on opacity { NumberAnimation { duration: 160 } }
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
                     }
                 }
             }

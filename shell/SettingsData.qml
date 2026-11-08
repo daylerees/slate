@@ -91,6 +91,7 @@ JsonAdapter {
     property bool barHoverDescriptions: true  // describe hovered items in the title area
     // What the bar shows (Settings → Menu bar)
     property bool barShowApps: true           // apps (launcher) button
+    property bool barShowSpaces: true         // Spaces (saved workspaces) button
     property bool barShowWorkspaces: true     // workspace dots
     property bool barShowTitle: true          // focused window's title
     property bool barShowTray: true           // app tray icons

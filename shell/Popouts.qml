@@ -1,4 +1,4 @@
-// Drop-down panels attached to the top bar: volume, Wi-Fi, battery & power,
+// Drop-down panels attached to the top bar: spaces, volume, Wi-Fi, battery & power,
 // calendar and session. Each opens under the button that was clicked, joins the
 // bar with curved corners, and slides out of it.
 //
@@ -9,6 +9,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
 import Quickshell.Networking
@@ -173,6 +174,7 @@ PanelWindow {
                         : pop.displayed === "calendar" ? calendarPanel
                         : pop.displayed === "session" ? sessionPanel
                         : pop.displayed === "control" ? controlPanel
+                        : pop.displayed === "spaces" ? spacesPanel
                         : pop.displayed === "notifications" ? notificationsPanel : null
                 }
             }
@@ -794,6 +796,474 @@ PanelWindow {
                 Icon { id: clpSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
                 Label { anchors { left: clpSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                     text: "Clipboard settings"; font.weight: Font.Normal }
+            }
+        }
+    }
+
+    // ---- Spaces -----------------------------------------------------------
+    // Saved sets of workspaces (Spaces.qml, scripts/spaces.py): click one to bring it back on
+    // new workspaces, or save the workspaces you have now as a new one
+    Component {
+        id: spacesPanel
+        Column {
+            id: spp
+            width: 340
+            spacing: 10
+            property string mode: "list"          // list, or new (saving the workspaces now)
+            property string confirmDelete: ""     // a space whose delete button was clicked once
+            // New Space
+            property var picked: []               // workspace ids
+            property string name: ""
+            property int icon: Spaces.icons[0]
+            property color colour: Spaces.colours[0]
+            property bool custom: false           // a colour of your own (hue strip and hex)
+            readonly property var sameName: Spaces.list.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) ?? null
+            readonly property bool canSave: name.trim() !== "" && picked.length > 0
+            readonly property color inkColour: "#1b1f26"      // icons on a pastel
+
+            function startNew() {
+                Spaces.refreshLive();
+                const ws = Hyprland.focusedWorkspace;
+                picked = ws ? [ws.id] : [];
+                name = "";
+                custom = false;
+                // A colour and icon no saved space uses yet
+                const used = Spaces.list.map(s => String(s.colour).toLowerCase());
+                colour = Spaces.colours.find(c => !used.includes(c)) ?? Spaces.colours[0];
+                const usedIcons = Spaces.list.map(s => Spaces.iconOf(s));
+                icon = Spaces.icons.find(i => !usedIcons.includes(i)) ?? Spaces.icons[0];
+                mode = "new";
+            }
+            function toggle(id) { picked = picked.includes(id) ? picked.filter(x => x !== id) : picked.concat([id]).sort((a, b) => a - b); }
+            function save() {
+                if (!canSave) return;
+                Spaces.save(name.trim(), colour.toString(), icon, picked);
+                mode = "list";
+            }
+            Connections {
+                target: pop
+                function onCurrentChanged() { if (pop.current === "spaces") { spp.mode = "list"; spp.confirmDelete = ""; } }
+            }
+
+            // ---- The saved spaces ----
+            Item {
+                visible: spp.mode === "list"
+                width: parent.width; height: 22
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Spaces"; font.pixelSize: 15 }
+                Label {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    visible: Spaces.list.length > 0
+                    text: Spaces.list.length === 1 ? "1 space" : Spaces.list.length + " spaces"
+                    color: pop.dim; font.weight: Font.Normal
+                }
+            }
+            Label {
+                visible: spp.mode === "list" && Spaces.list.length === 0
+                width: parent.width
+                text: "Set up your apps across workspaces the way you like them, then save them as a space to bring them all back in one click."
+                color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
+            }
+            Column {
+                visible: spp.mode === "list" && Spaces.list.length > 0
+                width: parent.width
+                spacing: 2
+                Repeater {
+                    model: Spaces.list
+                    delegate: RowButton {
+                        id: spRow
+                        required property var modelData
+                        readonly property bool busy: Spaces.restoring === modelData.id
+                        readonly property var appIds: Spaces.apps(modelData)
+                        width: parent.width
+                        height: 52
+                        onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
+                        HoverHandler { id: spRowHover; cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (!hovered && spp.confirmDelete === spRow.modelData.id) spp.confirmDelete = "" }
+                        Rectangle {
+                            id: spBadge
+                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            width: 34; height: 34; radius: 9
+                            color: spRow.modelData.colour
+                            Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spp.inkColour; font.pixelSize: 19 }
+                        }
+                        Column {
+                            anchors { left: spBadge.right; leftMargin: 10; right: spSide.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            spacing: 2
+                            Label { width: parent.width; text: spRow.modelData.name }
+                            Label {
+                                width: parent.width
+                                readonly property int nWs: (spRow.modelData.workspaces || []).length
+                                readonly property int nApps: Spaces.appCount(spRow.modelData)
+                                text: spRow.busy ? "Opening…"
+                                    : (nWs === 1 ? "1 workspace" : nWs + " workspaces") + " · " + (nApps === 1 ? "1 app" : nApps + " apps")
+                                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
+                            }
+                        }
+                        // Its apps, or, under the pointer, a delete button (click twice)
+                        Item {
+                            id: spSide
+                            anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            width: spRowHover.hovered || spp.confirmDelete === spRow.modelData.id ? spDel.width : spApps.width
+                            height: 28
+                            Row {
+                                id: spApps
+                                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                                visible: !spRowHover.hovered && spp.confirmDelete !== spRow.modelData.id
+                                spacing: -5
+                                Repeater {
+                                    model: spRow.appIds.slice(0, 4)
+                                    AppTile { required property string modelData; app: modelData; width: 22; height: 22 }
+                                }
+                                Label {
+                                    visible: spRow.appIds.length > 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    leftPadding: 8
+                                    text: "+" + (spRow.appIds.length - 4)
+                                    color: pop.dim; font.pixelSize: 11
+                                }
+                            }
+                            Rectangle {
+                                id: spDel
+                                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                                visible: !spApps.visible
+                                readonly property bool armed: spp.confirmDelete === spRow.modelData.id
+                                width: armed ? spDelText.implicitWidth + 36 : 28; height: 28; radius: 7
+                                color: armed ? pop.danger : spDelHover.hovered ? Config.tint("#2a313c") : "transparent"
+                                Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                Icon { id: spDelIcon; anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                    code: 0xEB41; font.pixelSize: 16; color: spDel.armed ? pop.accentText : pop.danger }
+                                Label { id: spDelText; visible: spDel.armed; anchors { left: spDelIcon.right; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                                    text: "Delete"; color: pop.accentText; font.pixelSize: 12 }
+                                HoverHandler { id: spDelHover; cursorShape: Qt.PointingHandCursor }
+                                // A MouseArea, so the click stops here rather than also opening the space
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        if (spDel.armed) { Spaces.remove(spRow.modelData.id); spp.confirmDelete = ""; }
+                                        else spp.confirmDelete = spRow.modelData.id;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Divider { visible: spp.mode === "list" }
+            RowButton {
+                visible: spp.mode === "list"
+                width: parent.width
+                onClicked: spp.startNew()
+                Icon { id: spNewIcon; code: 0xEB0B; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: spNewIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "New Space"; font.weight: Font.Normal }
+            }
+
+            // ---- New Space ----
+            Item {
+                visible: spp.mode === "new"
+                width: parent.width; height: 26
+                Rectangle {
+                    id: spBack
+                    width: 26; height: 26; radius: 7
+                    color: spBackHover.hovered ? pop.card : "transparent"
+                    Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
+                    HoverHandler { id: spBackHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler { onTapped: spp.mode = "list" }
+                }
+                Label { anchors { left: spBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                    text: "New Space"; font.pixelSize: 15 }
+            }
+            Label {
+                visible: spp.mode === "new"
+                text: spp.picked.length === 0 ? "Pick the workspaces to save" : spp.picked.length === 1 ? "1 workspace" : spp.picked.length + " workspaces"
+                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
+            }
+            Label {
+                visible: spp.mode === "new" && Spaces.live.length === 0
+                width: parent.width
+                text: "No workspace has apps open yet: open the apps you want, arranged how you like, then come back here."
+                color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
+            }
+            // Each workspace with apps, drawn small over the wallpaper; click to pick it
+            Flow {
+                visible: spp.mode === "new" && Spaces.live.length > 0
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: Spaces.live
+                    delegate: Column {
+                        id: wsCard
+                        required property var modelData
+                        readonly property bool on: spp.picked.includes(modelData.id)
+                        width: (spp.width - 8) / 2
+                        spacing: 5
+                        Rectangle {
+                            id: wsShot
+                            width: parent.width
+                            height: Math.round(width / Math.max(1, wsCard.modelData.aspect || 1.6))
+                            radius: 8
+                            color: Config.tint("#0b0d10")
+                            clip: true
+                            Image {
+                                anchors.fill: parent
+                                source: Config.wallpaper ? "file://" + Config.wallpaper : ""
+                                sourceSize: Qt.size(320, 200)
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                opacity: wsCard.on ? 0.75 : 0.4
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
+                            }
+                            Repeater {
+                                // Tiled first, floating ones on top
+                                model: wsCard.modelData.windows.slice().sort((a, b) => a.floating - b.floating)
+                                delegate: Rectangle {
+                                    id: wsWin
+                                    required property var modelData
+                                    x: wsShot.width * modelData.x; y: wsShot.height * modelData.y
+                                    width: Math.max(6, wsShot.width * modelData.w - 1); height: Math.max(6, wsShot.height * modelData.h - 1)
+                                    radius: 3
+                                    color: Qt.rgba(pop.card.r, pop.card.g, pop.card.b, 0.92)
+                                    border.width: 1
+                                    border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.12)
+                                    AppTile {
+                                        anchors.centerIn: parent
+                                        app: wsWin.modelData.desktopId || wsWin.modelData["class"]
+                                        width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
+                                    }
+                                }
+                            }
+                            // Picked: an accent ring and a tick
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: "transparent"
+                                border.width: wsCard.on ? 2 : 1
+                                border.color: wsCard.on ? pop.accent : wsShotHover.hovered ? pop.dim : Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.1)
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+                            }
+                            Rectangle {
+                                anchors { top: parent.top; right: parent.right; margins: 5 }
+                                width: 18; height: 18; radius: 9
+                                color: wsCard.on ? pop.accent : Qt.rgba(0, 0, 0, 0.45)
+                                border.width: wsCard.on ? 0 : 1.5
+                                border.color: Qt.rgba(1, 1, 1, 0.7)
+                                Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
+                            }
+                            HoverHandler { id: wsShotHover; cursorShape: Qt.PointingHandCursor }
+                            TapHandler { onTapped: spp.toggle(wsCard.modelData.id) }
+                        }
+                        Label {
+                            width: parent.width
+                            readonly property int n: wsCard.modelData.windows.length
+                            text: "Workspace " + wsCard.modelData.id + " · " + (n === 1 ? "1 app" : n + " apps")
+                            color: wsCard.on ? pop.text : pop.dim
+                            font.weight: Font.Normal; font.pixelSize: 12
+                        }
+                    }
+                }
+            }
+
+            Label { visible: spp.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Rectangle {
+                visible: spp.mode === "new"
+                width: parent.width; height: 34; radius: 8
+                color: pop.card
+                border.width: spName.activeFocus ? 1 : 0
+                border.color: pop.accent
+                TextInput {
+                    id: spName
+                    anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: pop.text
+                    font.family: bar.fontFamily
+                    font.pixelSize: 13
+                    maximumLength: 40
+                    selectByMouse: true
+                    text: spp.name
+                    onTextEdited: spp.name = text
+                    onVisibleChanged: if (visible) { text = spp.name; forceActiveFocus(); }
+                    onAccepted: spp.save()
+                    Keys.onEscapePressed: spp.mode = "list"
+                }
+                Label {
+                    visible: spName.text === ""
+                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    text: "e.g. Coding, Writing, Gaming"
+                    color: pop.dim; font.weight: Font.Normal
+                }
+            }
+            Label {
+                visible: spp.mode === "new" && spp.sameName !== null
+                width: parent.width
+                text: "Saving replaces the space already called " + (spp.sameName ? spp.sameName.name : "")
+                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; wrapMode: Text.Wrap
+            }
+
+            Label { visible: spp.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Grid {
+                visible: spp.mode === "new"
+                columns: 11
+                spacing: 2
+                Repeater {
+                    model: Spaces.icons
+                    delegate: Rectangle {
+                        id: icCell
+                        required property int modelData
+                        readonly property bool on: spp.icon === modelData
+                        width: (spp.width - 20) / 11; height: width; radius: 7
+                        color: on ? spp.colour : icHover.hovered ? pop.card : "transparent"
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
+                        HoverHandler { id: icHover; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: spp.icon = icCell.modelData }
+                    }
+                }
+            }
+
+            Label { visible: spp.mode === "new"; text: "Colour"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Grid {
+                visible: spp.mode === "new"
+                columns: 9
+                readonly property real cell: 28
+                spacing: (spp.width - cell * 9) / 8
+                Repeater {
+                    // The pastels, then your own colour
+                    model: Spaces.colours.concat(["custom"])
+                    delegate: Item {
+                        id: swatch
+                        required property string modelData
+                        readonly property bool isCustom: modelData === "custom"
+                        readonly property bool on: isCustom ? spp.custom : !spp.custom && Qt.colorEqual(spp.colour, modelData)
+                        width: 28; height: 28
+                        // A ring around the picked one
+                        Rectangle {
+                            anchors.fill: parent; radius: width / 2
+                            color: "transparent"
+                            border.width: 2
+                            border.color: swatch.on ? pop.text : "transparent"
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: swatch.on ? 20 : swHover.hovered ? 24 : 22; height: width; radius: width / 2
+                            color: swatch.isCustom ? (spp.custom ? spp.colour : "transparent") : swatch.modelData
+                            Behavior on width { NumberAnimation { duration: 100 } }
+                            // Your own colour: a colour wheel until one is chosen
+                            Canvas {
+                                anchors.fill: parent
+                                visible: swatch.isCustom && !spp.custom
+                                onPaint: {
+                                    const ctx = getContext("2d"), r = width / 2;
+                                    ctx.reset();
+                                    for (let i = 0; i < 36; i++) {
+                                        ctx.beginPath();
+                                        ctx.moveTo(r, r);
+                                        ctx.arc(r, r, r, i / 36 * Math.PI * 2, (i + 1.2) / 36 * Math.PI * 2);
+                                        ctx.closePath();
+                                        ctx.fillStyle = Qt.hsla(i / 36, 0.65, 0.78, 1);
+                                        ctx.fill();
+                                    }
+                                }
+                                onWidthChanged: requestPaint()
+                            }
+                            Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spp.inkColour }
+                        }
+                        HoverHandler { id: swHover; cursorShape: Qt.PointingHandCursor }
+                        TapHandler {
+                            onTapped: {
+                                if (swatch.isCustom) {
+                                    if (!spp.custom) { spp.custom = true; spHex.text = spp.colour.toString().slice(0, 7); }
+                                } else { spp.custom = false; spp.colour = swatch.modelData; }
+                            }
+                        }
+                    }
+                }
+            }
+            // Your own colour: drag along the hues, or type a hex value
+            Row {
+                visible: spp.mode === "new" && spp.custom
+                width: parent.width
+                spacing: 10
+                Item {
+                    id: hueStrip
+                    width: parent.width - spHexBox.width - 10; height: 30
+                    Canvas {
+                        id: hueCanvas
+                        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+                        height: 14
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.reset();
+                            const g = ctx.createLinearGradient(0, 0, width, 0);
+                            for (let i = 0; i <= 12; i++) g.addColorStop(i / 12, Qt.hsla(i / 12, 0.65, 0.78, 1));
+                            ctx.fillStyle = g;
+                            ctx.beginPath();
+                            ctx.roundedRect(0, 0, width, height, height / 2, height / 2);
+                            ctx.fill();
+                        }
+                        onWidthChanged: requestPaint()
+                    }
+                    Rectangle {
+                        readonly property real hue: Math.max(0, spp.colour.hslHue)
+                        x: hue * (hueStrip.width - width)
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20; height: 20; radius: 10
+                        color: spp.colour
+                        border.width: 2; border.color: pop.text
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        function set(mx) {
+                            const h = Math.max(0, Math.min(0.999, mx / width));
+                            spp.colour = Qt.hsla(h, 0.65, 0.78, 1);
+                            spHex.text = spp.colour.toString().slice(0, 7);
+                        }
+                        onPressed: m => set(m.x)
+                        onPositionChanged: m => { if (pressed) set(m.x); }
+                    }
+                }
+                Rectangle {
+                    id: spHexBox
+                    width: 92; height: 30; radius: 8
+                    color: pop.card
+                    border.width: spHex.activeFocus ? 1 : 0
+                    border.color: pop.accent
+                    TextInput {
+                        id: spHex
+                        anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                        verticalAlignment: TextInput.AlignVCenter
+                        color: pop.text
+                        font.family: bar.fontFamily
+                        font.pixelSize: 13
+                        maximumLength: 7
+                        selectByMouse: true
+                        onTextEdited: {
+                            const t = text.startsWith("#") ? text : "#" + text;
+                            if (/^#[0-9a-fA-F]{6}$/.test(t)) spp.colour = t;
+                        }
+                        Keys.onEscapePressed: spp.mode = "list"
+                    }
+                }
+            }
+
+            Divider { visible: spp.mode === "new" }
+            Row {
+                visible: spp.mode === "new"
+                anchors.right: parent.right
+                spacing: 8
+                Rectangle {
+                    width: spCancel.implicitWidth + 28; height: 32; radius: 8
+                    color: spCancelHover.hovered ? pop.card : "transparent"
+                    Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
+                    HoverHandler { id: spCancelHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler { onTapped: spp.mode = "list" }
+                }
+                Rectangle {
+                    width: spSave.implicitWidth + 28; height: 32; radius: 8
+                    color: spp.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
+                    Label { id: spSave; anchors.centerIn: parent; text: spp.sameName ? "Replace" : "Save"; color: spp.canSave ? pop.accentText : pop.dim }
+                    HoverHandler { id: spSaveHover; cursorShape: spp.canSave ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    TapHandler { onTapped: spp.save() }
+                }
             }
         }
     }

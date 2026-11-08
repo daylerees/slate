@@ -128,7 +128,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
@@ -1513,6 +1513,12 @@ FloatingWindow {
                     label: "Apps button"
                     detail: "Opens the app launcher (also Super or Super+Space)"
                     Toggle { checked: Config.s.barShowApps; onToggled: v => Config.s.barShowApps = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Spaces"
+                    detail: "Save the apps and layout of your workspaces, and bring them back in one click"
+                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
                 }
                 Separator {}
                 SettingRow {
