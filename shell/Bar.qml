@@ -962,7 +962,8 @@ PanelWindow {
         Row {
             id: segRow
             anchors.centerIn: parent
-            spacing: 6
+            // No gap when there's no label, so a lone icon sits in the middle
+            spacing: seg.label !== "" && !bar.vert ? 6 : 0
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.glyph(seg.iconCode)
