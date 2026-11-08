@@ -435,6 +435,12 @@ Singleton {
         screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
+    // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel
+    readonly property var statusPastels: ({
+        notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",
+        keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0"
+    })
+    function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }
 
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and

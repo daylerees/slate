@@ -810,6 +810,7 @@ PanelWindow {
                     // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
                     Segment {
                         id: bellBtn
+                        pastel: "notifications"            // its colour when the look is Colourful
                         visible: status.hasBell
                         first: true
                         last: status.isLast(0)
@@ -827,6 +828,7 @@ PanelWindow {
                     // Clipboard history: how many items it holds; click for the list
                     Segment {
                         id: clipSeg
+                        pastel: "clipboard"            // its colour when the look is Colourful
                         visible: status.hasClip
                         first: status.isFirst(1)
                         last: status.isLast(1)
@@ -841,6 +843,7 @@ PanelWindow {
                     // Screenshots: click for area / window / screen
                     Segment {
                         id: shotSeg
+                        pastel: "screenshot"            // its colour when the look is Colourful
                         visible: status.hasShot
                         first: status.isFirst(2)
                         last: status.isLast(2)
@@ -851,6 +854,7 @@ PanelWindow {
                     Separator { visible: status.sepBefore(3) }
                     Segment {
                         id: wifiSeg
+                        pastel: "wifi"            // its colour when the look is Colourful
                         visible: status.hasWifi
                         first: status.isFirst(3)
                         last: status.isLast(3)
@@ -867,6 +871,7 @@ PanelWindow {
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
+                        pastel: "keyboard"            // its colour when the look is Colourful
                         visible: status.hasKb
                         first: status.isFirst(4)
                         last: status.isLast(4)
@@ -881,6 +886,7 @@ PanelWindow {
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
+                        pastel: "bluetooth"            // its colour when the look is Colourful
                         visible: status.hasBt
                         first: status.isFirst(5)
                         last: status.isLast(5)
@@ -897,6 +903,7 @@ PanelWindow {
                     Separator { visible: status.sepBefore(6) }
                     Segment {
                         id: volSeg
+                        pastel: "volume"            // its colour when the look is Colourful
                         visible: status.hasVol
                         first: status.isFirst(6)
                         last: status.isLast(6)
@@ -919,6 +926,7 @@ PanelWindow {
                     Separator { visible: status.sepBefore(7) }
                     Segment {
                         id: batSeg
+                        pastel: "battery"            // its colour when the look is Colourful
                         first: status.isFirst(7)
                         last: true
                         readonly property var dev: UPower.displayDevice
@@ -1020,6 +1028,9 @@ PanelWindow {
         property int iconCode: 0
         property string label: ""
         property color tint: bar.textColor
+        // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
+        // warning colour (tint other than the text colour)
+        property string pastel: ""
         property string hoverText: ""
         property int hoverCode: iconCode
         property string hoverTile: ""
@@ -1058,7 +1069,7 @@ PanelWindow {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.glyph(seg.iconCode)
-                color: seg.tint
+                color: seg.pastel !== "" && Qt.colorEqual(seg.tint, bar.textColor) ? Config.statusColour(seg.pastel, seg.tint) : seg.tint
                 font.family: bar.iconFont
                 font.pixelSize: 16
             }
