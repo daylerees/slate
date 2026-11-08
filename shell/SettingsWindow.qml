@@ -142,7 +142,7 @@ FloatingWindow {
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
-        windows: ["windowMode", "keepEmptyWorkspace", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons", "wrapSwitcher", "overviewCardWidth", "overviewAppIcons", "wrapWorkspaces"],
+        windows: ["windowMode", "keepEmptyWorkspace", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons", "overviewCardWidth", "overviewAppIcons", "wrapWorkspaces"],
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
@@ -2988,12 +2988,7 @@ FloatingWindow {
                     detail: "A small app icon on the corner of each window's preview"
                     Toggle { checked: Config.s.switcherAppIcons; onToggled: v => Config.s.switcherAppIcons = v }
                 }
-                Separator {}
-                SettingRow {
-                    label: "Wrap around"
-                    detail: "Go from the last window back to the first (and the other way); off, it stops at the ends"
-                    Toggle { checked: Config.s.wrapSwitcher; onToggled: v => Config.s.wrapSwitcher = v }
-                }
+
             }
             GroupLabel { text: "Workspace overview (Super+Down)" }
             Group {
@@ -3010,7 +3005,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Workspaces wrap around"
-                    detail: "Super+Left/Right and the overview go from the last workspace back to the first (and the other way); off, they stop at the ends"
+                    detail: "Super+Left/Right and the overview go from the last workspace back to the first (and the other way); off, they stop at the ends, and the overview's row ends there too"
                     Toggle { checked: Config.s.wrapWorkspaces; onToggled: v => Config.s.wrapWorkspaces = v }
                 }
             }

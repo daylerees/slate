@@ -78,8 +78,7 @@ PanelWindow {
     function move(step) {
         if (!shown) { open(step); return; }
         const n = strip.length;
-        // Round from the last window to the first, unless that's turned off (Settings → Windows)
-        index = Config.s.wrapSwitcher ? (index + step + n) % n : Math.max(0, Math.min(n - 1, index + step));
+        index = (index + step + n) % n;
     }
     // The strip's position is set from here rather than bound to index: while the
     // switcher is opening (the strip rebuilding for the new windows, the window not yet

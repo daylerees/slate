@@ -164,8 +164,11 @@ PanelWindow {
     function close() { shown = false; shiftHeld = false; }
     function move(step) {
         const n = strip.length;
-        // Round from the last workspace to the first, unless that's turned off (Settings → Windows)
-        if (n) index = Config.s.wrapWorkspaces ? (index + step + n) % n : Math.max(0, Math.min(n - 1, index + step));
+        if (!n) return;
+        // Round from the last workspace to the first, unless that's turned off (Settings →
+        // Windows): then it stops at the first and last
+        if (!Config.s.wrapWorkspaces && (selected + step < 0 || selected + step >= spaces.length)) return;
+        index = (index + step + n) % n;
         list.currentIndex = index;
     }
     // Shift+Left/Right: move the selected workspace along by swapping its windows
@@ -384,7 +387,17 @@ PanelWindow {
                 width: ov.cardW
                 height: list.cardH + 40
                 scale: lifted ? 1.04 : isSelected ? 1 : 0.86
-                opacity: isSelected ? 1 : 0.6
+                // Without wrapping round (Settings → Windows), the row ends at the first and last
+                // workspace: the repeats past either end (the other end's cards) fade away
+                readonly property int offset: {
+                    const n = ov.strip.length;
+                    let d = ((index - ov.index) % n + n) % n;
+                    if (d > n / 2) d -= n;
+                    return d;
+                }
+                readonly property bool pastEnd: !Config.s.wrapWorkspaces
+                    && (ov.selected + offset < 0 || ov.selected + offset >= ov.spaces.length)
+                opacity: pastEnd ? 0 : isSelected ? 1 : 0.6
                 Behavior on scale { enabled: !ov.handover; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                 Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: 220 } }
 
