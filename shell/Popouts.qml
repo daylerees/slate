@@ -387,6 +387,7 @@ PanelWindow {
             Gloss { radius: parent.radius; strength: 0.6 }   // glass: a sheen
         }
         MouseArea {
+            preventStealing: true      // keep the drag once started, even if the pointer drifts off
             anchors.fill: parent
             function set(mx) { sl.moved(Math.max(0, Math.min(1, mx / width))); }
             onPressed: m => set(m.x)

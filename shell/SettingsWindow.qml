@@ -705,6 +705,9 @@ FloatingWindow {
             }
             MouseArea {
                 id: sliderMouse
+                // Keep the drag once it's started here: the scrolling page around it took over
+                // when the pointer drifted up or down, and the slider stopped following it
+                preventStealing: true
                 anchors.fill: parent
                 hoverEnabled: true
                 function set(mx) {
