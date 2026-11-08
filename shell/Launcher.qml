@@ -628,7 +628,13 @@ PanelWindow {
                     asynchronous: true
                     layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                     onStatusChanged: if (!row.calc && !row.setting && !row.action && status === Image.Error && !gen.running && row.tried !== row.tilePath) { row.tried = row.tilePath; gen.running = true; }
-                    IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                    // The tile behind, in the theme's colour. Solid on the highlight: with glass it's
+                    // see-through, and the accent behind would show through it
+                    IconPlate {
+                        anchors.fill: parent; z: -1
+                        color: row.selected && Config.glass ? Config.tint("#2a313c") : Config.iconPlateColor
+                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                    }
                 }
                 // Calculator tile
                 Rectangle {
