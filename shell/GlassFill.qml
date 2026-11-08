@@ -1,6 +1,6 @@
 // A lock / login screen panel's fill (LoginScreen.qml). With glass on (Settings →
-// Appearance → Glass) it looks like the rest of Slate: the wallpaper behind it frosted, the
-// colour see-through, the shine rim and the gloss sheen; with glass off it isn't shown and the
+// Appearance → Glass) it looks like the bar's containers: the wallpaper behind it frosted, the
+// colour see-through and the gloss sheen, with no outline; with glass off it isn't shown and the
 // panel keeps its solid colour. That screen draws its own wallpaper, so Hyprland's blur (which
 // frosts the bar) can't reach behind its panels; WallBlur draws that part instead.
 //   GlassFill { screen: <the full-screen item>; wallpaper: <path>; fill: Config.surface(…); radius: parent.radius }
@@ -36,8 +36,6 @@ Item {
         anchors.fill: parent
         radius: gf.radius
         color: gf.fill
-        border.width: Config.glassShine ? 1 : 0
-        border.color: Config.glassEdge
         Gloss { radius: gf.radius }
     }
 }
