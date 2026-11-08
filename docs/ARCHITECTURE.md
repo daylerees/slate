@@ -97,6 +97,11 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - Canvas-drawn shapes (corners, panel joins) repaint on colour change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a
   full restart after editing them.
+- **Reload notices** (`shell.qml`): Quickshell's own reload popup is hidden; Slate sends a
+  notification instead, for a reload that worked and one that failed (the error's last
+  "caused by" link leads: what, which file and line, and what used it). After a failed
+  reload Quickshell stops reloading on file changes until it's restarted, so Slate watches
+  the files the error names and reloads itself when one is saved.
 
 ## IPC (`slate ipc call <target> <function> [args]`)
 

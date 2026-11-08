@@ -234,13 +234,50 @@ ShellRoot {
     // if missing; saving one reloads Hyprland's config or Slate)
     UserFiles {}
     // No "Configuration reloaded" popup when Slate reloads (after an update or a setting that
-    // needs it): it covered the top of the screen and got in the way of the panels. A failed
-    // reload still shows its popup, with the error.
-    // Slate's own notice instead (a notification, kept in history like any other), and one when
-    // Hyprland reloads its config, with any errors in it
+    // needs it, or a code change): it covered the top of the screen and got in the way of the
+    // panels. Slate's own notice instead (a notification, kept in history like any other), for
+    // a reload that worked and one that failed, and one when Hyprland reloads its config, with
+    // any errors in it
     Connections {
         target: Quickshell
         function onReloadCompleted() { Quickshell.inhibitReloadPopup(); reloadNotice.restart(); }
+        function onReloadFailed(errorString) { Quickshell.inhibitReloadPopup(); root.reloadFailedNotice(errorString); }
+    }
+    // A failed reload leaves this (the previous) Slate running, so it can say so straight away.
+    // Quickshell's error is a chain of "caused by @File.qml[line:col]: …"; the last link is
+    // where the mistake is, so that leads
+    property string lastReloadError: ""
+    property var brokenFiles: []            // the files in the failed reload's error
+    function reloadFailedNotice(error) {
+        if (String(error) === lastReloadError) return;      // Quickshell reports a failure twice
+        lastReloadError = String(error);
+        const lines = String(error).split("\n").map(l => l.trim()).filter(l => l !== "");
+        const links = lines.map(l => l.match(/@([^\[\]]+)\[(-?\d+):-?\d+\]:\s*(.*)$/)).filter(m => m);
+        let body;
+        if (links.length) {
+            const cause = links[links.length - 1];
+            const where = cause[1] + (parseInt(cause[2]) > 0 ? ", line " + cause[2] : "");
+            const via = links.length > 1 ? links[links.length - 2][1] : "";
+            body = cause[3] + " (" + where + (via ? ", used by " + via : "") + ").";
+        } else {
+            body = lines.slice(0, 3).join(" ");
+        }
+        brokenFiles = [...new Set(links.map(m => m[1]))];
+        Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical",
+            "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
+            "Slate couldn't reload", body + " Still running the previous version; it reloads when you save the fix."]);
+    }
+    // After a failed reload Quickshell stops reloading when files change, until it's restarted.
+    // So watch the files the error names, and reload as soon as one is saved
+    Variants {
+        model: root.brokenFiles
+        FileView {
+            required property string modelData
+            path: Quickshell.shellPath(modelData)
+            watchChanges: true
+            printErrors: false
+            onFileChanged: { root.brokenFiles = []; root.lastReloadError = ""; Quickshell.reload(false); }
+        }
     }
     Timer {
         id: reloadNotice
