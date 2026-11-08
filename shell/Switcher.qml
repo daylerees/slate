@@ -190,9 +190,12 @@ PanelWindow {
         color: sw.bar.barColor
         opacity: sw.fade
         scale: 0.97 + 0.03 * sw.fade
+        // Glass: a thin light rim
+        border.width: Config.glassShine ? 1 : 0
+        border.color: Config.glassEdge
         layer.enabled: true
         layer.effect: MultiEffect {
-            shadowEnabled: true
+            shadowEnabled: !Config.glass
             shadowColor: "#000000"
             shadowOpacity: 0.45
             shadowBlur: 1.0
@@ -264,6 +267,18 @@ PanelWindow {
                     anchors { top: parent.top; topMargin: 10; horizontalCenter: parent.horizontalCenter }
                     width: sw.cardW - 20
                     height: sw.previewH
+                    // Behind a see-through window: the wallpaper blurred as on screen, from
+                    // where the window is on its screen
+                    WallBlur {
+                        readonly property var o: card.modelData.lastIpcObject
+                        readonly property var m: o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null
+                        visible: Config.hyprBlur.enabled && Config.s.switcherPreviews && !!o && !!o.at && !!m && shot.hasContent
+                        anchors.fill: shot
+                        win: visible ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
+                        screen: m ? Qt.size(m.width / (m.scale || 1), m.height / (m.scale || 1)) : Qt.size(1, 1)
+                        pixelScale: o && o.size ? shot.width / Math.max(1, o.size[0]) : 0.25
+                        radius: 8
+                    }
                     ScreencopyView {
                         id: shot
                         readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10

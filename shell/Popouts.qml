@@ -1181,6 +1181,17 @@ PanelWindow {
                                             // The window itself, live while New Space is open
                                             // (as in the workspace overview)
                                             readonly property var toplevel: Hyprland.toplevels.values.find(t => "0x" + t.address === modelData.address || t.address === modelData.address) ?? null
+                                            // Behind a see-through window: the wallpaper blurred as on
+                                            // screen, from where the window sits on this card
+                                            WallBlur {
+                                                anchors.fill: wsLive
+                                                win: Qt.rect(wsWin.modelData.x * wsShot.width, wsWin.modelData.y * wsShot.height,
+                                                             wsWin.modelData.w * wsShot.width, wsWin.modelData.h * wsShot.height)
+                                                screen: Qt.size(wsShot.width, wsShot.height)
+                                                pixelScale: wsShot.width / Math.max(1, wsCard.modelData.width || 1440)
+                                                radius: Math.max(0, wsWin.radius - 1)
+                                                opacity: wsCard.on ? 1 : 0.6
+                                            }
                                             ScreencopyView {
                                                 id: wsLive
                                                 anchors.fill: parent
