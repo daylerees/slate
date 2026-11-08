@@ -50,6 +50,9 @@ PanelWindow {
     // ---- Open / close ------------------------------------------------------
     property string mode: "clipboard"      // "clipboard" or "emoji"
     property bool shown: false
+    // Typed in (or an entry deleted) since opening: only then does it animate its height (not
+    // while its list is still loading as it opens, which made it grow in steps)
+    property bool typed: false
     property bool slideHighlight: false
     property var lastPointer: null
     function open(m) {
@@ -59,6 +62,7 @@ PanelWindow {
         slideHighlight = false;
         Qt.callLater(() => root.slideHighlight = true);
         search.text = "";
+        typed = false;
         if (m === "clipboard") clipFile.reload();
         view().currentIndex = 0;
         view().positionViewAtBeginning();
@@ -112,11 +116,12 @@ PanelWindow {
     function deleteClip(e) {
         if (!e) return;
         const i = list.currentIndex;
+        typed = true;                                   // shrinks smoothly
         clips = clips.filter(c => c.id !== e.id);      // at once; the file catches up
         list.currentIndex = Math.min(i, list.count - 1);
         clipRun(["delete", e.id]);
     }
-    function clearClips() { clips = []; clipRun(["clear"]); }
+    function clearClips() { typed = true; clips = []; clipRun(["clear"]); }
 
     function preview(text) { return text.replace(/\s+/g, " ").trim(); }
     function ago(t) {
@@ -187,7 +192,7 @@ PanelWindow {
         // Shrinks and grows with what's listed, smoothly; the top stays where a full-height
         // panel's would be, so the search box doesn't move
         height: root.fittedHeight
-        Behavior on height { enabled: root.shown; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
@@ -243,7 +248,7 @@ PanelWindow {
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
-                onTextChanged: root.view().currentIndex = 0
+                onTextChanged: { root.view().currentIndex = 0; if (root.shown) root.typed = true; }
 
                 Keys.onPressed: event => {
                     const v = root.view();

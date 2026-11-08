@@ -58,6 +58,10 @@ PanelWindow {
     // the selection when the pointer itself moves, not when rows slide under it.
     property var lastPointer: null
     property int openedOnWorkspace: -1
+    // Typed in since opening: only then does the launcher animate its height. Otherwise
+    // (the app list still filling in on the first opening after Slate starts) it grew in
+    // steps as the apps arrived
+    property bool typed: false
     function openLauncher() {
         screen = Config.focusedScreen;     // open on the focused screen
         lastPointer = null;
@@ -65,6 +69,7 @@ PanelWindow {
         slideHighlight = false;
         Qt.callLater(() => root.slideHighlight = true);
         search.text = "";
+        typed = false;
         list.currentIndex = 0;
         list.positionViewAtBeginning();
         openedAt = Date.now();
@@ -405,7 +410,7 @@ PanelWindow {
         // Shrinks and grows with the results, smoothly; the top stays put (where a full-height
         // launcher's would be), so the search box doesn't move while typing
         height: root.fittedHeight
-        Behavior on height { enabled: root.shown; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
@@ -477,7 +482,7 @@ PanelWindow {
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
-                onTextChanged: list.currentIndex = 0
+                onTextChanged: { list.currentIndex = 0; if (root.shown) root.typed = true; }
 
                 Keys.onPressed: event => {
                     const n = list.count;
