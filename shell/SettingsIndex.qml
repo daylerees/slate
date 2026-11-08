@@ -50,6 +50,7 @@ Singleton {
         ["Discord (Vencord)", "apptheming", "theme colours colors discord vesktop, vencord and equicord: a slate theme, switched on for you"],
         ["Spotify (Spicetify)", "apptheming", "theme colours colors spotify a slate theme for spicetify, applied without restarting spotify"],
         ["Firefox", "apptheming", "theme colours colors firefox toolbars, tabs and menus in slate's colours (userchrome.css), after a restart"],
+        ["Welcome", "about", "welcome introduction tour first start getting started setup onboarding"],
         ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],
         ["Check for updates", "updates", "update notification daily automatic new version"],
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],

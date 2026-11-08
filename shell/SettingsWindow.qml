@@ -4437,6 +4437,15 @@ FloatingWindow {
             }
             Group {
                 SettingRow {
+                    label: "Welcome"
+                    detail: "The introduction from Slate's first start, with its recommended choices"
+                    Button {
+                        label: "Show the welcome"
+                        onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "welcome", "show"]); }
+                    }
+                }
+                Separator {}
+                SettingRow {
                     label: "Settings file"
                     detail: "settings.json in ~/.config/slate"
                     Button { label: "Open file"; onClicked: Quickshell.execDetached(["xdg-open", Qt.resolvedUrl("settings.json").toString()]) }
