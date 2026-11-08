@@ -187,14 +187,22 @@ Rectangle {
                     color: card.dim
                     font.family: card.bar.fontFamily; font.pixelSize: 11
                 }
-                // Close button, shown on hover
-                Text {
+                // Close button, shown on hover: the icon on a small rounded square, lit in the
+                // accent when pointed at. (Overhangs the row a little rather than making it taller.)
+                Rectangle {
                     id: closeBtn
                     visible: cardHover.hovered
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    text: String.fromCodePoint(0xEB55)
-                    color: closeHover.hovered ? card.textColor : card.dim
-                    font.family: card.bar.iconFont; font.pixelSize: 14
+                    width: 20; height: 20
+                    radius: 5
+                    color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Text {
+                        anchors.centerIn: parent
+                        text: String.fromCodePoint(0xEB55)
+                        color: closeHover.hovered ? card.textColor : card.dim
+                        font.family: card.bar.iconFont; font.pixelSize: 13
+                    }
                     HoverHandler { id: closeHover }
                     TapHandler { onTapped: card.closed() }
                 }
