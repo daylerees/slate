@@ -968,7 +968,7 @@ PanelWindow {
                     SmoothWheel { flick: spListFlick; enabled: spListBox.overflow }
                     Column {
                         id: spListCol
-                        width: spListBox.width - (spListBox.overflow ? 14 : 0)
+                        width: spListBox.width - (spListBox.overflow ? 18 : 0)
                         spacing: 6
                         Repeater {
                             model: Spaces.list
@@ -1057,7 +1057,7 @@ PanelWindow {
                 // Scroll shadows, as in Settings: at the top once scrolled down, and at the
                 // bottom while there's more below
                 Rectangle {
-                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; top: parent.top }
+                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 18 : 0; top: parent.top }
                     height: 18
                     // Fades with the distance from the edge, gone just as you reach it
                     opacity: Math.max(0, Math.min(1, (spListFlick.contentY - spListFlick.originY) / 24))
@@ -1067,7 +1067,7 @@ PanelWindow {
                     }
                 }
                 Rectangle {
-                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 14 : 0; bottom: parent.bottom }
+                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 18 : 0; bottom: parent.bottom }
                     height: 24
                     opacity: Math.max(0, Math.min(1, (spListFlick.originY + spListFlick.contentHeight - spListFlick.height - spListFlick.contentY) / 24))
                     gradient: Gradient {
@@ -1134,7 +1134,7 @@ PanelWindow {
                 visible: spp.mode === "new" && Spaces.live.length > 0
                 width: parent.width
                 readonly property bool overflow: Math.ceil(Spaces.live.length / 3) > 2
-                readonly property real cardW: Math.floor((width - 16 - (overflow ? 14 : 0)) / 3)
+                readonly property real cardW: Math.floor((width - 16 - (overflow ? 18 : 0)) / 3)
                 readonly property real rowH: Math.round(cardW / Math.max(1, (Spaces.live[0] || {}).aspect || 1.6)) + 5 + 17 + 8
                 height: overflow ? Math.round(rowH * 2.4) : wsFlow.height
                 Flickable {
@@ -1147,7 +1147,7 @@ PanelWindow {
                     SmoothWheel { flick: wsFlick; enabled: wsBox.overflow }
                     Flow {
                         id: wsFlow
-                        width: wsBox.width - (wsBox.overflow ? 14 : 0)
+                        width: wsBox.width - (wsBox.overflow ? 18 : 0)
                         spacing: 8
                         Repeater {
                             model: Spaces.live
@@ -2480,7 +2480,7 @@ PanelWindow {
                 SmoothWheel { flick: nList }
                 delegate: NotificationCard {
                     required property var modelData
-                    width: nList.width - (nList.overflowing ? 10 : 0)   // room for the scrollbar
+                    width: nList.width - (nList.overflowing ? 18 : 0)   // room for the scrollbar and a gap before it
                     bar: pop.bar
                     inPanel: true
                     entry: modelData

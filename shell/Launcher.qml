@@ -16,7 +16,7 @@ PanelWindow {
     // Fits small screens: never wider or taller than the screen allows
     readonly property real panelWidth: Math.max(300, Math.min(560, width - 32))
     // The grid: as tall as its rows of square cells (search box, rows, name strip), within the screen
-    readonly property real gridCellSize: Math.floor((panelWidth - 36) / gridColumns)
+    readonly property real gridCellSize: Math.floor((panelWidth - 42) / gridColumns)
     readonly property real panelHeight: Math.max(260, Math.min(gridMode ? 134 + gridRows * gridCellSize : 520, height - 120))
     readonly property real rowHeight: 52
     // As tall as the results need (never taller than panelHeight), so it shrinks as a search
@@ -525,7 +525,7 @@ PanelWindow {
         // One GridView for both: in the list it has a single full-width column
         GridView {
             id: list
-            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: root.gridMode ? nameStrip.top : parent.bottom; margins: 14; rightMargin: listFits ? 14 : 22 }
+            anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: root.gridMode ? nameStrip.top : parent.bottom; margins: 14; rightMargin: listFits ? 14 : 28 }
             // Rows use the full width when they all fit (no scrollbar); the grid's cells are a fixed size
             readonly property bool listFits: !root.gridMode && contentHeight <= height
             anchors.bottomMargin: root.gridMode ? 4 : 14
@@ -748,7 +748,7 @@ PanelWindow {
             id: scrollbar
             flick: list
             color: root.textColor
-            anchors { top: list.top; bottom: list.bottom; left: list.right; leftMargin: 2 }
+            anchors { top: list.top; bottom: list.bottom; left: list.right; leftMargin: 8 }
         }
 
         // Shadow at the bottom while there's more to scroll to

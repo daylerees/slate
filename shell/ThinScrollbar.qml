@@ -4,7 +4,8 @@
 //   ThinScrollbar { flick: myList; color: theme text colour; anchors { top: …; bottom: …; right: … } }
 // It's 10 px wide to be easy to grab; the track and thumb are centred in that.
 // Views give it room only while it shows: when everything fits, rows use the full width
-// (e.g. rightMargin: flick.contentHeight <= flick.height ? 14 : 22).
+// and an 8 px gap before it (e.g. rightMargin: flick.contentHeight <= flick.height ? 14 : 28,
+// scrollbar leftMargin: 8; or content width - 18 with the scrollbar at the right edge).
 
 import QtQuick
 
