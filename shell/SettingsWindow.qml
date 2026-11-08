@@ -126,7 +126,7 @@ FloatingWindow {
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
@@ -3435,6 +3435,24 @@ FloatingWindow {
                     label: "Gloss"
                     detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
                     ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
+                }
+            }
+            GroupLabel { text: "Blur" }
+            Group {
+                SettingRow {
+                    label: "Fast blur"
+                    detail: Config.s.fastBlur ? "See-through windows and glass blur just the wallpaper, not the windows under them: far less work, so everything stays smooth"
+                        : "See-through windows and glass blur whatever's under them, windows included. Heavier: animations and the pointer can slow down"
+                    Toggle { checked: Config.s.fastBlur; onToggled: v => Config.s.fastBlur = v }
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Blur quality"
+                    detail: "Smoother blur takes more passes, and more work"
+                    options: [{ value: 0, label: "Hyprland's own" }, { value: 1, label: "Low (1 pass)" }, { value: 2, label: "Medium (2 passes)" },
+                              { value: 3, label: "High (3 passes)" }, { value: 4, label: "Highest (4 passes)" }]
+                    value: Config.s.blurPasses
+                    onPicked: v => Config.s.blurPasses = v
                 }
             }
             GroupLabel { text: "Style" }

@@ -253,7 +253,10 @@ Singleton {
             + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
             + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
             + `SLATE_GLASS:set_enabled(${s.glass ? "true" : "false"})`
-            + (s.glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "");
+            + (s.glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
+            // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
+            + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`
+            + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "");
     }
     onHyprSettingsChanged: hyprPush.restart()
     Timer {
@@ -452,7 +455,16 @@ Singleton {
     // Glass's blur size put back to Hyprland's own (glass off, or "Hyprland's own" picked):
     // reload Hyprland's config so its value comes back
     property bool blurOverridden: false
-    readonly property bool blurOverride: s.glass && s.glassBlur > 0
+    readonly property bool blurOverride: (s.glass && s.glassBlur > 0) || s.blurPasses > 0
+    // Which: a blur size or passes going back to Hyprland's own needs a reload
+    readonly property string blurOverrideKey: (s.glass && s.glassBlur > 0 ? "size" : "") + (s.blurPasses > 0 ? "passes" : "")
+    property string blurOverriddenKey: ""
+    onBlurOverrideKeyChanged: {
+        const was = blurOverriddenKey, now = blurOverrideKey;
+        if (was !== "" && (was.includes("size") && !now.includes("size") || was.includes("passes") && !now.includes("passes")))
+            hyprReload.restart();
+        blurOverriddenKey = now;
+    }
     onBlurOverrideChanged: if (!blurOverride && blurOverridden) { blurOverridden = false; hyprReload.restart(); }
 
     // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
