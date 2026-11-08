@@ -12,6 +12,10 @@ and workspace switchers, drop-down panels, notifications, on-screen indicators, 
 settings app, clipboard history, an emoji picker, night light, and its own lock and login
 screens.
 
+Slate is inspired by the best parts of macOS, Windows and Linux, and blends them together
+into something fresh. Things work the way you'd expect, so it's a welcoming place for
+people new to Linux and experienced users alike.
+
 ## Install
 
 ```sh
