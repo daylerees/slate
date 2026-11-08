@@ -25,7 +25,7 @@ Rectangle {
         if (c === undefined || c.a < 0.5) return 1;
         return 1 + 6 * Math.max(0, c.hslLightness - 0.4);
     }
-    readonly property real a: (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost * tinted
+    readonly property real a: Math.min(0.85, (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost * tinted * (onFill ? 2 : 1))
     // A coloured sheen is a little stronger, so its colour shows rather than reading as grey
     readonly property real tinted: hintAmount > 0 ? 1.35 : 1
     // The sheen's colour: light, with a hint of what it's on. A coloured fill (an accent-filled
