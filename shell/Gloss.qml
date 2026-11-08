@@ -54,6 +54,18 @@ Rectangle {
         GradientStop { position: 0.55; color: "transparent" }
         GradientStop { position: 1.0; color: "transparent" }
     }
+    // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
+    // rounded, glossy surface rather than a flat one (Gloss sets how strong)
+    Rectangle {
+        anchors.fill: parent
+        radius: g.radius
+        visible: g.onFill
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 0.5; color: "transparent" }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, Math.min(0.35, 0.3 * Config.glossAmount)) }
+        }
+    }
     // The bright edge: the shape's own rounded outline, so it bends around the top corners,
     // fading out a little way down the sides
     Item {
