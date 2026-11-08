@@ -128,7 +128,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "accentFromWallpaper", "accent", "toneFromWallpaper", "roundedScreenCorners",
             "workspaceShape", "animations", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "spaceBadges", "barShowWorkspaces", "barShowTitle",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
@@ -1519,6 +1519,12 @@ FloatingWindow {
                     label: "Spaces"
                     detail: "Save the apps and layout of your workspaces, and bring them back in one click"
                     Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Space badges on windows"
+                    detail: "Windows opened from a space show its icon in a corner, which moves out of the pointer's way"
+                    Toggle { checked: Config.s.spaceBadges; onToggled: v => Config.s.spaceBadges = v }
                 }
                 Separator {}
                 SettingRow {

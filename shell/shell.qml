@@ -217,6 +217,8 @@ ShellRoot {
         bar: topBar
         onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); }
     }
+    // A space's icon on the windows it opened (Settings → Menu bar → Space badges on windows)
+    SpaceBadges { suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
 
     PanelWindow {
         id: win

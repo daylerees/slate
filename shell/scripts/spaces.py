@@ -37,7 +37,11 @@ import uuid
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "slate")
 STORE = os.path.join(DATA, "spaces.json")
-LOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "slate-spaces.lock")
+RUNTIME = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "slate")
+LOCK = os.path.join(RUNTIME, "spaces.lock")
+# Which open windows came from which space (window stableId -> space id), for the badges
+# Slate draws on them (SpaceBadges.qml). Windows that have closed are dropped on each write.
+OWNERS = os.path.join(RUNTIME, "space-windows.json")
 
 WINDOW_TIMEOUT = 15     # seconds to wait for an app's window
 TOLERANCE = 12          # px: windows this close count as touching (gaps between tiles)
@@ -294,8 +298,26 @@ def first_leaf(node):
     return node
 
 
+def remember(stable_id, space_id):
+    """Note that a window belongs to a space."""
+    try:
+        with open(OWNERS, encoding="utf-8") as fh:
+            owners = json.load(fh)
+    except (OSError, ValueError):
+        owners = {}
+    alive = {str(c.get("stableId")) for c in hypr("clients")}
+    owners = {k: v for k, v in owners.items() if k in alive}
+    owners[str(stable_id)] = space_id
+    os.makedirs(RUNTIME, exist_ok=True)
+    tmp = OWNERS + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(owners, fh)
+    os.replace(tmp, OWNERS)
+
+
 class Restorer:
-    def __init__(self):
+    def __init__(self, space_id):
+        self.space_id = space_id
         self.failed = []
         self.ratio_form = None      # which "splitratio" form this Hyprland takes, once known
 
@@ -327,6 +349,8 @@ class Restorer:
                 dispatch("hl.dsp.window.move({ workspace = " + str(ws) + ", follow = false, window = "
                          + win_sel(c["address"]) + " })")
             time.sleep(0.3)        # let it settle into its place
+            if c.get("stableId") is not None:
+                remember(c["stableId"], self.space_id)
             return c["address"]
         self.failed.append(win.get("name") or win.get("class") or win["command"].split(" ")[0])
         return None
@@ -466,6 +490,7 @@ def restore(key):
     space = next((s for s in load()["spaces"] if s["id"] == key or s["name"].lower() == key.lower()), None)
     if not space:
         sys.exit("no space called " + key)
+    os.makedirs(RUNTIME, exist_ok=True)
     lock = open(LOCK, "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -474,7 +499,7 @@ def restore(key):
     # New workspaces after the last one with windows (an empty spare there gets used)
     taken = {w["id"] for w in hypr("workspaces") if w.get("id", 0) > 0 and w.get("windows", 0) > 0}
     nxt = max(taken, default=0) + 1
-    r = Restorer()
+    r = Restorer(space["id"])
     first_ws = None
     for saved in space["workspaces"]:
         while nxt in taken:

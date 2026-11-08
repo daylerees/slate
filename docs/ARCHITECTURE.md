@@ -31,6 +31,7 @@ shell.qml               root: creates everything below, plus the dock itself
 Config.qml              singleton: settings.json + theme helpers (accent, tint())
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
+SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
@@ -145,6 +146,15 @@ opens alone, and for each cut the first window of the first half is focused,
 waits for its window), and the split is set with `splitratio … exact`. Floating windows
 are started floating, then moved and sized. Apps that don't open a window within 15 s are
 skipped and named in a notification.
+
+Each window a restore opens is noted by its Hyprland `stableId` (addresses get reused) in
+`$XDG_RUNTIME_DIR/slate/space-windows.json`. `SpaceBadges.qml` puts a Top-layer strip along
+the top edge of each such window that's on a showing workspace (clear, and taking the
+pointer only where the badge is), placed from `HyprlandToplevel.lastIpcObject` (re-read on
+window/workspace events, and every 0.5 s while there are any, since Hyprland sends no event
+for resizes or drags); which workspaces are showing comes from `hyprctl -j monitors`.
+Hovering the badge fades it across to the other top corner, inside the strip, so Hyprland
+never animates it; a focus change puts it back.
 
 ## Dependencies
 

@@ -92,6 +92,7 @@ JsonAdapter {
     // What the bar shows (Settings → Menu bar)
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
+    property bool spaceBadges: true           // a space's icon on the windows it opened
     property bool barShowWorkspaces: true     // workspace dots
     property bool barShowTitle: true          // focused window's title
     property bool barShowTray: true           // app tray icons

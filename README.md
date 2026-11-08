@@ -50,7 +50,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down ask in a centred dialog | `Popouts.qml`, `PowerConfirm.qml` |
 | Dock | macOS-style magnifying dock, pinned apps, right-click menus, auto-hide | `shell.qml` |
 | Launcher | App search (usage-sorted), calculator, open on a new workspace left/right | `Launcher.qml` |
-| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `Popouts.qml`, `scripts/spaces.py` |
+| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces, each window wearing the space's icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `Popouts.qml`, `scripts/spaces.py` |
 | Window switcher | Super+Tab, live previews, circular strip | `Switcher.qml` |
 | Workspace overview | Super+Down, large live cards, reorder with Shift | `WorkspaceOverview.qml` |
 | Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml` |
