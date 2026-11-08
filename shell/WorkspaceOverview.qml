@@ -59,13 +59,44 @@ PanelWindow {
         geo = g;
         shotAddrs = all;
     }
-    // Where a workspace's monitor sits in Hyprland's layout, and its width, in Hyprland's
-    // units (window positions are in these; Slate's own units differ by the interface size)
+    // The part of a workspace's monitor that windows can use (without the space the bar and
+    // other edges reserve), in Hyprland's units: window positions are in these; Slate's own
+    // units differ by the interface size. Cards show just this part.
     function monitorBox(wsId) {
         const w = Hyprland.workspaces.values.find(x => x.id === wsId);
         const m = w ? w.monitor : null;
-        if (m && m.width > 0) return { x: m.x, y: m.y, w: m.width / (m.scale || 1) };
-        return { x: 0, y: 0, w: ov.width * Config.uiScale };
+        const a = m ? areas[m.name] : null;
+        if (a) return a;
+        if (m && m.width > 0) return { x: m.x, y: m.y, w: m.width / (m.scale || 1), h: m.height / (m.scale || 1) };
+        return { x: 0, y: 0, w: ov.width * Config.uiScale, h: ov.height * Config.uiScale };
+    }
+    // Each monitor's usable area by name, from hyprctl (read at start and on each open, as
+    // the bar's reserved space changes with its position and auto-hide)
+    property var areas: ({})
+    Process {
+        id: areaProc
+        running: true
+        command: ["hyprctl", "-j", "monitors"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const o = {};
+                    for (const m of JSON.parse(text)) {
+                        const sc = m.scale || 1;
+                        let w = m.width / sc, h = m.height / sc;
+                        if ((m.transform || 0) % 2) { const t = w; w = h; h = t; }
+                        const r = m.reserved || [0, 0, 0, 0];      // left, top, right, bottom
+                        o[m.name] = { x: m.x + r[0], y: m.y + r[1], w: w - r[0] - r[2], h: h - r[1] - r[3] };
+                    }
+                    ov.areas = o;
+                } catch (e) {}
+            }
+        }
+    }
+    // The cards' shape: the usable area of the screen the overview is on
+    readonly property real areaAspect: {
+        const a = areas[screen ? screen.name : ""];
+        return a && a.w > 0 ? a.h / a.w : ov.height / Math.max(1, ov.width);
     }
     // Last known position/size of each window (Hyprland's data briefly drops out
     // while windows move between workspaces)
@@ -108,6 +139,7 @@ PanelWindow {
 
     function open() {
         screen = Config.focusedScreen;     // open on the focused screen
+        areaProc.running = false; areaProc.running = true;
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
         // Normal workspaces only (the secret / special workspace has a negative id)
@@ -310,7 +342,7 @@ PanelWindow {
             id: list
             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; verticalCenterOffset: -30 }
             height: cardH + 60
-            readonly property real cardH: ov.cardW * (ov.height / Math.max(1, ov.width))
+            readonly property real cardH: ov.cardW * ov.areaAspect
             interactive: false
             model: ov.strip
             currentIndex: ov.index
@@ -398,12 +430,11 @@ PanelWindow {
                         color: "transparent"
                         visible: ov.wallpaper === ""
                     }
-                    // Mini top bar
-                    Rectangle { width: parent.width; height: ov.bar.barHeight * Config.uiScale * card.sx; color: ov.bar.barColor }
 
                     Repeater {
                         model: card.wins
                         delegate: Item {
+                            id: ovWin
                             required property var modelData
                             readonly property var g: modelData ? ov.geoFor(modelData.address) : null
                             visible: !!g          // position not known yet: leave it out rather than misplace it
