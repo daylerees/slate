@@ -130,7 +130,9 @@ opening any of them closes bar panels (wired in `shell.qml`).
   windows: Super+W, Super+Return in the launcher) and `besideWorkspace(dir)` for "open on a
   new workspace left/right".
 - `windowrules.lua` — `no_anim` for Slate overlay layers; "Slate Settings" floats.
-- `misc.lua` — `allow_session_lock_restore = true` (a restarted Slate re-takes a lock).
+- `misc.lua` — `allow_session_lock_restore = true` (a restarted Slate re-takes a lock);
+  `focus_on_activate = true` (an app asking to come forward, like a browser handed a link, is
+  switched to, on its workspace).
 
 **Gotcha:** Hyprland won't move focus or switch workspace while a layer holds exclusive
 keyboard focus. Slate overlays first release the keyboard (`releasing`), then dispatch

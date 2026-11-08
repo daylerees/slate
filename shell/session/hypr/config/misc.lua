@@ -13,6 +13,9 @@ hl.config({
             splash = SLATE_ACCENT,
         },
         middle_click_paste = false,
+        -- An app that asks to be brought forward (a browser handed a link by another app, a
+        -- file opened in an app that's already running) is switched to, on its workspace
+        focus_on_activate = true,
         -- A terminal that launches a GUI app hides while the app is open ("swallowing")
         enable_swallow = true,
         swallow_regex = "(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal)",
