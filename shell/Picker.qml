@@ -24,6 +24,9 @@ PanelWindow {
     readonly property real panelHeight: 520
     readonly property real rowHeight: 52
     readonly property real imageRowHeight: 92
+    // As tall as what's listed needs (never taller than panelHeight), like the launcher: the
+    // search box, margins and footer (118), then the list's or grid's own height, at least a row
+    readonly property real fittedHeight: Math.min(panelHeight, 118 + Math.max(rowHeight, view().contentHeight))
     readonly property int columns: 10            // emoji grid
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18
@@ -181,8 +184,12 @@ PanelWindow {
     Rectangle {
         id: panel
         width: root.panelWidth
-        height: root.panelHeight
-        anchors.centerIn: parent
+        // Shrinks and grows with what's listed, smoothly; the top stays where a full-height
+        // panel's would be, so the search box doesn't move
+        height: root.fittedHeight
+        Behavior on height { enabled: root.shown; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
         color: root.barColor
         opacity: root.fade
