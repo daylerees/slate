@@ -222,6 +222,41 @@ ShellRoot {
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)
     UserFiles {}
+    // No "Configuration reloaded" popup when Slate reloads (after an update or a setting that
+    // needs it): it covered the top of the screen and got in the way of the panels. A failed
+    // reload still shows its popup, with the error.
+    // Slate's own notice instead (a notification, kept in history like any other), and one when
+    // Hyprland reloads its config, with any errors in it
+    Connections {
+        target: Quickshell
+        function onReloadCompleted() { Quickshell.inhibitReloadPopup(); reloadNotice.restart(); }
+    }
+    Timer {
+        id: reloadNotice
+        interval: 600          // once the new Slate (and its notification server) is up
+        onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
+            "Slate reloaded", "Slate restarted on its updated files and settings."])
+    }
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) { if (event.name === "configreloaded") { hyprErrors.running = false; hyprErrors.running = true; } }
+    }
+    Process {
+        id: hyprErrors
+        command: ["hyprctl", "-j", "configerrors"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let errs = [];
+                try { errs = JSON.parse(text).filter(e => e && String(e).trim() !== ""); } catch (e) {}
+                const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
+                if (errs.length === 0)
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Hyprland settings reloaded", "Hyprland read its config again."]);
+                else
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Hyprland settings have errors",
+                        errs.join("\n").split("\n").slice(0, 6).join("\n")]);
+            }
+        }
+    }
     // The welcome: the first time Slate starts, and from Settings → About
     Welcome { bar: topBar }
     // New releases: checked daily, a notification when one's out (Settings → Updates)
