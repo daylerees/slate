@@ -517,8 +517,14 @@ FloatingWindow {
                     readonly property bool current: dropLayer.owner && modelData.value === dropLayer.owner.value
                     width: menuList.width; height: dropLayer.rowH; radius: 8
                     color: rowHover.hovered ? Config.hover : "transparent"
+                    FolderSwatch {
+                        id: rowFolder
+                        visible: !!parent.modelData.folder
+                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        colour: parent.modelData.folder || "transparent"
+                    }
                     Text {
-                        anchors { left: parent.left; leftMargin: 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        anchors { left: rowFolder.visible ? rowFolder.right : parent.left; leftMargin: rowFolder.visible ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
                         color: parent.current ? win.accent : win.text
                         font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
@@ -896,13 +902,20 @@ FloatingWindow {
           Rectangle {
             id: ddButton
             readonly property bool open: dropLayer.owner === dd
-            width: Math.max(150, ddText.implicitWidth + 44); height: 32; radius: 8
+            width: Math.max(150, ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)); height: 32; radius: 8
             color: open || ddHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: 100 } }
+            // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
+            FolderSwatch {
+                id: ddFolder
+                visible: !!dd.current && !!dd.current.folder
+                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                colour: dd.current && dd.current.folder ? dd.current.folder : "transparent"
+            }
             Text {
                 id: ddText
-                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: ddFolder.visible ? ddFolder.right : parent.left; leftMargin: ddFolder.visible ? 8 : 12; verticalCenter: parent.verticalCenter }
                 text: dd.current ? dd.current.label : String(dd.value)
                 color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
             }
@@ -3391,63 +3404,41 @@ FloatingWindow {
                     readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
                         darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
                     function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
-                    property string hoverName: ""
-                    SettingRow {
-                        label: "Folder colour"
-                        detail: !folderSet.info.supported
-                            ? "Folders in Nautilus, Dolphin and other file managers. Needs the Papirus icon theme (this system uses " + folderSet.info.base + ")"
-                            : folderSet.hoverName !== "" ? folderSet.hoverName
-                            : Config.s.folderColour === "auto" ? "From the wallpaper: the closest of Papirus's folder colours"
-                            : Config.s.folderColour === "default" || Config.s.folderColour === "" ? "Folders in Nautilus, Dolphin and other file managers: the icon theme's own"
-                            : folderSet.nice(Config.s.folderColour) + " folders in Nautilus, Dolphin and other file managers"
-                    }
-                    Flow {
-                        visible: folderSet.info.supported
-                        x: 16; width: parent.width - 32
-                        spacing: 8
-                        bottomPadding: 14
-                        // Auto (wallpaper), the theme's own, then each colour
-                        Repeater {
-                            model: [{ name: "auto" }, { name: "default" }].concat(folderSet.info.colours || [])
-                            delegate: Item {
-                                required property var modelData
-                                readonly property string key: modelData.name
-                                readonly property bool on: Config.s.folderColour === key || (key === "default" && Config.s.folderColour === "")
-                                width: 28; height: 28
-                                Rectangle {
-                                    // Selection ring
-                                    anchors.fill: parent
-                                    radius: width / 2
-                                    color: "transparent"
-                                    border.width: 2
-                                    border.color: parent.on ? win.accent : folderHover.hovered ? Config.tint("#4a5360") : "transparent"
-                                    Behavior on border.color { ColorAnimation { duration: 120 } }
-                                }
-                                Rectangle {
-                                    anchors { fill: parent; margins: 4 }
-                                    radius: width / 2
-                                    color: parent.key === "auto" ? (Config.wallpaperAccent || win.accent)
-                                        : parent.key === "default" ? Config.tint("#2a313c") : parent.modelData.hex
-                                    border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25)
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: parent.parent.key === "auto" || parent.parent.key === "default"
-                                        // Auto: a picture (from the wallpaper); default: the theme's own (a reset arrow)
-                                        text: win.glyph(parent.parent.key === "auto" ? 0xEB0A : 0xEB77)
-                                        color: parent.parent.key === "auto" ? "white" : win.dim
-                                        font.family: win.bar.iconFont; font.pixelSize: 12
-                                    }
-                                }
-                                HoverHandler {
-                                    id: folderHover
-                                    cursorShape: Qt.PointingHandCursor
-                                    onHoveredChanged: folderSet.hoverName = hovered
-                                        ? (parent.key === "auto" ? "From the wallpaper" : parent.key === "default" ? "The icon theme's own" : folderSet.nice(parent.key))
-                                        : ""
-                                }
-                                TapHandler { onTapped: Config.s.folderColour = parent.key }
-                            }
+                    readonly property var colours: folderSet.info.colours || []
+                    function hexOf(name) { const c = colours.find(x => x.name === name); return c ? c.hex : ""; }
+                    // Auto: the Papirus colour closest to the wallpaper's, picked as folder-colour.py
+                    // does (nearest()): by hue for colourful ones, else a grey
+                    readonly property string autoHex: {
+                        const a = Config.wallpaperAccent ? Qt.color(Config.wallpaperAccent) : null;
+                        if (!a || colours.length === 0) return hexOf("blue") || "#5294e2";
+                        const greys = ["black", "grey", "white", "bluegrey"];
+                        const hue = c => Math.max(0, c.hslHue);
+                        const grey = a.hslSaturation < 0.18;
+                        let best = "", d = 1e9;
+                        for (const c of colours) {
+                            if (c.name === "yaru" || greys.includes(c.name) !== grey) continue;
+                            const k = Qt.color(c.hex);
+                            const dh0 = Math.abs(hue(k) - hue(a)), dh = Math.min(dh0, 1 - dh0);
+                            const e = dh * 4 + Math.abs(k.hslLightness - a.hslLightness) + Math.abs(k.hslSaturation - a.hslSaturation) * 0.5;
+                            if (e < d) { d = e; best = c.hex; }
                         }
+                        return best || hexOf("blue") || "#5294e2";
+                    }
+                    SettingRow {
+                        visible: !folderSet.info.supported
+                        label: "Folder colour"
+                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs the Papirus icon theme (this system uses " + folderSet.info.base + ")"
+                    }
+                    DropdownSetting {
+                        visible: folderSet.info.supported
+                        label: "Folder colour"
+                        detail: Config.s.folderColour === "auto" ? "Folders in Nautilus, Dolphin and other file managers, in the Papirus colour closest to the wallpaper's"
+                            : "Folders in Nautilus, Dolphin and other file managers"
+                        options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
+                                  { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
+                            .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
+                        value: Config.s.folderColour === "" ? "default" : Config.s.folderColour
+                        onPicked: v => Config.s.folderColour = v
                     }
                 }
             }
