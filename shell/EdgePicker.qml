@@ -1,7 +1,6 @@
 // A small screen to pick an edge for the menu bar or dock (Settings → Menu bar / Dock):
-// click an edge. The chosen one is in the accent; the other (the dock, picking for the bar,
-// and the other way round) shows as a thin faint line inside its edge, for reference. bar: true draws the edges
-// as full-length bars, false as short dock-like pills.
+// click an edge; the chosen one is in the accent. bar: true draws the edges as full-length
+// bars, false as short dock-like pills.
 
 import QtQuick
 
@@ -9,7 +8,6 @@ Rectangle {
     id: ep
     property bool bar: true
     property string edge: "top"
-    property string other: "bottom"      // where the other one is
     property color accent: Config.accent
     signal picked(string edge)
 
@@ -27,21 +25,6 @@ Rectangle {
         const x = along ? (width - len) / 2 : (e === "left" ? gap : width - gap - thick);
         const y = along ? (e === "top" ? gap : height - gap - thick) : (height - len) / 2;
         return along ? Qt.rect(x, y, len, thick) : Qt.rect(x, y, thick, len);
-    }
-
-    // The other one, for reference: a thin, faint line of its length, just inside its edge
-    // (beside the spots there, so it's never covered and never in the way of a click)
-    Rectangle {
-        readonly property rect r: ep.place(ep.other, !ep.bar)
-        readonly property bool along: ep.other === "top" || ep.other === "bottom"
-        readonly property real thin: 3
-        readonly property real inset: ep.gap + ep.thick + 3
-        x: along ? r.x : ep.other === "left" ? inset : ep.width - inset - thin
-        y: along ? (ep.other === "top" ? inset : ep.height - inset - thin) : r.y
-        width: along ? r.width : thin
-        height: along ? thin : r.height
-        radius: thin / 2
-        color: Config.tint("#4a5360")
     }
 
     Repeater {
