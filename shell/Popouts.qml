@@ -461,7 +461,7 @@ PanelWindow {
             Column {
                 visible: vol.sinks.length > 1
                 width: parent.width
-                spacing: 2
+                spacing: 6
                 Repeater {
                     model: vol.sinks
                     delegate: RowButton {
@@ -568,7 +568,7 @@ PanelWindow {
                 width: parent.width
                 height: Math.min(contentHeight, 320)
                 clip: true
-                spacing: 2
+                spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
                 model: wf.nets
                 delegate: Column {
@@ -797,7 +797,7 @@ PanelWindow {
             }
             Column {
                 width: parent.width
-                spacing: 2
+                spacing: 6
                 visible: Config.s.clipboardHistory && clp.entries.length > 0
                 Repeater {
                     model: clp.entries.slice(0, 8)
@@ -942,7 +942,7 @@ PanelWindow {
             Column {
                 visible: spp.mode === "list" && Spaces.list.length > 0
                 width: parent.width
-                spacing: 2
+                spacing: 6
                 Repeater {
                     model: Spaces.list
                     delegate: RowButton {
@@ -1488,7 +1488,7 @@ PanelWindow {
             Label { text: "Keyboard layout"; font.pixelSize: 15 }
             Column {
                 width: parent.width
-                spacing: 2
+                spacing: 6
                 Repeater {
                     model: Config.kbLayoutList
                     delegate: RowButton {
@@ -1597,7 +1597,7 @@ PanelWindow {
             Column {
                 visible: btp.on && btp.devices.length > 0
                 width: parent.width
-                spacing: 2
+                spacing: 6
                 Repeater {
                     model: btp.devices
                     delegate: RowButton {
@@ -1995,7 +1995,7 @@ PanelWindow {
         Column {
             id: ses
             width: 220
-            spacing: 2
+            spacing: 6
             Repeater {
                 model: [
                     { id: "lock", label: "Lock", code: 0xEAE2, confirm: false },
