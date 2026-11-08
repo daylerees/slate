@@ -4049,14 +4049,32 @@ FloatingWindow {
                 color: win.dim; font.family: win.font; font.pixelSize: 13
                 wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
             }
+            // The screen, with each corner's action; click one to set it below
+            property string corner: "TopLeft"
+            readonly property string cornerName: ({ TopLeft: "Top left", TopRight: "Top right", BottomLeft: "Bottom left", BottomRight: "Bottom right" })[corner]
             Group {
-                DropdownSetting { label: "Top left"; options: hcCol.actions; value: Config.s.hotCornerTopLeft; onPicked: v => Config.s.hotCornerTopLeft = v }
+                Item {
+                    width: parent.width
+                    height: cornerPicker.height + 24
+                    HotCornerPicker {
+                        id: cornerPicker
+                        anchors.centerIn: parent
+                        width: Math.min(420, parent.width - 24)
+                        selected: hcCol.corner
+                        actions: hcCol.actions
+                        accent: win.accent; textColor: win.text; dimColor: win.dim
+                        fontFamily: win.font; iconFont: win.bar.iconFont
+                        onPicked: c => hcCol.corner = c
+                    }
+                }
                 Separator {}
-                DropdownSetting { label: "Top right"; options: hcCol.actions; value: Config.s.hotCornerTopRight; onPicked: v => Config.s.hotCornerTopRight = v }
-                Separator {}
-                DropdownSetting { label: "Bottom left"; options: hcCol.actions; value: Config.s.hotCornerBottomLeft; onPicked: v => Config.s.hotCornerBottomLeft = v }
-                Separator {}
-                DropdownSetting { label: "Bottom right"; options: hcCol.actions; value: Config.s.hotCornerBottomRight; onPicked: v => Config.s.hotCornerBottomRight = v }
+                DropdownSetting {
+                    label: hcCol.cornerName
+                    detail: "What resting the pointer in this corner does"
+                    options: hcCol.actions
+                    value: Config.s["hotCorner" + hcCol.corner]
+                    onPicked: v => Config.s["hotCorner" + hcCol.corner] = v
+                }
             }
             GroupLabel { text: "Timing" }
             Group {
