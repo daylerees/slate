@@ -795,7 +795,7 @@ ShellRoot {
                                 color: win.tileColor
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base) }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
                             // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                             Column {
                                 id: burger
@@ -852,6 +852,7 @@ ShellRoot {
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
                                 Gloss {
+                                    glassHint: true
                                     visible: Config.glassGloss && Config.s.iconShape !== "original"
                                     radius: parent.width * win.iconCorner / Math.max(1, win.base)
                                 }

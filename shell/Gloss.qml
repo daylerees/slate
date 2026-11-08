@@ -10,6 +10,9 @@ import QtQuick.Effects
 Rectangle {
     id: g
     property real strength: 1
+    // Take the wallpaper's colour hint as on glass, for a shape whose fill isn't its parent's
+    // colour (an app icon's tile)
+    property bool glassHint: false
     anchors.fill: parent
     // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
     // drawing), so its effect isn't rebuilt each time it shows
@@ -34,7 +37,7 @@ Rectangle {
     readonly property color hint: {
         const c = parent ? parent.color : undefined;
         if (c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2) return c;
-        if (c !== undefined && c.a < 0.95) {
+        if (glassHint || (c !== undefined && c.a < 0.95)) {
             // The wallpaper's vivid colour (the one an accent from the wallpaper uses); its
             // overall tone averages the whole picture and came out too grey
             const t = Config.wallpaperAccent || Config.wallpaperTone;
@@ -44,7 +47,7 @@ Rectangle {
     }
     // Settings → Glass → Gloss colour. On a coloured fill at most 40% of it, so the sheen stays
     // a lighter tint of the fill (at full strength it was the fill's own colour, and vanished)
-    readonly property bool onFill: { const c = parent ? parent.color : undefined; return c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2; }
+    readonly property bool onFill: { const c = parent ? parent.color : undefined; return !glassHint && c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2; }
     readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : 1) : 0
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
