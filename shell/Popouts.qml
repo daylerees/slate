@@ -571,6 +571,7 @@ PanelWindow {
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
                 model: wf.nets
+                SmoothWheel { flick: netList }
                 delegate: Column {
                     id: netRow
                     required property var modelData
