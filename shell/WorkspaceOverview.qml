@@ -67,8 +67,12 @@ PanelWindow {
         const m = w ? w.monitor : null;
         const a = m ? areas[m.name] : null;
         if (a) return a;
-        if (m && m.width > 0) return { x: m.x, y: m.y, w: m.width / (m.scale || 1), h: m.height / (m.scale || 1) };
-        return { x: 0, y: 0, w: ov.width * Config.uiScale, h: ov.height * Config.uiScale };
+        if (m && m.width > 0) {
+            const mw = m.width / (m.scale || 1), mh = m.height / (m.scale || 1);
+            return { x: m.x, y: m.y, w: mw, h: mh, mx: m.x, my: m.y, fw: mw, fh: mh, rl: 0, rt: 0 };
+        }
+        const sw = ov.width * Config.uiScale, sh = ov.height * Config.uiScale;
+        return { x: 0, y: 0, w: sw, h: sh, mx: 0, my: 0, fw: sw, fh: sh, rl: 0, rt: 0 };
     }
     // Each monitor's usable area by name, from hyprctl (read at start and on each open, as
     // the bar's reserved space changes with its position and auto-hide)
@@ -86,7 +90,10 @@ PanelWindow {
                         let w = m.width / sc, h = m.height / sc;
                         if ((m.transform || 0) % 2) { const t = w; w = h; h = t; }
                         const r = m.reserved || [0, 0, 0, 0];      // left, top, right, bottom
-                        o[m.name] = { x: m.x + r[0], y: m.y + r[1], w: w - r[0] - r[2], h: h - r[1] - r[3] };
+                        // The usable area (x, y, w, h), and the whole screen it's part of (mx, my,
+                        // fw, fh; rl, rt = the reserved space on its left and top)
+                        o[m.name] = { x: m.x + r[0], y: m.y + r[1], w: w - r[0] - r[2], h: h - r[1] - r[3],
+                                      mx: m.x, my: m.y, fw: w, fh: h, rl: r[0], rt: r[1] };
                     }
                     ov.areas = o;
                 } catch (e) {}
@@ -150,6 +157,7 @@ PanelWindow {
         if (spaces.length === 0) return;
         cardsOut = false;
         releasing = false;
+        zooming = false;
         snapshotContents();
         geoRefresh.restart();          // refreshToplevels() answers later: read positions again then
         shiftHeld = false;
@@ -235,25 +243,92 @@ PanelWindow {
         const w = spaces[selected];
         if (!w) { close(); return; }
         pendingId = w.id;
-        // One continuous motion: the backdrop starts its (slow-starting) fade now, the
-        // cards fade out quickly, and once they're gone the workspace switches
-        // instantly behind a still mostly-opaque backdrop, which keeps fading onto it
-        releasing = true;          // let go of the keyboard
-        cardsOut = true;
-        shown = false;             // starts the backdrop fade (fade -> 0)
+        // Let go of the keyboard and switch underneath while the overview still covers the
+        // screen. The chosen card then grows from its place to exactly the size and place of
+        // the workspace (its wallpaper and windows landing on the real ones) while everything
+        // else fades away, and once it's there the overview goes, with nothing changing on
+        // screen. (Fading the cards first left a dark screen for a moment; growing the card
+        // only part of the way showed two wallpapers at different sizes.)
+        releasing = true;
         goTimer.restart();
+    }
+    // The zoom: 0 → 1, from the card (zoomFrom) to the workspace's area (zoomTo), in the
+    // overview's own coordinates
+    property real zoomP: 0
+    property rect zoomFrom: Qt.rect(0, 0, 1, 1)
+    property rect zoomTo: Qt.rect(0, 0, 1, 1)
+    readonly property real zoomK: 1 + (zoomTo.width / Math.max(1, zoomFrom.width) - 1) * zoomP
+    NumberAnimation {
+        id: zoomAnim
+        target: ov; property: "zoomP"; from: 0; to: 1
+        duration: 300; easing.type: Easing.OutCubic
+        // Once it's there (and Hyprland is on that workspace), the real workspace is exactly
+        // underneath: fade quickly
+        onFinished: if (ov.arrived) ov.shown = false
+    }
+    // Hyprland has switched to the chosen workspace. Until then the backdrop stays solid,
+    // so the old workspace never shows through
+    property bool arrived: false
+    // The backdrop thins with the zoom, but only after arriving (smoothed, in case that's
+    // part-way through)
+    property real backdropGone: zooming && arrived ? zoomP : 0
+    Behavior on backdropGone { NumberAnimation { duration: 90 } }
+    function goNow() {
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() instantTo(hl.dsp.focus({ workspace = ${ov.pendingId} })) end`]);
+    }
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() {
+            if (!ov.zooming) return;
+            const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
+            if (id === ov.pendingId) {
+                ov.arrived = true;
+                if (!zoomAnim.running) ov.shown = false;      // the zoom's already done
+            } else if (ov.arrived) {
+                // Hyprland went back (giving focus back to the window from before, after we let
+                // go of the keyboard): go again, while it's still covered
+                ov.arrived = false;
+                ov.goNow();
+            }
+        }
+    }
+    // In case the switch was lost (or undone without a change being reported): try again
+    Timer {
+        id: arriveCheck
+        interval: 250
+        onTriggered: {
+            if (!ov.zooming) return;
+            const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
+            if (id === ov.pendingId) { ov.arrived = true; if (!zoomAnim.running) ov.shown = false; }
+            else { ov.goNow(); restart(); }
+        }
+    }
+    function startZoom() {
+        const card = list.currentItem;
+        const box = monitorBox(pendingId);
+        const s = Config.uiScale || 1;
+        if (!card || !card.previewItem) { shown = false; return; }
+        const p = card.previewItem.mapToItem(content, 0, 0, card.previewItem.width, card.previewItem.height);
+        zoomFrom = Qt.rect(p.x, p.y, p.width, p.height);
+        zoomTo = Qt.rect((box.x - box.mx) / s, (box.y - box.my) / s, box.w / s, box.h / s);
+        zooming = true;
+        zoomAnim.restart();
     }
     property bool releasing: false
     property bool cardsOut: false
     property real cardsFade: cardsOut ? 0 : 1
     Behavior on cardsFade { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
-    // Switch instantly underneath, then fade the overview out onto the new workspace
+    // Leaving into a chosen workspace (zooms in as it fades), rather than closing
+    property bool zooming: false
     Timer {
         id: goTimer
-        interval: 120              // once the cards have faded
+        interval: 40               // Hyprland won't switch while we still hold the keyboard
         onTriggered: {
-            Quickshell.execDetached(["hyprctl", "dispatch", `function() instantTo(hl.dsp.focus({ workspace = ${ov.pendingId} })) end`]);
+            ov.arrived = Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === ov.pendingId;
+            ov.goNow();
             ov.releasing = false;
+            ov.startZoom();
+            arriveCheck.restart();
         }
     }
 
@@ -283,10 +358,12 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: 360; easing.type: Easing.InOutCubic } }
+    // After zooming into a workspace the overview matches it, so it just goes, quickly
+    Behavior on fade { NumberAnimation { duration: ov.zooming ? 120 : 360; easing.type: Easing.InOutCubic } }
+    onFadeChanged: if (fade === 0) { zooming = false; zoomP = 0; arrived = false; arriveCheck.stop(); }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
-    color: Qt.rgba(0.04, 0.05, 0.06, 0.94 * fade)
+    color: Qt.rgba(0.04, 0.05, 0.06, 0.94 * fade * (1 - backdropGone))
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-overview"
     WlrLayershell.layer: WlrLayer.Overlay
@@ -310,7 +387,9 @@ PanelWindow {
                 readonly property real k: Math.min(1, 2 * ov.cardW / Math.max(1, ov.monitorBox(ws ? ws.id : -1).w))
                 width: g ? Math.max(1, g.size[0] * k) : 200
                 height: g ? Math.max(1, g.size[1] * k) : 120
-                captureSource: ov.shown && ov.byAddr[modelData] && ov.byAddr[modelData].wayland ? ov.byAddr[modelData].wayland : null
+                // Kept until the overview has completely gone (not just closing): dropped as it
+                // started fading, the window vanished from its card and came back as the real one
+                captureSource: ov.visible && ov.byAddr[modelData] && ov.byAddr[modelData].wayland ? ov.byAddr[modelData].wayland : null
                 live: ov.shown && !ov.releasing     // stop updating once chosen: less work during the fade
             }
         }
@@ -320,7 +399,20 @@ PanelWindow {
         id: content
         anchors.fill: parent
         opacity: ov.fade * ov.cardsFade
-        scale: 0.97 + 0.03 * ov.fade
+        // Opening and closing: a slight grow. Leaving into a workspace: the chosen card
+        // carried onto the workspace's area (scaled about the top left, then moved)
+        transform: [
+            Scale {
+                origin.x: content.width / 2; origin.y: content.height / 2
+                xScale: ov.zooming ? 1 : 0.97 + 0.03 * ov.fade
+                yScale: xScale
+            },
+            Scale { xScale: ov.zoomK; yScale: ov.zoomK },
+            Translate {
+                x: ov.zooming ? ov.zoomFrom.x + (ov.zoomTo.x - ov.zoomFrom.x) * ov.zoomP - ov.zoomFrom.x * ov.zoomK : 0
+                y: ov.zooming ? ov.zoomFrom.y + (ov.zoomTo.y - ov.zoomFrom.y) * ov.zoomP - ov.zoomFrom.y * ov.zoomK : 0
+            }
+        ]
 
         Item {
             focus: ov.shown
@@ -397,9 +489,10 @@ PanelWindow {
                 }
                 readonly property bool pastEnd: !Config.s.wrapWorkspaces
                     && (ov.selected + offset < 0 || ov.selected + offset >= ov.spaces.length)
-                opacity: pastEnd ? 0 : isSelected ? 1 : 0.6
+                readonly property Item previewItem: preview
+                opacity: pastEnd ? 0 : isSelected ? 1 : 0.6 * (1 - ov.zoomP)
                 Behavior on scale { enabled: !ov.handover; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: 220 } }
+                Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: 220 } }
 
                 // Shadow under the lifted card
                 RectangularShadow {
@@ -421,8 +514,8 @@ PanelWindow {
                     border.width: card.lifted ? 4 : 3
                     border.color: card.lifted ? ov.bar.textColor : ov.bar.accent
                     Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: 150 } }
-                    opacity: card.isSelected ? 1 : 0
-                    Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: 180 } }
+                    opacity: card.isSelected ? 1 - ov.zoomP : 0
+                    Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: 180 } }
                 }
 
                 // Miniature of the workspace: wallpaper, then each window in place
@@ -433,11 +526,17 @@ PanelWindow {
                     layer.enabled: true
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: previewMask }
 
+                    // The wallpaper as the screen shows it: across the whole screen (behind the
+                    // bar too), so the card shows the part in the usable area, just like the
+                    // workspace itself
                     Image {
-                        anchors.fill: parent
+                        x: -(card.mon.rl || 0) * card.sx
+                        y: -(card.mon.rt || 0) * card.sx
+                        width: (card.mon.fw || card.mon.w) * card.sx
+                        height: (card.mon.fh || card.mon.h) * card.sx
                         source: ov.wallpaper
                         fillMode: Image.PreserveAspectCrop
-                        sourceSize: Qt.size(ov.cardW * 2, list.cardH * 2)
+                        sourceSize: Qt.size(width * 2, height * 2)
                         asynchronous: true
                     }
                     Rectangle {
@@ -482,6 +581,7 @@ PanelWindow {
                             // so it reads over the window
                             Item {
                                 visible: Config.s.overviewAppIcons
+                                opacity: 1 - ov.zoomP
                                 anchors.centerIn: parent
                                 width: Math.round(Math.max(16, Math.min(44, parent.width * 0.28, parent.height * 0.4))); height: width
                                 layer.enabled: visible
@@ -506,12 +606,13 @@ PanelWindow {
                     anchors.fill: preview
                     visible: false
                     layer.enabled: true
-                    Rectangle { anchors.fill: parent; radius: 12 }
+                    Rectangle { anchors.fill: parent; radius: 12 * (1 - ov.zoomP) }   // square once it's the workspace
                 }
 
                 // Label
                 Text {
                     anchors { top: preview.bottom; topMargin: 14; horizontalCenter: parent.horizontalCenter }
+                    opacity: 1 - ov.zoomP
                     readonly property var first: card.wins.length ? ov.lookup(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
                     text: "Workspace " + card.modelData.name
                         + (card.wins.length === 0 ? " · empty"
@@ -532,6 +633,7 @@ PanelWindow {
         Rectangle {
             id: dotsCap
             anchors { horizontalCenter: parent.horizontalCenter; top: list.bottom; topMargin: 24 }
+            opacity: 1 - ov.zoomP
             width: dotsRow.width + 20
             height: 30
             radius: ov.bar.capsuleRadius
