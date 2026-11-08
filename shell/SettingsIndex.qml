@@ -28,28 +28,6 @@ Singleton {
         ["Screensaver", "screensaver", "screen saver idle clock slideshow away burn-in oled"],
         ["App theming", "apptheming", "theme other apps colours colors dark light accent gtk qt kde terminal editor"],
         ["Theme other apps", "apptheming", "app theming colours colors match follow"],
-        ["GTK apps", "apptheming", "theme colours colors gtk files, text editor, calculator and other gnome and gtk apps"],
-        ["Qt apps", "apptheming", "theme colours colors qt apps that use qt6ct for their look"],
-        ["KDE apps", "apptheming", "theme colours colors kde dolphin, kate and other kde apps (kdeglobals)"],
-        ["kitty", "apptheming", "theme colours colors kitty colours, plus a see-through starting config if you have none"],
-        ["Alacritty", "apptheming", "theme colours colors alacritty colours, plus a see-through starting config if you have none"],
-        ["Ghostty", "apptheming", "theme colours colors ghostty colours, plus a see-through starting config if you have none"],
-        ["foot", "apptheming", "theme colours colors foot colours, plus a see-through starting config if you have none"],
-        ["WezTerm", "apptheming", "theme colours colors wezterm a slate colour scheme (pick \"slate\" in your config); a starting config if you ha"],
-        ["btop", "apptheming", "theme colours colors btop the system monitor's colours"],
-        ["GNOME Text Editor", "apptheming", "theme colours colors texteditor a slate colour scheme, used unless you've picked another"],
-        ["VS Code", "apptheming", "theme colours colors vscode vs code, code - oss and vscodium: a slate theme, selected for you"],
-        ["Zed", "apptheming", "theme colours colors zed a slate theme, selected for you"],
-        ["Helix", "apptheming", "theme colours colors helix a slate theme, selected for you"],
-        ["Vim and Neovim", "apptheming", "theme colours colors vim a slate colour scheme (slate-desktop), used unless you set your own"],
-        ["bat", "apptheming", "theme colours colors bat a slate syntax theme, selected for you"],
-        ["fzf", "apptheming", "theme colours colors fzf slate's colours for the fuzzy finder (fzf_default_opts_file, set by the slate se"],
-        ["Yazi", "apptheming", "theme colours colors yazi a slate flavour, selected for you"],
-        ["cava", "apptheming", "theme colours colors cava the audio visualiser's colours: a gradient in slate's accent"],
-        ["zathura", "apptheming", "theme colours colors zathura the document viewer's colours (and its recolour mode)"],
-        ["Discord (Vencord)", "apptheming", "theme colours colors discord vesktop, vencord and equicord: a slate theme, switched on for you"],
-        ["Spotify (Spicetify)", "apptheming", "theme colours colors spotify a slate theme for spicetify, applied without restarting spotify"],
-        ["Firefox", "apptheming", "theme colours colors firefox toolbars, tabs and menus in slate's colours (userchrome.css), after a restart"],
         ["Welcome", "about", "welcome introduction tour first start getting started setup onboarding"],
         ["Glass", "appearance", "glass glassy liquid frosted translucent transparent see-through blur acrylic"],
         ["Blur", "appearance", "glass blur strength frosted"],
@@ -152,8 +130,20 @@ Singleton {
 
     // One list: { label, page, detail, group, words, row (true: a setting on its page, to
     // scroll to) }. A curated entry naming a row lends it its extra words instead.
+    // The apps App theming can theme (scripts/apply-theme.py --apps), so search finds them by
+    // name: their rows are only made when that page opens, so the scan above can't see them
+    property var themeApps: []
+    Process {
+        running: true
+        command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
+        stdout: StdioCollector { onStreamFinished: { try { root.themeApps = JSON.parse(text); } catch (e) {} } }
+    }
+
     readonly property var entries: {
         const out = [], byKey = {};
+        for (const a of themeApps)
+            out.push({ label: a.label, page: "apptheming", detail: a.detail || "", group: "App theming",
+                       words: "theme colours colors " + a.id + (a.installed ? "" : " not installed"), row: true });
         for (const r of rows) {
             const e = { label: r.label, page: r.page, detail: r.detail || "", group: r.group || "", words: "", row: true };
             byKey[r.page + "|" + r.label.toLowerCase()] = e;

@@ -97,7 +97,7 @@ FloatingWindow {
         visible = true;
     }
     function showFound() {
-        const label = findLabel;
+        const label = findLabel || foundRetryLabel;
         findLabel = "";
         if (!label || !pageLoader.item) return;
         // The setting (anything with that label), or a heading with that text
@@ -109,16 +109,40 @@ FloatingWindow {
             return null;
         };
         const hit = look(pageLoader.item);
-        if (!hit) return;
-        const p = hit.mapToItem(pageLoader.item, 0, 0);
-        scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, p.y - 40));
-        Qt.callLater(() => {
-            const q = hit.mapToItem(contentPane, 0, 0);
-            foundFlash.x = q.x - 6; foundFlash.y = q.y - 4;
-            foundFlash.width = Math.min(hit.width + 12, contentPane.width - foundFlash.x - 8); foundFlash.height = hit.height + 8;
-            foundFade.restart();
-        });
+        // Not there yet (rows a page makes once it's loaded something, like App theming's
+        // apps): look again for a moment
+        if (!hit) {
+            if (foundRetryLabel !== label) { foundRetryLabel = label; foundTries = 0; }
+            if (++foundTries <= 10) foundRetry.restart(); else foundRetryLabel = "";
+            return;
+        }
+        foundRetryLabel = "";
+        foundItem = hit;
+        foundAt = Date.now();
+        placeFound();
+        Qt.callLater(() => { placeFound(); foundFade.restart(); });
     }
+    // The found setting, kept in view and lit up while the highlight shows. Things above it on
+    // the page can finish loading after the jump (pictures, lists) and push it down, so this
+    // follows it, rather than staying where it first was (which left it lit too high)
+    property string foundRetryLabel: ""
+    property int foundTries: 0
+    Timer { id: foundRetry; interval: 100; onTriggered: win.showFound() }
+    property Item foundItem: null
+    property real foundAt: 0
+    function placeFound() {
+        const hit = foundItem;
+        if (!hit || !pageLoader.item) return;
+        // Scrolled to it for the first moment only, so it doesn't fight you scrolling away
+        if (Date.now() - foundAt < 1000) {
+            const p = hit.mapToItem(pageLoader.item, 0, 0);
+            scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, p.y - 40));
+        }
+        const q = hit.mapToItem(contentPane, 0, 0);
+        foundFlash.x = q.x - 6; foundFlash.y = q.y - 4;
+        foundFlash.width = Math.min(hit.width + 12, contentPane.width - foundFlash.x - 8); foundFlash.height = hit.height + 8;
+    }
+    Timer { interval: 40; repeat: true; running: foundFade.running; onTriggered: win.placeFound() }
     property bool avatarPicking: false     // General: the account picture chooser is open
     property string scrollTo: ""           // a part of the next page to scroll to ("wallpaper")
     // The settings each page can restore to their defaults. Left out on purpose: your
