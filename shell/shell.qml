@@ -805,23 +805,11 @@ ShellRoot {
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                                 onStatusChanged: if (status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
                                 IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
-                                // Glass: a sheen, cut to the icon's own outline (so it fits any icon
-                                // shape, including icons shown as they come)
-                                Item {
-                                    anchors.fill: parent
-                                    visible: Config.glassGloss
-                                    layer.enabled: visible
-                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: glossMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                                    Gloss { radius: 0 }
-                                    Image {
-                                        id: glossMask
-                                        anchors.fill: parent
-                                        visible: false
-                                        layer.enabled: true
-                                        source: parent.visible ? tileImg.source : ""
-                                        sourceSize: tileImg.sourceSize
-                                        smooth: true; mipmap: true
-                                    }
+                                // Glass: a sheen, rounded like the icon tiles (not on icons shown as
+                                // they come, which have no tile to follow)
+                                Gloss {
+                                    visible: Config.glassGloss && Config.s.iconShape !== "original" && opacity > 0
+                                    radius: parent.width * win.iconCorner / Math.max(1, win.base)
                                 }
                             }
 
