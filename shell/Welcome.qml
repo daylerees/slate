@@ -516,67 +516,125 @@ PanelWindow {
             }
 
             // ---- 5. All set ------------------------------------------------
+            // The logo and a line on top, the keys worth knowing as cards (icon, what it
+            // does, the keys as keycaps), and a thank-you to close
             Item {
+                id: donePage
                 anchors.fill: parent
                 opacity: w.page === 5 ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: 200 } }
+                readonly property var tips: Config.s.keyset === "slate" ? [
+                        { keys: "Super", what: "Open apps", icon: 0xEB1C },
+                        { keys: "Super+Tab", what: "Switch windows", icon: 0xEFE6 },
+                        { keys: "Super+Right", what: "Next workspace", icon: 0xEA1F },
+                        { keys: "Super+Down", what: "All your workspaces", icon: 0xEDBA },
+                        { keys: "Super+V", what: "Clipboard history", icon: 0xEA6F },
+                        { keys: "Super+Z", what: "Settings", icon: 0xEB20 }
+                    ] : Config.s.keyset === "hyprland" ? [
+                        { keys: "Super+R", what: "Open apps", icon: 0xEB1C },
+                        { keys: "Super+Q", what: "Terminal", icon: 0xEBEF },
+                        { keys: "Super+C", what: "Close a window", icon: 0xEB55 },
+                        { keys: "Super+1", what: "Go to a workspace", icon: 0xEA1F },
+                        { keys: "Super+Tab", what: "Switch windows", icon: 0xEFE6 },
+                        { keys: "Super+Z", what: "Settings", icon: 0xEB20 }
+                    ] : [
+                        { keys: "Super+R", what: "Open apps", icon: 0xEB1C },
+                        { keys: "Super+Q", what: "Terminal", icon: 0xEBEF },
+                        { keys: "Super+Tab", what: "Switch windows", icon: 0xEFE6 },
+                        { keys: "Super+Ctrl+Down", what: "All your workspaces", icon: 0xEDBA },
+                        { keys: "Super+Shift+V", what: "Clipboard history", icon: 0xEA6F },
+                        { keys: "Super+Z", what: "Settings", icon: 0xEB20 }
+                    ]
                 Column {
                     anchors.centerIn: parent
                     width: parent.width
-                    spacing: 14
-                    SlateLogo { size: 64; showText: false; anchors.horizontalCenter: parent.horizontalCenter }
+                    spacing: 0
+                    SlateLogo { size: 56; showText: false; anchors.horizontalCenter: parent.horizontalCenter }
+                    Item { width: 1; height: 14 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "You're all set"
                         color: w.text; font.family: w.font; font.pixelSize: 26; font.weight: Font.DemiBold
                     }
+                    Item { width: 1; height: 6 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "A few keys worth knowing:"
-                        color: w.dim; font.family: w.font; font.pixelSize: 13; bottomPadding: 4
+                        text: "A few keys to get around. Settings has the full list (Super+Z → Shortcuts)."
+                        color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
-                    // Keys for the chosen shortcuts. The key boxes all share the widest one's
-                    // width, so the descriptions line up
-                    FontMetrics { id: keyMetrics; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
+                    Item { width: 1; height: 22 }
                     Grid {
-                        id: keyGrid
-                        readonly property real keyW: Math.max(96, ...keyRepeater.model.map(k => keyMetrics.advanceWidth(k[0]))) + 20
                         anchors.horizontalCenter: parent.horizontalCenter
-                        columns: 2
-                        columnSpacing: 28; rowSpacing: 10
+                        columns: 3
+                        columnSpacing: 12; rowSpacing: 12
+                        readonly property real cardW: Math.floor((donePage.width - 2 * columnSpacing) / 3)
                         Repeater {
-                            id: keyRepeater
-                            model: Config.s.keyset === "slate" ? [
-                                    ["Super", "Open apps"], ["Super+Tab", "Switch windows"],
-                                    ["Super+Left/Right", "Next or previous workspace"], ["Super+Down", "See all workspaces"],
-                                    ["Super+V", "Clipboard history"], ["Super+Z", "Settings"]
-                                ] : Config.s.keyset === "hyprland" ? [
-                                    ["Super+R", "Open apps"], ["Super+Q", "Terminal"], ["Super+C", "Close a window"],
-                                    ["Super+1–0", "Go to a workspace"], ["Super+Z", "Settings"]
-                                ] : [
-                                    ["Super+R", "Open apps"], ["Super+Q", "Terminal"], ["Super+Shift+V", "Clipboard history"],
-                                    ["Super+Ctrl+Down", "See all workspaces"], ["Super+Z", "Settings"]
-                                ]
-                            delegate: Row {
+                            model: donePage.tips
+                            delegate: Rectangle {
+                                id: tip
                                 required property var modelData
-                                spacing: 10
+                                width: parent.cardW; height: 84; radius: 12
+                                color: w.card
+                                border.width: 1; border.color: w.line
+                                // Icon, in an accent-tinted square
                                 Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: keyGrid.keyW; height: 26; radius: 7
-                                    color: w.card
-                                    border.width: 1; border.color: w.line
-                                    Text { id: keyLabel; anchors.centerIn: parent; text: parent.parent.modelData[0]; color: w.text; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
+                                    id: tipIcon
+                                    anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                    width: 38; height: 38; radius: 10
+                                    color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.16)
+                                    Text { anchors.centerIn: parent; text: w.glyph(tip.modelData.icon); color: w.accent; font.family: w.iconFont; font.pixelSize: 19 }
                                 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; width: 170; text: parent.modelData[1]; color: w.dim; font.family: w.font; font.pixelSize: 13 }
+                                Column {
+                                    anchors { left: tipIcon.right; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    spacing: 8
+                                    Text { width: parent.width; text: tip.modelData.what; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                                    // The keys, each as a keycap
+                                    Row {
+                                        spacing: 4
+                                        Repeater {
+                                            model: tip.modelData.keys.split("+")
+                                            delegate: Row {
+                                                required property string modelData
+                                                required property int index
+                                                spacing: 4
+                                                Text {
+                                                    visible: index > 0
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: "+"; color: w.dim; font.family: w.font; font.pixelSize: 11
+                                                }
+                                                Rectangle {
+                                                    width: Math.max(22, capText.implicitWidth + 14); height: 22; radius: 6
+                                                    color: w.line
+                                                    // A slightly darker lower edge, like a key
+                                                    Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 2; radius: 6; color: Qt.darker(w.line, 1.35) }
+                                                    Text { id: capText; anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: parent.parent.modelData; color: w.text; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                    Item { width: 1; height: 28 }
+                    // The thank-you, between two short lines
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 14
+                        Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: w.line }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Thank you for using Slate"
+                            color: w.text; font.family: w.font; font.pixelSize: 15; font.weight: Font.Medium
+                        }
+                        Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: w.line }
+                    }
+                    Item { width: 1; height: 6 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        topPadding: 12
-                        text: "Thank you for using Slate. We hope you enjoy it."
-                        color: w.text; font.family: w.font; font.pixelSize: 15; font.weight: Font.Medium
+                        text: "We hope you enjoy it."
+                        color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                 }
             }
