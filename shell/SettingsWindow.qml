@@ -4511,29 +4511,41 @@ FloatingWindow {
                 wrapMode: Text.Wrap
                 leftPadding: 4; bottomPadding: 10
             }
-            // What Slate is using right now: its memory, and how busy it keeps the processor
-            // (read from /proc every 2 s while Settings is open; Slate is one process)
+            // What Slate is using right now, shown like the battery panel's meters: its memory (of
+            // all the memory), how busy it keeps the processor, and the last minute of that as a
+            // graph. Read from /proc every 2 s while Settings is open (Slate is one process)
             GroupLabel { text: "What Slate is using" }
             Group {
                 id: usage
                 property real mem: 0            // MB
+                property real memTotal: 0       // MB
                 property real cpu: -1           // % of the whole processor
+                property var history: []        // the last minute of cpu readings
                 property real lastTicks: -1
                 property real lastTime: 0
                 property int cores: 1
+                // Shown values glide from one reading to the next
+                property real memShown: memTotal > 0 ? mem / memTotal : 0
+                property real cpuShown: Math.max(0, cpu) / 100
+                Behavior on memShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+                Behavior on cpuShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+                function mb(v) { return v >= 1024 ? (v / 1024).toFixed(v >= 10240 ? 0 : 1) + " GB" : Math.round(v) + " MB"; }
                 Process {
                     id: usageProc
                     // $PPID: the shell's parent, Slate itself
-                    command: ["sh", "-c", "awk '/^VmRSS/{print $2}' /proc/$PPID/status; awk '{print $14+$15}' /proc/$PPID/stat; nproc"]
+                    command: ["sh", "-c", "awk '/^VmRSS/{print $2}' /proc/$PPID/status; awk '{print $14+$15}' /proc/$PPID/stat; nproc; awk '/^MemTotal/{print $2}' /proc/meminfo"]
                     stdout: StdioCollector {
                         onStreamFinished: {
                             const l = text.trim().split("\n");
-                            if (l.length < 3) return;
+                            if (l.length < 4) return;
                             usage.mem = Number(l[0]) / 1024;
                             usage.cores = Number(l[2]) || 1;
+                            usage.memTotal = Number(l[3]) / 1024;
                             const ticks = Number(l[1]), now = Date.now();
-                            if (usage.lastTicks >= 0 && now > usage.lastTime)
+                            if (usage.lastTicks >= 0 && now > usage.lastTime) {
                                 usage.cpu = Math.max(0, (ticks - usage.lastTicks) / 100 / ((now - usage.lastTime) / 1000) / usage.cores * 100);
+                                usage.history = usage.history.concat([usage.cpu]).slice(-30);
+                            }
                             usage.lastTicks = ticks; usage.lastTime = now;
                         }
                     }
@@ -4543,15 +4555,86 @@ FloatingWindow {
                     running: win.visible
                     onTriggered: { usageProc.running = false; usageProc.running = true; }
                 }
-                SettingRow {
-                    label: "Memory"
-                    detail: usage.mem > 0 ? (usage.mem >= 1024 ? (usage.mem / 1024).toFixed(2) + " GB" : Math.round(usage.mem) + " MB") : "Checking…"
-                }
-                Separator {}
-                SettingRow {
-                    label: "Processor"
-                    detail: usage.cpu < 0 ? "Checking…"
-                        : usage.cpu.toFixed(1) + "% of your processor (" + usage.cores + " cores), averaged over the last couple of seconds. Having Settings open adds a little"
+                Column {
+                    x: 16; width: parent.width - 32
+                    topPadding: 14; bottomPadding: 14
+                    spacing: 14
+                    // Meters, as in the battery panel
+                    Repeater {
+                        model: ["Memory", "Processor"]
+                        delegate: Column {
+                            required property string modelData
+                            readonly property bool isMem: modelData === "Memory"
+                            readonly property real frac: isMem ? usage.memShown : usage.cpuShown
+                            width: parent.width
+                            spacing: 6
+                            Item {
+                                width: parent.width; height: meterName.height
+                                Text { id: meterName; text: parent.parent.modelData; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
+                                Text {
+                                    anchors.right: parent.right
+                                    text: parent.parent.isMem ? (usage.mem > 0 ? usage.mb(usage.mem) + " of " + usage.mb(usage.memTotal) : "Checking…")
+                                        : (usage.cpu < 0 ? "Checking…" : usage.cpu.toFixed(1) + "% of " + usage.cores + " cores")
+                                    color: win.dim; font.family: win.font; font.pixelSize: 12
+                                }
+                            }
+                            Rectangle {
+                                width: parent.width; height: 6; radius: 3
+                                color: Config.tint("#262c35")
+                                Rectangle {
+                                    width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
+                                    height: parent.height; radius: 3
+                                    color: parent.parent.frac > 0.8 ? win.danger : win.accent
+                                    Behavior on color { ColorAnimation { duration: 300 } }
+                                }
+                            }
+                        }
+                    }
+                    // The processor over the last minute: scaled to its own peak, so the small
+                    // ups and downs show
+                    Item {
+                        width: parent.width; height: 64
+                        readonly property real realPeak: usage.history.length ? Math.max(...usage.history) : 0
+                        readonly property real peak: Math.max(2, realPeak)     // the graph's top (at least 2%, so tiny wobbles stay small)
+                        Canvas {
+                            id: spark
+                            anchors.fill: parent
+                            readonly property var data: usage.history
+                            readonly property color line: win.accent
+                            onDataChanged: requestPaint()
+                            onLineChanged: requestPaint()
+                            onPaint: {
+                                const ctx = getContext("2d");
+                                ctx.reset();
+                                const d = data, n = 30, w = width, h = height - 2, pk = parent.peak;
+                                if (d.length < 2) return;
+                                const x = i => w - (d.length - 1 - i) * (w / (n - 1));
+                                const y = v => 1 + h - Math.min(1, v / pk) * (h - 2);
+                                ctx.beginPath();
+                                ctx.moveTo(x(0), y(d[0]));
+                                for (let i = 1; i < d.length; i++) ctx.lineTo(x(i), y(d[i]));
+                                ctx.lineWidth = 2;
+                                ctx.strokeStyle = line;
+                                ctx.lineJoin = "round";
+                                ctx.stroke();
+                                // Soft fill under the line
+                                ctx.lineTo(x(d.length - 1), h + 1);
+                                ctx.lineTo(x(0), h + 1);
+                                ctx.closePath();
+                                const g = ctx.createLinearGradient(0, 0, 0, h);
+                                g.addColorStop(0, Qt.rgba(line.r, line.g, line.b, 0.28));
+                                g.addColorStop(1, Qt.rgba(line.r, line.g, line.b, 0));
+                                ctx.fillStyle = g;
+                                ctx.fill();
+                            }
+                        }
+                        Text {
+                            anchors { left: parent.left; top: parent.top }
+                            visible: usage.history.length >= 2
+                            text: "Last minute · peak " + parent.realPeak.toFixed(1) + "%"
+                            color: win.dim; font.family: win.font; font.pixelSize: 11
+                        }
+                    }
                 }
             }
             Group {
