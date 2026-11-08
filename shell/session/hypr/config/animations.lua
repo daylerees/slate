@@ -68,6 +68,16 @@ function instantTo(dispatcher)
     restoreTimer = hl.timer(function() restoreTimer = nil; slideWorkspaces() end, { timeout = 300, type = "oneshot" })
 end
 
+-- slideAwayTo(dispatcher): to an empty workspace, the windows slide away in the direction of
+-- travel. (Normally the new workspace slides in over the old, which fades underneath; with
+-- nothing coming in, the windows would just fade out where they are.)
+function slideAwayTo(dispatcher)
+    hl.animation({ leaf = "workspacesOut",   enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefade 100%" })
+    hl.dispatch(dispatcher)
+    if restoreTimer then restoreTimer:set_enabled(false) end
+    restoreTimer = hl.timer(function() restoreTimer = nil; slideWorkspaces() end, { timeout = 400, type = "oneshot" })
+end
+
 -- setAnimationSpeed(mode): "normal", "fast" or "off" (called by slateApply, slate.lua)
 function setAnimationSpeed(mode)
     if mode == "off" then
