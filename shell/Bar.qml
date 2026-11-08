@@ -164,6 +164,38 @@ PanelWindow {
         else x = sw - bar.barHeight;
         trayMenuWin.openFor(menu, x, y);
     }
+    // The Slate button's right-click menu: quick access to useful things
+    function openSlateMenu(item) {
+        if (bar.popouts) bar.popouts.close();
+        const slate = args => () => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args));
+        const notifs = bar.popouts ? bar.popouts.notifs : null;
+        const list = [
+            { text: "Settings", glyph: 0xEB20, action: slate(["settings", "open"]) },
+            { text: "Appearance", glyph: 0xEB01, action: slate(["settings", "page", "appearance"]) },
+            { text: "Next wallpaper", glyph: 0xEB0A, action: slate(["wallpaper", "next"]) },
+            { separator: true },
+            { text: "Do Not Disturb", glyph: 0xECE9, checked: !!(notifs && notifs.dnd), action: () => { if (notifs) notifs.dnd = !notifs.dnd; } },
+            { text: "Night Light", glyph: 0xEAF8, checked: Config.s.nightLight, action: slate(["nightlight", "toggle"]) },
+            { text: "Glass", glyph: 0xEB01, checked: Config.s.glass, action: () => { Config.s.glass = !Config.s.glass; } },
+            { separator: true },
+            { text: Updates.available ? "Update to " + Updates.latest : "Check for updates", glyph: 0xEA96, action: slate(["settings", "page", "updates"]) },
+            { text: "Restart Slate", glyph: 0xEB13, action: () => Quickshell.reload(true) },
+            { text: "Show the welcome", glyph: 0xEDBA, action: slate(["welcome", "open"]) },
+            { separator: true },
+            { text: "Lock screen", glyph: 0xEAE2, action: slate(["lock", "lock"]) },
+            { text: "Log out…", glyph: 0xEBA8, action: slate(["power", "confirm", "logout"]) },
+            { text: "About Slate", glyph: 0xEAC5, action: slate(["settings", "page", "about"]) }
+        ];
+        const p = item.mapToItem(bar.contentItem, item.width / 2, item.height / 2);
+        const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
+        let x = p.x + (bar.side === "right" ? sw - bar.width : 0);
+        let y = p.y + (bar.side === "bottom" ? sh - bar.height : 0);
+        if (bar.side === "top") y = bar.barHeight;
+        else if (bar.side === "bottom") y = sh - bar.barHeight;
+        else if (bar.side === "left") x = bar.barHeight;
+        else x = sw - bar.barHeight;
+        trayMenuWin.openList(list, x, y);
+    }
     function focusedBar() { return Config.barFor(Config.focusedScreen) || bar; }
     IpcHandler {
         target: "bar"
@@ -382,6 +414,7 @@ PanelWindow {
                 hoverText: "Control centre"
                 hoverImage: "file://" + Quickshell.shellPath("assets/icon/icon-64.png")
                 onClicked: bar.openPopout("control", flameBtn)
+                onRightClicked: bar.openSlateMenu(flameBtn)
                 // Turns white (the text colour) while the control centre is open
                 SlateMark {
                     anchors.centerIn: parent
@@ -945,6 +978,7 @@ PanelWindow {
         property url hoverImage
         property real length: bar.capsuleHeight      // size along the bar
         signal clicked()
+        signal rightClicked()
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: bar.capsuleRadius
@@ -959,6 +993,7 @@ PanelWindow {
         Gloss { radius: cap.radius }          // glass: a sheen
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
         TapHandler { onTapped: cap.clicked() }
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
 
     // Capsule holding one icon glyph
