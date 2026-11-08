@@ -85,6 +85,17 @@ Scope {
 
         onNotification: n => {
             n.tracked = true;
+            // Kept from before Slate reloaded (keepOnReload): Quickshell hands it over again,
+            // but it's not new. Link it back to its history entry (so its actions and closing
+            // it still work) without another pop-up, history entry or unread
+            if (n.lastGeneration) {
+                const old = notifs.history.find(h => h.id === n.id && h.summary === (n.summary || ""));
+                if (old) {
+                    notifs.live[old.key] = n;
+                    n.closed.connect(() => { delete notifs.live[old.key]; });
+                }
+                return;
+            }
             const key = notifs.nextKey++;
             notifs.live[key] = n;
             n.closed.connect(() => { delete notifs.live[key]; });
