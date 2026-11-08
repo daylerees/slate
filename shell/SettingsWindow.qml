@@ -1494,12 +1494,10 @@ FloatingWindow {
             spacing: 4
             PageTitle { text: "Menu bar" }
             Group {
-                DropdownSetting {
+                SettingRow {
                     label: "Position"
-                    detail: "Which edge of the screen. On the left or right, the status icons drop their text and the window title turns to run along the bar. If the dock is on that edge, it moves to the opposite one"
-                    options: [{ value: "top", label: "Top" }, { value: "bottom", label: "Bottom" }, { value: "left", label: "Left" }, { value: "right", label: "Right" }]
-                    value: Config.s.barPosition
-                    onPicked: v => Config.moveBar(v)
+                    detail: "Click an edge (the dock is shown dimmed). On the left or right, the status icons drop their text and the window title turns to run along the bar. If the dock is on that edge, it moves to the opposite one"
+                    EdgePicker { accent: win.accent; bar: true; edge: Config.s.barPosition; other: Config.s.dockPosition; onPicked: e => Config.moveBar(e) }
                 }
                 Separator {}
                 SettingRow {
@@ -1670,12 +1668,10 @@ FloatingWindow {
             spacing: 4
             PageTitle { text: "Dock" }
             Group {
-                DropdownSetting {
+                SettingRow {
                     label: "Position"
-                    detail: "Which edge of the screen the dock sits on. If the menu bar is on that edge, it moves to the other one"
-                    options: [{ value: "bottom", label: "Bottom" }, { value: "top", label: "Top" }, { value: "left", label: "Left" }, { value: "right", label: "Right" }]
-                    value: Config.s.dockPosition
-                    onPicked: v => Config.moveDock(v)
+                    detail: "Click an edge (the menu bar is shown dimmed). If the menu bar is on that edge, it moves to the other one"
+                    EdgePicker { accent: win.accent; bar: false; edge: Config.s.dockPosition; other: Config.s.barPosition; onPicked: e => Config.moveDock(e) }
                 }
                 Separator {}
                 SettingRow {
