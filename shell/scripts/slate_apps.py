@@ -900,6 +900,59 @@ def spotify_reload(ctx):
         run(["spicetify", "apply", "-n", "-q"], timeout=120)     # -n: don't restart Spotify
 
 
+def obsidian_vaults():
+    """Every vault Obsidian knows about (its own list; the Flatpak's too)"""
+    out = []
+    for f in (cfg("obsidian", "obsidian.json"), os.path.join(HOME, ".var", "app", "md.obsidian.Obsidian", "config", "obsidian", "obsidian.json")):
+        try:
+            vaults = json.loads(read(f) or "{}").get("vaults", {})
+        except ValueError:
+            continue
+        for v in vaults.values():
+            p = v.get("path") if isinstance(v, dict) else None
+            if p and os.path.isdir(os.path.join(p, ".obsidian")) and p not in out:
+                out.append(p)
+    return out
+
+def obsidian_css(c):
+    import colorsys
+    r, g, b = (int(c["accent"][i:i + 2], 16) / 255 for i in (1, 3, 5))
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    v = {
+        # Obsidian works out its accent shades from these
+        "--accent-h": "%d" % round(h * 360), "--accent-s": "%d%%" % round(s * 100), "--accent-l": "%d%%" % round(l * 100),
+        "--background-primary": c["bg"], "--background-primary-alt": c["between"],
+        "--background-secondary": c["surface"], "--background-secondary-alt": c["between"],
+        "--background-modifier-border": c["divider"], "--background-modifier-border-hover": c["box"],
+        "--background-modifier-border-focus": c["accent"], "--background-modifier-hover": c["accent"] + "14",
+        "--background-modifier-active-hover": c["accent"] + "1f", "--background-modifier-form-field": c["surface"],
+        "--background-modifier-message": c["surface"],
+        "--titlebar-background": c["bg"], "--titlebar-background-focused": c["bg"],
+        "--tab-container-background": c["bg"], "--ribbon-background": c["bg"], "--ribbon-background-collapsed": c["bg"],
+        "--text-normal": c["text"], "--text-muted": c["onVariant"], "--text-faint": c["dim"],
+        "--text-accent": c["accent"], "--text-accent-hover": c["accent"], "--text-on-accent": c["accentText"],
+        "--text-selection": c["selection"], "--text-highlight-bg": c["accent"] + "33",
+        "--interactive-normal": c["surface"], "--interactive-hover": c["surfaceHigh"],
+        "--interactive-accent": c["accent"], "--interactive-accent-hover": c["accent"],
+        "--link-color": c["accent"], "--link-color-hover": c["accent"], "--link-external-color": c["accent"],
+        "--link-unresolved-color": c["secondary"], "--checkbox-color": c["accent"], "--checkbox-marker-color": c["accentText"],
+        "--blockquote-border-color": c["accent"], "--code-background": c["surface"],
+        "--nav-item-background-active": c["selection"], "--nav-item-background-hover": c["accent"] + "14",
+        "--scrollbar-thumb-bg": c["box"], "--scrollbar-active-thumb-bg": c["dim"],
+        "--color-red": c["red"], "--color-green": c["green"], "--color-yellow": c["yellow"], "--color-orange": c["orange"],
+    }
+    body = "\n".join("    %s: %s !important;" % kv for kv in v.items())
+    return "/* %s */\nbody.theme-dark, body.theme-light, .theme-dark, .theme-light {\n%s\n}\n" % (GEN, body)
+
+@app("obsidian", "Obsidian", "A Slate CSS snippet in each of your vaults, switched on for you (reopen Obsidian once if it was open)",
+     lambda: bool(obsidian_vaults()))
+def obsidian(ctx):
+    css = obsidian_css(ctx.c)
+    for v in obsidian_vaults():
+        ctx.file(os.path.join(v, ".obsidian", "snippets", "slate.css"), css)
+        ctx.jsonlist(os.path.join(v, ".obsidian", "appearance.json"), ["enabledCssSnippets"], "slate")
+
+
 def firefox_profiles():
     out = []
     for base in (os.path.join(HOME, ".mozilla", "firefox"), cfg("mozilla", "firefox")):
