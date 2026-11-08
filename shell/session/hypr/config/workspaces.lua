@@ -51,6 +51,32 @@ function besideWorkspace(dir)
     end
 end
 
+-- newWorkspace(movingAddr): where "on a new workspace" goes (Super+W, Super+Return in the
+-- launcher): the number after the last workspace with windows, so new workspaces join the
+-- end rather than filling a gap earlier on. With "keep an empty workspace" on, that's the
+-- spare one. When moving a window (its address given), it doesn't count; a window already
+-- alone on its workspace stays there.
+--   hyprctl dispatch 'function() hl.dispatch(hl.dsp.focus({ workspace = newWorkspace() })) end'
+function newWorkspace(movingAddr)
+    local maxId, ownId, ownAlone = 0, nil, false
+    for _, w in ipairs(hl.get_workspaces()) do
+        if w.id and w.id > 0 then
+            local n = w.windows or 0
+            if movingAddr then
+                for _, win in ipairs(hl.get_workspace_windows(w.id) or {}) do
+                    if win.address == movingAddr then
+                        n = n - 1
+                        ownId, ownAlone = w.id, n == 0
+                    end
+                end
+            end
+            if n > 0 and w.id > maxId then maxId = w.id end
+        end
+    end
+    if ownAlone then return ownId end
+    return maxId + 1
+end
+
 -- Keep an empty workspace (Settings → Windows): there's always one empty workspace after the
 -- last one in use, ready for a new window, like GNOME. Hyprland only keeps an empty workspace
 -- that's marked persistent, so the mark moves to the number after the highest workspace with

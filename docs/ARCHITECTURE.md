@@ -119,7 +119,9 @@ opening any of them closes bar panels (wired in `shell.qml`).
   volume, brightness and keyboard-backlight keys → `osd`.
 - `animations.lua` — `fadeTo(dispatcher)` (crossfade) and `instantTo(dispatcher)` used
   when switching from a Slate overlay, so the switch starts from that screen.
-- `workspaces.lua` — `besideWorkspace(dir)` for "open on a new workspace left/right".
+- `workspaces.lua` — `newWorkspace(movingAddr)` (the number after the last workspace with
+  windows: Super+W, Super+Return in the launcher) and `besideWorkspace(dir)` for "open on a
+  new workspace left/right".
 - `windowrules.lua` — `no_anim` for Slate overlay layers; "Slate Settings" floats.
 - `misc.lua` — `allow_session_lock_restore = true` (a restarted Slate re-takes a lock).
 

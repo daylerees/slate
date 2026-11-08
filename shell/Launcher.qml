@@ -344,10 +344,12 @@ PanelWindow {
         function onActiveToplevelChanged() { if (root.launchingNew && !root.pendingEntry && Hyprland.activeToplevel) root.launchingNew = false; }
     }
 
-    // Where to open it: an empty workspace anywhere (Super+Enter), or one directly to
+    // Where to open it: a new workspace after the last one in use (Super+Enter; newWorkspace
+    // in workspaces.lua, or the first empty one on a Hyprland config without it), or one directly to
     // the left / right of the current workspace (Left / Right on an app; see
     // besideWorkspace in ~/.config/hypr/config/workspaces.lua)
-    property string pendingTarget: '"emptym"'
+    readonly property string newTarget: '(newWorkspace and newWorkspace() or "emptym")'
+    property string pendingTarget: newTarget
     function launchBeside(entry, dir) {
         if (!entry || entry.calc || entry.setting || entry.action) return;
         pendingTarget = "besideWorkspace(" + (dir > 0 ? 1 : -1) + ")";
@@ -355,7 +357,7 @@ PanelWindow {
     }
     function launchOnNewWorkspace(entry) {
         if (!entry || entry.calc || entry.setting || entry.action) return;
-        pendingTarget = '"emptym"';
+        pendingTarget = newTarget;
         startNewWorkspaceLaunch(entry);
     }
     function startNewWorkspaceLaunch(entry) {

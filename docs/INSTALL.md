@@ -158,7 +158,7 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 | Keys | Does |
 |---|---|
 | Super (tap) or Super+Space | app launcher (type to search; also a calculator) |
-| Super+Return | terminal (with the launcher open: the selected app on a new workspace) |
+| Super+Return | terminal (with the launcher open: the selected app on a new workspace at the end) |
 | Super+E | file manager |
 | Super+Q | close window |
 | Super+Tab / Alt+Tab | window switcher |

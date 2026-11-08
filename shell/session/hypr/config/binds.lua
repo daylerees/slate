@@ -289,7 +289,11 @@ hl.bind(mainMod .. " + E",          function() hl.exec_cmd(launchPrefix .. FILE_
 hl.bind(mainMod .. " + T",          function() hl.exec_cmd(launchPrefix .. EDITOR) end)
 hl.bind(mainMod .. " + C",          function() hl.exec_cmd(launchPrefix .. CALCULATOR) end)
 hl.bind("XF86Calculator",           function() hl.exec_cmd(launchPrefix .. CALCULATOR) end)
-hl.bind(mainMod .. " + W",          hl.dsp.window.move({ workspace = "emptym" }))
+-- The focused window to a new workspace at the end (newWorkspace in workspaces.lua)
+hl.bind(mainMod .. " + W",          function()
+    local win = hl.get_active_window()
+    if win then hl.dispatch(hl.dsp.window.move({ workspace = newWorkspace(win.address) })) end
+end)
 hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(launchPrefix .. TERMINAL .. " -e btop") end)
 hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(slate("settings toggle")))
 hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(slate("bar panel control")))
