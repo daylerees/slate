@@ -159,7 +159,7 @@ JsonAdapter {
     property real glassOpacity: 0.5           // how much of a surface's colour is kept (0.3–0.95)
     property int glassBlur: 10                // Hyprland's blur size while glass is on; 0 = Hyprland's own
     property bool glassShine: true            // a thin light rim on glass surfaces
-    property real glassGlossTint: 0.65        // how much colour the sheen takes from what it's on (0 = white)
+    property real glassGlossTint: 1           // how much colour the sheen takes from what it's on (0 = white)
     property real glassGloss: 0.5             // how much glossy sheen (bar containers, hover highlights, tooltips): 0 = none, 1 = full, up to 2
     // Blur (Settings → Appearance → Blur): Hyprland's blur behind see-through windows and glass
     property bool fastBlur: true              // blur only the wallpaper (Hyprland's xray): much less work
