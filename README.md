@@ -123,8 +123,9 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
     notification. **Update** asks for your password; until then you'll see the previous
     version at login. Settings → Lock & idle has the same button.
   - The lock screen is part of Slate itself, so it's always current.
-- **Floating mode's title bars need rebuilding after Hyprland updates.** They come from the
-  hyprbars plugin, which only works with the exact Hyprland it was built for. After a
+- **Floating mode's title bars need rebuilding after Hyprland updates.** Floating mode is
+  optional: Slate tiles windows by default, and this only matters if you've switched to
+  floating windows in Settings → Windows. The title bars come from the hyprbars plugin, which only works with the exact Hyprland it was built for. After a
   Hyprland update, Slate goes back to tiling (and Settings hides the window mode) until
   you run `slate build-hyprbars` (then log out and in, or `hyprctl reload`). Your choice
   of floating is kept and comes back once it's built.
