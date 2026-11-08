@@ -4511,6 +4511,49 @@ FloatingWindow {
                 wrapMode: Text.Wrap
                 leftPadding: 4; bottomPadding: 10
             }
+            // What Slate is using right now: its memory, and how busy it keeps the processor
+            // (read from /proc every 2 s while Settings is open; Slate is one process)
+            GroupLabel { text: "What Slate is using" }
+            Group {
+                id: usage
+                property real mem: 0            // MB
+                property real cpu: -1           // % of the whole processor
+                property real lastTicks: -1
+                property real lastTime: 0
+                property int cores: 1
+                Process {
+                    id: usageProc
+                    // $PPID: the shell's parent, Slate itself
+                    command: ["sh", "-c", "awk '/^VmRSS/{print $2}' /proc/$PPID/status; awk '{print $14+$15}' /proc/$PPID/stat; nproc"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            const l = text.trim().split("\n");
+                            if (l.length < 3) return;
+                            usage.mem = Number(l[0]) / 1024;
+                            usage.cores = Number(l[2]) || 1;
+                            const ticks = Number(l[1]), now = Date.now();
+                            if (usage.lastTicks >= 0 && now > usage.lastTime)
+                                usage.cpu = Math.max(0, (ticks - usage.lastTicks) / 100 / ((now - usage.lastTime) / 1000) / usage.cores * 100);
+                            usage.lastTicks = ticks; usage.lastTime = now;
+                        }
+                    }
+                }
+                Timer {
+                    interval: 2000; repeat: true; triggeredOnStart: true
+                    running: win.visible
+                    onTriggered: { usageProc.running = false; usageProc.running = true; }
+                }
+                SettingRow {
+                    label: "Memory"
+                    detail: usage.mem > 0 ? (usage.mem >= 1024 ? (usage.mem / 1024).toFixed(2) + " GB" : Math.round(usage.mem) + " MB") : "Checking…"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Processor"
+                    detail: usage.cpu < 0 ? "Checking…"
+                        : usage.cpu.toFixed(1) + "% of your processor (" + usage.cores + " cores), averaged over the last couple of seconds. Having Settings open adds a little"
+                }
+            }
             Group {
                 SettingRow {
                     label: "Welcome"
