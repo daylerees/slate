@@ -118,14 +118,17 @@ class List(PrintersCase):
 
 class Find(PrintersCase):
     def test_printers_to_add(self):
-        """Network and USB printers, named by make and model (or their DNS-SD name), without
-        ones already added, the same printer twice, or bare backends."""
+        """Network and USB printers, named by make and model (else the name they give
+        themselves, else their DNS-SD name), without ones already added, the same printer twice,
+        or bare backends."""
         self.cups()
         self.s.add("lpinfo", stdout=fixture_text("printers", "lpinfo.txt"))
         self.json("find", expected=[
             {"uri": "ipp://192.0.2.40/ipp/print", "name": "Canon TS5300 series", "via": "network"},
             {"uri": "dnssd://Brother%20MFC-L2710DW%20series._ipp._tcp.local/?uuid=e3248000-80ce-11db-8000-000000000001",
              "name": "Brother MFC-L2710DW series", "via": "network"},
+            # its model "Unknown": the name it gives itself, not its address (it used to be the address)
+            {"uri": "ipp://192.0.2.60/ipp/print", "name": "Studio Inkjet", "via": "network"},
             {"uri": "usb://Kyocera/ECOSYS%20P2040dw?serial=VCF0000001", "name": "Kyocera ECOSYS P2040dw", "via": "USB"},
         ])
         self.assertEqual(self.s.calls("lpinfo"),
@@ -137,7 +140,7 @@ class Find(PrintersCase):
         self.s.add("lpinfo", stdout=fixture_text("printers", "lpinfo.txt"))
         names = [p["name"] for p in json.loads(self.script("find"))]
         self.assertEqual(names, ["HP LaserJet Pro M404dn", "Canon TS5300 series",
-                                 "Brother MFC-L2710DW series", "Kyocera ECOSYS P2040dw"])
+                                 "Brother MFC-L2710DW series", "Studio Inkjet", "Kyocera ECOSYS P2040dw"])
 
     def test_nothing_found(self):
         self.cups()
@@ -222,6 +225,28 @@ class Actions(PrintersCase):
         code, out = run(["python3", SCRIPT, "frobnicate"], env=self.s.env)
         self.assertEqual(code, 1)
         self.assertIn("Usage:", out)
+
+
+class NiceName(Case):
+    """What a printer to add is called in Settings."""
+    @classmethod
+    def setUpClass(cls):
+        cls.nice_name = staticmethod(load_module().nice_name)
+
+    def test_names(self):
+        dnssd = "dnssd://Office%20Laser._ipp._tcp.local/?uuid=1"
+        for (uri, model, info), expected in [
+            (("ipp://192.0.2.1/ipp/print", "HP LaserJet", "Office"), "HP LaserJet"),
+            (("ipp://192.0.2.1/ipp/print", "Unknown", "Office"), "Office"),
+            (("ipp://192.0.2.1/ipp/print", "unknown", "  Office  "), "Office"),
+            (("ipp://192.0.2.1/ipp/print", "", "Office"), "Office"),
+            ((dnssd, "Unknown", ""), "Office Laser"),
+            ((dnssd, "Unknown", "Unknown"), "Office Laser"),
+            (("ipp://192.0.2.1/ipp/print", "Unknown", "ipp://192.0.2.1/ipp/print"), "ipp://192.0.2.1/ipp/print"),
+            (("usb://X/Y?serial=1", "", ""), "usb://X/Y?serial=1"),
+        ]:
+            with self.subTest(f"{model!r} / {info!r}"):
+                self.assertEqual(self.nice_name(uri, model, info), expected)
 
 
 class SafeName(Case):

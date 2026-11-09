@@ -22,6 +22,12 @@ Device: uri = dnssd://Brother%20MFC-L2710DW%20series._ipp._tcp.local/?uuid=e3248
         make-and-model = Unknown
         device-id = 
         location = 
+Device: uri = ipp://192.0.2.60/ipp/print
+        class = network
+        info = Studio Inkjet
+        make-and-model = Unknown
+        device-id = 
+        location = 
 Device: uri = usb://Kyocera/ECOSYS%20P2040dw?serial=VCF0000001
         class = direct
         info = Kyocera ECOSYS P2040dw

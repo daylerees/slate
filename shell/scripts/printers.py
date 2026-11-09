@@ -117,10 +117,13 @@ def list_printers():
     print(json.dumps({"service": state, "printers": printers, "configTool": tool}))
 
 
-def nice_name(uri, info):
-    """A printer's name from what lpinfo says about it (its make and model, or its address)."""
-    if info and info.lower() not in ("unknown", ""):
-        return info
+def nice_name(uri, model, info=""):
+    """A printer's name from what lpinfo says about it: its make and model, else the name it
+    gives itself (info), else its address."""
+    for name in (model, info):
+        name = (name or "").strip()
+        if name and name.lower() != "unknown" and "://" not in name:
+            return name
     if uri.startswith("dnssd://"):
         return urllib.parse.unquote(uri[8:].split("._", 1)[0])
     return uri
@@ -142,7 +145,7 @@ def find_printers():
         if m or line == "Device:":
             if block.get("uri") and "://" in block["uri"] and block["uri"] not in added:
                 uri = block["uri"]
-                name = nice_name(uri, block.get("make-and-model") or block.get("info", ""))
+                name = nice_name(uri, block.get("make-and-model", ""), block.get("info", ""))
                 if name not in seen:
                     seen.add(name)
                     found.append({"uri": uri, "name": name,
