@@ -3748,7 +3748,7 @@ FloatingWindow {
                     label: "Code font"
                     detail: "Monospaced font for terminals and code; used when apps are themed"
                     key: "codeFontFamily"
-                    defaultFont: "Noto Sans Mono"
+                    defaultFont: "Geist Mono"
                     monoOnly: true
                 }
             }

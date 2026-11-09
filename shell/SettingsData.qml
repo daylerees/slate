@@ -90,7 +90,7 @@ JsonAdapter {
     property int windowGap: 6                 // px between tiled windows (edges get 2 more; 0 = none)
     property int soloWindowGap: 0             // px around a window alone on its workspace (0 = fills the screen)
     property string fontFamily: "Geist"       // interface font for the whole shell
-    property string codeFontFamily: "Noto Sans Mono"   // monospaced font, for theming apps later
+    property string codeFontFamily: "Geist Mono"   // monospaced font, for theming apps (bundled)
 
     // Bar
     property string barPosition: "top"        // top, bottom, left or right
