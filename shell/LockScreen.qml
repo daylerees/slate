@@ -181,7 +181,24 @@ Scope {
     // ---- Lock before sleep, and "lock session" requests ----------------------------
     // Watch logind. While "lock before sleep" is on, also hold a short delay on
     // sleep so the lock screen is up before the machine suspends; let go once locked.
-    readonly property bool locked: sessionLock.locked
+    // Whether the screen is locked, kept here rather than bound to sessionLock.locked: Quickshell
+    // doesn't announce the change when Slate lets the lock go, so a binding stayed true after
+    // unlocking, and everything going by it (hot corners, the screensaver, the idle lock) stood
+    // down for good. Set by setLocked(), and kept in step with any change Quickshell does announce
+    property bool locked: false
+    function setLocked(on) {
+        sessionLock.locked = on;
+        if (locked === on) return;
+        locked = on;
+        if (!on) released();
+    }
+    // The lock let go: the fade's state back to rest, xray off
+    function released() {
+        fadeIn.stop(); fadeOut.stop(); fadeInGuard.stop(); unlockGuard.stop();
+        unlocking = false;
+        lockFade = 1;
+        xray(false);
+    }
 
     // ---- Fading in and out --------------------------------------------------------
     // The lock always engages at once: input goes to it from the first moment. The fade is
@@ -209,10 +226,10 @@ Scope {
     NumberAnimation { id: fadeIn; target: root; property: "lockFade"; to: 1; duration: Config.ms(300); easing.type: Easing.OutCubic
         onFinished: root.xray(false) }
     NumberAnimation { id: fadeOut; target: root; property: "lockFade"; to: 0; duration: Config.ms(300); easing.type: Easing.InCubic
-        onFinished: { sessionLock.locked = false; root.unlocking = false; root.xray(false); } }
+        onFinished: root.setLocked(false) }
     // fade: false for locks before sleep (and anything else that mustn't wait on a look)
     function lockNow(fade) {
-        if (sessionLock.locked) return;
+        if (locked) return;
         fadeOut.stop(); unlocking = false;
         if (fade !== false && Config.animate) {
             lockFade = 0;
@@ -222,10 +239,10 @@ Scope {
             fadeIn.stop();
             lockFade = 1;
         }
-        sessionLock.locked = true;            // at once, whatever the fade
+        setLocked(true);                      // at once, whatever the fade
     }
     function unlock() {
-        if (!sessionLock.locked || unlocking) return;
+        if (!locked || unlocking) return;
         fadeIn.stop();
         if (Config.animate) {
             unlocking = true;
@@ -233,19 +250,24 @@ Scope {
             xray(true);                       // only now, after the password: then fade out
             unlockGuard.restart();
         } else {
-            sessionLock.locked = false;
+            setLocked(false);
         }
     }
     // Safety nets, should a fade never start or finish (hyprctl stuck, say): the lock screen
     // shows anyway, so you're never typing into a blank screen; and after your password, the
     // lock lets go anyway, so you can't be left stuck behind it
-    Timer { id: fadeInGuard; interval: 1000; onTriggered: if (sessionLock.locked && !root.unlocking && root.lockFade < 1 && !fadeIn.running) root.lockFade = 1 }
-    Timer { id: unlockGuard; interval: 1500; onTriggered: if (root.unlocking) { fadeOut.stop(); sessionLock.locked = false; } }
+    Timer { id: fadeInGuard; interval: 1000; onTriggered: if (root.locked && !root.unlocking && root.lockFade < 1 && !fadeIn.running) root.lockFade = 1 }
+    Timer { id: unlockGuard; interval: 1500; onTriggered: if (root.unlocking) root.setLocked(false) }
     // Never left on: off when Slate starts, and whenever the lock is let go
     Component.onCompleted: xray(false)
     Connections {
         target: sessionLock
-        function onLockedChanged() { if (!sessionLock.locked) { fadeIn.stop(); fadeOut.stop(); root.unlocking = false; root.lockFade = 1; root.xray(false); } }
+        // A change Quickshell does announce (the compositor ending the lock, say): follow it
+        function onLockedChanged() {
+            if (root.locked === sessionLock.locked) return;
+            root.locked = sessionLock.locked;
+            if (!root.locked) root.released();
+        }
     }
     Process {
         id: logind
@@ -290,7 +312,7 @@ Scope {
 
     // ---- Idle: lock, screen off, suspend ----------------------------------------------
     IdleMonitor {
-        enabled: Config.s.idleLockMinutes > 0 && !sessionLock.locked
+        enabled: Config.s.idleLockMinutes > 0 && !root.locked
         timeout: Config.s.idleLockMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: if (isIdle) root.lockNow()
