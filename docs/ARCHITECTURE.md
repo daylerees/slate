@@ -112,7 +112,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 
 | Target | Functions |
 |---|---|
-| `bar` | `panel <control\|spaces\|notifications\|session\|volume\|wifi\|clipboard\|screenshot\|keyboard\|bluetooth\|battery\|calendar>`, `setFilled <bool>`, `reveal` |
+| `bar` | `panel <control\|spaces\|notifications\|session\|volume\|wifi\|clipboard\|screenshot\|keyboard\|bluetooth\|battery\|gamemode\|calendar>`, `setFilled <bool>`, `reveal` |
 | `popout` | `toggle <name> <x>`, `close` |
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight` |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |

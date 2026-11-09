@@ -127,7 +127,7 @@ PanelWindow {
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
         const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn,
-                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, calendar: clockCap })[name];
+                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap })[name];
         if (button) openPopout(name, button);
     }
     // Tray apps with no "activate" of their own: Ayatana app indicators (Steam and others)
@@ -207,7 +207,7 @@ PanelWindow {
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
-        // keyboard, bluetooth, battery, calendar
+        // keyboard, bluetooth, battery, gamemode, calendar
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
     }
 
