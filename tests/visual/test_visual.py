@@ -34,8 +34,14 @@ class Visual(LiveCase):
         cls.s = Session()
         atexit.register(cls.s.stop)
         cls.s.start()
-        cls.s.settle(8)         # the bar's segments and fonts settle before the first shot (under load
-                                # the clock was caught mid-layout, a fraction of a pixel off)
+        cls.s.settle(4)         # the bar's segments and fonts settle before the first shot
+        # The clock can be laid out before Slate's own font has loaded, keeping glyph positions a
+        # fraction of a pixel off from then on (only the first scene showed it; later ones had
+        # re-laid the bar). Lay it out again, now the font's there
+        cls.s.ipc("config", "set", "barClockDate", "false")
+        cls.s.settle(0.5)
+        cls.s.ipc("config", "set", "barClockDate", "true")
+        cls.s.settle(1.5)
         os.makedirs(OUT, exist_ok=True)
 
     @classmethod
