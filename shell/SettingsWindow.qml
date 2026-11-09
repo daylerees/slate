@@ -5353,6 +5353,12 @@ FloatingWindow {
                 text: "Slate is this desktop's shell: the bar, dock, launcher, window and workspace switchers, panels, notifications and these settings. It runs on Quickshell and Hyprland, from ~/.config/slate."
                 color: win.dim; font.family: win.font; font.pixelSize: 13
                 wrapMode: Text.Wrap
+                leftPadding: 4; bottomPadding: 6
+            }
+            // As in LICENSE
+            Text {
+                text: "© 2026 Dayle Rees · MIT License"
+                color: win.dim; font.family: win.font; font.pixelSize: 12
                 leftPadding: 4; bottomPadding: 10
             }
             // What Slate is using right now, shown like the battery panel's meters: its memory (of
