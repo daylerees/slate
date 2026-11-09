@@ -248,7 +248,7 @@ FloatingWindow {
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2273,6 +2273,12 @@ FloatingWindow {
                     label: "Auto-hide"
                     detail: "Hide the dock while the workspace has tiled windows (floating ones leave it open, except in floating windows mode); push the pointer to the bottom edge to show it"
                     key: "dockAutoHide"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Window previews"
+                    detail: "How long to pause on an app with windows open before they show; click one to go to it (titles only, in game mode)"
+                    ValueSlider { from: 0; to: 3; stepSize: 0.1; decimals: 1; suffix: " s"; zeroText: "Off"; value: Config.s.dockPreviewDelay; onMoved: v => Config.s.dockPreviewDelay = v }
                 }
                 Separator {}
                 ToggleSetting {

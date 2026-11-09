@@ -767,7 +767,7 @@ ShellRoot {
         }
         // (and once at start, so the windows already open have their details)
         Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
-        property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible
+        property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible || previewPop.visible
         Timer { id: holdTimer; interval: win.hideDelay }
         readonly property real dockHeight: base + padding * 2
         property real offset: shown ? 0 : dockHeight + bottomGap + 4
@@ -783,6 +783,18 @@ ShellRoot {
                 appMenu.openFor(sl.item, x);
             }
             function closeMenu(): void { appMenu.closeMenu(); }
+            // An app's window previews, as pausing on it does:  slate ipc call dock preview firefox
+            function preview(key: string): void {
+                const sl = win.slots.find(o => o.kind === "app" && o.item.key === key);
+                if (!sl || sl.item.windows.length === 0 || win.previewMode === "off") return;
+                win.previewApp = sl.item;
+                const x = (strip.width - win.restWidth) / 2 + win.slotStart(sl.at) + win.base / 2;
+                const p = strip.mapToItem(win.contentItem, x, bg.y - 16);
+                const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
+                previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
+                previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
+            }
+            function closePreview(): void { win.previewApp = null; }
             // The Downloads stack's grid, as clicking it does:  slate ipc call dock downloads
             function downloads(): void {
                 if (!win.downloadsShown) return;
@@ -794,6 +806,173 @@ ShellRoot {
         // ---- Right-click menu ----------------------------------------------
         // A full-screen invisible layer while open: clicking anywhere outside the menu
         // (or pressing Escape) closes it
+        // ---- Window previews (Settings → Dock → Window previews) -----------------------
+        // Pause on an app with windows open (for Settings' number of seconds; 0: never) and a
+        // panel shows a card for each: a live picture of it, or in game mode (no live pictures)
+        // its title and the app's icon; click one to go to it. It stays while the pointer moves
+        // onto it
+        readonly property string previewMode: Config.s.dockPreviewDelay <= 0 ? "off" : Config.gameMode ? "titles" : "live"
+        property var previewApp: null            // the app being previewed ({ key, entry, windows })
+        property bool previewHeld: false         // the pointer's on the panel
+        Timer { id: previewDwell; interval: Math.max(100, Config.s.dockPreviewDelay * 1000); onTriggered: win.showPreview() }
+        Timer { id: previewLeave; interval: 300; onTriggered: if (!win.previewHeld && !win.pointedApp) win.previewApp = null }
+        // The app under the pointer, while it has windows (null otherwise)
+        readonly property var pointedApp: {
+            const sl = hover > 0.5 && !appMenu.visible ? slotAt(hoveredIndex) : null;
+            return sl && sl.kind === "app" && sl.item.windows.length > 0 ? sl.item : null;
+        }
+        onPointedAppChanged: {
+            if (previewMode === "off") return;
+            if (pointedApp && previewApp) showPreview();       // already showing: switch at once
+            else if (pointedApp) previewDwell.restart();
+            else { previewDwell.stop(); previewLeave.restart(); }
+        }
+        function showPreview() {
+            const sl = slots.find(o => o.kind === "app" && pointedApp && o.item.key === pointedApp.key);
+            if (!sl) return;
+            previewApp = sl.item;
+            const p = strip.mapToItem(win.contentItem, row.x + cellX(sl.at) + base * scaleAt(sl.at) / 2, bg.y - 16);
+            const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
+            previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
+            previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
+        }
+        Connections { target: appMenu; function onVisibleChanged() { if (appMenu.visible) win.previewApp = null; } }
+
+        PanelWindow {
+            id: previewPop
+            screen: win.screen
+            property real atX: 0          // by the icon, just off the dock (screen coordinates)
+            property real atY: 0
+            readonly property var wins: win.previewApp ? win.previewApp.windows : []
+            visible: !!win.previewApp && wins.length > 0
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            WlrLayershell.namespace: "slate-dock-previews"
+            WlrLayershell.layer: WlrLayer.Overlay
+            mask: Region { item: previewBox }           // only the panel takes the pointer
+
+            // A card's size: live pictures are wider than title-only cards
+            readonly property real cardW: win.previewMode === "live" ? 220 : 200
+            readonly property real cardH: win.previewMode === "live" ? 160 : 48
+
+            Rectangle {
+                id: previewBox
+                readonly property real wanted: previewPop.wins.length * (previewPop.cardW + 8) + 8
+                width: Math.min(wanted, previewPop.width - 32)
+                height: win.previewMode === "live" ? previewPop.cardH + 16 : Math.min(previewPop.wins.length * (previewPop.cardH + 4) + 12, previewPop.height - 32)
+                x: Math.max(8, Math.min(previewPop.width - width - 8,
+                    win.edge === "left" ? previewPop.atX : win.edge === "right" ? previewPop.atX - width : previewPop.atX - width / 2))
+                y: Math.max(8, Math.min(previewPop.height - height - 8,
+                    win.edge === "bottom" ? previewPop.atY - height : win.edge === "top" ? previewPop.atY : previewPop.atY - height / 2))
+                radius: 12
+                color: win.bgColor
+                Gloss { radius: parent.radius }   // glass: a sheen
+                HoverHandler {
+                    onHoveredChanged: { win.previewHeld = hovered; if (!hovered) previewLeave.restart(); }
+                }
+
+                // Live: the windows side by side (scrolling sideways when there are many)
+                Flickable {
+                    id: previewScroll
+                    visible: win.previewMode === "live"
+                    anchors { fill: parent; margins: 8 }
+                    contentWidth: previewRow.width
+                    interactive: contentWidth > width
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    Row {
+                        id: previewRow
+                        spacing: 8
+                        Repeater {
+                            model: win.previewMode === "live" ? previewPop.wins : []
+                            delegate: Rectangle {
+                                id: liveCard
+                                required property var modelData
+                                width: previewPop.cardW; height: previewPop.cardH
+                                radius: 8
+                                color: liveHover.hovered ? Config.hover : "transparent"
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
+                                ScreencopyView {
+                                    id: liveShot
+                                    readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
+                                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
+                                    width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
+                                    height: width / ratio
+                                    captureSource: previewPop.visible ? liveCard.modelData : null
+                                    live: previewPop.visible
+                                    layer.enabled: true
+                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: liveMask }
+                                }
+                                Item {
+                                    id: liveMask
+                                    anchors.fill: liveShot
+                                    visible: false
+                                    layer.enabled: true
+                                    Rectangle { anchors.fill: parent; radius: 6 }
+                                }
+                                Text {
+                                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: liveCard.modelData.title || ""
+                                    elide: Text.ElideRight
+                                    color: liveCard.modelData.activated ? win.activeDotColor : win.textColor
+                                    font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                }
+                                HoverHandler { id: liveHover }
+                                ClickTap { onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
+                            }
+                        }
+                    }
+                }
+
+                // Titles: the windows one above another, each with the app's icon
+                Flickable {
+                    id: titleScroll
+                    visible: win.previewMode === "titles"
+                    anchors { fill: parent; margins: 6 }
+                    contentHeight: titleCol.height
+                    interactive: contentHeight > height
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    SmoothWheel { flick: titleScroll }
+                    Column {
+                        id: titleCol
+                        width: parent.width
+                        spacing: 4
+                        Repeater {
+                            model: win.previewMode === "titles" ? previewPop.wins : []
+                            delegate: Rectangle {
+                                id: titleCard
+                                required property var modelData
+                                width: titleCol.width; height: previewPop.cardH
+                                radius: 8
+                                color: titleHover.hovered ? Config.hover : "transparent"
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
+                                AppTile {
+                                    id: titleIcon
+                                    anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                                    width: 28; height: 28
+                                    app: win.previewApp ? (win.previewApp.entry ? win.previewApp.entry.id : win.previewApp.key) : ""
+                                }
+                                Text {
+                                    anchors { left: titleIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                    text: titleCard.modelData.title || ""
+                                    elide: Text.ElideRight
+                                    color: titleCard.modelData.activated ? win.activeDotColor : win.textColor
+                                    font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                                }
+                                HoverHandler { id: titleHover }
+                                ClickTap { onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         PanelWindow {
             id: appMenu
             screen: win.screen          // with the dock (which follows the focused screen)

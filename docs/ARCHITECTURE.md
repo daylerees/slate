@@ -117,7 +117,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight` |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
 | `overview` | `open`, `close`, `toggle`, `next`, `prev`, `go`, `moveLeft`, `moveRight`, `hold <bool>` |
-| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid) |
+| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `preview <app>`, `closePreview` |
 | `settings` | `toggle`, `open`, `close`, `page <id>` |
 | `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right) |
 | `lock` | `lock`, `preview <lock\|login>`, `closePreview` |
