@@ -561,7 +561,10 @@ PanelWindow {
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
 
-                Item { id: tileSlotStart; visible: appTile.parent === tileSlotStart && appTile.visible; width: childrenRect.width; height: childrenRect.height }
+                // The icon's place before the title (or, on a left bar, after it). It goes by whether
+                // the icon wants to show (appTile.wanted), not its visible, which reads false while
+                // this slot is hidden: once hidden, the slot never came back until Slate reloaded
+                Item { id: tileSlotStart; visible: appTile.parent === tileSlotStart && appTile.wanted; width: appTile.width; height: appTile.height }
                 Capsule {
                     id: appTile
                     // Before the title, except on a left bar, where the title reads upwards and
@@ -583,7 +586,8 @@ PanelWindow {
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
                     // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu Bar)
-                    visible: !titleArea.s && !!focusedTop && Config.s.barShowTitleIcon
+                    readonly property bool wanted: !titleArea.s && !!focusedTop && Config.s.barShowTitleIcon
+                    visible: wanted
                     length: bar.capsuleHeight
                     hoverTint: false
                     Image {
@@ -654,7 +658,7 @@ PanelWindow {
                         font.weight: Font.Medium
                     }
                 }
-                Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.visible; width: childrenRect.width; height: childrenRect.height }
+                Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.wanted; width: appTile.width; height: appTile.height }
             }
         }
 
