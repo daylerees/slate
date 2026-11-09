@@ -229,7 +229,7 @@ FloatingWindow {
         { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
         { id: "apps", label: "Default apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
         { id: "startup", label: "Startup apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
-        { id: "datetime", label: "Date & time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
+        { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
         { id: "apptheming", label: "App theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
@@ -2815,13 +2815,13 @@ FloatingWindow {
         }
     }
 
-    // ---- Date & time (timedatectl; changing them may ask for your password) -----------------
+    // ---- Date & Time (timedatectl; changing them may ask for your password) -----------------
     Component {
         id: timePage
         Column {
             id: dtp
             spacing: 4
-            PageTitle { text: "Date & time" }
+            PageTitle { text: "Date & Time" }
             property string zone: ""
             property bool ntp: false
             property bool canNtp: true

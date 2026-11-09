@@ -18,7 +18,7 @@ Singleton {
         startup: 0xEC45, datetime: 0xEA70, screenshots: 0xF201, general: 0xEB20, appearance: 0xEB01, bar: 0xEAD7, dock: 0xEAD3, launcher: 0xEB1C, spaces: 0xEEF6,
         windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, workspaces: 0xEDBA, lock: 0xEAE2, debug: 0xEA48, screensaver: 0xEAF8, apptheming: 0xEB01, updates: 0xEA96, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
     readonly property var pageNames: ({ overview: "All Settings", input: "Keyboard & Mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
-        apps: "Default apps", startup: "Startup apps", datetime: "Date & time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
+        apps: "Default apps", startup: "Startup apps", datetime: "Date & Time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
         windows: "Windows", displays: "Displays", hotcorners: "Hot corners", notifications: "Notifications", workspaces: "Workspaces", lock: "Lock & idle", debug: "Debug", screensaver: "Screensaver", apptheming: "App theming", updates: "Updates", wifi: "Wi-Fi",
         bluetooth: "Bluetooth", about: "About" })
     readonly property var curated: [
@@ -81,7 +81,7 @@ Singleton {
         ["Shortcuts", "shortcuts", "keyboard shortcuts keybinds hotkeys keys"],
         ["Default apps", "apps", "terminal browser file manager editor calculator default applications"],
         ["Startup apps", "startup", "autostart login start open at login"],
-        ["Date & time", "datetime", "time zone timezone clock ntp automatic"],
+        ["Date & Time", "datetime", "time zone timezone clock ntp automatic"],
         ["Time zone", "datetime", "timezone region clock"],
         ["Screenshots", "screenshots", "screenshot print screen capture folder"],
         ["Animations", "appearance", "motion reduce motion speed fast off"],
