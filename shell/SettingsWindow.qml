@@ -3398,7 +3398,8 @@ FloatingWindow {
             property bool canNtp: true
             property var zones: []
             property date now: new Date()
-            Timer { interval: 1000; running: true; repeat: true; onTriggered: dtp.now = new Date() }
+            // The clock on this page; only ticks while Settings is showing (and catches up at once)
+            Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dtp.now = new Date() }
             function refresh() { stateProc.running = false; stateProc.running = true; }
             Timer { id: reread; interval: 1500; onTriggered: dtp.refresh() }
             Process {
@@ -4258,7 +4259,7 @@ FloatingWindow {
                 }
                 // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too
                 FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false }
-                readonly property var previewShade: { previewColourFile.text(); return Config.iconTileShadeOf(previewColourFile.text().trim()); }
+                readonly property var previewShade: Config.iconTileShadeOf(previewColourFile.text().trim())
                 SettingRow {
                     label: "Shape"
                     detail: "For app icons in the dock, launcher, switcher, bar and notifications"
@@ -4564,10 +4565,13 @@ FloatingWindow {
                 command: [Quickshell.shellPath("scripts/image-sizes.py"), wp.folder]
                 stdout: StdioCollector { onStreamFinished: { try { wp.sizes = JSON.parse(text); } catch (e) {} } }
             }
-            // Read the sizes when the page opens and when the folder's contents change
-            Connections { target: wallFiles; function onCountChanged() { sizeReader.running = false; sizeReader.running = true; } }
+            // Read the sizes when the page opens and when the folder's contents change. Both happen
+            // together as the page opens (the folder's listing arrives just after), so they're
+            // gathered into one read rather than starting the script and stopping it straight away.
+            Timer { id: sizesSoon; interval: 250; onTriggered: { sizeReader.running = false; sizeReader.running = true; } }
+            Connections { target: wallFiles; function onCountChanged() { sizesSoon.restart(); } }
             Component.onCompleted: {
-                sizeReader.running = true;
+                sizesSoon.restart();
                 // Opened for the wallpapers (Super+Shift+W): scroll down to them
                 if (win.scrollTo === "wallpaper") Qt.callLater(() => Qt.callLater(() => {
                     win.scrollTo = "";
@@ -5453,8 +5457,10 @@ FloatingWindow {
                 function mb(v) { return v >= 1024 ? (v / 1024).toFixed(v >= 10240 ? 0 : 1) + " GB" : Math.round(v) + " MB"; }
                 Process {
                     id: usageProc
-                    // $PPID: the shell's parent, Slate itself
-                    command: ["sh", "-c", "awk '/^VmRSS/{print $2}' /proc/$PPID/status; awk '{print $14+$15}' /proc/$PPID/stat; nproc; awk '/^MemTotal/{print $2}' /proc/meminfo"]
+                    // One awk reads all three files; prints Slate's memory (kB), its processor time
+                    // (ticks), the number of cores and the total memory (kB), one per line.
+                    // $PPID: the shell's parent, Slate itself.
+                    command: ["sh", "-c", "awk -v cores=\"$(nproc)\" 'FILENAME ~ /status$/ && /^VmRSS/ { mem = $2 } FILENAME ~ /stat$/ { ticks = $14 + $15 } /^MemTotal/ { total = $2 } END { print mem; print ticks; print cores; print total }' /proc/$PPID/status /proc/$PPID/stat /proc/meminfo"]
                     stdout: StdioCollector {
                         onStreamFinished: {
                             const l = text.trim().split("\n");
