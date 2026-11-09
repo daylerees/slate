@@ -351,16 +351,6 @@ PanelWindow {
         function hold(on: bool): void { ov.shiftHeld = on; }      // same as holding Shift
     }
 
-    function lookup(appId) {
-        if (!appId) return null;
-        const e = DesktopEntries.byId(appId) ?? DesktopEntries.heuristicLookup(appId);
-        if (e) return e;
-        const parts = appId.toLowerCase().split(".");
-        if (parts.length < 3) return null;
-        const prefix = parts.slice(0, 2).join(".") + ".";
-        return DesktopEntries.applications.values.find(a => a.id.toLowerCase().startsWith(prefix)) ?? null;
-    }
-
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
     // After zooming into a workspace the overview matches it, so it just goes, quickly
@@ -632,7 +622,7 @@ PanelWindow {
                                 layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 1 }
                                 AppTile {
                                     anchors.fill: parent
-                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? ov.lookup(parent.parent.modelData.wayland.appId) : null
+                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? Config.appEntry(parent.parent.modelData.wayland.appId) : null
                                     app: entry ? entry.id : (parent.parent.modelData && parent.parent.modelData.wayland ? parent.parent.modelData.wayland.appId : "")
                                 }
                             }
@@ -657,7 +647,7 @@ PanelWindow {
                 Text {
                     anchors { top: preview.bottom; topMargin: 14; horizontalCenter: parent.horizontalCenter }
                     opacity: 1 - ov.zoomP
-                    readonly property var first: card.wins.length ? ov.lookup(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
+                    readonly property var first: card.wins.length ? Config.appEntry(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
                     text: "Workspace " + card.modelData.name
                         + (card.wins.length === 0 ? " · empty"
                            : " · " + (first ? first.name : card.wins[0].title)

@@ -5,7 +5,7 @@ import QtQuick
 
 Image {
     property string app: ""
-    source: app ? "file://" + Config.tileDir + "/" + app.replace(/[^A-Za-z0-9._-]/g, "_") + ".png?v=" + Config.tileVersion : ""
+    source: app ? "file://" + Config.tilePath(app) + "?v=" + Config.tileVersion : ""
     sourceSize: Qt.size(64, 64)
     smooth: true
     mipmap: true

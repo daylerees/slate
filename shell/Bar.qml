@@ -52,8 +52,6 @@ PanelWindow {
     readonly property string iconFont: tabler.name
     readonly property int holdMs: 4000
     readonly property int slideMs: 500
-    readonly property string tileScript: Config.tileScript
-    readonly property string tileDir: Config.tileDir
 
     // Drop-down panels (Popouts.qml), set from shell.qml
     property var popouts: null
@@ -250,18 +248,6 @@ PanelWindow {
         const sec = parseFloat((uptimeFile.text() || "0").split(" ")[0]);
         const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
         return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + (h > 0 || d > 0 ? h + " h " : "") + m + " min";
-    }
-
-    // ---- Helpers -----------------------------------------------------------
-
-    function lookup(appId) {
-        if (!appId) return null;
-        const e = DesktopEntries.byId(appId) ?? DesktopEntries.heuristicLookup(appId);
-        if (e) return e;
-        const parts = appId.toLowerCase().split(".");
-        if (parts.length < 3) return null;
-        const prefix = parts.slice(0, 2).join(".") + ".";
-        return DesktopEntries.applications.values.find(a => a.id.toLowerCase().startsWith(prefix)) ?? null;
     }
 
     // ---- Drawing -----------------------------------------------------------
@@ -513,7 +499,7 @@ PanelWindow {
                             // while this dot is being described (the lookup can scan every installed
                             // app, and ran for every dot on every window change)
                             readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
-                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? bar.lookup(modelData.toplevels.values[0].wayland.appId) : null
+                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? Config.appEntry(modelData.toplevels.values[0].wayland.appId) : null
                             readonly property string hoverText: "Workspace " + modelData.id + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
                             readonly property int hoverCode: 0
                             readonly property string hoverTile: firstApp ? firstApp.id : ""
@@ -574,10 +560,10 @@ PanelWindow {
                     // starts at the bottom: the icon goes there
                     parent: bar.vert && !bar.atRight ? tileSlotEnd : tileSlotStart
                     readonly property var focusedTop: ToplevelManager.activeToplevel
-                    readonly property var entry: bar.lookup(focusedTop ? focusedTop.appId : "")
+                    readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
                     readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
                     readonly property string key: titleArea.s ? (titleArea.s.hoverTile || "") : winKey
-                    readonly property string path: bar.tileDir + "/" + key.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
+                    readonly property string path: Config.tilePath(key)
                     readonly property bool showGlyph: !!titleArea.s && key === "" && titleArea.s.hoverCode !== 0
                     readonly property bool showImage: !!titleArea.s && key === "" && !showGlyph && String(titleArea.s.hoverImage) !== ""
                     // The focused window came from a space: its tile takes the space's colour

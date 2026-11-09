@@ -21,8 +21,7 @@ Rectangle {
 
     readonly property color textColor: bar.textColor
     readonly property color dim: Config.tint("#8b94a3")
-    readonly property string tileDir: Config.tileDir
-    readonly property string tilePath: entry && entry.entryId ? tileDir + "/" + entry.entryId.replace(/[^A-Za-z0-9._-]/g, "_") + ".png" : ""
+    readonly property string tilePath: entry && entry.entryId ? Config.tilePath(entry.entryId) : ""
     readonly property var actions: notif ? notif.actions.filter(a => a.identifier !== "default" && a.text) : []
     readonly property color accent: bar.accent
     // A picture from a file (screenshots, album art…) gets a large preview under the text, with

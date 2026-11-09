@@ -495,6 +495,42 @@ Singleton {
     function tileCommand(app, path) {
         return [tileScript, "--tile", app, path, "192", "--shape", s.iconShape, s.iconFill ? "--fill" : "--whole"];
     }
+    // Where an app's drawn icon lives: tilePath(app id, class or window key). Characters a file
+    // name can't safely hold become "_", the same way scripts/appicon.py names them.
+    function tilePath(key) { return tileDir + "/" + String(key).replace(/[^A-Za-z0-9._-]/g, "_") + ".png"; }
+
+    // ---- App entries ---------------------------------------------------------------
+    // The installed app (.desktop entry) for a window's app ID, as the dock, bar, switcher and
+    // overview show it. Hyprland's app IDs don't always match an entry's name, so this tries,
+    // in turn: the exact entry, Quickshell's best guess (the class, a looser match), and an
+    // entry sharing its reverse-domain prefix (org.godotengine.Editor -> org.godotengine.Godot).
+    // Results are remembered until the installed apps change, since the same few IDs are
+    // looked up over and over (the dock does it for every window, every time one opens).
+    property int appsVersion: 0
+    // (one object, changed inside but never replaced, so bindings that look things up don't
+    // re-run when the memo fills in; they re-run when appsVersion goes up)
+    readonly property var appEntryMemo: ({ version: -1, entries: {} })
+    Connections {
+        target: DesktopEntries.applications
+        function onValuesChanged() { root.appsVersion++; }
+    }
+    function appEntry(appId) {
+        if (!appId) return null;
+        // (read here so a binding that calls this runs again when apps are installed or removed)
+        const memo = appEntryMemo;
+        if (memo.version !== appsVersion) { memo.entries = {}; memo.version = appsVersion; }
+        if (appId in memo.entries) return memo.entries[appId];
+        let e = DesktopEntries.byId(appId) ?? DesktopEntries.heuristicLookup(appId);
+        if (!e) {
+            const parts = appId.toLowerCase().split(".");
+            if (parts.length >= 3) {
+                const prefix = parts.slice(0, 2).join(".") + ".";
+                e = DesktopEntries.applications.values.find(a => a.id.toLowerCase().startsWith(prefix)) ?? null;
+            }
+        }
+        memo.entries[appId] = e ?? null;
+        return memo.entries[appId];
+    }
     // Changing the style draws every installed app's icon in it, in the background (and at
     // startup, any that are missing); tileVersion goes up when that's done, to reload images
     property int tileVersion: 0

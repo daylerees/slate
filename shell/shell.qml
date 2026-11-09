@@ -436,8 +436,6 @@ ShellRoot {
         readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
         readonly property int fontWeight: Font.Medium   // bar font weight 500
         readonly property real fontSize: 13             // matches the bar text
-        readonly property string tileScript: Config.tileScript
-        readonly property string tileDir: Config.tileDir
 
         // ---- Window --------------------------------------------------------
         // Which screen edge (Settings → Dock → Position; bottom becomes top when the bar is at
@@ -486,25 +484,12 @@ ShellRoot {
         }
 
         // ---- Apps: pinned first, then anything else that's running ---------
-        function entryFor(id) {
-            return DesktopEntries.byId(id) ?? lookup(id);
-        }
-        // Best app entry for a window's app ID. Falls back to entries sharing its
-        // reverse-domain prefix (org.godotengine.Editor -> org.godotengine.Godot).
-        function lookup(appId) {
-            const e = DesktopEntries.heuristicLookup(appId);
-            if (e) return e;
-            const parts = (appId || "").toLowerCase().split(".");
-            if (parts.length < 3) return null;
-            const prefix = parts.slice(0, 2).join(".") + ".";
-            return DesktopEntries.applications.values.find(a => a.id.toLowerCase().startsWith(prefix)) ?? null;
-        }
         function belongsTo(t, id, e) {
             const a = (t.appId || "").toLowerCase();
             if (a === id.toLowerCase()) return true;
             if (!e) return false;
             if (a === (e.startupClass || "").toLowerCase() || a === (e.id || "").toLowerCase()) return true;
-            const h = lookup(t.appId);
+            const h = Config.appEntry(t.appId);
             return h !== null && h.id === e.id;
         }
         property var items: {
@@ -513,7 +498,7 @@ ShellRoot {
             const out = [];
             const claimed = new Set();
             for (const id of pinned) {
-                const e = entryFor(id);
+                const e = Config.appEntry(id);
                 const wins = tops.filter(t => !claimed.has(t) && belongsTo(t, id, e));
                 if (!e && wins.length === 0) continue;   // pinned app that's no longer installed
                 wins.forEach(t => claimed.add(t));
@@ -521,7 +506,7 @@ ShellRoot {
             }
             for (const t of tops) {
                 if (claimed.has(t)) continue;
-                const e = lookup(t.appId);
+                const e = Config.appEntry(t.appId);
                 const key = e ? e.id : t.appId;
                 const existing = out.find(o => o.key === key);
                 if (existing) existing.windows.push(t);
@@ -927,7 +912,7 @@ ShellRoot {
                             required property var modelData
                             required property int index
                             readonly property real s: win.scaleAt(index + 1)
-                            readonly property string tilePath: win.tileDir + "/" + modelData.key.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
+                            readonly property string tilePath: Config.tilePath(modelData.key)
                             property int version: 0
                             property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
                             // Bounces while the app is starting (clicked in the dock): see win.bounceOf

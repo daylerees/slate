@@ -25,7 +25,6 @@ PanelWindow {
     // Live pictures of the windows (Settings → Windows → Windows show), not in game mode
     readonly property bool livePreviews: Config.s.switcherPreviews && !Config.gameMode
     readonly property color dim: Config.tint("#8b94a3")
-    readonly property string tileDir: Config.tileDir
 
     // ---- Most recently used order (window addresses, newest first) ----------
     property var mru: []
@@ -122,16 +121,6 @@ PanelWindow {
         function prev(): void { sw.move(-1); }
         function commit(): void { sw.commit(); }
         function cancel(): void { sw.cancel(); }
-    }
-
-    function lookup(appId) {
-        if (!appId) return null;
-        const e = DesktopEntries.byId(appId) ?? DesktopEntries.heuristicLookup(appId);
-        if (e) return e;
-        const parts = appId.toLowerCase().split(".");
-        if (parts.length < 3) return null;
-        const prefix = parts.slice(0, 2).join(".") + ".";
-        return DesktopEntries.applications.values.find(a => a.id.toLowerCase().startsWith(prefix)) ?? null;
     }
 
     // ---- Window ------------------------------------------------------------
@@ -259,9 +248,9 @@ PanelWindow {
                 id: card
                 required property var modelData
                 required property int index
-                readonly property var entry: sw.lookup(modelData.wayland ? modelData.wayland.appId : "")
+                readonly property var entry: Config.appEntry(modelData.wayland ? modelData.wayland.appId : "")
                 readonly property string key: entry ? entry.id : (modelData.wayland ? modelData.wayland.appId : "")
-                readonly property string tilePath: sw.tileDir + "/" + key.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
+                readonly property string tilePath: Config.tilePath(key)
                 width: sw.cardW
                 height: sw.cardH
 

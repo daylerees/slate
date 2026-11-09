@@ -47,8 +47,6 @@ PanelWindow {
     readonly property color accentText: Config.tint("#12151a")      // text on the accent
     readonly property int slideMs: 140
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
-    readonly property string tileScript: Config.tileScript
-    readonly property string tileDir: Config.tileDir
 
     // ---- Open / close ------------------------------------------------------
     property bool shown: false
@@ -599,7 +597,7 @@ PanelWindow {
                 readonly property bool action: !!modelData.action
                 // Rows drawn with an icon glyph rather than an app tile
                 readonly property bool glyphTile: (setting && !modelData.app) || action
-                readonly property string tilePath: root.tileDir + "/" + modelData.id.replace(/[^A-Za-z0-9._-]/g, "_") + ".png"
+                readonly property string tilePath: Config.tilePath(modelData.id)
                 readonly property string detail: calc ? modelData.expr + " · Enter to copy" : (modelData.genericName || modelData.comment || "")
                 readonly property bool selected: GridView.isCurrentItem
                 // The list's text and calculator tile sit on the accent while selected; their
