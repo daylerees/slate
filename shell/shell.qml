@@ -98,6 +98,11 @@ ShellRoot {
         model: Config.welcoming ? Quickshell.screens : []
         FadeIn { required property var modelData; screen: modelData }
     }
+    // Logging out, restarting, shutting down: every screen fades to black with the goodbye sound
+    Variants {
+        model: Config.leaving ? Quickshell.screens : []
+        FadeOut { required property var modelData; screen: modelData }
+    }
     OSD { bar: topBar; popouts: popouts }
     LockScreen { id: lockScreen }
     Screensaver { lock: lockScreen }

@@ -25,6 +25,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from black at login, with the welcome sound ("slate-fade-in")
+├─ FadeOut.qml          fade to black on log out, restart, shut down, with the goodbye sound ("slate-fade-out")
 ├─ OSD.qml              volume/brightness indicators ("slate-osd")
 ├─ LockScreen.qml       session lock, PAM, idle, sleep hook
 │  └─ LoginScreen.qml   the lock/login screen design (shared with the greeter)

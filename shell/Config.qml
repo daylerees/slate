@@ -745,10 +745,28 @@ Singleton {
         onTriggered: { root.playSound("welcome", "welcome"); root.welcomeFading = true; }
     }
 
-    // Log out, restart or shut down (scripts/session.sh), with the goodbye sound first when it's on
+    // Log out, restart or shut down (scripts/session.sh), with the goodbye sound first when it's on.
+    // The screens fade to black (FadeOut.qml) while it plays; with the sound off, a shorter fade
+    // runs first. If the session is somehow still here a while later (the action failed), the
+    // black goes away again.
+    property bool leaving: false
+    property int leaveFade: 2400
+    property string leaveAction: ""
     function sessionAction(action) {
-        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action, (soundVolume("goodbye") / 100).toFixed(2)]);
+        if (leaving) return;
+        const v = soundVolume("goodbye") / 100;
+        leaveFade = v > 0 ? 2400 : 900;
+        leaveAction = action;
+        leaving = true;
+        leaveGiveUp.restart();
+        if (v > 0) runSessionAction();
+        else leaveAfterFade.restart();
     }
+    function runSessionAction() {
+        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), leaveAction, (soundVolume("goodbye") / 100).toFixed(2)]);
+    }
+    Timer { id: leaveAfterFade; interval: root.leaveFade; onTriggered: root.runSessionAction() }
+    Timer { id: leaveGiveUp; interval: 20000; onTriggered: root.leaving = false }
 
     // A soft question for confirmations, password prompts and warnings (Settings → Sound);
     // two dialogs opening together ask once
