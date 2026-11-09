@@ -10,6 +10,7 @@ import colorsys
 import json
 import os
 import re
+import shutil
 import time
 
 from slate_theme import (CFG, DATA, GEN, HOME, SHELL_DIR, bare, first_existing, have, mix,
@@ -881,8 +882,18 @@ def discord(ctx):
             ctx.jsonlist(settings, ["enabledThemes"], "slate.theme.css")
 
 
+def spicetify():
+    """The spicetify command: on the PATH, or where its own installer puts it (~/.spicetify),
+    which it only adds to your shell's PATH, not the desktop's. None if neither."""
+    found = shutil.which("spicetify")
+    if found:
+        return found
+    own = os.path.join(HOME, ".spicetify", "spicetify")
+    return own if os.access(own, os.X_OK) else None
+
+
 @app("spotify", "Spotify (Spicetify)", "A Slate theme for Spicetify, applied without restarting Spotify",
-     lambda: have("spicetify"))
+     lambda: spicetify() is not None)
 def spotify(ctx):
     c = ctx.c
     keys = [("text", c["text"]), ("subtext", c["onVariant"]), ("main", c["bg"]), ("main-elevated", c["surface"]),
@@ -894,17 +905,18 @@ def spotify(ctx):
     root = cfg("spicetify", "Themes", "Slate")
     ctx.file(os.path.join(root, "color.ini"), "; %s\n[slate]\n" % GEN + "\n".join("%-19s= %s" % (k, bare(v)) for k, v in keys) + "\n")
     ctx.file(os.path.join(root, "user.css"), "/* %s */\n" % GEN)
-    cur = (run_out(["spicetify", "config", "current_theme"]) or "").strip()
+    sp = spicetify()
+    cur = (run_out([sp, "config", "current_theme"]) or "").strip()
     if cur != "Slate":
         # (the scheme in use, to put back if Spotify's theming is switched off)
-        scheme = (run_out(["spicetify", "config", "color_scheme"]) or "").strip()
-        ctx.command(["spicetify", "config", "current_theme", "Slate", "color_scheme", "slate"],
-                    ["spicetify", "config", "current_theme", cur or "marketplace", "color_scheme", scheme or ""])
+        scheme = (run_out([sp, "config", "color_scheme"]) or "").strip()
+        ctx.command([sp, "config", "current_theme", "Slate", "color_scheme", "slate"],
+                    [sp, "config", "current_theme", cur or "marketplace", "color_scheme", scheme or ""])
 
 @reloads("spotify")
 def spotify_reload(ctx):
     if touched("spicetify") and ctx.live:
-        run(["spicetify", "apply", "-n", "-q"], timeout=120)     # -n: don't restart Spotify
+        run([spicetify(), "apply", "-n", "-q"], timeout=120)     # -n: don't restart Spotify
 
 
 def obsidian_vaults():
