@@ -54,10 +54,15 @@ Rectangle {
     readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : lightFrost ? 0.25 : 1) : 0
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
+    // How far down the shine (and the shade up from the bottom) reach, as a share of the height:
+    // half on shapes up to a bar capsule's size, the same depth in pixels on taller ones (half of
+    // a tall quick toggle made it look two-tone), where it fades out more gently too
+    readonly property real reach: Math.min(1, 32 / Math.max(1, height))
+    readonly property bool tall: reach < 1
     gradient: Gradient {
         GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-        GradientStop { position: 0.5; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
-        GradientStop { position: 0.55; color: "transparent" }
+        GradientStop { position: 0.5 * g.reach; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
+        GradientStop { position: (g.tall ? 0.8 : 0.55) * g.reach; color: "transparent" }
         GradientStop { position: 1.0; color: "transparent" }
     }
     // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
@@ -69,7 +74,7 @@ Rectangle {
         visible: g.onFill || g.lightFrost
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.5; color: "transparent" }
+            GradientStop { position: 1 - 0.5 * g.reach; color: "transparent" }
             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.35, 0.3 * Config.glossAmount) : Math.min(0.14, 0.18 * Config.glossAmount)) }
         }
     }
