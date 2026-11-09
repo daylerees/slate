@@ -1064,8 +1064,7 @@ ShellRoot {
 
                     // What's playing (see win.mediaShown): the album art cut to the icons' shape (or the
                     // theme's tile with a note when there's none), a sheen with glass, and under the
-                    // pointer Previous / Play-Pause / Next across it on a dark wash. A bar beneath
-                    // while it plays, like a running app's
+                    // pointer Previous / Play-Pause / Next across it on a dark wash
                     Item {
                         id: mediaCell
                         visible: win.mediaShown
@@ -1279,15 +1278,6 @@ ShellRoot {
                                     }
                                 }
                             }
-                        }
-                        // Playing: a bar beneath, in the accent (as a focused app's)
-                        Rectangle {
-                            visible: !!win.player && win.player.isPlaying
-                            width: 12; height: 3; radius: 1.5
-                            color: win.activeDotColor
-                            readonly property real dpr: win.screen ? win.screen.devicePixelRatio : 1
-                            x: Math.round((mediaCell.width - width) / 2 * dpr) / dpr
-                            y: Math.round((parent.height + (win.padding - height) / 2) * dpr) / dpr
                         }
                     }
 
