@@ -809,13 +809,27 @@ FloatingWindow {
         property real menuH: 0
         property real menuW: 200
         readonly property real rowH: 34
+        // Searchable lists (owner.searchable): what's typed, the choices matching it, and the
+        // one Up/Down/Enter would pick
+        readonly property bool searching: !!owner && !!owner.searchable
+        property string query: ""
+        property int pick: 0
+        readonly property var shown: {
+            const all = owner ? owner.options || [] : [];
+            const q = query.trim().toLowerCase().replace(/[_\s]+/g, " ");
+            if (!searching || q === "") return all;
+            return all.filter(o => (String(o.label) + " " + String(o.value)).toLowerCase().replace(/[_\s]+/g, " ").includes(q));
+        }
+        onQueryChanged: { pick = 0; menuList.positionViewAtBeginning(); }
+        readonly property real searchH: searching ? 40 : 0
         // For the list's width: as wide as its longest choice, at least the button's, at most
         // the window less a margin (longer ones shorten in the middle)
         TextMetrics { id: rowMetrics; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
         function place() {
             const b = owner.button;
             const p = b.mapToItem(dropLayer, 0, 0);
-            const full = (owner.options ? owner.options.length : 0) * rowH + 12;
+            query = ""; pick = 0;
+            const full = (owner.options ? owner.options.length : 0) * rowH + 12 + searchH;
             let widest = 0;
             for (const o of (owner.options || [])) {
                 rowMetrics.text = String(o.label);
@@ -831,9 +845,10 @@ FloatingWindow {
             const downwards = full <= below || (full > above && below >= above);
             menuH = Math.max(Math.min(full, 3 * rowH + 12), Math.min(full, downwards ? below : above));
             menuY = downwards ? Math.min(p.y + b.height + 6, height - 8 - menuH) : Math.max(8, p.y - 6 - menuH);
-            // Open on the current choice
+            // Open on the current choice (and, searchable, ready to type)
             const i = owner.options ? owner.options.findIndex(o => o.value === owner.value) : -1;
-            Qt.callLater(() => menuList.positionViewAtIndex(Math.max(0, i), ListView.Contain));
+            if (searching) pick = Math.max(0, i);
+            Qt.callLater(() => { menuList.positionViewAtIndex(Math.max(0, i), ListView.Contain); if (dropLayer.searching) dropFind.forceActiveFocus(); });
         }
         // Click anywhere else to close
         MouseArea { anchors.fill: parent; onPressed: dropLayer.owner = null }
@@ -849,19 +864,69 @@ FloatingWindow {
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
             MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
+            // Searchable: type to filter; Up/Down, Enter to pick, Escape to close
+            Rectangle {
+                id: dropFindBox
+                visible: dropLayer.searching
+                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 6 }
+                height: 32; radius: 8
+                color: Qt.rgba(win.text.r, win.text.g, win.text.b, 0.06)
+                border.width: dropFind.activeFocus ? 1 : 0; border.color: win.accent
+                Text {
+                    id: dropFindIcon
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: win.glyph(0xEB1C)
+                    color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 15
+                }
+                TextInput {
+                    id: dropFind
+                    anchors { left: dropFindIcon.right; leftMargin: 8; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    color: win.text; font.family: win.font; font.pixelSize: 13
+                    selectionColor: win.accent; selectedTextColor: win.accentText
+                    clip: true
+                    text: dropLayer.query
+                    onTextChanged: dropLayer.query = text
+                    Keys.onPressed: e => {
+                        const n = dropLayer.shown.length;
+                        if (e.key === Qt.Key_Down) { dropLayer.pick = Math.min(n - 1, dropLayer.pick + 1); menuList.positionViewAtIndex(dropLayer.pick, ListView.Contain); e.accepted = true; }
+                        else if (e.key === Qt.Key_Up) { dropLayer.pick = Math.max(0, dropLayer.pick - 1); menuList.positionViewAtIndex(dropLayer.pick, ListView.Contain); e.accepted = true; }
+                        else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
+                            const o = dropLayer.shown[dropLayer.pick], own = dropLayer.owner;
+                            if (o && own) { dropLayer.owner = null; own.picked(o.value); }
+                            e.accepted = true;
+                        }
+                        else if (e.key === Qt.Key_Escape) { dropLayer.owner = null; e.accepted = true; }
+                    }
+                    Text {
+                        visible: dropFind.text === ""
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Type to search"
+                        color: win.dim; font: dropFind.font
+                    }
+                }
+            }
+            Text {
+                visible: dropLayer.searching && dropLayer.shown.length === 0
+                anchors { top: dropFindBox.bottom; topMargin: 12; left: parent.left; leftMargin: 18 }
+                text: "Nothing matches “" + dropLayer.query.trim() + "”"
+                color: win.dim; font.family: win.font; font.pixelSize: 12
+            }
             ListView {
                 id: menuList
-                anchors { fill: parent; margins: 6 }
+                anchors { fill: parent; margins: 6; topMargin: 6 + dropLayer.searchH }
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 SmoothWheel { flick: menuList }
-                model: dropLayer.owner ? dropLayer.owner.options : []
+                model: dropLayer.shown
                 delegate: Rectangle {
                     required property var modelData
+                    required property int index
                     readonly property bool current: dropLayer.owner && modelData.value === dropLayer.owner.value
+                    // Searchable: the row Enter would pick
+                    readonly property bool picked: dropLayer.searching && index === dropLayer.pick
                     // Clear of the scrollbar, when there is one
                     width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
-                    color: rowHover.hovered ? Config.hover : "transparent"
+                    color: rowHover.hovered ? Config.hover : picked ? Config.tint("#262c35") : "transparent"
                     Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     FolderSwatch {
                         id: rowFolder
@@ -884,7 +949,7 @@ FloatingWindow {
                         color: win.accent
                         font.family: win.bar.iconFont; font.pixelSize: 16
                     }
-                    HoverHandler { id: rowHover }
+                    HoverHandler { id: rowHover; onHoveredChanged: if (hovered && dropLayer.searching) dropLayer.pick = parent.index }
                     // A MouseArea (not a TapHandler): the menu's own MouseArea underneath would otherwise
                     // take the click first and the pick would never happen
                     ClickArea {
@@ -1333,6 +1398,8 @@ FloatingWindow {
         readonly property var current: options.find(o => o.value === value) ?? null
         // Shown when the value isn't one of the options (it isn't offered in the list itself)
         property string noneLabel: ""
+        // A search box at the top of the open list, filtering it as you type (long lists)
+        property bool searchable: false
         property alias button: ddButton
         SettingRow {
           id: ddRow
@@ -3289,10 +3356,11 @@ FloatingWindow {
                     detail: Qt.formatTime(dtp.now, "HH:mm:ss")
                 }
                 Separator {}
-                // Every zone in one dropdown, opening at the current one (it scrolls)
+                // Every zone in one dropdown, opening at the current one, with a search box to filter it
                 DropdownSetting {
                     label: "Time zone"
-                    detail: "Where you are, for the clock"
+                    detail: "Where you are, for the clock; type to search"
+                    searchable: true
                     options: dtp.zones
                     value: dtp.zone
                     onPicked: v => { if (v !== dtp.zone) { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); } }
