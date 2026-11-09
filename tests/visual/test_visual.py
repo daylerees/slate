@@ -80,12 +80,15 @@ class Visual(LiveCase):
                 actual = self.shoot(name, scene)
                 approved = os.path.join(BASELINES, name + ".png")
                 if name in update:
+                    # Approving keeps what's on screen now when it really changed, a change within
+                    # the tolerance too (else small changes pile up unseen in the approved pictures)
                     if not os.path.exists(approved):
                         added.append(name)
-                    elif not imgdiff.compare(approved, actual, scene.get("mask", ())).ok:
-                        changed.append(name)
                     else:
-                        continue          # the same: keep the approved file as it is
+                        if not imgdiff.changed(approved, actual, scene.get("mask", ())):
+                            continue          # the same (but for rendering noise): keep the approved file
+                        r = imgdiff.compare(approved, actual, scene.get("mask", ()))
+                        changed.append(name if not r.ok else name + "  (small: within the tolerance)")
                     os.makedirs(BASELINES, exist_ok=True)
                     # (as RGB, compressed harder: the same pixels in a smaller file for git)
                     Image.open(actual).convert("RGB").save(approved, optimize=True)

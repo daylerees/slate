@@ -49,7 +49,7 @@ def compare(approved_path, actual_path, masks=()):
     changed = mask.histogram()[255]
     frac = changed / float(w * h)
     if changed == 0:
-        return Result(True, "identical")
+        return Result(True, "no change beyond the tolerance")
     # The block that changed most
     small = mask.resize((max(1, w // BLOCK), max(1, h // BLOCK)), Image.BOX)
     worst = max(range(small.size[0] * small.size[1]), key=lambda i: small.getdata()[i])
@@ -60,6 +60,23 @@ def compare(approved_path, actual_path, masks=()):
     if worst_frac > BLOCK_MAX:
         return Result(False, f"a {BLOCK}×{BLOCK} area at {bx},{by} changed ({worst_frac * 100:.0f}% of it)", frac, (bx, by))
     return Result(True, f"{frac * 100:.3f}% of pixels moved (within tolerance)", frac)
+
+
+# Approving: a scene has changed when more than this many pixels differ by more than this much.
+# Software rendering varies by a shade or two from run to run (anti-aliasing) and a text cursor
+# may blink; a real change, however small to the eye, moves far more pixels further
+APPROVE_LEVEL = 6
+APPROVE_PIXELS = 50
+
+
+def changed(approved_path, actual_path, masks=()):
+    """Whether a screenshot really differs from the approved one (for approving: stricter than
+    compare(), which a small change passes)."""
+    a, b = _load(approved_path, masks), _load(actual_path, masks)
+    if a.size != b.size:
+        return True
+    d = ImageChops.difference(a, b).convert("L")
+    return sum(d.histogram()[APPROVE_LEVEL + 1:]) > APPROVE_PIXELS
 
 
 def save_diff(approved_path, actual_path, out_path, masks=()):
