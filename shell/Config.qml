@@ -270,7 +270,11 @@ Singleton {
     // the startup apps, each on a workspace of its own, and returns to your last workspace.
     // Not on the login screen, which loads this file with a copy of your settings: there,
     // spaces.py isn't installed, so the check failed and every startup app was launched
-    onAtLogin: if (!isLoginScreen && !testMode) reopenCheck.running = true
+    onAtLogin: if (!isLoginScreen && !testMode) {
+        reopenCheck.running = true;
+        // Webcams forget their picture settings when unplugged or restarted: put yours back
+        Quickshell.execDetached([Quickshell.shellPath("scripts/webcam.py"), "apply"]);
+    }
     Process {
         id: reopenCheck
         command: ["python3", Quickshell.shellPath("scripts/spaces.py"), "session-pending"]
@@ -670,7 +674,7 @@ Singleton {
         bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc", debug: "#e8a0a0"
+        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel

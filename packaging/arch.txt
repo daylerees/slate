@@ -76,3 +76,6 @@ pkgconf
 ?ffmpeg
 ?xdg-user-dirs
 ?pciutils
+
+# Settings → Webcam: the camera's picture settings (v4l2-ctl)
+v4l-utils

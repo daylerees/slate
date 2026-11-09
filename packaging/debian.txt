@@ -82,3 +82,6 @@ qml6-module-qtquick-shapes
 ?ffmpeg
 ?xdg-user-dirs
 ?pciutils
+
+# Settings → Webcam: the camera's picture settings (v4l2-ctl)
+v4l-utils

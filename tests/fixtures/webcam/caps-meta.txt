@@ -1,0 +1,5 @@
+	Device Caps      : 0x04a00000
+		Metadata Capture
+		Streaming
+		Extended Pix Format
+Media Driver Info:
