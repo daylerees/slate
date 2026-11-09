@@ -1245,6 +1245,39 @@ FloatingWindow {
                     }
                 }
             }
+            // ---- Troubleshooting: fixes you shouldn't normally need ----------------------
+            Item { visible: findField.text.trim().length < 2; width: 1; height: 12 }
+            GroupLabel { visible: findField.text.trim().length < 2; text: "Troubleshooting" }
+            Group {
+                visible: findField.text.trim().length < 2
+                SettingRow {
+                    id: resyncRow
+                    property bool installed: false
+                    property string status: ""
+                    label: "Resync the login screen"
+                    detail: status !== "" ? status
+                        : !installed ? "Only for Slate's own login screen, which isn't set up"
+                        : "The login screen copies your wallpaper, settings, picture and font whenever you change them in Slate. "
+                          + "Use this if you changed one outside Slate (replaced the wallpaper file, changed your picture, name "
+                          + "or keyboard layout elsewhere) and the login screen hasn't caught up"
+                    Process {
+                        running: true
+                        command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--check"]
+                        stdout: StdioCollector { onStreamFinished: { const t = text.trim(); resyncRow.installed = t === "outdated" || t === "current"; } }
+                    }
+                    Process {
+                        id: resyncRun
+                        command: [Quickshell.shellPath("bin/slate-greeter-sync")]
+                        onExited: code => resyncRow.status = code === 0 ? "Resynced just now" : "Couldn't resync; is the login screen set up?"
+                    }
+                    Button {
+                        enabled: resyncRow.installed
+                        opacity: enabled ? 1 : 0.4
+                        label: "Resync"
+                        onClicked: { resyncRow.status = "Resyncing…"; resyncRun.running = true; }
+                    }
+                }
+            }
         }
     }
     Component {
@@ -4186,16 +4219,10 @@ FloatingWindow {
                         command: ["pkexec", Quickshell.shellPath("bin/slate-greeter-install"), "--code-only"]
                         onExited: code => { greeterRow.status = code === 0 ? "Updated; shows at your next logout or restart" : "Not updated"; greeterCheck.running = true; }
                     }
-                    Process {
-                        id: greeterSyncNow
-                        command: [Quickshell.shellPath("bin/slate-greeter-sync")]
-                        onExited: code => greeterRow.status = code === 0 ? "Appearance updated just now" : "Couldn't update; is it set up?"
-                    }
                     Row {
                         spacing: 8
                         Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "preview", "login"]); } }
                         Button { visible: greeterRow.state === "outdated"; label: "Update"; onClicked: { greeterRow.status = "Updating…"; greeterUpdate.running = true; } }
-                        Button { visible: greeterRow.installed; label: "Sync now"; onClicked: { greeterRow.status = "Updating…"; greeterSyncNow.running = true; } }
                     }
                 }
             }

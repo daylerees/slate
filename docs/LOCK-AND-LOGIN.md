@@ -51,6 +51,10 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 | `/var/lib/slate-greeter` | you | appearance only: `settings.json`, `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
 | `/var/cache/slate-greeter` | greeter | `last-session`, `proven` (version of the last copy someone logged in with), logs, caches | the greeter |
 
+- **Keeping the appearance in step:** Slate runs `slate-greeter-sync` a few seconds after the
+  wallpaper, settings or avatar change. If something changed outside Slate (the wallpaper file
+  replaced in place, the picture, name or keyboard layout changed elsewhere), Settings → All
+  Settings → Troubleshooting → **Resync** runs it by hand.
 - **Updating the code:** when the login screen's code changes, Slate shows a notification
   ("Login screen out of date") with an **Update** button that asks for your password
   (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
