@@ -610,6 +610,9 @@ Singleton {
     function setGameMode(on) { s.gameMode = on; }
 
     readonly property bool glass: s.glass && !gameMode
+    // Tray apps that only have a menu (Ayatana indicators): found once, by the main bar (Bar.qml),
+    // for every bar
+    property var trayIndicatorIds: []
     // The screensaver's Videos style: its folder (Settings → Screensaver)
     readonly property string screensaverVideoFolder: s.screensaverVideoFolder || (Quickshell.env("HOME") + "/Videos/Screensaver")
     // The size scenery videos download in: as set, or for Automatic, by the widest screen's real

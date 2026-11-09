@@ -135,8 +135,9 @@ PanelWindow {
     }
     // Tray apps with no "activate" of their own: Ayatana app indicators (Steam and others)
     // only have a menu, so clicking them shows it, as KDE does. Found by their D-Bus paths,
-    // whose last part is the item's id
-    property var indicatorIds: []
+    // whose last part is the item's id. Only the main bar asks (every bar would get the same
+    // answer); they all read it from Config
+    readonly property var indicatorIds: Config.trayIndicatorIds
     Process {
         id: indicatorQuery
         command: ["busctl", "--user", "--json=short", "get-property", "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher",
@@ -144,14 +145,14 @@ PanelWindow {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    bar.indicatorIds = JSON.parse(text).data.filter(x => x.includes("/org/ayatana/NotificationItem/"))
+                    Config.trayIndicatorIds = JSON.parse(text).data.filter(x => x.includes("/org/ayatana/NotificationItem/"))
                         .map(x => x.split("/").pop());
                 } catch (e) {}
             }
         }
     }
-    Timer { id: indicatorLater; interval: 800; running: true; onTriggered: { indicatorQuery.running = false; indicatorQuery.running = true; } }
-    Connections { target: SystemTray.items; function onValuesChanged() { indicatorLater.restart(); } }
+    Timer { id: indicatorLater; interval: 800; running: bar.primary; onTriggered: { indicatorQuery.running = false; indicatorQuery.running = true; } }
+    Connections { target: SystemTray.items; enabled: bar.primary; function onValuesChanged() { indicatorLater.restart(); } }
 
     // App tray menus (TrayMenu.qml), opened from a tray icon at its centre on the bar's inner edge
     TrayMenu { id: trayMenuWin; bar: bar }
@@ -242,9 +243,9 @@ PanelWindow {
         NumberAnimation { target: titleArea; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
     }
 
-    // Uptime, for the power button's hover text (refreshed each minute)
+    // Uptime, for the power button's hover text: read again as the pointer comes onto the button
+    // (rather than every minute, on every bar, whether anyone looked or not)
     FileView { id: uptimeFile; path: "/proc/uptime" }
-    Timer { interval: 60000; running: true; repeat: true; onTriggered: uptimeFile.reload() }
     function uptimeText() {
         const sec = parseFloat((uptimeFile.text() || "0").split(" ")[0]);
         const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
@@ -252,8 +253,6 @@ PanelWindow {
     }
 
     // ---- Helpers -----------------------------------------------------------
-    function run(cmd) { runner.command = cmd; runner.running = true; }
-    Process { id: runner }
 
     function lookup(appId) {
         if (!appId) return null;
@@ -510,7 +509,11 @@ PanelWindow {
                             required property var modelData
                             readonly property int winCount: modelData.toplevels?.values?.length ?? 0
                             readonly property bool occupied: winCount > 0
-                            readonly property var firstApp: occupied && modelData.toplevels.values[0].wayland ? bar.lookup(modelData.toplevels.values[0].wayland.appId) : null
+                            // Its first window's app, for the hover description's icon: only looked up
+                            // while this dot is being described (the lookup can scan every installed
+                            // app, and ran for every dot on every window change)
+                            readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
+                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? bar.lookup(modelData.toplevels.values[0].wayland.appId) : null
                             readonly property string hoverText: "Workspace " + modelData.id + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
                             readonly property int hoverCode: 0
                             readonly property string hoverTile: firstApp ? firstApp.id : ""
@@ -1054,7 +1057,13 @@ PanelWindow {
                 onClicked: bar.openPopout("calendar", clockCap)
             }
 
-            GlyphButton { id: powerBtn; visible: Config.s.barShowPower; code: 0xEB0D; tint: bar.errorColor; hoverText: bar.uptimeText(); onClicked: bar.openPopout("session", powerBtn) }   // power
+            GlyphButton {   // power
+                id: powerBtn
+                visible: Config.s.barShowPower; code: 0xEB0D; tint: bar.errorColor
+                hoverText: bar.uptimeText()
+                onClicked: bar.openPopout("session", powerBtn)
+                HoverHandler { onHoveredChanged: if (hovered) uptimeFile.reload() }
+            }
         }
     }
 
