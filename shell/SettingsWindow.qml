@@ -3316,7 +3316,7 @@ FloatingWindow {
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24; height: 24; radius: 12
-                            color: Config.wallpaperAccent || "transparent"
+                            color: Config.wallpaperAccent ? Config.accentShade(Config.wallpaperAccent) : "transparent"
                             border.width: 1; border.color: Config.tint("#3a424e")
                         }
                         Toggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.accentFromWallpaper; onToggled: v => Config.s.accentFromWallpaper = v }
@@ -3338,7 +3338,7 @@ FloatingWindow {
                                 delegate: Rectangle {
                                     required property string modelData
                                     width: 24; height: 24; radius: 12
-                                    color: modelData
+                                    color: Config.accentShade(modelData)      // as it'll look (deeper in light mode)
                                     border.width: Config.s.accent.toLowerCase() === modelData ? 2 : 0
                                     border.color: win.text
                                     scale: swHover.hovered ? 1.12 : 1
@@ -3367,20 +3367,20 @@ FloatingWindow {
                                     width: parent.width; height: 10; radius: 5
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
-                                        GradientStop { position: 0/6; color: Qt.hsla(0/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 1/6; color: Qt.hsla(1/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 2/6; color: Qt.hsla(2/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 3/6; color: Qt.hsla(3/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 4/6; color: Qt.hsla(4/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 5/6; color: Qt.hsla(5/6, 0.65, 0.74, 1) }
-                                        GradientStop { position: 6/6; color: Qt.hsla(0.999, 0.65, 0.74, 1) }
+                                        GradientStop { position: 0/6; color: Config.accentShade(Qt.hsla(0/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 1/6; color: Config.accentShade(Qt.hsla(1/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 2/6; color: Config.accentShade(Qt.hsla(2/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 3/6; color: Config.accentShade(Qt.hsla(3/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 4/6; color: Config.accentShade(Qt.hsla(4/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 5/6; color: Config.accentShade(Qt.hsla(5/6, 0.65, 0.74, 1)) }
+                                        GradientStop { position: 6/6; color: Config.accentShade(Qt.hsla(0.999, 0.65, 0.74, 1)) }
                                     }
                                 }
                                 Rectangle {
                                     width: 16; height: 16; radius: 8
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.max(0, customRow.current.hslHue) * (parent.width - width)
-                                    color: customRow.current
+                                    color: Config.accentShade(customRow.current)
                                     border.width: 2; border.color: win.text
                                 }
                                 MouseArea {

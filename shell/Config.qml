@@ -16,9 +16,11 @@ Singleton {
     signal saved()                         // settings.json changed (here or on disk)
 
     // The accent in use: picked by hand, or taken from the wallpaper
-    readonly property color accent: {
-        const a = Qt.lighter(s.accentFromWallpaper && wallpaperAccent !== "" ? wallpaperAccent : s.accent, 1.0);
-        // Light mode: a deeper shade so it stands out on light backgrounds
+    readonly property color accent: accentShade(s.accentFromWallpaper && wallpaperAccent !== "" ? wallpaperAccent : s.accent)
+    // A colour as the accent shows it: in light mode a deeper shade, so it stands out on light
+    // backgrounds (Settings' accent swatches use this too, to show what you'll get)
+    function accentShade(c) {
+        const a = Qt.lighter(c, 1.0);
         return s.lightMode ? Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, Math.max(a.hslSaturation, 0.45), 0.42, 1) : a;
     }
     // Hover highlight, everywhere in Slate: the accent, lightly. `hover` is see-through, for
