@@ -17,9 +17,16 @@ Singleton {
 
     // The accent in use: picked by hand, or taken from the wallpaper
     readonly property color accent: s.accentFromWallpaper && wallpaperAccent !== "" ? fromWallpaper(wallpaperAccent) : accentShade(s.accent)
-    // The wallpaper's colour as the accent: deeper in light mode (accentShade), and in dark mode as
-    // bold as Settings → Appearance → Boldness asks
-    function fromWallpaper(c) { return s.lightMode ? accentShade(c) : boldAccent(c, s.accentBoldness); }
+    // The wallpaper's colour as the accent, as bold as Settings → Appearance → Accent boldness asks.
+    // Light mode keeps its deeper shade (accentShade) and only gains saturation, so the light text
+    // on it stays readable
+    function fromWallpaper(c) {
+        if (!s.lightMode) return boldAccent(c, s.accentBoldness);
+        const a = accentShade(c);
+        const k = Math.max(0, Math.min(1, Number(s.accentBoldness) || 0));
+        if (Qt.lighter(c, 1.0).hslSaturation < 0.08) return a;     // a grey wallpaper stays grey
+        return Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, a.hslSaturation + (Math.max(a.hslSaturation, 0.9) - a.hslSaturation) * k, a.hslLightness, 1);
+    }
     // A colour made bolder by k (0: as it is, 1: fully): towards nearly full saturation, lightened
     // only as far as the dark text on the accent needs to stay readable (so blues and purples
     // end up lighter than reds and oranges)

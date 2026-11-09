@@ -3349,13 +3349,13 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
-                    // Only for the wallpaper's colour, and only in dark mode
-                    readonly property bool applies: Config.s.accentFromWallpaper && !Config.s.lightMode
+                    // Only for the wallpaper's colour
+                    readonly property bool applies: Config.s.accentFromWallpaper
                     opacity: applies ? 1 : 0.4
                     enabled: applies
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                     label: "Accent boldness"
-                    detail: "How vivid the wallpaper's colour is in dark mode: from soft, as picked, to bold. Text on it stays readable"
+                    detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
                     ValueSlider {
                         from: 0; to: 100; stepSize: 5; suffix: "%"
                         value: Math.round((Config.s.accentBoldness || 0) * 100)
