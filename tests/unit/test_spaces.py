@@ -273,8 +273,8 @@ if args[:1] == ["-j"]:
     sys.exit(0)
 code = args[1] if args[:1] == ["dispatch"] else ""
 m = re.search(r"hl\.exec_cmd\((.*), \{{ workspace = \[=\[(\d+)\]=\](, float = true)? \}}\)", code)
-if m:
-    cls = next(c for word, c in st["apps"].items() if word in m.group(1))
+cls = next((c for word, c in st["apps"].items() if word in m.group(1)), None) if m else None
+if cls:          # (an app it doesn't know opens no window, like one that fails to start)
     n = len(st["clients"]) + 1
     w, h = st["newsize"]
     st["clients"].append({{"address": "0xb%d" % n, "mapped": True, "hidden": False, "class": cls,
@@ -346,6 +346,30 @@ class Restore(SpacesBase):
                                                               "104": "aaaaaaaaaaaa"}})
         # Everything opened: no notification
         self.assertEqual(self.s.calls("notify-send"), [])
+
+    def test_some_apps_dont_open(self):
+        """An app that never opens a window: the rest of the space still opens, and one
+        notification names the one that didn't. (The wait for it is cut short for the test.)"""
+        self.fake_hyprland()
+        self.s.env["SLATE_SPACES_WINDOW_TIMEOUT"] = "1"
+        ghost = dict(TERM, desktopId="", command="ghost-app --start", name="Ghost", **{"class": "ghost-app"})
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778,
+                                                                        "windows": [EDITOR, ghost]}]}]})
+        self.spaces("restore", "work")
+        started = [d for d in self.dispatches() if "exec_cmd" in d]
+        self.assertEqual(len(started), 2, "both apps were started")
+        owners = self.read(os.path.join(self.h.runtime, "slate", "space-windows.json"))
+        self.assertEqual(list(owners["windows"].values()), ["aaaaaaaaaaaa"], "only the editor's window is the space's")
+        # (spaces.py doesn't wait for notify-send: give it a moment to be logged)
+        for _ in range(30):
+            notes = self.s.calls("notify-send")
+            if notes:
+                break
+            time.sleep(0.1)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0][-2], "Some apps in Work didn't open")
+        self.assertTrue(notes[0][-1].startswith("Ghost didn't open a window"), notes[0][-1])
 
     def test_restore_unknown(self):
         self.fake_hyprland()

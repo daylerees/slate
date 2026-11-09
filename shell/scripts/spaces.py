@@ -57,7 +57,9 @@ STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.
 SESSION = os.path.join(STATE, "session.json")
 SESSION_MAX_AGE = 24 * 3600     # a session kept longer ago than this isn't reopened
 
-WINDOW_TIMEOUT = 15     # seconds to wait for an app's window
+# Seconds to wait for an app's window: slow starters (Steam, big IDEs) take this long. The
+# override is for tests only, so an app that never opens doesn't hold them up
+WINDOW_TIMEOUT = float(os.environ.get("SLATE_SPACES_WINDOW_TIMEOUT") or 15)
 TOLERANCE = 12          # px: windows this close count as touching (gaps between tiles)
 
 def data_dirs():
