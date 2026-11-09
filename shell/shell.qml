@@ -600,7 +600,14 @@ ShellRoot {
                 r.push({ label: isPinned ? "Unpin from Dock" : "Pin to Dock", kind: "pin" });
                 // Closes every window the app has open, whether one or several
                 if (wins.length > 0) r.push({ label: wins.length === 1 ? "Close Window" : "Close " + wins.length + " Windows", kind: "quit", danger: true });
+                // Kills the app outright, for one that's stopped responding to Close
+                if (wins.length > 0) r.push({ label: "Force Quit", kind: "kill", danger: true });
                 return r;
+            }
+            // Hyprland's window addresses for these windows; scripts/force-quit.sh kills their processes
+            function forceQuit(list) {
+                const addrs = Hyprland.toplevels.values.filter(t => t.wayland && list.includes(t.wayland)).map(t => t.address.startsWith("0x") ? t.address : "0x" + t.address);
+                if (addrs.length > 0) Quickshell.execDetached([Quickshell.shellPath("scripts/force-quit.sh")].concat(addrs));
             }
             function run(row) {
                 switch (row.kind) {
@@ -609,6 +616,7 @@ ShellRoot {
                 case "new": entry.execute(); break;
                 case "pin": win.setPinned(app.key, !isPinned); break;
                 case "quit": for (const w of wins) w.close(); break;
+                case "kill": forceQuit(wins); break;
                 case "settings": if (settingsLoader.item) settingsLoader.item.goTo(row.target, row.find || ""); break;
                 }
                 closeMenu();
