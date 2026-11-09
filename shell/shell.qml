@@ -1077,9 +1077,11 @@ ShellRoot {
                             readonly property real corner: Config.s.iconShape === "circle" ? height / 2
                                 : height * win.iconCorner / Math.max(1, win.base)
                             readonly property bool hasArt: wideArt.status === Image.Ready
-                            // The art sits inside the tile, this far in from its edges, with corners
-                            // that follow the tile's (smaller by the same amount)
+                            // The art sits inside the tile, this far in from its edges. Album covers are
+                            // square, so it's only slightly rounded (as music apps show them), whatever
+                            // the icon shape: following the tile's own curve cut into the artwork
                             readonly property real inset: Math.round(height * 0.12)
+                            readonly property real artCorner: Math.max(2, Math.round((height - inset * 2) * 0.08))
                             Rectangle {
                                 anchors.fill: parent
                                 radius: mediaWideTile.corner
@@ -1120,7 +1122,16 @@ ShellRoot {
                                 anchors.fill: wideArtBox
                                 visible: false
                                 layer.enabled: true
-                                Rectangle { anchors.fill: parent; radius: Math.max(3, mediaWideTile.corner - mediaWideTile.inset) }
+                                Rectangle { anchors.fill: parent; radius: mediaWideTile.artCorner }
+                            }
+                            // A faint edge round the art, so a dark cover still stands off the tile
+                            Rectangle {
+                                anchors.fill: wideArtBox
+                                visible: mediaWideTile.hasArt
+                                radius: mediaWideTile.artCorner
+                                color: "transparent"
+                                border.width: 1
+                                border.color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.12)
                             }
                             // Previous, Play/Pause, Next: evenly across the rest of the tile
                             Row {
