@@ -61,3 +61,13 @@ pkgconf
 ?sane-backends
 ?sane-airscan
 ?simple-scan
+
+# Emoji (the picker, the launcher's :emoji), your account picture (AccountsService), and
+# extras: btop (Ctrl+Shift+Esc), ffmpeg (silent screensaver videos), xdg-user-dirs (your
+# Downloads and Pictures folders), pciutils (Debug → Export logs)
+google-noto-color-emoji-fonts
+accountsservice
+?btop
+?ffmpeg-free
+?xdg-user-dirs
+?pciutils

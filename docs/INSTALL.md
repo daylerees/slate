@@ -82,7 +82,11 @@ offers to build it from source (as on Ubuntu; rebuild after Qt upgrades).
 ### NixOS
 
 Add the contents of `packaging/nixos.nix` to your configuration (needs nixos-unstable for
-Hyprland 0.57), `sudo nixos-rebuild switch`, then `./install.sh --no-deps`.
+Hyprland 0.57), `sudo nixos-rebuild switch`, then `./install.sh --no-deps`. Install a terminal
+and a file manager too if you don't have one (kitty and Nautilus, say). NixOS's `/etc` and
+`/usr/share` are managed by Nix, so the Slate session and login screen are set up in your
+configuration rather than by `slate-session-install` and `slate-greeter-install`: add the
+session with `services.displayManager.sessionPackages`, and greetd with `services.greetd`.
 
 ### Other distros
 
@@ -111,7 +115,11 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 ## What the installer does
 
 1. **Packages** — installs the list for your distro from `packaging/` (you're shown the list
-   and asked first).
+   and asked first). If you have no terminal or no file manager, it offers kitty and
+   Nautilus (Slate's shortcuts, dock and desktop menu open them; any you already have are
+   used instead, and Settings → Default Apps picks between them). It also offers to switch on
+   Bluetooth and NetworkManager if they're off (some distros leave them off), leaving another
+   network service alone if one is running.
 2. **Checks** Hyprland and Quickshell are new enough.
 3. **Fonts** — [Geist and Geist Mono](https://vercel.com/font) ship with Slate (and Slate
    loads them itself); the installer also installs each to `~/.local/share/fonts` for your

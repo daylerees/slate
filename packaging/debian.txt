@@ -69,3 +69,14 @@ pkgconf
 ?sane-utils
 ?sane-airscan
 ?simple-scan
+
+# Emoji (the picker, the launcher's :emoji), your account picture (AccountsService), and
+# extras: btop (Ctrl+Shift+Esc), ffmpeg (silent screensaver videos), xdg-user-dirs (your
+# Downloads and Pictures folders), pciutils (Debug → Export logs)
+fonts-noto-color-emoji
+accountsservice
+qml6-module-qtquick-shapes
+?btop
+?ffmpeg
+?xdg-user-dirs
+?pciutils

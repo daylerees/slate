@@ -206,6 +206,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py` and the rest); Pillow for `appicon.py`'s tiles and `image-sizes.py` |
 | `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |
+| Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
+| `accountsservice` | your account picture (Settings → General, the lock and login screens) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
 | `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |
@@ -228,6 +230,11 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 |---|---|
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
 | `hyprpicker` | freezes the screen while picking a screenshot area (optional) |
+| `btop` | Ctrl+Shift+Esc (system monitor in a terminal) |
+| `ffmpeg` (Fedora `ffmpeg-free`) | takes the sound out of downloaded screensaver videos |
+| `xdg-user-dirs` | finding your Downloads and Pictures folders (else `~/Downloads`, `~/Pictures`) |
+| `pciutils` | Debug → Export logs (graphics card details) |
+| a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |
 | `swash` | opens screenshots to annotate; without it they're saved to ~/Pictures/Screenshots and copied |
 | `uwsm` | session management; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
 | `brightnessctl` | screen and keyboard brightness keys |

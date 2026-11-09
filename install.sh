@@ -159,6 +159,47 @@ install_opensuse() {
     for p in "${opt[@]}"; do sudo zypper --non-interactive install "$p" >/dev/null 2>&1 || warn "$p isn't available here; skipped"; done
 }
 
+# One package, by the distro's package manager (for the extras below)
+install_one() {
+    case "$family" in
+        arch) sudo pacman -S --needed --noconfirm "$1" ;;
+        debian) sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$1" ;;
+        fedora) sudo dnf install -y "$1" ;;
+        opensuse) sudo zypper --non-interactive install "$1" ;;
+    esac
+}
+# A terminal and a file manager: Slate's shortcuts, dock and desktop menu open them. Only
+# offered when you have none of the usual ones (yours is used if you do; Settings → Default
+# Apps picks between several).
+#   ensure_one <what> <package to offer> <commands that count…>
+ensure_one() {
+    local what=$1 pkg=$2 c; shift 2
+    for c in "$@"; do have "$c" && return 0; done
+    if ask "There's no $what installed (Slate's shortcuts and dock open one). Install $pkg?"; then
+        install_one "$pkg" && ok "Installed $pkg" || warn "Couldn't install $pkg"
+    else warn "No $what: the shortcuts that open one won't do anything until you install one"; fi
+}
+# Bluetooth and NetworkManager are installed but not always switched on (Arch leaves them
+# off); the Bluetooth and Wi-Fi panels are empty without them. Another network service
+# already running (iwd on its own, systemd-networkd, connman) is left alone, with a note.
+enable_services() {
+    have systemctl || return 0
+    local want=() other
+    if systemctl cat bluetooth.service >/dev/null 2>&1 && ! systemctl is-enabled --quiet bluetooth.service 2>/dev/null; then
+        want+=(bluetooth.service)
+    fi
+    if systemctl cat NetworkManager.service >/dev/null 2>&1 && ! systemctl is-active --quiet NetworkManager.service; then
+        other=""
+        for s in systemd-networkd iwd connman wicked netctl; do systemctl is-active --quiet "$s" 2>/dev/null && other="$s"; done
+        if [ -n "$other" ]; then warn "$other runs your network; Slate's Wi-Fi panel needs NetworkManager (switch over yourself if you want it)"
+        else want+=(NetworkManager.service); fi
+    fi
+    [ "${#want[@]}" -eq 0 ] && return 0
+    if ask "Switch on ${want[*]} (for Slate's Bluetooth and Wi-Fi panels)?"; then
+        sudo systemctl enable --now "${want[@]}" && ok "Switched on ${want[*]}" || warn "Couldn't switch on ${want[*]}"
+    fi
+}
+
 # Releases too old for Slate's Hyprland 0.57+ / Quickshell 0.3+ (see docs/INSTALL.md)
 too_old=""
 case "${ID:-}" in
@@ -197,7 +238,10 @@ if [ "$DEPS" -eq 1 ]; then
             echo "  Slate needs these packages (packaging/$family.txt):"
             read_list "$family" | tr '\n' ' ' | fold -s -w 76 | sed 's/^/    /'; echo
             if ask "Install them now (uses sudo)?"; then "install_$family"; ok "Packages installed"
-            else warn "Skipped; install them yourself before using Slate"; fi ;;
+            else warn "Skipped; install them yourself before using Slate"; fi
+            ensure_one "terminal" kitty kitty foot alacritty ghostty wezterm konsole gnome-terminal kgx ptyxis xfce4-terminal
+            ensure_one "file manager" nautilus nautilus dolphin thunar nemo pcmanfm pcmanfm-qt caja
+            enable_services ;;
         nixos)
             warn "On NixOS, add the packages in packaging/nixos.nix to your configuration, rebuild, then run: ./install.sh --no-deps"
             exit 1 ;;
