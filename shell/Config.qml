@@ -52,7 +52,7 @@ Singleton {
                 // Light backgrounds: a set amount of visible colour (chroma), from how colourful
                 // the wallpaper is. Near-white needs far more saturation than near-black to show
                 // any, so a muted wallpaper otherwise left them looking plain white
-                const chroma = Math.min(0.07, t.hslSaturation * 0.37);
+                const chroma = Math.min(0.1, t.hslSaturation * 0.5);
                 sat = Math.min(1, Math.max(sat, chroma / Math.max(0.01, 1 - Math.abs(2 * l - 1))));
             } else {
                 sat = Math.min(0.32, Math.max(sat, t.hslSaturation * (surface ? 0.45 : 0.22)));
