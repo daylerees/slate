@@ -50,8 +50,8 @@ Rectangle {
     radius: 9
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
-    // get barely showed on a card), a little stronger than on the bar's capsules
-    Gloss { radius: parent.radius; band: true; strength: 1.6 }
+    // get barely showed on a card), a touch stronger than on the bar's capsules
+    Gloss { radius: parent.radius; band: true; strength: 1.15 }
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
     // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
