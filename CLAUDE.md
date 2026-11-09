@@ -58,6 +58,27 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 - The lock and login screens stay silent (the login screen has no `sounds/`).
 - New sounds are played for the user to approve before they're committed.
 
+## Tests
+
+`tests/run` (docs/TESTING.md) runs every test in a container, so nothing touches the desktop.
+`tests/run -q` prints only failures and a summary line.
+
+- After a change, run at least `tests/run -q --tier static,unit` (or `--no-container` for a
+  quick pass); after anything that changes what's on screen, `tests/run -q` (live and visual
+  need `sudo modprobe vkms` once per boot: ask the user to run it if `tests/run` says so).
+- A visual difference you meant: `tests/run --update-baselines <scene>`, look at the new
+  image, and commit it with the change. One you didn't mean is a regression: fix it.
+- New features get tests: a script → a unit test; something on screen → a live test (and
+  its state in the `test` IPC target in `shell.qml` if needed) and a scene in
+  `tests/visual/scenes.py`. Anything that starts a side effect at login (sounds, prompts,
+  network) checks `Config.testMode`.
+- A changed feature gets its tests changed with it: new expectations, re-approved
+  screenshots, tests for removed things removed. Never loosen a test just to make it pass.
+- A bug gets a test that reproduces it, written before the fix where possible, so it can't
+  come back.
+- A bug a test finds but you don't fix: `@unittest.expectedFailure` (unit) or `KNOWN_ISSUES`
+  in `tests/lib/session.py` (live), with a comment, and tell the user.
+
 ## Releases
 
 Releases are tagged with [Semantic Versioning](https://semver.org/): annotated tags named
@@ -68,6 +89,10 @@ Releases are tagged with [Semantic Versioning](https://semver.org/): annotated t
 - **PATCH** for fixes and everything else.
 
 While Slate is below 1.0.0, breaking changes bump MINOR instead of MAJOR.
+
+Before tagging, run `tests/run -q` (pinned packages) and stop if it fails. Then run
+`tests/run -q --deps latest`; don't block on it, but list what fails in the release notes'
+Other section as a heads-up (it may break with the next Hyprland/Quickshell update).
 
 When asked to tag or release, do both: create and push the annotated tag, then a GitHub
 release for it with `gh release create <tag> --title <tag> --notes-file <notes>`. The tag
