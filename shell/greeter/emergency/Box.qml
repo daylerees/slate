@@ -81,7 +81,10 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: text !== ""
-            text: box.greeter.message
+            text: box.greeter.message.replace(/\s+/g, " ").trim()
+            width: Math.min(implicitWidth, 320)   // long PAM messages wrap instead of running off
+            wrapMode: Text.Wrap
+            horizontalAlignment: Text.AlignHCenter
             color: box.greeter.messageIsError ? "#f28b8b" : box.dim
             font.pixelSize: 14
         }

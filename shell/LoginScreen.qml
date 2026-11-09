@@ -247,26 +247,42 @@ Item {
                     }
                 }
 
-                // Caps lock / error / status line
-                Item {
+                // Caps lock / error / status line. Errors sit on a soft red strip; long
+                // ones (PAM's own messages on the login screen) wrap inside the frame.
+                Rectangle {
+                    id: note
+                    readonly property bool isError: ls.messageIsError && ls.message !== ""
+                    readonly property bool caps: ls.message === "" && ls.capsLock
                     width: parent.width
-                    height: 18
+                    height: Math.max(30, noteRow.implicitHeight + 12)
+                    radius: 10
                     visible: ls.capsLock || ls.message !== ""
+                    color: isError ? Qt.rgba(ls.error.r, ls.error.g, ls.error.b, 0.14) : "transparent"
                     Row {
+                        id: noteRow
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: 7
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: ls.message === "" && ls.capsLock
-                            text: ls.glyph(0xEFEF)
-                            color: ls.accent
-                            font.family: tabler.name; font.pixelSize: 14
+                            id: noteIcon
+                            anchors.top: noteText.top
+                            anchors.topMargin: Math.round((noteText.font.pixelSize * 1.35 - font.pixelSize) / 2)
+                            visible: note.isError || note.caps
+                            text: ls.glyph(note.isError ? 0xEA05 : 0xEFEF)
+                            color: note.isError ? ls.error : ls.accent
+                            font.family: tabler.name; font.pixelSize: 15
                         }
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: ls.message !== "" ? ls.message : "Caps Lock is on"
-                            color: ls.messageIsError ? ls.error : ls.message !== "" ? ls.dim : ls.accent
-                            font.family: ls.font; font.pixelSize: 12; font.weight: Font.Medium
+                            id: noteText
+                            // PAM messages can carry their own line breaks; let them wrap to fit instead
+                            text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : "Caps Lock is on"
+                            width: Math.min(implicitWidth, note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0))
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 3
+                            elide: Text.ElideRight
+                            lineHeight: 1.35; lineHeightMode: Text.ProportionalHeight
+                            horizontalAlignment: lineCount > 1 ? Text.AlignLeft : Text.AlignHCenter
+                            color: note.isError ? ls.error : ls.message !== "" ? ls.dim : ls.accent
+                            font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium
                         }
                     }
                 }
