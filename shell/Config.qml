@@ -18,14 +18,18 @@ Singleton {
     // The accent in use: picked by hand, or taken from the wallpaper
     readonly property color accent: s.accentFromWallpaper && wallpaperAccent !== "" ? fromWallpaper(wallpaperAccent) : accentShade(s.accent)
     // The wallpaper's colour as the accent, as bold as Settings → Appearance → Accent boldness asks.
-    // Light mode keeps its deeper shade (accentShade) and only gains saturation, so the light text
-    // on it stays readable
+    // Light mode keeps its deeper shade's depth (accentShade), so the light text on it stays
+    // readable, and changes only its saturation: 50% is that shade as it is, less mutes it (to
+    // 20% saturation at 0%) and more makes it vivid (90% at 100%)
     function fromWallpaper(c) {
         if (!s.lightMode) return boldAccent(c, s.accentBoldness);
         const a = accentShade(c);
         const k = Math.max(0, Math.min(1, Number(s.accentBoldness) || 0));
         if (Qt.lighter(c, 1.0).hslSaturation < 0.08) return a;     // a grey wallpaper stays grey
-        return Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, a.hslSaturation + (Math.max(a.hslSaturation, 0.9) - a.hslSaturation) * k, a.hslLightness, 1);
+        const base = a.hslSaturation;
+        const sat = k < 0.5 ? 0.2 + (base - 0.2) * (k / 0.5)
+            : base + (Math.max(base, 0.9) - base) * ((k - 0.5) / 0.5);
+        return Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, sat, a.hslLightness, 1);
     }
     // A colour made bolder by k (0: as it is, 1: fully): towards nearly full saturation, lightened
     // only as far as the dark text on the accent needs to stay readable (so blues and purples
