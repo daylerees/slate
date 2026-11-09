@@ -20,7 +20,13 @@ Item {
 
     // Preview pixels per unit of win/screen
     readonly property real k: width / Math.max(0.0001, win.width)
-    layer.enabled: true                     // keeps the wallpaper to this item's bounds
+    // A real window to show it behind: users pass a 1×1 stand-in while there's nothing to show
+    // (the window switcher, for a card without a preview), and that made k this item's whole
+    // width, laying the wallpaper out hundreds of times the screen's size, too big to draw
+    // (in any units: a real window is at most a few dozen times smaller than its screen)
+    readonly property bool drawn: visible && win.width > 0 && win.height > 0
+        && screen.width / win.width < 64 && screen.height / win.height < 64
+    layer.enabled: drawn                    // keeps the wallpaper to this item's bounds
     layer.effect: MultiEffect { maskEnabled: true; maskSource: wbMask }
 
     Image {
@@ -28,16 +34,21 @@ Item {
         visible: false
         x: -wb.win.x * wb.k
         y: -wb.win.y * wb.k
-        width: wb.screen.width * wb.k
-        height: wb.screen.height * wb.k
-        source: wb.visible ? wb.wallpaper : ""
+        // Nothing to show: no size at all, as the blur builds its images from this item's size
+        // even while it's hidden. And never more than 16 times this item, whatever order the
+        // values arrive in: for a moment drawn could still be true with a stand-in window,
+        // laying the wallpaper out hundreds of times the screen's size, too big to draw
+        width: wb.drawn ? Math.min(wb.screen.width * wb.k, wb.width * 16) : 0
+        height: wb.drawn ? Math.min(wb.screen.height * wb.k, wb.height * 16) : 0
+        source: wb.drawn ? wb.wallpaper : ""
         fillMode: Image.PreserveAspectCrop
         sourceSize: Qt.size(Math.min(1600, width), Math.min(1000, height))
         asynchronous: true
     }
     MultiEffect {
+        visible: wb.drawn
         anchors.fill: wbImg
-        source: wbImg
+        source: wb.drawn ? wbImg : null
         blurEnabled: true
         blur: 1
         blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * wb.pixelScale)))

@@ -278,7 +278,8 @@ PanelWindow {
                         readonly property var m: o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null
                         visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!m && shot.hasContent
                         anchors.fill: shot
-                        win: visible ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
+                        // The window's own place whenever it's known (a 1×1 stand-in only when it isn't)
+                        win: o && o.at && o.size && m ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
                         screen: m ? Qt.size(m.width / (m.scale || 1), m.height / (m.scale || 1)) : Qt.size(1, 1)
                         pixelScale: o && o.size ? shot.width / Math.max(1, o.size[0]) : 0.25
                         radius: 8
