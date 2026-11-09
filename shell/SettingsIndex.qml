@@ -29,6 +29,7 @@ Singleton {
         { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
         { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
+        { id: "printers", label: "Printers & Scanners", icon: 0xEB0E, more: true, about: "Adding printers, test pages, and scanning" },
         { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
         { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
         { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
@@ -171,6 +172,7 @@ Singleton {
         ["Login screen", "lock", "greeter greetd sign in"],
         ["Wi-Fi", "wifi", "wireless network internet"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
+        ["Printers & Scanners", "printers", "print printer printing scanner scan scanning cups sane test page"],
         ["About Slate", "about", "version restart settings file"]
     ]
 

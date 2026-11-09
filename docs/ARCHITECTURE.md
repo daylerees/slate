@@ -233,6 +233,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
 | hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Title bars on floating windows in floating mode. Built per Hyprland version by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
+| `cups` (+ `system-config-printer`, optional) | Settings → Printers & Scanners: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
+| `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers & Scanners: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
 | `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Appearance → Folder colour |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).

@@ -51,3 +51,11 @@ make
 gcc-c++
 pkg-config
 ?greetd
+
+# Printing and scanning (Settings → Printers & Scanners): CUPS, its printer tool, SANE with
+# network scanners (airscan), and an app to scan with
+?cups
+?system-config-printer
+?sane-backends
+?sane-airscan
+?simple-scan

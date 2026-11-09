@@ -642,7 +642,7 @@ Singleton {
     readonly property var pagePastels: ({
         overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
         input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
-        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8",
+        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0",
         bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
