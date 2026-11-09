@@ -5755,6 +5755,15 @@ FloatingWindow {
                 text: "Fixes for when something hasn't caught up. Slate normally does all of this by itself, so you shouldn't need them."
                 leftPadding: 0; bottomPadding: 8
             }
+            GroupLabel { text: "Reload" }
+            Group {
+                SettingRow {
+                    label: "Reload everything"
+                    detail: "Reloads Hyprland's config and restarts Slate from scratch (the bar, dock, panels and this window), "
+                        + "then comes back here. Your apps and windows stay open. For when something looks stuck or out of date"
+                    Button { label: "Reload"; icon: 0xEB13; onClicked: Config.reloadEverything() }
+                }
+            }
             GroupLabel { text: "Login screen" }
             Group {
                 SettingRow {

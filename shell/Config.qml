@@ -519,6 +519,12 @@ Singleton {
     function slateCall(...args) { Quickshell.execDetached([slateCommand, "ipc", "call", ...args]); }
     // Restart Slate completely (for changes it can only pick up that way), then open Settings
     // on a page again once it's back. Run detached, as this Slate is about to stop
+    // Settings → Debug → Reload everything: Hyprland's config, then Slate itself as a new
+    // process (not the in-place reload), back on the Debug page
+    function reloadEverything() {
+        reloadHyprland();
+        restartToPage("debug");
+    }
     function restartToPage(page) {
         Quickshell.execDetached(["setsid", "-f", "sh", "-c",
             `sleep 0.5; "$0" restart --full; for i in $(seq 40); do sleep 0.25; "$0" ipc call settings page "$1" >/dev/null 2>&1 && break; done`,
