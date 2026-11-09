@@ -220,8 +220,10 @@ Scope {
         Item {
             id: blk
             // Somewhere new every minute, fading out and back in
+            // Show the clock off: just black
             ClockFace {
                 id: blkClock
+                visible: Config.s.screensaverClock
                 x: (blk.width - width) * blk.px
                 y: (blk.height - height) * blk.py
                 opacity: blk.lit ? 0.85 : 0

@@ -2335,21 +2335,22 @@ FloatingWindow {
                 }
                 Separator {}
                 DropdownSetting {
+                    // The background; whether there's a clock on it is Show the clock, below
                     label: "Style"
-                    options: [{ value: "drift", label: "Clock on your wallpaper" },
+                    options: [{ value: "drift", label: "Your wallpaper" },
                               { value: "slideshow", label: "Wallpaper slideshow" },
-                              { value: "black", label: "Clock on black" }]
+                              { value: "black", label: "Black" }]
                     value: Config.s.screensaverStyle
                     onPicked: v => Config.s.screensaverStyle = v
                     detail: Config.s.screensaverStyle === "drift" ? "Your wallpaper, dimmed and slowly drifting"
                         : Config.s.screensaverStyle === "slideshow" ? "The pictures in your wallpaper folder, fading from one to the next"
-                        : "Moves now and then so nothing burns in; best for OLED screens"
+                        : "Plain black; best for OLED screens"
                 }
-                Separator { visible: Config.s.screensaverStyle !== "black" }
+                Separator {}
                 SettingRow {
-                    visible: Config.s.screensaverStyle !== "black"
                     label: "Show the clock"
-                    detail: "The time and date in the middle"
+                    detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
+                        : "The time and date in the middle"
                     Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
                 }
                 Separator { visible: Config.s.screensaverStyle === "slideshow" }
