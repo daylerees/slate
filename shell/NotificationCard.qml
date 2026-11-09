@@ -79,14 +79,16 @@ Rectangle {
             width: parent.width; height: card.height
             radius: card.radius
             color: card.critical ? card.bar.errorColor : card.accent
-            layer.enabled: true
+            // Only while there's a band: most cards have none, and two offscreen layers each for
+            // nothing added up across the notification list
+            layer.enabled: card.band > 0
             layer.effect: MultiEffect { maskEnabled: true; maskInverted: true; maskSource: bandCut; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
         }
         Item {
             id: bandCut
             width: parent.width; height: card.height
             visible: false
-            layer.enabled: true
+            layer.enabled: card.band > 0
             Rectangle {
                 y: card.band
                 width: parent.width; height: card.height

@@ -415,12 +415,17 @@ Singleton {
             }
         }
     }
+    // Everything again when the layouts themselves may have changed (yours, or Hyprland's config
+    // reloading); on a switch between layouts, only which one is active (the layout list doesn't
+    // change, so hypr-options.py needn't run on every switch)
     Timer { id: kbLater; interval: 400; onTriggered: root.refreshKeyboard() }
+    Timer { id: kbActiveLater; interval: 400; onTriggered: { kbState.running = false; kbState.running = true; } }
     onKbLayoutListChanged: kbLater.restart()
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "activelayout" || event.name === "configreloaded") kbLater.restart();
+            if (event.name === "activelayout") kbActiveLater.restart();
+            else if (event.name === "configreloaded") kbLater.restart();
         }
     }
 

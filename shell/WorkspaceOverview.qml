@@ -537,7 +537,8 @@ PanelWindow {
                     // for the windows to show through, but never seen itself
                     MultiEffect {
                         id: wallBlur
-                        visible: Config.hyprBlur.enabled
+                        // Only drawn for windows to show through (below), so not on empty cards
+                        visible: Config.hyprBlur.enabled && card.wins.length > 0
                         x: wallImg.x; y: wallImg.y; width: wallImg.width; height: wallImg.height
                         source: wallImg
                         blurEnabled: true
