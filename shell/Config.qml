@@ -44,9 +44,9 @@ Singleton {
         const neutral = c.hslSaturation < 0.3;
         const surface = c.hslLightness < 0.5;          // backgrounds (vs text) in the dark theme
         let h = c.hslHue, sat = c.hslSaturation, l = c.hslLightness;
-        // Light backgrounds sit a step below the straight flip: near-white was glaring and
+        // Light backgrounds sit well below the straight flip: near-white was glaring and
         // left no room for the wallpaper's tint to show
-        if (light) l = neutral ? 1 - l - (surface ? 0.035 : 0) : Math.min(l, 0.45);
+        if (light) l = neutral ? 1 - l - (surface ? 0.1 : 0) : Math.min(l, 0.45);
         if (toned && neutral) {
             const t = Qt.lighter(wallpaperTone, 1.0);
             if (t.hslHue >= 0) h = t.hslHue;
