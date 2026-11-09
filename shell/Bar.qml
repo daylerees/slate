@@ -592,7 +592,9 @@ PanelWindow {
                         // Too long for its room: the end fades away (drawn through fadeMask)
                         readonly property bool cut: implicitWidth > width + 0.5
                         layer.enabled: cut
-                        layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade }
+                        // (thresholds set so the mask's soft edge fades the text, rather than
+                        // cutting it off wherever the mask isn't fully clear)
+                        layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                         text: titleArea.s ? titleArea.s.hoverText
                             : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
                         leftPadding: titleArea.s || !Config.s.barShowTitleIcon ? 8 : 0      // a little space for a hover description, or with no app icon
