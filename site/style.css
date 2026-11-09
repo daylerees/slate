@@ -113,10 +113,7 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   height: 170px;
   border-radius: 16px;
   overflow: hidden;
-  background:
-    radial-gradient(120% 140% at 85% 110%, rgba(143, 179, 232, .38), transparent 55%),
-    radial-gradient(90% 120% at 10% 100%, rgba(122, 104, 170, .30), transparent 60%),
-    linear-gradient(170deg, #2a3446 0%, #1b2230 55%, #161b24 100%);
+  /* (its wallpaper is .glass-scene, which changes with the bar's looks: see bar-looks) */
   box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
   text-align: left;
 }
@@ -125,7 +122,6 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   display: flex; align-items: center; gap: 6px;
   height: 40px;
   padding: 0 6.5px;
-  background: var(--bg);
   font-size: 13px; font-weight: 500;
 }
 .bar-demo::before, .bar-demo::after {
@@ -133,12 +129,11 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   position: absolute; top: 40px;
   width: 12px; height: 12px;
 }
-.bar-demo::before { left: 0;  background: radial-gradient(circle at 100% 100%, transparent 11.5px, var(--bg) 12px); }
-.bar-demo::after  { right: 0; background: radial-gradient(circle at 0 100%, transparent 11.5px, var(--bg) 12px); }
+.bar-demo::before { left: 0; }
+.bar-demo::after  { right: 0; }
 .bar-demo .cap {
   display: flex; align-items: center; justify-content: center;
   height: 27px;
-  background: var(--card);
   border-radius: 6px;
   white-space: nowrap;
   flex: none;
@@ -146,18 +141,15 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .bar-demo .ti { font-size: 16px; vertical-align: 0; }
 .bar-demo .btn { width: 35px; }
 .bar-demo .burger { display: grid; gap: 3px; }
-.bar-demo .burger i { display: block; width: 14px; height: 2.4px; border-radius: 1.2px; background: var(--text); }
+.bar-demo .burger i { display: block; width: 14px; height: 2.4px; border-radius: 1.2px; }
 /* Workspace dots: 14px rounded squares, 5px apart; the active one in the accent */
 .bar-demo .ws { gap: 5px; padding: 0 8px; }
-.bar-demo .ws span { width: 14px; height: 14px; border-radius: 3.9px; background: #4f5866; }
-.bar-demo .ws span.occ { background: #aeb6c2; }
-.bar-demo .ws span.on { background: var(--accent); }
+.bar-demo .ws span { width: 14px; height: 14px; border-radius: 3.9px; }
 /* The focused window's app, on its tile, then its title */
 .bar-demo .app { width: 27px; }
 .bar-demo .tile {
   display: grid; place-items: center;
   width: 21px; height: 21px; border-radius: 4.7px;
-  background: #2a313c;
 }
 .bar-demo .tile .ti { font-size: 14px; }
 .bar-demo .title { padding: 0 4px; white-space: nowrap; }
@@ -166,11 +158,96 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .bar-demo .tray .ti { display: grid; place-items: center; width: 26px; height: 22px; font-size: 18px; }
 /* One container; short separators between its sections */
 .bar-demo .status span { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
-.bar-demo .status b { width: 1px; height: 13.5px; background: #444c58; }
+.bar-demo .status b { width: 1px; height: 13.5px; }
 .bar-demo .clock { padding: 0 10px; }
 .bar-demo .val { font-style: normal; }
 .bar-demo .power { color: #f28b8b; }
 .bar-demo .power .ti { font-size: 17px; }
+
+/* The menu bar example shifts through four looks, each easing into the next: flat in the default
+   theme; glass over a warm sunset (colours from it); flat in a forest's colours; glass over a
+   violet dusk. The glass ones copy Slate's own glass bar: about 78% opaque over a blur, frosted
+   capsules tinted by the wallpaper, a sheen over each capsule's top half with a bright top edge,
+   and translucent separators. */
+@property --d-bar { syntax: '<color>'; inherits: true; initial-value: #0f1216; }
+@property --d-cap { syntax: '<color>'; inherits: true; initial-value: #1d222a; }
+@property --d-sheen { syntax: '<color>'; inherits: true; initial-value: rgba(236,140,140,0); }
+@property --d-rim { syntax: '<color>'; inherits: true; initial-value: rgba(236,140,140,0); }
+@property --d-sep { syntax: '<color>'; inherits: true; initial-value: #444c58; }
+@property --d-accent { syntax: '<color>'; inherits: true; initial-value: #8fb3e8; }
+@property --d-occ { syntax: '<color>'; inherits: true; initial-value: #aeb6c2; }
+@property --d-empty { syntax: '<color>'; inherits: true; initial-value: #4f5866; }
+@property --d-tile { syntax: '<color>'; inherits: true; initial-value: #2a313c; }
+@property --d-ink { syntax: '<color>'; inherits: true; initial-value: #eef1f5; }
+@property --d-blob-a { syntax: '<color>'; inherits: true; initial-value: rgba(143,179,232,.38); }
+@property --d-blob-b { syntax: '<color>'; inherits: true; initial-value: rgba(122,104,170,.30); }
+@property --d-blob-c { syntax: '<color>'; inherits: true; initial-value: rgba(143,179,232,0); }
+@property --d-blob-d { syntax: '<color>'; inherits: true; initial-value: rgba(143,179,232,0); }
+@property --d-base-a { syntax: '<color>'; inherits: true; initial-value: #2a3446; }
+@property --d-base-b { syntax: '<color>'; inherits: true; initial-value: #161b24; }
+@property --d-blur { syntax: '<number>'; inherits: true; initial-value: 0; }
+@keyframes bar-looks {
+  0% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
+  18.75% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
+  25% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; }
+  43.75% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; }
+  50% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; }
+  68.75% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; }
+  75% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; }
+  93.75% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; }
+  100% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
+}
+.screen { animation: bar-looks 48s ease-in-out infinite; background: var(--d-base-b); }
+.glass-scene {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(45% 120% at 22% -10%, var(--d-blob-c), transparent 70%),
+    radial-gradient(40% 110% at 72% -15%, var(--d-blob-d), transparent 70%),
+    radial-gradient(120% 140% at 85% 110%, var(--d-blob-a), transparent 55%),
+    radial-gradient(90% 120% at 10% 100%, var(--d-blob-b), transparent 60%),
+    linear-gradient(170deg, var(--d-base-a) 0%, var(--d-base-b) 100%);
+}
+.bar-demo {
+  z-index: 1;
+  color: var(--d-ink);
+  background: var(--d-bar);
+  -webkit-backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+  backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+}
+/* The concave corners under the bar: its own colour and blur, cut to the curve */
+.bar-demo::before, .bar-demo::after {
+  background: var(--d-bar);
+  -webkit-backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+  backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+}
+.bar-demo::before { -webkit-mask: radial-gradient(circle at 100% 100%, transparent 11.5px, #000 12px); mask: radial-gradient(circle at 100% 100%, transparent 11.5px, #000 12px); }
+.bar-demo::after  { -webkit-mask: radial-gradient(circle at 0 100%, transparent 11.5px, #000 12px); mask: radial-gradient(circle at 0 100%, transparent 11.5px, #000 12px); }
+.bar-demo .cap { position: relative; z-index: 0; background: var(--d-cap); }
+/* Glass: the sheen (bright at the top, fading by the middle) and the bright top edge, which
+   bends round the top corners and fades a little way down the sides (Gloss.qml) */
+.bar-demo .cap::before, .bar-demo .cap::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit; pointer-events: none;
+}
+.bar-demo .cap::before {
+  background: linear-gradient(to bottom, var(--d-sheen) 0%,
+    color-mix(in srgb, var(--d-sheen) 25%, transparent) 50%, transparent 55%);
+}
+.bar-demo .cap::after {
+  border: 1px solid var(--d-rim);
+  -webkit-mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
+  mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
+}
+.bar-demo .burger i { background: var(--d-ink); }
+.bar-demo .ws span { background: var(--d-empty); }
+.bar-demo .ws span.occ { background: var(--d-occ); }
+.bar-demo .ws span.on { background: var(--d-accent); }
+.bar-demo .tile { background: var(--d-tile); }
+.bar-demo .status b { background: var(--d-sep); }
+.bar-demo .mark-accent { stroke: var(--d-accent); }
+@media (prefers-reduced-motion: reduce) {
+  .screen { animation: none; }
+}
 
 .what .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .what p { color: var(--dim); margin: 0; }

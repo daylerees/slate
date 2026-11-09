@@ -41,14 +41,16 @@
 
 <!-- A lighter stripe across the page, holding a bit of Slate's desktop -->
 <div class="stripe">
-  <!-- Slate's menu bar, drawn with its own shapes and sizes (Bar.qml), in the default theme -->
+  <!-- Slate's menu bar, drawn with its own shapes and sizes (Bar.qml): on a slow loop it eases
+       from the default theme to glass over a warm wallpaper (colours from it), and back -->
   <div class="screen" aria-hidden="true">
+  <div class="glass-scene"></div>
   <div class="bar-demo">
     <!-- Control centre: the slate mark (SlateMark.qml) -->
     <div class="cap btn">
       <svg width="18" height="18" viewBox="0 0 18 18">
         <path d="M3.4 7.6 L14.6 4.6 L14.6 13.4 L3.4 16.4 Z" fill="#566173" stroke="#566173" stroke-width="1.6" stroke-linejoin="round"/>
-        <path d="M3.3 6.4 L14.7 3.4" stroke="#8fb3e8" stroke-width="2.4" stroke-linecap="round"/>
+        <path class="mark-accent" d="M3.3 6.4 L14.7 3.4" stroke="#8fb3e8" stroke-width="2.4" stroke-linecap="round"/>
       </svg>
     </div>
     <!-- Apps: three soft rounded bars -->
