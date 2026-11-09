@@ -1,4 +1,5 @@
-// Logging in: covers a screen in black, then fades it away as the welcome sound plays
+// Logging in: covers a screen in the dark background Hyprland shows while Slate starts (misc.lua
+// background_color, the login screen's colour), so there's no step from it, then fades it away as the welcome sound plays
 // (Config.welcoming / welcomeFading). Above everything, and never takes the pointer.
 
 import QtQuick
@@ -16,7 +17,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: "black"
+        color: "#0f1216"
         opacity: Config.welcomeFading ? 0 : 1
         Behavior on opacity {
             NumberAnimation {

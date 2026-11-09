@@ -13,7 +13,8 @@ hl.config({
             splash = SLATE_ACCENT,
         },
         -- While Slate starts, show a plain dark background (the login screen's colour)
-        -- rather than Hyprland's (or the distro's) default wallpaper and logo
+        -- rather than Hyprland's (or the distro's) default wallpaper and logo. Slate's fade in at
+        -- login (FadeIn.qml) starts from this same colour
         force_default_wallpaper = 0,
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
