@@ -25,7 +25,7 @@ hl.config({
         focus_on_activate = true,
         -- A terminal that launches a GUI app hides while the app is open ("swallowing")
         enable_swallow = true,
-        swallow_regex = "(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal)",
+        swallow_regex = "(" .. TERMINAL_CLASSES .. ")",     -- (variables.lua)
         vrr = 3,                           -- variable refresh rate for fullscreen games and video
         -- If Slate restarts while the screen is locked, it can take the lock back over
         allow_session_lock_restore = true,

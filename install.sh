@@ -396,4 +396,4 @@ fi
 echo
 echo "${G}${B}Slate is installed.${N} Log out, pick \"Slate\" on the login screen, and log in."
 echo "  Settings: Super+Z   ·   Apps: Super+Space   ·   Keys and more: docs/INSTALL.md"
-echo "  Your own Hyprland tweaks (keyboard layout, monitors, apps): ~/.config/slate/hypr/hyprland.lua"
+echo "  Your own Hyprland tweaks (shortcuts, rules, monitors, startup apps): ~/.config/slate/hypr/"

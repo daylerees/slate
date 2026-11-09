@@ -1,5 +1,5 @@
 -- Workspace rules: https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
--- Add your own in ~/.config/slate/hypr/hyprland.lua, e.g. workspaces on a second monitor:
+-- Add your own in ~/.config/slate/hypr/rules.lua, e.g. workspaces on a second monitor:
 --   hl.workspace_rule({ workspace = "4", monitor = MONITOR2, default = true, persistent = true })
 -- or a different layout:
 --   hl.workspace_rule({ workspace = "1", monitor = MONITOR1, layout = "scrolling" })
@@ -105,8 +105,13 @@ function setSpareWorkspace(on)
     updateSpareWorkspace()
 end
 -- After the change has landed (a closing window still counts for a moment)
+-- One timer, started again by each event, so a burst of them (a window moving: close, open,
+-- move) checks once, after the last
+local spareTimer = nil
 local function spareSoon()
-    if spareOn then hl.timer(updateSpareWorkspace, { timeout = 150, type = "oneshot" }) end
+    if not spareOn then return end
+    if spareTimer then spareTimer:set_enabled(false) end
+    spareTimer = hl.timer(function() spareTimer = nil; updateSpareWorkspace() end, { timeout = 150, type = "oneshot" })
 end
 hl.on("window.open", spareSoon)
 hl.on("window.close", spareSoon)

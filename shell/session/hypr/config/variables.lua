@@ -2,6 +2,10 @@
 -- already set in ~/.config/slate/hypr/variables.lua (made for you, with instructions), so
 -- change them there.
 
+-- Terminals' window classes (a pattern): they're never made see-through by Slate, as they have
+-- their own transparency (windowrules.lua), and they "swallow" apps started from them (misc.lua)
+TERMINAL_CLASSES = "kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal"
+
 -- Apps opened by the keyboard shortcuts in binds.lua
 TERMINAL     = TERMINAL     or "kitty"                            -- Super+Return
 FILE_MANAGER = FILE_MANAGER or "dolphin"                          -- Super+E
@@ -31,6 +35,10 @@ hl.env("HYPRCURSOR_SIZE", tostring(CURSOR_SIZE))
 -- fzf in Slate's colours (Settings → Appearance → App Theming writes this file, and empties
 -- it when fzf's theming is off). Your own FZF_DEFAULT_OPTS still apply on top.
 local fzfOpts = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/slate/fzf/slate.opts"
-os.execute("mkdir -p '" .. fzfOpts:match("^(.*)/") .. "'")
 local fzfFile = io.open(fzfOpts, "a")
+if not fzfFile then
+    -- Its folder isn't there yet: make it (only then, as it starts a shell while Hyprland loads)
+    os.execute("mkdir -p '" .. fzfOpts:match("^(.*)/") .. "'")
+    fzfFile = io.open(fzfOpts, "a")
+end
 if fzfFile then fzfFile:close(); hl.env("FZF_DEFAULT_OPTS_FILE", fzfOpts) end

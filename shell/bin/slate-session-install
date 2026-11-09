@@ -33,5 +33,5 @@ install -D -m 755 -o root -g root "$SRC/slate-session" "$BIN"
 install -D -m 644 -o root -g root "$SRC/slate.desktop" "$ENTRY"
 
 echo "Done. Pick \"Slate\" on the login screen next time you log in."
-echo "Personal settings (keyboard layout, monitors, startup apps): ~/.config/slate/hypr/hyprland.lua"
+echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): ~/.config/slate/hypr/"
 echo "To remove: sudo ~/.config/slate/bin/slate-session-install --remove"

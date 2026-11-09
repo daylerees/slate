@@ -1,5 +1,5 @@
 -- Window rules: https://wiki.hypr.land/Configuring/Basics/Window-Rules/
--- Add your own in ~/.config/slate/hypr/hyprland.lua.
+-- Add your own in ~/.config/slate/hypr/rules.lua.
 
 -- Floating windows remember their size
 hl.window_rule({ match = { float = true }, persistent_size = true })
@@ -71,7 +71,7 @@ hl.window_rule({
 hl.window_rule({ match = { class = "^([Gg]odot.*)$" }, tile = true })
 
 -- Fully opaque: browsers, terminals (they handle their own transparency) and video players
-local terminals = "^(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal)$"
+local terminals = "^(" .. TERMINAL_CLASSES .. ")$"     -- (variables.lua)
 
 hl.window_rule({ match = { class = "^(firefox|zen)$" }, opacity = "1.0 override" })
 hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })

@@ -36,7 +36,7 @@ local EXTRAS = KEYSET == "hyprland-extras"
 
 -- What each shortcut does, shown in Settings → Shortcuts ("Group: what it does"). Looked
 -- up by the exact keys given to hl.bind below, and only for the shortcuts in this file:
--- one of your own (in ~/.config/slate/hypr/hyprland.lua) on the same keys doesn't take
+-- one of your own (in ~/.config/slate/hypr/binds.lua) on the same keys doesn't take
 -- Slate's description; give it its own with { description = "Group: what it does" }.
 local inSlateBinds = true
 local SHORTCUT_DESCRIPTIONS = {
