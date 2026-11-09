@@ -19,8 +19,8 @@ Canvas {
     }
     // The theme's tile, or with Settings → App icons → Tiles in the icon's colour, a shade of the icon's
     property color color: Config.iconTileFor(app, Config.iconPlateColor)
-    // In the icon's colour: a very soft gradient, a touch lighter at the top and darker at the
-    // bottom (the theme's tile, and a space's, stay flat)
+    // In the icon's colour: a soft gradient, a touch lighter at the top left and darker at the
+    // bottom right (the theme's tile, and a space's, stay flat)
     property bool shaded: Config.iconTileShade(app) !== null
     visible: !fill && shape !== "original"
 
@@ -40,7 +40,8 @@ Canvas {
         const w = width, h = height;
         if (shaded) {
             const c = plate.color, l = c.hslLightness;
-            const g = ctx.createLinearGradient(0, 0, 0, h);
+            // Mostly top to bottom, tilted a little: lightest towards the top left
+            const g = ctx.createLinearGradient(w * 0.3, 0, w * 0.7, h);
             g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.08), c.a));
             g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.08), c.a));
             ctx.fillStyle = g;
