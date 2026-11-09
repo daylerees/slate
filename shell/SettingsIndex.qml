@@ -82,6 +82,7 @@ Singleton {
         ["Keyboard layout code", "bar", "language code text beside icon layout gb us"],
         ["Connected Bluetooth devices", "bar", "bluetooth count number devices"],
         ["Tuck the tray away", "bar", "tray collapse hide icons system tray expand"],
+        ["Tuck the status icons away", "bar", "status collapse hide wifi volume battery bluetooth notifications expand button"],
         ["Wi-Fi network name", "bar", "values text beside icons network name ssid"],
         ["Volume percentage", "bar", "values text beside icons volume number"],
         ["Battery percentage", "bar", "values text beside icons battery number"],

@@ -154,7 +154,7 @@ FloatingWindow {
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
-            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed",
+            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
@@ -1728,6 +1728,12 @@ FloatingWindow {
                     label: "Battery"
                     detail: "Charge level; click for power profiles. Hidden on computers without a battery"
                     Toggle { checked: Config.s.barShowBattery; onToggled: v => Config.s.barShowBattery = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Tuck the status icons away"
+                    detail: "Show one button that opens to reveal notifications, Wi-Fi, volume, battery and the rest, and closes again after a few seconds"
+                    Toggle { checked: Config.s.barStatusCollapsed; onToggled: v => Config.s.barStatusCollapsed = v }
                 }
                 Separator {}
                 SettingRow {

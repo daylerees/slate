@@ -682,22 +682,31 @@ PanelWindow {
                 width: childrenRect.width; height: childrenRect.height
             }
 
-            // Tray. Collapsed (Settings → Menu Bar): one button that opens to show the icons, and
-            // closes again a few seconds after the pointer leaves (or when clicked)
+            // Tray. Collapsed (Settings → Menu Bar): one button that slides open to show the icons,
+            // and closes again a few seconds after the pointer leaves (or when clicked)
             Capsule {
                 id: trayCapsule
                 visible: Config.s.barShowTray && SystemTray.items.values.length > 0
-                length: (bar.vert ? trayRow.height : trayRow.width) + 10     // 5 px each side
                 hoverTint: false
                 readonly property bool collapsible: Config.s.barTrayCollapsed
                 property bool expanded: false
-                readonly property bool showIcons: !collapsible || expanded
                 onCollapsibleChanged: expanded = false
+                // 0 closed … 1 open, eased; the icons stay laid out until it has finished closing
+                property real openness: !collapsible || expanded ? 1 : 0
+                Behavior on openness { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+                readonly property bool showIcons: !collapsible || openness > 0
+                readonly property real fullLength: (bar.vert ? trayRow.height : trayRow.width) + 10     // 5 px each side
+                readonly property real closedLength: 22 + 10
+                length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
+                clip: collapsible
                 HoverHandler { id: trayAreaHover; onHoveredChanged: if (hovered) trayClose.stop(); else if (trayCapsule.expanded) trayClose.restart() }
-                Timer { id: trayClose; interval: 4000; onTriggered: trayCapsule.expanded = false }
+                // Stays open while one of its apps' menus is open
+                Timer { id: trayClose; interval: 4000; onTriggered: if (trayMenuWin.visible) restart(); else trayCapsule.expanded = false }
                 Grid {
                     id: trayRow
-                    anchors.centerIn: parent
+                    // Held at the end with the button, so the icons slide out from it
+                    x: bar.vert ? (parent.width - width) / 2 : parent.width - width - 5
+                    y: bar.vert ? parent.height - height - 5 : (parent.height - height) / 2
                     spacing: 2
                     // One row across the bar, or one column down a side bar, sized to what it holds
                     // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
@@ -709,6 +718,7 @@ PanelWindow {
                         delegate: Item {
                             id: trayItem
                             required property var modelData
+                            opacity: trayCapsule.openness
                             width: bar.vert ? 22 : 26; height: bar.vert ? 26 : 22
                             readonly property string hoverText: modelData.tooltipTitle || modelData.title || modelData.id || ""
                             readonly property int hoverCode: 0
@@ -781,8 +791,10 @@ PanelWindow {
                         HoverHandler { id: toggleHover; onHoveredChanged: bar.setHover(trayToggle, hovered) }
                         Text {
                             anchors.centerIn: parent
-                            // Points the way the icons open (away from the rest of the bar), or back when open
-                            text: bar.glyph(bar.vert ? (trayCapsule.expanded ? 0xEA5F : 0xEA62) : (trayCapsule.expanded ? 0xEA61 : 0xEA60))
+                            // Points the way the icons open (away from the rest of the bar), turning
+                            // round to point back as it opens
+                            text: bar.glyph(bar.vert ? 0xEA62 : 0xEA60)
+                            rotation: 180 * trayCapsule.openness
                             color: bar.textColor
                             font.family: bar.iconFont; font.pixelSize: 16
                         }
@@ -805,15 +817,33 @@ PanelWindow {
                 readonly property bool hasBt: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
                 readonly property bool hasVol: Config.s.barShowVolume
                 readonly property bool hasBat: Config.s.barShowBattery && UPower.displayDevice && UPower.displayDevice.isPresent
-                // In order along the bar; first/last/separators follow whichever are shown
-                readonly property var shown: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat]
+                // Collapsed (Settings → Menu Bar): one button at the end that slides the group open,
+                // closing again a few seconds after the pointer leaves (or when clicked)
+                readonly property bool collapsible: Config.s.barStatusCollapsed
+                property bool expanded: false
+                onCollapsibleChanged: expanded = false
+                // 0 closed … 1 open, eased; the icons stay laid out until it has finished closing
+                property real openness: !collapsible || expanded ? 1 : 0
+                Behavior on openness { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+                readonly property bool showIcons: !collapsible || openness > 0
+                // In order along the bar, then the button; first/last/separators follow whichever are shown
+                readonly property var shown: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat].map(x => x && showIcons).concat([collapsible])
                 function isFirst(i) { return !shown.slice(0, i).some(x => x); }
                 function isLast(i) { return !shown.slice(i + 1).some(x => x); }
                 function sepBefore(i) { return shown[i] && !isFirst(i); }
-                visible: shown.some(x => x)
-                length: bar.vert ? statusRow.height : statusRow.width
+                visible: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat].some(x => x)
+                readonly property real fullLength: bar.vert ? statusRow.height : statusRow.width
+                readonly property real closedLength: bar.vert ? statusToggle.height : statusToggle.width
+                length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
+                clip: collapsible
+                HoverHandler { onHoveredChanged: if (hovered) statusClose.stop(); else if (status.expanded) statusClose.restart() }
+                // Stays open while one of its panels is open
+                Timer { id: statusClose; interval: 4000; onTriggered: if (bar.popoutHere) restart(); else status.expanded = false }
                 Grid {
                     id: statusRow
+                    // Held at the end with the button, so the icons slide out from it
+                    x: bar.vert ? 0 : parent.width - width
+                    y: bar.vert ? parent.height - height : 0
                     // One row across the bar, or one column down a side bar, sized to what it holds
                     // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
                     // for every column it's told to have, even empty ones)
@@ -823,8 +853,9 @@ PanelWindow {
                     // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
                     Segment {
                         id: bellBtn
+                        opacity: status.openness
                         pastel: "notifications"            // its colour when the look is Colourful
-                        visible: status.hasBell
+                        visible: status.shown[0]
                         first: true
                         last: status.isLast(0)
                         iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
@@ -841,8 +872,9 @@ PanelWindow {
                     // Clipboard history: how many items it holds; click for the list
                     Segment {
                         id: clipSeg
+                        opacity: status.openness
                         pastel: "clipboard"            // its colour when the look is Colourful
-                        visible: status.hasClip
+                        visible: status.shown[1]
                         first: status.isFirst(1)
                         last: status.isLast(1)
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
@@ -856,8 +888,9 @@ PanelWindow {
                     // Screenshots: click for area / window / screen
                     Segment {
                         id: shotSeg
+                        opacity: status.openness
                         pastel: "screenshot"            // its colour when the look is Colourful
-                        visible: status.hasShot
+                        visible: status.shown[2]
                         first: status.isFirst(2)
                         last: status.isLast(2)
                         iconCode: 0xF201
@@ -867,8 +900,9 @@ PanelWindow {
                     Separator { visible: status.sepBefore(3) }
                     Segment {
                         id: wifiSeg
+                        opacity: status.openness
                         pastel: "wifi"            // its colour when the look is Colourful
-                        visible: status.hasWifi
+                        visible: status.shown[3]
                         first: status.isFirst(3)
                         last: status.isLast(3)
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
@@ -884,8 +918,9 @@ PanelWindow {
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
+                        opacity: status.openness
                         pastel: "keyboard"            // its colour when the look is Colourful
-                        visible: status.hasKb
+                        visible: status.shown[4]
                         first: status.isFirst(4)
                         last: status.isLast(4)
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
@@ -899,8 +934,9 @@ PanelWindow {
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
+                        opacity: status.openness
                         pastel: "bluetooth"            // its colour when the look is Colourful
-                        visible: status.hasBt
+                        visible: status.shown[5]
                         first: status.isFirst(5)
                         last: status.isLast(5)
                         readonly property var adapter: Bluetooth.defaultAdapter
@@ -916,8 +952,9 @@ PanelWindow {
                     Separator { visible: status.sepBefore(6) }
                     Segment {
                         id: volSeg
+                        opacity: status.openness
                         pastel: "volume"            // its colour when the look is Colourful
-                        visible: status.hasVol
+                        visible: status.shown[6]
                         first: status.isFirst(6)
                         last: status.isLast(6)
                         readonly property var sink: Pipewire.defaultAudioSink
@@ -939,17 +976,29 @@ PanelWindow {
                     Separator { visible: status.sepBefore(7) }
                     Segment {
                         id: batSeg
+                        opacity: status.openness
                         pastel: "battery"            // its colour when the look is Colourful
                         first: status.isFirst(7)
-                        last: true
+                        last: status.isLast(7)
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
                         readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
-                        visible: status.hasBat
+                        visible: status.shown[7]
                         iconCode: charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         label: Config.s.barValueBattery ? Math.round(pct * 100) + "%" : ""
                         hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
+                    }
+                    Separator { visible: status.sepBefore(8) }
+                    // The button that opens and closes the group (collapsed only)
+                    Segment {
+                        id: statusToggle
+                        visible: status.collapsible
+                        first: status.isFirst(8)
+                        last: true
+                        iconCode: 0xEC38
+                        hoverText: status.expanded ? "Hide the status icons" : "Wi-Fi, volume, battery and more"
+                        onClicked: { status.expanded = !status.expanded; statusClose.stop(); }
                     }
                 }
             }

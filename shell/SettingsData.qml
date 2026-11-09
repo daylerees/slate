@@ -140,6 +140,7 @@ JsonAdapter {
     property bool barValueVolume: true        // the volume % beside its icon
     property bool barValueBattery: true       // the battery % beside its icon
     property bool barTrayCollapsed: false     // the tray as one button that opens to show its icons
+    property bool barStatusCollapsed: false   // Wi-Fi, volume, battery… as one button that opens to show them
     property bool barShowPower: true          // power button
     property string barClockFormat: "12h"     // 12h or 24h
     property bool barClockSeconds: false
