@@ -29,11 +29,66 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.17.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.17.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Game mode.</strong> A new button for the bar's status icons (Settings → Menu Bar → Game mode, off by default), showing On or Off. Its panel turns off everything costly or distracting while you play: glass, blur and shadows; see-through windows (terminals included); animations; live window previews (the switcher and overview show each window's outline and app icon instead); and notification pop-ups (they still go to the list). The touchpad also keeps working while you type. Turning it off puts everything back exactly as you had it.</li>
+        <li><strong>Screensaver videos.</strong> A new Videos style plays the videos in a folder (<code>~/Videos/Screensaver</code>), silent and fading from one to the next. <strong>Get scenery videos</strong> downloads four free clips: Earth from the space station, an aurora over Lapland, clouds over a canyon and a waterfall in Tasmania (about 95 MB, with a progress bar and credits). Needs Qt Multimedia.</li>
+        <li><strong>The lock screen crossfades</strong> in over your desktop and back out after your password, while staying fully locked the whole time. Locks before sleep don't fade.</li>
+        <li><strong>Search every setting from any Settings page,</strong> with a search box at the top of each page.</li>
+        <li><strong>Settings comes back where it was</strong> (same page, same scroll position) when Slate reloads or restarts.</li>
+        <li><strong>Tiles in the icon's colour:</strong> the tile behind each app icon can take a deep shade of the icon's own colour, with a soft gradient (Settings → Appearance → App icons).</li>
+        <li><strong>Window borders get a sheen</strong> with glass on, catching the light at the top left corner.</li>
+        <li><strong>A Slate Default theme preset</strong>, and presets now set folder colours from the wallpaper too. Restore defaults on Appearance goes back to Slate Default.</li>
+        <li><strong>Light mode asks first,</strong> as it's still being polished.</li>
+        <li><strong>A picker window for your account picture,</strong> with your picture folders, a thumbnail grid and a round preview.</li>
+        <li><strong>Your location searches as you type,</strong> and shows the place you've set.</li>
+        <li><strong>The time zone is a dropdown you can search.</strong></li>
+        <li><strong>Refresh rate has its own dropdown,</strong> next to resolution.</li>
+        <li><strong>A play button for each sound</strong> in Settings → Sound.</li>
+        <li><strong>The workspace overview and window switcher can show</strong> live previews, app icons or both.</li>
+        <li><strong>Animations Off (and Faster) now apply to Slate's own animations</strong> (panels, the bar, fades), not just windows and workspaces.</li>
+        <li><strong>The Settings window never dims</strong> when it isn't focused, so you can watch a change take effect.</li>
+        <li><strong>Dropdowns show when there's more to scroll,</strong> with soft shadows and a slim scrollbar.</li>
+        <li><strong>Urgent login screen notices:</strong> the prompt to update the login screen, and the notice if updating fails, now stay until you've seen them.</li>
+        <li>More: a switch for game mode's On/Off text, a Spaces button switch on the Menu Bar page, App icons previews that show every icon setting and glass, Slate's mark on its notifications coloured like the bar's button, and a copyright line on the About page.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>After you unlocked, Slate still thought the screen was locked, so hot corners, the screensaver and the idle lock stopped working until Slate reloaded. Fixed.</li>
+        <li>A hot corner used to lock the screen works again after you unlock, and screens turned off from a corner come back on at your next mouse move or key press.</li>
+        <li>The window's app icon on the bar no longer disappears until a reload.</li>
+        <li>Changing several settings at once (a preset, Restore defaults) no longer sometimes undoes some of them.</li>
+        <li>Fewer Hyprland reloads (and no flicker or notice) when the accent colour changes, and no "reloaded" notice for reloads Slate makes itself.</li>
+        <li>The window switcher no longer tries to draw its blurred wallpaper hundreds of times too big, which wasted work every time it opened.</li>
+        <li>Containers that were missing glass's sheen now have it: the overview's workspace dots, the control centre's cards, text fields, Settings' search boxes and groups, and the welcome's cards.</li>
+        <li>Hiding the bar's last item (like the power button) no longer leaves a gap.</li>
+        <li>Dropdowns with long choices (sound devices) stay inside the window, and show the end of long names.</li>
+        <li>The page search's results show above the rest of the page and can be clicked.</li>
+        <li>The screensaver's style now picks just the background, and Show the clock works with every style.</li>
+        <li>Title bar buttons only apply in floating mode, the user card's buttons stand out from the wallpaper, and the custom preset is no longer something to pick.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>New defaults</strong> (existing settings are kept): Colourful colours; 3 px window borders and 50% dimming; key repeat at 500 ms and 16 a second; the clock shows the date; hover descriptions off; no hot corners.</li>
+        <li>Settings tidy-ups: the folder colour moves to Theme &amp; colour, keyboard layouts get their own container, Restore defaults sits opposite each page's title, About's sections get headings, and night light's schedule is a dropdown. Interface size and display Scale also explain how they differ.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.16.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.16.0 <time datetime="2026-11-09">9 November 2026</time></h2>
   <div class="cl-grid">
