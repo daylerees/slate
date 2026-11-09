@@ -1161,9 +1161,11 @@ ShellRoot {
                                         Rectangle {
                                             anchors.centerIn: parent
                                             width: parent.height; height: width; radius: width / 2
-                                            color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b,
-                                                mediaCell.under === mediaButton.modelData.id && mediaButton.modelData.on ? 0.14 : 0)
+                                            readonly property bool lit: mediaCell.under === mediaButton.modelData.id && mediaButton.modelData.on
+                                            color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, lit ? 0.14 : 0)
                                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                            // Glass: a sheen on it while it shows (fading with it)
+                                            Gloss { radius: parent.radius; opacity: parent.lit ? 1 : 0 }
                                         }
                                         Text {
                                             anchors.centerIn: parent
