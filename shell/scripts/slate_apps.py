@@ -6,13 +6,14 @@
   reload(ctx)           optional: make running copies pick up the new colours
 Only installed apps that aren't switched off are themed; switching one off reverses what
 Slate did to it (slate_theme.Ctx.undo)."""
-import glob
+import colorsys
 import json
 import os
 import re
+import time
 
 from slate_theme import (CFG, DATA, GEN, HOME, SHELL_DIR, bare, first_existing, have, mix,
-                         read, run, run_out, signal_all, touched, write)
+                         read, run, run_out, signal_all, touched)
 
 APPS = []
 
@@ -113,7 +114,6 @@ def gtk_reload(ctx):
     # GTK apps re-read their theme and gtk.css when the theme name changes: switch away and back
     cur = (run_out(["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"]) or "").strip().strip("'")
     if cur:
-        import time
         run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "Adwaita" if cur != "Adwaita" else "HighContrast"])
         time.sleep(0.3)
         run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", cur])
@@ -895,8 +895,9 @@ def spotify(ctx):
     ctx.file(os.path.join(root, "color.ini"), "; %s\n[slate]\n" % GEN + "\n".join("%-19s= %s" % (k, bare(v)) for k, v in keys) + "\n")
     ctx.file(os.path.join(root, "user.css"), "/* %s */\n" % GEN)
     cur = (run_out(["spicetify", "config", "current_theme"]) or "").strip()
-    scheme = (run_out(["spicetify", "config", "color_scheme"]) or "").strip()
     if cur != "Slate":
+        # (the scheme in use, to put back if Spotify's theming is switched off)
+        scheme = (run_out(["spicetify", "config", "color_scheme"]) or "").strip()
         ctx.command(["spicetify", "config", "current_theme", "Slate", "color_scheme", "slate"],
                     ["spicetify", "config", "current_theme", cur or "marketplace", "color_scheme", scheme or ""])
 
@@ -921,7 +922,6 @@ def obsidian_vaults():
     return out
 
 def obsidian_css(c):
-    import colorsys
     r, g, b = (int(c["accent"][i:i + 2], 16) / 255 for i in (1, 3, 5))
     h, l, s = colorsys.rgb_to_hls(r, g, b)
     alpha = lambda a: "%02x" % round(a * 255)

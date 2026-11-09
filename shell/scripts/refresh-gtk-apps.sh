@@ -7,12 +7,13 @@
 #   refresh-gtk-apps.sh
 flag="${XDG_CACHE_HOME:-$HOME/.cache}/slate/gtk4-refresh"
 [ -f "$flag" ] || exit 0
-clients=$(hyprctl clients 2>/dev/null)
+clients=""
 waiting=0
 # app process : window class : how to quit it
 for app in "nautilus:org.gnome.Nautilus:nautilus --quit"; do
     proc=${app%%:*}; rest=${app#*:}; class=${rest%%:*}; quit=${rest#*:}
     pgrep -x -u "$(id -u)" "$proc" >/dev/null || continue
+    [ -n "$clients" ] || clients=$(hyprctl clients 2>/dev/null)    # (only asked when one's running)
     if printf '%s\n' "$clients" | grep -q "class: $class\$"; then
         waiting=1        # windows open: wait for them to close
     else

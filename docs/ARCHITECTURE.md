@@ -202,7 +202,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `hyprland` (0.57+, Lua config) | the compositor; `hyprctl` for dispatches, borders, night light shader |
 | `quickshell` (0.3.x) | runs Slate (`qs`) |
 | `qt6-declarative`, `qt6-shadertools` | QML / QtQuick.Effects; `qsb` to build `shaders/mono.frag.qsb` |
-| `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py`); `appicon.py` tiles |
+| `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py` and the rest); Pillow for `appicon.py`'s tiles and `image-sizes.py` |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
 | `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |

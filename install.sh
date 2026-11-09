@@ -38,7 +38,8 @@ for a in "$@"; do
         --link) LINK=1 ;;
         --login-screen) LOGIN=1 ;;
         --uninstall) UNINSTALL=1 ;;
-        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        # (the comments at the top, up to the "set" line)
+        -h|--help) sed -n '2,/^set /{/^set /d;s/^# \{0,1\}//;p}' "$0"; exit 0 ;;
         *) echo "Unknown option: $a (see ./install.sh --help)" >&2; exit 1 ;;
     esac
 done
@@ -273,7 +274,7 @@ ok "Icon font: bundled with Slate"
 # ~/.config/slate holds Slate's code plus your own files, which are always kept:
 #   settings.json (Slate's settings), hypr/ (your Hyprland tweaks) and user/ (your own QML)
 step "4. Slate"
-KEEP=(settings.json hypr user)
+KEEP=(settings.json hypr user)     # (the same list as KEEP in shell/scripts/update.py)
 mkdir -p "$(dirname "$DEST")"
 # Slate used to live in ~/.config/quickshell/slate: bring its settings along
 if [ -d "$OLD_DEST" ] && [ ! -L "$OLD_DEST" ] && [ ! -e "$DEST/settings.json" ] && [ -f "$OLD_DEST/settings.json" ]; then
@@ -287,6 +288,8 @@ else
     if [ "$LINK" -eq 0 ]; then
         rm -rf "$DEST.new"
         cp -a "$ROOT/shell" "$DEST.new"
+        # Python's caches from running the scripts in this checkout aren't part of Slate
+        find "$DEST.new" -name __pycache__ -prune -exec rm -rf {} +
         # Its version (a release's, or this checkout's) and a fingerprint of each of its files,
         # so Settings → Updates can tell you which you've changed before an update replaces them
         [ -f "$DEST.new/VERSION" ] || { v=$(git -C "$ROOT" describe --tags 2>/dev/null || true); [ -z "$v" ] || echo "$v" > "$DEST.new/VERSION"; }

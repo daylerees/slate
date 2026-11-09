@@ -8,10 +8,9 @@
 # before the session closes (at most 3 seconds, in case the sound system is stuck).
 sound="$(dirname "$0")/../sounds/goodbye.wav"
 case "$1" in logout|reboot|shutdown|poweroff)
+    # Keep (or forget) the open apps, then the goodbye sound
     if [ "$1" = reboot ] && [ "$3" = reopen ]; then python3 "$(dirname "$0")/spaces.py" session-save
-    else python3 "$(dirname "$0")/spaces.py" session-forget; fi ;;
-esac
-case "$1" in logout|reboot|shutdown|poweroff)
+    else python3 "$(dirname "$0")/spaces.py" session-forget; fi
     if [ -n "$2" ] && [ "$2" != "0" ] && [ -e "$sound" ]; then
         timeout 3 pw-play --volume="$2" "$sound" 2>/dev/null \
             || timeout 3 paplay --volume="$(awk -v v="$2" 'BEGIN { printf "%d", v * 65536 }')" "$sound" 2>/dev/null

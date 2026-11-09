@@ -18,11 +18,15 @@ API = f"https://api.github.com/repos/{REPO}/releases/latest"
 HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))      # ~/.config/slate
 DEST = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "slate")
 PREVIOUS = DEST + ".previous"
+# Yours, never replaced by an update: copied across to the new version as they are (the
+# same list as KEEP in install.sh, which must match)
 KEEP = ("settings.json", "hypr", "user")
 STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "slate")
 STATE = os.path.join(STATE_DIR, "update.json")
 LOG = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "slate-update.log")
-KEPT = ("settings.json", "hypr/", "user/")      # yours: never compared, always kept
+# The same, as the start of a path inside the install (folders end in "/"), for leaving them
+# out when comparing files
+KEPT = tuple(k if k == "settings.json" else k + "/" for k in KEEP)
 CHECK_EVERY = 20 * 3600
 
 
