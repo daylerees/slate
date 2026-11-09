@@ -255,6 +255,45 @@ PanelWindow {
         : (calcResult ? [calcResult] : []).concat(convertResult ? [convertResult] : [], appResults, actionResults,
             windowResults, toggleResults, settingResults, fileResults, webResults)
 
+    // ---- The list's rows, kept in step with the results -------------------------------
+    // Each result has a key that stays the same while it's in the results (its kind, id and
+    // name), and the list holds just those keys: typing a letter adds, removes and moves rows,
+    // rather than handing the list a new array that made it draw every row again (and every
+    // icon flash) on each key. A row looks its result up by key, so its text can still change
+    // (the calculator's answer, a toggle's state) without the row being made again.
+    ListModel { id: resultModel }
+    function keyOf(r) {
+        const kind = r.kind || (r.calc ? "calc" : r.action ? "session" : r.setting ? "setting" : "app");
+        return kind === "calc" ? "calc" : kind + ":" + (r.id || "") + ":" + r.name;
+    }
+    readonly property var resultKeys: {
+        const seen = {};
+        return results.map(r => { const k = keyOf(r); seen[k] = (seen[k] || 0) + 1; return seen[k] > 1 ? k + "#" + seen[k] : k; });
+    }
+    readonly property var resultByKey: {
+        const m = {};
+        resultKeys.forEach((k, i) => m[k] = results[i]);
+        return m;
+    }
+    property string syncedQuery: ""
+    onResultKeysChanged: syncResults()
+    onGridModeChanged: { resultModel.clear(); syncResults(); }     // a layout's rows are made for it
+    function syncResults() {
+        const keys = resultKeys, wanted = new Set(keys);
+        for (let i = resultModel.count - 1; i >= 0; i--)
+            if (!wanted.has(resultModel.get(i).rid)) resultModel.remove(i);
+        for (let i = 0; i < keys.length; i++) {
+            if (i < resultModel.count && resultModel.get(i).rid === keys[i]) continue;
+            let j = -1;
+            for (let k = i + 1; k < resultModel.count; k++) if (resultModel.get(k).rid === keys[i]) { j = k; break; }
+            if (j >= 0) resultModel.move(j, i, 1);
+            else resultModel.insert(i, { rid: keys[i] });
+        }
+        // A new search starts at the top
+        if (syncedQuery !== search.text) { syncedQuery = search.text; list.currentIndex = 0; }
+    }
+    Component.onCompleted: syncResults()
+
     // ---- App actions (Settings → Launcher → App actions) -------------------------------
     // What an app offers besides opening (Firefox's New Private Window and so on): its own
     // when its name is typed, or found by name ("private")
@@ -833,9 +872,10 @@ PanelWindow {
             readonly property bool listFits: !root.gridMode && contentHeight <= height
             anchors.bottomMargin: root.gridMode ? 4 : 14
             clip: true
-            // A fresh copy when the layout changes, so every item is made again for it (items
-            // made for the list don't lay themselves out again properly as grid cells)
-            model: root.gridMode ? root.results.slice() : root.results
+            // The results' keys (see syncResults), emptied and filled again when the layout
+            // changes, so every item is made again for it (items made for the list don't lay
+            // themselves out again properly as grid cells)
+            model: resultModel
             SmoothWheel { flick: list }
             boundsBehavior: Flickable.StopAtBounds
             readonly property int columns: root.gridMode ? root.gridColumns : 1
@@ -895,8 +935,9 @@ PanelWindow {
 
             delegate: Item {
                 id: row
-                required property var modelData
+                required property string rid
                 required property int index
+                readonly property var modelData: root.resultByKey[rid] || ({ name: "", id: "" })
                 readonly property bool calc: !!modelData.calc
                 readonly property bool setting: !!modelData.setting
                 readonly property bool action: !!modelData.action
