@@ -29,11 +29,37 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.24.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.24.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>The login screen no longer always looks out of date.</strong> On systems without <code>diffutils</code>, Slate's checks for an outdated login screen, missing packages and changed files always failed. It's now one of Slate's packages; Slate offers to install it after updating (or run <code>./install.sh</code>).</li>
+        <li>A grey wallpaper no longer gives a pink accent colour: it keeps the default, as a black one does.</li>
+        <li>With whole app icons, an app with no icon no longer shows a dark square in light mode.</li>
+        <li>Switching an app's theming off (Settings → App Theming) puts its config back exactly: a file without a final newline stays that way, and KDE's settings no longer gain a blank line.</li>
+        <li>Settings → Updates now warns about a file of yours like <code>settings.json.bak</code> in Slate's folder, which an update would remove.</li>
+        <li>The clipboard history recovers from a damaged history file, and copying a picture whose file has gone fails quietly instead of with an error.</li>
+        <li>Downloading screensaver scenery no longer stops on a video size it doesn't know; it fetches that video again.</li>
+        <li>Printers found to add (Settings → Printers &amp; Scanners) show the name they give themselves rather than their address when their model is unknown.</li>
+        <li>Creating your own config files never writes through a link of yours, even one that points nowhere.</li>
+        <li>Fewer warnings in Slate's log from the launcher, the clipboard and emoji picker, and the login screen.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>Slate has a test suite.</strong> Over 1,300 checks (every setting and Settings page, panels, the dock, the login screen, scripts, and screenshots of each part) now run on every change and before every release, and weekly against the newest Arch packages, to catch breakage before it reaches you.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.23.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.23.0 <time datetime="2026-11-09">9 November 2026</time></h2>
   <div class="cl-grid">
