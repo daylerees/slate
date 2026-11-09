@@ -219,6 +219,11 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 30px 60px -20px rgba(0, 0, 0, .7), 0 18px 36px -18px rgba(0, 0, 0, .6);
 }
 
+/* Dayle's current desktop: one screenshot, flat and full width */
+.desktop { padding-top: 96px; }
+.desktop .sub { color: var(--dim); max-width: 640px; margin: -12px 0 28px; }
+.desktop figure { margin: 0; }
+
 /* The tour: text beside a tilted screenshot, alternating sides */
 .tour { display: grid; gap: 96px; padding-top: 24px; }
 .row { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
