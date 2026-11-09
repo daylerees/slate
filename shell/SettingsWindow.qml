@@ -248,7 +248,7 @@ FloatingWindow {
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2292,6 +2292,12 @@ FloatingWindow {
                     label: "Album art"
                     detail: "The track's artwork beside the controls; off, just the controls"
                     Toggle { checked: Config.s.dockMediaArt; onToggled: v => Config.s.dockMediaArt = v }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Downloads"
+                    detail: "Before the Waste Basket: click for your newest downloads, right-click to open the folder"
+                    key: "dockShowDownloads"
                 }
                 Separator {}
                 ToggleSetting {

@@ -156,6 +156,7 @@ JsonAdapter {
     property bool dockDivider: true           // a line between pinned apps and the others
     property bool dockShowMedia: true         // what's playing, after the Apps button, with its controls
     property bool dockMediaArt: true          // its album art
+    property bool dockShowDownloads: true     // a Downloads stack before the waste basket
     property bool dockShowTrash: true         // the waste basket at the end of the dock
 
     // Launcher

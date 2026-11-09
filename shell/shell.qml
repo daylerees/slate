@@ -556,7 +556,53 @@ ShellRoot {
         function indexOfKind(kind) { const x = slots.find(o => o.kind === kind); return x ? x.at : -1; }
         readonly property int count: slots.length
         readonly property real dividerWide: 0.35     // a divider's width, in icons
-        readonly property bool downloadsShown: false
+
+        // ---- Downloads (Settings → Dock → Downloads) -------------------------------
+        // A stack before the Waste Basket: click for a grid of the newest downloads (pictures
+        // as thumbnails), right-click to open the folder. The folder is the desktop's own
+        // (xdg-user-dir DOWNLOAD), else ~/Downloads
+        readonly property bool downloadsShown: Config.s.dockShowDownloads && downloadsDir !== ""
+        property string downloadsDir: ""
+        Process {
+            running: Config.s.dockShowDownloads && win.downloadsDir === ""
+            command: ["sh", "-c", "d=$(xdg-user-dir DOWNLOAD 2>/dev/null); [ -n \"$d\" ] && [ \"$d\" != \"$HOME\" ] && echo \"$d\" || echo \"$HOME/Downloads\""]
+            stdout: StdioCollector { onStreamFinished: win.downloadsDir = text.trim() }
+        }
+        FolderListModel {
+            id: downloadsFiles
+            folder: win.downloadsShown ? "file://" + win.downloadsDir : ""
+            showDirs: true; showHidden: false; showDotAndDotDot: false
+            sortField: FolderListModel.Time          // newest first
+        }
+        // The newest 24, without downloads still arriving (.part, .crdownload…). However big the
+        // folder (it's read in the background), only these are ever looked at; the grid shows
+        // three rows and scrolls for the rest, and Open Downloads is there for everything
+        readonly property var recentDownloads: {
+            const out = [];
+            for (let i = 0; i < downloadsFiles.count && out.length < 24; i++) {
+                const name = downloadsFiles.get(i, "fileName");
+                if (/\.(part|crdownload|download|tmp)$/i.test(name)) continue;
+                out.push({ name: name, path: downloadsFiles.get(i, "filePath"), dir: downloadsFiles.get(i, "fileIsDir") });
+            }
+            return out;
+        }
+        // How a download is shown: pictures as themselves, the rest as a glyph for their kind
+        function downloadKind(d) {
+            if (d.dir) return { glyph: 0xEAAD };
+            const ext = (d.name.split(".").pop() || "").toLowerCase();
+            if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "avif", "svg"].includes(ext)) return { image: true };
+            if (ext === "pdf") return { glyph: 0xFB10 };
+            if (["zip", "tar", "gz", "xz", "bz2", "zst", "7z", "rar", "deb", "rpm", "appimage", "iso"].includes(ext)) return { glyph: 0xED4E };
+            if (["mp3", "flac", "ogg", "opus", "wav", "m4a", "aac"].includes(ext)) return { glyph: 0xEAFC };
+            if (["mp4", "mkv", "webm", "mov", "avi", "m4v"].includes(ext)) return { glyph: 0xEAFA };
+            if (["sh", "py", "js", "ts", "json", "lua", "c", "cpp", "h", "rs", "go", "qml", "html", "css"].includes(ext)) return { glyph: 0xEBD0 };
+            if (["txt", "md", "log", "csv", "doc", "docx", "odt", "rtf"].includes(ext)) return { glyph: 0xEAA2 };
+            return { glyph: 0xEAA4 };
+        }
+        function openDownloads() {
+            Quickshell.execDetached(["hyprctl", "dispatch",
+                `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. " '${downloadsDir.replace(/'/g, "")}'") end`]);
+        }
 
         // ---- Media (Settings → Dock → Media controls) ----------------------------------
         // What's playing, right after the launcher button, while a media app has a track: its
@@ -604,6 +650,7 @@ ShellRoot {
         // it. The desktop's own (freedesktop) trash, so it's the same bin the file managers use
         readonly property bool trashShown: Config.s.dockShowTrash
         readonly property int trashIndex: indexOfKind("trash")         // always last
+        readonly property int downloadsIndex: indexOfKind("downloads")
         readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
         // What's in it, watched (the folder made first if nothing's been thrown away yet, so
         // there's something to watch)
@@ -707,6 +754,12 @@ ShellRoot {
                 appMenu.openFor(sl.item, x);
             }
             function closeMenu(): void { appMenu.closeMenu(); }
+            // The Downloads stack's grid, as clicking it does:  slate ipc call dock downloads
+            function downloads(): void {
+                if (!win.downloadsShown) return;
+                const i = win.downloadsIndex;
+                appMenu.openFor({ downloadsGrid: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
+            }
         }
 
         // ---- Right-click menu ----------------------------------------------
@@ -749,6 +802,10 @@ ShellRoot {
                         r.push({ kind: "sep" });
                         r.push({ label: "Show " + (p.identity || "the player"), kind: "media-raise" });
                     }
+                    return r;
+                }
+                if (app.downloadsGrid || app.downloadsMenu) {
+                    r.push({ label: "Open Downloads", kind: "downloads-open" });
                     return r;
                 }
                 if (app.trashMenu) {
@@ -802,6 +859,7 @@ ShellRoot {
                 case "kill": forceQuit(wins); break;
                 case "settings": if (settingsLoader.item) settingsLoader.item.goTo(row.target, row.find || ""); break;
                 case "trash-open": win.openTrash(); break;
+                case "downloads-open": win.openDownloads(); break;
                 case "media-toggle": if (win.player) win.player.togglePlaying(); break;
                 case "media-next": if (win.player) win.player.next(); break;
                 case "media-previous": if (win.player) win.player.previous(); break;
@@ -839,7 +897,8 @@ ShellRoot {
             }
 
             Rectangle {
-                width: 240
+                // Wider for Downloads' grid (four across)
+                width: appMenu.app && appMenu.app.downloadsGrid ? 4 * 88 + 16 : 240
                 height: menuCol.implicitHeight + 16
                 // Opens away from the dock's edge
                 x: Math.max(8, Math.min(appMenu.width - width - 8,
@@ -871,6 +930,101 @@ ShellRoot {
                     id: menuCol
                     anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
                     spacing: 1
+
+                    // Downloads: the newest, four across; click one to open it
+                    Text {
+                        visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length === 0
+                        width: menuCol.width; height: 40
+                        horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                        text: "Nothing downloaded yet"
+                        color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
+                        font.family: Config.s.fontFamily; font.pixelSize: 13
+                    }
+                    Flickable {
+                        id: dlScroll
+                        visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length > 0
+                        width: menuCol.width
+                        height: Math.min(dlGrid.height, 3 * 92)        // three rows; the rest scroll
+                        contentHeight: dlGrid.height
+                        interactive: contentHeight > height
+                        boundsBehavior: Flickable.StopAtBounds
+                        clip: true
+                        SmoothWheel { flick: dlScroll }
+                        Grid {
+                        id: dlGrid
+                        columns: 4
+                        Repeater {
+                            model: appMenu.app && appMenu.app.downloadsGrid ? win.recentDownloads : []
+                            delegate: Item {
+                                id: dl
+                                required property var modelData
+                                readonly property var kind: win.downloadKind(modelData)
+                                width: 88; height: 92
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 8
+                                    color: dlHover.hovered ? Config.hover : "transparent"
+                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                    Gloss { radius: parent.radius; opacity: dlHover.hovered ? 1 : 0 }
+                                }
+                                // The file: a picture as itself, anything else as its kind on a tile
+                                Item {
+                                    id: dlIcon
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    y: 8; width: 52; height: 52
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        visible: !dl.kind.image || dlThumb.status !== Image.Ready
+                                        radius: 10
+                                        color: win.tileColor
+                                        Gloss { radius: parent.radius; glassHint: true }
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: String.fromCodePoint(dl.kind.glyph || 0xEB0A)
+                                            color: win.textColor
+                                            font.family: "slate-tabler-icons"; font.pixelSize: 24
+                                        }
+                                    }
+                                    Image {
+                                        id: dlThumb
+                                        anchors.fill: parent
+                                        visible: !!dl.kind.image && status === Image.Ready
+                                        source: dl.kind.image ? "file://" + dl.modelData.path : ""
+                                        sourceSize: Qt.size(128, 128)
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        layer.enabled: visible
+                                        layer.effect: MultiEffect { maskEnabled: true; maskSource: dlThumbMask }
+                                    }
+                                    Item {
+                                        id: dlThumbMask
+                                        anchors.fill: parent
+                                        visible: false
+                                        layer.enabled: true
+                                        Rectangle { anchors.fill: parent; radius: 8 }
+                                    }
+                                }
+                                Text {
+                                    anchors { top: dlIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: dl.modelData.name
+                                    elide: Text.ElideMiddle
+                                    color: win.textColor
+                                    font.family: Config.s.fontFamily; font.pixelSize: 11
+                                }
+                                HoverHandler { id: dlHover }
+                                ClickTap {
+                                    onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
+                                }
+                            }
+                        }
+                        }
+                    }
+                    Rectangle {
+                        visible: !!appMenu.app && !!appMenu.app.downloadsGrid
+                        width: menuCol.width; height: 9; color: "transparent"
+                        Rectangle { anchors.centerIn: parent; width: parent.width - 16; height: 1; color: win.tileColor }
+                    }
 
                     Repeater {
                         model: appMenu.rows
@@ -998,6 +1152,12 @@ ShellRoot {
                 // What's playing: the control under the pointer; right-click for them all
                 if (right) appMenu.openFor({ mediaMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * slotWidth(i) * scaleAt(i) / 2);
                 else mediaClick();
+                return;
+            }
+            if (downloadsShown && i === downloadsIndex) {
+                // Downloads: the grid of the newest; right-click just to open the folder
+                appMenu.openFor(right ? { downloadsMenu: true, key: "", windows: [] } : { downloadsGrid: true, key: "", windows: [] },
+                    row.x + cellX(i) + base * scaleAt(i) / 2);
                 return;
             }
             if (trashShown && i === trashIndex) {
@@ -1407,6 +1567,35 @@ ShellRoot {
 
                         }
                     }
+                    // Downloads: a stack, the folder-and-arrow on a tile like the launcher button's
+                    Item {
+                        visible: win.downloadsShown
+                        readonly property real s: win.scaleAt(win.downloadsIndex)
+                        width: win.base * s
+                        height: row.height
+                        Item {
+                            id: downloadsTile
+                            anchors.bottom: parent.bottom
+                            width: parent.width; height: width
+                            transform: Matrix4x4 { matrix: win.upright(downloadsTile.width, downloadsTile.height) }
+                            IconPlate {
+                                anchors.fill: parent
+                                drawSize: win.base * win.maxScale
+                                shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
+                                fill: false
+                                color: win.tileColor
+                            }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
+                            Text {
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(0xF912)       // folder-down
+                                color: win.textColor
+                                font.family: "slate-tabler-icons"
+                                font.pixelSize: Math.round(parent.width * 0.5)
+                            }
+                        }
+                    }
+
                     // The waste basket: a drawn metal bin (TrashCan.qml) on a tile like the launcher
                     // button's, with crumpled paper over the rim once something's in it
                     Item {
@@ -1443,6 +1632,7 @@ ShellRoot {
                 Rectangle {
                     id: label
                     readonly property string text: win.hoveredIndex === 0 ? "Apps"
+                        : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
                         : win.mediaShown && win.hoveredIndex === win.mediaIndex
