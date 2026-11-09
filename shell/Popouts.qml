@@ -2381,7 +2381,9 @@ PanelWindow {
                             height: ccTiles.tileH
                             radius: 12
                             selected: modelData.on
-                            color: selected ? pop.accent : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                            // On ones light up too when pointed at (a lighter accent), as they can be turned off
+                            color: selected ? (tileHover.hovered ? Qt.lighter(pop.accent, 1.12) : pop.accent)
+                                : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
                             Gloss { radius: parent.radius; opacity: (selected || tileHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             HoverHandler { id: tileHover }
                             onClicked: {
