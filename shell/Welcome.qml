@@ -81,13 +81,16 @@ PanelWindow {
     Rectangle {
         id: panel
         anchors.centerIn: parent
-        width: Math.min(780, w.width - 48)
-        height: Math.min(600, w.height - 48)
+        // Always laid out at 780×600, then shrunk as a whole on a smaller screen: its pages'
+        // cards have set heights, and squeezing the box slid them under the footer
+        readonly property real fit: Math.min(1, (w.width - 48) / 780, (w.height - 48) / 600)
+        width: 780
+        height: 600
         radius: 18
         color: w.bg
         border.width: 1; border.color: w.line
         opacity: w.fade
-        scale: 0.96 + 0.04 * w.fade
+        scale: fit * (0.96 + 0.04 * w.fade)
         layer.enabled: !Config.glass     // only for the shadow, which glass goes without
         layer.effect: MultiEffect { shadowEnabled: !Config.glass; shadowColor: "black"; shadowOpacity: 0.5; shadowBlur: 1; shadowVerticalOffset: 10; blurMax: 48 }
 

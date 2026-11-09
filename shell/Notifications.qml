@@ -240,7 +240,8 @@ Scope {
         // Room either side for the cards' shadows
         readonly property real shadowPad: 12
         implicitWidth: notifs.toastWidth + shadowPad * 2
-        implicitHeight: 700
+        // Room for a column of pop-ups, but never taller than the screen
+        implicitHeight: toastWin.screen ? Math.min(700, toastWin.screen.height - 120) : 700
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "slate-notifications"

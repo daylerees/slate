@@ -6,7 +6,7 @@ import QtQuick
 Image {
     property string app: ""
     source: app ? "file://" + Config.tilePath(app) + "?v=" + Config.tileVersion : ""
-    sourceSize: Qt.size(64, 64)
+    sourceSize: Qt.size(128, 128)      // sharp at its largest (the overview's 44 px, on a 2× screen)
     smooth: true
     mipmap: true
     asynchronous: true

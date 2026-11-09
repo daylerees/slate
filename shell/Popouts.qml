@@ -656,7 +656,9 @@ PanelWindow {
                 id: netList
                 visible: Networking.wifiEnabled && wifiView.nets.length > 0
                 width: parent.width
-                height: Math.min(contentHeight, 320)
+                // At most 320, less on a short screen (with room for the rest of the panel: its
+                // title, the connection's details), so the panel never runs off the screen
+                height: Math.min(contentHeight, 320, Math.max(120, pop.height - 360))
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
@@ -2528,7 +2530,9 @@ PanelWindow {
                 id: nList
                 visible: notifView.list.length > 0
                 width: parent.width
-                height: Math.min(contentHeight, 480)
+                // At most 480, less on a short screen (with room for the title row and the panel's
+                // edges), so the panel never runs off the screen
+                height: Math.min(contentHeight, 480, Math.max(160, pop.height - 160))
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds

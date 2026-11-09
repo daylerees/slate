@@ -66,7 +66,8 @@ PanelWindow {
         const a = m ? areas[m.name] : null;
         if (a) return a;
         if (m && m.width > 0) {
-            const mw = m.width / (m.scale || 1), mh = m.height / (m.scale || 1);
+            let mw = m.width / (m.scale || 1), mh = m.height / (m.scale || 1);
+            if (((m.lastIpcObject?.transform || 0) % 2) === 1) { const t = mw; mw = mh; mh = t; }   // turned on its side
             return { x: m.x, y: m.y, w: mw, h: mh, mx: m.x, my: m.y, fw: mw, fh: mh, rl: 0, rt: 0 };
         }
         const sw = ov.width * Config.uiScale, sh = ov.height * Config.uiScale;

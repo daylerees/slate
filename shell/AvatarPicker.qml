@@ -17,9 +17,11 @@ FloatingWindow {
 
     title: "Choose a picture"
     visible: false
-    implicitWidth: 860
-    implicitHeight: 580
-    minimumSize: Qt.size(620, 420)
+    // 860×580, or less on a small screen (as Settings fits itself)
+    readonly property var fitScreen: Config.focusedScreen
+    implicitWidth: Math.round(fitScreen ? Math.min(860, fitScreen.width * 0.9) : 860)
+    implicitHeight: Math.round(fitScreen ? Math.min(580, (fitScreen.height - 60) * 0.9) : 580)
+    minimumSize: Qt.size(Math.min(620, implicitWidth), Math.min(420, implicitHeight))
     color: bar.barColor
 
     // ---- Look (as Settings) --------------------------------------------------

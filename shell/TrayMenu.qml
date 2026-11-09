@@ -75,7 +75,8 @@ PanelWindow {
         readonly property string edge: tm.bar.side
         readonly property bool sideBar: edge === "left" || edge === "right"
         width: 240
-        height: menuCol.implicitHeight + 16
+        // As tall as its rows, but never taller than the screen (it scrolls then)
+        height: Math.min(menuCol.implicitHeight + 16, tm.height - 16)
         // Opens away from the bar, centred on the icon along it, kept on the screen
         x: Math.max(8, Math.min(tm.width - width - 8,
             edge === "left" ? tm.anchorX + 14 : edge === "right" ? tm.anchorX - width - 14 : tm.anchorX - width / 2))
@@ -98,136 +99,147 @@ PanelWindow {
             y: menuBox.edge === "top" ? -height / 2 : menuBox.edge === "bottom" ? parent.height - height / 2 : along - height / 2
         }
 
-        Column {
-            id: menuCol
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
-            spacing: 1
+        // The rows, scrolling when the menu is taller than the screen allows (long menus from
+        // some apps), otherwise just as they are
+        Flickable {
+            id: menuScroll
+            anchors { fill: parent; margins: 8 }
+            contentHeight: menuCol.implicitHeight
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            SmoothWheel { flick: menuScroll }
+            Column {
+                id: menuCol
+                width: menuScroll.width
+                spacing: 1
 
-            // Back to the menu this one came from
-            Item {
-                visible: tm.stack.length > 1
-                width: menuCol.width; height: visible ? 30 : 0
-                Rectangle {
-                    anchors.fill: parent; radius: 7
-                    color: backHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                    Text {
-                        id: backArrow
-                        anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                        text: String.fromCodePoint(0xEA60)
-                        color: tm.dimColor
-                        font.family: tm.bar.iconFont; font.pixelSize: 14
-                    }
-                    Text {
-                        anchors { left: backArrow.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                        text: "Back"
-                        color: tm.dimColor
-                        font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
-                    }
-                    HoverHandler { id: backHover }
-                    ClickTap { onTapped: tm.stack = tm.stack.slice(0, -1) }
-                }
-            }
-            Rectangle {
-                visible: tm.stack.length > 1
-                width: menuCol.width - 16; x: 8; height: visible ? 1 : 0
-                color: tm.rowHover
-            }
-
-            Repeater {
-                model: tm.entries
-                delegate: Item {
-                    id: entryRow
-                    required property var modelData
-                    readonly property var e: modelData
-                    readonly property bool sep: !!e && e.isSeparator
-                    readonly property bool checkable: !!e && e.buttonType !== QsMenuButtonType.None
-                    readonly property bool checked: checkable && e.checkState === Qt.Checked
-                    width: menuCol.width
-                    height: sep ? 9 : 30
+                // Back to the menu this one came from
+                Item {
+                    visible: tm.stack.length > 1
+                    width: menuCol.width; height: visible ? 30 : 0
                     Rectangle {
-                        visible: entryRow.sep
-                        anchors.centerIn: parent
-                        width: parent.width - 16; height: 1
-                        color: tm.rowHover
-                    }
-                    Rectangle {
-                        visible: !entryRow.sep
-                        anchors.fill: parent
-                        radius: 7
-                        color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (entryHover.hovered && entryRow.e.enabled) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                        // Tick for a checked checkbox or radio item
+                        anchors.fill: parent; radius: 7
+                        color: backHover.hovered ? Config.hover : "transparent"
+                        Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Text {
-                            visible: entryRow.checked
+                            id: backArrow
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            text: String.fromCodePoint(0xEA5E)
-                            color: Config.accent
+                            text: String.fromCodePoint(0xEA60)
+                            color: tm.dimColor
                             font.family: tm.bar.iconFont; font.pixelSize: 14
                         }
-                        // Slate's own entries: an icon from the icon font
                         Text {
-                            visible: !!entryRow.e && !entryRow.sep && !!entryRow.e.glyph
-                            x: tm.anyChecks ? 28 : 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 16
-                            horizontalAlignment: Text.AlignHCenter
-                            text: visible ? String.fromCodePoint(entryRow.e.glyph) : ""
+                            anchors { left: backArrow.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                            text: "Back"
                             color: tm.dimColor
-                            font.family: tm.bar.iconFont; font.pixelSize: 15
-                        }
-                        Image {
-                            id: entryIcon
-                            visible: tm.anyIcons && String(entryRow.e.icon) !== ""
-                            x: tm.anyChecks ? 28 : 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 16; height: 16
-                            sourceSize: Qt.size(32, 32)
-                            source: entryRow.e && !entryRow.sep ? entryRow.e.icon : ""
-                        }
-                        Text {
-                            id: rowText
-                            x: (tm.anyChecks ? 28 : 10) + (tm.anyIcons ? 24 : 0)
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - x - 26
-                            // Strip the underscore mnemonics some apps put in (e.g. "_Quit")
-                            text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
-                            color: tm.textColor
-                            opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4
                             font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
-                            elide: Text.ElideRight
                         }
-                        // Opens a submenu
-                        Text {
-                            visible: !!entryRow.e && entryRow.e.hasChildren
-                            anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            text: String.fromCodePoint(0xEA61)
-                            color: tm.dimColor
-                            font.family: tm.bar.iconFont; font.pixelSize: 14
+                        HoverHandler { id: backHover }
+                        ClickTap { onTapped: tm.stack = tm.stack.slice(0, -1) }
+                    }
+                }
+                Rectangle {
+                    visible: tm.stack.length > 1
+                    width: menuCol.width - 16; x: 8; height: visible ? 1 : 0
+                    color: tm.rowHover
+                }
+
+                Repeater {
+                    model: tm.entries
+                    delegate: Item {
+                        id: entryRow
+                        required property var modelData
+                        readonly property var e: modelData
+                        readonly property bool sep: !!e && e.isSeparator
+                        readonly property bool checkable: !!e && e.buttonType !== QsMenuButtonType.None
+                        readonly property bool checked: checkable && e.checkState === Qt.Checked
+                        width: menuCol.width
+                        height: sep ? 9 : 30
+                        Rectangle {
+                            visible: entryRow.sep
+                            anchors.centerIn: parent
+                            width: parent.width - 16; height: 1
+                            color: tm.rowHover
                         }
-                        HoverHandler { id: entryHover }
-                        ClickTap {
-                            onTapped: {
-                                const e = entryRow.e;
-                                if (!e || !e.enabled) return;
-                                if (e.hasChildren) { tm.stack = tm.stack.concat([e]); return; }
-                                e.triggered();
-                                tm.close();
+                        Rectangle {
+                            visible: !entryRow.sep
+                            anchors.fill: parent
+                            radius: 7
+                            color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
+                            Gloss { radius: parent.radius; opacity: (entryHover.hovered && entryRow.e.enabled) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                            // Tick for a checked checkbox or radio item
+                            Text {
+                                visible: entryRow.checked
+                                anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                                text: String.fromCodePoint(0xEA5E)
+                                color: Config.accent
+                                font.family: tm.bar.iconFont; font.pixelSize: 14
+                            }
+                            // Slate's own entries: an icon from the icon font
+                            Text {
+                                visible: !!entryRow.e && !entryRow.sep && !!entryRow.e.glyph
+                                x: tm.anyChecks ? 28 : 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 16
+                                horizontalAlignment: Text.AlignHCenter
+                                text: visible ? String.fromCodePoint(entryRow.e.glyph) : ""
+                                color: tm.dimColor
+                                font.family: tm.bar.iconFont; font.pixelSize: 15
+                            }
+                            Image {
+                                id: entryIcon
+                                visible: tm.anyIcons && String(entryRow.e.icon) !== ""
+                                x: tm.anyChecks ? 28 : 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 16; height: 16
+                                sourceSize: Qt.size(32, 32)
+                                source: entryRow.e && !entryRow.sep ? entryRow.e.icon : ""
+                            }
+                            Text {
+                                id: rowText
+                                x: (tm.anyChecks ? 28 : 10) + (tm.anyIcons ? 24 : 0)
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - x - 26
+                                // Strip the underscore mnemonics some apps put in (e.g. "_Quit")
+                                text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
+                                color: tm.textColor
+                                opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4
+                                font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                                elide: Text.ElideRight
+                            }
+                            // Opens a submenu
+                            Text {
+                                visible: !!entryRow.e && entryRow.e.hasChildren
+                                anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                text: String.fromCodePoint(0xEA61)
+                                color: tm.dimColor
+                                font.family: tm.bar.iconFont; font.pixelSize: 14
+                            }
+                            HoverHandler { id: entryHover }
+                            ClickTap {
+                                onTapped: {
+                                    const e = entryRow.e;
+                                    if (!e || !e.enabled) return;
+                                    if (e.hasChildren) { tm.stack = tm.stack.concat([e]); return; }
+                                    e.triggered();
+                                    tm.close();
+                                }
                             }
                         }
                     }
                 }
-            }
-            // Nothing in it (an app that's still loading its menu)
-            Text {
-                visible: tm.entries.length === 0
-                width: menuCol.width; height: 30
-                verticalAlignment: Text.AlignVCenter
-                leftPadding: 10
-                text: "No menu items"
-                color: tm.dimColor
-                font.family: tm.bar.fontFamily; font.pixelSize: 13
+                // Nothing in it (an app that's still loading its menu)
+                Text {
+                    visible: tm.entries.length === 0
+                    width: menuCol.width; height: 30
+                    verticalAlignment: Text.AlignVCenter
+                    leftPadding: 10
+                    text: "No menu items"
+                    color: tm.dimColor
+                    font.family: tm.bar.fontFamily; font.pixelSize: 13
+                }
             }
         }
     }

@@ -421,7 +421,11 @@ ShellRoot {
             pinned = list;
             savePinned();
         }
-        readonly property real base: Config.s.dockIconSize           // icon size at rest (logical px)
+        // Icon size at rest (logical px): as set in Settings, shrunk only when that many icons
+        // wouldn't fit along the screen's edge (a short screen, a side dock, lots of apps open),
+        // with room left at the ends for the dock's padding and the magnified icons
+        readonly property real base: Math.max(16, Math.min(Config.s.dockIconSize,
+            (stripLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, count)))
         readonly property real maxScale: Config.s.dockMagnification  // size of the icon under the pointer
         readonly property real spread: Config.s.dockSpread           // how many icons either side grow
         readonly property real spacing: 8

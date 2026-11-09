@@ -20,8 +20,9 @@ PanelWindow {
     id: root
 
     // ---- Look (same as the launcher) ---------------------------------------
-    readonly property real panelWidth: 560
-    readonly property real panelHeight: 520
+    // 560×520, smaller on a small screen (never wider or taller than it allows), as the launcher
+    readonly property real panelWidth: Math.max(300, Math.min(560, width - 32))
+    readonly property real panelHeight: Math.max(260, Math.min(520, height - 120))
     readonly property real rowHeight: 52
     readonly property real imageRowHeight: 92
     // As tall as what's listed needs (never taller than panelHeight), like the launcher: the
