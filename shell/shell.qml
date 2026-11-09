@@ -656,7 +656,8 @@ ShellRoot {
         // Next in thirds of the rest. One icon: Previous on its left third, Next on its right
         // Which part of it the pointer's on: "art" (wide), "previous", "toggle" or "next"
         function mediaControlAt() {
-            const along = (pointerX - slotStart(mediaIndex)) / (mediaWide * base);    // 0 … 1 across it
+            // 0 … 1 across it, as it's drawn
+            const along = (pointerStripX - row.x - cellX(mediaIndex)) / Math.max(1, base * mediaWide * scaleAt(mediaIndex));
             if (mediaWide > 1) {
                 const art = mediaArt ? 1 / mediaWide : 0;        // the art: a square at the start
                 if (along <= art) return "art";
@@ -730,7 +731,16 @@ ShellRoot {
         }
         function slotStart(i) { return slotStarts[Math.max(0, Math.min(i, slotStarts.length - 1))]; }
         readonly property real restWidth: Math.max(0, slotStarts[slotStarts.length - 1])
-        property real pointerX: -1000                          // in rest-layout coordinates
+        property real pointerX: -1000                          // in rest-layout coordinates (for magnifying)
+        // Where the pointer is along the strip itself: what's under it is worked out from where
+        // the slots are actually drawn (magnified), so a wide slot (what's playing) answers over
+        // all of it, not just over the space it would take at rest
+        property real pointerStripX: -1000
+        // The pointer's moved to sx along the strip
+        function setPointer(sx) {
+            pointerStripX = sx;
+            pointerX = sx - (strip.width - restWidth) / 2;
+        }
         // Magnification stays frozen while the right-click menu is open
         property real hover: (mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag ? 1 : 0
         Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
@@ -750,8 +760,13 @@ ShellRoot {
         }
         readonly property int hoveredIndex: {
             if (hover <= 0) return -1;
-            for (let i = 0; i < count; i++)
-                if (pointerX < slotStart(i) + slotWidth(i) * base + spacing / 2) return pointerX >= slotStart(i) - spacing / 2 ? i : -1;
+            const x = pointerStripX - row.x;                   // along the drawn row
+            let start = 0;
+            for (let i = 0; i < count; i++) {
+                const end = start + base * slotWidth(i) * scaleAt(i);
+                if (x < end + spacing / 2) return x >= start - spacing / 2 ? i : -1;
+                start = end + spacing;
+            }
             return -1;
         }
 
@@ -1347,7 +1362,7 @@ ShellRoot {
                 win.dragCandidate = m.button === Qt.LeftButton && sl && sl.kind === "app" && sl.item.pinned ? sl.item.key : "";
             }
             onPositionChanged: m => {
-                win.pointerX = stripX(m) - (strip.width - win.restWidth) / 2;
+                win.setPointer(stripX(m));
                 if (!pressed || win.dragCandidate === "") return;
                 if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > 8) {
                     dragged = true;
@@ -1360,7 +1375,7 @@ ShellRoot {
             onExited: holdTimer.restart()
             onClicked: m => {
                 if (dragged) return;            // a drag, not a click
-                win.pointerX = stripX(m) - (strip.width - win.restWidth) / 2;
+                win.setPointer(stripX(m));
                 win.clickItem(win.hoveredIndex, m.button === Qt.RightButton);
             }
         }
@@ -1373,10 +1388,10 @@ ShellRoot {
                 win.fileDrag = d.hasUrls;
                 if (!d.hasUrls) d.accepted = false;
             }
-            onPositionChanged: d => win.pointerX = strip.mapFromItem(this, d.x, d.y).x - (strip.width - win.restWidth) / 2
+            onPositionChanged: d => win.setPointer(strip.mapFromItem(this, d.x, d.y).x)
             onExited: { win.fileDrag = false; holdTimer.restart(); }
             onDropped: d => {
-                win.pointerX = strip.mapFromItem(this, d.x, d.y).x - (strip.width - win.restWidth) / 2;
+                win.setPointer(strip.mapFromItem(this, d.x, d.y).x);
                 if (d.hasUrls && win.dropFiles(win.hoveredIndex, d.urls)) d.acceptProposedAction();
                 win.fileDrag = false;
             }
