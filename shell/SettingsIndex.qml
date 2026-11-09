@@ -14,13 +14,50 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property var pageIcons: ({ overview: 0xEA03, input: 0xEBD6, sound: 0xEB51, power: 0xEA38, shortcuts: 0xEA78, apps: 0xEBB6,
-        startup: 0xEC45, datetime: 0xEA70, screenshots: 0xF201, general: 0xEB20, appearance: 0xEB01, bar: 0xEAD7, dock: 0xEAD3, launcher: 0xEB1C, spaces: 0xEEF6,
-        windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, workspaces: 0xEDBA, lock: 0xEAE2, debug: 0xEA48, screensaver: 0xEAF8, apptheming: 0xEB01, updates: 0xEA96, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
-    readonly property var pageNames: ({ overview: "All Settings", input: "Keyboard & Mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
-        apps: "Default Apps", startup: "Startup Apps", datetime: "Date & Time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu Bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
-        windows: "Windows", displays: "Displays", hotcorners: "Hot Corners", notifications: "Notifications", workspaces: "Workspaces", lock: "Lock & Idle", debug: "Debug", screensaver: "Screensaver", apptheming: "App Theming", updates: "Updates", wifi: "Wi-Fi",
-        bluetooth: "Bluetooth", about: "About" })
+    // Every Settings page, in order, each a tile on All Settings (the first page). The ones used
+    // most are also down the sidebar; the rest (more: true) are reached from All Settings.
+    // SettingsWindow shows these; the launcher and search use the icons and names below.
+    readonly property var pages: [
+        { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
+        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, icons, fonts, size and wallpaper" },
+        { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
+        { id: "input", label: "Keyboard & Mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
+        { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
+        { id: "power", label: "Power", icon: 0xEA38, about: "Power mode, the lid and the power button" },
+        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling or floating, gaps, borders, focus and Super+Tab" },
+        { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
+        { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
+        { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
+        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
+        { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
+        { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
+        { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
+        { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
+        { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
+        { id: "lock", label: "Lock & Idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
+        { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper, a slideshow or videos while you're away" },
+        { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
+        { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
+        { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
+        { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
+        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
+        { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
+        { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
+        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
+        // About is always last
+        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
+    ]
+    // Each page's icon and name by its id, All Settings (overview) included
+    readonly property var pageIcons: {
+        const icons = { overview: 0xEA03 };
+        for (const p of pages) icons[p.id] = p.icon;
+        return icons;
+    }
+    readonly property var pageNames: {
+        const names = { overview: "All Settings" };
+        for (const p of pages) names[p.id] = p.label;
+        return names;
+    }
     readonly property var curated: [
         // [name, page, extra search words]
         ["General settings", "general", "settings preferences account"],

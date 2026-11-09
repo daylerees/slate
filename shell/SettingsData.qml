@@ -6,10 +6,10 @@ import Quickshell.Io
 
 JsonAdapter {
 
-    // General
+    // Colour, theme and wallpaper (Settings → Appearance)
     property string accent: "#8fb3e8"
     property bool accentFromWallpaper: false
-    property real accentBoldness: 0.6         // Settings → Appearance → Boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
+    property real accentBoldness: 0.6         // Settings → Appearance → Accent boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
     property bool lightMode: false           // light variant in use (set by themeMode)
     property string themeMode: ""            // dark, light or auto (light by day); "" = from lightMode
     property bool toneFromWallpaper: false   // tint the dark UI colours from the wallpaper
@@ -94,7 +94,7 @@ JsonAdapter {
     property string profileOnAC: ""
     property bool reopenAppsAfterRestart: true  // the restart dialog's switch: open your apps again after restarting, where they were
     // ---- Sound, startup, screenshots
-    property var themedApps: []               // Appearance → App Theming: app ids that follow Slate's colours (none until switched on)
+    property var themedApps: []               // Settings → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login
     property string screenshotFolder: ""      // "" = ~/Pictures/Screenshots
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)

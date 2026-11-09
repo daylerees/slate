@@ -1,5 +1,5 @@
-// Slate settings window for the bar, dock, launcher, switchers, notifications and
-// Bluetooth, styled like the rest of the shell. Values live in Config (settings.json).
+// Slate's Settings app: every page of settings (SettingsIndex.pages), styled like the rest of
+// the shell. Values live in Config (settings.json).
 // Open with:  slate ipc call settings toggle   (also Super+Z and the control centre gear)
 
 import QtQuick
@@ -20,8 +20,10 @@ FloatingWindow {
     title: "Slate Settings"
     // 880×620, or less on a small screen (Hyprland centres it at the size it asks for)
     readonly property var fitScreen: Config.focusedScreen
-    implicitWidth: Math.round(Math.min(880, fitScreen ? fitScreen.width * 0.9 : 880))
-    implicitHeight: Math.round(Math.min(620, fitScreen ? (fitScreen.height - 60) * 0.9 : 620))
+    // The window's size on a screen, in Slate's units (before rounding)
+    function fitSize(scr) { return Qt.size(Math.min(880, scr.width * 0.9), Math.min(620, (scr.height - 60) * 0.9)); }
+    implicitWidth: Math.round(fitScreen ? fitSize(fitScreen).width : 880)
+    implicitHeight: Math.round(fitScreen ? fitSize(fitScreen).height : 620)
     minimumSize: Qt.size(Math.min(520, implicitWidth), Math.min(380, implicitHeight))
     // The screen it's on changing size (its scale or resolution changed, or the interface
     // size): fit and centre it again, or it can be left off to one side or past the edge
@@ -33,8 +35,9 @@ FloatingWindow {
         onTriggered: {
             if (!win.visible || !win.screen) return;
             // Hyprland's units: Slate's times the interface size
-            const w = Math.round(Math.min(880, win.screen.width * 0.9) * Config.uiScale);
-            const h = Math.round(Math.min(620, (win.screen.height - 60) * 0.9) * Config.uiScale);
+            const size = win.fitSize(win.screen);
+            const w = Math.round(size.width * Config.uiScale);
+            const h = Math.round(size.height * Config.uiScale);
             const sel = "title:^(Slate Settings)$";
             Quickshell.execDetached(["hyprctl", "dispatch",
                 `function() hl.dispatch(hl.dsp.window.resize({ x = ${w}, y = ${h}, window = "${sel}" })); hl.dispatch(hl.dsp.window.center({ window = "${sel}" })) end`]);
@@ -85,8 +88,31 @@ FloatingWindow {
     // bar's containers have (a hint of the wallpaper's colour), so their sheen picks it up too
     readonly property color control: Config.raised(Config.tint("#2a313c"))
     function controlHover(solid) { return Config.glass ? Config.hoverOn(control) : solid; }
+    // The theme's greys, named for what they're used for (each worked out once, not per item)
+    readonly property color well: Config.tint("#151920")           // sunken areas: the content pane, search wells, segmented tracks
+    readonly property color divider: Config.tint("#262c35")        // separators, chosen rows, meter tracks
+    readonly property color outline: Config.tint("#2a313c")        // borders, idle icon tiles
+    readonly property color popupFill: Config.tint("#1d222a")      // dropdown menus and other pop-ups
+    readonly property color controlHoverSolid: Config.tint("#323a46")  // a button under the pointer (without glass)
+    readonly property color knobHover: Config.tint("#38414e")      // a switch or slider track under the pointer (without glass)
+    readonly property color ring: Config.tint("#3a424e")           // the outline round a swatch or picture
+    readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)   // a whisper of the text colour, for flat fills
+    // A text field or dropdown under the pointer
+    function fieldHover() { return controlHover(Config.hoverOn(outline)); }
     readonly property string font: bar.fontFamily
     function glyph(code) { return String.fromCodePoint(code); }
+    // Dropdown choices every half hour, from one hour to another (halfHours(16, 23.5): 16:00,
+    // 16:30 … 23:30), for night light's schedule
+    function halfHours(from, to) {
+        const out = [];
+        for (let t = from; t <= to; t += 0.5) {
+            const v = String(Math.floor(t)).padStart(2, "0") + (t % 1 ? ":30" : ":00");
+            out.push({ value: v, label: v });
+        }
+        return out;
+    }
+    // Dropdown choices for a number of minutes (0 is "Never")
+    function minuteOptions(list) { return list.map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") })); }
 
     property string section: "overview"
 
@@ -268,38 +294,8 @@ FloatingWindow {
     FontMetrics { id: introMetrics; font.family: win.font; font.pixelSize: 13 }
     readonly property real detailMeasure: detailMetrics.averageCharacterWidth * 70
     readonly property real introMeasure: introMetrics.averageCharacterWidth * 70
-    // Every page, each a tile on All Settings (the first page). The ones used most are also
-    // down the sidebar; the rest (more: true) are reached from All Settings
-    readonly property var sections: [
-        { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
-        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, icons, fonts, size and wallpaper" },
-        { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
-        { id: "input", label: "Keyboard & Mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
-        { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
-        { id: "power", label: "Power", icon: 0xEA38, about: "Power mode, the lid and the power button" },
-        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling or floating, gaps, borders, focus and Super+Tab" },
-        { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
-        { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
-        { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
-        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
-        { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
-        { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
-        { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
-        { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
-        { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
-        { id: "lock", label: "Lock & Idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
-        { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper or a slideshow while you're away" },
-        { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
-        { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
-        { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
-        { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
-        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
-        { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
-        { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
-        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
-        // About is always last
-        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
-    ]
+    // Every page (SettingsIndex.pages: id, label, icon, about, more)
+    readonly property var sections: SettingsIndex.pages
     // Theme presets (Settings → Appearance → Presets): a named set of the Theme & colour and Glass
     // settings, applied together. Only those keys; lightMode follows themeMode
     // Slate Default: the same settings the other presets set (and light or dark), at Slate's
@@ -368,51 +364,51 @@ FloatingWindow {
                 boundsBehavior: Flickable.StopAtBounds
                 interactive: contentHeight > height
                 SmoothWheel { flick: sideScroll }
-            Column {
-                id: sideCol
-                width: parent.width
-                spacing: 4                  // room between the pills for the page you're on and the one pointed at
-                // Slate's mark (as on the About page) beside the title
-                Row {
-                    leftPadding: 4; topPadding: 4; bottomPadding: 14
-                    spacing: 8
-                    SlateLogo { size: win.compact ? 30 : 40; showText: false; anchors.verticalCenter: parent.verticalCenter }
-                    Column {
-                        visible: !win.compact
-                        anchors.verticalCenter: parent.verticalCenter
-                        Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: 18; font.weight: Font.Medium }
-                        Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
-                    }
-                }
-                Repeater {
-                    model: win.sidebarSections
-                    delegate: Rectangle {
-                        required property var modelData
-                        readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
-                        width: parent.width; height: 38; radius: 9
-                        color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (current || navHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        Text {
-                            id: navIcon
-                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                            text: win.glyph(parent.modelData.icon)
-                            // Colourful: each page its own colour; monotone: the accent when current
-                            color: Config.colourful ? Config.pageColour(parent.modelData.id) : parent.current ? win.accent : win.dim
-                            font.family: win.bar.iconFont; font.pixelSize: 17
-                        }
-                        Text {
+                Column {
+                    id: sideCol
+                    width: parent.width
+                    spacing: 4                  // room between the pills for the page you're on and the one pointed at
+                    // Slate's mark (as on the About page) beside the title
+                    Row {
+                        leftPadding: 4; topPadding: 4; bottomPadding: 14
+                        spacing: 8
+                        SlateLogo { size: win.compact ? 30 : 40; showText: false; anchors.verticalCenter: parent.verticalCenter }
+                        Column {
                             visible: !win.compact
-                            anchors { left: navIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                            text: parent.modelData.label
-                            color: parent.current ? win.text : win.dim
-                            font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: 18; font.weight: Font.Medium }
+                            Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
                         }
-                        HoverHandler { id: navHover }
-                        ClickTap { onTapped: win.section = parent.modelData.id }
+                    }
+                    Repeater {
+                        model: win.sidebarSections
+                        delegate: Rectangle {
+                            required property var modelData
+                            readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
+                            width: parent.width; height: 38; radius: 9
+                            color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
+                            Gloss { radius: parent.radius; opacity: (current || navHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                            Text {
+                                id: navIcon
+                                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                text: win.glyph(parent.modelData.icon)
+                                // Colourful: each page its own colour; monotone: the accent when current
+                                color: Config.colourful ? Config.pageColour(parent.modelData.id) : parent.current ? win.accent : win.dim
+                                font.family: win.bar.iconFont; font.pixelSize: 17
+                            }
+                            Text {
+                                visible: !win.compact
+                                anchors { left: navIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                text: parent.modelData.label
+                                color: parent.current ? win.text : win.dim
+                                font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                            }
+                            HoverHandler { id: navHover }
+                            ClickTap { onTapped: win.section = parent.modelData.id }
+                        }
                     }
                 }
-            }
             }
         }
 
@@ -420,8 +416,7 @@ FloatingWindow {
         Rectangle {
             // Fills the rest of the window, edge to edge (the window's own corners round it)
             anchors { top: parent.top; bottom: parent.bottom; left: sidebar.right; right: parent.right }
-            radius: 0
-            color: Config.tint("#151920")
+            color: win.well
 
             id: contentPane
             // Header: a search across every setting (on each page but All Settings, which has its
@@ -444,7 +439,7 @@ FloatingWindow {
                     anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
                     height: 36; radius: 10
                     // Flat: a faint fill and no sheen, so it stays quiet above the page
-                    color: Qt.rgba(win.text.r, win.text.g, win.text.b, 0.06)
+                    color: win.faint
                     border.width: pageFind.activeFocus ? 1 : 0; border.color: win.accent
                     readonly property var found: pageFind.text.trim() === "" ? [] : SettingsIndex.search(pageFind.text, 8)
                     property int pick: 0
@@ -499,51 +494,39 @@ FloatingWindow {
                         HoverHandler { id: pageFindClearHover }
                         ClickTap { onTapped: { pageFind.text = ""; pageFind.forceActiveFocus(); } }
                     }
-
                 }
-
 
                 Item {
-                id: titleRow
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height: 66
-                // Back to All Settings, from a page opened there
-                Rectangle {
-                    id: backBtn
-                    visible: win.onMorePage
-                    anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
-                    width: 34; height: 34; radius: 17
-                    color: backHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                    Text {
-                        anchors.centerIn: parent
-                        text: win.glyph(0xEA19)
-                        color: backHover.hovered ? win.text : win.dim
-                        font.family: win.bar.iconFont; font.pixelSize: 18
+                    id: titleRow
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: 66
+                    // Back to All Settings, from a page opened there
+                    IconButton {
+                        id: backBtn
+                        visible: win.onMorePage
+                        anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                        icon: 0xEA19
+                        onClicked: win.section = "overview"
                     }
-                    HoverHandler { id: backHover }
-                    ClickTap { onTapped: win.section = "overview" }
-                }
-                Text {
-                    anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 12 : 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
-                    text: win.pageTitle
-                    color: win.text
-                    font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
-                    elide: Text.ElideRight
-                }
-                // Restore defaults: opposite the title, only on pages with settings, and only
-                // clickable when something's changed
-                Button {
-                    id: resetBtn
-                    compactLabel: win.compact
-                    anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
-                    visible: win.currentKeys.length > 0
-                    opacity: win.changedHere > 0 ? 1 : 0.45
-                    icon: 0xEB77
-                    label: "Restore defaults"
-                    onClicked: if (win.changedHere > 0) win.confirmReset = true
-                }
+                    Text {
+                        anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 12 : 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                        text: win.pageTitle
+                        color: win.text
+                        font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
+                        elide: Text.ElideRight
+                    }
+                    // Restore defaults: opposite the title, only on pages with settings, and only
+                    // clickable when something's changed
+                    Button {
+                        id: resetBtn
+                        compactLabel: win.compact
+                        anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                        visible: win.currentKeys.length > 0
+                        opacity: win.changedHere > 0 ? 1 : 0.45
+                        icon: 0xEB77
+                        label: "Restore defaults"
+                        onClicked: if (win.changedHere > 0) win.confirmReset = true
+                    }
                 }
             }
 
@@ -560,8 +543,8 @@ FloatingWindow {
                 height: pageHitsCol.implicitHeight + 8
                 radius: 12
                 // Solid, so the page under it doesn't show through the results
-                color: Config.tint("#151920")
-                border.width: 1; border.color: Config.tint("#2a313c")
+                color: win.well
+                border.width: 1; border.color: win.outline
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
                 Column {
                     id: pageHitsCol
@@ -583,7 +566,7 @@ FloatingWindow {
                             readonly property bool chosen: index === pageSearch.pick
                             width: parent.width; height: pageHitCol.implicitHeight + 14
                             radius: 9
-                            color: chosen ? Config.tint("#262c35") : pageHitHover.hovered ? Config.hover : "transparent"
+                            color: chosen ? win.divider : pageHitHover.hovered ? Config.hover : "transparent"
                             Text {
                                 id: pageHitIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
@@ -616,23 +599,13 @@ FloatingWindow {
                     }
                 }
             }
-            Rectangle {
+            IconButton {
                 id: closeBtn
                 z: 3
                 // Top right, in the same place on every page (beside the search, or All Settings' title)
                 anchors { right: parent.right; rightMargin: 14; top: header.top; topMargin: 16 }
-                width: 34; height: 34; radius: 17
-                color: closeHover.hovered ? Config.hover : "transparent"
-                Gloss { radius: parent.radius; opacity: (closeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                Text {
-                    anchors.centerIn: parent
-                    text: win.glyph(0xEB55)
-                    color: closeHover.hovered ? win.text : win.dim
-                    font.family: win.bar.iconFont; font.pixelSize: 18
-                }
-                HoverHandler { id: closeHover }
-                ClickTap { onTapped: win.visible = false }
+                icon: 0xEB55
+                onClicked: win.visible = false
             }
 
             // Lights up a setting found by search (showFound), then fades
@@ -684,53 +657,41 @@ FloatingWindow {
 
             // Scroll shadows: under the header once scrolled down, and at the bottom while
             // there's more below
-            Rectangle {
+            ScrollShade {
                 z: 1
                 anchors { top: header.bottom; left: parent.left; right: parent.right }
-                height: 18
-                topLeftRadius: contentPane.radius; topRightRadius: contentPane.radius
-                // Fades with the distance from the edge, gone just as you reach it
-                opacity: Math.max(0, Math.min(1, (scroller.contentY - scroller.originY) / 24))
-                gradient: Gradient {
-                    GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
-                    GradientStop { position: 1; color: "transparent" }
-                }
+                distance: scroller.contentY - scroller.originY
             }
-            Rectangle {
+            ScrollShade {
                 z: 1
+                atBottom: true
                 anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
                 height: 24
-                bottomLeftRadius: contentPane.radius; bottomRightRadius: contentPane.radius
-                opacity: Math.max(0, Math.min(1, (scroller.originY + scroller.contentHeight - scroller.height - scroller.contentY) / 24))
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "transparent" }
-                    GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
-                }
+                distance: scroller.originY + scroller.contentHeight - scroller.height - scroller.contentY
             }
         }
     }
 
-    // ---- Dropdown menus ----------------------------------------------------
-    // ---- Restore defaults: confirmation ---------------------------------------------
+    // ---- Confirmation card (Restore defaults, or any win.ask question) --------------------
     Rectangle {
-        id: resetConfirm
+        id: confirmLayer
         anchors.fill: parent
         z: 120
         color: Qt.rgba(0, 0, 0, 0.45)
         visible: opacity > 0
         opacity: win.confirming ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(140) } }
-        onVisibleChanged: if (visible) resetConfirmCard.forceActiveFocus()
+        onVisibleChanged: if (visible) confirmCard.forceActiveFocus()
         MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: win.cancelConfirm() }
         // Restoring defaults, or another question (win.ask)
         readonly property var q: win.confirmReset ? null : win.lastAsk
         Rectangle {
-            id: resetConfirmCard
+            id: confirmCard
             anchors.centerIn: parent
             width: 380; height: confirmCol.implicitHeight + 40
             radius: 16
             color: win.bar.barColor
-            border.width: 1; border.color: Config.tint("#2a313c")
+            border.width: 1; border.color: win.outline
             scale: win.confirming ? 1 : 0.96
             Behavior on scale { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it
@@ -743,13 +704,13 @@ FloatingWindow {
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
                 spacing: 8
                 Text {
-                    text: resetConfirm.q ? resetConfirm.q.title : "Restore " + win.pageTitle + " defaults?"
+                    text: confirmLayer.q ? confirmLayer.q.title : "Restore " + win.pageTitle + " defaults?"
                     color: win.text; font.family: win.font; font.pixelSize: 16; font.weight: Font.Medium
                     width: parent.width; elide: Text.ElideRight
                 }
                 Text {
                     width: parent.width
-                    text: resetConfirm.q ? resetConfirm.q.body
+                    text: confirmLayer.q ? confirmLayer.q.body
                         : win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
                           + " back to how Slate starts out. Other pages aren't touched."
                           + (win.resetRestarts ? " Slate restarts to apply them; your apps and windows stay open." : "")
@@ -758,7 +719,7 @@ FloatingWindow {
                 }
                 // The question's switch (an option to go further), when it has one
                 Item {
-                    readonly property var opt: resetConfirm.q ? resetConfirm.q.option : null
+                    readonly property var opt: confirmLayer.q ? confirmLayer.q.option : null
                     visible: !!opt
                     width: parent.width; height: visible ? Math.max(optCol.implicitHeight, optToggle.height) + 12 : 0
                     Column {
@@ -782,8 +743,8 @@ FloatingWindow {
                     Button { label: "Cancel"; onClicked: win.cancelConfirm() }
                     Button {
                         id: confirmYes
-                        label: resetConfirm.q ? resetConfirm.q.button : "Restore defaults"
-                        destructive: !!(resetConfirm.q && resetConfirm.q.destructive)
+                        label: confirmLayer.q ? confirmLayer.q.button : "Restore defaults"
+                        destructive: !!(confirmLayer.q && confirmLayer.q.destructive)
                         primary: !destructive
                         onClicked: {
                             if (win.ask) { const run = win.ask.run, opt = win.askOption; win.closeConfirm(); run(opt); }
@@ -795,6 +756,7 @@ FloatingWindow {
         }
     }
 
+    // ---- Dropdown menus ----------------------------------------------------
     // One shared layer over the whole window, so a menu isn't clipped by the scrolling
     // page. A DropdownSetting sets itself as the owner to open its menu here.
     Item {
@@ -858,11 +820,11 @@ FloatingWindow {
             width: dropLayer.menuW
             height: dropLayer.menuH
             radius: 12
-            color: Config.tint("#1d222a")
-            border.width: 1; border.color: Config.tint("#2a313c")
+            color: win.popupFill
+            border.width: 1; border.color: win.outline
             opacity: dropLayer.visible ? 1 : 0
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+            layer.effect: PopupShadow {}
             MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
             // Searchable: type to filter; Up/Down, Enter to pick, Escape to close
             Rectangle {
@@ -870,7 +832,7 @@ FloatingWindow {
                 visible: dropLayer.searching
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 6 }
                 height: 32; radius: 8
-                color: Qt.rgba(win.text.r, win.text.g, win.text.b, 0.06)
+                color: win.faint
                 border.width: dropFind.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: dropFindIcon
@@ -926,7 +888,7 @@ FloatingWindow {
                     readonly property bool picked: dropLayer.searching && index === dropLayer.pick
                     // Clear of the scrollbar, when there is one
                     width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
-                    color: rowHover.hovered ? Config.hover : picked ? Config.tint("#262c35") : "transparent"
+                    color: rowHover.hovered ? Config.hover : picked ? win.divider : "transparent"
                     Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     FolderSwatch {
                         id: rowFolder
@@ -965,25 +927,16 @@ FloatingWindow {
             }
             // While the list scrolls: a soft shadow at the top once scrolled down and at the bottom
             // while there's more below (like Settings' pages), and a 1 px scrollbar
-            Rectangle {
+            ScrollShade {
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
-                height: 18
-                topLeftRadius: menu.radius - 1; topRightRadius: menu.radius - 1
-                opacity: Math.max(0, Math.min(1, menuList.contentY / 24))
-                gradient: Gradient {
-                    GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
-                    GradientStop { position: 1; color: "transparent" }
-                }
+                cornerRadius: menu.radius - 1
+                distance: menuList.contentY
             }
-            Rectangle {
+            ScrollShade {
+                atBottom: true
                 anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
-                height: 18
-                bottomLeftRadius: menu.radius - 1; bottomRightRadius: menu.radius - 1
-                opacity: Math.max(0, Math.min(1, (menuList.contentHeight - menuList.height - menuList.contentY) / 24))
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "transparent" }
-                    GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
-                }
+                cornerRadius: menu.radius - 1
+                distance: menuList.contentHeight - menuList.height - menuList.contentY
             }
             Rectangle {
                 readonly property real range: menuList.contentHeight - menuList.height
@@ -1010,6 +963,68 @@ FloatingWindow {
         visible: false
         onTextChanged: win.pageTitle = text
         Component.onCompleted: win.pageTitle = text
+    }
+    // A round icon button (the header's back and close): a glyph that brightens, on a fill and
+    // sheen that fade in, under the pointer
+    component IconButton: Rectangle {
+        id: iconButton
+        property int icon                  // a Tabler glyph's code point
+        signal clicked()
+        width: 34; height: 34; radius: 17
+        color: iconButtonHover.hovered ? Config.hover : "transparent"
+        Gloss { radius: parent.radius; opacity: (iconButtonHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+        Text {
+            anchors.centerIn: parent
+            text: win.glyph(iconButton.icon)
+            color: iconButtonHover.hovered ? win.text : win.dim
+            font.family: win.bar.iconFont; font.pixelSize: 18
+        }
+        HoverHandler { id: iconButtonHover }
+        ClickTap { onTapped: iconButton.clicked() }
+    }
+    // A soft shadow along the top or bottom edge of a scrolling list, saying there's more that
+    // way: it fades with the distance (px) from that end, gone just as you reach it
+    component ScrollShade: Rectangle {
+        id: scrollShade
+        property bool atBottom: false
+        property real distance: 0
+        property real cornerRadius: 0      // the rounding of the corners it sits in
+        height: 18
+        topLeftRadius: atBottom ? 0 : cornerRadius; topRightRadius: atBottom ? 0 : cornerRadius
+        bottomLeftRadius: atBottom ? cornerRadius : 0; bottomRightRadius: atBottom ? cornerRadius : 0
+        opacity: Math.max(0, Math.min(1, distance / 24))
+        gradient: Gradient {
+            GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
+            GradientStop { position: 1; color: scrollShade.atBottom ? Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+        }
+    }
+    // The shadow under a pop-up (dropdown menus, the place search's results): use it as
+    // layer.effect: PopupShadow {}
+    component PopupShadow: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+    // The box round a text field: the control colour with a sheen, an I-beam pointer, and a faint
+    // accent outline under the pointer (solid while typing). field: the TextInput inside it
+    component FieldFrame: Rectangle {
+        id: fieldFrame
+        property Item field: null
+        radius: 8
+        color: win.control
+        Gloss { radius: parent.radius }   // glass: a sheen
+        HoverHandler { id: fieldFrameHover; cursorShape: Qt.IBeamCursor }
+        border.width: (fieldFrame.field && fieldFrame.field.activeFocus) || fieldFrameHover.hovered ? 1 : 0
+        border.color: fieldFrame.field && fieldFrame.field.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
+    }
+    // A page's opening paragraph, under its title
+    component IntroText: Text {
+        width: Math.min(parent.width, win.introMeasure)
+        color: win.dim; font.family: win.font; font.pixelSize: 13
+        wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
+    }
+    // A note at the foot of a page
+    component Footnote: Text {
+        width: parent.width
+        topPadding: 10
+        color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
     }
     component GroupLabel: Text {
         color: win.dim
@@ -1046,13 +1061,20 @@ FloatingWindow {
             width: childrenRect.width; height: childrenRect.height
         }
     }
+    // A setting that's a plain switch for one of Slate's settings: key is its name in
+    // SettingsData (ToggleSetting { label: "…"; detail: "…"; key: "barShowApps" })
+    component ToggleSetting: SettingRow {
+        id: toggleRow
+        property string key
+        Toggle { checked: Config.s[toggleRow.key]; onToggled: v => Config.s[toggleRow.key] = v }
+    }
     component Toggle: Rectangle {
-        id: tg
+        id: toggleSwitch
         property bool checked: false
         signal toggled(bool value)
         width: 42; height: 24; radius: 12
         color: checked ? (tgHover.hovered ? Qt.lighter(win.accent, 1.08) : win.accent)
-            : (tgHover.hovered ? win.controlHover(Config.tint("#38414e")) : win.control)
+            : (tgHover.hovered ? win.controlHover(win.knobHover) : win.control)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
         Rectangle {
@@ -1068,15 +1090,15 @@ FloatingWindow {
         Rectangle {
             width: 18; height: 18; radius: 9
             anchors.verticalCenter: parent.verticalCenter
-            x: tg.checked ? parent.width - width - 3 : 3
-            color: tg.checked ? win.accentText : win.text
+            x: toggleSwitch.checked ? parent.width - width - 3 : 3
+            color: toggleSwitch.checked ? win.accentText : win.text
             Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
         }
-        ClickTap { onTapped: tg.toggled(!tg.checked) }
+        ClickTap { onTapped: toggleSwitch.toggled(!toggleSwitch.checked) }
     }
     // Slider with its value shown alongside
     component ValueSlider: Row {
-        id: vs
+        id: valueSlider
         property real from: 0
         property real to: 1
         property real stepSize: 0.1
@@ -1091,20 +1113,20 @@ FloatingWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: 56
             horizontalAlignment: Text.AlignRight
-            text: vs.zeroText !== "" && vs.value <= vs.from ? vs.zeroText : vs.value.toFixed(vs.decimals) + vs.suffix
+            text: valueSlider.zeroText !== "" && valueSlider.value <= valueSlider.from ? valueSlider.zeroText : valueSlider.value.toFixed(valueSlider.decimals) + valueSlider.suffix
             color: win.dim
             font.family: win.font; font.pixelSize: 12
         }
         Item {
             width: 200; height: 24
-            readonly property real frac: (vs.value - vs.from) / (vs.to - vs.from)
+            readonly property real frac: (valueSlider.value - valueSlider.from) / (valueSlider.to - valueSlider.from)
             id: sliderBox
             readonly property bool hot: sliderMouse.containsMouse || sliderMouse.pressed
             Rectangle {
                 id: trk
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: 3
-                color: sliderBox.hot ? win.controlHover(Config.tint("#38414e")) : win.control
+                color: sliderBox.hot ? win.controlHover(win.knobHover) : win.control
                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 Rectangle {
                     width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
@@ -1137,19 +1159,19 @@ FloatingWindow {
                 anchors.fill: parent
                 hoverEnabled: true
                 function set(mx) {
-                    const raw = vs.from + Math.max(0, Math.min(1, mx / width)) * (vs.to - vs.from);
-                    vs.moved(Math.round(raw / vs.stepSize) * vs.stepSize);
+                    const raw = valueSlider.from + Math.max(0, Math.min(1, mx / width)) * (valueSlider.to - valueSlider.from);
+                    valueSlider.moved(Math.round(raw / valueSlider.stepSize) * valueSlider.stepSize);
                 }
                 onPressed: m => set(m.x)
                 onPositionChanged: m => { if (pressed) set(m.x); }
-                onReleased: vs.released()
+                onReleased: valueSlider.released()
             }
         }
     }
     // One of Slate's sounds: a play button to hear it, and a volume slider, Off at 0; letting go
     // of the slider plays it too, at that volume
     component SoundSetting: SettingRow {
-        id: snd
+        id: soundSetting
         property string which              // Config.soundSettings key
         property string sample             // sounds/<sample>.wav to play as a preview
         property bool available: true
@@ -1161,28 +1183,28 @@ FloatingWindow {
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 28; height: 28; radius: 14
-                opacity: snd.audible ? 1 : 0.4
-                color: playHover.hovered && snd.audible ? win.controlHover(Config.tint("#323a46")) : win.control
+                opacity: soundSetting.audible ? 1 : 0.4
+                color: playHover.hovered && soundSetting.audible ? win.controlHover(win.controlHoverSolid) : win.control
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 Gloss { radius: parent.radius }   // glass: a sheen
                 Text {
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 1      // the triangle looks centred a touch right
                     text: win.glyph(0xED46)                // play
-                    color: snd.audible ? win.text : win.dim
+                    color: soundSetting.audible ? win.text : win.dim
                     font.family: win.bar.iconFont; font.pixelSize: 14
                 }
-                HoverHandler { id: playHover; cursorShape: snd.audible ? Qt.PointingHandCursor : Qt.ArrowCursor }
-                TapHandler { enabled: snd.audible; onTapped: Config.playSound(snd.sample, snd.which) }
+                HoverHandler { id: playHover; cursorShape: soundSetting.audible ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                TapHandler { enabled: soundSetting.audible; onTapped: Config.playSound(soundSetting.sample, soundSetting.which) }
             }
             ValueSlider {
                 anchors.verticalCenter: parent.verticalCenter
-                enabled: snd.available
+                enabled: soundSetting.available
                 opacity: enabled ? 1 : 0.4
                 from: 0; to: 100; stepSize: 5; suffix: "%"; zeroText: "Off"
-                value: snd.available ? Config.soundVolume(snd.which) : 0
-                onMoved: v => Config.s[Config.soundSettings[snd.which][0]] = Math.round(v)
-                onReleased: Config.playSound(snd.sample, snd.which)
+                value: soundSetting.available ? Config.soundVolume(soundSetting.which) : 0
+                onMoved: v => Config.s[Config.soundSettings[soundSetting.which][0]] = Math.round(v)
+                onReleased: Config.playSound(soundSetting.sample, soundSetting.which)
             }
         }
     }
@@ -1196,7 +1218,7 @@ FloatingWindow {
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? (btnHover.hovered ? Qt.lighter(win.accent, 1.1) : win.accent)
-            : btnHover.hovered ? win.controlHover(Config.tint("#323a46")) : win.control
+            : btnHover.hovered ? win.controlHover(win.controlHoverSolid) : win.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
         Gloss { radius: parent.radius }   // glass: a sheen
@@ -1225,7 +1247,7 @@ FloatingWindow {
     // A font choice: shows the current font, and opens a searchable list of
     // installed fonts (each shown in its own typeface). key = Config.s property.
     component FontSetting: Column {
-        id: fs
+        id: fontSetting
         property string label
         property string detail
         property string key
@@ -1239,10 +1261,10 @@ FloatingWindow {
         // Monospaced fonts, from fontconfig, plus anything named like one
         property var monoFonts: []
         Process {
-            running: fs.monoOnly
+            running: fontSetting.monoOnly
             command: ["fc-list", ":spacing=mono", "family"]
             stdout: StdioCollector {
-                onStreamFinished: fs.monoFonts = text.split("\n").map(l => l.split(",")[0].trim()).filter(f => f)
+                onStreamFinished: fontSetting.monoFonts = text.split("\n").map(l => l.split(",")[0].trim()).filter(f => f)
             }
         }
         readonly property var all: Qt.fontFamilies().filter(f => f && !f.startsWith(".")
@@ -1260,54 +1282,50 @@ FloatingWindow {
         // Once the list has been laid out, scroll the page so it's all on screen
         Timer {
             id: revealTimer; interval: 30
-            onTriggered: { fontList.positionViewAtIndex(Math.max(0, fs.shown.indexOf(fs.value)), ListView.Center); fs.revealList(); }
+            onTriggered: { fontList.positionViewAtIndex(Math.max(0, fontSetting.shown.indexOf(fontSetting.value)), ListView.Center); fontSetting.revealList(); }
         }
         function revealList() {
-            const bottom = fs.mapToItem(scroller.contentItem, 0, fs.height).y;
-            const top = fs.mapToItem(scroller.contentItem, 0, 0).y;
+            const bottom = fontSetting.mapToItem(scroller.contentItem, 0, fontSetting.height).y;
+            const top = fontSetting.mapToItem(scroller.contentItem, 0, 0).y;
             if (bottom > scroller.contentY + scroller.height)
                 scroller.contentY = Math.min(top, bottom - scroller.height);
         }
 
         SettingRow {
-            label: fs.label
-            detail: fs.detail
+            label: fontSetting.label
+            detail: fontSetting.detail
             Row {
                 spacing: 8
-                Button { visible: fs.value !== fs.defaultFont; label: "Default"; onClicked: fs.choose(fs.defaultFont) }
+                Button { visible: fontSetting.value !== fontSetting.defaultFont; label: "Default"; onClicked: fontSetting.choose(fontSetting.defaultFont) }
                 Button {
-                    label: fs.value + (fs.open ? "  ▴" : "  ▾")
-                    primary: fs.open
-                    onClicked: fs.open = !fs.open
+                    label: fontSetting.value + (fontSetting.open ? "  ▴" : "  ▾")
+                    primary: fontSetting.open
+                    onClicked: fontSetting.open = !fontSetting.open
                 }
             }
         }
         Item {
-            visible: fs.open
+            visible: fontSetting.open
             width: parent.width
-            height: fs.open ? 300 : 0
-            Rectangle {
+            height: fontSetting.open ? 300 : 0
+            FieldFrame {
                 id: fontSearchBox
+                field: fontSearch
                 anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 16; rightMargin: 16 }
-                height: 34; radius: 8
-                color: win.control
-                Gloss { radius: parent.radius }   // glass: a sheen
-                // Hover: a faint accent outline (solid while typing)
-                HoverHandler { id: fontSearchHover; cursorShape: Qt.IBeamCursor }
-                border.width: fontSearch.activeFocus || fontSearchHover.hovered ? 1 : 0; border.color: fontSearch.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
+                height: 34
                 TextInput {
                     id: fontSearch
                     anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                     verticalAlignment: TextInput.AlignVCenter
                     color: win.text; selectionColor: win.accent
                     font.family: win.font; font.pixelSize: 13
-                    Keys.onEscapePressed: fs.open = false
-                    Keys.onReturnPressed: if (fs.shown.length) { fs.choose(fs.shown[0]); fs.open = false; }
+                    Keys.onEscapePressed: fontSetting.open = false
+                    Keys.onReturnPressed: if (fontSetting.shown.length) { fontSetting.choose(fontSetting.shown[0]); fontSetting.open = false; }
                 }
                 Text {
                     visible: fontSearch.text === ""
                     anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                    text: "Search " + fs.all.length + " fonts"
+                    text: "Search " + fontSetting.all.length + " fonts"
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
             }
@@ -1316,11 +1334,11 @@ FloatingWindow {
                 anchors { left: parent.left; right: parent.right; top: fontSearchBox.bottom; bottom: parent.bottom; margins: 8; leftMargin: 12; rightMargin: 12 }
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                model: fs.shown
+                model: fontSetting.shown
                 SmoothWheel { flick: fontList; notch: 108 }
                 delegate: Rectangle {
                     required property string modelData
-                    readonly property bool current: fs.value === modelData
+                    readonly property bool current: fontSetting.value === modelData
                     width: ListView.view.width; height: 36; radius: 8
                     color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
                     Gloss { radius: parent.radius; opacity: (current || fontHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
@@ -1334,12 +1352,12 @@ FloatingWindow {
                     Text {
                         id: sample
                         anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: fs.monoOnly ? "{ x => 0 }" : "Aa 123"
+                        text: fontSetting.monoOnly ? "{ x => 0 }" : "Aa 123"
                         color: parent.current ? win.accentText : win.dim
                         font.family: parent.modelData; font.pixelSize: 13
                     }
                     HoverHandler { id: fontHover }
-                    ClickTap { onTapped: fs.choose(parent.modelData) }
+                    ClickTap { onTapped: fontSetting.choose(parent.modelData) }
                 }
             }
         }
@@ -1347,7 +1365,7 @@ FloatingWindow {
     // A setting with a few named options: shows the current one; click to pick.
     // options: [{ value, label }]
     component ChoiceSetting: Column {
-        id: ch
+        id: choiceSetting
         property string label
         property string detail: ""
         property var options: []
@@ -1357,37 +1375,37 @@ FloatingWindow {
         width: parent ? parent.width : 0
         readonly property var current: options.find(o => o.value === value) ?? null
         SettingRow {
-            label: ch.label
-            detail: ch.detail
+            label: choiceSetting.label
+            detail: choiceSetting.detail
             Button {
-                label: (ch.current ? ch.current.label : String(ch.value)) + (ch.open ? "  ▴" : "  ▾")
-                primary: ch.open
-                onClicked: ch.open = !ch.open
+                label: (choiceSetting.current ? choiceSetting.current.label : String(choiceSetting.value)) + (choiceSetting.open ? "  ▴" : "  ▾")
+                primary: choiceSetting.open
+                onClicked: choiceSetting.open = !choiceSetting.open
             }
         }
         Flow {
-            visible: ch.open
+            visible: choiceSetting.open
             width: parent.width - 32; x: 16
             spacing: 6
             bottomPadding: 14
             Repeater {
-                model: ch.options
+                model: choiceSetting.options
                 delegate: Rectangle {
                     required property var modelData
-                    readonly property bool on: modelData.value === ch.value
+                    readonly property bool on: modelData.value === choiceSetting.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
-                    color: on ? win.accent : optHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
+                    color: on ? win.accent : optHover.hovered ? win.fieldHover() : win.control
                     Gloss { radius: parent.radius; opacity: (on || optHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
-                    ClickTap { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
+                    ClickTap { onTapped: { choiceSetting.picked(parent.modelData.value); choiceSetting.open = false; } }
                 }
             }
         }
     }
     // A setting with a dropdown menu of choices (opens over the page; see dropLayer)
     component DropdownSetting: Item {
-        id: dd
+        id: dropdown
         property string label
         property string detail: ""
         width: parent ? parent.width : 0
@@ -1403,30 +1421,30 @@ FloatingWindow {
         property alias button: ddButton
         SettingRow {
           id: ddRow
-          label: dd.label
-          detail: dd.detail
+          label: dropdown.label
+          detail: dropdown.detail
           Rectangle {
             id: ddButton
-            readonly property bool open: dropLayer.owner === dd
+            readonly property bool open: dropLayer.owner === dropdown
             // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
             readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
-            width: Math.max(150, Math.min(naturalWidth, dd.width * 0.45)); height: 32; radius: 8
-            color: open || ddHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
+            width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: 8
+            color: open || ddHover.hovered ? win.fieldHover() : win.control
             Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
             FolderSwatch {
                 id: ddFolder
-                visible: !!dd.current && !!dd.current.folder
+                visible: !!dropdown.current && !!dropdown.current.folder
                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                colour: dd.current && dd.current.folder ? dd.current.folder : "transparent"
+                colour: dropdown.current && dropdown.current.folder ? dropdown.current.folder : "transparent"
             }
             Text {
                 id: ddText
                 anchors { left: ddFolder.visible ? ddFolder.right : parent.left; leftMargin: ddFolder.visible ? 8 : 12; verticalCenter: parent.verticalCenter }
                 width: Math.min(implicitWidth, ddButton.width - x - 32)
-                text: dd.current ? dd.current.label : dd.noneLabel !== "" ? dd.noneLabel : String(dd.value)
+                text: dropdown.current ? dropdown.current.label : dropdown.noneLabel !== "" ? dropdown.noneLabel : String(dropdown.value)
                 color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
                 elide: Text.ElideMiddle      // device names differ at the end: keep it in view
             }
@@ -1438,15 +1456,15 @@ FloatingWindow {
                 color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
             }
             HoverHandler { id: ddHover }
-            ClickTap { onTapped: dropLayer.owner = ddButton.open ? null : dd }
+            ClickTap { onTapped: dropLayer.owner = ddButton.open ? null : dropdown }
           }
         }
     }
-    component Separator: Rectangle { width: parent ? parent.width - 32 : 0; x: 16; height: 1; color: Config.tint("#262c35") }
+    component Separator: Rectangle { width: parent ? parent.width - 32 : 0; x: 16; height: 1; color: win.divider }
     // A choice from a long list (keyboard layouts, time zones, apps): a button that opens a
     // search box and list under the row. options: [{ value, label, detail? }]
     component SearchPicker: Column {
-        id: sp
+        id: searchPicker
         property string label
         property string detail: ""
         property string buttonLabel: "Choose…"
@@ -1461,26 +1479,26 @@ FloatingWindow {
             return list.slice(0, 400);
         }
         SettingRow {
-            label: sp.label
-            detail: sp.detail
+            label: searchPicker.label
+            detail: searchPicker.detail
             Button {
-                icon: sp.open ? 0 : sp.buttonIcon
-                label: sp.open ? "Cancel" : sp.buttonLabel
+                icon: searchPicker.open ? 0 : searchPicker.buttonIcon
+                label: searchPicker.open ? "Cancel" : searchPicker.buttonLabel
                 onClicked: {
-                    sp.open = !sp.open;
+                    searchPicker.open = !searchPicker.open;
                     findBox.text = "";
-                    if (sp.open) Qt.callLater(() => findBox.forceActiveFocus());
+                    if (searchPicker.open) Qt.callLater(() => findBox.forceActiveFocus());
                 }
             }
         }
         Column {
-            visible: sp.open
+            visible: searchPicker.open
             width: parent.width - 32; x: 16
             spacing: 6
             bottomPadding: 14
             Rectangle {
                 width: parent.width; height: 34; radius: 8
-                color: Config.tint("#151920")
+                color: win.well
                 border.width: findBox.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: findGlass
@@ -1494,21 +1512,21 @@ FloatingWindow {
                     color: win.text; font.family: win.font; font.pixelSize: 13
                     selectionColor: win.accent; selectedTextColor: win.accentText
                     clip: true
-                    Keys.onReturnPressed: if (sp.shown.length > 0) { sp.picked(sp.shown[0].value); sp.open = false; }
-                    Keys.onEscapePressed: event => { sp.open = false; event.accepted = true; }
+                    Keys.onReturnPressed: if (searchPicker.shown.length > 0) { searchPicker.picked(searchPicker.shown[0].value); searchPicker.open = false; }
+                    Keys.onEscapePressed: event => { searchPicker.open = false; event.accepted = true; }
                     Text { visible: findBox.text === ""; text: "Search"; color: win.dim; font: findBox.font; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
             Rectangle {
                 width: parent.width; height: Math.min(220, Math.max(40, pickList.contentHeight + 8)); radius: 8
-                color: Config.tint("#151920")
+                color: win.well
                 ListView {
                     id: pickList
                     anchors { fill: parent; margins: 4 }
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     SmoothWheel { flick: pickList }
-                    model: sp.shown
+                    model: searchPicker.shown
                     delegate: Rectangle {
                         required property var modelData
                         width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: 6
@@ -1520,7 +1538,7 @@ FloatingWindow {
                             Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
                         }
                         HoverHandler { id: pickHover }
-                        ClickTap { onTapped: { sp.picked(parent.modelData.value); sp.open = false; } }
+                        ClickTap { onTapped: { searchPicker.picked(parent.modelData.value); searchPicker.open = false; } }
                     }
                     Text {
                         anchors.centerIn: parent
@@ -1534,15 +1552,15 @@ FloatingWindow {
     }
     // An item in a list setting (a keyboard layout, a startup app), with a way to remove it
     component ListItemRow: SettingRow {
-        id: lir
+        id: listItemRow
         property bool removable: true
         signal removed()
         Button {
-            visible: lir.removable
+            visible: listItemRow.removable
             icon: 0xEB41
             label: "Remove"
             compactLabel: true
-            onClicked: lir.removed()
+            onClicked: listItemRow.removed()
         }
     }
 
@@ -1631,7 +1649,7 @@ FloatingWindow {
                         readonly property bool chosen: index === ovPage.pick
                         width: parent.width; height: hitCol.implicitHeight + 18
                         radius: 9
-                        color: chosen ? Config.tint("#262c35") : hitHover.hovered ? Config.hover : "transparent"
+                        color: chosen ? win.divider : hitHover.hovered ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (chosen || hitHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                         Text {
                             id: hitIcon
@@ -1743,7 +1761,7 @@ FloatingWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         Rectangle {
                             anchors.fill: parent; radius: width / 2
-                            color: Config.tint("#2a313c")
+                            color: win.outline
                             visible: acctImg.status !== Image.Ready
                             Text { anchors.centerIn: parent; text: win.glyph(0xEF68); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 34 }
                         }
@@ -1855,15 +1873,10 @@ FloatingWindow {
                         label: "Location"
                         detail: Config.s.locationName !== "" ? "Weather and night light's sunset/sunrise use " + Config.s.locationName
                             : "Not set: weather is hidden. Search for your town or city"
-                        Rectangle {
+                        FieldFrame {
                             id: placeField
-                            width: 240; height: 30; radius: 8
-                            color: win.control
-                            Gloss { radius: parent.radius }   // glass: a sheen
-                            // Hover: a faint accent outline (solid while typing)
-                            HoverHandler { id: placeInputHover; cursorShape: Qt.IBeamCursor }
-                            border.width: placeInput.activeFocus || placeInputHover.hovered ? 1 : 0
-                            border.color: placeInput.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
+                            field: placeInput
+                            width: 240; height: 30
                             TextInput {
                                 id: placeInput
                                 anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -1914,10 +1927,10 @@ FloatingWindow {
                                 height: locPopCol.implicitHeight + 8
                                 radius: 12
                                 // Solid, so the page under it doesn't show through
-                                color: Config.tint("#1d222a")
-                                border.width: 1; border.color: Config.tint("#2a313c")
+                                color: win.popupFill
+                                border.width: 1; border.color: win.outline
                                 layer.enabled: true
-                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+                                layer.effect: PopupShadow {}
                                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
                                 Column {
                                     id: locPopCol
@@ -1939,7 +1952,7 @@ FloatingWindow {
                                             readonly property bool chosen: index === loc.pick
                                             width: parent.width; height: placeCol.implicitHeight + 14
                                             radius: 9
-                                            color: chosen ? Config.tint("#262c35") : placeHover.hovered ? Config.hover : "transparent"
+                                            color: chosen ? win.divider : placeHover.hovered ? Config.hover : "transparent"
                                             Column {
                                                 id: placeCol
                                                 anchors { left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -1970,10 +1983,10 @@ FloatingWindow {
             }
             GroupLabel { text: "Night light" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Night light"
                     detail: "Warmer screen colours, easier on the eyes at night. Also in the control centre"
-                    Toggle { checked: Config.s.nightLight; onToggled: v => Config.s.nightLight = v }
+                    key: "nightLight"
                 }
                 Separator {}
                 SettingRow {
@@ -2002,7 +2015,7 @@ FloatingWindow {
                     visible: Config.s.nightLightSchedule === "custom"
                     label: "Turn on at"
                     value: Config.s.nightLightFrom
-                    options: [{ value: "16:00", label: "16:00" }, { value: "16:30", label: "16:30" }, { value: "17:00", label: "17:00" }, { value: "17:30", label: "17:30" }, { value: "18:00", label: "18:00" }, { value: "18:30", label: "18:30" }, { value: "19:00", label: "19:00" }, { value: "19:30", label: "19:30" }, { value: "20:00", label: "20:00" }, { value: "20:30", label: "20:30" }, { value: "21:00", label: "21:00" }, { value: "21:30", label: "21:30" }, { value: "22:00", label: "22:00" }, { value: "22:30", label: "22:30" }, { value: "23:00", label: "23:00" }, { value: "23:30", label: "23:30" }]
+                    options: win.halfHours(16, 23.5)
                     onPicked: v => Config.s.nightLightFrom = v
                 }
                 Separator { visible: Config.s.nightLightSchedule === "custom" }
@@ -2010,7 +2023,7 @@ FloatingWindow {
                     visible: Config.s.nightLightSchedule === "custom"
                     label: "Turn off at"
                     value: Config.s.nightLightTo
-                    options: [{ value: "04:00", label: "04:00" }, { value: "04:30", label: "04:30" }, { value: "05:00", label: "05:00" }, { value: "05:30", label: "05:30" }, { value: "06:00", label: "06:00" }, { value: "06:30", label: "06:30" }, { value: "07:00", label: "07:00" }, { value: "07:30", label: "07:30" }, { value: "08:00", label: "08:00" }, { value: "08:30", label: "08:30" }, { value: "09:00", label: "09:00" }, { value: "09:30", label: "09:30" }, { value: "10:00", label: "10:00" }, { value: "10:30", label: "10:30" }]
+                    options: win.halfHours(4, 10.5)
                     onPicked: v => Config.s.nightLightTo = v
                 }
             }
@@ -2029,42 +2042,42 @@ FloatingWindow {
                     EdgePicker { accent: win.accent; bar: true; edge: Config.s.barPosition; onPicked: e => Config.moveBar(e) }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Auto-hide"
                     detail: "Slide the bar away when a single window fills the screen; it comes back on workspace switches and at the top edge"
-                    Toggle { checked: Config.s.barAutoHide; onToggled: v => Config.s.barAutoHide = v }
+                    key: "barAutoHide"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Hover descriptions"
                     detail: "Show what you're pointing at on the bar in place of the window title"
-                    Toggle { checked: Config.s.barHoverDescriptions; onToggled: v => Config.s.barHoverDescriptions = v }
+                    key: "barHoverDescriptions"
                 }
             }
             GroupLabel { text: "Left side" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Apps button"
                     detail: "Opens the app launcher (also Super or Super+Space)"
-                    Toggle { checked: Config.s.barShowApps; onToggled: v => Config.s.barShowApps = v }
+                    key: "barShowApps"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Spaces button"
                     detail: "Between Apps and the workspaces: your spaces, and New Space (also in Settings → Spaces)"
-                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
+                    key: "barShowSpaces"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Workspaces"
                     detail: "A dot for each workspace; the highlighted one is where you are"
-                    Toggle { checked: Config.s.barShowWorkspaces; onToggled: v => Config.s.barShowWorkspaces = v }
+                    key: "barShowWorkspaces"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Window title"
                     detail: "The focused app's icon and title"
-                    Toggle { checked: Config.s.barShowTitle; onToggled: v => Config.s.barShowTitle = v }
+                    key: "barShowTitle"
                 }
                 Separator { visible: Config.s.barShowTitle }
                 SettingRow {
@@ -2076,10 +2089,10 @@ FloatingWindow {
             }
             GroupLabel { text: "Right side" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "App icons (tray)"
                     detail: "Icons that background apps put in the bar"
-                    Toggle { checked: Config.s.barShowTray; onToggled: v => Config.s.barShowTray = v }
+                    key: "barShowTray"
                 }
                 Separator { visible: Config.s.barShowTray }
                 SettingRow {
@@ -2089,40 +2102,40 @@ FloatingWindow {
                     Toggle { checked: Config.s.barTrayCollapsed; onToggled: v => Config.s.barTrayCollapsed = v }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Tuck the status icons away"
                     detail: "Show one button that opens to reveal notifications, Wi-Fi, volume, battery and the rest, and closes again after a few seconds"
-                    Toggle { checked: Config.s.barStatusCollapsed; onToggled: v => Config.s.barStatusCollapsed = v }
+                    key: "barStatusCollapsed"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Notifications"
                     detail: "Bell with the number of unread notifications"
-                    Toggle { checked: Config.s.barShowNotifications; onToggled: v => Config.s.barShowNotifications = v }
+                    key: "barShowNotifications"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Clipboard"
                     detail: "What you've copied recently; click to copy something again"
-                    Toggle { checked: Config.s.barShowClipboard; onToggled: v => Config.s.barShowClipboard = v }
+                    key: "barShowClipboard"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Screenshot"
                     detail: "Click to take one of an area, a window or the screen"
-                    Toggle { checked: Config.s.barShowScreenshot; onToggled: v => Config.s.barShowScreenshot = v }
+                    key: "barShowScreenshot"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Game mode"
                     detail: "A button to turn off glass, blur, see-through windows, shadows, animations, live window previews, notification pop-ups and ignoring the touchpad while you type, for smoother games, and back on after"
-                    Toggle { checked: Config.s.barShowGameMode; onToggled: v => Config.s.barShowGameMode = v }
+                    key: "barShowGameMode"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Wi-Fi"
                     detail: "Signal strength; click for networks"
-                    Toggle { checked: Config.s.barShowWifi; onToggled: v => Config.s.barShowWifi = v }
+                    key: "barShowWifi"
                 }
                 Separator {}
                 SettingRow {
@@ -2132,70 +2145,70 @@ FloatingWindow {
                     Toggle { checked: Config.s.barShowKeyboard; onToggled: v => Config.s.barShowKeyboard = v }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Bluetooth"
                     detail: "Turn it on or off and connect devices; click for the panel"
-                    Toggle { checked: Config.s.barShowBluetooth; onToggled: v => Config.s.barShowBluetooth = v }
+                    key: "barShowBluetooth"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Volume"
                     detail: "Click for output and input devices; scroll to change"
-                    Toggle { checked: Config.s.barShowVolume; onToggled: v => Config.s.barShowVolume = v }
+                    key: "barShowVolume"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Battery"
                     detail: "Charge level; click for power profiles. Hidden on computers without a battery"
-                    Toggle { checked: Config.s.barShowBattery; onToggled: v => Config.s.barShowBattery = v }
+                    key: "barShowBattery"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Clipboard items"
                     detail: "How many items the clipboard history holds, beside its icon"
-                    Toggle { checked: Config.s.barValueClipboard; onToggled: v => Config.s.barValueClipboard = v }
+                    key: "barValueClipboard"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Game mode on or off"
                     detail: "On or Off beside the game mode icon"
-                    Toggle { checked: Config.s.barValueGameMode; onToggled: v => Config.s.barValueGameMode = v }
+                    key: "barValueGameMode"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Wi-Fi network name"
                     detail: "Beside the Wi-Fi icon"
-                    Toggle { checked: Config.s.barValueWifi; onToggled: v => Config.s.barValueWifi = v }
+                    key: "barValueWifi"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Keyboard layout code"
                     detail: "The layout in use (GB, FR…) beside the keyboard icon"
-                    Toggle { checked: Config.s.barValueKeyboard; onToggled: v => Config.s.barValueKeyboard = v }
+                    key: "barValueKeyboard"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Connected Bluetooth devices"
                     detail: "How many, beside the Bluetooth icon"
-                    Toggle { checked: Config.s.barValueBluetooth; onToggled: v => Config.s.barValueBluetooth = v }
+                    key: "barValueBluetooth"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Volume percentage"
                     detail: "Beside the volume icon"
-                    Toggle { checked: Config.s.barValueVolume; onToggled: v => Config.s.barValueVolume = v }
+                    key: "barValueVolume"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Battery percentage"
                     detail: "Beside the battery icon"
-                    Toggle { checked: Config.s.barValueBattery; onToggled: v => Config.s.barValueBattery = v }
+                    key: "barValueBattery"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Power button"
                     detail: "Lock, suspend, log out, restart and shut down"
-                    Toggle { checked: Config.s.barShowPower; onToggled: v => Config.s.barShowPower = v }
+                    key: "barShowPower"
                 }
             }
             GroupLabel { text: "Clock" }
@@ -2207,16 +2220,15 @@ FloatingWindow {
                     onPicked: v => Config.s.barClockFormat = v
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Show seconds"
-                    detail: ""
-                    Toggle { checked: Config.s.barClockSeconds; onToggled: v => Config.s.barClockSeconds = v }
+                    key: "barClockSeconds"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Show the date"
                     detail: "Day and date before the time, e.g. Sat 7 Nov. Click the clock for a calendar"
-                    Toggle { checked: Config.s.barClockDate; onToggled: v => Config.s.barClockDate = v }
+                    key: "barClockDate"
                 }
             }
         }
@@ -2234,10 +2246,10 @@ FloatingWindow {
                     EdgePicker { accent: win.accent; bar: false; edge: Config.s.dockPosition; onPicked: e => Config.moveDock(e) }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Auto-hide"
                     detail: "Hide the dock while the workspace has windows; push the pointer to the bottom edge to show it"
-                    Toggle { checked: Config.s.dockAutoHide; onToggled: v => Config.s.dockAutoHide = v }
+                    key: "dockAutoHide"
                 }
             }
             GroupLabel { text: "Icons" }
@@ -2267,44 +2279,39 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Spaces" }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
-                text: "Save the apps on some workspaces, and where their windows sit, as a space; then bring them all back on new workspaces in one click from the Spaces button on the menu bar."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
-            }
+            IntroText { text: "Save the apps on some workspaces, and where their windows sit, as a space; then bring them all back on new workspaces in one click from the Spaces button on the menu bar." }
             GroupLabel { text: "Menu Bar" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Spaces button"
                     detail: "Between Apps and the workspaces: your spaces, and New Space"
-                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
+                    key: "barShowSpaces"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Colour the window's icon"
                     detail: "When the focused window came from a space, its icon on the menu bar sits on the space's colour"
-                    Toggle { checked: Config.s.spaceBarTint; onToggled: v => Config.s.spaceBarTint = v }
+                    key: "spaceBarTint"
                 }
             }
             GroupLabel { text: "Windows from a space" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Top border"
                     detail: "A thin line in the space's colour along the top of each window"
-                    Toggle { checked: Config.s.spaceBorders; onToggled: v => Config.s.spaceBorders = v }
+                    key: "spaceBorders"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Corner badge"
                     detail: "The space's icon in the window's top left corner; it moves to the other corner when the pointer comes near"
-                    Toggle { checked: Config.s.spaceBadges; onToggled: v => Config.s.spaceBadges = v }
+                    key: "spaceBadges"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Badges in the switchers"
                     detail: "The space's icon on its windows in the window switcher (Super+Tab) and the workspace overview (Super+Down)"
-                    Toggle { checked: Config.s.spaceSwitcherBadges; onToggled: v => Config.s.spaceSwitcherBadges = v }
+                    key: "spaceSwitcherBadges"
                 }
             }
         }
@@ -2315,14 +2322,9 @@ FloatingWindow {
         Column {
             id: ssCol
             spacing: 4
-            readonly property var minutes: [0, 1, 2, 3, 5, 10, 15, 20, 30].map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") }))
+            readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30])
             PageTitle { text: "Screensaver" }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
-                text: "Covers the screen while you're away, before the lock and screen-off times in Lock & idle. Any key, click or move of the pointer puts it away."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
-            }
+            IntroText { text: "Covers the screen while you're away, before the lock and screen-off times in Lock & idle. Any key, click or move of the pointer puts it away." }
             Group {
                 DropdownSetting {
                     label: "Start after"
@@ -2430,10 +2432,10 @@ FloatingWindow {
                     onPicked: v => Config.s.screensaverSlideSeconds = v
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Lock on wake"
                     detail: "Waking it shows the lock screen, so you need your password to get back in"
-                    Toggle { checked: Config.s.screensaverLock; onToggled: v => Config.s.screensaverLock = v }
+                    key: "screensaverLock"
                 }
                 Separator {}
                 SettingRow {
@@ -2462,7 +2464,7 @@ FloatingWindow {
                     Rectangle {
                         readonly property var modes: ["list", "grid"]
                         width: 184; height: 34; radius: 9
-                        color: Config.tint("#151920")
+                        color: win.well
                         Rectangle {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
@@ -2520,10 +2522,10 @@ FloatingWindow {
                     Toggle { checked: Config.s.launcherDescriptions; onToggled: v => Config.s.launcherDescriptions = v }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Most used first"
                     detail: "Order apps by how often you open them (after how well they match your search)"
-                    Toggle { checked: Config.s.launcherSortByUsage; onToggled: v => Config.s.launcherSortByUsage = v }
+                    key: "launcherSortByUsage"
                 }
             }
         }
@@ -2532,7 +2534,7 @@ FloatingWindow {
     Component {
         id: displaysPage
         Column {
-            id: dp
+            id: displaysPane
             spacing: 4
             PageTitle { text: "Displays" }
             Displays { id: disp }
@@ -2608,14 +2610,14 @@ FloatingWindow {
                             required property var modelData
                             readonly property var c: disp.configOf(modelData)
                             readonly property var sz: disp.logicalSize(c)
-                            readonly property bool chosen: dp.mon && dp.mon.name === modelData.name
+                            readonly property bool chosen: displaysPane.mon && displaysPane.mon.name === modelData.name
                             readonly property real homeX: arrange.box.ox + (c.x - arrange.box.x0) * arrange.box.k
                             readonly property real homeY: arrange.box.oy + (c.y - arrange.box.y0) * arrange.box.k
                             x: homeX; y: homeY
                             width: Math.max(24, sz.w * arrange.box.k - 4); height: Math.max(18, sz.h * arrange.box.k - 4)
                             radius: 6
-                            color: chosen ? win.accent : Config.tint("#2a313c")
-                            border.width: 1; border.color: chosen ? win.accent : Config.tint("#3a424e")
+                            color: chosen ? win.accent : win.outline
+                            border.width: 1; border.color: chosen ? win.accent : win.ring
                             z: drag.active ? 2 : 1
                             Column {
                                 anchors.centerIn: parent
@@ -2635,12 +2637,12 @@ FloatingWindow {
                                 }
                             }
                             HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.ArrowCursor }
-                            ClickTap { onTapped: dp.selected = tile.modelData.name }
+                            ClickTap { onTapped: displaysPane.selected = tile.modelData.name }
                             DragHandler {
                                 id: drag
                                 enabled: arrange.live.length > 1
                                 onActiveChanged: {
-                                    if (active) { dp.selected = tile.modelData.name; return; }
+                                    if (active) { displaysPane.selected = tile.modelData.name; return; }
                                     // Dropped: from the box back to the layout, then snap beside the nearest
                                     const lx = (tile.x - arrange.box.ox) / arrange.box.k + arrange.box.x0;
                                     const ly = (tile.y - arrange.box.oy) / arrange.box.k + arrange.box.y0;
@@ -2658,55 +2660,55 @@ FloatingWindow {
             }
 
             // ---- The chosen monitor -----------------------------------------------------
-            GroupLabel { visible: !!dp.mon; text: dp.mon ? disp.displayName(dp.mon) + " (" + dp.mon.name + ")" : "" }
+            GroupLabel { visible: !!displaysPane.mon; text: displaysPane.mon ? disp.displayName(displaysPane.mon) + " (" + displaysPane.mon.name + ")" : "" }
             Group {
-                visible: !!dp.mon
+                visible: !!displaysPane.mon
                 SettingRow {
                     visible: disp.monitors.length > 1
                     label: "Use this display"
-                    detail: dp.cfg && !dp.cfg.disabled && dp.enabledCount <= 1 ? "The only display in use can't be turned off" : "Turn it off to leave it dark and unused"
+                    detail: displaysPane.cfg && !displaysPane.cfg.disabled && displaysPane.enabledCount <= 1 ? "The only display in use can't be turned off" : "Turn it off to leave it dark and unused"
                     Toggle {
-                        checked: dp.cfg ? !dp.cfg.disabled : true
-                        opacity: dp.cfg && !dp.cfg.disabled && dp.enabledCount <= 1 ? 0.4 : 1
-                        onToggled: v => { if (v || dp.enabledCount > 1) dp.change("disabled", !v); }
+                        checked: displaysPane.cfg ? !displaysPane.cfg.disabled : true
+                        opacity: displaysPane.cfg && !displaysPane.cfg.disabled && displaysPane.enabledCount <= 1 ? 0.4 : 1
+                        onToggled: v => { if (v || displaysPane.enabledCount > 1) displaysPane.change("disabled", !v); }
                     }
                 }
                 Separator { visible: disp.monitors.length > 1 }
                 DropdownSetting {
-                    visible: dp.cfg && !dp.cfg.disabled
+                    visible: displaysPane.cfg && !displaysPane.cfg.disabled
                     label: "Resolution"
                     detail: "The sizes this display reports. Laptop panels often report only their own; to make things larger or smaller there, use Scale"
-                    options: dp.mon ? disp.resolutionOptions(dp.mon) : []
-                    value: dp.cfg ? dp.cfg.mode.split("@")[0] : ""
+                    options: displaysPane.mon ? disp.resolutionOptions(displaysPane.mon) : []
+                    value: displaysPane.cfg ? displaysPane.cfg.mode.split("@")[0] : ""
                     // Keeps the refresh rate if the new size has it, else its fastest
-                    onPicked: v => dp.change("mode", disp.modeAt(dp.mon, v, dp.cfg.mode.split("@")[1]))
+                    onPicked: v => displaysPane.change("mode", disp.modeAt(displaysPane.mon, v, displaysPane.cfg.mode.split("@")[1]))
                 }
-                Separator { visible: dp.cfg && !dp.cfg.disabled }
+                Separator { visible: displaysPane.cfg && !displaysPane.cfg.disabled }
                 DropdownSetting {
-                    visible: dp.cfg && !dp.cfg.disabled
+                    visible: displaysPane.cfg && !displaysPane.cfg.disabled
                     label: "Refresh rate"
                     detail: "How many times a second the picture updates, from the rates this resolution has. Higher is smoother"
-                    options: dp.mon && dp.cfg ? disp.refreshOptions(dp.mon, dp.cfg.mode.split("@")[0]) : []
-                    value: dp.cfg ? dp.cfg.mode.split("@")[1] : ""
-                    onPicked: v => dp.change("mode", dp.cfg.mode.split("@")[0] + "@" + v)
+                    options: displaysPane.mon && displaysPane.cfg ? disp.refreshOptions(displaysPane.mon, displaysPane.cfg.mode.split("@")[0]) : []
+                    value: displaysPane.cfg ? displaysPane.cfg.mode.split("@")[1] : ""
+                    onPicked: v => displaysPane.change("mode", displaysPane.cfg.mode.split("@")[0] + "@" + v)
                 }
-                Separator { visible: dp.cfg && !dp.cfg.disabled }
+                Separator { visible: displaysPane.cfg && !displaysPane.cfg.disabled }
                 DropdownSetting {
-                    visible: dp.cfg && !dp.cfg.disabled
+                    visible: displaysPane.cfg && !displaysPane.cfg.disabled
                     label: "Scale"
                     detail: "How large everything on this display looks, apps included. Only scales that suit the resolution are offered. "
                         + "To resize just Slate (the bar, dock and panels) on every display, use Interface size in Appearance"
-                    options: dp.cfg ? disp.scaleOptions(dp.cfg.mode, dp.cfg.scale) : []
-                    value: dp.cfg ? dp.cfg.scale : 1
-                    onPicked: v => dp.change("scale", v)
+                    options: displaysPane.cfg ? disp.scaleOptions(displaysPane.cfg.mode, displaysPane.cfg.scale) : []
+                    value: displaysPane.cfg ? displaysPane.cfg.scale : 1
+                    onPicked: v => displaysPane.change("scale", v)
                 }
-                Separator { visible: dp.cfg && !dp.cfg.disabled }
+                Separator { visible: displaysPane.cfg && !displaysPane.cfg.disabled }
                 DropdownSetting {
-                    visible: dp.cfg && !dp.cfg.disabled
+                    visible: displaysPane.cfg && !displaysPane.cfg.disabled
                     label: "Rotation"
                     options: disp.transformOptions
-                    value: dp.cfg ? dp.cfg.transform : 0
-                    onPicked: v => dp.change("transform", v)
+                    value: displaysPane.cfg ? displaysPane.cfg.transform : 0
+                    onPicked: v => displaysPane.change("transform", v)
                 }
                 Separator { visible: disp.monitors.length > 1 }
                 DropdownSetting {
@@ -2722,12 +2724,7 @@ FloatingWindow {
                     onPicked: v => Config.s.mainDisplay = v
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "Slate's own size (bar, panels, this window) is under Appearance → Interface size, on top of each display's scale. Monitor rules in ~/.config/slate/hypr/hyprland.lua override these."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "Slate's own size (bar, panels, this window) is under Appearance → Interface size, on top of each display's scale. Monitor rules in ~/.config/slate/hypr/monitors.lua override these." }
         }
     }
 
@@ -2737,7 +2734,7 @@ FloatingWindow {
     Component {
         id: inputPage
         Column {
-            id: ip
+            id: inputPane
             spacing: 4
             PageTitle { text: "Keyboard & Mouse" }
             property var cur: ({})
@@ -2749,17 +2746,17 @@ FloatingWindow {
                     "input:repeat_rate", "input:repeat_delay", "input:sensitivity", "input:accel_profile", "input:natural_scroll",
                     "input:touchpad:natural_scroll", "input:touchpad:tap-to-click", "input:touchpad:disable_while_typing",
                     "input:touchpad:scroll_factor"]
-                stdout: StdioCollector { onStreamFinished: { try { ip.cur = JSON.parse(text); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: { try { inputPane.cur = JSON.parse(text); } catch (e) {} } }
             }
             Process {
                 running: true
                 command: [Quickshell.shellPath("scripts/xkb-layouts.py")]
-                stdout: StdioCollector { onStreamFinished: { try { ip.layoutOptions = JSON.parse(text); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: { try { inputPane.layoutOptions = JSON.parse(text); } catch (e) {} } }
             }
             Process {
                 running: true
                 command: ["hyprctl", "devices", "-j"]
-                stdout: StdioCollector { onStreamFinished: { try { ip.hasTouchpad = JSON.parse(text).mice.some(m => m.name.toLowerCase().includes("touchpad")); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: { try { inputPane.hasTouchpad = JSON.parse(text).mice.some(m => m.name.toLowerCase().includes("touchpad")); } catch (e) {} } }
             }
 
             // Keyboard layouts in use, in order: [{ layout, variant }]
@@ -2793,13 +2790,13 @@ FloatingWindow {
                     detail: "Search by language or name, e.g. French or Dvorak"
                     buttonLabel: "Add…"
                     buttonIcon: 0xEB0B
-                    options: ip.layoutOptions
+                    options: inputPane.layoutOptions
                     onPicked: v => {
                         const parts = String(v).split(":");
-                        const l = ip.layouts.slice();
+                        const l = inputPane.layouts.slice();
                         if (!l.some(x => x.layout === parts[0] && x.variant === (parts[1] || "")))
                             l.push({ layout: parts[0], variant: parts[1] || "" });
-                        ip.setLayouts(l);
+                        inputPane.setLayouts(l);
                     }
                 }
             }
@@ -2807,7 +2804,7 @@ FloatingWindow {
             // The layouts in use, in their own container under Add a layout
             Group {
                 Repeater {
-                    model: ip.layouts
+                    model: inputPane.layouts
                     delegate: Column {
                         id: layoutRow
                         required property var modelData
@@ -2815,10 +2812,10 @@ FloatingWindow {
                         width: parent ? parent.width : 0
                         Separator { visible: layoutRow.index > 0 }
                         ListItemRow {
-                            label: ip.layoutName(layoutRow.modelData)
-                            detail: ip.layouts.length > 1 && layoutRow.index === 0 ? "Used first" : ""
-                            removable: ip.layouts.length > 1
-                            onRemoved: { const l = ip.layouts.slice(); l.splice(layoutRow.index, 1); ip.setLayouts(l); }
+                            label: inputPane.layoutName(layoutRow.modelData)
+                            detail: inputPane.layouts.length > 1 && layoutRow.index === 0 ? "Used first" : ""
+                            removable: inputPane.layouts.length > 1
+                            onRemoved: { const l = inputPane.layouts.slice(); l.splice(layoutRow.index, 1); inputPane.setLayouts(l); }
                         }
                     }
                 }
@@ -2826,20 +2823,20 @@ FloatingWindow {
             Item { width: 1; height: 6 }
             Group {
                 DropdownSetting {
-                    visible: ip.layouts.length > 1
+                    visible: inputPane.layouts.length > 1
                     label: "Switch layouts with"
                     options: [{ value: "alt_shift", label: "Alt+Shift" }, { value: "ctrl_space", label: "Ctrl+Space" },
                               { value: "caps", label: "Caps Lock" }, { value: "none", label: "No shortcut" }]
-                    value: ip.switchValue
+                    value: inputPane.switchValue
                     onPicked: v => Config.s.kbSwitch = v
                 }
-                Separator { visible: ip.layouts.length > 1 }
+                Separator { visible: inputPane.layouts.length > 1 }
                 DropdownSetting {
                     label: "Caps Lock key"
-                    detail: ip.switchValue === "caps" && ip.layouts.length > 1 ? "It switches layouts (above)" : "What the Caps Lock key does"
+                    detail: inputPane.switchValue === "caps" && inputPane.layouts.length > 1 ? "It switches layouts (above)" : "What the Caps Lock key does"
                     options: [{ value: "default", label: "Caps Lock" }, { value: "ctrl", label: "Another Ctrl" },
                               { value: "escape", label: "Escape" }, { value: "off", label: "Nothing" }]
-                    value: ip.capsValue
+                    value: inputPane.capsValue
                     onPicked: v => Config.s.capsLock = v
                 }
                 Separator {}
@@ -2848,7 +2845,7 @@ FloatingWindow {
                     detail: "How long a held key waits before it repeats"
                     ValueSlider {
                         from: 150; to: 1000; stepSize: 25; suffix: " ms"
-                        value: Config.s.keyRepeatDelay > 0 ? Config.s.keyRepeatDelay : (ip.cur["input:repeat_delay"] || 600)
+                        value: Config.s.keyRepeatDelay > 0 ? Config.s.keyRepeatDelay : (inputPane.cur["input:repeat_delay"] || 600)
                         onMoved: v => Config.s.keyRepeatDelay = Math.round(v)
                     }
                 }
@@ -2858,7 +2855,7 @@ FloatingWindow {
                     detail: "How fast a held key repeats"
                     ValueSlider {
                         from: 10; to: 80; stepSize: 1; suffix: " /s"
-                        value: Config.s.keyRepeatRate > 0 ? Config.s.keyRepeatRate : (ip.cur["input:repeat_rate"] || 25)
+                        value: Config.s.keyRepeatRate > 0 ? Config.s.keyRepeatRate : (inputPane.cur["input:repeat_rate"] || 25)
                         onMoved: v => Config.s.keyRepeatRate = Math.round(v)
                     }
                 }
@@ -2868,10 +2865,10 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Pointer speed"
-                    detail: ip.hasTouchpad ? "Mice and touchpads. Slower to faster; 0 is the device's own speed" : "Slower to faster; 0 is the mouse's own speed"
+                    detail: inputPane.hasTouchpad ? "Mice and touchpads. Slower to faster; 0 is the device's own speed" : "Slower to faster; 0 is the mouse's own speed"
                     ValueSlider {
                         from: -100; to: 100; stepSize: 5
-                        value: Math.round((Config.s.mouseSpeed >= -1 ? Config.s.mouseSpeed : (ip.cur["input:sensitivity"] || 0)) * 100)
+                        value: Math.round((Config.s.mouseSpeed >= -1 ? Config.s.mouseSpeed : (inputPane.cur["input:sensitivity"] || 0)) * 100)
                         onMoved: v => Config.s.mouseSpeed = v / 100
                     }
                 }
@@ -2880,7 +2877,7 @@ FloatingWindow {
                     label: "Acceleration"
                     detail: "Quick movements carry the pointer further. Off: the same distance however fast you move"
                     Toggle {
-                        checked: (Config.s.mouseAccel !== "" ? Config.s.mouseAccel : (ip.cur["input:accel_profile"] || "adaptive")) !== "flat"
+                        checked: (Config.s.mouseAccel !== "" ? Config.s.mouseAccel : (inputPane.cur["input:accel_profile"] || "adaptive")) !== "flat"
                         onToggled: v => Config.s.mouseAccel = v ? "adaptive" : "flat"
                     }
                 }
@@ -2889,7 +2886,7 @@ FloatingWindow {
                     label: "Natural scrolling"
                     detail: "Content moves the way the wheel turns, like a touch screen"
                     Toggle {
-                        checked: Config.s.mouseNaturalScroll !== "" ? Config.s.mouseNaturalScroll === "on" : !!ip.cur["input:natural_scroll"]
+                        checked: Config.s.mouseNaturalScroll !== "" ? Config.s.mouseNaturalScroll === "on" : !!inputPane.cur["input:natural_scroll"]
                         onToggled: v => Config.s.mouseNaturalScroll = v ? "on" : "off"
                     }
                 }
@@ -2903,14 +2900,14 @@ FloatingWindow {
                 }
             }
 
-            GroupLabel { visible: ip.hasTouchpad; text: "Touchpad" }
+            GroupLabel { visible: inputPane.hasTouchpad; text: "Touchpad" }
             Group {
-                visible: ip.hasTouchpad
+                visible: inputPane.hasTouchpad
                 SettingRow {
                     label: "Scroll speed"
                     ValueSlider {
                         from: 10; to: 200; stepSize: 10; suffix: "%"
-                        value: Math.round((Config.s.touchpadScrollSpeed > 0 ? Config.s.touchpadScrollSpeed : (ip.cur["input:touchpad:scroll_factor"] || 1)) * 100)
+                        value: Math.round((Config.s.touchpadScrollSpeed > 0 ? Config.s.touchpadScrollSpeed : (inputPane.cur["input:touchpad:scroll_factor"] || 1)) * 100)
                         onMoved: v => Config.s.touchpadScrollSpeed = v / 100
                     }
                 }
@@ -2919,7 +2916,7 @@ FloatingWindow {
                     label: "Natural scrolling"
                     detail: "Content follows your fingers, like a phone"
                     Toggle {
-                        checked: Config.s.touchpadNaturalScroll !== "" ? Config.s.touchpadNaturalScroll === "on" : !!ip.cur["input:touchpad:natural_scroll"]
+                        checked: Config.s.touchpadNaturalScroll !== "" ? Config.s.touchpadNaturalScroll === "on" : !!inputPane.cur["input:touchpad:natural_scroll"]
                         onToggled: v => Config.s.touchpadNaturalScroll = v ? "on" : "off"
                     }
                 }
@@ -2927,7 +2924,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Tap to click"
                     Toggle {
-                        checked: Config.s.touchpadTapToClick !== "" ? Config.s.touchpadTapToClick === "on" : ip.cur["input:touchpad:tap-to-click"] !== false
+                        checked: Config.s.touchpadTapToClick !== "" ? Config.s.touchpadTapToClick === "on" : inputPane.cur["input:touchpad:tap-to-click"] !== false
                         onToggled: v => Config.s.touchpadTapToClick = v ? "on" : "off"
                     }
                 }
@@ -2936,7 +2933,7 @@ FloatingWindow {
                     label: "Ignore while typing"
                     detail: "Stops a palm on the touchpad moving the pointer as you type"
                     Toggle {
-                        checked: Config.s.touchpadIgnoreWhileTyping !== "" ? Config.s.touchpadIgnoreWhileTyping === "on" : ip.cur["input:touchpad:disable_while_typing"] !== false
+                        checked: Config.s.touchpadIgnoreWhileTyping !== "" ? Config.s.touchpadIgnoreWhileTyping === "on" : inputPane.cur["input:touchpad:disable_while_typing"] !== false
                         onToggled: v => Config.s.touchpadIgnoreWhileTyping = v ? "on" : "off"
                     }
                 }
@@ -2948,39 +2945,39 @@ FloatingWindow {
     Component {
         id: soundPage
         Column {
-            id: sndp
+            id: soundPane
             spacing: 4
             PageTitle { text: "Sound" }
             readonly property var sinks: Pipewire.nodes.values.filter(n => n.audio && n.isSink && !n.isStream)
             readonly property var sources: Pipewire.nodes.values.filter(n => n.audio && !n.isSink && !n.isStream)
             readonly property var sink: Pipewire.defaultAudioSink
             readonly property var source: Pipewire.defaultAudioSource
-            PwObjectTracker { objects: [sndp.sink, sndp.source] }
+            PwObjectTracker { objects: [soundPane.sink, soundPane.source] }
             function nodeName(n) { return n ? (n.description || n.nickname || n.name) : ""; }
 
             GroupLabel { text: "Output" }
             Group {
                 DropdownSetting {
                     label: "Play sound through"
-                    options: sndp.sinks.map(n => ({ value: n.id, label: sndp.nodeName(n) }))
-                    value: sndp.sink ? sndp.sink.id : -1
-                    onPicked: v => { const n = sndp.sinks.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSink = n; }
+                    options: soundPane.sinks.map(n => ({ value: n.id, label: soundPane.nodeName(n) }))
+                    value: soundPane.sink ? soundPane.sink.id : -1
+                    onPicked: v => { const n = soundPane.sinks.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSink = n; }
                 }
                 Separator {}
                 SettingRow {
                     label: "Volume"
                     ValueSlider {
                         from: 0; to: 100; stepSize: 1; suffix: "%"
-                        value: sndp.sink && sndp.sink.audio ? Math.round(sndp.sink.audio.volume * 100) : 0
-                        onMoved: v => { if (sndp.sink && sndp.sink.audio) sndp.sink.audio.volume = v / 100; }
+                        value: soundPane.sink && soundPane.sink.audio ? Math.round(soundPane.sink.audio.volume * 100) : 0
+                        onMoved: v => { if (soundPane.sink && soundPane.sink.audio) soundPane.sink.audio.volume = v / 100; }
                     }
                 }
                 Separator {}
                 SettingRow {
                     label: "Mute"
                     Toggle {
-                        checked: !!(sndp.sink && sndp.sink.audio && sndp.sink.audio.muted)
-                        onToggled: v => { if (sndp.sink && sndp.sink.audio) sndp.sink.audio.muted = v; }
+                        checked: !!(soundPane.sink && soundPane.sink.audio && soundPane.sink.audio.muted)
+                        onToggled: v => { if (soundPane.sink && soundPane.sink.audio) soundPane.sink.audio.muted = v; }
                     }
                 }
             }
@@ -2988,25 +2985,25 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Microphone"
-                    options: sndp.sources.map(n => ({ value: n.id, label: sndp.nodeName(n) }))
-                    value: sndp.source ? sndp.source.id : -1
-                    onPicked: v => { const n = sndp.sources.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSource = n; }
+                    options: soundPane.sources.map(n => ({ value: n.id, label: soundPane.nodeName(n) }))
+                    value: soundPane.source ? soundPane.source.id : -1
+                    onPicked: v => { const n = soundPane.sources.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSource = n; }
                 }
                 Separator {}
                 SettingRow {
                     label: "Input level"
                     ValueSlider {
                         from: 0; to: 100; stepSize: 1; suffix: "%"
-                        value: sndp.source && sndp.source.audio ? Math.round(sndp.source.audio.volume * 100) : 0
-                        onMoved: v => { if (sndp.source && sndp.source.audio) sndp.source.audio.volume = v / 100; }
+                        value: soundPane.source && soundPane.source.audio ? Math.round(soundPane.source.audio.volume * 100) : 0
+                        onMoved: v => { if (soundPane.source && soundPane.source.audio) soundPane.source.audio.volume = v / 100; }
                     }
                 }
                 Separator {}
                 SettingRow {
                     label: "Mute the microphone"
                     Toggle {
-                        checked: !!(sndp.source && sndp.source.audio && sndp.source.audio.muted)
-                        onToggled: v => { if (sndp.source && sndp.source.audio) sndp.source.audio.muted = v; }
+                        checked: !!(soundPane.source && soundPane.source.audio && soundPane.source.audio.muted)
+                        onToggled: v => { if (soundPane.source && soundPane.source.audio) soundPane.source.audio.muted = v; }
                     }
                 }
             }
@@ -3062,14 +3059,14 @@ FloatingWindow {
     Component {
         id: powerPage
         Column {
-            id: pwp
+            id: powerPane
             spacing: 4
             PageTitle { text: "Power" }
             property bool hasLid: false
             Process {
                 running: true
                 command: ["hyprctl", "devices", "-j"]
-                stdout: StdioCollector { onStreamFinished: { try { pwp.hasLid = (JSON.parse(text).switches || []).some(x => /lid/i.test(x.name)); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: { try { powerPane.hasLid = (JSON.parse(text).switches || []).some(x => /lid/i.test(x.name)); } catch (e) {} } }
             }
             readonly property var profileOptions: [{ value: "", label: "Leave it as it is" }, { value: "power-saver", label: "Power saver" },
                 { value: "balanced", label: "Balanced" }].concat(PowerProfiles.hasPerformanceProfile ? [{ value: "performance", label: "Performance" }] : [])
@@ -3077,7 +3074,7 @@ FloatingWindow {
             GroupLabel { text: "Lid and power button" }
             Group {
                 DropdownSetting {
-                    visible: pwp.hasLid
+                    visible: powerPane.hasLid
                     label: "Closing the lid"
                     detail: Config.s.lidAction === "" ? "Left to the system (usually suspends)"
                         : "With another screen connected, only the laptop's own screen turns off"
@@ -3086,7 +3083,7 @@ FloatingWindow {
                     value: Config.s.lidAction
                     onPicked: v => Config.s.lidAction = v
                 }
-                Separator { visible: pwp.hasLid }
+                Separator { visible: powerPane.hasLid }
                 DropdownSetting {
                     label: "Power button"
                     detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
@@ -3101,7 +3098,7 @@ FloatingWindow {
                 DropdownSetting {
                     label: "On battery"
                     detail: "Switched to when you unplug; the control centre can still change it any time"
-                    options: pwp.profileOptions
+                    options: powerPane.profileOptions
                     value: Config.s.profileOnBattery
                     onPicked: v => { Config.s.profileOnBattery = v; Config.applyPowerProfile(); }
                 }
@@ -3109,17 +3106,17 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Plugged in"
                     detail: "Switched to when you plug in"
-                    options: pwp.profileOptions
+                    options: powerPane.profileOptions
                     value: Config.s.profileOnAC
                     onPicked: v => { Config.s.profileOnAC = v; Config.applyPowerProfile(); }
                 }
             }
             GroupLabel { text: "Restarting" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Reopen apps after restarting"
                     detail: "Your apps open again on the same workspaces, where you left them. Also on the restart dialog"
-                    Toggle { checked: Config.s.reopenAppsAfterRestart; onToggled: v => Config.s.reopenAppsAfterRestart = v }
+                    key: "reopenAppsAfterRestart"
                 }
             }
         }
@@ -3129,7 +3126,7 @@ FloatingWindow {
     Component {
         id: shortcutsPage
         Column {
-            id: scp
+            id: shortcutsPane
             spacing: 4
             PageTitle { text: "Shortcuts" }
             property var binds: []
@@ -3137,7 +3134,7 @@ FloatingWindow {
                 id: bindsProc
                 running: true
                 command: ["hyprctl", "binds", "-j"]
-                stdout: StdioCollector { onStreamFinished: { try { scp.binds = JSON.parse(text).filter(b => b.has_description && b.description && b.submap === ""); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: { try { shortcutsPane.binds = JSON.parse(text).filter(b => b.has_description && b.description && b.submap === ""); } catch (e) {} } }
             }
             // The keys, as caps: modifiers then the key
             function keysOf(b) {
@@ -3214,7 +3211,7 @@ FloatingWindow {
                 }
             }
             Repeater {
-                model: scp.groups
+                model: shortcutsPane.groups
                 delegate: Column {
                     id: keyGroup
                     required property var modelData
@@ -3239,8 +3236,8 @@ FloatingWindow {
                                             delegate: Rectangle {
                                                 required property string modelData
                                                 width: Math.max(26, capText.implicitWidth + 14); height: 24; radius: 6
-                                                color: Config.tint("#262c35")
-                                                border.width: 1; border.color: Config.tint("#323a46")
+                                                color: win.divider
+                                                border.width: 1; border.color: win.controlHoverSolid
                                                 Text { id: capText; anchors.centerIn: parent; text: parent.modelData; color: win.text; font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium }
                                             }
                                         }
@@ -3251,12 +3248,7 @@ FloatingWindow {
                     }
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "Add or change shortcuts in ~/.config/slate/hypr/hyprland.lua (with a description = \"Group: what it does\" to list them here)."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "Add or change shortcuts in ~/.config/slate/hypr/binds.lua (with a description = \"Group: what it does\" to list them here)." }
         }
     }
 
@@ -3265,7 +3257,7 @@ FloatingWindow {
     Component {
         id: appsPage
         Column {
-            id: dap
+            id: defaultAppsPane
             spacing: 4
             PageTitle { text: "Default Apps" }
             readonly property var all: DesktopEntries.applications.values.filter(e => !e.noDisplay)
@@ -3280,16 +3272,16 @@ FloatingWindow {
                 SearchPicker {
                     label: "Terminal"
                     detail: "Super+Enter"
-                    buttonLabel: dap.nameOf(Config.s.defaultTerminal) || "Choose…"
-                    options: dap.optionsFor(["TerminalEmulator"])
+                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultTerminal) || "Choose…"
+                    options: defaultAppsPane.optionsFor(["TerminalEmulator"])
                     onPicked: v => Config.s.defaultTerminal = v
                 }
                 Separator {}
                 SearchPicker {
                     label: "Web browser"
                     detail: "Links open in it"
-                    buttonLabel: dap.nameOf(Config.s.defaultBrowser) || "Choose…"
-                    options: dap.optionsFor(["WebBrowser"])
+                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultBrowser) || "Choose…"
+                    options: defaultAppsPane.optionsFor(["WebBrowser"])
                     onPicked: v => {
                         Config.s.defaultBrowser = v;
                         Quickshell.execDetached(["xdg-settings", "set", "default-web-browser", v + ".desktop"]);
@@ -3299,8 +3291,8 @@ FloatingWindow {
                 SearchPicker {
                     label: "Files"
                     detail: "Super+E, and folders open in it"
-                    buttonLabel: dap.nameOf(Config.s.defaultFileManager) || "Choose…"
-                    options: dap.optionsFor(["FileManager"])
+                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultFileManager) || "Choose…"
+                    options: defaultAppsPane.optionsFor(["FileManager"])
                     onPicked: v => {
                         Config.s.defaultFileManager = v;
                         Quickshell.execDetached(["xdg-mime", "default", v + ".desktop", "inode/directory"]);
@@ -3310,8 +3302,8 @@ FloatingWindow {
                 SearchPicker {
                     label: "Text editor"
                     detail: "Super+T, and text files open in it"
-                    buttonLabel: dap.nameOf(Config.s.defaultEditor) || "Choose…"
-                    options: dap.optionsFor(["TextEditor"])
+                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultEditor) || "Choose…"
+                    options: defaultAppsPane.optionsFor(["TextEditor"])
                     onPicked: v => {
                         Config.s.defaultEditor = v;
                         Quickshell.execDetached(["xdg-mime", "default", v + ".desktop", "text/plain"]);
@@ -3321,17 +3313,12 @@ FloatingWindow {
                 SearchPicker {
                     label: "Calculator"
                     detail: "Super+C and the calculator key"
-                    buttonLabel: dap.nameOf(Config.s.defaultCalculator) || "Choose…"
-                    options: dap.optionsFor(["Calculator"])
+                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultCalculator) || "Choose…"
+                    options: defaultAppsPane.optionsFor(["Calculator"])
                     onPicked: v => Config.s.defaultCalculator = v
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "Ones not chosen here use those in ~/.config/slate/hypr/variables.lua (or Slate's own defaults)."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "Ones not chosen here use those in ~/.config/slate/hypr/variables.lua (or Slate's own defaults)." }
         }
     }
 
@@ -3339,7 +3326,7 @@ FloatingWindow {
     Component {
         id: startupPage
         Column {
-            id: stp
+            id: startupPane
             spacing: 4
             PageTitle { text: "Startup Apps" }
             readonly property var all: DesktopEntries.applications.values.filter(e => !e.noDisplay)
@@ -3372,17 +3359,12 @@ FloatingWindow {
                     detail: "It opens each time you log in"
                     buttonLabel: "Add…"
                     buttonIcon: 0xEB0B
-                    options: stp.all.filter(e => !(Config.s.startupApps || []).includes(e.id))
+                    options: startupPane.all.filter(e => !(Config.s.startupApps || []).includes(e.id))
                         .map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "" }))
                     onPicked: v => Config.s.startupApps = (Config.s.startupApps || []).concat([v])
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "Apps started in ~/.config/slate/hypr/hyprland.lua still open too."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "Apps started in ~/.config/slate/hypr/autostart.lua still open too." }
         }
     }
 
@@ -3390,7 +3372,7 @@ FloatingWindow {
     Component {
         id: timePage
         Column {
-            id: dtp
+            id: dateTimePane
             spacing: 4
             PageTitle { text: "Date & Time" }
             property string zone: ""
@@ -3399,9 +3381,9 @@ FloatingWindow {
             property var zones: []
             property date now: new Date()
             // The clock on this page; only ticks while Settings is showing (and catches up at once)
-            Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dtp.now = new Date() }
+            Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dateTimePane.now = new Date() }
             function refresh() { stateProc.running = false; stateProc.running = true; }
-            Timer { id: reread; interval: 1500; onTriggered: dtp.refresh() }
+            Timer { id: reread; interval: 1500; onTriggered: dateTimePane.refresh() }
             Process {
                 id: stateProc
                 running: true
@@ -3410,9 +3392,9 @@ FloatingWindow {
                     onStreamFinished: {
                         for (const line of text.split("\n")) {
                             const i = line.indexOf("="), k = line.slice(0, i), v = line.slice(i + 1);
-                            if (k === "Timezone") dtp.zone = v;
-                            else if (k === "NTP") dtp.ntp = v === "yes";
-                            else if (k === "CanNTP") dtp.canNtp = v === "yes";
+                            if (k === "Timezone") dateTimePane.zone = v;
+                            else if (k === "NTP") dateTimePane.ntp = v === "yes";
+                            else if (k === "CanNTP") dateTimePane.canNtp = v === "yes";
                         }
                     }
                 }
@@ -3420,12 +3402,12 @@ FloatingWindow {
             Process {
                 running: true
                 command: ["timedatectl", "list-timezones"]
-                stdout: StdioCollector { onStreamFinished: dtp.zones = text.trim().split("\n").filter(z => z !== "").map(z => ({ value: z, label: z.replace(/_/g, " ") })) }
+                stdout: StdioCollector { onStreamFinished: dateTimePane.zones = text.trim().split("\n").filter(z => z !== "").map(z => ({ value: z, label: z.replace(/_/g, " ") })) }
             }
             Group {
                 SettingRow {
-                    label: Qt.formatDateTime(dtp.now, "dddd d MMMM yyyy")
-                    detail: Qt.formatTime(dtp.now, "HH:mm:ss")
+                    label: Qt.formatDateTime(dateTimePane.now, "dddd d MMMM yyyy")
+                    detail: Qt.formatTime(dateTimePane.now, "HH:mm:ss")
                 }
                 Separator {}
                 // Every zone in one dropdown, opening at the current one, with a search box to filter it
@@ -3433,27 +3415,22 @@ FloatingWindow {
                     label: "Time zone"
                     detail: "Where you are, for the clock; type to search"
                     searchable: true
-                    options: dtp.zones
-                    value: dtp.zone
-                    onPicked: v => { if (v !== dtp.zone) { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); } }
+                    options: dateTimePane.zones
+                    value: dateTimePane.zone
+                    onPicked: v => { if (v !== dateTimePane.zone) { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); } }
                 }
-                Separator { visible: dtp.canNtp }
+                Separator { visible: dateTimePane.canNtp }
                 SettingRow {
-                    visible: dtp.canNtp
+                    visible: dateTimePane.canNtp
                     label: "Set the time automatically"
                     detail: "Keeps the clock right using a time server on the internet"
                     Toggle {
-                        checked: dtp.ntp
-                        onToggled: v => { dtp.ntp = v; Quickshell.execDetached(["timedatectl", "set-ntp", v ? "true" : "false"]); reread.restart(); }
+                        checked: dateTimePane.ntp
+                        onToggled: v => { dateTimePane.ntp = v; Quickshell.execDetached(["timedatectl", "set-ntp", v ? "true" : "false"]); reread.restart(); }
                     }
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "How the clock looks is under Menu bar. Changing these may ask for your password."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "How the clock looks is under Menu bar. Changing these may ask for your password." }
         }
     }
 
@@ -3461,18 +3438,18 @@ FloatingWindow {
     Component {
         id: shotsPage
         Column {
-            id: shp
+            id: screenshotsPane
             spacing: 4
             PageTitle { text: "Screenshots" }
             property bool hasSwash: false
-            Process { running: true; command: ["sh", "-c", "command -v swash"]; onExited: code => shp.hasSwash = code === 0 }
+            Process { running: true; command: ["sh", "-c", "command -v swash"]; onExited: code => screenshotsPane.hasSwash = code === 0 }
             readonly property string home: Quickshell.env("HOME")
             readonly property string folder: Config.s.screenshotFolder || (home + "/Pictures/Screenshots")
             readonly property date example: new Date()
             Group {
                 DropdownSetting {
                     label: "After taking one"
-                    detail: shp.hasSwash ? "Every screenshot is saved to the folder below and copied. Marking one up and saving updates that file"
+                    detail: screenshotsPane.hasSwash ? "Every screenshot is saved to the folder below and copied. Marking one up and saving updates that file"
                         : "Every screenshot is saved to the folder below and copied (swash, for marking up, isn't installed)"
                     options: [{ value: "edit", label: "Open it to mark up" }, { value: "save", label: "Just show a notification" }]
                     value: Config.s.screenshotAfter
@@ -3481,18 +3458,18 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Save to"
-                    detail: shp.folder.replace(shp.home, "~")
-                    options: [{ value: "", label: "Pictures/Screenshots" }, { value: shp.home + "/Pictures", label: "Pictures" },
-                              { value: shp.home + "/Desktop", label: "Desktop" }, { value: shp.home + "/Downloads", label: "Downloads" }]
+                    detail: screenshotsPane.folder.replace(screenshotsPane.home, "~")
+                    options: [{ value: "", label: "Pictures/Screenshots" }, { value: screenshotsPane.home + "/Pictures", label: "Pictures" },
+                              { value: screenshotsPane.home + "/Desktop", label: "Desktop" }, { value: screenshotsPane.home + "/Downloads", label: "Downloads" }]
                     value: Config.s.screenshotFolder
                     onPicked: v => Config.s.screenshotFolder = v
                 }
                 Separator {}
                 DropdownSetting {
                     label: "File names"
-                    options: [{ value: "default", label: "Screenshot " + Qt.formatDateTime(shp.example, "yyyy-MM-dd HH.mm.ss") },
-                              { value: "compact", label: Qt.formatDateTime(shp.example, "yyyy-MM-dd_HH-mm-ss") },
-                              { value: "gnome", label: "Screenshot from " + Qt.formatDateTime(shp.example, "yyyy-MM-dd HH-mm-ss") }]
+                    options: [{ value: "default", label: "Screenshot " + Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd HH.mm.ss") },
+                              { value: "compact", label: Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd_HH-mm-ss") },
+                              { value: "gnome", label: "Screenshot from " + Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd HH-mm-ss") }]
                     value: Config.s.screenshotName
                     onPicked: v => Config.s.screenshotName = v
                 }
@@ -3501,16 +3478,11 @@ FloatingWindow {
                     label: "Screenshot folder"
                     Button {
                         icon: 0xFAF7; label: "Open"
-                        onClicked: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && xdg-open \"$0\"", shp.folder])
+                        onClicked: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && xdg-open \"$0\"", screenshotsPane.folder])
                     }
                 }
             }
-            Text {
-                width: parent.width
-                topPadding: 10
-                text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen."
-                color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
-            }
+            Footnote { text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen." }
         }
     }
 
@@ -3531,7 +3503,7 @@ FloatingWindow {
                     Rectangle {
                         readonly property var modes: ["tiling", "floating"]
                         width: 200; height: 34; radius: 9
-                        color: Config.tint("#151920")
+                        color: win.well
                         Rectangle {
                             width: 100 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.windowMode)) * 100
@@ -3692,16 +3664,16 @@ FloatingWindow {
                     onPicked: v => Config.s.workspaceAnimation = v
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Workspaces wrap around"
                     detail: "Super+Left/Right and the overview go from the last workspace back to the first (and the other way); off, they stop at the ends, and the overview's row ends there too"
-                    Toggle { checked: Config.s.wrapWorkspaces; onToggled: v => Config.s.wrapWorkspaces = v }
+                    key: "wrapWorkspaces"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Keep an empty workspace"
                     detail: "Always have an empty workspace after the last one in use, ready for a new window"
-                    Toggle { checked: Config.s.keepEmptyWorkspace; onToggled: v => Config.s.keepEmptyWorkspace = v }
+                    key: "keepEmptyWorkspace"
                 }
             }
             GroupLabel { text: "Look" }
@@ -3713,7 +3685,7 @@ FloatingWindow {
                     Rectangle {
                         readonly property var shapes: ["circle", "square"]
                         width: 184; height: 34; radius: 9
-                        color: Config.tint("#151920")
+                        color: win.well
                         Rectangle {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
@@ -3755,10 +3727,10 @@ FloatingWindow {
                     }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "On the menu bar"
                     detail: "The workspace dots on the bar (also in Menu bar)"
-                    Toggle { checked: Config.s.barShowWorkspaces; onToggled: v => Config.s.barShowWorkspaces = v }
+                    key: "barShowWorkspaces"
                 }
             }
             GroupLabel { text: "Workspace overview (Super+Down)" }
@@ -3821,9 +3793,9 @@ FloatingWindow {
                     // A small screen: click a spot to put notifications there
                     Rectangle {
                         width: 168; height: 104; radius: 10
-                        color: Config.tint("#151920")
-                        border.width: 1; border.color: Config.tint("#323a46")
-                        Rectangle { anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 } height: 9; topLeftRadius: 9; topRightRadius: 9; color: Config.tint("#2a313c") }
+                        color: win.well
+                        border.width: 1; border.color: win.controlHoverSolid
+                        Rectangle { anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 } height: 9; topLeftRadius: 9; topRightRadius: 9; color: win.outline }
                         Repeater {
                             model: ["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"]
                             delegate: Rectangle {
@@ -3833,7 +3805,7 @@ FloatingWindow {
                                 width: 44; height: 22; radius: 6
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
-                                color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
+                                color: current ? win.accent : spotHover.hovered ? Config.hoverOn(win.divider) : win.divider
                                 Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 HoverHandler { id: spotHover }
@@ -3868,7 +3840,7 @@ FloatingWindow {
     Component {
         id: appearancePage
         Column {
-            id: wp
+            id: appearancePane
             spacing: 4
             readonly property string folder: Config.s.wallpaperFolder || (Quickshell.env("HOME") + "/Pictures")
             function setWallpaper(path) { Config.s.wallpaper = path; }
@@ -3916,7 +3888,7 @@ FloatingWindow {
                     Rectangle {
                         readonly property var modes: ["dark", "light", "auto"]
                         width: 276; height: 34; radius: 9
-                        color: Config.tint("#151920")
+                        color: win.well
                         Rectangle {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
@@ -3971,7 +3943,7 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24; height: 24; radius: 12
                             color: Config.wallpaperAccent ? Config.fromWallpaper(Config.wallpaperAccent) : "transparent"
-                            border.width: 1; border.color: Config.tint("#3a424e")
+                            border.width: 1; border.color: win.ring
                         }
                         Toggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.accentFromWallpaper; onToggled: v => Config.s.accentFromWallpaper = v }
                     }
@@ -4064,15 +4036,10 @@ FloatingWindow {
                                     onPositionChanged: m => { if (pressed) set(m.x); }
                                 }
                             }
-                            Rectangle {
+                            FieldFrame {
+                                field: hexInput
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 92; height: 30; radius: 8
-                                color: win.control
-                                Gloss { radius: parent.radius }   // glass: a sheen
-                                // Hover: a faint accent outline (solid while typing)
-                                HoverHandler { id: hexInputHover; cursorShape: Qt.IBeamCursor }
-                                border.width: hexInput.activeFocus || hexInputHover.hovered ? 1 : 0
-                                border.color: hexInput.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
+                                width: 92; height: 30
                                 TextInput {
                                     id: hexInput
                                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -4106,7 +4073,7 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24; height: 24; radius: 12
                             color: Config.wallpaperTone ? Qt.hsla(Qt.lighter(Config.wallpaperTone, 1).hslHue, 0.3, 0.2, 1) : "transparent"
-                            border.width: 1; border.color: Config.tint("#3a424e")
+                            border.width: 1; border.color: win.ring
                         }
                         Toggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.toneFromWallpaper; onToggled: v => Config.s.toneFromWallpaper = v }
                     }
@@ -4178,10 +4145,10 @@ FloatingWindow {
             }
             GroupLabel { text: "Glass" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Glass"
                     detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
-                    Toggle { checked: Config.s.glass; onToggled: v => Config.s.glass = v }
+                    key: "glass"
                 }
                 Separator { visible: Config.s.glass }
                 SettingRow {
@@ -4240,10 +4207,10 @@ FloatingWindow {
             }
             GroupLabel { text: "Style" }
             Group {
-                SettingRow {
+                ToggleSetting {
                     label: "Rounded screen corners"
                     detail: "Round off the corners of the screen and curve the bar into the screen edges"
-                    Toggle { checked: Config.s.roundedScreenCorners; onToggled: v => Config.s.roundedScreenCorners = v }
+                    key: "roundedScreenCorners"
                 }
             }
             GroupLabel { text: "App icons" }
@@ -4276,7 +4243,7 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: 12
-                            color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(Config.tint("#151920")) : Config.tint("#151920")
+                            color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(win.well) : win.well
                             Gloss { radius: parent.radius; opacity: (on || shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -4337,10 +4304,10 @@ FloatingWindow {
                     Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Tint app icons"
                     detail: "Colour app icons in the dock, launcher, switcher, bar and notifications with the accent colour"
-                    Toggle { checked: Config.s.tintIcons; onToggled: v => Config.s.tintIcons = v }
+                    key: "tintIcons"
                 }
                 Separator { visible: Config.s.tintIcons }
                 SettingRow {
@@ -4422,17 +4389,17 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Folder"
-                    detail: wp.folder.replace(Quickshell.env("HOME"), "~")
+                    detail: appearancePane.folder.replace(Quickshell.env("HOME"), "~")
                     Row {
                         spacing: 8
-                        Button { icon: 0xFAF7; label: "Open"; onClicked: Quickshell.execDetached(["xdg-open", wp.folder]) }
-                        Button { icon: 0xEAAD; label: "Change…"; onClicked: wp.choosingFolder ? wp.choosingFolder = false : wp.chooseFolder() }
-                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: if (wp.shown.length > 0) wp.setWallpaper(wp.shown[Math.floor(Math.random() * wp.shown.length)]) }
+                        Button { icon: 0xFAF7; label: "Open"; onClicked: Quickshell.execDetached(["xdg-open", appearancePane.folder]) }
+                        Button { icon: 0xEAAD; label: "Change…"; onClicked: appearancePane.choosingFolder ? appearancePane.choosingFolder = false : appearancePane.chooseFolder() }
+                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: if (appearancePane.shown.length > 0) appearancePane.setWallpaper(appearancePane.shown[Math.floor(Math.random() * appearancePane.shown.length)]) }
                     }
                 }
                 // Folder browser: go into a folder, then use it
                 Column {
-                    visible: wp.choosingFolder
+                    visible: appearancePane.choosingFolder
                     width: parent.width - 32; x: 16
                     spacing: 8
                     bottomPadding: 14
@@ -4442,15 +4409,15 @@ FloatingWindow {
                         Button {
                             id: upBtn
                             icon: 0xEA25; label: "Up"
-                            opacity: wp.browseDir === "/" ? 0.45 : 1
-                            onClicked: if (wp.browseDir !== "/") wp.browseDir = wp.browseDir.replace(/\/[^\/]*$/, "") || "/"
+                            opacity: appearancePane.browseDir === "/" ? 0.45 : 1
+                            onClicked: if (appearancePane.browseDir !== "/") appearancePane.browseDir = appearancePane.browseDir.replace(/\/[^\/]*$/, "") || "/"
                         }
-                        Button { id: homeBtn; icon: 0xEAC1; label: "Home"; onClicked: wp.browseDir = Quickshell.env("HOME") }
+                        Button { id: homeBtn; icon: 0xEAC1; label: "Home"; onClicked: appearancePane.browseDir = Quickshell.env("HOME") }
                         Text {
                             width: parent.width - upBtn.width - homeBtn.width - 12
                             anchors.verticalCenter: parent.verticalCenter
                             leftPadding: 6
-                            text: wp.browseDir.replace(Quickshell.env("HOME"), "~")
+                            text: appearancePane.browseDir.replace(Quickshell.env("HOME"), "~")
                             color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                             elide: Text.ElideMiddle
                         }
@@ -4458,7 +4425,7 @@ FloatingWindow {
                     Rectangle {
                         width: parent.width; height: 220
                         radius: 8
-                        color: Config.tint("#151920")
+                        color: win.well
                         ListView {
                             id: dirList
                             anchors { fill: parent; margins: 4 }
@@ -4467,7 +4434,7 @@ FloatingWindow {
                             SmoothWheel { flick: dirList }
                             model: FolderListModel {
                                 id: dirModel
-                                folder: wp.choosingFolder ? "file://" + wp.browseDir : ""
+                                folder: appearancePane.choosingFolder ? "file://" + appearancePane.browseDir : ""
                                 showFiles: false
                                 showDirs: true
                                 showDotAndDotDot: false
@@ -4493,7 +4460,7 @@ FloatingWindow {
                                     elide: Text.ElideRight
                                 }
                                 HoverHandler { id: dirHover }
-                                ClickTap { onTapped: wp.browseDir = parent.filePath }
+                                ClickTap { onTapped: appearancePane.browseDir = parent.filePath }
                             }
                         }
                         Text {
@@ -4506,13 +4473,13 @@ FloatingWindow {
                     Row {
                         anchors.right: parent.right
                         spacing: 8
-                        Button { label: "Cancel"; onClicked: wp.choosingFolder = false }
+                        Button { label: "Cancel"; onClicked: appearancePane.choosingFolder = false }
                         Button {
                             label: "Use this folder"; primary: true
                             onClicked: {
                                 const home = Quickshell.env("HOME") + "/Pictures";
-                                Config.s.wallpaperFolder = wp.browseDir === home ? "" : wp.browseDir;
-                                wp.choosingFolder = false;
+                                Config.s.wallpaperFolder = appearancePane.browseDir === home ? "" : appearancePane.browseDir;
+                                appearancePane.choosingFolder = false;
                             }
                         }
                     }
@@ -4538,10 +4505,10 @@ FloatingWindow {
                     onPicked: v => Config.s.wallpaperChange = v
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Hide small images"
                     detail: "Leave out pictures too small to be wallpapers, like icons, avatars and small screenshots"
-                    Toggle { checked: Config.s.wallpaperHideSmall; onToggled: v => Config.s.wallpaperHideSmall = v }
+                    key: "wallpaperHideSmall"
                 }
                 Separator { visible: Config.s.wallpaperHideSmall }
                 DropdownSetting {
@@ -4562,8 +4529,8 @@ FloatingWindow {
             }
             Process {
                 id: sizeReader
-                command: [Quickshell.shellPath("scripts/image-sizes.py"), wp.folder]
-                stdout: StdioCollector { onStreamFinished: { try { wp.sizes = JSON.parse(text); } catch (e) {} } }
+                command: [Quickshell.shellPath("scripts/image-sizes.py"), appearancePane.folder]
+                stdout: StdioCollector { onStreamFinished: { try { appearancePane.sizes = JSON.parse(text); } catch (e) {} } }
             }
             // Read the sizes when the page opens and when the folder's contents change. Both happen
             // together as the page opens (the folder's listing arrives just after), so they're
@@ -4589,12 +4556,12 @@ FloatingWindow {
             readonly property int hidden: wallFiles.count - shown.length
 
             GroupLabel {
-                text: wp.shown.length + (wp.shown.length === 1 ? " image" : " images")
-                    + (wp.hidden > 0 ? " · " + wp.hidden + " small " + (wp.hidden === 1 ? "one" : "ones") + " hidden" : "")
+                text: appearancePane.shown.length + (appearancePane.shown.length === 1 ? " image" : " images")
+                    + (appearancePane.hidden > 0 ? " · " + appearancePane.hidden + " small " + (appearancePane.hidden === 1 ? "one" : "ones") + " hidden" : "")
             }
             FolderListModel {
                 id: wallFiles
-                folder: "file://" + wp.folder
+                folder: "file://" + appearancePane.folder
                 nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.JPG", "*.JPEG", "*.PNG"]
                 showDirs: false
                 sortField: FolderListModel.Name
@@ -4618,7 +4585,7 @@ FloatingWindow {
                         required property string filePath
                         required property string fileName
                         readonly property bool current: Config.wallpaper === filePath
-                        visible: !wp.tooSmall(fileName)
+                        visible: !appearancePane.tooSmall(fileName)
                         width: wallGrid.tileW
                         height: width * 10 / 16 + 26
                         Rectangle {
@@ -4668,7 +4635,7 @@ FloatingWindow {
                             horizontalAlignment: Text.AlignHCenter
                         }
                         HoverHandler { id: wallHover }
-                        ClickTap { onTapped: wp.setWallpaper(filePath) }
+                        ClickTap { onTapped: appearancePane.setWallpaper(filePath) }
                     }
                 }
             }
@@ -4741,7 +4708,7 @@ FloatingWindow {
     Component {
         id: wifiPage
         Column {
-            id: wf
+            id: wifiPane
             spacing: 4
             readonly property var dev: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
             readonly property var nets: {
@@ -4754,23 +4721,23 @@ FloatingWindow {
             readonly property var current: nets.find(n => n.connected) ?? null
             property string askingFor: ""
             // Look for networks while this page is open
-            Binding { target: wf.dev; property: "scannerEnabled"; value: true; when: wf.dev !== null && win.visible }
+            Binding { target: wifiPane.dev; property: "scannerEnabled"; value: true; when: wifiPane.dev !== null && win.visible }
 
             PageTitle { text: "Wi-Fi" }
             Group {
                 SettingRow {
                     label: "Wi-Fi"
-                    detail: !wf.dev ? "No Wi-Fi adapter found"
+                    detail: !wifiPane.dev ? "No Wi-Fi adapter found"
                         : !Networking.wifiEnabled ? "Off"
-                        : wf.current ? "Connected to " + wf.current.name : "Not connected"
-                    Toggle { visible: !!wf.dev; checked: Networking.wifiEnabled; onToggled: v => Networking.wifiEnabled = v }
+                        : wifiPane.current ? "Connected to " + wifiPane.current.name : "Not connected"
+                    Toggle { visible: !!wifiPane.dev; checked: Networking.wifiEnabled; onToggled: v => Networking.wifiEnabled = v }
                 }
             }
-            GroupLabel { visible: Networking.wifiEnabled && !!wf.dev; text: wf.nets.length ? "Networks" : "Searching for networks…" }
+            GroupLabel { visible: Networking.wifiEnabled && !!wifiPane.dev; text: wifiPane.nets.length ? "Networks" : "Searching for networks…" }
             Group {
-                visible: Networking.wifiEnabled && wf.nets.length > 0
+                visible: Networking.wifiEnabled && wifiPane.nets.length > 0
                 Repeater {
-                    model: wf.nets
+                    model: wifiPane.nets
                     delegate: Column {
                         id: netRow
                         required property var modelData
@@ -4778,14 +4745,14 @@ FloatingWindow {
                         readonly property var n: modelData
                         readonly property bool secure: n.security !== undefined && n.security !== WifiSecurityType.Open
                         width: parent.width
-                        Rectangle { visible: netRow.index > 0; width: parent.width - 32; x: 16; height: 1; color: Config.tint("#262c35") }
+                        Separator { visible: netRow.index > 0 }
                         Item {
                             width: parent.width; height: 60
                             Rectangle {
                                 id: netIcon
                                 anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                                 width: 34; height: 34; radius: 9
-                                color: netRow.n.connected ? win.accent : Config.tint("#2a313c")
+                                color: netRow.n.connected ? win.accent : win.outline
                                 Text {
                                     anchors.centerIn: parent
                                     readonly property real s: netRow.n.signalStrength
@@ -4819,8 +4786,8 @@ FloatingWindow {
                                     onClicked: {
                                         const n = netRow.n;
                                         if (n.connected) n.disconnect();
-                                        else if (n.known || !netRow.secure) { n.connect(); wf.askingFor = ""; }
-                                        else wf.askingFor = (wf.askingFor === n.name ? "" : n.name);
+                                        else if (n.known || !netRow.secure) { n.connect(); wifiPane.askingFor = ""; }
+                                        else wifiPane.askingFor = (wifiPane.askingFor === n.name ? "" : n.name);
                                     }
                                 }
                                 Button {
@@ -4833,7 +4800,7 @@ FloatingWindow {
                         }
                         // Password for a new secured network
                         Item {
-                            visible: wf.askingFor === netRow.n.name
+                            visible: wifiPane.askingFor === netRow.n.name
                             width: parent.width; height: 48
                             Rectangle {
                                 anchors { left: parent.left; right: parent.right; leftMargin: 60; rightMargin: 14; top: parent.top }
@@ -4849,8 +4816,8 @@ FloatingWindow {
                                     color: win.text
                                     font.family: win.font; font.pixelSize: 13
                                     onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
-                                    onAccepted: { netRow.n.connectWithPsk(text); wf.askingFor = ""; }
-                                    Keys.onEscapePressed: wf.askingFor = ""
+                                    onAccepted: { netRow.n.connectWithPsk(text); wifiPane.askingFor = ""; }
+                                    Keys.onEscapePressed: wifiPane.askingFor = ""
                                 }
                                 Text {
                                     visible: psk.text === ""
@@ -4871,7 +4838,7 @@ FloatingWindow {
         Column {
             id: lockCol
             spacing: 4
-            readonly property var minutes: [0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60].map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") }))
+            readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60])
             PageTitle { text: "Lock & Idle" }
             Group {
                 SettingRow {
@@ -4884,16 +4851,16 @@ FloatingWindow {
                     }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Power menu on the lock screen"
                     detail: "Lets anyone at the keyboard suspend, restart, shut down or log you out without your password"
-                    Toggle { checked: Config.s.lockScreenPowerMenu; onToggled: v => Config.s.lockScreenPowerMenu = v }
+                    key: "lockScreenPowerMenu"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Lock before sleep"
                     detail: "Lock the screen whenever the computer suspends or hibernates"
-                    Toggle { checked: Config.s.lockBeforeSleep; onToggled: v => Config.s.lockBeforeSleep = v }
+                    key: "lockBeforeSleep"
                 }
             }
             GroupLabel { text: "Login screen" }
@@ -4951,10 +4918,10 @@ FloatingWindow {
                     onPicked: v => Config.s.idleSuspendMinutes = v
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Wait while media plays"
                     detail: "Don't count as away while a video or app is keeping the screen awake"
-                    Toggle { checked: Config.s.idleRespectInhibitors; onToggled: v => Config.s.idleRespectInhibitors = v }
+                    key: "idleRespectInhibitors"
                 }
             }
         }
@@ -4975,12 +4942,7 @@ FloatingWindow {
                 { value: "screenoff", label: "Turn screen off" }
             ]
             PageTitle { text: "Hot Corners" }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
-                text: "Rest the pointer in a corner of the screen to run an action."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
-            }
+            IntroText { text: "Rest the pointer in a corner of the screen to run an action." }
             // The screen, with each corner's action; click one to set it below
             property string corner: "TopLeft"
             readonly property string cornerName: ({ TopLeft: "Top left", TopRight: "Top right", BottomLeft: "Bottom left", BottomRight: "Bottom right" })[corner]
@@ -5022,7 +4984,7 @@ FloatingWindow {
     Component {
         id: bluetoothPage
         Column {
-            id: bt
+            id: bluetoothPane
             spacing: 4
             readonly property var adapter: Bluetooth.defaultAdapter
             readonly property var devices: adapter ? adapter.devices.values.slice().sort((a, b) =>
@@ -5041,18 +5003,18 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Bluetooth"
-                    detail: bt.adapter ? (bt.adapter.enabled ? "On" : "Off") : "No Bluetooth adapter found"
-                    Toggle { visible: !!bt.adapter; checked: bt.adapter ? bt.adapter.enabled : false; onToggled: v => { if (bt.adapter) bt.adapter.enabled = v; } }
+                    detail: bluetoothPane.adapter ? (bluetoothPane.adapter.enabled ? "On" : "Off") : "No Bluetooth adapter found"
+                    Toggle { visible: !!bluetoothPane.adapter; checked: bluetoothPane.adapter ? bluetoothPane.adapter.enabled : false; onToggled: v => { if (bluetoothPane.adapter) bluetoothPane.adapter.enabled = v; } }
                 }
-                Separator { visible: bt.adapter && bt.adapter.enabled }
+                Separator { visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled }
                 SettingRow {
-                    visible: bt.adapter && bt.adapter.enabled
+                    visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled
                     label: "New devices"
-                    detail: bt.adapter && bt.adapter.discovering ? "Searching… put your device in pairing mode" : "Find nearby devices to pair"
+                    detail: bluetoothPane.adapter && bluetoothPane.adapter.discovering ? "Searching… put your device in pairing mode" : "Find nearby devices to pair"
                     Row {
                         spacing: 10
                         Text {
-                            visible: bt.adapter && bt.adapter.discovering
+                            visible: bluetoothPane.adapter && bluetoothPane.adapter.discovering
                             anchors.verticalCenter: parent.verticalCenter
                             text: win.glyph(0xF226)
                             color: win.accent
@@ -5061,39 +5023,39 @@ FloatingWindow {
                         }
                         Button {
                             icon: 0xEA37
-                            label: bt.adapter && bt.adapter.discovering ? "Stop" : "Search"
-                            primary: !(bt.adapter && bt.adapter.discovering)
-                            onClicked: if (bt.adapter) bt.adapter.discovering = !bt.adapter.discovering
+                            label: bluetoothPane.adapter && bluetoothPane.adapter.discovering ? "Stop" : "Search"
+                            primary: !(bluetoothPane.adapter && bluetoothPane.adapter.discovering)
+                            onClicked: if (bluetoothPane.adapter) bluetoothPane.adapter.discovering = !bluetoothPane.adapter.discovering
                         }
                     }
                 }
             }
-            GroupLabel { visible: bt.adapter && bt.adapter.enabled; text: "Devices" }
+            GroupLabel { visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled; text: "Devices" }
             Group {
-                visible: bt.adapter && bt.adapter.enabled
+                visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled
                 Text {
-                    visible: bt.devices.length === 0
+                    visible: bluetoothPane.devices.length === 0
                     x: 16; height: 48; verticalAlignment: Text.AlignVCenter
                     text: "No devices yet"
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
                 Repeater {
-                    model: bt.devices
+                    model: bluetoothPane.devices
                     delegate: Item {
                         required property var modelData
                         required property int index
                         readonly property var d: modelData
                         width: parent.width
                         height: 60
-                        Rectangle { visible: index > 0; width: parent.width - 32; x: 16; height: 1; color: Config.tint("#262c35") }
+                        Separator { visible: index > 0 }
                         Rectangle {
                             id: devIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 34; height: 34; radius: 9
-                            color: d.connected ? win.accent : Config.tint("#2a313c")
+                            color: d.connected ? win.accent : win.outline
                             Text {
                                 anchors.centerIn: parent
-                                text: win.glyph(bt.deviceIcon(d))
+                                text: win.glyph(bluetoothPane.deviceIcon(d))
                                 color: d.connected ? win.accentText : win.text
                                 font.family: win.bar.iconFont; font.pixelSize: 17
                             }
@@ -5143,7 +5105,7 @@ FloatingWindow {
     Component {
         id: updatesPage
         Column {
-            id: upd
+            id: updatesPane
             spacing: 4
             // A second click confirms (updating over files you've changed; going back)
             property bool confirmUpdate: false
@@ -5164,40 +5126,35 @@ FloatingWindow {
             Component.onCompleted: { Updates.check(false); Updates.findModified(); }
 
             PageTitle { text: "Updates" }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
-                text: "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
-            }
+            IntroText { text: "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it." }
             Group {
                 SettingRow {
                     label: "Installed version"
                     detail: Updates.installed === "" ? "Unknown: this copy of Slate wasn't installed with a version"
-                        : upd.nice(Updates.installed)
+                        : updatesPane.nice(Updates.installed)
                 }
                 Separator {}
                 SettingRow {
-                    label: Updates.available ? "Slate " + upd.latest + " is available" : "Latest version"
+                    label: Updates.available ? "Slate " + updatesPane.latest + " is available" : "Latest version"
                     detail: Updates.checking ? "Checking…"
                         : Updates.error !== "" && Updates.status !== "failed" ? Updates.error
-                        : upd.latest === "" ? "Not checked yet"
-                        : (Updates.available ? "Released " + upd.when(Updates.state.published) : upd.latest + ": you're up to date")
-                          + (Updates.checkedAt > 0 ? " · checked " + upd.ago(Updates.checkedAt) : "")
+                        : updatesPane.latest === "" ? "Not checked yet"
+                        : (Updates.available ? "Released " + updatesPane.when(Updates.state.published) : updatesPane.latest + ": you're up to date")
+                          + (Updates.checkedAt > 0 ? " · checked " + updatesPane.ago(Updates.checkedAt) : "")
                     Button { label: Updates.checking ? "Checking…" : "Check now"; icon: 0xEB13; onClicked: Updates.check(true) }
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Check for updates"
                     detail: "Once a day, with a notification when there's a new version"
-                    Toggle { checked: Config.s.updateCheck; onToggled: v => Config.s.updateCheck = v }
+                    key: "updateCheck"
                 }
             }
 
             // ---- A new version: what's new, and updating ----
             GroupLabel {
                 visible: Updates.available || Updates.busy || Updates.status === "failed"
-                text: "What's new in " + upd.latest
+                text: "What's new in " + updatesPane.latest
             }
             Group {
                 visible: Updates.available || Updates.busy || Updates.status === "failed"
@@ -5216,22 +5173,22 @@ FloatingWindow {
                 // Slate's own files changed by hand: an update replaces them (the old copy is kept)
                 Text {
                     x: 16; width: parent.width - 32
-                    visible: upd.touched.length > 0 && !Updates.busy
+                    visible: updatesPane.touched.length > 0 && !Updates.busy
                     topPadding: 12; bottomPadding: 4
                     text: "You've changed some of Slate's own files, outside settings.json, hypr/ and user/. Updating replaces them; your versions stay in ~/.config/slate.previous:\n"
-                        + upd.touched.slice(0, 8).map(f => "  · " + f).join("\n")
-                        + (upd.touched.length > 8 ? "\n  · and " + (upd.touched.length - 8) + " more" : "")
+                        + updatesPane.touched.slice(0, 8).map(f => "  · " + f).join("\n")
+                        + (updatesPane.touched.length > 8 ? "\n  · and " + (updatesPane.touched.length - 8) + " more" : "")
                     color: win.danger; font.family: win.font; font.pixelSize: 12
                     wrapMode: Text.Wrap
                 }
                 SettingRow {
-                    label: Updates.status === "downloading" ? "Downloading " + upd.latest + "…"
-                        : Updates.status === "installing" ? "Installing " + upd.latest + "…"
+                    label: Updates.status === "downloading" ? "Downloading " + updatesPane.latest + "…"
+                        : Updates.status === "installing" ? "Installing " + updatesPane.latest + "…"
                         : Updates.status === "failed" ? "The update didn't finish"
-                        : "Update to " + upd.latest
+                        : "Update to " + updatesPane.latest
                     detail: Updates.status === "installing" ? "Slate restarts on the new version when it's done"
                         : Updates.status === "failed" ? Updates.error
-                        : upd.confirmUpdate ? "Your changed files above will be replaced. Click again to update"
+                        : updatesPane.confirmUpdate ? "Your changed files above will be replaced. Click again to update"
                         : "Takes a moment; Slate restarts on the new version"
                     Row {
                         spacing: 8
@@ -5245,10 +5202,10 @@ FloatingWindow {
                             visible: !Updates.busy
                             primary: true
                             icon: 0xEA96
-                            label: Updates.status === "failed" ? "Try again" : upd.confirmUpdate ? "Update anyway" : "Update now"
+                            label: Updates.status === "failed" ? "Try again" : updatesPane.confirmUpdate ? "Update anyway" : "Update now"
                             onClicked: {
-                                if (upd.touched.length > 0 && !upd.confirmUpdate) { upd.confirmUpdate = true; return; }
-                                upd.confirmUpdate = false;
+                                if (updatesPane.touched.length > 0 && !updatesPane.confirmUpdate) { updatesPane.confirmUpdate = true; return; }
+                                updatesPane.confirmUpdate = false;
                                 Updates.install();
                             }
                         }
@@ -5260,7 +5217,7 @@ FloatingWindow {
             Group {
                 visible: Updates.status === "done" || Updates.status === "reverted"
                 SettingRow {
-                    label: Updates.status === "done" ? "Updated to " + upd.nice(Updates.installed) : "Back on " + upd.nice(Updates.installed)
+                    label: Updates.status === "done" ? "Updated to " + updatesPane.nice(Updates.installed) : "Back on " + updatesPane.nice(Updates.installed)
                     detail: Updates.status === "done" ? (Updates.note !== "" ? Updates.note : "Your settings and tweaks came along. The version before is kept, below")
                         : "Your settings and tweaks stayed as they were. The version you left is kept, below"
                     Button { visible: Updates.status === "done" && Updates.url !== ""; label: "What's new"; icon: 0xEA99; onClicked: Qt.openUrlExternally(Updates.url) }
@@ -5272,15 +5229,15 @@ FloatingWindow {
             Group {
                 visible: Updates.previous !== ""
                 SettingRow {
-                    label: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : upd.nice(Updates.previous))
-                    detail: upd.confirmRevert ? "Click again to switch. Your settings and tweaks stay as they are now"
+                    label: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous))
+                    detail: updatesPane.confirmRevert ? "Click again to switch. Your settings and tweaks stay as they are now"
                         : "Kept in ~/.config/slate.previous. Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
                     Button {
                         enabled: !Updates.busy
-                        label: upd.confirmRevert ? "Go back now" : "Go back"
+                        label: updatesPane.confirmRevert ? "Go back now" : "Go back"
                         onClicked: {
-                            if (!upd.confirmRevert) { upd.confirmRevert = true; return; }
-                            upd.confirmRevert = false;
+                            if (!updatesPane.confirmRevert) { updatesPane.confirmRevert = true; return; }
+                            updatesPane.confirmRevert = false;
                             Updates.revert();
                         }
                     }
@@ -5295,12 +5252,9 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Debug" }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
+            IntroText {
                 text: "Fixes for when something hasn't caught up. Slate normally does all of this by itself, so you shouldn't need them."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap
-                bottomPadding: 8
+                leftPadding: 0; bottomPadding: 8
             }
             GroupLabel { text: "Login screen" }
             Group {
@@ -5423,13 +5377,7 @@ FloatingWindow {
             PageTitle { text: "About Slate" }
             SlateLogo { size: 64; x: 4; textColor: win.text }
             Item { width: 1; height: 10 }
-            Text {
-                width: Math.min(parent.width, win.introMeasure)
-                text: "Slate is this desktop's shell: the bar, dock, launcher, window and workspace switchers, panels, notifications and these settings. It runs on Quickshell and Hyprland, from ~/.config/slate."
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-                wrapMode: Text.Wrap
-                leftPadding: 4; bottomPadding: 6
-            }
+            IntroText { text: "Slate is this desktop's shell: the bar, dock, launcher, window and workspace switchers, panels, notifications and these settings. It runs on Quickshell and Hyprland, from ~/.config/slate." }
             // As in LICENSE
             Text {
                 text: "© 2026 Dayle Rees · MIT License"
@@ -5507,7 +5455,7 @@ FloatingWindow {
                             }
                             Rectangle {
                                 width: parent.width; height: 6; radius: 3
-                                color: Config.tint("#262c35")
+                                color: win.divider
                                 Rectangle {
                                     width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
                                     height: parent.height; radius: 3
