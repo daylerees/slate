@@ -8,6 +8,7 @@ libQt6Svg6
 # Scripts and images
 python3
 python3-Pillow
+python3-gobject     # the tray's register, apart from Slate (scripts/tray-watcher.py)
 python3-numpy
 rsvg-convert
 ImageMagick

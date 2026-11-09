@@ -19,7 +19,7 @@
     quickshell qt6.qtdeclarative qt6.qtsvg qt6Packages.qt6ct
     qt6.qtmultimedia   # optional: click sound, and sounds without a delay
     # (python's modules have to come with it to be found: a separate package isn't on its path)
-    (python3.withPackages (ps: [ ps.pillow ps.numpy ]))
+    (python3.withPackages (ps: [ ps.pillow ps.numpy ps.pygobject3 ]))   # pygobject3: the tray's register
     librsvg imagemagick wl-clipboard libnotify curl unzip xdg-utils xdg-user-dirs
     diffutils   # cmp: is the installed copy (Slate, the login screen) up to date
     glib gsettings-desktop-schemas fontconfig   # gio / gsettings / gdbus, and fc-list (font lists)

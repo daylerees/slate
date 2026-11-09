@@ -11,6 +11,7 @@ qt6-shadertools
 # Scripts and images
 python
 python-pillow
+python-gobject      # the tray's register, apart from Slate (scripts/tray-watcher.py)
 python-numpy
 librsvg
 imagemagick

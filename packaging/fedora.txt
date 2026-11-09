@@ -9,6 +9,7 @@ quickshell
 # Scripts and images
 python3
 python3-pillow
+python3-gobject     # the tray's register, apart from Slate (scripts/tray-watcher.py)
 python3-numpy
 librsvg2-tools
 ImageMagick

@@ -18,6 +18,7 @@ qt6-wayland
 # Scripts and images
 python3
 python3-pil
+python3-gi          # the tray's register, apart from Slate (scripts/tray-watcher.py)
 python3-numpy
 librsvg2-bin
 imagemagick

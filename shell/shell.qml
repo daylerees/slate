@@ -21,6 +21,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
 import Quickshell.Services.Mpris
 
@@ -72,7 +73,10 @@ ShellRoot {
 
     // ---- For the test suite (tests/, with SLATE_TEST=1) ---------------------------------
     // $XDG_RUNTIME_DIR/slate-ready once Slate has loaded, so tests wait for it rather than guess
-    Component.onCompleted: if (Config.testMode) Qt.callLater(() => Qt.callLater(() => readyMark.running = true))
+    Component.onCompleted: {
+        Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("scripts/tray-watcher.py")]);     // the tray's register (below)
+        if (Config.testMode) Qt.callLater(() => Qt.callLater(() => readyMark.running = true));
+    }
     Process { id: readyMark; command: ["sh", "-c", ': > "${XDG_RUNTIME_DIR:-/tmp}/slate-ready"'] }
     // What's on screen, as JSON, for tests to check rather than reading pixels:
     //   slate ipc call test state
@@ -111,11 +115,16 @@ ShellRoot {
                     menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : "other") : "",
                     preview: previewPop.visible, media: win.mediaShown, trash: win.trashCount
                 },
+                tray: SystemTray.items.values.map(i => i.id),
                 gameMode: Config.gameMode,
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
     }
+    // The tray's register, apart from Slate so it outlives Slate's restarts (apps that sign
+    // their icons up only once would lose them): started here too for sessions that didn't
+    // (another copy just exits), detached so it keeps going
+    // (started in Component.onCompleted, with the test suite's ready mark, above)
     // Geist ships with Slate (fonts/, SIL OFL), so it's there even if not installed system-wide
     Variants {
         model: ["Geist-Variable.ttf", "Geist-Italic-Variable.ttf", "GeistMono-Variable.ttf", "GeistMono-Italic-Variable.ttf"]
