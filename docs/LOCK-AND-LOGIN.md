@@ -68,8 +68,11 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 - **Updating the code:** when the login screen's code changes, Slate shows an urgent
   notification ("Login screen out of date": it stays until answered, shows through Do Not
   Disturb and plays the attention sound) with an **Update** button that asks for your password
-  (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
-  code; "Later" waits for the next change. If the update is cancelled or fails, an urgent
+  (pkexec) and runs `slate-greeter-install --code-only`. It asks only when the login
+  screen's own code changes (its design, glass pieces, fonts, keyboard layout), not for
+  `Config.qml` or `SettingsData.qml`, which are shared with the rest of Slate and change with
+  nearly everything; those come along with the next update. It asks once per version, and
+  "Later" (or dismissing it) waits a week. If the update is cancelled or fails, an urgent
   "Login screen not updated" notification gives the command to run instead. Settings → Lock
   & Idle has the same Update button.
   Files are read with your own permissions, not root's.

@@ -22,6 +22,11 @@ SRC="$HOME/.config/slate"
 code_files() {
     sed 's/#.*//' "$SRC/greeter/files" | awk -v src="$SRC" 'NF >= 2 && $1 != "-" && $1 != "+" { print $1, src "/" $2 }'
 }
+# The ones shared with the rest of Slate, which change with nearly every Slate change, mostly in
+# ways the login screen doesn't notice: a change to only these doesn't ask for an update (it
+# comes along with the next one, or Settings → Lock & Idle → Update)
+SHARED="Config.qml SettingsData.qml"
+own_files() { code_files | while read -r name src; do case " $SHARED " in *" $name "*) ;; *) echo "$name $src" ;; esac; done; }
 
 # Your keyboard layout, from the running Hyprland (the login screen uses the same one)
 kb_layout() {
@@ -45,11 +50,24 @@ state() {
 
 if [ "${1:-}" = "--check" ]; then state; exit 0; fi
 
+# Whether the login screen's own code (not the shared files) or its keyboard layout has changed
+own_outdated() {
+    [ -d "$CODE" ] || return 1
+    while read -r name src; do
+        cmp -s "$src" "$CODE/$name" || return 0
+    done < <(own_files)
+    hypr_expected | cmp -s - "$CODE/hyprland.lua" || return 0
+    return 1
+}
+
 if [ "${1:-}" = "--prompt" ]; then
-    [ "$(state)" = outdated ] || exit 0
-    # Ask once per version of the code: "Later" waits for the next change
+    # Only for the login screen's own changes (see SHARED); --check still reports any change
+    own_outdated || exit 0
+    # Ask once per version of its own code; "Later" (or dismissing it) waits a week
     asked="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-asked"
-    version=$( { while read -r _ src; do cat "$src"; done < <(code_files); hypr_expected; } | md5sum | cut -d' ' -f1)
+    snooze="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-later"
+    [ "$(date +%s)" -lt "$(cat "$snooze" 2>/dev/null || echo 0)" ] && exit 0
+    version=$( { while read -r _ src; do cat "$src"; done < <(own_files); hypr_expected; } | md5sum | cut -d' ' -f1)
     [ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
     mkdir -p "$(dirname "$asked")"; echo "$version" > "$asked"
     icon="$SRC/assets/icon/icon-64.png"      # Slate's own icon, as its other notices use
@@ -57,7 +75,11 @@ if [ "${1:-}" = "--prompt" ]; then
     choice=$(notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock -A update=Update -A later=Later \
         "Login screen out of date" \
         "Its design has changed. Update it now? You'll be asked for your password." || true)
-    [ "$choice" = update ] || exit 0
+    if [ "$choice" != update ]; then
+        echo $(( $(date +%s) + 7 * 24 * 3600 )) > "$snooze"     # not now: ask again in a week
+        exit 0
+    fi
+    rm -f "$snooze"
     if pkexec "$SRC/bin/slate-greeter-install" --code-only; then
         notify-send -a Slate -i "$icon" -h string:x-slate-page:lock "Login screen updated" "You'll see it at your next logout or restart."
     else
