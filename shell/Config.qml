@@ -511,12 +511,15 @@ Singleton {
     // The tile behind an app's icon: a deep shade of the icon's colour (a light one in light
     // mode) with the setting on, else `fallback`. Grey icons keep the fallback. `solid`: never
     // see-through, even with glass (the launcher's highlighted row)
-    function iconTileFor(app, fallback, solid) {
-        if (!s.iconTileColour || s.iconFill || !app) return fallback;
+    function iconTileFor(app, fallback, solid) { return iconTileShade(app, solid) ?? fallback; }
+    // The shade itself, or null when the theme's tile applies (setting off, filled icons, a grey
+    // icon, or its colour not noted yet)
+    function iconTileShade(app, solid) {
+        if (!s.iconTileColour || s.iconFill || !app) return null;
         const hex = iconColours[app];
-        if (!hex) { askIconColour(app); return fallback; }
+        if (!hex) { askIconColour(app); return null; }
         const c = Qt.color(hex);
-        if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return fallback;
+        if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return null;
         const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
         const t = s.lightMode ? Qt.hsla(h, sat * 0.7, 0.84, 1) : Qt.hsla(h, sat * 0.8, 0.22, 1);
         return glass && !solid ? Qt.rgba(t.r, t.g, t.b, 0.6) : t;

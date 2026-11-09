@@ -19,10 +19,14 @@ Canvas {
     }
     // The theme's tile, or with Settings → App icons → Tiles in the icon's colour, a shade of the icon's
     property color color: Config.iconTileFor(app, Config.iconPlateColor)
+    // In the icon's colour: a very soft gradient, a touch lighter at the top and darker at the
+    // bottom (the theme's tile, and a space's, stay flat)
+    property bool shaded: Config.iconTileShade(app) !== null
     visible: !fill && shape !== "original"
 
     onShapeChanged: requestPaint()
     onColorChanged: requestPaint()
+    onShadedChanged: requestPaint()
     onVisibleChanged: if (visible) requestPaint()
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
@@ -34,7 +38,13 @@ Canvas {
         ctx.reset();
         if (!visible) return;
         const w = width, h = height;
-        ctx.fillStyle = plate.color;
+        if (shaded) {
+            const c = plate.color, l = c.hslLightness;
+            const g = ctx.createLinearGradient(0, 0, 0, h);
+            g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.04), c.a));
+            g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.04), c.a));
+            ctx.fillStyle = g;
+        } else ctx.fillStyle = plate.color;
         ctx.beginPath();
         if (shape === "circle") {
             ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, 2 * Math.PI);

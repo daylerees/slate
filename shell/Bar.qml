@@ -600,6 +600,7 @@ PanelWindow {
                             id: tilePlate
                             anchors.fill: parent; z: -1
                             color: appTile.space ? appTile.space.colour : Config.iconTileFor(app, Config.iconPlateColor)
+                            shaded: !appTile.space && Config.iconTileShade(app) !== null
                             Behavior on color { ColorAnimation { duration: 200 } }
                         }
                     }
