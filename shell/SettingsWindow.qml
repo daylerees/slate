@@ -3469,7 +3469,7 @@ FloatingWindow {
                     detail: Config.colourful ? "More variety of colour: soft pastels, like each Settings page in its own colour"
                         : "The accent colour and greys throughout"
                     options: [{ value: "monotone", label: "Monotone" }, { value: "colourful", label: "Colourful" }]
-                    value: Config.s.colourStyle || "monotone"
+                    value: Config.s.colourStyle || "colourful"
                     onPicked: v => Config.s.colourStyle = v
                 }
                 Separator {}
