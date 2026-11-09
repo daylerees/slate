@@ -51,6 +51,9 @@ Singleton {
     property string wallpaper: s.wallpaper
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper
+    // Settings → Appearance → Tint boldness, as a multiplier on how much of the wallpaper's colour
+    // backgrounds take: 50% (the default) is 1×, 100% is 2×
+    readonly property real toneBold: 2 * Math.max(0, Math.min(1, Number(s.toneBoldness ?? 0.5)))
 
     // Every theme colour goes through tint():
     //  - Light mode flips the greys (dark backgrounds become light, light text
@@ -76,10 +79,12 @@ Singleton {
                 // Light backgrounds: a set amount of visible colour (chroma), from how colourful
                 // the wallpaper is. Near-white needs far more saturation than near-black to show
                 // any, so a muted wallpaper otherwise left them looking plain white
-                const chroma = Math.min(0.15, t.hslSaturation * 0.8);
+                const chroma = Math.min(0.15 * toneBold, t.hslSaturation * 0.8 * toneBold);
                 sat = Math.min(1, Math.max(sat, chroma / Math.max(0.01, 1 - Math.abs(2 * l - 1))));
+            } else if (surface) {
+                sat = Math.min(0.32 * toneBold, Math.max(sat, t.hslSaturation * 0.45 * toneBold));
             } else {
-                sat = Math.min(0.32, Math.max(sat, t.hslSaturation * (surface ? 0.45 : 0.22)));
+                sat = Math.min(0.32, Math.max(sat, t.hslSaturation * 0.22));     // text: a hint, whatever the boldness
             }
         }
         return Qt.hsla(h < 0 ? 0 : h, sat, l, c.a);
