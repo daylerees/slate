@@ -337,6 +337,7 @@ PanelWindow {
                         id: appsRow
                         width: parent.width; height: appsText.implicitHeight + 28; radius: 12
                         color: w.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         // Installed apps Slate can theme (scripts/apply-theme.py --apps)
                         property var installed: []
                         Process {
@@ -418,6 +419,7 @@ PanelWindow {
                                 required property var modelData
                                 width: (parent.width - 16) / 2; height: 250; radius: 14
                                 color: w.card
+                                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                                 Column {
                                     anchors { fill: parent; margins: 16 }
                                     spacing: 6
@@ -444,6 +446,7 @@ PanelWindow {
                         id: hideRow
                         width: parent.width; height: 56; radius: 12
                         color: w.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         readonly property bool on: Config.s.dockAutoHide
                         Column {
                             anchors { left: parent.left; right: hideSwitch.left; leftMargin: 14; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -591,6 +594,7 @@ PanelWindow {
                                 required property var modelData
                                 width: parent.cardW; height: 84; radius: 12
                                 color: w.card
+                                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                                 border.width: 1; border.color: w.line
                                 // Icon, in an accent-tinted square
                                 Rectangle {

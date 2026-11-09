@@ -681,7 +681,7 @@ PanelWindow {
             height: 30
             radius: ov.bar.capsuleRadius
             color: ov.bar.capsuleColor
-
+            Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's capsules
 
             Row {
                 id: dotsRow

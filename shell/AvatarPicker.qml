@@ -301,6 +301,7 @@ FloatingWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 156; height: 156; radius: 78
                 color: Config.raised(Config.tint("#1d222a"))
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: 1; border.color: Config.tint("#2a313c")
                 Text {
                     visible: pk.chosen === ""

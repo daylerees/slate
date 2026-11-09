@@ -635,6 +635,7 @@ PanelWindow {
                         visible: wf.askingFor === netRow.modelData.name
                         width: parent.width; height: 34; radius: 8
                         color: pop.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         TextInput {
                             id: psk
                             anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
@@ -1282,6 +1283,7 @@ PanelWindow {
                 visible: spp.mode === "new"
                 width: parent.width; height: 34; radius: 8
                 color: pop.card
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: spName.activeFocus ? 1 : 0
                 border.color: pop.accent
                 TextInput {
@@ -1441,6 +1443,7 @@ PanelWindow {
                     id: spHexBox
                     width: 92; height: 30; radius: 8
                     color: pop.card
+                    Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                     border.width: spHex.activeFocus ? 1 : 0
                     border.color: pop.accent
                     TextInput {
@@ -2115,6 +2118,7 @@ PanelWindow {
                         readonly property int day: index + 1
                         width: (cal.width - 18) / 4; height: 64; radius: 9
                         color: pop.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         Column {
                             anchors.centerIn: parent
                             spacing: 3
@@ -2200,6 +2204,7 @@ PanelWindow {
                 id: profileCard
                 width: parent.width; height: 80; radius: 12
                 color: pop.card
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 // Wallpaper behind the card, fading into it from the left
                 Item {
                     anchors.fill: parent
@@ -2322,6 +2327,7 @@ PanelWindow {
                         visible: cc.player !== null
                         width: parent.width; height: 104; radius: 12
                         color: pop.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         Item {
                             visible: cc.player !== null
                             anchors { fill: parent; margins: 12 }
@@ -2369,6 +2375,7 @@ PanelWindow {
                         readonly property bool roomy: cc.player === null
                         width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: 12
                         color: pop.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         SystemClock { id: ccClock; precision: SystemClock.Minutes }
                         Column {
                             anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }

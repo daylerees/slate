@@ -958,6 +958,7 @@ FloatingWindow {
         height: groupCol.implicitHeight + 8
         radius: 12
         color: win.card
+        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
         Column { id: groupCol; anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 } }
     }
     // One setting: label + description on the left, a control on the right
@@ -1470,6 +1471,7 @@ FloatingWindow {
                 width: parent.width; height: 44
                 radius: 12
                 color: win.card
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: findField.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: findIcon
@@ -3021,6 +3023,7 @@ FloatingWindow {
             Rectangle {
                 width: parent.width; height: 40; radius: 10
                 color: win.card
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: findKeys.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: keysGlass
