@@ -1763,34 +1763,52 @@ FloatingWindow {
             }
             GroupLabel { text: "Location" }
             Group {
-                // Search a place by name (Open-Meteo's free geocoding), then pick a result
+                // In front of the groups below while its results are showing over them
+                z: locPop.visible ? 5 : 0
+                // Search a place by name as you type (Open-Meteo's free geocoding), then pick a result
                 Column {
                     id: loc
                     width: parent.width
                     property var results: []
                     property string status: ""
+                    property int pick: 0
+                    onResultsChanged: pick = 0
                     function search(q) {
-                        if (q.trim().length < 2) return;
-                        status = "Searching…"; results = [];
+                        if (q.trim().length < 2) { results = []; status = ""; return; }
+                        status = "Searching…";
+                        geo.running = false;         // a newer search replaces one still going
                         geo.command = ["curl", "-sf", "--max-time", "10", "https://geocoding-api.open-meteo.com/v1/search?count=6&format=json&name=" + encodeURIComponent(q.trim())];
                         geo.running = true;
                     }
+                    function choose(r) {
+                        if (!r) return;
+                        Config.s.latitude = r.latitude;
+                        Config.s.longitude = r.longitude;
+                        Config.s.locationName = r.name;
+                        results = []; status = ""; placeInput.text = ""; placeInput.focus = false;
+                    }
+                    // Searches a moment after you stop typing
+                    Timer { id: geoSoon; interval: 350; onTriggered: loc.search(placeInput.text) }
+                    // A search stopped for a newer one ends with nothing (and a failure code): that
+                    // says nothing about the newer one, so it's ignored
                     Process {
                         id: geo
                         stdout: StdioCollector {
                             onStreamFinished: {
+                                if (text.trim() === "") return;
                                 try { loc.results = JSON.parse(text).results || []; } catch (e) { loc.results = []; }
                                 loc.status = loc.results.length ? "" : "No places found";
                             }
                         }
-                        onExited: code => { if (code !== 0) loc.status = "Couldn't search (offline?)"; }
+                        onExited: code => { if (code !== 0 && !geo.running && !geoSoon.running) loc.status = "Couldn't search (offline?)"; }
                     }
                     SettingRow {
                         label: "Location"
                         detail: Config.s.locationName !== "" ? "Weather and night light's sunset/sunrise use " + Config.s.locationName
                             : "Not set: weather is hidden. Search for your town or city"
                         Rectangle {
-                            width: 200; height: 30; radius: 8
+                            id: placeField
+                            width: 240; height: 30; radius: 8
                             color: win.control
                             Gloss { radius: parent.radius }   // glass: a sheen
                             // Hover: a faint accent outline (solid while typing)
@@ -1803,44 +1821,81 @@ FloatingWindow {
                                 verticalAlignment: TextInput.AlignVCenter
                                 color: win.text; selectionColor: win.accent
                                 font.family: win.font; font.pixelSize: 12
-                                onAccepted: loc.search(text)
-                                Keys.onEscapePressed: { text = ""; loc.results = []; loc.status = ""; focus = false; }
+                                onTextChanged: { if (text.trim().length >= 2) geoSoon.restart(); else { geoSoon.stop(); geo.running = false; loc.results = []; loc.status = ""; } }
+                                Keys.onPressed: e => {
+                                    if (e.key === Qt.Key_Down) { loc.pick = Math.min(loc.results.length - 1, loc.pick + 1); e.accepted = true; }
+                                    else if (e.key === Qt.Key_Up) { loc.pick = Math.max(0, loc.pick - 1); e.accepted = true; }
+                                    else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
+                                        if (geoSoon.running) { geoSoon.stop(); loc.search(text); }      // Enter before the pause: search now
+                                        else loc.choose(loc.results[loc.pick]);
+                                        e.accepted = true;
+                                    }
+                                    else if (e.key === Qt.Key_Escape) { text = ""; focus = false; e.accepted = true; }
+                                }
                             }
                             Text {
                                 visible: placeInput.text === ""
                                 anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                                text: "Search, then Enter"
+                                text: "Search for your town or city"
                                 color: win.dim; font.family: win.font; font.pixelSize: 12
                             }
-                        }
-                    }
-                    Text {
-                        visible: loc.status !== ""
-                        x: 16; bottomPadding: 12
-                        text: loc.status
-                        color: win.dim; font.family: win.font; font.pixelSize: 12
-                    }
-                    Flow {
-                        visible: loc.results.length > 0
-                        width: parent.width - 32; x: 16
-                        spacing: 6
-                        bottomPadding: 14
-                        Repeater {
-                            model: loc.results
-                            delegate: Rectangle {
-                                required property var modelData
-                                readonly property string place: [modelData.name, modelData.admin1, modelData.country].filter(x => x).join(", ")
-                                width: placeText.implicitWidth + 26; height: 32; radius: 8
-                                color: placeHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
-                                Gloss { radius: parent.radius; opacity: (placeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                                Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
-                                HoverHandler { id: placeHover }
-                                ClickTap {
-                                    onTapped: {
-                                        Config.s.latitude = parent.modelData.latitude;
-                                        Config.s.longitude = parent.modelData.longitude;
-                                        Config.s.locationName = parent.modelData.name;
-                                        loc.results = []; placeInput.text = ""; placeInput.focus = false;
+
+                            // Results, dropping down from the field over the page
+                            Rectangle {
+                                id: locPop
+                                visible: placeInput.activeFocus && placeInput.text.trim().length >= 2 && (loc.results.length > 0 || loc.status !== "")
+                                anchors { top: parent.bottom; topMargin: 6; right: parent.right }
+                                width: 300
+                                height: locPopCol.implicitHeight + 8
+                                radius: 12
+                                // Solid, so the page under it doesn't show through
+                                color: Config.tint("#1d222a")
+                                border.width: 1; border.color: Config.tint("#2a313c")
+                                layer.enabled: true
+                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+                                MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
+                                Column {
+                                    id: locPopCol
+                                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 }
+                                    // Searching…, No places found, or couldn't search
+                                    Text {
+                                        visible: loc.results.length === 0 && loc.status !== ""
+                                        width: parent.width
+                                        topPadding: 10; bottomPadding: 10; leftPadding: 12
+                                        text: loc.status
+                                        color: win.dim; font.family: win.font; font.pixelSize: 12
+                                    }
+                                    Repeater {
+                                        model: loc.results
+                                        delegate: Rectangle {
+                                            id: placeRow
+                                            required property var modelData
+                                            required property int index
+                                            readonly property bool chosen: index === loc.pick
+                                            width: parent.width; height: placeCol.implicitHeight + 14
+                                            radius: 9
+                                            color: chosen ? Config.tint("#262c35") : placeHover.hovered ? Config.hover : "transparent"
+                                            Column {
+                                                id: placeCol
+                                                anchors { left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                                spacing: 1
+                                                Text {
+                                                    width: parent.width
+                                                    text: placeRow.modelData.name
+                                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                                    elide: Text.ElideRight
+                                                }
+                                                Text {
+                                                    width: parent.width
+                                                    visible: text !== ""
+                                                    text: [placeRow.modelData.admin1, placeRow.modelData.country].filter(x => x).join(", ")
+                                                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                            HoverHandler { id: placeHover; onHoveredChanged: if (hovered) loc.pick = placeRow.index }
+                                            ClickArea { anchors.fill: parent; onClicked: loc.choose(placeRow.modelData) }
+                                        }
                                     }
                                 }
                             }
