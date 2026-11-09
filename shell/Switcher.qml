@@ -136,6 +136,35 @@ PanelWindow {
 
     MouseArea { anchors.fill: parent; enabled: sw.shown; onClicked: sw.cancel() }
 
+    // ---- Live captures ------------------------------------------------------
+    // One capture per window, drawn off-screen at exactly a card's preview size and shown on
+    // each card through a copy (shotFor). The strip repeats the windows round the loop, so
+    // with a capture per card the same window was captured several times over.
+    function shotFor(win) {
+        for (let i = 0; i < shotRepeater.count; i++) {       // (count: re-run as they're made)
+            const it = shotRepeater.itemAt(i);
+            if (it && it.win === win) return it;
+        }
+        return null;
+    }
+    Item {
+        x: -10000
+        Repeater {
+            id: shotRepeater
+            model: sw.windows
+            delegate: ScreencopyView {
+                required property var modelData
+                readonly property var win: modelData
+                // Fitted to a card's preview area, keeping the window's shape
+                readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
+                width: Math.min(sw.cardW - 20, sw.previewH * ratio)
+                height: width / ratio
+                captureSource: sw.livePreviews && sw.shown && modelData.wayland ? modelData.wayland : null
+                live: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
+            }
+        }
+    }
+
     // Workspace dots under the switcher (as on the bar); the accent marker sits on the
     // selected window's workspace and slides as the selection moves
     Rectangle {
@@ -273,16 +302,19 @@ PanelWindow {
                         pixelScale: o && o.size ? shot.width / Math.max(1, o.size[0]) : 0.25
                         radius: 8
                     }
-                    ScreencopyView {
+                    // The window's live capture (shared with its other cards: see shotFor), copied
+                    // at its own size
+                    ShaderEffectSource {
                         id: shot
-                        readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
+                        readonly property Item capture: sw.shotFor(card.modelData)
+                        readonly property bool hasContent: !!capture && capture.hasContent
                         anchors.centerIn: parent
-                        width: Math.min(parent.width, parent.height * ratio)
-                        height: width / ratio
+                        // (until the capture's made: 16:10, as an empty capture is)
+                        width: capture ? capture.width : Math.min(parent.width, parent.height * 16 / 10)
+                        height: capture ? capture.height : width * 10 / 16
+                        sourceItem: capture
                         // Without live previews (or in game mode): the window's shape and app tile instead (below)
                         visible: sw.livePreviews       // a frame from before previews were turned off stays hidden
-                        captureSource: sw.livePreviews && sw.shown && card.modelData.wayland ? card.modelData.wayland : null
-                        live: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask }
                     }
