@@ -2295,7 +2295,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Media controls"
-                    detail: "After the Apps button while something's playing: its album art with Previous, Play/Pause and Next beside it (over the art on a side dock); right-click for them all"
+                    detail: "After the Apps button while something's playing: its album art (click it to go to the app) with Previous, Play/Pause and Next beside it (over the art on a side dock); right-click for them all"
                     key: "dockShowMedia"
                 }
                 Separator { visible: Config.s.dockShowMedia }

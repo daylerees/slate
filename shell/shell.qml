@@ -652,8 +652,8 @@ ShellRoot {
             running: win.mediaShown && win.shown && !!win.player && win.player.isPlaying && win.mediaWide > 1
             onTriggered: win.player.positionChanged()
         }
-        // A click on it. Wide: the art plays or pauses, then Previous / Play-Pause / Next in
-        // thirds of the rest. One icon: Previous on its left third, Next on its right
+        // A click on it. Wide: the art goes to the app playing, then Previous / Play-Pause /
+        // Next in thirds of the rest. One icon: Previous on its left third, Next on its right
         // Which part of it the pointer's on: "art" (wide), "previous", "toggle" or "next"
         function mediaControlAt() {
             const along = (pointerX - slotStart(mediaIndex)) / (mediaWide * base);    // 0 … 1 across it
@@ -665,10 +665,23 @@ ShellRoot {
             }
             return along < 1 / 3 ? "previous" : along > 2 / 3 ? "next" : "toggle";
         }
+        // Go to the app that's playing: its window if one's open (by the app the player names),
+        // else asking the player to show itself
+        function showPlayer() {
+            const p = player;
+            if (!p) return;
+            const id = (p.desktopEntry || "").toLowerCase(), name = (p.identity || "").toLowerCase();
+            const app = items.find(it => it.windows.length > 0 && (
+                (id !== "" && (it.key.toLowerCase() === id || (it.entry && it.entry.id.toLowerCase() === id)))
+                || (name !== "" && it.entry && (it.entry.name || "").toLowerCase() === name)));
+            if (app) app.windows[0].activate();
+            else if (p.canRaise) p.raise();
+        }
         function mediaClick() {
             const p = player;
             if (!p) return;
             const control = mediaControlAt();
+            if (control === "art") { showPlayer(); return; }
             if (control === "previous") { if (p.canGoPrevious) p.previous(); }
             else if (control === "next") { if (p.canGoNext) p.next(); }
             else if (p.canTogglePlaying) p.togglePlaying();
@@ -1040,7 +1053,7 @@ ShellRoot {
                     r.push({ label: p.isPlaying ? "Pause" : "Play", kind: "media-toggle" });
                     if (p.canGoNext) r.push({ label: "Next", kind: "media-next" });
                     if (p.canGoPrevious) r.push({ label: "Previous", kind: "media-previous" });
-                    if (p.canRaise) {
+                    {
                         r.push({ kind: "sep" });
                         r.push({ label: "Show " + (p.identity || "the player"), kind: "media-raise" });
                     }
@@ -1105,7 +1118,7 @@ ShellRoot {
                 case "media-toggle": if (win.player) win.player.togglePlaying(); break;
                 case "media-next": if (win.player) win.player.next(); break;
                 case "media-previous": if (win.player) win.player.previous(); break;
-                case "media-raise": if (win.player) win.player.raise(); break;
+                case "media-raise": win.showPlayer(); break;
                 case "trash-empty": {
                     // Asks first, in the same confirmation window as shutting down and the rest
                     const n = win.trashCount;
