@@ -29,11 +29,49 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.19.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.19.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Eight more scenery videos.</strong> Get scenery videos now fetches twelve clips: Lake Bled at sunrise and from the air, Right Whale Bay and Gold Harbour on South Georgia, an emperor penguin in Antarctica, the Crimean coast, the Blue Ridge mountains and a beach in Cádiz join the four from before. In all: about 410 MB at 1080p, 780 MB at 1440p, 1.1 GB at 4K.</li>
+        <li><strong>Glassier notifications.</strong> With glass on, notifications get a curved glossy shine across their top, and their app icons a sheen like the dock's.</li>
+        <li><strong>A steadier menu bar with glass.</strong> In dark mode the bar is a little darker and less see-through than other glass, so it reads as a steady band whatever the wallpaper does.</li>
+        <li><strong>The dock stays open over floating windows.</strong> With auto-hide on, a workspace with only floating windows keeps the dock open, as an empty one does (except in floating windows mode).</li>
+        <li><strong>Long window titles fade out</strong> before the bar's status icons, instead of running underneath them.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Turning <strong>tap to click</strong> off in Settings now works (Hyprland was refusing it).</li>
+        <li>Apps keep the <strong>cursor size</strong> set in Settings, rather than getting the old one back after a theme change.</li>
+        <li>The <strong>login screen</strong> no longer runs your startup apps or holds on to the lid switch.</li>
+        <li>The calendar and control centre <strong>clocks follow the 24-hour setting</strong>.</li>
+        <li>In <strong>game mode</strong> the bar's separators go solid with the rest of the bar.</li>
+        <li>The switcher and overview <strong>slide at the Animations speed</strong> (Fast and Off).</li>
+        <li>Long <strong>Wi-Fi names</strong> in Settings stop short of the buttons.</li>
+        <li>A broken wallpaper can't hang the <strong>accent colour</strong> pick.</li>
+        <li><code>slate ipc call bar panel gamemode</code> opens the game mode panel.</li>
+        <li>The package lists now include <strong>numpy and rsvg-convert</strong>, which app icons need. Updating from Settings will ask you to run <code>./install.sh</code> once to install them.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>A lighter Slate overall.</strong> Many things that ran all the time now only run when needed: the lock screen's Caps Lock check, the hidden clipboard list, Settings' clock and pages while it's closed, the bar's timers on every screen, and more. The window switcher captures each window once instead of several times, the dock no longer redraws its icon tiles on every frame of magnification, and Slate's scripts start far fewer processes. Everything looks and works as before.</li>
+        <li>The code is tidier underneath: shared pieces in place of repeated ones, clearer names, and comments that match what the code does.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.18.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.18.0 <time datetime="2026-11-09">9 November 2026</time></h2>
   <div class="cl-grid">
