@@ -472,7 +472,7 @@ Singleton {
         const w = wallpaperAccent ? Qt.color(wallpaperAccent) : null;
         const k = w ? glossTint : 0;
         const r = 1 - k + (w ? w.r * k : 0), g = 1 - k + (w ? w.g * k : 0), b = 1 - k + (w ? w.b * k : 0);
-        return s.lightMode ? Qt.rgba(r, g, b, 0.4) : Qt.rgba(r, g, b, 0.07 + 0.04 * k);
+        return s.lightMode ? Qt.rgba(r, g, b, 0.55) : Qt.rgba(r, g, b, 0.07 + 0.04 * k);
     }
     // Where Hyprland's blur stops: just under the surfaces' own opacity. It goes by each pixel
     // (no smoothing), so along rounded edges it steps; stopping where the surface is nearly

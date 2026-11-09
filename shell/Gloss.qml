@@ -48,7 +48,10 @@ Rectangle {
     // Settings → Glass → Gloss colour. On a coloured fill at most 40% of it, so the sheen stays
     // a lighter tint of the fill (at full strength it was the fill's own colour, and vanished)
     readonly property bool onFill: { const c = parent ? parent.color : undefined; return !glassHint && c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2; }
-    readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : 1) : 0
+    // Light frosted glass (light mode, not on a coloured fill): the sheen stays close to white,
+    // since a sheen in the wallpaper's colour vanished into the tinted surface beneath it
+    readonly property bool lightFrost: Config.s.lightMode && !onFill
+    readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : lightFrost ? 0.25 : 1) : 0
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
     gradient: Gradient {
@@ -58,15 +61,16 @@ Rectangle {
         GradientStop { position: 1.0; color: "transparent" }
     }
     // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
-    // rounded, glossy surface rather than a flat one (Gloss sets how strong)
+    // rounded, glossy surface rather than a flat one (Gloss sets how strong). Light frosted glass
+    // gets a fainter one, for the same depth
     Rectangle {
         anchors.fill: parent
         radius: g.radius
-        visible: g.onFill
+        visible: g.onFill || g.lightFrost
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
             GradientStop { position: 0.5; color: "transparent" }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, Math.min(0.35, 0.3 * Config.glossAmount)) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.35, 0.3 * Config.glossAmount) : Math.min(0.14, 0.18 * Config.glossAmount)) }
         }
     }
     // The bright edge: the shape's own rounded outline, so it bends around the top corners,
@@ -83,7 +87,8 @@ Rectangle {
             radius: g.radius
             color: "transparent"
             border.width: 1
-            border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
+            // Crisper on light frosted glass, where a faint white edge didn't show
+            border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))
         }
     }
     Item {
