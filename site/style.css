@@ -203,7 +203,7 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   96.43% { --d-bar: rgba(24,14,20,.78); --d-cap: rgba(240,160,200,.11); --d-sheen: rgba(240,160,200,.18); --d-rim: rgba(240,160,200,.28); --d-sep: rgba(220,196,210,.35); --d-accent: #f0a0c8; --d-occ: #c6b0bc; --d-empty: #5e4c58; --d-tile: rgba(240,160,200,.16); --d-ink: #f6ecf1; --d-blob-a: rgba(255,150,120,.75); --d-blob-b: rgba(200,70,150,.75); --d-blob-c: rgba(255,200,170,.80); --d-blob-d: rgba(255,110,170,.75); --d-base-a: #4d1f3a; --d-base-b: #1c0c16; --d-blur: 18; }
   100.00% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
 }
-.screen { animation: bar-looks 38s ease-in-out infinite; background: var(--d-base-b); }
+.screen { animation: bar-looks 14s ease-in-out infinite; background: var(--d-base-b); }
 .glass-scene {
   position: absolute; inset: 0;
   background:
