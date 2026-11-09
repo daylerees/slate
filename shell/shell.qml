@@ -124,6 +124,20 @@ ShellRoot {
     readonly property string borderCmd: {
         const rgba = (c, a) => "rgba(" + c.toString().slice(1, 7) + Math.round(a * 255).toString(16).padStart(2, "0") + ")";
         const active = rgba(Config.accent, 0.6), inactive = rgba(Config.tint("#0f1216"), 0.85);
+        // Glass (with its gloss): a sheen on the borders, as Hyprland can draw one. Its gradients
+        // spread their colours evenly, so the light is the first of several: a bright catch on
+        // the top left corner, fading within the first sixth or so into the colour itself, a
+        // touch deeper at the far corner (how strong follows Glass → Gloss). Hyprland's angles
+        // put the first colour at the left for 0°, the top for 90°: 45° is the top left.
+        // Without glass (or in game mode), flat
+        const toWhite = (c, k) => Qt.rgba(c.r + (1 - c.r) * k, c.g + (1 - c.g) * k, c.b + (1 - c.b) * k, 1);
+        const g = Config.glassGloss ? Math.min(1, Config.glossAmount) : 0;
+        const sheen = (base, a, light, soft, deep) => [rgba(toWhite(base, light * g), Math.min(1, a + 0.3 * g)), rgba(toWhite(base, soft * g), a),
+            rgba(base, a), rgba(base, a), rgba(base, a), rgba(base, a), rgba(Qt.darker(base, 1 + deep * g), a)].map(c => `"${c}"`).join(", ");
+        const activeColors = g > 0 ? sheen(Config.accent, 0.6, 0.75, 0.3, 0.2) : `"${active}"`;
+        const inactiveBorder = g > 0
+            ? `{ colors = { ${sheen(Config.tint("#0f1216"), 0.85, 0.3, 0.1, 0)} }, angle = 45 }`
+            : `"${inactive}"`;
         const size = Math.max(0, Math.min(12, Config.s.windowBorderSize));   // Settings → Windows
         const dim = Math.max(0, Math.min(80, Config.s.inactiveDim)) / 100;   // Settings → Windows
         // Spacing: gaps_in is added on each side of a window, so half the gap between two;
@@ -146,7 +160,7 @@ ShellRoot {
             + `bar_text_font = [==[${Config.s.fontFamily}]==], bar_text_size = ${Math.round(13 * Config.uiScale)}, bar_height = ${Math.round(13 * 2.6 * Config.uiScale)}, `
             + `bar_buttons_alignment = "${Config.s.titleButtons === "left" ? "left" : "right"}" } } }); `
             + `if HYPRBARS_IDLE then pcall(hl.config, { plugin = { hyprbars = { idle_button_color = "${rgba(Config.tint("#5a6372"), 1)}" } } }) end end; `;
-        return solos + mode + bars + `ACTIVE_BORDER = { colors = { "${active}" } }; INACTIVE_BORDER = "${inactive}"; BORDER_SIZE = ${size}; `
+        return solos + mode + bars + `ACTIVE_BORDER = { colors = { ${activeColors} }${g > 0 ? ", angle = 45" : ""} }; INACTIVE_BORDER = ${inactiveBorder}; BORDER_SIZE = ${size}; `
             + `hl.config({ general = { border_size = BORDER_SIZE, gaps_in = ${gapIn}, gaps_out = ${gapOut}, col = { active_border = ACTIVE_BORDER, inactive_border = INACTIVE_BORDER } }, `
             + `decoration = { dim_inactive = ${dim > 0}, dim_strength = ${dim.toFixed(2)} } })`;
     }
