@@ -500,7 +500,7 @@ def leaves(node):
 
 def notify(summary, body):
     try:
-        subprocess.Popen(["notify-send", "-a", "Slate", "-i", "view-grid", summary, body],
+        subprocess.Popen(["notify-send", "-a", "Slate", "-i", "view-grid", "-h", "string:x-slate-page:spaces", summary, body],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except OSError:
         pass

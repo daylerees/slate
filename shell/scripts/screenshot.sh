@@ -72,5 +72,5 @@ wl-copy --type image/png < "$tmp"
 if [ "$after" = "edit" ] && command -v swash >/dev/null 2>&1; then
     swash "$file"                    # saving there updates the same file
 else
-    notify-send -a Slate -i "$file" "Screenshot saved" "$file (also copied)"
+    notify-send -a Slate -i "$file" -h string:x-slate-page:screenshots "Screenshot saved" "$file (also copied)"
 fi

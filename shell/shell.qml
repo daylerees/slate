@@ -282,7 +282,7 @@ ShellRoot {
             body = lines.slice(0, 3).join(" ");
         }
         brokenFiles = [...new Set(links.map(m => m[1]))];
-        Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical",
+        Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical", "--hint=string:x-slate-page:about",
             "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
             "Slate couldn't reload", body + " Still running the previous version; it reloads when you save the fix."]);
     }
@@ -301,7 +301,7 @@ ShellRoot {
     Timer {
         id: reloadNotice
         interval: 600          // once the new Slate (and its notification server) is up
-        onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
+        onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:about",
             "Slate reloaded", "Slate restarted on its updated files and settings."])
     }
     Connections {
@@ -317,9 +317,9 @@ ShellRoot {
                 try { errs = JSON.parse(text).filter(e => e && String(e).trim() !== ""); } catch (e) {}
                 const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
                 if (errs.length === 0)
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Hyprland settings reloaded", "Hyprland read its config again."]);
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland read its config again."]);
                 else
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Hyprland settings have errors",
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings have errors",
                         errs.join("\n").split("\n").slice(0, 6).join("\n")]);
             }
         }

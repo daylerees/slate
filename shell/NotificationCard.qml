@@ -141,6 +141,9 @@ Rectangle {
             // From Slate itself: its mark on the accent-tinted tile, like the glyph icons (a
             // screenshot's picture still shows below, as the preview)
             readonly property bool fromSlate: !!card.entry && card.entry.appName === "Slate"
+            // Its colour: in Colourful mode, Slate's notices take the colour of the Settings page
+            // they're about, and other apps' bell the Notifications page's; else the accent
+            readonly property color tint: Config.pageColour(fromSlate ? ((card.entry && card.entry.page) || "about") : "notifications")
             RoundImage {
                 id: picture
                 anchors.fill: parent
@@ -169,19 +172,19 @@ Rectangle {
                 visible: !picture.visible && !tile.visible
                 radius: 9
                 // No icon: the bell on an accent-tinted tile (Slate's mark for Slate's notices)
-                color: Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.16)
+                color: Qt.rgba(icon.tint.r, icon.tint.g, icon.tint.b, 0.16)
                 SlateMark {
                     visible: icon.fromSlate
                     anchors.centerIn: parent
                     size: 24
-                    accent: card.accent
-                    body: Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.55)
+                    accent: icon.tint
+                    body: Qt.rgba(icon.tint.r, icon.tint.g, icon.tint.b, 0.55)
                 }
                 Text {
                     visible: !icon.fromSlate
                     anchors.centerIn: parent
                     text: String.fromCodePoint(0xEA35)
-                    color: card.accent
+                    color: icon.tint
                     font.family: card.bar.iconFont
                     font.pixelSize: 20
                 }

@@ -108,6 +108,9 @@ Scope {
                 entryId: notifs.entryFor(n),
                 image: n.image || "",
                 appIcon: n.appIcon || "",
+                // Slate's own notices name the Settings page they're about (x-slate-page), for
+                // their colour in Colourful mode
+                page: String((n.hints && n.hints["x-slate-page"]) || ""),
                 time: Date.now(),
                 urgency: n.urgency
             };

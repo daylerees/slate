@@ -20,7 +20,7 @@ Scope {
     property bool ready: false        // the files exist (watching a missing file doesn't work)
 
     function notify(title, body) {
-        Quickshell.execDetached(["notify-send", "-a", "Slate", "-i", "dialog-warning", title, body]);
+        Quickshell.execDetached(["notify-send", "-a", "Slate", "-i", "dialog-warning", "-h", "string:x-slate-page:about", title, body]);
     }
 
     Process {
