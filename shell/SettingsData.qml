@@ -168,6 +168,7 @@ JsonAdapter {
     property int launcherRows: 4               // grid: rows shown at once (more scroll)
     property bool launcherDescriptions: true
     property bool launcherSortByUsage: true
+    property bool launcherWrap: false          // arrow keys go round from the last result to the first
     property bool launcherRecent: true         // the apps opened most recently first, before you type
     property bool launcherFuzzy: true          // initials and small slips find apps too
     property bool launcherWindows: true        // open windows, by title

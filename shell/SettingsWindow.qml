@@ -250,7 +250,7 @@ FloatingWindow {
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
-            "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
+            "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
             "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2602,6 +2602,12 @@ FloatingWindow {
                     label: "Most used first"
                     detail: "Order apps by how often you open them (after how well they match your search)"
                     key: "launcherSortByUsage"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Wrap around"
+                    detail: "The arrow keys go from the last result back to the first, and from the first to the last"
+                    key: "launcherWrap"
                 }
                 Separator {}
                 ToggleSetting {

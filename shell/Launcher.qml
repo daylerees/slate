@@ -854,10 +854,23 @@ PanelWindow {
                         break;
                     case Qt.Key_Return:
                     case Qt.Key_Enter: root.launch(root.results[i]); break;
-                    case Qt.Key_Down: list.currentIndex = Math.min(n - 1, i + across); break;
-                    case Qt.Key_Up: list.currentIndex = Math.max(0, i - across); break;
-                    case Qt.Key_Tab: list.currentIndex = Math.min(n - 1, i + 1); break;
-                    case Qt.Key_Backtab: list.currentIndex = Math.max(0, i - 1); break;
+                    // Settings → Launcher → Wrap around: past the end back to the start, and the
+                    // other way (in the grid, to the same column at the other end)
+                    case Qt.Key_Down:
+                        if (i + across < n) list.currentIndex = i + across;
+                        else if (Config.s.launcherWrap) list.currentIndex = i % across;
+                        else list.currentIndex = n - 1;
+                        break;
+                    case Qt.Key_Up:
+                        if (i - across >= 0) list.currentIndex = i - across;
+                        else if (Config.s.launcherWrap) {
+                            // the same column in the last row (or the last item, if that row is short)
+                            const lastRow = Math.floor((n - 1) / across) * across;
+                            list.currentIndex = Math.min(n - 1, lastRow + i % across);
+                        } else list.currentIndex = 0;
+                        break;
+                    case Qt.Key_Tab: list.currentIndex = i + 1 < n ? i + 1 : (Config.s.launcherWrap ? 0 : n - 1); break;
+                    case Qt.Key_Backtab: list.currentIndex = i > 0 ? i - 1 : (Config.s.launcherWrap ? n - 1 : 0); break;
                     case Qt.Key_PageDown: list.currentIndex = Math.min(n - 1, i + page); break;
                     case Qt.Key_PageUp: list.currentIndex = Math.max(0, i - page); break;
                     default: return;
