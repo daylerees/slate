@@ -738,18 +738,23 @@ Singleton {
     }
     // Logging in: Slate fades in from black (FadeIn.qml) with the welcome sound, once per session
     // (per start of Hyprland), not when Slate reloads or restarts. A marker in the runtime folder,
-    // named for this Hyprland instance, says it's happened. It's checked straight away so the
-    // screens are black from the start; a moment's wait lets the sound system come up, then the
-    // sound plays and the black fades. The login screen loads this file too but has no sounds/
-    // (greeter/files), so it stays silent and doesn't fade.
-    property bool welcoming: false      // black until welcomeFading, then fading out
+    // named for this Hyprland instance, says it's happened. It's read as this file loads, before
+    // any window opens, so the screens are black from the very first frame (the wallpaper never
+    // shows first). welcomeCheck then writes the marker; a moment's wait lets the sound system come
+    // up, then the sound plays and the black fades. The login screen loads this file too but has no
+    // sounds/ (greeter/files), so the check fails there: it stays silent and doesn't fade.
+    readonly property string welcomeMarker: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/welcomed-"
+        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none")
+    FileView { id: welcomeMarkerFile; path: root.welcomeMarker; blockLoading: true; printErrors: false }
+    // black until welcomeFading, then fading out
+    property bool welcoming: { welcomeMarkerFile.text(); return !welcomeMarkerFile.loaded; }
     property bool welcomeFading: false
     Process {
         id: welcomeCheck
         running: true
-        command: ["sh", "-c", '[ -e "$0" ] || exit 1; d="${XDG_RUNTIME_DIR:-/tmp}/slate"; f="$d/welcomed-${HYPRLAND_INSTANCE_SIGNATURE:-none}"; '
-            + '[ -e "$f" ] && exit 1; mkdir -p "$d" && : > "$f"', Quickshell.shellPath("sounds/welcome.wav")]
-        onExited: code => { if (code === 0) { root.welcoming = true; welcomeStart.start(); } }
+        command: ["sh", "-c", '[ -e "$0" ] || exit 1; f="$1"; [ -e "$f" ] && exit 1; mkdir -p "${f%/*}" && : > "$f"',
+            Quickshell.shellPath("sounds/welcome.wav"), root.welcomeMarker]
+        onExited: code => { if (code === 0) welcomeStart.start(); else root.welcoming = false; }
     }
     Timer {
         id: welcomeStart; interval: 1500

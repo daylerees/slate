@@ -24,6 +24,12 @@ import Quickshell.Hyprland
 
 ShellRoot {
     id: root
+    // Logging in: every screen starts black and fades in with the welcome sound.
+    // First, so its windows open before the wallpaper and bar
+    Variants {
+        model: Config.welcoming ? Quickshell.screens : []
+        FadeIn { required property var modelData; screen: modelData }
+    }
     // Only one of the launcher, window switcher and workspace overview shows at a
     // time: opening one closes the others
     Launcher {
@@ -92,11 +98,6 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         ScreenCorners { required property var modelData; screen: modelData; bar: topBar }
-    }
-    // Logging in: every screen starts black and fades in with the welcome sound
-    Variants {
-        model: Config.welcoming ? Quickshell.screens : []
-        FadeIn { required property var modelData; screen: modelData }
     }
     // Logging out, restarting, shutting down: every screen fades to black with the goodbye sound
     Variants {
