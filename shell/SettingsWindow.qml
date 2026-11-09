@@ -418,7 +418,8 @@ FloatingWindow {
 
             id: contentPane
             // Header: a search across every setting (on each page but All Settings, which has its
-            // own), then the page's title; the close button sits top right. The page scrolls beneath
+            // own), then the page's title with Restore defaults opposite; the close button sits top
+            // right. The page scrolls beneath
             Item {
                 id: header
                 z: 2
@@ -433,7 +434,7 @@ FloatingWindow {
                     z: 2
                     visible: win.section !== "overview"
                     // Level with the close button (top right), and clear of it
-                    anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 10 : 58 }
+                    anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
                     height: 36; radius: 10
                     // Flat: a faint fill and no sheen, so it stays quiet above the page
                     color: Qt.rgba(win.text.r, win.text.g, win.text.b, 0.06)
@@ -494,19 +495,6 @@ FloatingWindow {
 
                 }
 
-                // Restore defaults: only on pages with settings, and only when something's changed.
-                // On the top row, between the search and the close button
-                Button {
-                    id: resetBtn
-                    compactLabel: win.compact
-                    anchors { right: parent.right; rightMargin: 58; top: pageSearch.top }
-                    height: pageSearch.height; radius: pageSearch.radius     // matches the search beside it
-                    visible: win.currentKeys.length > 0
-                    opacity: win.changedHere > 0 ? 1 : 0.45
-                    icon: 0xEB77
-                    label: "Restore defaults"
-                    onClicked: if (win.changedHere > 0) win.confirmReset = true
-                }
 
                 Item {
                 id: titleRow
@@ -531,11 +519,23 @@ FloatingWindow {
                     ClickTap { onTapped: win.section = "overview" }
                 }
                 Text {
-                    anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                    anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 12 : 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                     text: win.pageTitle
                     color: win.text
                     font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
                     elide: Text.ElideRight
+                }
+                // Restore defaults: opposite the title, only on pages with settings, and only
+                // clickable when something's changed
+                Button {
+                    id: resetBtn
+                    compactLabel: win.compact
+                    anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                    visible: win.currentKeys.length > 0
+                    opacity: win.changedHere > 0 ? 1 : 0.45
+                    icon: 0xEB77
+                    label: "Restore defaults"
+                    onClicked: if (win.changedHere > 0) win.confirmReset = true
                 }
                 }
             }
