@@ -173,6 +173,18 @@ class Download(Case):
         self.assertEqual(self.sizes()[second], "2160p")
         self.assertEqual(lines[-1], f"done {len(self.m.CLIPS)}")
 
+    def test_unknown_size_fetched_again(self):
+        """A size this version doesn't know (a newer one's notes, or a damaged file) means the
+        clip is fetched again, rather than a crash."""
+        os.makedirs(self.dir)
+        first = self.m.CLIPS[0]["file"]
+        open(os.path.join(self.dir, first), "w").close()
+        with open(os.path.join(self.dir, ".slate-scenery.json"), "w") as f:
+            json.dump({first: "720p"}, f)
+        lines = self.main("1080p")
+        self.assertIn(first, [f for f, _ in self.fetched])
+        self.assertEqual(lines[-1], f"done {len(self.m.CLIPS)}")
+
     def test_nothing_to_do(self):
         """Everything there already: no downloads at all, and still CREDITS.txt."""
         os.makedirs(self.dir)

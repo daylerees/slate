@@ -240,7 +240,8 @@ def main():
         dest = os.path.join(folder, c["file"])
         want = best_size(c, quality)
         have = sizes.get(c["file"], "1080p")     # downloaded before sizes were noted: 1080p
-        if os.path.exists(dest) and QUALITIES.index(have) >= QUALITIES.index(want):
+        # (a size this version doesn't know counts as smaller than any: fetched again)
+        if os.path.exists(dest) and (QUALITIES.index(have) if have in QUALITIES else -1) >= QUALITIES.index(want):
             silence(dest)            # from before sound tracks were taken out
             got += 1
             progress(i, 1)
