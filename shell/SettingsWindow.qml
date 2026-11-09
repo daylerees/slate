@@ -51,6 +51,7 @@ FloatingWindow {
         const a = Bluetooth.defaultAdapter;
         if (!visible && a && a.discovering) a.discovering = false;
         if (!visible) cancelConfirm();        // closing Settings answers an open question with Cancel
+        if (!visible) dropLayer.owner = null; // and closes an open dropdown (its page is let go)
         if (visible && !keepSection) section = "overview";
         // Cleared a moment later, not now: showing the window can report "visible" twice,
         // and the second would otherwise send a requested page back to All Settings
@@ -635,6 +636,9 @@ FloatingWindow {
                 Loader {
                     id: pageLoader
                     width: scroller.width
+                    // Only while Settings shows: closed, the page (its wallpaper thumbnails, folder
+                    // watching, device lists…) is let go, and built again on opening
+                    active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
                         apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
