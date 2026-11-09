@@ -43,9 +43,6 @@ ENVIRONMENT_NOISE = re.compile("|".join([
 # Warnings Slate is known to log today (reported, not yet fixed). Each one here is a bug to
 # fix; take it off the list when it is, so it can't come back unnoticed
 KNOWN_ISSUES = re.compile("|".join([
-    r"Launcher\.qml\[\d+:\d+\]: Binding loop detected for property \"listFits\"",
-    r"Picker at @shell\.qml\[\d+:\d+\]: Binding loop detected for property \"fittedHeight\"",
-    r"Gloss\.qml\[\d+:\d+\]: Unable to assign \[undefined\]",     # the login screen only
     # Not Slate's: after a wrong password Quickshell's greetd client cancels the attempt
     # itself and then calls greetd's normal reply to that "unexpected" (harmless)
     r"quickshell\.service\.greetd: Received unexpected greetd response .*success",
