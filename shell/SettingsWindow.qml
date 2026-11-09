@@ -202,7 +202,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
@@ -1955,6 +1955,12 @@ FloatingWindow {
                     label: "Apps button"
                     detail: "Opens the app launcher (also Super or Super+Space)"
                     Toggle { checked: Config.s.barShowApps; onToggled: v => Config.s.barShowApps = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Spaces button"
+                    detail: "Between Apps and the workspaces: your spaces, and New Space (also in Settings → Spaces)"
+                    Toggle { checked: Config.s.barShowSpaces; onToggled: v => Config.s.barShowSpaces = v }
                 }
                 Separator {}
                 SettingRow {
