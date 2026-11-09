@@ -41,7 +41,11 @@ PanelWindow {
     readonly property color dimColor: Config.tint("#c5ccd6")
     readonly property color accent: Config.accent
     readonly property color errorColor: Config.tint("#f28b8b")
-    readonly property color separatorColor: Config.tint("#444c58")
+    // With glass: a translucent line in the dim text colour (light in dark mode, dark in light
+    // mode, tinted toward the wallpaper), which stays visible whatever's behind the bar
+    readonly property color separatorColor: Config.s.glass ? withAlpha(Config.tint("#c5ccd6"), 0.35)
+                                                           : Config.tint("#444c58")
+    function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     readonly property color emptyDot: Config.tint("#5f6876")
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
     readonly property real fontSize: 13              // Settings → Interface size scales it with everything else
