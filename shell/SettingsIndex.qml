@@ -25,6 +25,7 @@ Singleton {
         // [name, page, extra search words]
         ["General settings", "general", "settings preferences account"],
         ["Appearance", "appearance", "look theme colours colors style fonts"],
+        ["Theme presets", "appearance", "preset look style liquid glass theme colours glass"],
         ["Debug", "debug", "troubleshooting troubleshoot fix problems resync sync login screen greeter"],
         ["Screensaver", "screensaver", "screen saver idle clock slideshow away burn-in oled"],
         ["App theming", "apptheming", "theme other apps colours colors dark light accent gtk qt kde terminal editor"],

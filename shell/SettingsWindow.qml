@@ -237,6 +237,25 @@ FloatingWindow {
         // About is always last
         { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
     ]
+    // Theme presets (Settings → Appearance → Presets): a named set of the Theme & colour and Glass
+    // settings, applied together. Only those keys; lightMode follows themeMode
+    readonly property var themePresets: [
+        { name: "Liquid Glass", settings: {
+            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
+            toneFromWallpaper: true, toneBoldness: 0.5,
+            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } }
+    ]
+    function presetActive(p) {
+        for (const k in p.settings) {
+            const a = Config.s[k], b = p.settings[k];
+            if (typeof b === "number" ? Math.abs(Number(a) - b) > 0.001 : a !== b) return false;
+        }
+        return true;
+    }
+    function applyPreset(p) {
+        for (const k in p.settings) Config.s[k] = p.settings[k];
+        if (p.settings.themeMode && p.settings.themeMode !== "auto") Config.s.lightMode = p.settings.themeMode === "light";
+    }
     readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
     // A page opened from All Settings: the sidebar keeps All Settings lit, and the title gets a back arrow
@@ -3267,6 +3286,28 @@ FloatingWindow {
             function chooseFolder() { browseDir = folder; choosingFolder = true; }
 
             PageTitle { text: "Appearance" }
+            // ---- Presets: theme, colour and glass in one go (asks first) --------------------
+            Group {
+                DropdownSetting {
+                    label: "Preset"
+                    detail: "Sets the theme, colours and glass below in one go. Your wallpaper and other settings stay as they are"
+                    // "Custom" while the settings don't match a preset
+                    readonly property var match: win.themePresets.find(p => win.presetActive(p)) ?? null
+                    options: [{ value: "", label: "Custom" }].concat(win.themePresets.map(p => ({ value: p.name, label: p.name })))
+                    value: match ? match.name : ""
+                    onPicked: v => {
+                        const p = win.themePresets.find(x => x.name === v);
+                        if (!p || win.presetActive(p)) return;
+                        win.ask = {
+                            title: "Apply " + p.name + "?",
+                            body: "This changes your appearance settings: the theme, colours and glass. "
+                                + "Your wallpaper stays as it is, and so does everything else.",
+                            button: "Apply",
+                            run: () => win.applyPreset(p)
+                        };
+                    }
+                }
+            }
             GroupLabel { text: "Theme & colour" }
             Group {
                 SettingRow {
