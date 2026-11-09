@@ -177,6 +177,7 @@ PanelWindow {
         // Round from the last workspace to the first, unless that's turned off (Settings →
         // Windows): then it stops at the first and last
         if (!Config.s.wrapWorkspaces && (selected + step < 0 || selected + step >= spaces.length)) return;
+        if (spaces.length > 1) Config.swish(step);         // one workspace: nothing moves
         index = (index + step + n) % n;
         list.currentIndex = index;
     }

@@ -78,7 +78,7 @@ PanelWindow {
     // A new request: start clean
     onFlowChanged: { busy = false; error = ""; password.text = ""; }
     // Ask on the focused screen
-    onShownChanged: if (shown) { screen = Config.focusedScreen; busy = false; error = ""; password.text = ""; Qt.callLater(() => password.forceActiveFocus()); }
+    onShownChanged: if (shown) { Config.attention(); screen = Config.focusedScreen; busy = false; error = ""; password.text = ""; Qt.callLater(() => password.forceActiveFocus()); }
 
     Connections {
         target: root.flow

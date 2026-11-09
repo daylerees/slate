@@ -76,9 +76,9 @@ PanelWindow {
         onTriggered: { sw.syncStrip(); sw.animate = true; }
     }
     function move(step) {
-        if (!shown) { open(step); return; }
-        const n = strip.length;
-        index = (index + step + n) % n;
+        if (!shown) open(step);
+        else index = (index + step + strip.length) % strip.length;
+        if (windows.length > 1) Config.swish(step);       // one window: nothing moves, so no swish
     }
     // The strip's position is set from here rather than bound to index: while the
     // switcher is opening (the strip rebuilding for the new windows, the window not yet

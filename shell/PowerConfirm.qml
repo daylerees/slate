@@ -57,6 +57,7 @@ PanelWindow {
         action = name;
         focusedButton = 1;
         shown = true;
+        Config.attention();
         Qt.callLater(() => keys.forceActiveFocus());
     }
     function press() { if (focusedButton === 0) cancel(); else confirm(); }

@@ -9,6 +9,12 @@
                     that swells in, opens up brighter as it rises and fades, about 3.4 s
   goodbye.wav       a closing sound for log out, restart and shut down: soft notes stepping
                     down the welcome's chord to rest on the low home note, over a warm hum, 2.6 s
+  swish-left.wav,   a soft, airy swish for switching workspaces and windows: filtered noise
+  swish-right.wav   sweeping up and back as it swells and fades, about 160 ms, drifting gently
+                    left or right (stereo) with the direction of the move
+  attention.wav     for confirmations, password prompts and warnings: a soft question, two of
+                    the notification's tones stepping up a whole tone (D5, E5), unresolved,
+                    the second lifting a touch at its end, about 0.7 s
 
 Run it from anywhere; it writes next to the other sounds.
 
@@ -16,6 +22,7 @@ Run it from anywhere; it writes next to the other sounds.
 """
 import math
 import os
+import random
 import struct
 import wave
 
@@ -118,8 +125,78 @@ def goodbye():
     write("goodbye.wav", out, peak=0.2, tail=0.5)
 
 
+def write_stereo(name, left, right, peak, tail):
+    """Like write(), for two channels (normalised together, so the balance is kept)."""
+    n = len(left)
+    fade_n = max(1, int(RATE * tail))
+    g = [min(1.0, (n - i) / fade_n) for i in range(n)]
+    top = max(max(abs(x) for x in left), max(abs(x) for x in right)) or 1.0
+    k = peak * 32767 / top
+    frames = b"".join(struct.pack("<hh", round(l * gi * k), round(r * gi * k)) for l, r, gi in zip(left, right, g))
+    path = os.path.normpath(os.path.join(OUT, name))
+    with wave.open(path, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(frames)
+    print("wrote", path)
+
+
+def swish():
+    # A soft, airy swish for switching workspaces and windows: filtered noise whose band sweeps
+    # up and back as it swells and fades, like a hand passing by. About 160 ms, and quiet.
+    # Two versions drift gently across, for moving right or left; the drift is subtle (from a
+    # little off-centre on one side to a little on the other), never hard over.
+    rng = random.Random(11)                     # the same swish every time the sound is made
+    n = int(RATE * 0.16)
+    mono, y1, y2, x1, x2 = [], 0.0, 0.0, 0.0, 0.0
+    for i in range(n):
+        t = i / RATE
+        u = t / 0.16
+        env = math.sin(math.pi * min(1.0, u / 0.35) / 2) ** 2 * (1 - max(0.0, (u - 0.35) / 0.65)) ** 2
+        # band-pass (RBJ), centre sweeping 700 Hz -> 2.6 kHz -> 1.6 kHz
+        fc = 700 + 1900 * math.sin(math.pi * min(1.0, u / 0.7) / 2) - 1000 * max(0.0, (u - 0.7) / 0.3)
+        q = 1.2
+        w0 = 2 * math.pi * fc / RATE
+        alpha = math.sin(w0) / (2 * q)
+        b0, b2 = alpha, -alpha
+        a0, a1, a2 = 1 + alpha, -2 * math.cos(w0), 1 - alpha
+        x = rng.uniform(-1, 1)
+        y = (b0 * x + b2 * x2 - a1 * y1 - a2 * y2) / a0
+        x2, x1, y2, y1 = x1, x, y1, y
+        mono.append(env * y)
+    for name, sign in (("swish-right.wav", 1), ("swish-left.wav", -1)):
+        left, right = [], []
+        for i, v in enumerate(mono):
+            pan = sign * 0.3 * (2 * i / (n - 1) - 1)                # -0.3 -> +0.3 (or back)
+            a = (pan + 1) * math.pi / 4                             # equal-power pan
+            left.append(v * math.cos(a))
+            right.append(v * math.sin(a))
+        write_stereo(name, left, right, peak=0.12, tail=0.02)
+
+
+def attention():
+    # For confirmations, password prompts and warnings: a soft question, not an alarm. Two of the
+    # notification's rounded tones, lower and warmer, stepping up a whole tone (D5, E5) without
+    # resolving, the second lifting a touch at its end like a spoken question. About 0.7 s.
+    notes = [(0.00, 587.33, 0.80, 0.0), (0.16, 659.25, 1.00, 0.025)]   # (start s, Hz, level, lift)
+
+    def tone(t, f, lift):
+        if t < 0:
+            return 0.0
+        # the pitch rises by `lift` (a fraction) over the note's ring, integrated into the phase
+        phase = 2 * math.pi * f * (t + lift * (t - 0.25 * (1 - math.exp(-t / 0.25))))
+        return onset(t, 8) * math.exp(-t / 0.22) * (math.sin(phase) + 0.12 * math.sin(2 * phase))
+
+    n = int(RATE * 0.7)
+    out = [sum(lv * tone(i / RATE - st, f, lift) for st, f, lv, lift in notes) for i in range(n)]
+    write("attention.wav", out, peak=0.3, tail=0.12)
+
+
 if __name__ == "__main__":
     notification()
     click()
     welcome()
     goodbye()
+    swish()
+    attention()

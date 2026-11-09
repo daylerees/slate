@@ -163,7 +163,8 @@ FloatingWindow {
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
-        sound: ["volumeSound", "notificationSound", "clickSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
+        sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume",
+            "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
@@ -193,6 +194,7 @@ FloatingWindow {
     property var lastAsk: null
     onAskChanged: if (ask) lastAsk = ask
     readonly property bool confirming: confirmReset || ask !== null
+    onConfirmingChanged: if (confirming) Config.attention()
     function closeConfirm() { confirmReset = false; ask = null; }
     function cancelConfirm() { const c = ask && ask.cancel; closeConfirm(); if (c) c(); }
     // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
@@ -708,6 +710,7 @@ FloatingWindow {
         property real stepSize: 0.1
         property real value: 0
         property string suffix: ""
+        property string zeroText: ""   // shown instead of the value at the bottom (e.g. "Off")
         property int decimals: 0
         signal moved(real value)
         signal released()          // let go of the slider (after moving it, or a click)
@@ -716,7 +719,7 @@ FloatingWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: 56
             horizontalAlignment: Text.AlignRight
-            text: vs.value.toFixed(vs.decimals) + vs.suffix
+            text: vs.zeroText !== "" && vs.value <= vs.from ? vs.zeroText : vs.value.toFixed(vs.decimals) + vs.suffix
             color: win.dim
             font.family: win.font; font.pixelSize: 12
         }
@@ -769,6 +772,21 @@ FloatingWindow {
                 onPositionChanged: m => { if (pressed) set(m.x); }
                 onReleased: vs.released()
             }
+        }
+    }
+    // One of Slate's sounds: a volume slider, Off at 0; letting go plays it at that volume
+    component SoundSetting: SettingRow {
+        id: snd
+        property string which              // Config.soundSettings key
+        property string sample             // sounds/<sample>.wav to play as a preview
+        property bool available: true
+        ValueSlider {
+            enabled: snd.available
+            opacity: enabled ? 1 : 0.4
+            from: 0; to: 100; stepSize: 5; suffix: "%"; zeroText: "Off"
+            value: snd.available ? Config.soundVolume(snd.which) : 0
+            onMoved: v => Config.s[Config.soundSettings[snd.which][0]] = Math.round(v)
+            onReleased: Config.playSound(snd.sample, snd.which)
         }
     }
     component Button: Rectangle {
@@ -2481,46 +2499,47 @@ FloatingWindow {
             }
             GroupLabel { text: "Sound effects" }
             Group {
-                SettingRow {
-                    label: "Volume key sound"
+                SoundSetting {
+                    label: "Volume keys"
                     detail: "A short tick at the new volume when you press the volume keys"
-                    Toggle { checked: Config.s.volumeSound; onToggled: v => Config.s.volumeSound = v }
+                    which: "tick"; sample: "volume-tick"
                 }
                 Separator {}
-                SettingRow {
-                    label: "Notification sound"
+                SoundSetting {
+                    label: "Notifications"
                     detail: "A soft chime when a notification pops up (silent during Do Not Disturb)"
-                    Toggle { checked: Config.s.notificationSound; onToggled: v => { Config.s.notificationSound = v; if (v) Config.playSound("notification"); } }
+                    which: "notification"; sample: "notification"
                 }
                 Separator {}
-                SettingRow {
-                    label: "Click sound"
-                    detail: Config.clickAvailable ? "A very quiet click when you press Slate's buttons, menus and switches"
+                SoundSetting {
+                    label: "Questions and warnings"
+                    detail: "A soft, questioning sound when Slate asks you to confirm something, an app asks for your password, or a notification is urgent"
+                    which: "attention"; sample: "attention"
+                }
+                Separator {}
+                SoundSetting {
+                    label: "Clicks"
+                    detail: Config.clickAvailable ? "A barely-there tap when you press Slate's buttons, menus and switches"
                                                   : "Needs Qt Multimedia (qt6-multimedia), so the click is on time"
-                    Toggle {
-                        enabled: Config.clickAvailable
-                        opacity: enabled ? 1 : 0.4
-                        checked: Config.s.clickSound && Config.clickAvailable
-                        onToggled: v => { Config.s.clickSound = v; }
-                    }
+                    which: "click"; sample: "click"; available: Config.clickAvailable
                 }
                 Separator {}
-                SettingRow {
-                    label: "Welcome sound"
+                SoundSetting {
+                    label: "Switching"
+                    detail: "A soft swish when you change workspace or move through the window switcher and overview, drifting the way you're going"
+                    which: "swish"; sample: "swish-right"
+                }
+                Separator {}
+                SoundSetting {
+                    label: "Welcome"
                     detail: "A gentle, warm swell when you log in (not when Slate reloads)"
-                    Toggle { checked: Config.s.welcomeSound; onToggled: v => { Config.s.welcomeSound = v; if (v) Config.playSound("welcome"); } }
+                    which: "welcome"; sample: "welcome"
                 }
                 Separator {}
-                SettingRow {
-                    label: "Goodbye sound"
-                    detail: "The welcome in reverse when you log out, restart or shut down (it plays first, so they take a moment longer)"
-                    Toggle { checked: Config.s.goodbyeSound; onToggled: v => { Config.s.goodbyeSound = v; if (v) Config.playSound("goodbye"); } }
-                }
-                Separator {}
-                SettingRow {
-                    label: "Sound effects volume"
-                    detail: "How loud Slate's own sounds are"
-                    ValueSlider { from: 0; to: 100; stepSize: 5; suffix: "%"; value: Config.s.soundEffectsVolume; onMoved: v => Config.s.soundEffectsVolume = Math.round(v) }
+                SoundSetting {
+                    label: "Goodbye"
+                    detail: "A gentle closing sound when you log out, restart or shut down (it plays first, so they take a moment longer)"
+                    which: "goodbye"; sample: "goodbye"
                 }
             }
         }
@@ -3245,10 +3264,10 @@ FloatingWindow {
                     Toggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
                 }
                 Separator {}
-                SettingRow {
+                SoundSetting {
                     label: "Sound"
                     detail: "A soft chime when a notification pops up (also in Sound settings)"
-                    Toggle { checked: Config.s.notificationSound; onToggled: v => { Config.s.notificationSound = v; if (v) Config.playSound("notification"); } }
+                    which: "notification"; sample: "notification"
                 }
             }
             GroupLabel { text: "Pop-ups" }

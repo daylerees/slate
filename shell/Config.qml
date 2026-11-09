@@ -191,7 +191,10 @@ Singleton {
     }
     // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
     function separateBarAndDock() { if (s.dockPosition === s.barPosition) s.dockPosition = opposite(s.barPosition); }
-    Component.onCompleted: Qt.callLater(separateBarAndDock)
+    Component.onCompleted: {
+        Qt.callLater(separateBarAndDock);
+        clickAvailable = effect("click") !== null;        // Slate's sounds, below
+    }
 
     // ---- Light/dark by time of day (themeMode "auto") -------------------------------
     // Light from sunrise to sunset at Settings' location, else 07:00–19:00
@@ -677,7 +680,7 @@ Singleton {
 
     // ---- Defaults --------------------------------------------------------------------
     // A spare copy of the settings, never loaded from disk, so it holds the defaults
-    // ---- Slate's sounds (sounds/<name>.wav), at Settings → Sound → Sound effects volume -----
+    // ---- Slate's sounds (sounds/<name>.wav), each at its own volume (Settings → Sound) -------
     // With Qt Multimedia (optional) each is loaded once and plays straight away; without it
     // pw-play starts for each one, a little late (~80 ms) but fine for the chime and the tick
     property var effects: ({})
@@ -695,10 +698,27 @@ Singleton {
         effects[name] = e;
         return e;
     }
-    // The click needs to be on time, so it only plays with Qt Multimedia (Settings says so)
-    readonly property bool clickAvailable: effect("click") !== null
-    function playSound(name) {
-        const v = Math.max(0, Math.min(100, s.soundEffectsVolume)) / 100;
+    // The click needs to be on time, so it only plays with Qt Multimedia (Settings says so).
+    // Worked out once at start (a binding would loop: loading a sound sets soundStamp)
+    property bool clickAvailable: false
+    // How loud each sound is (Settings → Sound), 0-100, 0 = off. Not set yet: from the earlier
+    // on/off switch and the single effects volume
+    readonly property var soundSettings: ({
+        tick: ["tickVolume", "volumeSound"], notification: ["notificationVolume", "notificationSound"],
+        click: ["clickVolume", "clickSound"], swish: ["swishVolume", "swishSound"],
+        welcome: ["welcomeVolume", "welcomeSound"], goodbye: ["goodbyeVolume", "goodbyeSound"],
+        attention: ["attentionVolume", ""]       // newer than the switches: on, at the effects volume
+    })
+    function soundVolume(which) {
+        const k = soundSettings[which];
+        if (!k) return 0;
+        const v = s[k[0]];
+        if (v >= 0) return Math.min(100, v);
+        return !k[1] || s[k[1]] ? Math.max(0, Math.min(100, s.soundEffectsVolume)) : 0;
+    }
+    // Play sounds/<name>.wav at the volume set for `which` (Settings → Sound)
+    function playSound(name, which) {
+        const v = soundVolume(which) / 100;
         if (v <= 0) return;
         const e = effect(name);
         if (e) { e.volume = v; e.play(); return; }
@@ -713,22 +733,59 @@ Singleton {
         id: welcomeCheck
         command: ["sh", "-c", '[ -e "$0" ] || exit 1; d="${XDG_RUNTIME_DIR:-/tmp}/slate"; f="$d/welcomed-${HYPRLAND_INSTANCE_SIGNATURE:-none}"; '
             + '[ -e "$f" ] && exit 1; mkdir -p "$d" && : > "$f"', Quickshell.shellPath("sounds/welcome.wav")]
-        onExited: code => { if (code === 0 && root.s.welcomeSound) root.playSound("welcome"); }
+        onExited: code => { if (code === 0) root.playSound("welcome", "welcome"); }
     }
     Timer { interval: 1500; running: true; onTriggered: welcomeCheck.running = true }
 
     // Log out, restart or shut down (scripts/session.sh), with the goodbye sound first when it's on
     function sessionAction(action) {
-        const v = Math.max(0, Math.min(100, s.soundEffectsVolume)) / 100;
-        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action, s.goodbyeSound ? v.toFixed(2) : "0"]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action, (soundVolume("goodbye") / 100).toFixed(2)]);
+    }
+
+    // A soft question for confirmations, password prompts and warnings (Settings → Sound);
+    // two dialogs opening together ask once
+    property real lastAttention: 0
+    function attention() {
+        if (Date.now() - lastAttention < 800) return;
+        lastAttention = Date.now();
+        playSound("attention", "attention");
+    }
+
+    // A soft swish when switching (Settings → Sound): workspaces on the desktop, and moving
+    // through the window switcher and workspace overview. step < 0 drifts gently left,
+    // otherwise right; quick repeats (holding a key) swish once.
+    property real lastSwish: 0
+    function swish(step) {
+        if (soundVolume("swish") <= 0 || Date.now() - lastSwish < 60) return;
+        lastSwish = Date.now();
+        playSound(step < 0 ? "swish-left" : "swish-right", "swish");
+    }
+    // Each screen's workspace: when one changes (keys, the bar, the overview…), swish towards
+    // it. Focus moving between screens changes nothing here, so it's silent; so is a reload.
+    readonly property string screenWorkspaces: Hyprland.monitors.values
+        .map(m => m.name + "=" + ((m.activeWorkspace && m.activeWorkspace.id) || 0)).join(",")
+    property var lastScreenWorkspaces: null
+    onScreenWorkspacesChanged: {
+        const now = {};
+        for (const pair of screenWorkspaces.split(",")) {
+            const [name, id] = pair.split("=");
+            if (name) now[name] = Number(id);
+        }
+        const before = lastScreenWorkspaces;
+        lastScreenWorkspaces = now;
+        if (!before) return;
+        for (const name in now) {
+            const a = before[name], b = now[name];
+            if (a > 0 && b > 0 && a !== b) { swish(b - a); return; }
+        }
     }
 
     // A very quiet click for Slate's buttons, menus and toggles (ClickTap / ClickArea)
     property real lastClick: 0
     function click() {
-        if (!s.clickSound || !clickAvailable || Date.now() - lastClick < 40) return;
+        if (!clickAvailable || soundVolume("click") <= 0 || Date.now() - lastClick < 40) return;
         lastClick = Date.now();
-        playSound("click");
+        playSound("click", "click");
     }
     SettingsData { id: defaults }
     function defaultOf(key) { return defaults[key]; }

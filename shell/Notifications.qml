@@ -125,15 +125,17 @@ Scope {
     }
 
     // A soft chime with each pop-up (Settings → Sound): not for low-urgency notices, nor when the
-    // app asks for silence (suppress-sound); a burst of notifications chimes once
+    // app asks for silence (suppress-sound); a burst of notifications chimes once. Critical ones
+    // (warnings) ask for attention instead
     property real lastChime: 0
     function chime(n) {
-        if (!Config.s.notificationSound || n.urgency === NotificationUrgency.Low) return;
         const h = n.hints || {};
-        if (h["suppress-sound"]) return;
+        if (h["suppress-sound"] || n.urgency === NotificationUrgency.Low) return;
+        if (n.urgency === NotificationUrgency.Critical) { Config.attention(); return; }
+        if (Config.soundVolume("notification") <= 0) return;
         if (Date.now() - lastChime < 1500) return;
         lastChime = Date.now();
-        Config.playSound("notification");
+        Config.playSound("notification", "notification");
     }
 
     // ---- Saving / loading --------------------------------------------------

@@ -87,9 +87,9 @@ PanelWindow {
     // Held keys repeat fast, so tick at most every 70 ms.
     property real lastTick: 0
     function tick() {
-        if (!Config.s.volumeSound || Date.now() - lastTick < 70) return;
+        if (Config.soundVolume("tick") <= 0 || Date.now() - lastTick < 70) return;
         lastTick = Date.now();
-        Config.playSound("volume-tick");
+        Config.playSound("volume-tick", "tick");
     }
 
     // ---- Brightness (screen and keyboard) -------------------------------------
