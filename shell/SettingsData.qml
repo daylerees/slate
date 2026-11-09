@@ -153,6 +153,7 @@ JsonAdapter {
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockAutoHide: true          // hide when the workspace has windows
+    property bool dockBadges: true            // unread counts and progress on app icons
     property bool dockDivider: true           // a line between pinned apps and the others
     property bool dockShowMedia: true         // what's playing, after the Apps button, with its controls
     property bool dockMediaArt: true          // its album art

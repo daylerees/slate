@@ -557,6 +557,35 @@ ShellRoot {
         readonly property int count: slots.length
         readonly property real dividerWide: 0.35     // a divider's width, in icons
 
+        // ---- Badges and progress (Settings → Dock → Badges and progress) -------------
+        // What apps publish for their icons (an unread count, how far a download or copy has
+        // got, a call for attention: scripts/launcher-entries.py), and for apps that don't, how
+        // many of their notifications are unread
+        property var launcherEntries: ({})       // app id (lower case) → its latest state
+        Process {
+            running: Config.s.dockBadges
+            command: [Quickshell.shellPath("scripts/launcher-entries.py")]
+            stdout: SplitParser {
+                onRead: line => {
+                    try {
+                        const e = JSON.parse(line);
+                        const m = Object.assign({}, win.launcherEntries);
+                        m[e.app.toLowerCase()] = e;
+                        win.launcherEntries = m;
+                    } catch (err) {}
+                }
+            }
+        }
+        // An app's badge: { count (0: none), progress (0…1, or -1: none), urgent }
+        function badgeFor(app) {
+            if (!Config.s.dockBadges || !app || !app.key) return { count: 0, progress: -1, urgent: false };
+            const id = app.entry ? app.entry.id : app.key;
+            const le = launcherEntries[id.toLowerCase()] || launcherEntries[app.key.toLowerCase()] || null;
+            const published = le && le.countVisible && le.count > 0 ? le.count : 0;
+            const unread = notifs.unreadByApp[id] || 0;
+            return { count: published || unread, progress: le && le.progressVisible ? Math.max(0, Math.min(1, le.progress || 0)) : -1, urgent: !!(le && le.urgent) };
+        }
+
         // ---- Downloads (Settings → Dock → Downloads) -------------------------------
         // A stack before the Waste Basket: click for a grid of the newest downloads (pictures
         // as thumbnails), right-click to open the folder. The folder is the desktop's own
@@ -1493,6 +1522,7 @@ ShellRoot {
                             // The app in this slot ({ key, entry, windows, pinned }; none for a divider)
                             readonly property var app: isApp ? modelData.item : ({ key: "", entry: null, windows: [], pinned: false })
                             readonly property real s: win.scaleAt(modelData.at)
+                            readonly property var badge: win.badgeFor(isApp ? app : null)
                             readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
                             property int version: 0
                             property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
@@ -1541,6 +1571,41 @@ ShellRoot {
                                     glassHint: true
                                     visible: Config.glassGloss && Config.s.iconShape !== "original"
                                     radius: parent.width * win.iconCorner / Math.max(1, win.base)
+                                }
+                                // How far a download or copy has got: a slim bar near the icon's foot
+                                Rectangle {
+                                    visible: cell.badge.progress >= 0
+                                    z: 2
+                                    x: parent.width * 0.15; width: parent.width * 0.7
+                                    y: parent.height * 0.8; height: Math.max(3, parent.height * 0.08); radius: height / 2
+                                    color: Qt.rgba(0, 0, 0, 0.45)
+                                    Rectangle {
+                                        width: Math.max(parent.height, parent.width * cell.badge.progress)
+                                        height: parent.height; radius: parent.radius
+                                        color: win.activeDotColor
+                                    }
+                                }
+                                // An unread count (or "!" when the app asks for attention): a pill on the
+                                // icon's top corner, in the accent, with glass's sheen
+                                Rectangle {
+                                    readonly property string text: cell.badge.count > 99 ? "99+" : cell.badge.count > 0 ? String(cell.badge.count)
+                                        : cell.badge.urgent ? "!" : ""
+                                    visible: text !== ""
+                                    z: 2
+                                    height: Math.round(parent.height * 0.38)
+                                    width: Math.max(height, badgeText.implicitWidth + height * 0.5)
+                                    radius: height / 2
+                                    x: parent.width - width * 0.75; y: -height * 0.25
+                                    color: win.activeDotColor
+                                    Gloss { radius: parent.radius }
+                                    Text {
+                                        id: badgeText
+                                        anchors.centerIn: parent
+                                        text: parent.text
+                                        color: Config.tint("#12151a")
+                                        font.family: Config.s.fontFamily; font.weight: Font.DemiBold
+                                        font.pixelSize: Math.round(parent.height * 0.62)
+                                    }
                                 }
                             }
 

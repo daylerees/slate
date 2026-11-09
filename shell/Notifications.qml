@@ -27,9 +27,18 @@ Scope {
     property var history: []
     property int unread: 0
     property int nextKey: 1
+    // The newest notification seen (its key): any newer ones are unread. Gives each app's count
+    // of unread ones (unreadByApp: entry id → count), for the dock's badges
+    property int readUpTo: 0
+    readonly property var unreadByApp: {
+        const out = {};
+        for (const h of history)
+            if (h.key > readUpTo && h.entryId) out[h.entryId] = (out[h.entryId] || 0) + 1;
+        return out;
+    }
     property var live: ({})           // key -> Notification still open (for actions)
 
-    function markRead() { unread = 0; save(); }
+    function markRead() { unread = 0; readUpTo = nextKey - 1; save(); }
     function remove(key) {
         const n = live[key];
         if (n) n.dismiss();
@@ -42,6 +51,7 @@ Scope {
         live = {};
         history = [];
         unread = 0;
+        readUpTo = nextKey - 1;
         save();
     }
     // Run the notification's main action (if the app is still listening), then dismiss
@@ -150,10 +160,13 @@ Scope {
                 notifs.dnd = !!d.dnd;
                 notifs.unread = d.unread || 0;
                 notifs.nextKey = Math.max(1, ...notifs.history.map(h => h.key + 1));
+                // (saved by older versions without it: the newest "unread" of the history are unread)
+                notifs.readUpTo = d.readUpTo !== undefined ? d.readUpTo
+                    : (notifs.history[notifs.unread] ? notifs.history[notifs.unread].key : 0);
             } catch (e) {}
         }
     }
-    Timer { id: saveTimer; interval: 500; onTriggered: store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, history: notifs.history }, null, 1)) }
+    Timer { id: saveTimer; interval: 500; onTriggered: store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo, history: notifs.history }, null, 1)) }
     function save() { saveTimer.restart(); }
     onDndChanged: save()
 
