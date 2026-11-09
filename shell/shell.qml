@@ -719,7 +719,7 @@ ShellRoot {
         readonly property real restWidth: Math.max(0, slotStarts[slotStarts.length - 1])
         property real pointerX: -1000                          // in rest-layout coordinates
         // Magnification stays frozen while the right-click menu is open
-        property real hover: (mouse.containsMouse && shown) || appMenu.visible ? 1 : 0
+        property real hover: (mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag ? 1 : 0
         Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
         function scaleAt(i) {
@@ -767,7 +767,7 @@ ShellRoot {
         }
         // (and once at start, so the windows already open have their details)
         Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
-        property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible || previewPop.visible
+        property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag
         Timer { id: holdTimer; interval: win.hideDelay }
         readonly property real dockHeight: base + padding * 2
         property real offset: shown ? 0 : dockHeight + bottomGap + 4
@@ -806,6 +806,46 @@ ShellRoot {
         // ---- Right-click menu ----------------------------------------------
         // A full-screen invisible layer while open: clicking anywhere outside the menu
         // (or pressing Escape) closes it
+        // ---- Dragging --------------------------------------------------------------
+        // A pinned app dragged along the dock moves among the pinned ones (saved when it's let
+        // go); dragged up off the dock, it's let go of to unpin it. Files dragged in from a
+        // file manager: onto the Waste Basket to bin them, onto an app to open them in it
+        property string dragCandidate: ""        // the pinned app pressed on (dragging once it moves)
+        property string dragKey: ""              // the pinned app being dragged
+        property bool dragAway: false            // pulled off the dock: letting go unpins it
+        property bool fileDrag: false            // files being dragged over the dock
+        function dragTo(stripPoint) {
+            dragAway = stripPoint.y < bg.y - base;
+            if (dragAway) return;
+            const sl = slotAt(hoveredIndex);
+            if (!sl || sl.kind !== "app" || !sl.item.pinned || sl.item.key === dragKey) return;
+            // Into the place of the pinned app under the pointer
+            const list = pinned.filter(k => k !== dragKey);
+            const at = list.indexOf(sl.item.key);
+            const from = pinned.indexOf(dragKey), to = pinned.indexOf(sl.item.key);
+            list.splice(to > from ? at + 1 : at, 0, dragKey);
+            pinned = list;
+        }
+        function endDrag() {
+            if (dragKey !== "") {
+                if (dragAway) setPinned(dragKey, false);
+                else savePinned();
+            }
+            dragKey = ""; dragCandidate = ""; dragAway = false;
+        }
+        // Files let go of over slot i
+        function dropFiles(i, urls) {
+            const sl = slotAt(i);
+            const paths = urls.map(u => decodeURIComponent(String(u).replace(/^file:\/\//, ""))).filter(p => p.startsWith("/"));
+            if (!sl || paths.length === 0) return false;
+            if (sl.kind === "trash") { Quickshell.execDetached(["gio", "trash"].concat(paths)); return true; }
+            if (sl.kind === "app" && sl.item.entry) {
+                Quickshell.execDetached([Quickshell.shellPath("scripts/open-with.sh"), sl.item.entry.id].concat(paths));
+                return true;
+            }
+            return false;
+        }
+
         // ---- Window previews (Settings → Dock → Window previews) -----------------------
         // Pause on an app with windows open (for Settings' number of seconds; 0: never) and a
         // panel shows a card for each: a live picture of it, or in game mode (no live pictures)
@@ -1291,11 +1331,47 @@ ShellRoot {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             function stripX(m) { return strip.mapFromItem(mouse, m.x, m.y).x; }
-            onPositionChanged: m => win.pointerX = stripX(m) - (strip.width - win.restWidth) / 2
+            property point pressedAt
+            property bool dragged: false        // moved far enough to be a drag, not a click
+            onPressed: m => {
+                pressedAt = Qt.point(m.x, m.y);
+                dragged = false;
+                const sl = win.slotAt(win.hoveredIndex);
+                win.dragCandidate = m.button === Qt.LeftButton && sl && sl.kind === "app" && sl.item.pinned ? sl.item.key : "";
+            }
+            onPositionChanged: m => {
+                win.pointerX = stripX(m) - (strip.width - win.restWidth) / 2;
+                if (!pressed || win.dragCandidate === "") return;
+                if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > 8) {
+                    dragged = true;
+                    win.dragKey = win.dragCandidate;
+                    win.previewApp = null;
+                }
+                if (dragged) win.dragTo(strip.mapFromItem(mouse, m.x, m.y));
+            }
+            onReleased: win.endDrag()
             onExited: holdTimer.restart()
             onClicked: m => {
+                if (dragged) return;            // a drag, not a click
                 win.pointerX = stripX(m) - (strip.width - win.restWidth) / 2;
                 win.clickItem(win.hoveredIndex, m.button === Qt.RightButton);
+            }
+        }
+        // Files dragged over the dock (from a file manager): it shows and magnifies as for the
+        // pointer, and they're dropped on the slot under them (see win.dropFiles)
+        DropArea {
+            z: 11
+            anchors.fill: maskBox
+            onEntered: d => {
+                win.fileDrag = d.hasUrls;
+                if (!d.hasUrls) d.accepted = false;
+            }
+            onPositionChanged: d => win.pointerX = strip.mapFromItem(this, d.x, d.y).x - (strip.width - win.restWidth) / 2
+            onExited: { win.fileDrag = false; holdTimer.restart(); }
+            onDropped: d => {
+                win.pointerX = strip.mapFromItem(this, d.x, d.y).x - (strip.width - win.restWidth) / 2;
+                if (d.hasUrls && win.dropFiles(win.hoveredIndex, d.urls)) d.acceptProposedAction();
+                win.fileDrag = false;
             }
         }
         // Click on dock item i (0 = the apps button)
@@ -1726,6 +1802,9 @@ ShellRoot {
 
                             Image {
                                 visible: cell.isApp
+                                // Being dragged off the dock to unpin it: faded, as it's about to go
+                                opacity: win.dragAway && cell.app.key === win.dragKey ? 0.35 : 1
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                                 anchors.bottom: parent.bottom
                                 id: tileImg
                                 width: parent.width; height: width
@@ -1877,7 +1956,8 @@ ShellRoot {
                 // App name above the icon under the pointer
                 Rectangle {
                     id: label
-                    readonly property string text: win.hoveredIndex === 0 ? "Apps"
+                    readonly property string text: win.dragAway ? "Remove from Dock"
+                        : win.hoveredIndex === 0 ? "Apps"
                         : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
