@@ -22,7 +22,14 @@ Singleton {
     // readable, and changes only its saturation: 50% is that shade as it is, less mutes it (to
     // 20% saturation at 0%) and more makes it vivid (90% at 100%)
     function fromWallpaper(c) {
-        if (!s.lightMode) return boldAccent(c, s.accentBoldness);
+        if (!s.lightMode) {
+            // Dark mode: 50% is the colour as picked; less mutes it (to 20% saturation at 0%),
+            // more takes it towards the bold version (all the way at 100%)
+            const k = Math.max(0, Math.min(1, Number(s.accentBoldness) || 0));
+            const p = Qt.lighter(c, 1.0);
+            if (k >= 0.5 || p.hslSaturation < 0.08) return boldAccent(c, (k - 0.5) / 0.5);
+            return Qt.hsla(p.hslHue < 0 ? 0 : p.hslHue, Math.min(p.hslSaturation, 0.2 + (p.hslSaturation - 0.2) * (k / 0.5)), p.hslLightness, 1);
+        }
         const a = accentShade(c);
         const k = Math.max(0, Math.min(1, Number(s.accentBoldness) || 0));
         if (Qt.lighter(c, 1.0).hslSaturation < 0.08) return a;     // a grey wallpaper stays grey
