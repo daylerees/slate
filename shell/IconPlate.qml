@@ -41,8 +41,8 @@ Canvas {
         if (shaded) {
             const c = plate.color, l = c.hslLightness;
             const g = ctx.createLinearGradient(0, 0, 0, h);
-            g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.04), c.a));
-            g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.04), c.a));
+            g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.08), c.a));
+            g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.08), c.a));
             ctx.fillStyle = g;
         } else ctx.fillStyle = plate.color;
         ctx.beginPath();
