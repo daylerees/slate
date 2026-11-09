@@ -99,7 +99,7 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: root.fadeMs; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
 
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -133,10 +133,10 @@ PanelWindow {
         transform: Translate { id: shakeX }
         SequentialAnimation {
             id: shake
-            NumberAnimation { target: shakeX; property: "x"; to: -12; duration: 50 }
-            NumberAnimation { target: shakeX; property: "x"; to: 10; duration: 70 }
-            NumberAnimation { target: shakeX; property: "x"; to: -6; duration: 60 }
-            NumberAnimation { target: shakeX; property: "x"; to: 0; duration: 60 }
+            NumberAnimation { target: shakeX; property: "x"; to: -12; duration: Config.ms(50) }
+            NumberAnimation { target: shakeX; property: "x"; to: 10; duration: Config.ms(70) }
+            NumberAnimation { target: shakeX; property: "x"; to: -6; duration: Config.ms(60) }
+            NumberAnimation { target: shakeX; property: "x"; to: 0; duration: Config.ms(60) }
         }
 
         MouseArea { anchors.fill: parent }    // swallow clicks inside the card
@@ -214,7 +214,7 @@ PanelWindow {
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                             Gloss { radius: parent.radius; opacity: (current || chipHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             HoverHandler { id: chipHover }
                             ClickTap {
                                 onTapped: {
@@ -318,8 +318,8 @@ PanelWindow {
         color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
         Gloss { radius: parent.radius; opacity: (hh.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
         opacity: dimmed ? 0.55 : 1
-        Behavior on color { ColorAnimation { duration: 100 } }
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh }
         ClickTap { onTapped: btn.clicked() }
         Text {

@@ -87,7 +87,7 @@ Item {
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         opacity: status === Image.Ready ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 400 } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(400) } }
     }
 
     // Rounded screen corners, the same black squircles as the desktop (Bar.qml /
@@ -180,10 +180,10 @@ Item {
             transform: Translate { id: shakeX }
             SequentialAnimation {
                 id: shake
-                NumberAnimation { target: shakeX; property: "x"; to: -12; duration: 50 }
-                NumberAnimation { target: shakeX; property: "x"; to: 10; duration: 70 }
-                NumberAnimation { target: shakeX; property: "x"; to: -6; duration: 60 }
-                NumberAnimation { target: shakeX; property: "x"; to: 0; duration: 60 }
+                NumberAnimation { target: shakeX; property: "x"; to: -12; duration: Config.ms(50) }
+                NumberAnimation { target: shakeX; property: "x"; to: 10; duration: Config.ms(70) }
+                NumberAnimation { target: shakeX; property: "x"; to: -6; duration: Config.ms(60) }
+                NumberAnimation { target: shakeX; property: "x"; to: 0; duration: Config.ms(60) }
             }
 
             Column {
@@ -233,7 +233,7 @@ Item {
                         anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
                         width: 34; height: 34; radius: 9
                         color: password.text !== "" ? ls.accent : "transparent"
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         Gloss { radius: goBtn.radius; visible: Config.glassGloss && password.text !== "" }
                         Text {
                             anchors.centerIn: parent
@@ -304,7 +304,7 @@ Item {
         radius: 22
         readonly property color fill: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
         color: Config.glass ? "transparent" : fill
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: 0.7; shadowVerticalOffset: 4; blurMax: 32 }
         GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }

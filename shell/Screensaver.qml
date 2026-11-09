@@ -73,7 +73,7 @@ Scope {
 
     // Fades in slowly, away quickly
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: root.shown ? 1500 : 180; easing.type: Easing.InOutQuad } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.shown ? 1500 : 180); easing.type: Easing.InOutQuad } }
 
     Variants {
         model: Quickshell.screens
@@ -203,9 +203,9 @@ Scope {
                 if (target.source.toString() === src) { onA = !onA; return; }
                 target.source = src;
             }
-            Drifting { id: a; opacity: show.onA ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 1800; easing.type: Easing.InOutQuad } }
+            Drifting { id: a; opacity: show.onA ? 1 : 0; Behavior on opacity { NumberAnimation { duration: Config.ms(1800); easing.type: Easing.InOutQuad } }
                 onStatusChanged: if (status === Image.Ready && !show.onA) show.onA = true }
-            Drifting { id: b; opacity: show.onA ? 0 : 1; Behavior on opacity { NumberAnimation { duration: 1800; easing.type: Easing.InOutQuad } }
+            Drifting { id: b; opacity: show.onA ? 0 : 1; Behavior on opacity { NumberAnimation { duration: Config.ms(1800); easing.type: Easing.InOutQuad } }
                 onStatusChanged: if (status === Image.Ready && show.onA) show.onA = false }
             onListChanged: if (a.source.toString() === "" && list.length) { a.source = "file://" + list[0]; next = 1; }
             Component.onCompleted: if (list.length) { a.source = "file://" + list[0]; next = 1; }
@@ -225,7 +225,7 @@ Scope {
                 x: (blk.width - width) * blk.px
                 y: (blk.height - height) * blk.py
                 opacity: blk.lit ? 0.85 : 0
-                Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutQuad } }
             }
             property real px: 0.5
             property real py: 0.45

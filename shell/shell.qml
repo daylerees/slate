@@ -518,7 +518,7 @@ ShellRoot {
         property real pointerX: -1000                          // in rest-layout coordinates
         // Magnification stays frozen while the right-click menu is open
         property real hover: (mouse.containsMouse && shown) || appMenu.visible ? 1 : 0
-        Behavior on hover { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
         function scaleAt(i) {
             const centre = i * (base + spacing) + base / 2;
@@ -543,7 +543,7 @@ ShellRoot {
         Timer { id: holdTimer; interval: win.hideDelay }
         readonly property real dockHeight: base + padding * 2
         property real offset: shown ? 0 : dockHeight + bottomGap + 4
-        Behavior on offset { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on offset { NumberAnimation { duration: Config.ms(260); easing.type: Easing.OutCubic } }
 
         // Open an app's menu by its key, e.g.  slate ipc call dock menu firefox
         IpcHandler {
@@ -705,7 +705,7 @@ ShellRoot {
                                 radius: 7
                                 color: rowHover.hovered ? Config.hover : "transparent"
                                 Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                                Behavior on color { ColorAnimation { duration: 90 } }
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
                                     width: 5; height: 5; radius: 2.5
@@ -792,7 +792,7 @@ ShellRoot {
         // How high an app's icon is now: 0 on the dock, 1 at the top of a hop
         function bounceOf(key) {
             const b = launching[key];
-            if (!b) return 0;
+            if (!b || !Config.animate) return 0;       // Animations off (or game mode): no hop
             const phase = (clock - b.start) % hopCycle;
             if (phase < hopUp) { const p = phase / hopUp; return 1 - (1 - p) * (1 - p); }              // rising, slowing
             if (phase < hopUp + hopDown) { const q = (phase - hopUp) / hopDown; return 1 - q * q; }   // falling, speeding up

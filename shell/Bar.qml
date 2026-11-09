@@ -93,7 +93,7 @@ PanelWindow {
     readonly property real shadowPad: 18
     // Drop shadow while the pointer is on the bar or one of its panels is open
     property real shadow: hovered || popoutHere ? 1 : 0
-    Behavior on shadow { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+    Behavior on shadow { NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
     // Text along a side bar is turned to read top to bottom on the right, bottom to top on the left
     readonly property real textRotation: vert ? (atRight ? 90 : -90) : 0
     anchors { top: side !== "bottom"; bottom: side !== "top"; left: side !== "right"; right: side !== "left" }
@@ -120,8 +120,8 @@ PanelWindow {
     // the bar slides in they're pushed aside to make room (and grow back when it leaves)
     property real zoneReveal: reveal
     property real reveal: !autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible ? 1 : 0
-    Behavior on zoneReveal { NumberAnimation { duration: bar.slideMs; easing.type: Easing.InOutCubic } }
-    Behavior on reveal { NumberAnimation { duration: bar.slideMs; easing.type: Easing.InOutCubic } }
+    Behavior on zoneReveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
+    Behavior on reveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
 
     function setFilled(value) {
         if (value && !filled) holdTimer.restart();
@@ -237,9 +237,9 @@ PanelWindow {
     onHoverItemChanged: titleSwap.restart()
     SequentialAnimation {
         id: titleSwap
-        NumberAnimation { target: titleArea; property: "opacity"; to: 0; duration: 90; easing.type: Easing.InQuad }
+        NumberAnimation { target: titleArea; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
         ScriptAction { script: bar.shownItem = bar.hoverItem }
-        NumberAnimation { target: titleArea; property: "opacity"; to: 1; duration: 140; easing.type: Easing.OutQuad }
+        NumberAnimation { target: titleArea; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
     }
 
     // Uptime, for the power button's hover text (refreshed each minute)
@@ -400,7 +400,7 @@ PanelWindow {
         Grid {
             id: left
             opacity: bar.dimmed ? 0.4 : 1
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
             spacing: bar.gap
             // One row across the bar, or one column down a side bar, sized to what it holds
             // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
@@ -425,7 +425,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     accent: bar.accent
                     body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.tint("#566173")
-                    Behavior on body { ColorAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on body { ColorAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
                 }
             }
             // Apps: three soft rounded bars
@@ -476,8 +476,8 @@ PanelWindow {
                             // (Colourful look: each square its own pastel)
                             color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, index, bar.textColor)
                             opacity: !busy || lit ? 1 : 0.35
-                            Behavior on opacity { NumberAnimation { duration: 160 } }
-                            Behavior on color { ColorAnimation { duration: 200 } }
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
                         }
                     }
                 }
@@ -521,7 +521,7 @@ PanelWindow {
                             // one. Brighter under the pointer
                             color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
                                 : occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
                             ClickArea { anchors.fill: parent; onClicked: modelData.activate() }
                         }
                     }
@@ -579,7 +579,7 @@ PanelWindow {
                     readonly property var space: titleArea.s || !Config.s.spaceBarTint ? null
                         : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
                     color: space && !tilePlate.visible ? space.colour : bar.capsuleColor
-                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(200) } }
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
                     // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu Bar)
@@ -601,7 +601,7 @@ PanelWindow {
                             anchors.fill: parent; z: -1
                             color: appTile.space ? appTile.space.colour : Config.iconTileFor(app, Config.iconPlateColor)
                             shaded: !appTile.space && Config.iconTileShade(app) !== null
-                            Behavior on color { ColorAnimation { duration: 200 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
                         }
                     }
                     Process {
@@ -662,7 +662,7 @@ PanelWindow {
         Grid {
             id: right
             opacity: bar.dimmed ? 0.4 : 1
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
             spacing: bar.gap
             // One row across the bar, or one column down a side bar, sized to what it holds
             // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
@@ -694,7 +694,7 @@ PanelWindow {
                 onCollapsibleChanged: expanded = false
                 // 0 closed … 1 open, eased; the icons stay laid out until it has finished closing
                 property real openness: !collapsible || expanded ? 1 : 0
-                Behavior on openness { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+                Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
                 readonly property bool showIcons: !collapsible || openness > 0
                 readonly property real fullLength: (bar.vert ? trayRow.height : trayRow.width) + 10     // 5 px each side
                 readonly property real closedLength: 22 + 10
@@ -731,7 +731,7 @@ PanelWindow {
                                 radius: 6
                                 color: bar.hoverFill
                                 opacity: trayHover.hovered ? bar.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                             }
                             HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
                             // Icon drawn in high-contrast black and white (light parts white,
@@ -787,7 +787,7 @@ PanelWindow {
                             radius: 6
                             color: bar.hoverFill
                             opacity: toggleHover.hovered ? bar.hoverStrength : 0
-                            Behavior on opacity { NumberAnimation { duration: 120 } }
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                         }
                         HoverHandler { id: toggleHover; onHoveredChanged: bar.setHover(trayToggle, hovered) }
                         Text {
@@ -825,7 +825,7 @@ PanelWindow {
                 onCollapsibleChanged: expanded = false
                 // 0 closed … 1 open, eased; the icons stay laid out until it has finished closing
                 property real openness: !collapsible || expanded ? 1 : 0
-                Behavior on openness { NumberAnimation { duration: 280; easing.type: Easing.OutCubic } }
+                Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
                 readonly property bool showIcons: !collapsible || openness > 0
                 // In order along the bar, then the button; first/last/separators follow whichever are shown
                 readonly property var shown: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat].map(x => x && showIcons).concat([collapsible])
@@ -1059,7 +1059,7 @@ PanelWindow {
             radius: parent.radius
             color: bar.hoverFill
             opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         Gloss { radius: cap.radius }          // glass: a sheen
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
@@ -1122,7 +1122,7 @@ PanelWindow {
             topRightRadius: (bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0
             bottomRightRadius: seg.last ? bar.capsuleRadius : 0
             opacity: segHover.hovered ? bar.hoverStrength : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         Row {
             id: segRow

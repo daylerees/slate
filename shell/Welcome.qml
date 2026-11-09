@@ -41,7 +41,7 @@ PanelWindow {
     }
 
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(260); easing.type: Easing.OutCubic } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: Qt.rgba(0.02, 0.03, 0.04, 0.82 * fade)        // the desktop well dimmed behind it
@@ -118,7 +118,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 0 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
                     anchors.centerIn: parent
                     width: parent.width
@@ -146,7 +146,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 1 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
                     width: parent.width
                     spacing: 6
@@ -176,7 +176,7 @@ PanelWindow {
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 opacity: usable ? 1 : 0.5
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 // A small screen showing the idea
                                 Rectangle {
                                     id: modeArt
@@ -233,7 +233,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 2 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
                     width: parent.width
                     spacing: 6
@@ -257,7 +257,7 @@ PanelWindow {
                                 width: themeRow.implicitWidth + 28; height: 38; radius: 10
                                 color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
                                 Gloss { radius: parent.radius; opacity: (on || themeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Row {
                                     id: themeRow
                                     anchors.centerIn: parent
@@ -287,7 +287,7 @@ PanelWindow {
                                 color: accHover.hovered ? Config.hoverOn(w.card) : w.card
                                 Gloss { radius: parent.radius; opacity: (accHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Column {
                                     anchors { fill: parent; margins: 14 }
                                     spacing: 6
@@ -372,13 +372,13 @@ PanelWindow {
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 42; height: 24; radius: 12
                             color: appsRow.on ? w.accent : w.line
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
                                 width: 18; height: 18; radius: 9
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: appsRow.on ? parent.width - width - 3 : 3
                                 color: appsRow.on ? w.accentText : w.text
-                                Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
                             }
                         }
                         // On: all installed ones; off: none of them (their configs are put back)
@@ -397,7 +397,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 3 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
                     width: parent.width
                     spacing: 6
@@ -456,13 +456,13 @@ PanelWindow {
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 42; height: 24; radius: 12
                             color: hideRow.on ? w.accent : w.line
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
                                 width: 18; height: 18; radius: 9
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: hideRow.on ? parent.width - width - 3 : 3
                                 color: hideRow.on ? w.accentText : w.text
-                                Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
                             }
                         }
                         ClickTap { onTapped: Config.s.dockAutoHide = !Config.s.dockAutoHide }
@@ -475,7 +475,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 4 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
                     width: parent.width
                     spacing: 6
@@ -499,7 +499,7 @@ PanelWindow {
                             color: keyHover.hovered ? Config.hoverOn(w.card) : w.card
                             Gloss { radius: parent.radius; opacity: (keyHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                             border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Column {
                                 anchors { left: parent.left; right: keyTick.left; leftMargin: 16; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                 spacing: 4
@@ -538,7 +538,7 @@ PanelWindow {
                 anchors.fill: parent
                 opacity: w.page === 5 ? 1 : 0
                 visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 200 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 readonly property var tips: Config.s.keyset === "slate" ? [
                         { keys: "Super", what: "Open apps", icon: 0xEB1C },
                         { keys: "Super+Tab", what: "Switch windows", icon: 0xEFE6 },
@@ -669,8 +669,8 @@ PanelWindow {
                         required property int index
                         width: index === w.page ? 22 : 8; height: 8; radius: 4
                         color: index === w.page ? w.accent : w.line
-                        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                        Behavior on color { ColorAnimation { duration: 180 } }
+                        Behavior on width { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(180) } }
                         ClickTap { onTapped: w.page = parent.index }
                     }
                 }
@@ -727,7 +727,7 @@ PanelWindow {
         color: Qt.rgba(0, 0, 0, 0.45)
         visible: opacity > 0
         opacity: w.askMode !== "" ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 140 } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(140) } }
         onVisibleChanged: if (visible) askCard.forceActiveFocus()
         MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: w.answer(false) }
         Rectangle {
@@ -738,7 +738,7 @@ PanelWindow {
             color: Config.tint("#0f1216")
             border.width: 1; border.color: w.line
             scale: w.askMode !== "" ? 1 : 0.96
-            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it
             Keys.onEscapePressed: w.answer(false)
             Keys.onReturnPressed: w.answer(true)

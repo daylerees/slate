@@ -20,7 +20,7 @@ Rectangle {
     color: "transparent"
     // Hover highlights set opacity to show it while pointed at: it fades in and out in step
     // with their colour (appearing at once, the top half showed before the rest)
-    Behavior on opacity { NumberAnimation { duration: 100 } }
+    Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
     // Stronger on light colours (an accent-filled selection), where a faint white sheen
     // barely shows; as it is on dark ones
     readonly property real boost: {

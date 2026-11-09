@@ -67,7 +67,7 @@ PanelWindow {
                         radius: 7
                         color: itemHover.hovered ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (itemHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: 90 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                         Text {
                             id: rowIcon
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }

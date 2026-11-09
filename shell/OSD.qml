@@ -151,7 +151,7 @@ PanelWindow {
 
     // ---- Window --------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
     visible: fade > 0
     anchors.bottom: true
     // Clear of the dock (or the bar, when either is at the bottom)
@@ -198,7 +198,7 @@ PanelWindow {
                 width: Math.max(height, track.width * osd.value)
                 height: parent.height; radius: 3
                 color: osd.dimmed ? Config.tint("#4f5866") : osd.bar.accent
-                Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                Behavior on width { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
             }
         }
         Text {

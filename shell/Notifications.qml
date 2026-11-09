@@ -263,14 +263,14 @@ Scope {
 
             add: Transition {
                 ParallelAnimation {
-                    NumberAnimation { property: "x"; from: toastWin.slideX; to: 0; duration: 320; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "scale"; from: toastWin.side === "center" ? 0.92 : 1; to: 1; duration: 320; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 320; easing.type: Easing.OutQuad }
+                    NumberAnimation { property: "x"; from: toastWin.slideX; to: 0; duration: Config.ms(320); easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "scale"; from: toastWin.side === "center" ? 0.92 : 1; to: 1; duration: Config.ms(320); easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Config.ms(320); easing.type: Easing.OutQuad }
                     // …and drops a little into place (rises, for pop-ups at the bottom)
-                    NumberAnimation { property: "y"; from: ViewTransition.destination.y + (toastWin.atTop ? -12 : 12); to: ViewTransition.destination.y; duration: 320; easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "y"; from: ViewTransition.destination.y + (toastWin.atTop ? -12 : 12); to: ViewTransition.destination.y; duration: Config.ms(320); easing.type: Easing.OutCubic }
                 }
             }
-            displaced: Transition { NumberAnimation { property: "y"; duration: 220; easing.type: Easing.OutCubic } }
+            displaced: Transition { NumberAnimation { property: "y"; duration: Config.ms(220); easing.type: Easing.OutCubic } }
 
             delegate: Item {
                 id: toast
@@ -280,7 +280,7 @@ Scope {
                 onLeavingChanged: if (leaving) leaveAnim.start()
                 SequentialAnimation {
                     id: leaveAnim
-                    NumberAnimation { target: toast; property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: toast; property: "opacity"; to: 0; duration: Config.ms(380); easing.type: Easing.OutQuad }
                     ScriptAction { script: notifs.removeToastNow(toast.key) }
                 }
                 readonly property var item: notifs.itemFor(key)

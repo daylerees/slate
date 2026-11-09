@@ -93,7 +93,7 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: root.fadeMs; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
 
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -195,7 +195,7 @@ PanelWindow {
                     radius: 12
                     readonly property bool on: Config.s.reopenAppsAfterRestart
                     color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
-                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Gloss { radius: parent.radius; opacity: reopenHover.hovered ? 1 : 0 }
                     HoverHandler { id: reopenHover; onHoveredChanged: if (hovered) root.focusedButton = 2 }
                     ClickTap { onTapped: Config.s.reopenAppsAfterRestart = !reopen.on }
@@ -206,7 +206,7 @@ PanelWindow {
                         color: "transparent"
                         border.width: 2; border.color: root.textColor
                         opacity: root.focusedButton === 2 ? 0.35 : 0
-                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                     }
                     Column {
                         id: reopenText
@@ -231,13 +231,13 @@ PanelWindow {
                         anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                         width: 42; height: 24; radius: 12
                         color: reopen.on ? root.accent : Config.tint("#2a313c")
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         Rectangle {
                             width: 18; height: 18; radius: 9
                             anchors.verticalCenter: parent.verticalCenter
                             x: reopen.on ? parent.width - width - 3 : 3
                             color: reopen.on ? root.accentText : root.textColor
-                            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
                         }
                     }
                 }
@@ -276,7 +276,7 @@ PanelWindow {
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
         color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
         Gloss { radius: parent.radius; opacity: (hh.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button
         Rectangle {
@@ -286,7 +286,7 @@ PanelWindow {
             border.width: 2
             border.color: btn.primary ? btn.base : root.textColor
             opacity: btn.focused ? (btn.primary ? 0.55 : 0.35) : 0
-            Behavior on opacity { NumberAnimation { duration: 100 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
         }
         ClickTap { onTapped: btn.clicked() }
         Text {

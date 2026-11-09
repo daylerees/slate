@@ -157,7 +157,7 @@ PanelWindow {
                         radius: 7
                         color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (entryHover.hovered && entryRow.e.enabled) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: 90 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                         // Tick for a checked checkbox or radio item
                         Text {
                             visible: entryRow.checked

@@ -81,7 +81,7 @@ PanelWindow {
     }
 
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: root.fadeMs; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
 
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -192,7 +192,7 @@ PanelWindow {
         // Shrinks and grows with what's listed, smoothly; the top stays where a full-height
         // panel's would be, so the search box doesn't move
         height: root.fittedHeight
-        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
@@ -297,7 +297,7 @@ PanelWindow {
             else if (it.y + it.height > v.contentY + v.height) to = it.y + it.height - v.height;
             if (to === v.contentY) return;
             anim.stop();
-            if (root.slideHighlight) { anim.to = to; anim.start(); } else v.contentY = to;
+            if (root.slideHighlight && Config.animate) { anim.to = to; anim.start(); } else v.contentY = to;
         }
 
         // ---- Clipboard list ------------------------------------------------
@@ -318,10 +318,10 @@ PanelWindow {
                 color: root.selectColor
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 y: list.currentItem ? list.currentItem.y : 0
-                Behavior on y { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
-                Behavior on height { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
+                Behavior on y { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
+                Behavior on height { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
             }
-            NumberAnimation { id: listScroll; target: list; property: "contentY"; duration: root.slideMs; easing.type: Easing.OutCubic }
+            NumberAnimation { id: listScroll; target: list; property: "contentY"; duration: Config.ms(root.slideMs); easing.type: Easing.OutCubic }
             onCurrentIndexChanged: panel.follow(list, listScroll)
 
             delegate: Item {
@@ -419,10 +419,10 @@ PanelWindow {
                 Gloss { radius: parent.radius }   // glass: a sheen on the selection
                 x: grid.currentItem ? grid.currentItem.x : 0
                 y: grid.currentItem ? grid.currentItem.y : 0
-                Behavior on x { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
-                Behavior on y { enabled: root.slideHighlight; SmoothedAnimation { duration: root.slideMs; velocity: -1 } }
+                Behavior on x { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
+                Behavior on y { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
             }
-            NumberAnimation { id: gridScroll; target: grid; property: "contentY"; duration: root.slideMs; easing.type: Easing.OutCubic }
+            NumberAnimation { id: gridScroll; target: grid; property: "contentY"; duration: Config.ms(root.slideMs); easing.type: Easing.OutCubic }
             onCurrentIndexChanged: panel.follow(grid, gridScroll)
 
             delegate: Item {
@@ -494,7 +494,7 @@ PanelWindow {
                 width: clearLabel.implicitWidth + 24; height: 28; radius: 8
                 color: clearHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                 Gloss { radius: parent.radius; opacity: (clearHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                Behavior on color { ColorAnimation { duration: 100 } }
+                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverHandler { id: clearHover }
                 ClickTap { onTapped: root.clearClips() }
                 Text {

@@ -232,7 +232,7 @@ FloatingWindow {
                     Item {
                         visible: !cell.fileIsDir
                         anchors { fill: parent; margins: cell.picked ? 4 : 0 }
-                        Behavior on anchors.margins { NumberAnimation { duration: 100 } }
+                        Behavior on anchors.margins { NumberAnimation { duration: Config.ms(100) } }
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask }
                         Image {
@@ -242,7 +242,7 @@ FloatingWindow {
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             opacity: status === Image.Ready ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                         }
                         Item {
                             id: thumbMask
@@ -258,7 +258,7 @@ FloatingWindow {
                         anchors.fill: parent; radius: parent.radius
                         color: "white"
                         opacity: cellHover.hovered && !cell.picked ? 0.08 : 0
-                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                     }
                 }
                 Text {

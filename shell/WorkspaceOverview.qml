@@ -199,7 +199,7 @@ PanelWindow {
         id: swapAnim
         target: ov; property: "swapProg"
         from: 0; to: 1
-        duration: 260
+        duration: Config.ms(260)
         easing.type: Easing.InOutQuad
         onFinished: ov.finishSwap()
     }
@@ -263,7 +263,7 @@ PanelWindow {
     NumberAnimation {
         id: zoomAnim
         target: ov; property: "zoomP"; from: 0; to: 1
-        duration: 300; easing.type: Easing.OutCubic
+        duration: Config.ms(300); easing.type: Easing.OutCubic
         // Once it's there (and Hyprland is on that workspace), the real workspace is exactly
         // underneath: fade quickly
         onFinished: if (ov.arrived) ov.shown = false
@@ -274,7 +274,7 @@ PanelWindow {
     // The backdrop thins with the zoom, but only after arriving (smoothed, in case that's
     // part-way through)
     property real backdropGone: zooming && arrived ? zoomP : 0
-    Behavior on backdropGone { NumberAnimation { duration: 90 } }
+    Behavior on backdropGone { NumberAnimation { duration: Config.ms(90) } }
     function goNow() {
         Quickshell.execDetached(["hyprctl", "dispatch", `function() instantTo(hl.dsp.focus({ workspace = ${ov.pendingId} })) end`]);
     }
@@ -319,7 +319,7 @@ PanelWindow {
     property bool releasing: false
     property bool cardsOut: false
     property real cardsFade: cardsOut ? 0 : 1
-    Behavior on cardsFade { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+    Behavior on cardsFade { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutQuad } }
     // Leaving into a chosen workspace (zooms in as it fades), rather than closing
     property bool zooming: false
     Timer {
@@ -361,7 +361,7 @@ PanelWindow {
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
     // After zooming into a workspace the overview matches it, so it just goes, quickly
-    Behavior on fade { NumberAnimation { duration: ov.zooming ? 120 : 360; easing.type: Easing.InOutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(ov.zooming ? 120 : 360); easing.type: Easing.InOutCubic } }
     onFadeChanged: if (fade === 0) { zooming = false; zoomP = 0; arrived = false; arriveCheck.stop(); }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -472,7 +472,7 @@ PanelWindow {
                     x: card.modelData.id === ov.swapA ? ov.swapStep * ov.slotW * ov.swapProg
                      : card.modelData.id === ov.swapB ? -ov.swapStep * ov.slotW * ov.swapProg : 0
                     y: card.lifted ? -26 : 0
-                    Behavior on y { enabled: !ov.handover; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on y { enabled: !ov.handover; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
                 }
                 z: lifted ? 10 : (modelData.id === ov.swapB ? 5 : 0)
                 // Hyprland units to card units, for this workspace's monitor
@@ -493,8 +493,8 @@ PanelWindow {
                     && (ov.selected + offset < 0 || ov.selected + offset >= ov.spaces.length)
                 readonly property Item previewItem: preview
                 opacity: pastEnd ? 0 : isSelected ? 1 : 0.6 * (1 - ov.zoomP)
-                Behavior on scale { enabled: !ov.handover; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: 220 } }
+                Behavior on scale { enabled: !ov.handover; NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
+                Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: Config.ms(220) } }
 
                 // Shadow under the lifted card
                 RectangularShadow {
@@ -504,7 +504,7 @@ PanelWindow {
                     offset.y: 18
                     color: Qt.rgba(0, 0, 0, 0.7)
                     opacity: card.lifted ? 1 : 0
-                    Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: 180 } }
+                    Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: Config.ms(180) } }
                 }
 
                 // Selection ring
@@ -515,9 +515,9 @@ PanelWindow {
                     // Blue when selected; bright white while lifted (holding Shift)
                     border.width: card.lifted ? 4 : 3
                     border.color: card.lifted ? ov.bar.textColor : ov.bar.accent
-                    Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: 150 } }
+                    Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: Config.ms(150) } }
                     opacity: card.isSelected ? 1 - ov.zoomP : 0
-                    Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: 180 } }
+                    Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: Config.ms(180) } }
                     Gloss { radius: parent.radius; strength: 0.7 }   // glass: a sheen over the selected card
                 }
 

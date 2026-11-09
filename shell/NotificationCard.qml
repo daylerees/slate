@@ -51,7 +51,7 @@ Rectangle {
     radius: 9
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     Gloss { radius: parent.radius }   // glass: a sheen
-    Behavior on color { ColorAnimation { duration: 100 } }
+    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
     // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
     // shadow first, as the pop-up faded in.)
@@ -234,7 +234,7 @@ Rectangle {
                     radius: 5
                     color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
                     Gloss { radius: parent.radius }   // glass: a sheen
-                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
@@ -291,7 +291,7 @@ Rectangle {
                         // Accent-tinted; solid accent on hover
                         color: actHover.hovered ? card.accent : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.16)
                         Gloss { radius: parent.radius }   // glass: a sheen
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Text {
                             id: actText
                             anchors.centerIn: parent

@@ -106,7 +106,7 @@ PanelWindow {
 
     // Fade in and out; the window stays mapped until the fade-out finishes
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: root.fadeMs; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
 
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -410,7 +410,7 @@ PanelWindow {
         // Shrinks and grows with the results, smoothly; the top stays put (where a full-height
         // launcher's would be), so the search box doesn't move while typing
         height: root.fittedHeight
-        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
         radius: 18
@@ -554,12 +554,12 @@ PanelWindow {
                 // Smoothed: a new target (the next key press) carries on at the current speed,
                 // where an eased slide restarted fast on each press and lurched when keys repeat
                 Behavior on x {
-                    enabled: root.slideHighlight
-                    SmoothedAnimation { duration: root.slideMs; velocity: -1 }
+                    enabled: root.slideHighlight && Config.animate
+                    SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 }
                 }
                 Behavior on y {
-                    enabled: root.slideHighlight
-                    SmoothedAnimation { duration: root.slideMs; velocity: -1 }
+                    enabled: root.slideHighlight && Config.animate
+                    SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 }
                 }
             }
 
@@ -568,7 +568,7 @@ PanelWindow {
                 id: scrollAnim
                 target: list
                 property: "contentY"
-                duration: root.slideMs
+                duration: Config.ms(root.slideMs)
                 velocity: -1
             }
             onCurrentIndexChanged: {
@@ -581,7 +581,7 @@ PanelWindow {
                 if (top < from) to = top;
                 else if (bottom > from + height) to = bottom - height;
                 if (to === from) return;
-                if (root.slideHighlight) {
+                if (root.slideHighlight && Config.animate) {
                     scrollAnim.to = to;
                     scrollAnim.restart();       // a smoothed restart keeps its current speed
                 } else {
@@ -633,7 +633,7 @@ PanelWindow {
                     IconPlate {
                         anchors.fill: parent; z: -1
                         color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c"), true) : Config.iconTileFor(app, Config.iconPlateColor)
-                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     }
                 }
                 // Calculator tile
@@ -643,12 +643,12 @@ PanelWindow {
                     radius: 9
                     // Swapped round on the accent highlight, so it doesn't vanish into it
                     color: row.onAccent ? root.accentText : root.accent
-                    Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB80)
                         color: row.onAccent ? root.accent : root.accentText
-                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: tabler.name
                         font.pixelSize: 20
                     }
@@ -669,7 +669,7 @@ PanelWindow {
                     // Solid on the highlight: with glass it's see-through, and its icon would
                     // vanish into the accent behind it
                     color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
-                    Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     border.width: 1; border.color: root.selectColor
                     Text {
                         anchors.centerIn: parent
@@ -697,7 +697,7 @@ PanelWindow {
                         width: parent.width
                         text: row.calc ? "= " + row.modelData.name : root.capitalised(row.modelData.name)
                         color: row.onAccent ? root.accentText : root.textColor
-                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: root.fontFamily
                         font.pixelSize: row.calc ? 16 : 14
                         font.weight: Font.Medium
@@ -708,7 +708,7 @@ PanelWindow {
                         visible: row.calc || row.setting || row.action || (Config.s.launcherDescriptions && row.detail !== "" && row.detail !== row.modelData.name)
                         text: row.calc ? row.detail : root.capitalised(row.detail)
                         color: row.onAccent ? Qt.rgba(root.accentText.r, root.accentText.g, root.accentText.b, 0.72) : root.dimTextColor
-                        Behavior on color { ColorAnimation { duration: row.fadeMs } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: root.fontFamily
                         font.pixelSize: 12
                         elide: Text.ElideRight

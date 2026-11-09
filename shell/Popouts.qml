@@ -98,7 +98,7 @@ PanelWindow {
     }
 
     property real fade: revealed ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
 
     // ---- Window ------------------------------------------------------------
     // Opening, open or closing (when closed it's empty: no panel, no clicks, no keyboard)
@@ -407,7 +407,7 @@ PanelWindow {
         radius: 8
         color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
         Gloss { radius: parent.radius; opacity: (selected || rbHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: rbHover }
         ClickTap { onTapped: rb.clicked() }
     }
@@ -531,7 +531,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         x: Networking.wifiEnabled ? parent.width - width - 3 : 3
                         color: Networking.wifiEnabled ? pop.accentText : pop.text
-                        Behavior on x { NumberAnimation { duration: 120 } }
+                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
                     }
                     ClickTap { onTapped: Networking.wifiEnabled = !Networking.wifiEnabled }
                 }
@@ -668,7 +668,7 @@ PanelWindow {
                 spacing: 5
                 // Glides between readings (the bar and the number together)
                 property real sig: wf.connected ? wf.connected.signalStrength : 0
-                Behavior on sig { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+                Behavior on sig { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
                 Item {
                     width: parent.width; height: sigLabel.height
                     Label { id: sigLabel; text: "Signal"; font.pixelSize: 12 }
@@ -685,7 +685,7 @@ PanelWindow {
                         width: Math.max(height, parent.width * parent.parent.sig)
                         height: parent.height; radius: 3
                         color: parent.parent.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
-                        Behavior on color { ColorAnimation { duration: 300 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                     }
                 }
             }
@@ -715,7 +715,7 @@ PanelWindow {
                         radius: 9
                         color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
                         Gloss { radius: parent.radius; opacity: (tileHover.hovered && modelData.copy) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
                         Column {
@@ -1171,7 +1171,7 @@ PanelWindow {
                                         fillMode: Image.PreserveAspectCrop
                                         asynchronous: true
                                         opacity: wsCard.on ? 0.75 : 0.4
-                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                                        Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                                     }
                                     Repeater {
                                         // Tiled first, floating ones on top
@@ -1247,7 +1247,7 @@ PanelWindow {
                                         color: "transparent"
                                         border.width: wsCard.on ? 2 : 1
                                         border.color: wsCard.on ? pop.accent : wsShotHover.hovered ? pop.dim : Qt.rgba(pop.text.r, pop.text.g, pop.text.b, 0.1)
-                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                                        Behavior on border.color { ColorAnimation { duration: Config.ms(120) } }
                                     }
                                     Rectangle {
                                         anchors { top: parent.top; right: parent.right; margins: 5 }
@@ -1324,7 +1324,7 @@ PanelWindow {
                         width: (spp.width - 28) / 15; height: width; radius: 7
                         color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (on || icHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
                         ClickTap { onTapped: spp.icon = icCell.modelData }
@@ -1359,7 +1359,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             width: swatch.on ? 20 : swHover.hovered ? 24 : 22; height: width; radius: width / 2
                             color: swatch.isCustom ? (spp.custom ? spp.colour : "transparent") : swatch.modelData
-                            Behavior on width { NumberAnimation { duration: 100 } }
+                            Behavior on width { NumberAnimation { duration: Config.ms(100) } }
                             // Your own colour: a colour wheel until one is chosen
                             Canvas {
                                 anchors.fill: parent
@@ -1512,7 +1512,7 @@ PanelWindow {
                         radius: 10
                         color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
                         Gloss { radius: parent.radius; opacity: (shotHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Column {
                             anchors.centerIn: parent
                             spacing: 6
@@ -1649,7 +1649,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         x: btp.on ? parent.width - width - 3 : 3
                         color: btp.on ? pop.accentText : pop.text
-                        Behavior on x { NumberAnimation { duration: 120 } }
+                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
                     }
                     ClickTap { onTapped: if (btp.adapter) btp.adapter.enabled = !btp.adapter.enabled }
                 }
@@ -1861,9 +1861,9 @@ PanelWindow {
             property real cpuShown: cpu
             property real memShown: memTotal ? memUsed / memTotal : 0
             property real diskShown: diskTotal ? diskUsed / diskTotal : 0
-            Behavior on cpuShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
-            Behavior on memShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
-            Behavior on diskShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+            Behavior on cpuShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
+            Behavior on memShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
+            Behavior on diskShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
             function gb(bytes) {
                 const g = bytes / 1e9;
                 return g >= 1000 ? (g / 1000).toFixed(1) + " TB" : g >= 100 ? Math.round(g) + " GB" : g.toFixed(1) + " GB";
@@ -1897,7 +1897,7 @@ PanelWindow {
                             // Red when above 80%
                             color: parent.parent.frac > 0.8 ? pop.danger : pop.accent
                             Gloss { radius: parent.radius }   // glass: a sheen
-                            Behavior on color { ColorAnimation { duration: 300 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                         }
                     }
                 }
@@ -2175,14 +2175,14 @@ PanelWindow {
                     // Hover: greyed and dimmed with a pencil; click to change the picture
                     saturation: avatarHover.hovered ? -1 : 0
                     brightness: avatarHover.hovered ? -0.45 : 0
-                    Behavior on saturation { NumberAnimation { duration: 150 } }
-                    Behavior on brightness { NumberAnimation { duration: 150 } }
+                    Behavior on saturation { NumberAnimation { duration: Config.ms(150) } }
+                    Behavior on brightness { NumberAnimation { duration: Config.ms(150) } }
                     Icon {
                         anchors.centerIn: parent
                         code: 0xEB04
                         color: "white"
                         opacity: avatarHover.hovered ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     }
                     HoverHandler { id: avatarHover }
                     ClickTap {
@@ -2451,7 +2451,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             x: parent.on ? parent.width - width - 3 : 3
                             color: parent.on ? pop.accentText : pop.text
-                            Behavior on x { NumberAnimation { duration: 120 } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(120) } }
                         }
                         ClickTap { onTapped: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd }
                     }
@@ -2497,8 +2497,8 @@ PanelWindow {
                     onClosed: pop.notifs.remove(modelData.key)
                     onAction: id => { pop.notifs.invokeAction(modelData.key, id); pop.close(); }
                 }
-                remove: Transition { NumberAnimation { property: "opacity"; to: 0; duration: 150 } }
-                displaced: Transition { NumberAnimation { property: "y"; duration: 180; easing.type: Easing.OutCubic } }
+                remove: Transition { NumberAnimation { property: "opacity"; to: 0; duration: Config.ms(150) } }
+                displaced: Transition { NumberAnimation { property: "y"; duration: Config.ms(180); easing.type: Easing.OutCubic } }
 
                 // Scrollbar (ThinScrollbar, as everywhere), only when the list overflows
                 ThinScrollbar {

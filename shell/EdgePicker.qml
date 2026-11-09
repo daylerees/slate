@@ -38,7 +38,7 @@ Rectangle {
             radius: 3
             color: current ? ep.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
             Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             HoverHandler { id: spotHover }
             ClickTap { onTapped: ep.picked(spot.modelData) }
         }

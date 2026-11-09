@@ -18,6 +18,6 @@ PanelWindow {
         anchors.fill: parent
         color: "black"
         opacity: 0
-        NumberAnimation on opacity { to: 1; duration: Config.leaveFade; easing.type: Easing.InOutQuad }
+        NumberAnimation on opacity { to: 1; duration: Config.ms(Config.leaveFade); easing.type: Easing.InOutQuad }
     }
 }

@@ -47,7 +47,7 @@ Rectangle {
             Gloss { radius: parent.radius; opacity: (cornerHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
             border.width: current ? 2 : 0
             border.color: hp.accent
-            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
 
             Row {
                 anchors { verticalCenter: parent.verticalCenter; left: corner.atRight ? undefined : parent.left; right: corner.atRight ? parent.right : undefined; leftMargin: 12; rightMargin: 12 }

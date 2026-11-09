@@ -35,8 +35,8 @@ Item {
         opacity: sb.active ? 1 : 0.7
         height: Math.max(24, sb.height * (sb.flick ? sb.flick.visibleArea.heightRatio : 1))
         y: sb.range > 0 ? (sb.height - height) * Math.max(0, Math.min(1, (sb.flick.contentY - sb.flick.originY) / sb.range)) : 0
-        Behavior on width { NumberAnimation { duration: 100 } }
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        Behavior on width { NumberAnimation { duration: Config.ms(100) } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
     }
     HoverHandler { id: hover }
     MouseArea {

@@ -135,7 +135,7 @@ Scope {
                 sourceSize.width: win.width * (win.modelData.devicePixelRatio || 1)
                 sourceSize.height: win.height * (win.modelData.devicePixelRatio || 1)
                 opacity: 0
-                Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(600); easing.type: Easing.InOutQuad } }
                 onStatusChanged: {
                     if (status !== Image.Ready || source.toString() !== win.wanted) return;
                     const i = win.images.indexOf(layer);

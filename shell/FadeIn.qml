@@ -21,7 +21,7 @@ PanelWindow {
         opacity: Config.welcomeFading ? 0 : 1
         Behavior on opacity {
             NumberAnimation {
-                duration: 2600; easing.type: Easing.InOutQuad
+                duration: Config.ms(2600); easing.type: Easing.InOutQuad
                 onRunningChanged: if (!running && Config.welcomeFading) Config.welcoming = false
             }
         }

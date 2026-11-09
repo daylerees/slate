@@ -392,7 +392,7 @@ FloatingWindow {
                         width: parent.width; height: 38; radius: 9
                         color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (current || navHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Text {
                             id: navIcon
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
@@ -515,7 +515,7 @@ FloatingWindow {
                     width: 34; height: 34; radius: 17
                     color: backHover.hovered ? Config.hover : "transparent"
                     Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
                         text: win.glyph(0xEA19)
@@ -624,7 +624,7 @@ FloatingWindow {
                 width: 34; height: 34; radius: 17
                 color: closeHover.hovered ? Config.hover : "transparent"
                 Gloss { radius: parent.radius; opacity: (closeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                Behavior on color { ColorAnimation { duration: 100 } }
+                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 Text {
                     anchors.centerIn: parent
                     text: win.glyph(0xEB55)
@@ -646,9 +646,9 @@ FloatingWindow {
                 Rectangle { anchors.fill: parent; radius: parent.radius; color: win.accent; opacity: 0.12 }
                 SequentialAnimation {
                     id: foundFade
-                    NumberAnimation { target: foundFlash; property: "opacity"; to: 1; duration: 150 }
+                    NumberAnimation { target: foundFlash; property: "opacity"; to: 1; duration: Config.ms(150) }
                     PauseAnimation { duration: 900 }
-                    NumberAnimation { target: foundFlash; property: "opacity"; to: 0; duration: 600 }
+                    NumberAnimation { target: foundFlash; property: "opacity"; to: 0; duration: Config.ms(600) }
                 }
             }
             Flickable {
@@ -719,7 +719,7 @@ FloatingWindow {
         color: Qt.rgba(0, 0, 0, 0.45)
         visible: opacity > 0
         opacity: win.confirming ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 140 } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(140) } }
         onVisibleChanged: if (visible) resetConfirmCard.forceActiveFocus()
         MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: win.cancelConfirm() }
         // Restoring defaults, or another question (win.ask)
@@ -732,7 +732,7 @@ FloatingWindow {
             color: win.bar.barColor
             border.width: 1; border.color: Config.tint("#2a313c")
             scale: win.confirming ? 1 : 0.96
-            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it
             Keys.onEscapePressed: win.cancelConfirm()
             // Enter confirms, except for something that can't be taken back (a red button)
@@ -975,7 +975,7 @@ FloatingWindow {
         width: 42; height: 24; radius: 12
         color: checked ? (tgHover.hovered ? Qt.lighter(win.accent, 1.08) : win.accent)
             : (tgHover.hovered ? win.controlHover(Config.tint("#38414e")) : win.control)
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
         Rectangle {
             anchors { fill: parent; margins: -3 }
@@ -983,7 +983,7 @@ FloatingWindow {
             color: "transparent"
             border.width: 2; border.color: win.accent
             opacity: tgHover.hovered ? 0.35 : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         HoverHandler { id: tgHover }
         Gloss { radius: parent.radius }   // glass: a sheen
@@ -992,7 +992,7 @@ FloatingWindow {
             anchors.verticalCenter: parent.verticalCenter
             x: tg.checked ? parent.width - width - 3 : 3
             color: tg.checked ? win.accentText : win.text
-            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
         }
         ClickTap { onTapped: tg.toggled(!tg.checked) }
     }
@@ -1027,7 +1027,7 @@ FloatingWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: 3
                 color: sliderBox.hot ? win.controlHover(Config.tint("#38414e")) : win.control
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 Rectangle {
                     width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
                     Gloss { radius: parent.radius }   // glass: a sheen
@@ -1040,7 +1040,7 @@ FloatingWindow {
                 x: parent.frac * (parent.width - 16) + 8 - width / 2
                 color: win.accent
                 opacity: sliderBox.hot ? 0.22 : 0
-                Behavior on opacity { NumberAnimation { duration: 120 } }
+                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
             }
             Rectangle {
                 width: 16; height: 16; radius: 8
@@ -1049,7 +1049,7 @@ FloatingWindow {
                 color: win.text
                 Gloss { radius: parent.radius; strength: 0.6 }   // glass: a sheen
                 scale: sliderBox.hot ? 1.15 : 1
-                Behavior on scale { NumberAnimation { duration: 120 } }
+                Behavior on scale { NumberAnimation { duration: Config.ms(120) } }
             }
             MouseArea {
                 id: sliderMouse
@@ -1094,7 +1094,7 @@ FloatingWindow {
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? (btnHover.hovered ? Qt.lighter(win.accent, 1.1) : win.accent)
             : btnHover.hovered ? win.controlHover(Config.tint("#323a46")) : win.control
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
         Gloss { radius: parent.radius }   // glass: a sheen
         Row {
@@ -1307,7 +1307,7 @@ FloatingWindow {
             color: open || ddHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
             Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
-            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
             FolderSwatch {
                 id: ddFolder
@@ -1325,7 +1325,7 @@ FloatingWindow {
                 anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                 text: win.glyph(0xEA5F)                      // chevron down
                 rotation: ddButton.open ? 180 : 0
-                Behavior on rotation { NumberAnimation { duration: 120 } }
+                Behavior on rotation { NumberAnimation { duration: Config.ms(120) } }
                 color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
             }
             HoverHandler { id: ddHover }
@@ -1573,7 +1573,7 @@ FloatingWindow {
                         radius: 12
                         color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
                         Gloss { radius: parent.radius; opacity: (tileHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Rectangle {
                             x: 14; y: 14
                             width: 34; height: 34; radius: 10
@@ -1643,8 +1643,8 @@ FloatingWindow {
                             source: Config.avatarUrl
                             saturation: acctHover.hovered || Config.avatarBusy ? -1 : 0
                             brightness: acctHover.hovered || Config.avatarBusy ? -0.45 : 0
-                            Behavior on saturation { NumberAnimation { duration: 150 } }
-                            Behavior on brightness { NumberAnimation { duration: 150 } }
+                            Behavior on saturation { NumberAnimation { duration: Config.ms(150) } }
+                            Behavior on brightness { NumberAnimation { duration: Config.ms(150) } }
                         }
                         Text {
                             anchors.centerIn: parent
@@ -1652,7 +1652,7 @@ FloatingWindow {
                             color: "white"
                             font.family: win.bar.iconFont; font.pixelSize: 20
                             opacity: acctHover.hovered && !Config.avatarBusy ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                         }
                         HoverHandler { id: acctHover }
                         ClickTap { onTapped: win.avatarPicking = true }
@@ -2269,7 +2269,7 @@ FloatingWindow {
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
                             color: win.accent
                             Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
                             anchors.fill: parent
@@ -2285,7 +2285,7 @@ FloatingWindow {
                                         radius: 7
                                         color: win.accent
                                         opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                                     }
                                     HoverHandler { id: layoutHover }
                                     Row {
@@ -3334,7 +3334,7 @@ FloatingWindow {
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.windowMode)) * 100
                             color: win.accent
                             Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
                             anchors.fill: parent
@@ -3351,7 +3351,7 @@ FloatingWindow {
                                         radius: 7
                                         color: win.accent
                                         opacity: !modeOpt.on && modeHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                                     }
                                     HoverHandler { id: modeHover }
                                     Row {
@@ -3508,7 +3508,7 @@ FloatingWindow {
                             y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
                             color: win.accent
                             Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
                             anchors.fill: parent
@@ -3523,7 +3523,7 @@ FloatingWindow {
                                         radius: 7
                                         color: win.accent
                                         opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                                     }
                                     HoverHandler { id: shapeHover }
                                     Row {
@@ -3614,7 +3614,7 @@ FloatingWindow {
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
                                 Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 HoverHandler { id: spotHover }
                                 ClickTap { onTapped: Config.s.notificationPosition = parent.modelData }
                             }
@@ -3701,7 +3701,7 @@ FloatingWindow {
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
                             color: win.accent
                             Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
                             anchors.fill: parent
@@ -3716,7 +3716,7 @@ FloatingWindow {
                                         radius: 7
                                         color: win.accent
                                         opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                                     }
                                     HoverHandler { id: themeHover }
                                     Row {
@@ -3761,7 +3761,7 @@ FloatingWindow {
                     readonly property bool applies: Config.s.accentFromWallpaper
                     opacity: applies ? 1 : 0.4
                     enabled: applies
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Accent boldness"
                     detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
                     ValueSlider {
@@ -3775,7 +3775,7 @@ FloatingWindow {
                     width: parent.width
                     opacity: Config.s.accentFromWallpaper ? 0.4 : 1
                     enabled: !Config.s.accentFromWallpaper
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     SettingRow {
                         label: "Accent colour"
                         detail: "Used for highlights across the bar, dock, launcher and panels"
@@ -3790,7 +3790,7 @@ FloatingWindow {
                                     border.width: Config.s.accent.toLowerCase() === modelData ? 2 : 0
                                     border.color: win.text
                                     scale: swHover.hovered ? 1.12 : 1
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
+                                    Behavior on scale { NumberAnimation { duration: Config.ms(100) } }
                                     HoverHandler { id: swHover }
                                     ClickTap { onTapped: Config.s.accent = parent.modelData }
                                 }
@@ -3894,7 +3894,7 @@ FloatingWindow {
                 SettingRow {
                     opacity: Config.s.toneFromWallpaper ? 1 : 0.4
                     enabled: Config.s.toneFromWallpaper
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Tint boldness"
                     detail: "How much of the wallpaper's colour the backgrounds take, in light and dark mode. 50% is the standard amount"
                     ValueSlider {
@@ -4058,7 +4058,7 @@ FloatingWindow {
                             color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(Config.tint("#151920")) : Config.tint("#151920")
                             Gloss { radius: parent.radius; opacity: (on || shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             border.width: on ? 2 : 0; border.color: win.accent
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
                             // in the icon's colour, and Tint app icons (and its strength); with glass,
                             // see-through tiles and the sheen, as in the dock
@@ -4109,7 +4109,7 @@ FloatingWindow {
                     readonly property bool applies: !Config.s.iconFill && Config.s.iconShape !== "original"
                     opacity: applies ? 1 : 0.4
                     enabled: applies
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Tiles in the icon's colour"
                     detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
                         : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
@@ -4181,7 +4181,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Animations"
-                    detail: "Windows opening, closing and moving, and switching workspaces"
+                    detail: "Windows opening, closing and moving, switching workspaces, and Slate's own: panels opening, the bar's groups sliding open, fades and highlights. Faster halves them; Off makes them instant"
                     options: [{ value: "normal", label: "Normal" }, { value: "fast", label: "Faster" }, { value: "off", label: "Off" }]
                     value: Config.s.animations !== "" ? Config.s.animations : "normal"
                     onPicked: v => Config.s.animations = v
@@ -4416,7 +4416,7 @@ FloatingWindow {
                                     asynchronous: true
                                     cache: true
                                     opacity: status === Image.Ready ? 1 : 0
-                                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                                 }
                                 Item {
                                     id: thumbMask
@@ -5222,8 +5222,8 @@ FloatingWindow {
                 // Shown values glide from one reading to the next
                 property real memShown: memTotal > 0 ? mem / memTotal : 0
                 property real cpuShown: Math.max(0, cpu) / 100
-                Behavior on memShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
-                Behavior on cpuShown { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
+                Behavior on memShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
+                Behavior on cpuShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
                 function mb(v) { return v >= 1024 ? (v / 1024).toFixed(v >= 10240 ? 0 : 1) + " GB" : Math.round(v) + " MB"; }
                 Process {
                     id: usageProc
@@ -5281,7 +5281,7 @@ FloatingWindow {
                                     height: parent.height; radius: 3
                                     color: parent.parent.frac > 0.8 ? win.danger : win.accent
                                     Gloss { radius: parent.radius }   // glass: a sheen
-                                    Behavior on color { ColorAnimation { duration: 300 } }
+                                    Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                                 }
                             }
                         }

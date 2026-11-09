@@ -134,7 +134,7 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(200); easing.type: Easing.InOutQuad } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"

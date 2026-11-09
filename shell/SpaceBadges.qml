@@ -179,9 +179,9 @@ Scope {
             Connections { target: root; function onResetCorners() { badge.right = false; } }
             SequentialAnimation {
                 id: hop
-                NumberAnimation { target: face; property: "opacity"; to: 0; duration: 90; easing.type: Easing.InQuad }
+                NumberAnimation { target: face; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
                 ScriptAction { script: badge.shownRight = badge.right }
-                NumberAnimation { target: face; property: "opacity"; to: 1; duration: 140; easing.type: Easing.OutQuad }
+                NumberAnimation { target: face; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
             }
 
             screen: g ? g.screen : null
@@ -203,7 +203,7 @@ Scope {
             // ends, before the fade could run
             property real reveal: 0
             Component.onCompleted: reveal = root.settling ? 0 : 1
-            NumberAnimation { id: fadeIn; target: badge; property: "reveal"; to: 1; duration: 220; easing.type: Easing.OutQuad }
+            NumberAnimation { id: fadeIn; target: badge; property: "reveal"; to: 1; duration: Config.ms(220); easing.type: Easing.OutQuad }
             Connections {
                 target: root
                 function onSettlingChanged() {

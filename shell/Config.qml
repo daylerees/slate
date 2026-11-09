@@ -582,6 +582,16 @@ Singleton {
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).
     readonly property bool glass: s.glass
+
+    // ---- Slate's own animations -----------------------------------------------------------
+    // They follow Settings → Appearance → Animations, as Hyprland's do: Fast halves them, Off
+    // makes them instant. Every animation in Slate takes its time from here:
+    //   NumberAnimation { duration: Config.ms(200) }
+    // except motion that's the point of the thing (the screensaver's drift, busy spinners, a
+    // notification's countdown) and scrolling's glide
+    readonly property real animScale: s.animations === "off" ? 0 : s.animations === "fast" ? 0.5 : 1
+    readonly property bool animate: animScale > 0
+    function ms(t) { return Math.round(Number(t) * animScale); }
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))
     // A surface's colour: as it is, or see-through with glass
     function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }

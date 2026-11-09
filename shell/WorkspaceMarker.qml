@@ -34,7 +34,7 @@ Item {
         const cur = along;
         glide.stop();
         from = cur; to = target; p = 0;
-        glide.duration = 380 + Math.min(Math.abs(target - cur) / step, 6) * 30;
+        glide.duration = Config.ms(380 + Math.min(Math.abs(target - cur) / step, 6) * 30);
         glide.start();
     }
     function jump(i) {
