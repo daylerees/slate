@@ -57,7 +57,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Workspace overview | Super+Down, large live cards, reorder with Shift | `WorkspaceOverview.qml` |
 | Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml` |
 | On-screen indicators | Volume, mic, brightness, keyboard backlight, workspace dots (Super+Left/Right) | `OSD.qml` |
-| Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, about, debug (login screen resync, log detail, exporting logs for bug reports) | `SettingsWindow.qml`, `bin/slate-logs` |
+| Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, about, debug (login screen resync, log detail, exporting logs for bug reports, factory reset) | `SettingsWindow.qml`, `bin/slate-logs`, `bin/slate-factory-reset` |
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
 | Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
 | Screensaver | Clock on drifting wallpaper, wallpaper slideshow or clock on black; starts before the lock, optional lock on wake (Settings → Screensaver; `slate ipc call screensaver start`) | `Screensaver.qml` |

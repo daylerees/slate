@@ -83,6 +83,7 @@ Singleton {
         ["Connected Bluetooth devices", "bar", "bluetooth count number devices"],
         ["Tuck the tray away", "bar", "tray collapse hide icons system tray expand"],
         ["Tuck the status icons away", "bar", "status collapse hide wifi volume battery bluetooth notifications expand button"],
+        ["Factory reset", "debug", "reset defaults start over wipe erase fresh install restore clear everything"],
         ["Wi-Fi network name", "bar", "values text beside icons network name ssid"],
         ["Volume percentage", "bar", "values text beside icons volume number"],
         ["Battery percentage", "bar", "values text beside icons battery number"],

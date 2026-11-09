@@ -500,8 +500,9 @@ FloatingWindow {
             Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it
             Keys.onEscapePressed: win.cancelConfirm()
-            Keys.onReturnPressed: confirmYes.clicked()
-            Keys.onEnterPressed: confirmYes.clicked()
+            // Enter confirms, except for something that can't be taken back (a red button)
+            Keys.onReturnPressed: if (!confirmYes.destructive) confirmYes.clicked()
+            Keys.onEnterPressed: if (!confirmYes.destructive) confirmYes.clicked()
             Column {
                 id: confirmCol
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
@@ -527,7 +528,9 @@ FloatingWindow {
                     Button { label: "Cancel"; onClicked: win.cancelConfirm() }
                     Button {
                         id: confirmYes
-                        label: resetConfirm.q ? resetConfirm.q.button : "Restore defaults"; primary: true
+                        label: resetConfirm.q ? resetConfirm.q.button : "Restore defaults"
+                        destructive: !!(resetConfirm.q && resetConfirm.q.destructive)
+                        primary: !destructive
                         onClicked: {
                             if (win.ask) { const run = win.ask.run; win.closeConfirm(); run(); }
                             else { Config.resetKeys(win.currentKeys); win.closeConfirm(); win.countChanged(); }
@@ -4813,6 +4816,30 @@ FloatingWindow {
                         spacing: 8
                         Button { visible: exportRow.saved !== ""; label: "Show"; onClicked: Quickshell.execDetached(["xdg-open", exportRow.saved.substring(0, exportRow.saved.lastIndexOf("/"))]) }
                         Button { label: "Export"; onClicked: { exportRow.saved = ""; exportRow.status = "Saving…"; exportRun.running = true; } }
+                    }
+                }
+            }
+            GroupLabel { text: "Start over" }
+            Group {
+                SettingRow {
+                    label: "Factory reset"
+                    detail: "Puts Slate back as it was when first installed: every setting to its default, and your dock pins, "
+                        + "saved Spaces, launcher history, notifications, clipboard history, display layout and app theming "
+                        + "forgotten. Everything is kept in a backup folder (~/.local/share/slate/backups). Your own files in "
+                        + "~/.config/slate/hypr and user/ aren't touched"
+                    Button {
+                        label: "Reset…"
+                        destructive: true
+                        onClicked: win.ask = {
+                            title: "Reset Slate?",
+                            body: "Every setting goes back to its default, and Slate forgets your dock pins, saved Spaces, launcher "
+                                + "history, notifications, clipboard history, display layout and app theming. Slate restarts and "
+                                + "the welcome tour opens; your apps and windows stay open. A copy of everything is kept in "
+                                + "~/.local/share/slate/backups.",
+                            button: "Reset Slate",
+                            destructive: true,
+                            run: () => Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("bin/slate-factory-reset")])
+                        }
                     }
                 }
             }

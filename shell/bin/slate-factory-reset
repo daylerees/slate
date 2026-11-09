@@ -1,0 +1,27 @@
+#!/bin/sh
+# Puts Slate back as it was when first installed (Settings → Debug → Factory reset): every
+# setting back to its default, and everything Slate remembers forgotten (dock pins, launcher
+# history, notifications, clipboard history, saved Spaces, the display layout, app theming).
+# Nothing is deleted: it's all moved into a dated folder in ~/.local/share/slate/backups, so it
+# can be put back by hand. Your own files (hypr/*.lua, user/shell.qml) aren't touched.
+#
+# Slate is stopped first, so it can't write its settings straight back, and started again
+# afterwards. Prints the backup folder.
+set -u
+SLATE_DIR=$(cd "$(dirname "$0")/.." && pwd)
+state="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
+share="${XDG_DATA_HOME:-$HOME/.local/share}/slate"
+backup="$share/backups/factory-reset-$(date +%Y-%m-%d-%H%M%S)"
+mkdir -p "$backup/state" || exit 1
+
+"$SLATE_DIR/bin/slate" stop
+sleep 0.3
+
+[ -e "$SLATE_DIR/settings.json" ] && mv "$SLATE_DIR/settings.json" "$backup/"
+[ -e "$share/spaces.json" ] && mv "$share/spaces.json" "$backup/"
+[ -d "$state" ] && find "$state" -mindepth 1 -maxdepth 1 -exec mv -t "$backup/state/" {} +
+
+# Hyprland drops the display layout, title bar colours and shortcut set Slate had written
+hyprctl reload >/dev/null 2>&1
+"$SLATE_DIR/bin/slate" start
+echo "$backup"
