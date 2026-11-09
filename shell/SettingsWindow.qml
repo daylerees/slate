@@ -397,11 +397,161 @@ FloatingWindow {
             color: Config.tint("#151920")
 
             id: contentPane
-            // Header: the page's title and the close button; the page scrolls beneath it
+            // Header: a search across every setting (on each page but All Settings, which has its
+            // own), then the page's title; the close button sits top right. The page scrolls beneath
             Item {
                 id: header
                 z: 2
                 anchors { top: parent.top; left: parent.left; right: parent.right }
+                height: titleRow.height + (pageSearch.visible ? pageSearch.height + 14 : 0)
+
+                // ---- Search every setting (SettingsIndex), from any page -------------------
+                Rectangle {
+                    id: pageSearch
+                    visible: win.section !== "overview"
+                    // Level with the close button (top right), and clear of it
+                    anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 10 : 58 }
+                    height: 36; radius: 10
+                    // Flat: a faint fill and no sheen, so it stays quiet above the page
+                    color: Qt.rgba(win.text.r, win.text.g, win.text.b, 0.06)
+                    border.width: pageFind.activeFocus ? 1 : 0; border.color: win.accent
+                    readonly property var found: pageFind.text.trim() === "" ? [] : SettingsIndex.search(pageFind.text, 8)
+                    property int pick: 0
+                    onFoundChanged: pick = 0
+                    function open(e) {
+                        if (!e) return;
+                        pageFind.text = "";
+                        pageFind.focus = false;
+                        win.goTo(e.page, e.label);
+                    }
+                    // A fresh search on each page, and each time Settings opens
+                    Connections {
+                        target: win
+                        function onSectionChanged() { pageFind.text = ""; }
+                        function onVisibleChanged() { pageFind.text = ""; }
+                    }
+                    Text {
+                        id: pageFindIcon
+                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        text: win.glyph(0xEB1C)
+                        color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
+                    }
+                    TextInput {
+                        id: pageFind
+                        anchors { left: pageFindIcon.right; leftMargin: 8; right: pageFindClear.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        color: win.text; font.family: win.font; font.pixelSize: 13
+                        selectionColor: win.accent; selectedTextColor: win.accentText
+                        clip: true
+                        Keys.onPressed: e => {
+                            const f = pageSearch.found;
+                            if (e.key === Qt.Key_Down) { pageSearch.pick = Math.min(f.length - 1, pageSearch.pick + 1); e.accepted = true; }
+                            else if (e.key === Qt.Key_Up) { pageSearch.pick = Math.max(0, pageSearch.pick - 1); e.accepted = true; }
+                            else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) { pageSearch.open(f[pageSearch.pick]); e.accepted = true; }
+                            else if (e.key === Qt.Key_Escape) { if (text !== "") text = ""; else focus = false; e.accepted = true; }
+                        }
+                        Text {
+                            visible: pageFind.text === ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Search settings"
+                            color: win.dim; font: pageFind.font
+                        }
+                    }
+                    HoverHandler { cursorShape: Qt.IBeamCursor }
+                    TapHandler { onTapped: pageFind.forceActiveFocus() }
+                    Text {
+                        id: pageFindClear
+                        visible: pageFind.text !== ""
+                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        text: win.glyph(0xEB55)
+                        color: pageFindClearHover.hovered ? win.text : win.dim
+                        font.family: win.bar.iconFont; font.pixelSize: 15
+                        HoverHandler { id: pageFindClearHover }
+                        ClickTap { onTapped: { pageFind.text = ""; pageFind.forceActiveFocus(); } }
+                    }
+
+                    // Results, over the page while typing
+                    Rectangle {
+                        id: pageHits
+                        visible: pageFind.activeFocus && pageFind.text.trim() !== ""
+                        anchors { top: parent.bottom; topMargin: 6; left: parent.left; right: parent.right }
+                        height: pageHitsCol.implicitHeight + 8
+                        radius: 12
+                        // Solid, so the page under it doesn't show through the results
+                        color: Config.tint("#151920")
+                        border.width: 1; border.color: Config.tint("#2a313c")
+                        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
+                        Column {
+                            id: pageHitsCol
+                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 }
+                            Text {
+                                visible: pageSearch.found.length === 0
+                                width: parent.width
+                                topPadding: 10; bottomPadding: 10; leftPadding: 12
+                                text: "No settings match “" + pageFind.text.trim() + "”"
+                                color: win.dim; font.family: win.font; font.pixelSize: 13
+                                elide: Text.ElideRight
+                            }
+                            Repeater {
+                                model: pageSearch.found
+                                delegate: Rectangle {
+                                    id: pageHit
+                                    required property var modelData
+                                    required property int index
+                                    readonly property bool chosen: index === pageSearch.pick
+                                    width: parent.width; height: pageHitCol.implicitHeight + 14
+                                    radius: 9
+                                    color: chosen ? Config.tint("#262c35") : pageHitHover.hovered ? Config.hover : "transparent"
+                                    Text {
+                                        id: pageHitIcon
+                                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                        text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
+                                        color: pageHit.chosen ? win.accent : win.dim
+                                        font.family: win.bar.iconFont; font.pixelSize: 16
+                                    }
+                                    Column {
+                                        id: pageHitCol
+                                        anchors { left: pageHitIcon.right; leftMargin: 10; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                        spacing: 1
+                                        Text {
+                                            width: parent.width
+                                            text: pageHit.modelData.label
+                                            color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: (SettingsIndex.pageNames[pageHit.modelData.page] || "")
+                                                + (pageHit.modelData.group && pageHit.modelData.group !== pageHit.modelData.label ? " → " + pageHit.modelData.group : "")
+                                                + (pageHit.modelData.detail ? " · " + pageHit.modelData.detail : "")
+                                            color: win.dim; font.family: win.font; font.pixelSize: 11
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    HoverHandler { id: pageHitHover; onHoveredChanged: if (hovered) pageSearch.pick = pageHit.index }
+                                    ClickTap { onTapped: pageSearch.open(pageHit.modelData) }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Restore defaults: only on pages with settings, and only when something's changed.
+                // On the top row, between the search and the close button
+                Button {
+                    id: resetBtn
+                    compactLabel: win.compact
+                    anchors { right: parent.right; rightMargin: 58; top: pageSearch.top }
+                    height: pageSearch.height; radius: pageSearch.radius     // matches the search beside it
+                    visible: win.currentKeys.length > 0
+                    opacity: win.changedHere > 0 ? 1 : 0.45
+                    icon: 0xEB77
+                    label: "Restore defaults"
+                    onClicked: if (win.changedHere > 0) win.confirmReset = true
+                }
+
+                Item {
+                id: titleRow
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height: 66
                 // Back to All Settings, from a page opened there
                 Rectangle {
@@ -422,28 +572,19 @@ FloatingWindow {
                     ClickTap { onTapped: win.section = "overview" }
                 }
                 Text {
-                    anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.left; rightMargin: 12; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
+                    anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                     text: win.pageTitle
                     color: win.text
                     font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
-                // Restore defaults: only on pages with settings, and only when something's changed
-                Button {
-                    id: resetBtn
-                    compactLabel: win.compact
-                    anchors { right: parent.right; rightMargin: 58; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }   // clear of the close button
-                    visible: win.currentKeys.length > 0
-                    opacity: win.changedHere > 0 ? 1 : 0.45
-                    icon: 0xEB77
-                    label: "Restore defaults"
-                    onClicked: if (win.changedHere > 0) win.confirmReset = true
                 }
             }
             Rectangle {
                 id: closeBtn
                 z: 3
-                anchors { right: parent.right; rightMargin: 14; verticalCenter: header.verticalCenter }
+                // Top right, in the same place on every page (beside the search, or All Settings' title)
+                anchors { right: parent.right; rightMargin: 14; top: header.top; topMargin: 16 }
                 width: 34; height: 34; radius: 17
                 color: closeHover.hovered ? Config.hover : "transparent"
                 Gloss { radius: parent.radius; opacity: (closeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
