@@ -36,6 +36,7 @@ ShellRoot {
     // time: opening one closes the others
     Launcher {
         id: appLauncher
+        notifs: notifs
         onShownChanged: if (shown) { winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)

@@ -249,7 +249,9 @@ FloatingWindow {
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
-        launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
+        launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
+            "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
+            "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
@@ -2600,6 +2602,77 @@ FloatingWindow {
                     label: "Most used first"
                     detail: "Order apps by how often you open them (after how well they match your search)"
                     key: "launcherSortByUsage"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Recent apps first"
+                    detail: "Before you type: the apps you opened most recently, at the top"
+                    key: "launcherRecent"
+                }
+            }
+            GroupLabel { text: "What it finds" }
+            Group {
+                ToggleSetting {
+                    label: "Forgiving search"
+                    detail: "Initials and small slips find apps too: gc for GNOME Calculator, fierfox for Firefox"
+                    key: "launcherFuzzy"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Open windows"
+                    detail: "Type part of a window's title to go to it, wherever it is"
+                    key: "launcherWindows"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "App actions"
+                    detail: "What apps offer besides opening, like Firefox's New Private Window"
+                    key: "launcherActions"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Quick toggles"
+                    detail: "Wi-Fi, Bluetooth, Do Not Disturb, night light and game mode, switched from the results"
+                    key: "launcherToggles"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Files and folders"
+                    detail: "Files you opened recently, and folders in your home by name"
+                    key: "launcherFiles"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Conversions"
+                    detail: "Units and dates beside the calculator: 5 km in miles, 72 f to c, today + 30 days"
+                    key: "launcherConvert"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Run commands"
+                    detail: "Start with > to run a command, in a terminal or on its own"
+                    key: "launcherCommands"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Emoji"
+                    detail: "Start with : to find an emoji by name (:smile); Enter copies it"
+                    key: "launcherEmoji"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Search the web"
+                    detail: "A last result that searches the web for what you typed"
+                    key: "launcherWeb"
+                }
+                Separator { visible: Config.s.launcherWeb }
+                DropdownSetting {
+                    visible: Config.s.launcherWeb
+                    label: "Search engine"
+                    options: [{ value: "duckduckgo", label: "DuckDuckGo" }, { value: "google", label: "Google" }, { value: "bing", label: "Bing" },
+                              { value: "brave", label: "Brave Search" }, { value: "startpage", label: "Startpage" }, { value: "ecosia", label: "Ecosia" }]
+                    value: Config.s.launcherSearchEngine
+                    onPicked: v => Config.s.launcherSearchEngine = v
                 }
             }
         }

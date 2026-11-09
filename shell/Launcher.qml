@@ -8,6 +8,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Networking
+import Quickshell.Bluetooth
 
 PanelWindow {
     id: root
@@ -49,6 +51,7 @@ PanelWindow {
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
 
     // ---- Open / close ------------------------------------------------------
+    property var notifs: null            // Notifications (for the Do Not Disturb toggle), from shell.qml
     property bool shown: false
     property real openedAt: 0
     property bool slideHighlight: false
@@ -146,7 +149,34 @@ PanelWindow {
         if (name.includes(q)) return 2;
         const extra = [a.genericName, a.comment, a.id, (a.keywords || []).join(" ")].join(" ").toLowerCase();
         if (extra.includes(q)) return 3;
+        return Config.s.launcherFuzzy ? fuzzyScore(name, q) : -1;
+    }
+
+    // ---- Forgiving search (Settings → Launcher → Forgiving search) ---------------------
+    // Initials ("gc" → GNOME Calculator, "vsc" → Visual Studio Code) and a slip or two in a
+    // word ("fierfox" → Firefox): after every exact match
+    function fuzzyScore(name, q) {
+        const words = name.split(/[\s\-_.]+/).filter(w => w !== "");
+        if (q.length >= 2 && words.map(w => w[0]).join("").startsWith(q)) return 4;
+        if (q.length >= 4) {
+            const allowed = q.length >= 8 ? 2 : 1;
+            for (const w of words)
+                if (w.length >= q.length - 1 && editDistance(w.slice(0, q.length), q) <= allowed) return 5;
+        }
         return -1;
+    }
+    // How many letters differ between two words (a swap of neighbours counts as one)
+    function editDistance(a, b) {
+        const d = [];
+        for (let i = 0; i <= a.length; i++) { d.push([i]); }
+        for (let j = 1; j <= b.length; j++) d[0][j] = j;
+        for (let i = 1; i <= a.length; i++)
+            for (let j = 1; j <= b.length; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+                if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+            }
+        return d[a.length][b.length];
     }
     // ---- Calculator ----------------------------------------------------------
     // When the search contains a maths operator and reads as a sum, the answer
@@ -215,7 +245,268 @@ PanelWindow {
         return v === null ? null : { calc: true, id: "", name: formatNumber(v), expr: search.text.trim() };
     }
 
-    readonly property var results: (calcResult ? [calcResult] : []).concat(appResults, settingResults)
+    // What's typed, and what kind of search it is: "> command" runs it, ":name" finds emoji,
+    // anything else searches everything (each part can be switched off in Settings → Launcher)
+    readonly property string query: search.text.trim()
+    readonly property string mode: query.startsWith(">") && Config.s.launcherCommands ? "command"
+        : query.startsWith(":") && Config.s.launcherEmoji ? "emoji" : "normal"
+    readonly property var results: mode === "command" ? commandResults
+        : mode === "emoji" ? emojiResults
+        : (calcResult ? [calcResult] : []).concat(convertResult ? [convertResult] : [], appResults, actionResults,
+            windowResults, toggleResults, settingResults, fileResults, webResults)
+
+    // ---- App actions (Settings → Launcher → App actions) -------------------------------
+    // What an app offers besides opening (Firefox's New Private Window and so on): its own
+    // when its name is typed, or found by name ("private")
+    readonly property var actionResults: {
+        const q = query.toLowerCase();
+        if (mode !== "normal" || !Config.s.launcherActions || q.length < 2) return [];
+        const out = [];
+        for (const a of apps) {
+            if (!a.actions || a.actions.length === 0) continue;
+            const ofApp = a.name.toLowerCase().startsWith(q);
+            for (const act of a.actions) {
+                const n = (act.name || "").toLowerCase();
+                if (!ofApp && !n.includes(q)) continue;
+                out.push({ kind: "appaction", id: a.id, name: act.name, comment: a.name, run: () => act.execute() });
+                if (out.length >= 6) return out;
+            }
+        }
+        return out;
+    }
+
+    // ---- Open windows (Settings → Launcher → Open windows) -----------------------------
+    // A window by its title (or its app's name): Enter goes to it, wherever it is
+    readonly property var windowResults: {
+        const q = query.toLowerCase();
+        if (mode !== "normal" || !Config.s.launcherWindows || q.length < 2) return [];
+        const out = [];
+        for (const t of ToplevelManager.toplevels.values) {
+            const e = Config.appEntry(t.appId);
+            const appName = e ? e.name : (t.appId || "");
+            if (!((t.title || "") + " " + appName).toLowerCase().includes(q)) continue;
+            out.push({ kind: "window", id: e ? e.id : (t.appId || ""), name: t.title || appName,
+                comment: "Open window · " + appName, run: () => t.activate() });
+            if (out.length >= 5) break;
+        }
+        return out;
+    }
+
+    // ---- Quick toggles (Settings → Launcher → Quick toggles) ---------------------------
+    // Wi-Fi, Bluetooth, Do Not Disturb, night light and game mode, switched from the results
+    readonly property var toggles: [
+        { name: "Wi-Fi", words: "wifi wi-fi wireless network internet", icon: 0xEB52,
+          on: () => Networking.wifiEnabled, set: v => Networking.wifiEnabled = v, can: () => true },
+        { name: "Bluetooth", words: "bluetooth bt wireless", icon: 0xEA37,
+          on: () => !!Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled,
+          set: v => { if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = v; }, can: () => !!Bluetooth.defaultAdapter },
+        { name: "Do Not Disturb", words: "dnd do not disturb notifications quiet silence focus", icon: 0xECE9,
+          on: () => !!root.notifs && root.notifs.dnd, set: v => { if (root.notifs) root.notifs.dnd = v; }, can: () => !!root.notifs },
+        { name: "Night Light", words: "night light nightlight warm blue light", icon: 0xEAF8,
+          on: () => Config.s.nightLight, set: v => Config.s.nightLight = v, can: () => true },
+        { name: "Game Mode", words: "game gaming mode performance", icon: 0xF1D2,
+          on: () => Config.s.gameMode, set: v => Config.setGameMode(v), can: () => true }
+    ]
+    readonly property var toggleResults: {
+        const q = query.toLowerCase();
+        if (mode !== "normal" || !Config.s.launcherToggles || q.length < 2) return [];
+        return toggles.filter(t => t.can() && (t.name.toLowerCase().includes(q) || t.words.split(" ").some(w => w.startsWith(q))))
+            .map(t => {
+                const on = t.on();
+                return { kind: "toggle", toggleOn: on, icon: t.icon, name: t.name,
+                    comment: (on ? "On" : "Off") + " · Enter to turn it " + (on ? "off" : "on"), run: () => t.set(!on) };
+            });
+    }
+
+    // ---- Files and folders (Settings → Launcher → Files and folders) -------------------
+    // Files you opened recently (the desktop's own list, which most apps add to) and folders
+    // in your home by name (up to three deep, not hidden ones)
+    property var recentFiles: []
+    FileView {
+        path: Config.s.launcherFiles ? (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/recently-used.xbel" : ""
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            const out = [], seen = new Set();
+            const re = /<bookmark\s+href="file:\/\/([^"]+)"[^>]*?modified="([^"]+)"/g;
+            const found = [];
+            let m;
+            const t = text();
+            while ((m = re.exec(t)) !== null) found.push({ path: decodeURIComponent(m[1]), when: m[2] });
+            found.sort((a, b) => a.when < b.when ? 1 : -1);
+            for (const f of found) if (!seen.has(f.path)) { seen.add(f.path); out.push(f.path); if (out.length >= 200) break; }
+            root.recentFiles = out;
+        }
+    }
+    property var foundFolders: []
+    Process {
+        id: folderFind
+        stdout: StdioCollector { onStreamFinished: root.foundFolders = text.split("\n").filter(l => l !== "") }
+    }
+    // Looked for a moment after typing stops (find, standard everywhere)
+    Timer {
+        id: folderSoon
+        interval: 180
+        onTriggered: {
+            const q = root.query.replace(/[*?\[\]\\]/g, "");
+            if (q.length < 2) { root.foundFolders = []; return; }
+            folderFind.running = false;
+            folderFind.command = ["sh", "-c", 'find "$HOME" -mindepth 1 -maxdepth 3 -type d -not -path "*/.*" -iname "*$1*" 2>/dev/null | head -n 4', "sh", q];
+            folderFind.running = true;
+        }
+    }
+    onQueryChanged: if (Config.s.launcherFiles && mode === "normal") folderSoon.restart()
+    function fileGlyph(path, dir) {
+        if (dir) return 0xEAAD;
+        const ext = (path.split(".").pop() || "").toLowerCase();
+        if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "avif", "svg"].includes(ext)) return 0xEB0A;
+        if (ext === "pdf") return 0xFB10;
+        if (["zip", "tar", "gz", "xz", "bz2", "zst", "7z", "rar"].includes(ext)) return 0xED4E;
+        if (["mp3", "flac", "ogg", "opus", "wav", "m4a"].includes(ext)) return 0xEAFC;
+        if (["mp4", "mkv", "webm", "mov", "avi"].includes(ext)) return 0xEAFA;
+        return 0xEAA2;
+    }
+    function shortPath(p) { const h = Quickshell.env("HOME"); return p.startsWith(h) ? "~" + p.slice(h.length) : p; }
+    readonly property var fileResults: {
+        const q = query.toLowerCase();
+        if (mode !== "normal" || !Config.s.launcherFiles || q.length < 2) return [];
+        const out = [];
+        for (const f of recentFiles) {
+            const base = f.split("/").pop();
+            if (!base.toLowerCase().includes(q)) continue;
+            out.push({ kind: "file", icon: fileGlyph(f, false), name: base, comment: "Recent · " + shortPath(f),
+                run: () => Qt.openUrlExternally("file://" + f) });
+            if (out.length >= 4) break;
+        }
+        for (const d of foundFolders)
+            out.push({ kind: "file", icon: 0xEAAD, name: d.split("/").pop(), comment: "Folder · " + shortPath(d),
+                run: () => Qt.openUrlExternally("file://" + d) });
+        return out;
+    }
+
+    // ---- Run a command (Settings → Launcher → Run commands): "> command" ---------------
+    readonly property var commandResults: {
+        const cmd = query.slice(1).trim();
+        if (cmd === "") return [{ kind: "hint", icon: 0xEBEF, name: "Type a command to run", comment: "In a terminal, or on its own" }];
+        const q = s => "'" + s.replace(/'/g, "'\\''") + "'";
+        // In the terminal the shortcuts use (TERMINAL, Hyprland's variable), kept open after
+        const inTerminal = cmd + "; printf '\\n[finished: press Enter to close]'; read _";
+        return [
+            { kind: "command", icon: 0xEBEF, name: cmd, comment: "Run in a terminal",
+              run: () => Quickshell.execDetached(["hyprctl", "dispatch",
+                  "function() hl.exec_cmd(TERMINAL .. [==[ -e sh -c ]==] .. [==[" + q(inTerminal) + "]==]) end"]) },
+            { kind: "command", icon: 0xEBEF, name: cmd, comment: "Run on its own (no terminal)",
+              run: () => Quickshell.execDetached(["sh", "-c", cmd]) }
+        ];
+    }
+
+    // ---- Search the web (Settings → Launcher → Search the web) -------------------------
+    readonly property var searchEngines: ({
+        duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
+        google: { name: "Google", url: "https://www.google.com/search?q=" },
+        bing: { name: "Bing", url: "https://www.bing.com/search?q=" },
+        brave: { name: "Brave Search", url: "https://search.brave.com/search?q=" },
+        startpage: { name: "Startpage", url: "https://www.startpage.com/do/search?q=" },
+        ecosia: { name: "Ecosia", url: "https://www.ecosia.org/search?q=" }
+    })
+    readonly property var webResults: {
+        if (mode !== "normal" || !Config.s.launcherWeb || query.length < 2) return [];
+        const e = searchEngines[Config.s.launcherSearchEngine] || searchEngines.duckduckgo;
+        const q = query;
+        return [{ kind: "web", icon: 0xF9E7, name: "Search the web for “" + q + "”", comment: e.name,
+            run: () => Qt.openUrlExternally(e.url + encodeURIComponent(q)) }];
+    }
+
+    // ---- Emoji (Settings → Launcher → Emoji): ":name" -----------------------------------
+    // The emoji picker's list (data/emoji.json), read the first time it's wanted
+    property var emojiList: []
+    FileView {
+        path: root.mode === "emoji" || root.emojiList.length > 0 ? Quickshell.shellPath("data/emoji.json") : ""
+        onLoaded: { try { root.emojiList = JSON.parse(text()); } catch (e) {} }
+    }
+    readonly property var emojiResults: {
+        const q = query.slice(1).trim().toLowerCase();
+        if (q === "") return [{ kind: "hint", icon: 0xEAF7, name: "Type a name, like :smile", comment: "Enter copies the emoji" }];
+        const starts = [], within = [];
+        for (const e of emojiList) {
+            const name = e[1].toLowerCase();
+            if (name.startsWith(q) || name.split(" ").some(w => w.startsWith(q))) starts.push(e);
+            else if ((e[2] || "").includes(q)) within.push(e);
+            if (starts.length >= 40) break;
+        }
+        return starts.concat(within).slice(0, 40).map(e => ({ kind: "emoji", emoji: e[0], name: e[1], comment: "Enter to copy",
+            run: () => Quickshell.execDetached(["wl-copy", e[0]]) }));
+    }
+
+    // ---- Conversions (Settings → Launcher → Conversions) -------------------------------
+    // "5 km in miles", "72 f to c", "2 gb in mib", "today + 30 days": shown like a sum, Enter copies
+    readonly property var unitTable: ({
+        // length (metres)
+        mm: ["length", 0.001], cm: ["length", 0.01], m: ["length", 1], metre: ["length", 1], meter: ["length", 1], km: ["length", 1000],
+        in: ["length", 0.0254], inch: ["length", 0.0254], ft: ["length", 0.3048], foot: ["length", 0.3048], feet: ["length", 0.3048],
+        yd: ["length", 0.9144], yard: ["length", 0.9144], mi: ["length", 1609.344], mile: ["length", 1609.344],
+        // mass (kilograms)
+        mg: ["mass", 1e-6], g: ["mass", 0.001], gram: ["mass", 0.001], kg: ["mass", 1], kilo: ["mass", 1], t: ["mass", 1000], tonne: ["mass", 1000],
+        oz: ["mass", 0.028349523125], ounce: ["mass", 0.028349523125], lb: ["mass", 0.45359237], lbs: ["mass", 0.45359237], pound: ["mass", 0.45359237],
+        st: ["mass", 6.35029318], stone: ["mass", 6.35029318],
+        // volume (litres)
+        ml: ["volume", 0.001], cl: ["volume", 0.01], l: ["volume", 1], litre: ["volume", 1], liter: ["volume", 1],
+        tsp: ["volume", 0.00492892159], tbsp: ["volume", 0.0147867648], floz: ["volume", 0.0295735296], cup: ["volume", 0.2365882365],
+        pt: ["volume", 0.473176473], pint: ["volume", 0.473176473], qt: ["volume", 0.946352946], quart: ["volume", 0.946352946],
+        gal: ["volume", 3.785411784], gallon: ["volume", 3.785411784],
+        // speed (metres a second)
+        kph: ["speed", 1 / 3.6], kmh: ["speed", 1 / 3.6], mph: ["speed", 0.44704], knot: ["speed", 0.514444], kn: ["speed", 0.514444], mps: ["speed", 1],
+        // data (bytes)
+        b: ["data", 1], byte: ["data", 1], kb: ["data", 1e3], mb: ["data", 1e6], gb: ["data", 1e9], tb: ["data", 1e12],
+        kib: ["data", 1024], mib: ["data", 1048576], gib: ["data", 1073741824], tib: ["data", 1099511627776],
+        // time (seconds)
+        ms: ["time", 0.001], s: ["time", 1], sec: ["time", 1], second: ["time", 1], min: ["time", 60], minute: ["time", 60],
+        h: ["time", 3600], hr: ["time", 3600], hour: ["time", 3600], day: ["time", 86400], week: ["time", 604800], year: ["time", 31557600],
+        // temperature (worked out on its own)
+        c: ["temp", 0], celsius: ["temp", 0], f: ["temp", 0], fahrenheit: ["temp", 0], k: ["temp", 0], kelvin: ["temp", 0]
+    })
+    function unitOf(word) {
+        const w = word.toLowerCase().replace(/°/g, "").replace(/\s+/g, "");
+        return unitTable[w] ? w : (w.endsWith("s") && unitTable[w.slice(0, -1)] ? w.slice(0, -1) : (w.endsWith("es") && unitTable[w.slice(0, -2)] ? w.slice(0, -2) : ""));
+    }
+    function convert(text) {
+        // A date: today / now / tomorrow / yesterday plus or minus days, weeks, months or years
+        const d = /^(today|now|tomorrow|yesterday)(?:\s*([+-])\s*(\d+)\s*(day|week|month|year)s?)?$/i.exec(text);
+        if (d && (d[2] || d[1].toLowerCase() !== "today")) {
+            const t = new Date();
+            const base = d[1].toLowerCase();
+            if (base === "tomorrow") t.setDate(t.getDate() + 1);
+            if (base === "yesterday") t.setDate(t.getDate() - 1);
+            if (d[2]) {
+                const n = parseInt(d[3]) * (d[2] === "-" ? -1 : 1), u = d[4].toLowerCase();
+                if (u === "day") t.setDate(t.getDate() + n);
+                else if (u === "week") t.setDate(t.getDate() + 7 * n);
+                else if (u === "month") t.setMonth(t.getMonth() + n);
+                else t.setFullYear(t.getFullYear() + n);
+            }
+            return Qt.formatDate(t, "dddd d MMMM yyyy");
+        }
+        // Units: "<number> <unit> in|to <unit>"
+        const m = /^(-?[\d.,]+)\s*([a-zA-Z°]+(?:\s?[a-zA-Z]+)?)\s+(?:in|to|as|into)\s+([a-zA-Z°]+(?:\s?[a-zA-Z]+)?)$/i.exec(text);
+        if (!m) return null;
+        const v = parseFloat(m[1].replace(/,/g, ""));
+        const a = unitOf(m[2]), b = unitOf(m[3]);
+        if (isNaN(v) || !a || !b) return null;
+        const ua = unitTable[a], ub = unitTable[b];
+        if (ua[0] !== ub[0]) return null;
+        let r;
+        if (ua[0] === "temp") {
+            const k = a[0] === "c" ? v + 273.15 : a[0] === "f" ? (v - 32) * 5 / 9 + 273.15 : v;
+            r = b[0] === "c" ? k - 273.15 : b[0] === "f" ? (k - 273.15) * 9 / 5 + 32 : k;
+        } else r = v * ua[1] / ub[1];
+        return String(Number(r.toPrecision(6))) + " " + m[3].trim();       // six figures is plenty
+    }
+    readonly property var convertResult: {
+        if (mode !== "normal" || !Config.s.launcherConvert) return null;
+        const r = convert(query);
+        return r === null ? null : { calc: true, id: "", name: r, expr: query };
+    }
 
     // ---- Slate settings (after apps) ---------------------------------------------
     // Pages and individual settings (SettingsIndex), opening Settings at the setting
@@ -227,7 +518,13 @@ PanelWindow {
     }))
     readonly property var appResults: {
         const q = search.text.trim().toLowerCase();
-        if (q === "") return apps.slice().sort((x, y) => uses(y) - uses(x) || x.name.localeCompare(y.name));
+        if (q === "") {
+            const all = apps.slice().sort((x, y) => uses(y) - uses(x) || x.name.localeCompare(y.name));
+            if (!Config.s.launcherRecent) return all;
+            // The few opened most recently first (Settings → Launcher → Recent apps first)
+            const recent = all.filter(a => lastUsed[a.id]).sort((x, y) => lastUsed[y.id] - lastUsed[x.id]).slice(0, 4);
+            return recent.concat(all.filter(a => !recent.includes(a)));
+        }
         return apps.concat(sessionActions)
             .map(a => ({ a: a, s: score(a, q) }))
             .filter(x => x.s >= 0)
@@ -237,11 +534,12 @@ PanelWindow {
 
     // How often each app has been opened from here (for usage sorting)
     property var counts: ({})
+    property var lastUsed: ({})          // app id → when it was last opened from here (ms)
     FileView {
         id: usage
         path: Quickshell.env("HOME") + "/.local/state/slate/launcher.json"
         blockLoading: true
-        onLoaded: { try { root.counts = JSON.parse(text()).counts || {}; } catch (e) {} }
+        onLoaded: { try { const d = JSON.parse(text()); root.counts = d.counts || {}; root.lastUsed = d.last || {}; } catch (e) {} }
     }
     function uses(a) { return Config.s.launcherSortByUsage ? (counts[a.id] || 0) : 0; }
     // One more open of this entry, saved
@@ -249,11 +547,19 @@ PanelWindow {
         const updated = Object.assign({}, counts);
         updated[id] = (updated[id] || 0) + 1;
         counts = updated;
-        usage.setText(JSON.stringify({ counts: updated }, null, 1));
+        const last = Object.assign({}, lastUsed);
+        last[id] = Date.now();
+        lastUsed = last;
+        usage.setText(JSON.stringify({ counts: updated, last: last }, null, 1));
     }
 
     function launch(entry) {
-        if (!entry) return;
+        if (!entry || entry.kind === "hint") return;
+        if (entry.run) {           // a window, toggle, file, command, web search, emoji or app action
+            entry.run();
+            closeLauncher();
+            return;
+        }
         if (entry.calc) {          // calculator: copy the answer
             Quickshell.execDetached(["wl-copy", entry.name]);
             closeLauncher();
@@ -359,12 +665,12 @@ PanelWindow {
     readonly property string newTarget: '(newWorkspace and newWorkspace() or "emptym")'
     property string pendingTarget: newTarget
     function launchBeside(entry, dir) {
-        if (!entry || entry.calc || entry.setting || entry.action) return;
+        if (!entry || entry.calc || entry.setting || entry.action || entry.run) return;
         pendingTarget = "besideWorkspace(" + (dir > 0 ? 1 : -1) + ")";
         startNewWorkspaceLaunch(entry);
     }
     function launchOnNewWorkspace(entry) {
-        if (!entry || entry.calc || entry.setting || entry.action) return;
+        if (!entry || entry.calc || entry.setting || entry.action || entry.run) return;
         pendingTarget = newTarget;
         startNewWorkspaceLaunch(entry);
     }
@@ -463,7 +769,7 @@ PanelWindow {
 
             Text {
                 anchors { left: glass.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                text: "Search apps"
+                text: "Search apps, windows, files and more"
                 color: root.dimTextColor
                 font.family: root.fontFamily
                 font.pixelSize: 15
@@ -594,8 +900,12 @@ PanelWindow {
                 readonly property bool calc: !!modelData.calc
                 readonly property bool setting: !!modelData.setting
                 readonly property bool action: !!modelData.action
+                readonly property string kind: modelData.kind || ""
+                // An app's tile: apps, and a window or app action (their app's tile)
+                readonly property bool appTile: !calc && !setting && !action && (kind === "" || kind === "window" || kind === "appaction")
+                readonly property bool emojiTile: kind === "emoji"
                 // Rows drawn with an icon glyph rather than an app tile
-                readonly property bool glyphTile: (setting && !modelData.app) || action
+                readonly property bool glyphTile: (setting && !modelData.app) || action || (kind !== "" && !appTile && !emojiTile)
                 readonly property string tilePath: Config.tilePath(modelData.id)
                 readonly property string detail: calc ? modelData.expr + " · Enter to copy" : (modelData.genericName || modelData.comment || "")
                 readonly property bool selected: GridView.isCurrentItem
@@ -617,14 +927,14 @@ PanelWindow {
                     width: root.gridMode ? root.gridTile : root.tileSize; height: width
                     x: root.gridMode ? Math.round((parent.width - width) / 2) : 10
                     y: Math.round((parent.height - height) / 2)
-                    visible: !row.calc && !row.setting && !row.action
-                    source: row.calc || row.setting || row.action ? "" : "file://" + row.tilePath + "?v=" + row.version + "." + Config.tileVersion
+                    visible: row.appTile
+                    source: row.appTile ? "file://" + row.tilePath + "?v=" + row.version + "." + Config.tileVersion : ""
                     sourceSize: Qt.size(192, 192)
                     smooth: true
                     mipmap: true
                     asynchronous: true
                     layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                    onStatusChanged: if (!row.calc && !row.setting && !row.action && status === Image.Error && !gen.running && row.tried !== row.tilePath) { row.tried = row.tilePath; gen.running = true; }
+                    onStatusChanged: if (row.appTile && status === Image.Error && !gen.running && row.tried !== row.tilePath) { row.tried = row.tilePath; gen.running = true; }
                     // The tile behind, in the theme's colour. Solid on the highlight: with glass it's
                     // see-through, and the accent behind would show through it
                     IconPlate {
@@ -672,10 +982,26 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: row.glyphTile ? String.fromCodePoint(row.modelData.icon) : ""
                         // A setting's icon takes its page's colour in colourful mode, as in Settings
+                        // (a toggle in the accent while it's on, dim while it's off)
                         color: row.modelData.danger ? Config.tint("#f28b8b")
-                            : row.setting ? Config.pageColour(row.modelData.page) : root.accent
+                            : row.setting ? Config.pageColour(row.modelData.page)
+                            : row.kind === "toggle" && !row.modelData.toggleOn ? root.dimTextColor : root.accent
                         font.family: tabler.name
                         font.pixelSize: 19
+                    }
+                }
+                // Emoji: the emoji itself, on a tile like the glyphs'
+                Rectangle {
+                    visible: row.emojiTile
+                    anchors.fill: tile
+                    radius: 9
+                    color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
+                    border.width: 1; border.color: root.selectColor
+                    Text {
+                        anchors.centerIn: parent
+                        text: row.emojiTile ? row.modelData.emoji : ""
+                        font.family: "Noto Color Emoji"
+                        font.pixelSize: Math.round(parent.height * 0.6)
                     }
                 }
                 // Draw the tile if this app doesn't have one yet
@@ -692,7 +1018,8 @@ PanelWindow {
                     spacing: 2
                     Text {
                         width: parent.width
-                        text: row.calc ? "= " + row.modelData.name : root.capitalised(row.modelData.name)
+                        // (apps' names capitalised; a command, file or window's title as it is)
+                        text: row.calc ? "= " + row.modelData.name : row.kind === "" ? root.capitalised(row.modelData.name) : row.modelData.name
                         color: row.onAccent ? root.accentText : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: root.fontFamily
@@ -702,7 +1029,7 @@ PanelWindow {
                     }
                     Text {
                         width: parent.width
-                        visible: row.calc || row.setting || row.action || (Config.s.launcherDescriptions && row.detail !== "" && row.detail !== row.modelData.name)
+                        visible: row.calc || row.setting || row.action || row.kind !== "" || (Config.s.launcherDescriptions && row.detail !== "" && row.detail !== row.modelData.name)
                         text: row.calc ? row.detail : root.capitalised(row.detail)
                         color: row.onAccent ? Qt.rgba(root.accentText.r, root.accentText.g, root.accentText.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
@@ -743,7 +1070,8 @@ PanelWindow {
                 Text {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
-                    text: !nameStrip.item ? "" : nameStrip.item.calc ? "= " + nameStrip.item.name : root.capitalised(nameStrip.item.name)
+                    text: !nameStrip.item ? "" : nameStrip.item.calc ? "= " + nameStrip.item.name
+                        : !nameStrip.item.kind ? root.capitalised(nameStrip.item.name) : nameStrip.item.name
                     color: root.textColor
                     font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
                     elide: Text.ElideRight
@@ -783,7 +1111,7 @@ PanelWindow {
         Text {
             anchors.centerIn: list
             visible: list.count === 0
-            text: "No apps match"
+            text: "Nothing matches"
             color: root.dimTextColor
             font.family: root.fontFamily
             font.pixelSize: 14

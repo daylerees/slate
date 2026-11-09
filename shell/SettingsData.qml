@@ -168,6 +168,17 @@ JsonAdapter {
     property int launcherRows: 4               // grid: rows shown at once (more scroll)
     property bool launcherDescriptions: true
     property bool launcherSortByUsage: true
+    property bool launcherRecent: true         // the apps opened most recently first, before you type
+    property bool launcherFuzzy: true          // initials and small slips find apps too
+    property bool launcherWindows: true        // open windows, by title
+    property bool launcherActions: true        // apps' own actions (New Private Window…)
+    property bool launcherToggles: true        // Wi-Fi, Bluetooth, Do Not Disturb, night light, game mode
+    property bool launcherFiles: true          // recent files and folders in your home
+    property bool launcherConvert: true        // units and dates ("5 km in miles", "today + 30 days")
+    property bool launcherCommands: true       // "> command" runs it
+    property bool launcherEmoji: true          // ":name" finds emoji
+    property bool launcherWeb: true            // a last result to search the web
+    property string launcherSearchEngine: "duckduckgo"   // duckduckgo, google, bing, brave, startpage, ecosia
 
     // Switchers
     property bool switcherPreviews: true
