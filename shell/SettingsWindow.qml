@@ -2337,7 +2337,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Pointer speed"
-                    detail: "Slower to faster; 0 is the mouse's own speed"
+                    detail: ip.hasTouchpad ? "Mice only (the touchpad has its own speed below). Slower to faster; 0 is the mouse's own speed" : "Slower to faster; 0 is the mouse's own speed"
                     ValueSlider {
                         from: -100; to: 100; stepSize: 5
                         value: Math.round((Config.s.mouseSpeed >= -1 ? Config.s.mouseSpeed : (ip.cur["input:sensitivity"] || 0)) * 100)
