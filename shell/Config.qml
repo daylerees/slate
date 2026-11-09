@@ -725,17 +725,25 @@ Singleton {
         Quickshell.execDetached(["sh", "-c", "pw-play --volume=\"$1\" \"$0\" 2>/dev/null || paplay --volume=\"$2\" \"$0\"",
             Quickshell.shellPath("sounds/" + name + ".wav"), v.toFixed(2), String(Math.round(v * 65536))]);
     }
-    // Welcome sound when you log in: once per session (per start of Hyprland), not when Slate
-    // reloads or restarts. A marker in the runtime folder, named for this Hyprland instance,
-    // says it's played; a moment's wait lets the sound system come up at login. The login
-    // screen loads this file too but has no sounds/ (greeter/files), so it stays silent.
+    // Logging in: Slate fades in from black (FadeIn.qml) with the welcome sound, once per session
+    // (per start of Hyprland), not when Slate reloads or restarts. A marker in the runtime folder,
+    // named for this Hyprland instance, says it's happened. It's checked straight away so the
+    // screens are black from the start; a moment's wait lets the sound system come up, then the
+    // sound plays and the black fades. The login screen loads this file too but has no sounds/
+    // (greeter/files), so it stays silent and doesn't fade.
+    property bool welcoming: false      // black until welcomeFading, then fading out
+    property bool welcomeFading: false
     Process {
         id: welcomeCheck
+        running: true
         command: ["sh", "-c", '[ -e "$0" ] || exit 1; d="${XDG_RUNTIME_DIR:-/tmp}/slate"; f="$d/welcomed-${HYPRLAND_INSTANCE_SIGNATURE:-none}"; '
             + '[ -e "$f" ] && exit 1; mkdir -p "$d" && : > "$f"', Quickshell.shellPath("sounds/welcome.wav")]
-        onExited: code => { if (code === 0) root.playSound("welcome", "welcome"); }
+        onExited: code => { if (code === 0) { root.welcoming = true; welcomeStart.start(); } }
     }
-    Timer { interval: 1500; running: true; onTriggered: welcomeCheck.running = true }
+    Timer {
+        id: welcomeStart; interval: 1500
+        onTriggered: { root.playSound("welcome", "welcome"); root.welcomeFading = true; }
+    }
 
     // Log out, restart or shut down (scripts/session.sh), with the goodbye sound first when it's on
     function sessionAction(action) {

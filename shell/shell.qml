@@ -93,6 +93,11 @@ ShellRoot {
         model: Quickshell.screens
         ScreenCorners { required property var modelData; screen: modelData; bar: topBar }
     }
+    // Logging in: every screen starts black and fades in with the welcome sound
+    Variants {
+        model: Config.welcoming ? Quickshell.screens : []
+        FadeIn { required property var modelData; screen: modelData }
+    }
     OSD { bar: topBar; popouts: popouts }
     LockScreen { id: lockScreen }
     Screensaver { lock: lockScreen }
