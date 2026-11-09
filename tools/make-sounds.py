@@ -7,6 +7,8 @@
                     one smooth, low pulse (three cycles at 210 Hz, about 14 ms)
   welcome.wav       "sunrise", a gentle welcome when you log in: a soft, open D major 9 chord
                     that swells in, opens up brighter as it rises and fades, about 3.4 s
+  goodbye.wav       a closing sound for log out, restart and shut down: soft notes stepping
+                    down the welcome's chord to rest on the low home note, over a warm hum, 2.6 s
 
 Run it from anywhere; it writes next to the other sounds.
 
@@ -90,7 +92,34 @@ def welcome():
     write("welcome.wav", out, peak=0.2, tail=0.6)
 
 
+def goodbye():
+    # A closing sound, for log out, restart and shut down: soft notes stepping down through the
+    # welcome's chord (E5, C#5, A4) and coming to rest on the low home note (D4), over a warm,
+    # low D that swells in and fades with them. Landing on the home note sounds finished, not
+    # broken. About 2.6 s.
+    steps = [(0.00, 659.25, 0.55), (0.28, 554.37, 0.65), (0.56, 440.00, 0.80), (0.84, 293.66, 1.00)]
+
+    def note(t, f, last):
+        if t < 0:
+            return 0.0
+        decay = 0.9 if last else 0.45                               # the last one rings on
+        return onset(t, 20) * math.exp(-t / decay) * (math.sin(2 * math.pi * f * t) + 0.1 * math.sin(4 * math.pi * f * t))
+
+    n = int(RATE * 2.6)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        hum = math.sin(min(1.0, t / 0.6) * math.pi / 2) ** 2 * math.exp(-max(0.0, t - 0.9) / 0.6)
+        w = 2 * math.pi * t
+        low = sum(0.5 * math.sin(w * (f - 0.5)) + 0.5 * math.sin(w * (f + 0.5)) for f in (146.83, 220.00))
+        v = 0.35 * hum * low
+        v += sum(lv * note(t - st, f, k == len(steps) - 1) for k, (st, f, lv) in enumerate(steps))
+        out.append(v)
+    write("goodbye.wav", out, peak=0.2, tail=0.5)
+
+
 if __name__ == "__main__":
     notification()
     click()
     welcome()
+    goodbye()

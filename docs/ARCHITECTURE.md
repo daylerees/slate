@@ -42,7 +42,7 @@ AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
-sounds/                 volume tick; notification chime, click and welcome (made by tools/make-sounds.py)
+sounds/                 volume tick; notification chime, click, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
@@ -234,7 +234,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).
 
-Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down),
+Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down; the goodbye sound first),
 `scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming and the code font — fontconfig's "monospace",
 GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when the theme, accent, code font or the
 apps switched on in Settings → App Theming change). The apps live in `scripts/slate_apps.py`

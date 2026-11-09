@@ -70,7 +70,7 @@ PanelWindow {
             if (f) f();
             return;
         }
-        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action]);
+        Config.sessionAction(action);
     }
 
     IpcHandler {

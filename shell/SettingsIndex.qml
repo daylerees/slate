@@ -53,6 +53,7 @@ Singleton {
         ["Notification sound", "sound", "chime alert ding audio notifications"],
         ["Click sound", "sound", "click tap button feedback audio ui"],
         ["Welcome sound", "sound", "login startup chime audio session start"],
+        ["Goodbye sound", "sound", "logout log off shutdown shut down restart reboot audio session end"],
         ["Sound effects volume", "sound", "alert tick click quiet loud"],
         ["Sound", "sound", "audio speakers headphones output input microphone volume mute"],
         ["Play sound through", "sound", "output speakers headphones device audio"],

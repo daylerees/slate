@@ -717,6 +717,12 @@ Singleton {
     }
     Timer { interval: 1500; running: true; onTriggered: welcomeCheck.running = true }
 
+    // Log out, restart or shut down (scripts/session.sh), with the goodbye sound first when it's on
+    function sessionAction(action) {
+        const v = Math.max(0, Math.min(100, s.soundEffectsVolume)) / 100;
+        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), action, s.goodbyeSound ? v.toFixed(2) : "0"]);
+    }
+
     // A very quiet click for Slate's buttons, menus and toggles (ClickTap / ClickArea)
     property real lastClick: 0
     function click() {

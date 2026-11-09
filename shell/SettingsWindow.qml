@@ -163,7 +163,7 @@ FloatingWindow {
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
-        sound: ["volumeSound", "notificationSound", "clickSound", "welcomeSound", "soundEffectsVolume"],
+        sound: ["volumeSound", "notificationSound", "clickSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
@@ -2509,6 +2509,12 @@ FloatingWindow {
                     label: "Welcome sound"
                     detail: "A gentle, warm swell when you log in (not when Slate reloads)"
                     Toggle { checked: Config.s.welcomeSound; onToggled: v => { Config.s.welcomeSound = v; if (v) Config.playSound("welcome"); } }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Goodbye sound"
+                    detail: "The welcome in reverse when you log out, restart or shut down (it plays first, so they take a moment longer)"
+                    Toggle { checked: Config.s.goodbyeSound; onToggled: v => { Config.s.goodbyeSound = v; if (v) Config.playSound("goodbye"); } }
                 }
                 Separator {}
                 SettingRow {

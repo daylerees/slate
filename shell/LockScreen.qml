@@ -139,7 +139,7 @@ Scope {
             message = "Preview: would " + names[action]; messageIsError = false;
             return;
         }
-        if (action === "logout") Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), "logout"]);
+        if (action === "logout" || action === "reboot" || action === "poweroff") Config.sessionAction(action);
         else Quickshell.execDetached(["systemctl", action]);
     }
 

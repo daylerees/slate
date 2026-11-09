@@ -2087,7 +2087,7 @@ PanelWindow {
                         else if (modelData.id === "lock") Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "lock"]);
                         else if (modelData.id === "lock_and_suspend")   // lock first, then sleep
                             Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Quickshell.shellPath("bin/slate")]);
-                        else Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), modelData.id]);
+                        else Config.sessionAction(modelData.id);
                     }
                     Icon {
                         id: sIcon

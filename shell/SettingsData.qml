@@ -23,6 +23,7 @@ JsonAdapter {
     property bool notificationSound: true    // a soft chime when a notification pops up
     property bool clickSound: false          // a very quiet click on Slate's buttons and menus
     property bool welcomeSound: true         // a gentle swell when you log in (not on reloads)
+    property bool goodbyeSound: true         // the welcome in reverse when you log out, restart or shut down
     property bool nightLight: false          // warm the screen colours (control centre toggle)
     property int nightLightTemperature: 4000 // kelvin: lower is warmer
     property string nightLightSchedule: "manual"   // manual, sun (sunset to sunrise) or custom
@@ -79,7 +80,7 @@ JsonAdapter {
     property string profileOnBattery: ""      // "" (leave it), power-saver, balanced or performance
     property string profileOnAC: ""
     // ---- Sound, startup, screenshots
-    property int soundEffectsVolume: 100      // %, Slate's own sounds (the volume tick, the notification chime, clicks, the welcome)
+    property int soundEffectsVolume: 100      // %, Slate's own sounds (the volume tick, the notification chime, clicks, welcome and goodbye)
     property var themedApps: []               // Appearance → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login
     property string screenshotFolder: ""      // "" = ~/Pictures/Screenshots
