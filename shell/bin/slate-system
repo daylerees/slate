@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# Keep the parts of Slate that live outside your home in step with it: the packages it needs
+# and the login session (both need your password to change).
+#   slate-system --check            what's out of date, one per line: "package <name>" or "session"
+#   slate-system --prompt           if anything is, offer to fix it: a notification with an
+#                                   Install button, then your password. Asks once for each set
+#                                   of changes ("Later" waits a week). Slate runs this.
+#   slate-system --fix [--packages] fix it now (asks for your password); --packages: only the
+#                                   packages (the updater does those before installing a version)
+# The packages are the required ones in packaging/<distro>.txt; optional ones ("?") are left to
+# ./install.sh. NixOS is left to your configuration (packaging/nixos.nix).
+set -uo pipefail
+
+SELF=$(readlink -f "$0")
+SRC=$(dirname "$(dirname "$SELF")")          # the Slate folder this belongs to
+ICON="$SRC/assets/icon/icon-64.png"
+
+# The distro family, as install.sh works it out
+family() {
+    local id
+    . /etc/os-release 2>/dev/null || true
+    for id in ${ID:-} ${ID_LIKE:-}; do
+        case "$id" in
+            arch|cachyos|endeavouros|manjaro|garuda) echo arch; return ;;
+            debian|ubuntu|linuxmint|pop|elementary|zorin) echo debian; return ;;
+            fedora|rhel|centos|nobara|ultramarine) echo fedora; return ;;
+            opensuse*|suse|sles) echo opensuse; return ;;
+            nixos) echo nixos; return ;;
+        esac
+    done
+}
+FAMILY=$(family)
+
+# packaging/ is copied into an installed Slate; next to shell/ in a checkout or a release
+LISTS=""
+for d in "$SRC/packaging" "$SRC/../packaging"; do [ -d "$d" ] && { LISTS=$(readlink -f "$d"); break; }; done
+
+# The list's lines, without comments: packages, "?optional" and (Fedora) "copr:owner/project"
+read_list() { [ -f "$LISTS/$FAMILY.txt" ] && grep -v '^\s*\(#\|$\)' "$LISTS/$FAMILY.txt" | sed 's/\s*#.*//; s/\s*$//'; }
+
+missing_packages() {
+    local p
+    read_list | while read -r p; do
+        case "$p" in \?*|copr:*|"") continue ;; esac
+        case "$FAMILY" in
+            arch) pacman -T "$p" >/dev/null 2>&1 || echo "$p" ;;
+            debian) dpkg -s "$p" 2>/dev/null | grep -q '^Status:.* installed' || echo "$p" ;;
+            fedora|opensuse) rpm -q --whatprovides "$p" >/dev/null 2>&1 || echo "$p" ;;
+        esac
+    done
+}
+
+# The login session (sudo slate-session-install) is out of date when it's installed and its
+# script differs from this Slate's, comments aside
+session_outdated() {
+    local bin=/usr/local/bin/slate-session new="$SRC/session/slate-session"
+    [ -f "$bin" ] && [ -f "$new" ] || return 1
+    ! cmp -s <(grep -v '^\s*#' "$bin") <(grep -v '^\s*#' "$new")
+}
+
+check() {
+    local only_packages=${1:-0}
+    missing_packages | sed 's/^/package /'
+    [ "$only_packages" -eq 1 ] || { session_outdated && echo session; }
+    return 0
+}
+
+# ---- Run as root, by pkexec: install the packages named, and/or the login session ----------
+if [ "${1:-}" = "--as-root" ]; then
+    shift
+    [ "$(id -u)" -eq 0 ] || { echo "slate-system: --as-root is run by pkexec" >&2; exit 1; }
+    pkgs=(); session=0
+    for a in "$@"; do
+        case "$a" in
+            --session) session=1 ;;
+            *) [[ "$a" =~ ^[A-Za-z0-9][A-Za-z0-9@._+:-]*$ ]] || { echo "slate-system: bad package name: $a" >&2; exit 1; }
+               pkgs+=("$a") ;;
+        esac
+    done
+    rc=0
+    if [ "${#pkgs[@]}" -gt 0 ]; then
+        case "$FAMILY" in
+            arch) pacman -S --needed --noconfirm "${pkgs[@]}" || rc=1 ;;
+            debian) apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkgs[@]}" || rc=1 ;;
+            fedora)
+                # a new version may add a repository (copr) too
+                while read -r p; do case "$p" in copr:*) dnf -y copr enable "${p#copr:}" >/dev/null 2>&1 ;; esac; done < <(read_list)
+                dnf install -y "${pkgs[@]}" || rc=1 ;;
+            opensuse) zypper --non-interactive install "${pkgs[@]}" || rc=1 ;;
+            *) echo "slate-system: don't know how to install packages here" >&2; rc=1 ;;
+        esac
+    fi
+    if [ "$session" -eq 1 ]; then "$SRC/bin/slate-session-install" || rc=1; fi
+    exit $rc
+fi
+
+# ---- fix: everything --check lists, with one password -------------------------------------
+fix() {   # fix <only packages: 0/1>
+    local args=() kind name
+    while read -r kind name; do
+        case "$kind" in package) args+=("$name") ;; session) args+=(--session) ;; esac
+    done < <(check "$1")
+    [ "${#args[@]}" -eq 0 ] && return 0
+    command -v pkexec >/dev/null || { echo "slate-system: pkexec isn't installed (it comes with polkit)" >&2; return 1; }
+    pkexec "$SELF" --as-root "${args[@]}"
+}
+
+case "${1:-}" in
+    --check) check; exit 0 ;;
+    --fix) [ "${2:-}" = --packages ] && only=1 || only=0; fix "$only"; exit $? ;;
+    --prompt) ;;
+    *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
+
+# ---- prompt -------------------------------------------------------------------------------
+todo=$(check)
+[ -n "$todo" ] || exit 0
+state="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
+asked="$state/system-asked"; snooze="$state/system-later"
+[ "$(date +%s)" -lt "$(cat "$snooze" 2>/dev/null || echo 0)" ] && exit 0
+version=$(printf '%s\n' "$todo" | md5sum | cut -d' ' -f1)
+[ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
+mkdir -p "$state"; echo "$version" > "$asked"
+
+pkgs=$(printf '%s\n' "$todo" | sed -n 's/^package //p' | paste -sd ' ' | sed 's/ /, /g')
+if [ -n "$pkgs" ]; then
+    title="Slate needs some packages"
+    body="This version of Slate needs: $pkgs."
+    printf '%s\n' "$todo" | grep -qx session && body="$body The login session has changed too."
+else
+    title="Login session out of date"
+    body="This version of Slate changes the Slate session on the login screen."
+fi
+# Critical, as the login screen's prompt is: it stays until answered, shows through Do Not
+# Disturb and plays the attention sound
+choice=$(notify-send -a Slate -i "$ICON" -u critical -h string:x-slate-page:updates -A install=Install -A later=Later \
+    "$title" "$body Install now? You'll be asked for your password." || true)
+if [ "$choice" != install ]; then
+    echo $(( $(date +%s) + 7 * 24 * 3600 )) > "$snooze"      # not now: ask again in a week
+    exit 0
+fi
+rm -f "$snooze"
+id=$(notify-send -a Slate -i "$ICON" -p -h string:x-slate-page:updates "Installing…" "Slate is bringing your system up to date." || true)
+replace=(); [ -n "$id" ] && replace=(-r "$id")
+if fix 0 >/dev/null 2>&1; then
+    if [ -n "$pkgs" ]; then done_body="Restart Slate to use them (run: slate restart)."; else done_body="You'll see it at your next login."; fi
+    notify-send -a Slate -i "$ICON" "${replace[@]}" -h string:x-slate-page:updates "Installed" "$done_body"
+else
+    rm -f "$asked"      # cancelled or failed: ask again next time
+    names=$(printf '%s\n' "$todo" | sed -n 's/^package //p' | paste -sd ' ')
+    case "$FAMILY" in
+        arch) cmd="sudo pacman -S $names" ;; debian) cmd="sudo apt install $names" ;;
+        fedora) cmd="sudo dnf install $names" ;; opensuse) cmd="sudo zypper install $names" ;; *) cmd="" ;;
+    esac
+    [ -n "$names" ] || cmd=""
+    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-session-install"
+    notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \
+        "To finish by hand, run: $cmd"
+fi
+exit 0

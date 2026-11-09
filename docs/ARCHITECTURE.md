@@ -49,6 +49,9 @@ RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
+bin/slate-system              packages (packaging/<distro>.txt, copied in) and the login session
+                              in step with this version: --check, --fix (pkexec), --prompt
+                              (urgent notification 25 s after start; shell.qml)
 shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists

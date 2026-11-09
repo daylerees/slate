@@ -218,16 +218,14 @@ fi
 needs_installer() { echo; warn "$*"; warn "Run ./install.sh from this version of Slate to finish updating."; exit 3; }
 if [ "$UPDATE" -eq 1 ]; then
     step "1. Packages"
-    missing=()
-    while read -r p; do
-        case "$p" in \?*) continue ;; esac
-        case "$family" in
-            arch) pacman -T "$p" >/dev/null 2>&1 || missing+=("$p") ;;
-            debian) dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p") ;;
-            fedora|opensuse) rpm -q --whatprovides "$p" >/dev/null 2>&1 || missing+=("$p") ;;
-        esac
-    done < <(case "$family" in arch|debian|fedora|opensuse) read_list "$family" ;; esac)
-    [ "${#missing[@]}" -eq 0 ] || needs_installer "This version needs packages you don't have: ${missing[*]}"
+    sys="$ROOT/shell/bin/slate-system"
+    missing=$(bash "$sys" --check | sed -n 's/^package //p' | paste -sd ' ')
+    # Updating from inside Slate: install them now, with Slate's password prompt
+    if [ -n "$missing" ] && [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec; then
+        echo "  Installing the packages this version needs: $missing"
+        bash "$sys" --fix --packages && missing=$(bash "$sys" --check | sed -n 's/^package //p' | paste -sd ' ')
+    fi
+    [ -z "$missing" ] || needs_installer "This version needs packages you don't have: $missing"
     ok "Everything this version needs is installed"
 fi
 
@@ -334,6 +332,8 @@ else
         cp -a "$ROOT/shell" "$DEST.new"
         # Python's caches from running the scripts in this checkout aren't part of Slate
         find "$DEST.new" -name __pycache__ -prune -exec rm -rf {} +
+        # The package lists, so Slate can tell when a version needs packages you don't have
+        mkdir -p "$DEST.new/packaging" && cp "$ROOT"/packaging/*.txt "$DEST.new/packaging/"
         # Its version (a release's, or this checkout's) and a fingerprint of each of its files,
         # so Settings → Updates can tell you which you've changed before an update replaces them
         [ -f "$DEST.new/VERSION" ] || { v=$(git -C "$ROOT" describe --tags 2>/dev/null || true); [ -z "$v" ] || echo "$v" > "$DEST.new/VERSION"; }
@@ -399,15 +399,21 @@ if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark
     esac
 fi
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin isn't on your PATH; add it to use the slate command in a terminal" ;; esac
+# --update: the login session's two files are copied into place as root. If this version
+# changed them, put the new ones there now (Slate's password prompt, before Slate restarts),
+# or say how to
+if [ "$UPDATE" -eq 1 ]; then
+    if "$DEST/bin/slate-system" --check | grep -qx session; then
+        if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$DEST/bin/slate-system" --fix >/dev/null 2>&1; then
+            ok "Updated the login session"
+        else
+            warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install"
+        fi
+    fi
+fi
 # If Slate is running (updating from inside it), restart it on the new code
 if have qs && pgrep -x qs >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then "$DEST/bin/slate" restart && ok "Restarted Slate"; fi
-
-# --update: the login session's two files are copied into place with sudo, so they can't be
-# updated here. Done, unless this version changed them.
 if [ "$UPDATE" -eq 1 ]; then
-    if [ -f /usr/local/bin/slate-session ] && ! cmp -s /usr/local/bin/slate-session "$DEST/session/slate-session"; then
-        warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install"
-    fi
     echo; echo "${G}${B}Slate is updated.${N}"
     exit 0
 fi

@@ -37,7 +37,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/` | Slate itself: installed to `~/.config/slate` |
 | `shell/session/` | the "Slate" login session and its Hyprland config |
 | `shell/greeter/` | Slate's login screen (greetd) |
-| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check` |
+| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages and login session in step with Slate) |
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
@@ -59,7 +59,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | On-screen indicators | Volume, mic, brightness, keyboard backlight, workspace dots (Super+Left/Right) | `OSD.qml` |
 | Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, printers & scanners, about, debug (login screen resync, log detail, exporting logs for bug reports, factory reset) | `SettingsWindow.qml`, `bin/slate-logs`, `bin/slate-factory-reset` |
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
-| Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
+| Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`; new packages and login session changes are installed with your password) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
 | Screensaver | Your wallpaper drifting, a wallpaper slideshow, videos (your own folder, or free scenery clips to download) or black, each with or without the clock; starts before the lock, optional lock on wake (Settings → Screensaver; `slate ipc call screensaver start`) | `Screensaver.qml` |
 | Login screen | greetd greeter in a minimal Hyprland, same design as the lock screen | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |
@@ -95,7 +95,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Session launcher + login entry (installed) | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` |
 | Login screen code (root-owned copy) | `/usr/local/share/slate-greeter/` |
 | Login screen appearance (synced) | `/var/lib/slate-greeter/` |
-| Helpers | `~/.config/slate/bin/`: `slate-session-install` (sudo), `slate-greeter-install` (sudo), `slate-greeter-sync` |
+| Helpers | `~/.config/slate/bin/`: `slate-session-install` (sudo), `slate-greeter-install` (sudo), `slate-greeter-sync`, `slate-system` (`--check`, `--fix`) |
 | App-icon tile generator | `scripts/appicon.py` (in the shell folder) |
 
 ## Everyday commands

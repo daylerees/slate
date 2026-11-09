@@ -275,6 +275,12 @@ ShellRoot {
     // change, so a run of edits gives one prompt.
     Timer { id: greeterCodeCheck; interval: 20000; running: true; onTriggered: greeterPrompt.running = true }
     Process { id: greeterPrompt; command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--prompt"] }
+    // When this version of Slate needs packages you don't have, or changes the login session,
+    // offer to install them (a notification with an Install button, then a password prompt).
+    // Updates from Settings do this as they install; this catches the rest (a copy put in place
+    // by hand, a package removed since). Checked once, 25 s after Slate starts.
+    Timer { interval: 25000; running: true; onTriggered: systemPrompt.running = true }
+    Process { id: systemPrompt; command: [Quickshell.shellPath("bin/slate-system"), "--prompt"] }
     Variants {
         model: ["greeter/files", "greeter/shell.qml", "greeter/LoginWindow.qml", "greeter/run-greeter.sh", "greeter/fonts.conf",
             "greeter/hyprland.lua", "greeter/emergency/shell.qml", "greeter/emergency/Window.qml", "greeter/emergency/Box.qml",

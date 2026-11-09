@@ -23,6 +23,7 @@ if [ "${1:-}" = "--remove" ]; then
 fi
 
 OWNER="${SUDO_USER:-}"
+[ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec (slate-system)
 [ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
 HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
 SRC="$HOMEDIR/.config/slate/session"

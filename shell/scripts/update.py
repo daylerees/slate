@@ -177,8 +177,9 @@ def install():
                     st["note"] = ("One more step: this version changes the login session. In a terminal, run: "
                                   "sudo ~/.config/slate/bin/slate-session-install")
         elif rc == 3:
-            st.update(status="failed", error="This update needs the full installer (new packages or system changes). "
-                      "Download the release and run ./install.sh from it.")
+            # (install.sh --update installs new packages itself, with a password prompt)
+            st.update(status="failed", error="This update needs packages that weren't installed (the password prompt "
+                      "was cancelled, or they couldn't be). Try again, or download the release and run ./install.sh from it.")
         else:
             st.update(status="failed", error="The update didn't finish (see the log). Your previous Slate is still in place.")
     except Exception as e:

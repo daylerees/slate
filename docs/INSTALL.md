@@ -209,9 +209,16 @@ version in place without questions or `sudo`. Your settings and overrides are al
   you switch, and the version you leave becomes the backup, so you can switch back again.
 - Changes made by hand to Slate's own files (outside `settings.json`, `hypr/` and `user/`)
   are listed before updating, since the update replaces them (they stay in the backup).
-- A release that needs new packages, or newer Hyprland or Quickshell, stops before changing
-  anything and asks you to run its full installer. If it changes the login session, the
-  Updates page shows the one `sudo` command left to run.
+- A release that needs packages you don't have asks for your password and installs them
+  before it puts itself in place; one that changes the login session does the same for it.
+  If you cancel, or it needs newer Hyprland or Quickshell than your distro has, it stops
+  before changing anything and asks you to run its full installer.
+- Slate also checks this itself, 25 seconds after it starts (for a copy put in place by
+  hand, or a package removed since): when something is missing, an urgent notification
+  offers to install it, with your password. It asks once for each set of changes, and
+  "Later" waits a week. `~/.config/slate/bin/slate-system --check` lists what it would do.
+  Only the required packages are installed this way; optional ones are left to
+  `./install.sh`, and on NixOS they come from your configuration.
 
 From a copy of the code instead:
 
