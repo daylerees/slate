@@ -98,11 +98,9 @@ class Modified(Case):
         self.write("scripts/settings.json", "{}\n")
         self.assertEqual(self.modified()["added"], ["data/user/thing.txt", "scripts/settings.json"])
 
-    @unittest.expectedFailure
     def test_file_named_like_settings_reported(self):
-        """Slate bug: a file of yours next to settings.json whose name starts with it
-        (settings.json.bak) is ignored, as `ignored()` matches "settings.json" as a prefix,
-        yet an update doesn't keep it (KEEP copies only settings.json itself)."""
+        """A file of yours whose name starts with settings.json (settings.json.bak) is listed:
+        an update doesn't keep it (it used to be matched as a prefix and left out)."""
         self.write("settings.json.bak", "{}\n")
         self.assertEqual(self.modified()["added"], ["settings.json.bak"])
 

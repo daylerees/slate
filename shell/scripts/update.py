@@ -107,7 +107,8 @@ def check(force):
 
 def ignored(rel):
     """Not Slate's own files: yours (kept), hidden files and Python's caches."""
-    return rel.startswith(KEPT) or rel in ("VERSION",) or any(p.startswith(".") or p == "__pycache__" for p in rel.split("/"))
+    # (settings.json itself, not settings.json.bak: only the exact name is kept)
+    return rel in KEEP or rel.startswith(tuple(k for k in KEPT if k.endswith("/"))) or rel in ("VERSION",) or any(p.startswith(".") or p == "__pycache__" for p in rel.split("/"))
 
 
 def modified():
