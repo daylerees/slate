@@ -2208,11 +2208,15 @@ PanelWindow {
                         delegate: RowButton {
                             required property var modelData
                             width: 34; height: 34
-                            // Over the wallpaper: the solid card colour, half see-through (not the
-                            // glass card colour, which is already see-through white)
+                            // Over the wallpaper, so they need to stand out from whatever it is: the
+                            // solid card colour, mostly opaque (not the glass card colour, which is
+                            // already see-through white), a faint light edge and the sheen
                             readonly property color base: Config.tint("#1d222a")
-                            color: hovered2.hovered ? Config.hoverOn(Config.tint("#0f1216")) : Qt.rgba(base.r, base.g, base.b, 0.55)
-                            Gloss { radius: parent.radius; opacity: (hovered2.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            color: hovered2.hovered ? Config.hoverOn(base) : Qt.rgba(base.r, base.g, base.b, 0.82)
+                            border.width: 1
+                            border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, hovered2.hovered ? 0.22 : 0.14)
+                            // glass: a sheen (RowButton's own takes over while hovered)
+                            Gloss { radius: parent.radius; opacity: hovered2.hovered ? 0 : 1 }
                             HoverHandler { id: hovered2 }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }
