@@ -69,6 +69,47 @@ ShellRoot {
         target: "shell"
         function reload(): void { Quickshell.reload(true); }
     }
+
+    // ---- For the test suite (tests/, with SLATE_TEST=1) ---------------------------------
+    // $XDG_RUNTIME_DIR/slate-ready once Slate has loaded, so tests wait for it rather than guess
+    Component.onCompleted: if (Config.testMode) Qt.callLater(() => Qt.callLater(() => readyMark.running = true))
+    Process { id: readyMark; command: ["sh", "-c", ': > "${XDG_RUNTIME_DIR:-/tmp}/slate-ready"'] }
+    // What's on screen, as JSON, for tests to check rather than reading pixels:
+    //   slate ipc call test state
+    IpcHandler {
+        target: "test"
+        enabled: Config.testMode
+        function state(): string {
+            const settings = settingsLoader.item;
+            const opt = v => v === undefined || v === null ? null : v;
+            return JSON.stringify({
+                screens: Quickshell.screens.map(s => ({ name: s.name, width: s.width, height: s.height })),
+                popout: popouts.current,
+                settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
+                            scroll: settings ? settings.scrolledTo : 0 },
+                launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode,
+                            results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
+                picker: { open: picker.shown, mode: picker.mode },
+                switcher: { open: winSwitcher.shown },
+                overview: { open: wsOverview.shown },
+                lock: { locked: lockScreen.locked, previewing: lockScreen.previewing },
+                screensaver: { open: screensaver.shown },
+                power: { open: powerConfirm.shown, action: powerConfirm.action },
+                polkit: { open: polkitAgent.shown },
+                welcome: { open: welcome.shown },
+                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd },
+                dock: {
+                    slots: win.slots.map(x => x.kind === "app"
+                        ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
+                        : { kind: x.kind }),
+                    menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : "other") : "",
+                    preview: previewPop.visible, media: win.mediaShown, trash: win.trashCount
+                },
+                gameMode: Config.gameMode,
+                barEdge: Config.barEdge, dockEdge: Config.dockEdge
+            });
+        }
+    }
     // Geist ships with Slate (fonts/, SIL OFL), so it's there even if not installed system-wide
     Variants {
         model: ["Geist-Variable.ttf", "Geist-Italic-Variable.ttf", "GeistMono-Variable.ttf", "GeistMono-Italic-Variable.ttf"]
@@ -76,7 +117,7 @@ ShellRoot {
     }
     Wallpaper {}
     NightLight {}
-    PolkitAgent {}          // password prompts for apps (pkexec, system settings…)
+    PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
     Notifications { id: notifs; bar: topBar }
     // Settings, built afresh whenever it's closed from outside Slate (Super+Q, a title bar's close
     // button): after that the window couldn't be shown again until Slate reloaded
@@ -109,12 +150,12 @@ ShellRoot {
     }
     OSD { bar: topBar; popouts: popouts }
     LockScreen { id: lockScreen }
-    Screensaver { lock: lockScreen }
+    Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { lock: lockScreen }
 
     // Keep the login screen (/var/lib/slate-greeter) in step with the wallpaper and
     // settings. Does nothing until it's been set up with: sudo slate-greeter-install
-    Timer { id: greeterSync; interval: 3000; onTriggered: greeterSyncRun.running = true }
+    Timer { id: greeterSync; interval: 3000; onTriggered: greeterSyncRun.running = !Config.testMode }
     Process {
         id: greeterSyncRun
         command: ["sh", "-c", "[ -w /var/lib/slate-greeter ] && exec \"$0\" || true", Quickshell.shellPath("bin/slate-greeter-sync")]
@@ -273,13 +314,13 @@ ShellRoot {
     // with an Update button, then a password prompt). Checked 20 s after Slate starts
     // (it reloads whenever its own code is edited) and after the greeter-only files
     // change, so a run of edits gives one prompt.
-    Timer { id: greeterCodeCheck; interval: 20000; running: true; onTriggered: greeterPrompt.running = true }
+    Timer { id: greeterCodeCheck; interval: 20000; running: !Config.testMode; onTriggered: greeterPrompt.running = !Config.testMode }
     Process { id: greeterPrompt; command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--prompt"] }
     // When this version of Slate needs packages you don't have, or changes the login session,
     // offer to install them (a notification with an Install button, then a password prompt).
     // Updates from Settings do this as they install; this catches the rest (a copy put in place
     // by hand, a package removed since). Checked once, 25 s after Slate starts.
-    Timer { interval: 25000; running: true; onTriggered: systemPrompt.running = true }
+    Timer { interval: 25000; running: !Config.testMode; onTriggered: systemPrompt.running = true }
     Process { id: systemPrompt; command: [Quickshell.shellPath("bin/slate-system"), "--prompt"] }
     Variants {
         model: ["greeter/files", "greeter/shell.qml", "greeter/LoginWindow.qml", "greeter/run-greeter.sh", "greeter/fonts.conf",
@@ -377,7 +418,7 @@ ShellRoot {
         }
     }
     // The welcome: the first time Slate starts, and from Settings → About
-    Welcome { bar: topBar }
+    Welcome { id: welcome; bar: topBar }
     // New releases: checked daily, a notification when one's out (Settings → Updates)
     // Nothing reads this, but keep it: it's what creates the Updates singleton at start (its
     // daily check and the "updates" IPC), as singletons are only made when first used

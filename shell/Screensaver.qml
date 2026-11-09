@@ -138,13 +138,13 @@ Scope {
         SystemClock { id: clock; precision: SystemClock.Minutes }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatTime(clock.date, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm")
+            text: Qt.formatTime(Config.clockDate(clock.date), Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm")
             color: "white"
             font.family: Config.s.fontFamily; font.pixelSize: 112; font.weight: Font.Light
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatDate(clock.date, "dddd d MMMM")
+            text: Qt.formatDate(Config.clockDate(clock.date), "dddd d MMMM")
             color: Qt.rgba(1, 1, 1, 0.75)
             font.family: Config.s.fontFamily; font.pixelSize: 22
         }

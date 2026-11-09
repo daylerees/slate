@@ -91,8 +91,8 @@ Singleton {
 
     // About a minute after Slate starts, then every few hours; update.py itself only asks
     // GitHub once in 20 hours
-    Timer { interval: 60 * 1000; running: Config.s.updateCheck; onTriggered: root.check(false) }
-    Timer { interval: 6 * 3600 * 1000; running: Config.s.updateCheck; repeat: true; onTriggered: root.check(false) }
+    Timer { interval: 60 * 1000; running: Config.s.updateCheck && !Config.testMode; onTriggered: root.check(false) }
+    Timer { interval: 6 * 3600 * 1000; running: Config.s.updateCheck && !Config.testMode; repeat: true; onTriggered: root.check(false) }
 
     // "Slate v0.5.0 is available": clicking it (or "See what's new") opens Settings → Updates
     property string announcing: ""

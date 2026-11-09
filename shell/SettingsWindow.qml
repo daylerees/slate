@@ -118,6 +118,7 @@ FloatingWindow {
     function minuteOptions(list) { return list.map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") })); }
 
     property string section: "overview"
+    readonly property int scrolledTo: Math.round(scroller.contentY)   // (tests: the "test" IPC)
 
     // ---- Back where it was after Slate reloads or restarts ----------------
     // While Settings is open, its page and how far down it's scrolled are kept in the runtime
@@ -3537,7 +3538,7 @@ FloatingWindow {
             property var zones: []
             property date now: new Date()
             // The clock on this page; only ticks while Settings is showing (and catches up at once)
-            Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dateTimePane.now = new Date() }
+            Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dateTimePane.now = Config.clockDate(new Date()) }
             function refresh() { stateProc.running = false; stateProc.running = true; }
             Timer { id: reread; interval: 1500; onTriggered: dateTimePane.refresh() }
             Process {
@@ -3602,7 +3603,7 @@ FloatingWindow {
             Process { running: true; command: ["sh", "-c", "command -v swash"]; onExited: code => screenshotsPane.hasSwash = code === 0 }
             readonly property string home: Quickshell.env("HOME")
             readonly property string folder: Config.s.screenshotFolder || (home + "/Pictures/Screenshots")
-            readonly property date example: new Date()
+            readonly property date example: Config.clockDate(new Date())
             GroupLabel { text: "Saving" }
             Group {
                 DropdownSetting {

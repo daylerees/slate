@@ -133,6 +133,17 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `power` | `confirm <logout\|reboot\|shutdown>` (asks first), `cancel` |
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
+| `welcome` | `open`, `close` |
+| `test` | `state` (JSON of what's on screen; only with `SLATE_TEST=1`, for the test suite) |
+
+### Test mode (`SLATE_TEST=1`)
+
+Set by the test suite (docs/TESTING.md) for the Slate it starts. Slate then plays no sounds,
+skips the welcome, startup apps, update checks and the login-screen/package prompts, shows
+the time in `SLATE_TEST_TIME` on its clocks (`Config.clockDate`), writes
+`$XDG_RUNTIME_DIR/slate-ready` once it has loaded, and answers `ipc call test state`.
+Anything new that starts a side effect at login (a prompt, a sound, a network check) should
+check `Config.testMode`.
 
 ## Hyprland integration (`~/.config/hypr/config/*.lua`)
 

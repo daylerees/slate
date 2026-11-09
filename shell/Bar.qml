@@ -963,7 +963,7 @@ PanelWindow {
             Capsule {
                 id: clockCap
                 length: clock.implicitWidth + 20
-                hoverText: Qt.formatDate(sysClock.date, "dddd, d MMMM yyyy")
+                hoverText: Qt.formatDate(Config.clockDate(sysClock.date), "dddd, d MMMM yyyy")
                 hoverCode: 0xEA53
                 SystemClock { id: sysClock; precision: Config.s.barClockSeconds ? SystemClock.Seconds : SystemClock.Minutes }
                 Text {
@@ -971,8 +971,8 @@ PanelWindow {
                     anchors.centerIn: parent
                     // Turned to run along a side bar, like the window title
                     rotation: bar.textRotation
-                    text: (Config.s.barClockDate ? Qt.formatDate(sysClock.date, "ddd d MMM") + "  " : "")
-                        + Qt.formatTime(sysClock.date, Config.s.barClockFormat === "24h"
+                    text: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                        + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (Config.s.barClockSeconds ? "HH:mm:ss" : "HH:mm")
                             : (Config.s.barClockSeconds ? "h:mm:ss AP" : "h:mm AP"))
                     color: bar.textColor

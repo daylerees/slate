@@ -33,11 +33,12 @@ PanelWindow {
     Timer {
         interval: 2500
         running: true
-        onTriggered: if (!Config.s.welcomeShown) w.open()
+        onTriggered: if (!Config.s.welcomeShown && !Config.testMode) w.open()
     }
     IpcHandler {
         target: "welcome"
         function open(): void { w.open(); }
+        function close(): void { w.shown = false; }
     }
 
     property real fade: shown ? 1 : 0

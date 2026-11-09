@@ -2005,7 +2005,7 @@ PanelWindow {
             width: 280
             spacing: 10
             SystemClock { id: calClock; precision: SystemClock.Minutes }
-            readonly property date today: calClock.date
+            readonly property date today: Config.clockDate(calClock.date)
             property int monthOffset: 0
             readonly property date shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
             // Days from last month before the 1st, in a week that starts on Monday
@@ -2370,8 +2370,8 @@ PanelWindow {
                             anchors.top: clockCard.roomy ? parent.top : undefined
                             anchors.topMargin: 14
                             spacing: 2
-                            Label { text: Qt.formatTime(ccClock.date, pop.timeFormat); font.pixelSize: clockCard.roomy ? 32 : 24 }
-                            Label { text: Qt.formatDate(ccClock.date, "dddd, d MMMM"); color: pop.dim; font.pixelSize: 12 }
+                            Label { text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat); font.pixelSize: clockCard.roomy ? 32 : 24 }
+                            Label { text: Qt.formatDate(Config.clockDate(ccClock.date), "dddd, d MMMM"); color: pop.dim; font.pixelSize: 12 }
                             Row {
                                 visible: pop.weather !== null
                                 spacing: 6

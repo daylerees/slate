@@ -268,7 +268,7 @@ Singleton {
     // the startup apps, each on a workspace of its own, and returns to your last workspace.
     // Not on the login screen, which loads this file with a copy of your settings: there,
     // spaces.py isn't installed, so the check failed and every startup app was launched
-    onAtLogin: if (!isLoginScreen) reopenCheck.running = true
+    onAtLogin: if (!isLoginScreen && !testMode) reopenCheck.running = true
     Process {
         id: reopenCheck
         command: ["python3", Quickshell.shellPath("scripts/spaces.py"), "session-pending"]
@@ -678,6 +678,13 @@ Singleton {
     // windows. Your own settings for them are kept, not changed, so turning it off puts them
     // all back. Not on the login screen, which reads a copy of these settings
     readonly property bool isLoginScreen: Quickshell.shellPath("").indexOf("slate-greeter") >= 0
+    // Under the test suite (tests/run sets SLATE_TEST=1): no sounds, welcome, startup apps,
+    // update checks or login screen prompts, so a run is quiet and the same every time
+    readonly property bool testMode: Quickshell.env("SLATE_TEST") === "1"
+    // The time the clocks show under test (SLATE_TEST_TIME, e.g. "2026-01-05T09:41:00"), so
+    // screenshots match from run to run. clockDate(d) is the time to show: d, or that one
+    readonly property var testTime: testMode && Quickshell.env("SLATE_TEST_TIME") ? new Date(Quickshell.env("SLATE_TEST_TIME")) : null
+    function clockDate(d) { return testTime || d; }
     readonly property bool gameMode: s.gameMode && !isLoginScreen
     // Off again: Hyprland reloads its config (quietly), for its own blur, shadows, animations
     // and touchpad setting, then Slate's settings go back on top (hyprPush)
@@ -938,6 +945,7 @@ Singleton {
     }
     // Play sounds/<name>.wav at the volume set for `which` (Settings → Sound)
     function playSound(name, which) {
+        if (testMode) return;
         const v = soundVolume(which) / 100;
         if (v <= 0) return;
         const e = effect(name);
@@ -956,11 +964,11 @@ Singleton {
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none")
     FileView { id: welcomeMarkerFile; path: root.welcomeMarker; blockLoading: true; printErrors: false }
     // covered until welcomeFading, then fading out
-    property bool welcoming: { welcomeMarkerFile.text(); return !welcomeMarkerFile.loaded; }
+    property bool welcoming: { if (testMode) return false; welcomeMarkerFile.text(); return !welcomeMarkerFile.loaded; }
     property bool welcomeFading: false
     Process {
         id: welcomeCheck
-        running: true
+        running: !root.testMode
         command: ["sh", "-c", '[ -e "$0" ] || exit 1; f="$1"; [ -e "$f" ] && exit 1; mkdir -p "${f%/*}" && : > "$f"',
             Quickshell.shellPath("sounds/welcome.wav"), root.welcomeMarker]
         onExited: code => { if (code === 0) welcomeStart.start(); else root.welcoming = false; }
