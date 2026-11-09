@@ -1011,10 +1011,32 @@ PanelWindow {
                     onExited: row.version++
                 }
 
+                // A quick toggle: a switch at the end of its row showing whether it's on (the list only)
+                Rectangle {
+                    id: toggleSwitch
+                    visible: row.kind === "toggle" && !root.gridMode
+                    readonly property bool on: !!row.modelData.toggleOn
+                    anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                    width: 36; height: 20; radius: 10
+                    // On the accent highlight, the track can't be the accent too: it takes the
+                    // highlight's dark text colour instead
+                    color: on ? (row.onAccent ? root.accentText : root.accent)
+                        : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, row.onAccent ? 0.25 : 0.15)
+                    Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
+                    Gloss { radius: parent.radius }   // glass: a sheen
+                    Rectangle {
+                        width: 14; height: 14; radius: 7
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: toggleSwitch.on ? parent.width - width - 3 : 3
+                        color: toggleSwitch.on ? (row.onAccent ? root.accent : root.accentText) : root.textColor
+                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
+                    }
+                }
+
                 // Name and description (the list only: the grid shows them in the strip at the bottom)
                 Column {
                     visible: !root.gridMode
-                    anchors { left: tile.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    anchors { left: tile.right; leftMargin: 12; right: toggleSwitch.visible ? toggleSwitch.left : parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     spacing: 2
                     Text {
                         width: parent.width
