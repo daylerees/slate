@@ -498,6 +498,19 @@ Singleton {
     // name can't safely hold become "_", the same way scripts/appicon.py names them.
     function tilePath(key) { return tileDir + "/" + String(key).replace(/[^A-Za-z0-9._-]/g, "_") + ".png"; }
 
+    // ---- Slate's own commands (bin/slate) -------------------------------------------
+    readonly property string slateCommand: Quickshell.shellPath("bin/slate")
+    // Call one of Slate's IPC functions, as `slate ipc call <target> <function> [args…]` does
+    // (slate ipc show lists them): slateCall("settings", "page", "updates")
+    function slateCall(...args) { Quickshell.execDetached([slateCommand, "ipc", "call", ...args]); }
+    // Restart Slate completely (for changes it can only pick up that way), then open Settings
+    // on a page again once it's back. Run detached, as this Slate is about to stop
+    function restartToPage(page) {
+        Quickshell.execDetached(["setsid", "-f", "sh", "-c",
+            `sleep 0.5; "$0" restart --full; for i in $(seq 40); do sleep 0.25; "$0" ipc call settings page "$1" >/dev/null 2>&1 && break; done`,
+            slateCommand, page]);
+    }
+
     // ---- App entries ---------------------------------------------------------------
     // The installed app (.desktop entry) for a window's app ID, as the dock, bar, switcher and
     // overview show it. Hyprland's app IDs don't always match an entry's name, so this tries,
@@ -786,9 +799,7 @@ Singleton {
         interval: 1200
         onTriggered: {
             if ((root.s.logLevel || "normal") === root.runningLogLevel) return;
-            const slate = Quickshell.shellPath("bin/slate");
-            Quickshell.execDetached(["setsid", "-f", "sh", "-c",
-                `sleep 0.5; "${slate}" restart --full; for i in $(seq 40); do sleep 0.25; "${slate}" ipc call settings page debug >/dev/null 2>&1 && break; done`]);
+            root.restartToPage("debug");
         }
     }
     Timer {
@@ -796,9 +807,7 @@ Singleton {
         interval: 1200
         onTriggered: {
             if (Math.abs(root.s.uiScale - root.uiScale) < 0.001) return;
-            const slate = Quickshell.shellPath("bin/slate");
-            Quickshell.execDetached(["setsid", "-f", "sh", "-c",
-                `sleep 0.5; "${slate}" restart --full; for i in $(seq 40); do sleep 0.25; "${slate}" ipc call settings page appearance >/dev/null 2>&1 && break; done`]);
+            root.restartToPage("appearance");
         }
     }
 

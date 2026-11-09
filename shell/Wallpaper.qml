@@ -23,7 +23,7 @@ Scope {
 
     // For the desktop's right-click menu: a Slate command, or one of the default apps (the
     // terminal / file manager the shortcuts open, as set in Hyprland's config or Settings)
-    function slateCall(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
+    function slateCall(args) { Config.slateCall(...args); }
     function openApp(variable) {
         Quickshell.execDetached(["hyprctl", "dispatch",
             `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${variable}) end`]);

@@ -11,7 +11,7 @@ Scope {
     property var lock: null           // LockScreen: corners stand down while locked
 
     function run(action) {
-        const ipc = (t, f, ...a) => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", t, f, ...a]);
+        const ipc = (...args) => Config.slateCall(...args);
         switch (action) {
         case "lock": ipc("lock", "lock"); break;
         case "launcher": ipc("launcher", "toggle"); break;

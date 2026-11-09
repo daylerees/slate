@@ -699,7 +699,7 @@ PanelWindow {
                     ClickTap {
                         onTapped: {
                             w.finish();
-                            Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]);
+                            Config.slateCall("settings", "open");
                         }
                     }
                 }

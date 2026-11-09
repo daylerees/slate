@@ -261,18 +261,16 @@ PanelWindow {
         }
         if (entry.app) countUse(entry.id);     // the Slate Settings app: counted like an app
         if (entry.action) {        // lock / suspend / log out / restart / shut down
-            const slate = Quickshell.shellPath("bin/slate");
-            if (entry.action === "lock") Quickshell.execDetached([slate, "ipc", "call", "lock", "lock"]);
-            else if (entry.action === "suspend") Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", slate]);
-            else Quickshell.execDetached([slate, "ipc", "call", "power", "confirm", entry.action]);   // asks first
+            if (entry.action === "lock") Config.slateCall("lock", "lock");
+            else if (entry.action === "suspend") Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Config.slateCommand]);
+            else Config.slateCall("power", "confirm", entry.action);   // asks first
             closeLauncher();
             return;
         }
         if (entry.setting) {       // a Slate setting: open Settings on its page
             // Straight to the setting on its page (just the page for the Slate Settings app itself)
-            Quickshell.execDetached(entry.app
-                ? [Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", entry.page]
-                : [Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "find", entry.page, entry.name]);
+            if (entry.app) Config.slateCall("settings", "page", entry.page);
+            else Config.slateCall("settings", "find", entry.page, entry.name);
             closeLauncher();
             return;
         }

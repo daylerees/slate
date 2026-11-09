@@ -108,7 +108,7 @@ Singleton {
             "Slate " + root.announcing + " is available",
             (root.installed ? "You have " + root.installed.replace(/-.*/, "") + ". " : "") + "See what's new and update in Settings → Updates."]
         stdout: StdioCollector {
-            onStreamFinished: if (text.trim() !== "") Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "updates"])
+            onStreamFinished: if (text.trim() !== "") Config.slateCall("settings", "page", "updates")
         }
     }
 
