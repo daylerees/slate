@@ -64,6 +64,7 @@ PanelWindow {
         search.text = "";
         typed = false;
         if (m === "clipboard") clipFile.reload();
+        if (m === "emoji") emojiWanted = true;
         view().currentIndex = 0;
         view().positionViewAtBeginning();
         shown = true;
@@ -139,10 +140,12 @@ PanelWindow {
     }
 
     // ---- Emoji -------------------------------------------------------------
-    // data/emoji.json: [[emoji, name, keywords, category], ...]
+    // data/emoji.json: [[emoji, name, keywords, category], ...]. A big file (140 KB), so it's
+    // read the first time the emoji picker opens, not at every start
     property var emojis: []
+    property bool emojiWanted: false
     FileView {
-        path: Quickshell.shellPath("data/emoji.json")
+        path: root.emojiWanted ? Quickshell.shellPath("data/emoji.json") : ""
         blockLoading: true
         onLoaded: { try { root.emojis = JSON.parse(text()); } catch (e) {} }
     }
@@ -307,7 +310,9 @@ PanelWindow {
             // Full width when everything fits (no scrollbar); room for it when it doesn't
             anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: footer.top; margins: 14; bottomMargin: 6; rightMargin: contentHeight <= height ? 14 : 28 }
             clip: true
-            model: root.mode === "clipboard" ? root.clipResults : []
+            // Empty while the picker's hidden, so a copy elsewhere doesn't rebuild rows (and image
+            // thumbnails) nobody can see; open() reloads the history anyway
+            model: root.visible && root.mode === "clipboard" ? root.clipResults : []
             SmoothWheel { flick: list }
             boundsBehavior: Flickable.StopAtBounds
             highlightFollowsCurrentItem: false

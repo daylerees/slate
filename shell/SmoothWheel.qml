@@ -92,6 +92,9 @@ WheelHandler {
 
     property FrameAnimation anim: FrameAnimation {
         onTriggered: {
+            // Touchpad events stopped without the fingers' lift being reported (the list hid
+            // mid-scroll, say): a second of nothing counts as lifted, so this doesn't tick forever
+            if (wh.fingers && Date.now() - wh.lastEvent > 1000) wh.release();
             // Moved by something else (keys, the scrollbar, a drag): let it
             if (Math.abs(wh.flick.contentY - wh.pos) > 1 || wh.flick.dragging) { stop(); wh.gliding = false; wh.velocity = 0; return; }
             const dt = Math.min(0.05, Math.max(0.001, frameTime));
