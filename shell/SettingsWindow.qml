@@ -421,9 +421,7 @@ FloatingWindow {
             // own), then the page's title; the close button sits top right. The page scrolls beneath
             Item {
                 id: header
-                // Over the page; while the search's results show, over everything else in the pane
-                // too (the scrollbar, close button and find highlight)
-                z: pageHits.visible ? 5 : 2
+                z: 2
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 height: titleRow.height + (pageSearch.visible ? pageSearch.height + 14 : 0)
 
@@ -494,70 +492,6 @@ FloatingWindow {
                         ClickTap { onTapped: { pageFind.text = ""; pageFind.forceActiveFocus(); } }
                     }
 
-                    // Results, over the page while typing
-                    Rectangle {
-                        id: pageHits
-                        visible: pageFind.activeFocus && pageFind.text.trim() !== ""
-                        anchors { top: parent.bottom; topMargin: 6; left: parent.left; right: parent.right }
-                        height: pageHitsCol.implicitHeight + 8
-                        radius: 12
-                        // Solid, so the page under it doesn't show through the results
-                        color: Config.tint("#151920")
-                        border.width: 1; border.color: Config.tint("#2a313c")
-                        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
-                        Column {
-                            id: pageHitsCol
-                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 }
-                            Text {
-                                visible: pageSearch.found.length === 0
-                                width: parent.width
-                                topPadding: 10; bottomPadding: 10; leftPadding: 12
-                                text: "No settings match “" + pageFind.text.trim() + "”"
-                                color: win.dim; font.family: win.font; font.pixelSize: 13
-                                elide: Text.ElideRight
-                            }
-                            Repeater {
-                                model: pageSearch.found
-                                delegate: Rectangle {
-                                    id: pageHit
-                                    required property var modelData
-                                    required property int index
-                                    readonly property bool chosen: index === pageSearch.pick
-                                    width: parent.width; height: pageHitCol.implicitHeight + 14
-                                    radius: 9
-                                    color: chosen ? Config.tint("#262c35") : pageHitHover.hovered ? Config.hover : "transparent"
-                                    Text {
-                                        id: pageHitIcon
-                                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                                        text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
-                                        color: pageHit.chosen ? win.accent : win.dim
-                                        font.family: win.bar.iconFont; font.pixelSize: 16
-                                    }
-                                    Column {
-                                        id: pageHitCol
-                                        anchors { left: pageHitIcon.right; leftMargin: 10; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                                        spacing: 1
-                                        Text {
-                                            width: parent.width
-                                            text: pageHit.modelData.label
-                                            color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
-                                            elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            width: parent.width
-                                            text: (SettingsIndex.pageNames[pageHit.modelData.page] || "")
-                                                + (pageHit.modelData.group && pageHit.modelData.group !== pageHit.modelData.label ? " → " + pageHit.modelData.group : "")
-                                                + (pageHit.modelData.detail ? " · " + pageHit.modelData.detail : "")
-                                            color: win.dim; font.family: win.font; font.pixelSize: 11
-                                            elide: Text.ElideRight
-                                        }
-                                    }
-                                    HoverHandler { id: pageHitHover; onHoveredChanged: if (hovered) pageSearch.pick = pageHit.index }
-                                    ClickTap { onTapped: pageSearch.open(pageHit.modelData) }
-                                }
-                            }
-                        }
-                    }
                 }
 
                 // Restore defaults: only on pages with settings, and only when something's changed.
@@ -603,6 +537,76 @@ FloatingWindow {
                     font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
+                }
+            }
+
+            // The page search's results, over the page while typing. Here in the pane rather than
+            // in the search box: past the header's bottom edge, the pointer doesn't reach things
+            // inside it, so the results couldn't be hovered or clicked there
+            Rectangle {
+                id: pageHits
+                z: 6
+                visible: pageFind.activeFocus && pageFind.text.trim() !== ""
+                // Under the search box (the header sits at the pane's top left)
+                x: header.x + pageSearch.x; y: header.y + pageSearch.y + pageSearch.height + 6
+                width: pageSearch.width
+                height: pageHitsCol.implicitHeight + 8
+                radius: 12
+                // Solid, so the page under it doesn't show through the results
+                color: Config.tint("#151920")
+                border.width: 1; border.color: Config.tint("#2a313c")
+                MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
+                Column {
+                    id: pageHitsCol
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 }
+                    Text {
+                        visible: pageSearch.found.length === 0
+                        width: parent.width
+                        topPadding: 10; bottomPadding: 10; leftPadding: 12
+                        text: "No settings match “" + pageFind.text.trim() + "”"
+                        color: win.dim; font.family: win.font; font.pixelSize: 13
+                        elide: Text.ElideRight
+                    }
+                    Repeater {
+                        model: pageSearch.found
+                        delegate: Rectangle {
+                            id: pageHit
+                            required property var modelData
+                            required property int index
+                            readonly property bool chosen: index === pageSearch.pick
+                            width: parent.width; height: pageHitCol.implicitHeight + 14
+                            radius: 9
+                            color: chosen ? Config.tint("#262c35") : pageHitHover.hovered ? Config.hover : "transparent"
+                            Text {
+                                id: pageHitIcon
+                                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
+                                color: pageHit.chosen ? win.accent : win.dim
+                                font.family: win.bar.iconFont; font.pixelSize: 16
+                            }
+                            Column {
+                                id: pageHitCol
+                                anchors { left: pageHitIcon.right; leftMargin: 10; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                spacing: 1
+                                Text {
+                                    width: parent.width
+                                    text: pageHit.modelData.label
+                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: (SettingsIndex.pageNames[pageHit.modelData.page] || "")
+                                        + (pageHit.modelData.group && pageHit.modelData.group !== pageHit.modelData.label ? " → " + pageHit.modelData.group : "")
+                                        + (pageHit.modelData.detail ? " · " + pageHit.modelData.detail : "")
+                                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            HoverHandler { id: pageHitHover; onHoveredChanged: if (hovered) pageSearch.pick = pageHit.index }
+                            ClickTap { onTapped: pageSearch.open(pageHit.modelData) }
+                        }
+                    }
                 }
             }
             Rectangle {
