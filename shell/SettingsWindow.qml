@@ -2471,7 +2471,8 @@ FloatingWindow {
                 DropdownSetting {
                     visible: dp.cfg && !dp.cfg.disabled
                     label: "Scale"
-                    detail: "How large everything on this display looks, apps included. Only scales that suit the resolution are offered"
+                    detail: "How large everything on this display looks, apps included. Only scales that suit the resolution are offered. "
+                        + "To resize just Slate (the bar, dock and panels) on every display, use Interface size in Appearance"
                     options: dp.cfg ? disp.scaleOptions(dp.cfg.mode, dp.cfg.scale) : []
                     value: dp.cfg ? dp.cfg.scale : 1
                     onPicked: v => dp.change("scale", v)
@@ -4090,7 +4091,8 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Interface size"
-                    detail: "Scales all of Slate: the bar, dock, panels, launcher, title bars and this window. Changing it restarts Slate"
+                    detail: "Scales Slate only (the bar, dock, panels, launcher, title bars and this window), on every display, on top of each display's Scale. "
+                        + "Apps stay as they are: to make everything larger or smaller, apps included, change Scale in Displays instead. Changing it restarts Slate"
                     ValueSlider {
                         from: 75; to: 150; stepSize: 5; suffix: "%"
                         value: Math.round(Config.s.uiScale * 100)
