@@ -299,11 +299,11 @@ FloatingWindow {
         { name: "Liquid Glass", settings: {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } },
+            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" } },
         { name: "Metro Flat", settings: {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.4, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } }
+            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" } }
     ]
     function presetActive(p) {
         for (const k in p.settings) {
@@ -3586,7 +3586,7 @@ FloatingWindow {
                         if (!p || win.presetActive(p)) return;
                         win.ask = {
                             title: "Apply " + p.name + "?",
-                            body: "This changes your appearance settings: the theme, colours and glass. "
+                            body: "This changes your appearance settings: the theme, colours, glass and folder colours. "
                                 + "Your wallpaper stays as it is, and so does everything else.",
                             button: "Apply",
                             run: () => win.applyPreset(p)
