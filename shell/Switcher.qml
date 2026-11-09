@@ -312,8 +312,10 @@ PanelWindow {
                         width: capture ? capture.width : Math.min(parent.width, parent.height * 16 / 10)
                         height: capture ? capture.height : width * 10 / 16
                         sourceItem: capture
-                        // Without live previews (or in game mode): the window's shape and app tile instead (below)
-                        visible: sw.livePreviews       // a frame from before previews were turned off stays hidden
+                        // Without live previews (or in game mode): the window's shape and app tile instead
+                        // (below). A frame from before previews were turned off stays hidden, and so
+                        // does the copy until its capture exists (it has nothing to show till then)
+                        visible: sw.livePreviews && !!capture
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask }
                     }
