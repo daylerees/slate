@@ -17,7 +17,28 @@ Scope {
         case "overview": ipc("overview", "toggle"); break;
         case "control": ipc("bar", "panel", "control"); break;
         case "notifications": ipc("bar", "panel", "notifications"); break;
-        case "screenoff": Quickshell.execDetached(["hyprctl", "dispatch", 'hl.dsp.dpms({ action = "off" })']); break;
+        case "screenoff":
+            Quickshell.execDetached(["hyprctl", "dispatch", 'hl.dsp.dpms({ action = "off" })']);
+            hc.screensOff = true;
+            break;
+        }
+    }
+
+    // Screens turned off from a corner: back on at your next mouse movement or key press.
+    // Hyprland won't wake them by itself (mouse_move/key_press_enables_dpms are off), and the
+    // idle screen-off (LockScreen.qml) only wakes the screens it turned off. This waits for a
+    // second with no input first (so pulling out of the corner doesn't undo it), then the
+    // first input after that turns them back on. Not held back by apps that keep the screen
+    // awake (a video): those would stop it ever going idle, leaving the screens dark
+    property bool screensOff: false
+    IdleMonitor {
+        enabled: hc.screensOff
+        timeout: 1
+        respectInhibitors: false
+        onIsIdleChanged: {
+            if (isIdle || !hc.screensOff) return;
+            hc.screensOff = false;
+            Quickshell.execDetached(["hyprctl", "dispatch", 'hl.dsp.dpms({ action = "on" })']);
         }
     }
 
