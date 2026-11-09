@@ -290,7 +290,11 @@ PanelWindow {
             else resultModel.insert(i, { rid: keys[i] });
         }
         // A new search starts at the top
-        if (syncedQuery !== search.text) { syncedQuery = search.text; list.currentIndex = 0; }
+        if (syncedQuery !== search.text) {
+            syncedQuery = search.text;
+            list.currentIndex = 0;
+            list.positionViewAtBeginning();
+        }
     }
     Component.onCompleted: syncResults()
 
@@ -916,7 +920,9 @@ PanelWindow {
             }
             onCurrentIndexChanged: {
                 if (currentIndex < 0) return;
-                const top = Math.floor(currentIndex / columns) * cellHeight;
+                // (from the list's own starting point: rows added above move it, so it isn't
+                // always 0, and going by 0 scrolled the results out of sight)
+                const top = originY + Math.floor(currentIndex / columns) * cellHeight;
                 const bottom = top + cellHeight;
                 // From where it's already heading (keys pressed quickly), so the scroll carries on
                 const from = scrollAnim.running ? scrollAnim.to : contentY;
