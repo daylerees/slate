@@ -48,10 +48,15 @@ Singleton {
         if (toned && neutral) {
             const t = Qt.lighter(wallpaperTone, 1.0);
             if (t.hslHue >= 0) h = t.hslHue;
-            // Light backgrounds take more: the same saturation that reads clearly on near-black
-            // all but vanishes on near-white
-            const lightSurface = light && surface;
-            sat = Math.min(lightSurface ? 0.5 : 0.32, Math.max(sat, t.hslSaturation * (lightSurface ? 1.0 : surface ? 0.45 : 0.22)));
+            if (light && surface) {
+                // Light backgrounds: a set amount of visible colour (chroma), from how colourful
+                // the wallpaper is. Near-white needs far more saturation than near-black to show
+                // any, so a muted wallpaper otherwise left them looking plain white
+                const chroma = Math.min(0.07, t.hslSaturation * 0.37);
+                sat = Math.min(1, Math.max(sat, chroma / Math.max(0.01, 1 - Math.abs(2 * l - 1))));
+            } else {
+                sat = Math.min(0.32, Math.max(sat, t.hslSaturation * (surface ? 0.45 : 0.22)));
+            }
         }
         return Qt.hsla(h < 0 ? 0 : h, sat, l, c.a);
     }
