@@ -41,8 +41,9 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
-| `.githooks/` | pre-commit check for the login screen; turn on with `git config core.hooksPath .githooks` |
-| `docs/` | install, architecture, session, lock/login, redistribution notes |
+| `tests/` | the test suite: `tests/run` (in Docker, never touches your desktop); see [docs/TESTING.md](docs/TESTING.md) |
+| `.githooks/` | pre-commit checks (the quick tests, and the login screen); turn on with `git config core.hooksPath .githooks` |
+| `docs/` | install, architecture, session, lock/login, testing, redistribution notes |
 
 ## What's in it
 
@@ -79,6 +80,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the pieces fit, IPC, Hyprland integration, theming, settings
 - [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md) — lock screen, idle/sleep, login screen (greetd) and recovery
 - [docs/SESSION.md](docs/SESSION.md) — the "Slate" login session, its Hyprland config and personal overrides
+- [docs/TESTING.md](docs/TESTING.md) — the test suite: what it checks, running it, approving new screenshots
 - [docs/REDISTRIBUTION.md](docs/REDISTRIBUTION.md) — packaging status and what's left
 
 ## Where things live

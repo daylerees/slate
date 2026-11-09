@@ -1,0 +1,4 @@
+device for Brother_HL-L2350DW_series: usb://Brother/HL-L2350DW%20series?serial=E00000A0B1C2
+device for EPSON.ET-2850: ipp://192.0.2.31/ipp/print
+device for Office_Laser: ipps://192.0.2.20:631/ipp/print
+device for Old-Printer: socket://192.0.2.99:9100

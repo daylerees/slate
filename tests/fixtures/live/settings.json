@@ -1,0 +1,20 @@
+{
+    "welcomeShown": true,
+    "updateCheck": false,
+    "clipboardHistory": false,
+    "accent": "#8fb3e8",
+    "themeMode": "dark",
+    "lightMode": false,
+    "glass": false,
+    "barClockFormat": "24h",
+    "barClockSeconds": false,
+    "barClockDate": true,
+    "dockShowDownloads": true,
+    "dockShowTrash": true,
+    "dockShowMedia": true,
+    "dockBadges": true,
+    "screensaverMinutes": 0,
+    "idleLockMinutes": 0,
+    "idleScreenOffMinutes": 0,
+    "idleSuspendMinutes": 0
+}

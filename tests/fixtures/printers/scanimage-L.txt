@@ -1,0 +1,3 @@
+device `airscan:e0:Canon TS5300 series' is a eSCL Canon TS5300 series ip=192.0.2.40
+device `hpaio:/net/officejet_pro_8020?ip=192.0.2.31&queue=false' is a Hewlett-Packard OfficeJet_Pro_8020 all-in-one
+device `v4l:/dev/video0' is a Noname USB2.0 HD UVC WebCam virtual device

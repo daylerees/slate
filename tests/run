@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Slate's tests: one command for all of them, run in a container so nothing touches your
+# desktop. See docs/TESTING.md.
+#
+#   tests/run                      every tier, in the container
+#   tests/run -q                   only failures and a summary line (for agents and hooks)
+#   tests/run --tier static,unit   just these tiers (static, unit, live, visual, all)
+#   tests/run --no-container       static + unit straight on this machine (fast)
+#   tests/run --filter dock        only tests whose name contains "dock"
+#   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
+#   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
+#   tests/run --json               one JSON line per failure, then a summary
+#   tests/run -v                   list every check, passes too
+#
+# Exit code 0 only when everything ran and passed. Logs, failure screenshots and diffs go
+# in tests/out/. The live and visual tiers need the vkms kernel module (sudo modprobe vkms).
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+OUT="$ROOT/tests/out"
+tier=all; deps=pinned; container=1; update=""; updating=0
+pass=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --tier) tier=$2; shift ;;
+        --tier=*) tier=${1#*=} ;;
+        --deps) deps=$2; shift ;;
+        --deps=*) deps=${1#*=} ;;
+        --no-container) container=0 ;;
+        --filter) pass+=(--filter "$2"); shift ;;
+        --filter=*) pass+=(--filter "${1#*=}") ;;
+        -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
+        --update-baselines)
+            updating=1
+            while [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; do update="$update $2"; shift; done ;;
+        -h|--help) sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0"; exit 0 ;;
+        *) echo "tests/run: unknown option $1 (see tests/run --help)" >&2; exit 2 ;;
+    esac
+    shift
+done
+case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest" >&2; exit 2 ;; esac
+if [ "$updating" = 1 ]; then
+    [ "$tier" = all ] && tier=visual
+    export SLATE_UPDATE_BASELINES="${update# }"
+    [ -n "$SLATE_UPDATE_BASELINES" ] || SLATE_UPDATE_BASELINES=all
+fi
+quiet=0; for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|--json) quiet=1 ;; esac; done
+say() { [ "$quiet" = 1 ] || echo "$@" >&2; }
+mkdir -p "$OUT"
+
+if [ "$container" = 0 ]; then
+    [ "$tier" = all ] && tier=static,unit
+    case ",$tier," in *,live,*|*,visual,*)
+        echo "tests/run: the live and visual tiers only run in the container (leave out --no-container)" >&2; exit 2 ;;
+    esac
+    exec python3 "$ROOT/tests/lib/runner.py" --tier "$tier" "${pass[@]+"${pass[@]}"}"
+fi
+
+command -v docker >/dev/null || { echo "tests/run: Docker isn't installed (or use --no-container for static + unit)" >&2; exit 2; }
+
+# The image: rebuilt when its recipe changes (pinned), or once a day (latest)
+ctx=$(mktemp -d); trap 'rm -rf "$ctx"' EXIT
+cp "$ROOT/tests/container/Dockerfile" "$ROOT/tests/container/entry.sh" "$ROOT/packaging/arch.txt" "$ctx/"
+snapshot=$(grep -v '^\s*\(#\|$\)' "$ROOT/tests/container/deps.lock" | head -1)
+recipe=$(cat "$ctx"/* "$ROOT/tests/container/deps.lock" | sha256sum | cut -c1-12)
+if [ "$deps" = pinned ]; then
+    image="slate-tests:pinned-$recipe"; build_args=(--build-arg "SNAPSHOT=$snapshot")
+else
+    image="slate-tests:latest-$(date +%Y%m%d)-$recipe"; build_args=(--pull --no-cache)
+fi
+if ! docker image inspect "$image" >/dev/null 2>&1; then
+    say "Building the test image ($deps deps$([ "$deps" = pinned ] && echo ", $snapshot")): a few minutes, once…"
+    # (CI adds its layer cache through SLATE_TEST_BUILD_ARGS)
+    # shellcheck disable=SC2086
+    if ! docker build "${build_args[@]}" ${SLATE_TEST_BUILD_ARGS:-} -t "$image" "$ctx" >"$OUT/image-build.log" 2>&1; then
+        echo "tests/run: building the test image failed; see tests/out/image-build.log" >&2
+        tail -5 "$OUT/image-build.log" >&2
+        exit 2
+    fi
+fi
+
+# The live and visual tiers: Hyprland renders (in software) through a vkms device
+run_args=()
+case ",$tier," in *,live,*|*,visual,*|*,all,*)
+    card=""
+    for c in /sys/class/drm/card[0-9]*; do
+        [ -e "$c/device/driver" ] || continue
+        case "$(readlink -f "$c/device/driver")" in *vkms*|*faux*) card=/dev/dri/$(basename "$c"); break ;; esac
+    done
+    if [ -z "$card" ]; then
+        echo "tests/run: the live and visual tiers need the vkms kernel module. Load it with:" >&2
+        echo "    sudo modprobe vkms" >&2
+        echo "(or run only --tier static,unit)" >&2
+        exit 2
+    fi
+    run_args+=(--device "$card" -e "SLATE_TEST_CARD=$card" -e "DRI_GID=$(stat -c %g "$card")")
+    ;;
+esac
+
+label=""; [ "$deps" = latest ] && label="[latest deps]"
+if [ "$updating" = 1 ]; then
+    mkdir -p "$ROOT/tests/visual/baselines"
+    run_args+=(-v "$ROOT/tests/visual/baselines:/slate/tests/visual/baselines")
+    rm -f "$OUT/visual/updated.txt"
+fi
+status=0
+docker run --rm --init --hostname slate-test \
+    -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+    -e SLATE_UPDATE_BASELINES="${SLATE_UPDATE_BASELINES:-}" \
+    -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -w /slate \
+    "${run_args[@]+"${run_args[@]}"}" \
+    "$image" python3 /slate/tests/lib/runner.py --tier "$tier" --label "$label" "${pass[@]+"${pass[@]}"}" || status=$?
+if [ "$updating" = 1 ]; then
+    if [ -s "$OUT/visual/updated.txt" ]; then
+        echo "Approved screenshots updated (review them with git diff before committing):"
+        sed 's/^/  /' "$OUT/visual/updated.txt"
+    else
+        echo "No approved screenshots changed."
+    fi
+fi
+exit $status

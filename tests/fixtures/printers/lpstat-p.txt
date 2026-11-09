@@ -1,0 +1,34 @@
+printer Brother_HL-L2350DW_series is idle.  enabled since Mon 05 Jan 2026 09:12:40 UTC
+	Form mounted:
+	Content types: any
+	Printer types: unknown
+	Description: Brother HL-L2350DW series
+	Alerts: none
+	Location: Study
+	Connection: direct
+	Interface: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
+	On fault: no alert
+	After fault: continue
+	Users allowed:
+		(all)
+	Forms allowed:
+		(none)
+	Banner required
+	Charge:
+		(none)
+	Rerun required
+printer EPSON.ET-2850 now printing EPSON.ET-2850-14.  enabled since Mon 05 Jan 2026 09:30:02 UTC
+	Form mounted:
+	Content types: any
+	Printer types: unknown
+	Description:   Kitchen Inkjet  
+	Alerts: none
+	Location:
+printer Office_Laser is idle.  enabled since Mon 05 Jan 2026 08:55:10 UTC
+	Description: Office Laser (HP LaserJet Pro M404dn)
+	Alerts: none
+printer Old-Printer disabled since Fri 02 Jan 2026 17:01:44 UTC -
+	Paused
+	Form mounted:
+	Description: 
+	Alerts: none

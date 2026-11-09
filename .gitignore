@@ -10,3 +10,5 @@ __pycache__/
 *.pyc
 shell/VERSION
 shell/.manifest
+# Test results (tests/run)
+tests/out/

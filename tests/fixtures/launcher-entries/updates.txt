@@ -1,0 +1,68 @@
+signal time=1762700000.000001 sender=org.freedesktop.DBus -> destination=:1.240 serial=2 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameAcquired
+   string ":1.240"
+signal time=1762700000.000002 sender=org.freedesktop.DBus -> destination=:1.240 serial=4 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameLost
+   string ":1.240"
+signal time=1762700001.104521 sender=:1.87 -> destination=(null destination) serial=1201 path=/com/canonical/unity/launcherentry/3046587; interface=com.canonical.Unity.LauncherEntry; member=Update
+   string "application://org.example.Chat.desktop"
+   array [
+      dict entry(
+         string "count"
+         variant             int64 3
+      )
+      dict entry(
+         string "count-visible"
+         variant             boolean true
+      )
+   ]
+signal time=1762700002.551203 sender=:1.95 -> destination=(null destination) serial=88 path=/com/canonical/unity/launcherentry/1172648; interface=com.canonical.Unity.LauncherEntry; member=Update
+   string "application://org.example.Files.desktop"
+   array [
+      dict entry(
+         string "progress"
+         variant             double 0.4
+      )
+      dict entry(
+         string "progress-visible"
+         variant             boolean true
+      )
+      dict entry(
+         string "quicklist"
+         variant             string "/org/example/Files/menu"
+      )
+   ]
+signal time=1762700003.000117 sender=:1.87 -> destination=(null destination) serial=1202 path=/com/canonical/unity/launcherentry/3046587; interface=com.canonical.Unity.LauncherEntry; member=Update
+   string "application://org.example.Chat.desktop"
+   array [
+      dict entry(
+         string "count"
+         variant             int64 5
+      )
+      dict entry(
+         string "urgent"
+         variant             boolean true
+      )
+   ]
+signal time=1762700004.300004 sender=:1.95 -> destination=(null destination) serial=89 path=/com/canonical/unity/launcherentry/1172648; interface=com.canonical.Unity.LauncherEntry; member=Update
+   string "application://org.example.Files.desktop"
+   array [
+      dict entry(
+         string "progress"
+         variant             double 1
+      )
+      dict entry(
+         string "progress-visible"
+         variant             boolean false
+      )
+   ]
+signal time=1762700005.000001 sender=:1.87 -> destination=(null destination) serial=1203 path=/com/canonical/unity/launcherentry/3046587; interface=com.canonical.Unity.LauncherEntry; member=Update
+   string "application://org.example.Chat.desktop"
+   array [
+      dict entry(
+         string "count-visible"
+         variant             boolean false
+      )
+      dict entry(
+         string "urgent"
+         variant             boolean false
+      )
+   ]

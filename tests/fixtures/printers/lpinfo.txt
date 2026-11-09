@@ -1,0 +1,36 @@
+Device: uri = ipps://192.0.2.20:631/ipp/print
+        class = network
+        info = Office Laser
+        make-and-model = HP LaserJet Pro M404dn
+        device-id = MFG:HP;MDL:LaserJet Pro M404dn;
+        location = 
+Device: uri = ipp://192.0.2.40/ipp/print
+        class = network
+        info = Canon TS5300 series
+        make-and-model = Canon TS5300 series
+        device-id = MFG:Canon;MDL:TS5300 series;
+        location = Hall
+Device: uri = ipps://192.0.2.40:443/ipp/print
+        class = network
+        info = Canon TS5300 series
+        make-and-model = Canon TS5300 series
+        device-id = MFG:Canon;MDL:TS5300 series;
+        location = Hall
+Device: uri = dnssd://Brother%20MFC-L2710DW%20series._ipp._tcp.local/?uuid=e3248000-80ce-11db-8000-000000000001
+        class = network
+        info = Brother MFC-L2710DW series
+        make-and-model = Unknown
+        device-id = 
+        location = 
+Device: uri = usb://Kyocera/ECOSYS%20P2040dw?serial=VCF0000001
+        class = direct
+        info = Kyocera ECOSYS P2040dw
+        make-and-model = Kyocera ECOSYS P2040dw
+        device-id = MFG:Kyocera;MDL:ECOSYS P2040dw;
+        location = 
+Device: uri = usb
+        class = direct
+        info = USB Printer (usb)
+        make-and-model = Unknown
+        device-id = 
+        location = 

@@ -1,0 +1,4 @@
+# The Arch archive snapshot the pinned test image is built from (archive.archlinux.org/repos/<date>/).
+# Move it forward on purpose (and re-approve screenshots if they change): tests/run --deps latest
+# shows what a newer date would break first.
+2026/11/08

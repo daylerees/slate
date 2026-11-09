@@ -1,0 +1,5 @@
+Brother_HL-L2350DW_series accepting requests since Mon 05 Jan 2026 09:12:40 UTC
+EPSON.ET-2850 accepting requests since Mon 05 Jan 2026 09:30:02 UTC
+Office_Laser accepting requests since Mon 05 Jan 2026 08:55:10 UTC
+Old-Printer not accepting requests since Fri 02 Jan 2026 17:01:44 UTC -
+	Rejecting Jobs

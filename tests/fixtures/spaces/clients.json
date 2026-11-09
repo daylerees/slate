@@ -1,0 +1,317 @@
+[
+ {
+  "address": "0xa1",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   0,
+   40
+  ],
+  "size": [
+   1280,
+   1400
+  ],
+  "workspace": {
+   "id": 1,
+   "name": "1"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "com.example.Editor",
+  "title": "main.c - Editor",
+  "initialClass": "com.example.Editor",
+  "initialTitle": "main.c - Editor",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 3,
+  "inhibitingIdle": false,
+  "stableId": 11
+ },
+ {
+  "address": "0xa2",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   1280,
+   40
+  ],
+  "size": [
+   1280,
+   1400
+  ],
+  "workspace": {
+   "id": 1,
+   "name": "1"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "example-term",
+  "title": "~",
+  "initialClass": "example-term",
+  "initialTitle": "~",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 0,
+  "inhibitingIdle": false,
+  "stableId": 12
+ },
+ {
+  "address": "0xa6",
+  "mapped": true,
+  "hidden": true,
+  "at": [
+   0,
+   40
+  ],
+  "size": [
+   100,
+   100
+  ],
+  "workspace": {
+   "id": 1,
+   "name": "1"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "com.example.Editor",
+  "title": "hidden",
+  "initialClass": "com.example.Editor",
+  "initialTitle": "hidden",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 7,
+  "inhibitingIdle": false,
+  "stableId": 16
+ },
+ {
+  "address": "0xa7",
+  "mapped": false,
+  "hidden": false,
+  "at": [
+   0,
+   40
+  ],
+  "size": [
+   100,
+   100
+  ],
+  "workspace": {
+   "id": 1,
+   "name": "1"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "com.example.Editor",
+  "title": "unmapped",
+  "initialClass": "com.example.Editor",
+  "initialTitle": "unmapped",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 8,
+  "inhibitingIdle": false,
+  "stableId": 17
+ },
+ {
+  "address": "0xa3",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   640,
+   390
+  ],
+  "size": [
+   1280,
+   700
+  ],
+  "workspace": {
+   "id": 2,
+   "name": "2"
+  },
+  "floating": true,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "scratch-notes",
+  "title": "Notes",
+  "initialClass": "scratch-notes",
+  "initialTitle": "Notes",
+  "pid": 0,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 1,
+  "inhibitingIdle": false,
+  "stableId": 13
+ },
+ {
+  "address": "0xa8",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   100,
+   100
+  ],
+  "size": [
+   900,
+   700
+  ],
+  "workspace": {
+   "id": 2,
+   "name": "2"
+  },
+  "floating": true,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "org.quickshell",
+  "title": "Slate Settings",
+  "initialClass": "org.quickshell",
+  "initialTitle": "Slate Settings",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 4,
+  "inhibitingIdle": false,
+  "stableId": 18
+ },
+ {
+  "address": "0xa4",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   2560,
+   0
+  ],
+  "size": [
+   720,
+   1280
+  ],
+  "workspace": {
+   "id": 3,
+   "name": "3"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 1,
+  "class": "Example-Viewer",
+  "title": "photo.png",
+  "initialClass": "Example-Viewer",
+  "initialTitle": "photo.png",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 1,
+  "fullscreenClient": 1,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 2,
+  "inhibitingIdle": false,
+  "stableId": 14
+ },
+ {
+  "address": "0xa9",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   2560,
+   0
+  ],
+  "size": [
+   720,
+   640
+  ],
+  "workspace": {
+   "id": 3,
+   "name": "3"
+  },
+  "floating": false,
+  "pseudo": false,
+  "monitor": 1,
+  "class": "ghost",
+  "title": "Ghost",
+  "initialClass": "ghost",
+  "initialTitle": "Ghost",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 5,
+  "inhibitingIdle": false,
+  "stableId": 19
+ },
+ {
+  "address": "0xa5",
+  "mapped": true,
+  "hidden": false,
+  "at": [
+   200,
+   200
+  ],
+  "size": [
+   1000,
+   800
+  ],
+  "workspace": {
+   "id": -98,
+   "name": "special:magic"
+  },
+  "floating": true,
+  "pseudo": false,
+  "monitor": 0,
+  "class": "com.example.Editor",
+  "title": "Scratch",
+  "initialClass": "com.example.Editor",
+  "initialTitle": "Scratch",
+  "pid": 999999999,
+  "xwayland": false,
+  "pinned": false,
+  "fullscreen": 0,
+  "fullscreenClient": 0,
+  "grouped": [],
+  "tags": [],
+  "swallowing": "0x0",
+  "focusHistoryID": 6,
+  "inhibitingIdle": false,
+  "stableId": 15
+ }
+]

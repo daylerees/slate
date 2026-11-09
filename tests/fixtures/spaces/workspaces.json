@@ -1,0 +1,16 @@
+[{
+    "id": 1, "name": "1", "monitor": "DP-1", "monitorID": 0, "windows": 4, "hasfullscreen": false,
+    "lastwindow": "0xa2", "lastwindowtitle": "~", "ispersistent": false
+},{
+    "id": 2, "name": "2", "monitor": "DP-1", "monitorID": 0, "windows": 2, "hasfullscreen": false,
+    "lastwindow": "0xa3", "lastwindowtitle": "Notes", "ispersistent": false
+},{
+    "id": 3, "name": "3", "monitor": "HDMI-A-1", "monitorID": 1, "windows": 2, "hasfullscreen": true,
+    "lastwindow": "0xa4", "lastwindowtitle": "photo.png", "ispersistent": false
+},{
+    "id": 4, "name": "4", "monitor": "DP-1", "monitorID": 0, "windows": 0, "hasfullscreen": false,
+    "lastwindow": "0x0", "lastwindowtitle": "", "ispersistent": false
+},{
+    "id": -98, "name": "special:magic", "monitor": "DP-1", "monitorID": 0, "windows": 1, "hasfullscreen": false,
+    "lastwindow": "0xa5", "lastwindowtitle": "Scratch", "ispersistent": false
+}]

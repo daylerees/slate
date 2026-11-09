@@ -1,0 +1,13 @@
+[{
+    "id": 0, "name": "DP-1", "description": "Example Display 27", "make": "Example", "model": "Display 27",
+    "width": 2560, "height": 1440, "refreshRate": 143.99600, "x": 0, "y": 0,
+    "activeWorkspace": {"id": 1, "name": "1"}, "specialWorkspace": {"id": 0, "name": ""},
+    "reserved": [0, 40, 0, 0], "scale": 1.00, "transform": 0, "focused": true,
+    "dpmsStatus": true, "vrr": false, "disabled": false
+},{
+    "id": 1, "name": "HDMI-A-1", "description": "Example Portrait 24", "make": "Example", "model": "Portrait 24",
+    "width": 1920, "height": 1080, "refreshRate": 60.00000, "x": 2560, "y": 0,
+    "activeWorkspace": {"id": 3, "name": "3"}, "specialWorkspace": {"id": 0, "name": ""},
+    "reserved": [0, 0, 0, 0], "scale": 1.50, "transform": 1, "focused": false,
+    "dpmsStatus": true, "vrr": false, "disabled": false
+}]

@@ -1,6 +1,9 @@
 # Plan: Slate's regression test suite
 
-Status: **proposed, not started** (written 2026-11-09). Nothing here is implemented yet.
+Status: **built** (2026-11-09): all seven steps, see docs/TESTING.md for how it's used. Left
+for later: a fake MPRIS player (the dock's media controls, and a scene for them), the
+switcher/overview with windows in screenshots (terminal contents vary), restoring a Settings
+page's defaults from a test (it's a button only), multi-monitor.
 
 ## Context
 
@@ -96,11 +99,11 @@ per script, e.g.:
 
 ### 3. Live (a real headless session; ~minutes)
 Inside the container, as a non-root user, with `dbus-run-session`:
-1. **Parent compositor**: `sway` with `WLR_BACKENDS=headless WLR_RENDERER=pixman` (no GPU, no
-   display; the only way Hyprland can run without a seat: it has no headless flag of its own).
-2. **Hyprland nested** in it (`LIBGL_ALWAYS_SOFTWARE=1`, `HYPRLAND_NO_CRASHREPORTER=1`),
-   with a test config: Slate's session config plus one fixed headless output (1440×900,
-   scale 1), animations off.
+1. **A device to render with**: the host's vkms card passed in (see "Spike result"); no
+   parent compositor.
+2. **Hyprland** on it (`LIBSEAT_BACKEND=noop`, `AQ_DRM_DEVICES`, `HYPRLAND_NO_CRASHREPORTER=1`,
+   apps with `LIBGL_ALWAYS_SOFTWARE=1`), with a test config: Slate's session config plus one
+   headless output `TEST` (1440×900, scale 1), every other output off, animations off.
 3. **Slate** from a copy of `shell/` with a scratch `HOME`, a fixture `settings.json`, fixture
    wallpaper, and `faketime` pinned to `2026-01-05 09:41` so clocks are stable.
 4. **Fake world**: a few fixture apps (`foot` terminals, a GTK test window) for the dock,
@@ -156,6 +159,32 @@ picker, power confirm, welcome. For each: drive the state, wait for `test` to re
   scheduled `--deps latest` run opens an issue when it fails.
 - `.githooks/pre-commit`: add `tests/run -q --tier static --no-container` (fast).
 - A memory note: run `tests/run -q` before releases and after big changes.
+
+## Spike result (2026-11-09)
+
+Nested Hyprland doesn't work: its Wayland backend needs a GPU device for buffers (a
+pixman-only parent offers no linux-dmabuf: "no allocator available"), and even with the
+host's render node passed in, it binds `xdg_wm_base` v6 where sway 1.12 offers v5 (protocol
+error). So the live tier doesn't use a parent compositor. What works, locally and on
+GitHub's `ubuntu-latest` runners:
+
+- **vkms** on the host (`sudo modprobe vkms`; on GitHub it loads as-is). It's only used as a
+  device to allocate buffers on: Hyprland's renderer runs on llvmpipe through it.
+- In the container: `--device /dev/dri/cardN` (the vkms one, found by its `faux`/`vkms`
+  driver in `/sys/class/drm`), `--group-add <its gid>`, and `LIBSEAT_BACKEND=noop
+  AQ_DRM_DEVICES=/dev/dri/cardN Hyprland -c …` under `dbus-run-session`.
+- The vkms screen (`Virtual-1`) is disabled; Slate is shown on a **headless output**
+  (`hyprctl output create headless TEST` + a monitor rule for its size), which takes any
+  mode (so 853×480 is easy). `grim -o TEST` screenshots it. Locally the host's Hyprland
+  grabs the vkms card when it appears (but shows nothing on it), so the container can't
+  modeset it; it doesn't need to. On GitHub the container does get it, and `Virtual-1`
+  showed up as a second small output, so the harness disables every output but `TEST`.
+- Apps need `LIBGL_ALWAYS_SOFTWARE=1` (Quickshell crashed without it: Mesa found no driver
+  for the vkms fd).
+- sway (and other binaries with file capabilities) won't exec in Docker until
+  `setcap -r` (not needed any more without the parent compositor).
+- Slate came up with its bar, dock, wallpaper and the welcome window in ~20 s, both places.
+  Without a system bus, UPower/NetworkManager/Bluetooth/polkit warn as expected.
 
 ## Order of work
 1. **Spike** (do first; it decides tier 3/4): container with headless sway → nested Hyprland

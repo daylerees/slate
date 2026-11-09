@@ -1,0 +1,4 @@
+Home Wi-Fi:802-11-wireless
+Office VPN:vpn
+wg0:wireguard
+lo:loopback

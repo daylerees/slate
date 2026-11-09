@@ -1,0 +1,4 @@
+wlp2s0:wifi:connected
+wg0:wireguard:connected
+tun0:tun:connected (externally)
+lo:loopback:connected (externally)
