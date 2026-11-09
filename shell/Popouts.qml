@@ -149,6 +149,9 @@ PanelWindow {
     readonly property color accent: bar.accent
     readonly property color accentText: Config.tint("#12151a")
     readonly property color danger: bar.errorColor
+    // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
+    // without seconds: they're big and don't tick every second
+    readonly property string timeFormat: Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"
     readonly property real radius: 14
     readonly property real pad: 14
 
@@ -2018,7 +2021,7 @@ PanelWindow {
                 Column {
                     id: timeCol
                     spacing: 2
-                    Label { text: Qt.formatTime(cal.today, "h:mm AP"); font.pixelSize: 22 }
+                    Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: 22 }
                     Label { text: Qt.formatDate(cal.today, "dddd, d MMMM yyyy"); color: pop.dim; font.pixelSize: 12 }
                 }
                 // Now: icon and temperature, conditions and place underneath
@@ -2368,7 +2371,7 @@ PanelWindow {
                             anchors.top: clockCard.roomy ? parent.top : undefined
                             anchors.topMargin: 14
                             spacing: 2
-                            Label { text: Qt.formatTime(ccClock.date, "h:mm AP"); font.pixelSize: clockCard.roomy ? 32 : 24 }
+                            Label { text: Qt.formatTime(ccClock.date, pop.timeFormat); font.pixelSize: clockCard.roomy ? 32 : 24 }
                             Label { text: Qt.formatDate(ccClock.date, "dddd, d MMMM"); color: pop.dim; font.pixelSize: 12 }
                             Row {
                                 visible: pop.weather !== null
