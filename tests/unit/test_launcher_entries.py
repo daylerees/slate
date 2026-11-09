@@ -1,6 +1,11 @@
 """scripts/launcher-entries.py: the dock badges and progress apps publish over D-Bus, read
 from canned dbus-monitor output."""
 import json
+import os
+import signal
+import stat
+import subprocess
+import time
 
 import slate
 from slate import Case, run
@@ -32,6 +37,13 @@ class LauncherEntries(Case):
         self.assertEqual(s.calls("dbus-monitor")[-1:], [["--session", MATCH]])
         return [json.loads(l) for l in out.splitlines()]
 
+    def state_file(self):
+        return os.path.join(self.h.runtime, "slate", "launcher-entries.json")
+
+    def forget(self):
+        if os.path.exists(self.state_file()):
+            os.remove(self.state_file())
+
     def test_capture(self):
         """Each change prints the app's whole state so far."""
         chat = {"app": "org.example.Chat"}
@@ -52,6 +64,7 @@ class LauncherEntries(Case):
         ]
         for raw, want in cases:
             with self.subTest(raw):
+                self.forget()               # (each from an empty session: no count from the last)
                 got = self.lines(update("application://a.desktop", ("count", raw)))
                 self.assertEqual(got, [{"app": "a", "count": want}])
 
@@ -82,3 +95,102 @@ class LauncherEntries(Case):
         code, out = run(["python3", SCRIPT], env=s.env, timeout=10)
         self.assertEqual(code, 1)
         self.assertIn("dbus-monitor isn't installed", out)
+
+    # ---- Kept for the session: Slate restarting doesn't lose the badges -----------------------
+
+    def test_remembered_after_a_restart(self):
+        """Apps only speak when a count changes; after Slate restarts (a new listener), the
+        counts so far come first, before anything new (they used to be lost until the app
+        spoke again)."""
+        self.lines(update("application://a.desktop", ("count", "int64 3"), ("count-visible", "boolean true"))
+                   + update("application://b.desktop", ("progress", "double 0.5")))
+        with open(self.state_file()) as f:
+            self.assertEqual(set(json.load(f)), {"a", "b"})
+        got = self.lines(update("application://b.desktop", ("progress", "double 0.75")))
+        self.assertEqual(got, [{"app": "a", "count": 3, "countVisible": True},
+                               {"app": "b", "progress": 0.5},
+                               {"app": "b", "progress": 0.75}])
+
+    def test_damaged_state_starts_afresh(self):
+        for bad in ("{half", "[]", '{"a": 5}'):
+            with self.subTest(bad):
+                os.makedirs(os.path.dirname(self.state_file()), exist_ok=True)
+                with open(self.state_file(), "w") as f:
+                    f.write(bad)
+                self.assertEqual(self.lines(update("application://c.desktop", ("count", "int64 1"))),
+                                 [{"app": "c", "count": 1}])
+
+    def test_stops_with_slate(self):
+        """When whatever started it goes (Slate, killed by a full restart), it and its
+        dbus-monitor stop too: they used to run on, one more copy each restart."""
+        s = Stubs(self.h)
+        pids = os.path.join(self.h.dir, "pids")
+        # A dbus-monitor that listens forever, as the real one does
+        fake = os.path.join(s.dir, "dbus-monitor")
+        with open(fake, "w") as f:
+            f.write("#!/bin/sh\necho $$ >> '%s'\nexec sleep 300\n" % pids)
+        os.chmod(fake, os.stat(fake).st_mode | stat.S_IXUSR)
+        # Its parent: started in the background, then the parent exits (as Slate's process does)
+        subprocess.run(["sh", "-c", "python3 '%s' >/dev/null 2>&1 & echo $! >> '%s'; sleep 1" % (SCRIPT, pids)],
+                       env=s.env, timeout=10)
+        with open(pids) as f:
+            started = [int(p) for p in f.read().split()]
+        self.assertEqual(len(started), 2, "the listener and its dbus-monitor")
+        def alive(pid):
+            try:
+                os.kill(pid, 0)
+                with open(f"/proc/{pid}/stat") as st:
+                    return st.read().split()[2] != "Z"
+            except (OSError, FileNotFoundError):
+                return False
+        try:
+            for _ in range(50):
+                if not any(alive(p) for p in started):
+                    break
+                time.sleep(0.1)
+            self.assertFalse([p for p in started if alive(p)], "still running after their parent went")
+        finally:
+            for p in started:
+                try:
+                    os.kill(p, signal.SIGKILL)
+                except OSError:
+                    pass
+
+    def test_monitor_stops_with_it(self):
+        """When Slate stops the listener (every reload does), its dbus-monitor goes too: it used
+        to be left running, one more each reload."""
+        s = Stubs(self.h)
+        pids = os.path.join(self.h.dir, "pids")
+        fake = os.path.join(s.dir, "dbus-monitor")
+        with open(fake, "w") as f:
+            f.write("#!/bin/sh\necho $$ >> '%s'\nexec sleep 300\n" % pids)
+        os.chmod(fake, os.stat(fake).st_mode | stat.S_IXUSR)
+        p = subprocess.Popen(["python3", SCRIPT], env=s.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        monitor = None
+        try:
+            for _ in range(50):
+                if os.path.exists(pids) and open(pids).read().strip():
+                    monitor = int(open(pids).read().split()[0])
+                    break
+                time.sleep(0.1)
+            self.assertIsNotNone(monitor, "dbus-monitor didn't start")
+            p.terminate()
+            p.wait(5)
+            for _ in range(50):
+                try:
+                    os.kill(monitor, 0)
+                    with open(f"/proc/{monitor}/stat") as st:
+                        if st.read().split()[2] == "Z":
+                            break
+                except (OSError, FileNotFoundError):
+                    break
+                time.sleep(0.1)
+            else:
+                self.fail("dbus-monitor still running after the listener was stopped")
+        finally:
+            p.kill()
+            if monitor:
+                try:
+                    os.kill(monitor, signal.SIGKILL)
+                except OSError:
+                    pass

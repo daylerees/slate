@@ -13,13 +13,22 @@ change, each app's whole state so far:
    "progress": 0.4, "progressVisible": false, "urgent": false}
 
 "app" is the desktop entry's id (application://org.telegram.desktop.desktop → org.telegram.desktop).
-Runs until it's stopped; prints nothing until an app says something.
+Runs until it's stopped, or until Slate (whatever started it) has gone.
+
+Apps only say something when a count changes, so the latest state is kept for the session
+($XDG_RUNTIME_DIR/slate/launcher-entries.json, emptied at logout) and printed first when it
+starts: Slate restarting doesn't lose the badges until each app speaks again.
 """
+import ctypes
 import json
+import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
+
+STATE = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "slate", "launcher-entries.json")
 
 MATCH = "type='signal',interface='com.canonical.Unity.LauncherEntry',member='Update'"
 KEYS = {"count": "count", "count-visible": "countVisible", "progress": "progress",
@@ -41,11 +50,47 @@ def value(line):
     return int(raw)
 
 
+def stop_with_parent():
+    """Be stopped when whatever started this goes (Slate, killed by a restart), rather than
+    running on unseen. (Linux's PR_SET_PDEATHSIG; the dbus-monitor below gets it too.)"""
+    try:
+        ctypes.CDLL(None, use_errno=True).prctl(1, signal.SIGTERM)      # 1: PR_SET_PDEATHSIG
+    except (OSError, AttributeError):
+        pass
+
+
+def load():
+    try:
+        with open(STATE, encoding="utf-8") as f:
+            d = json.load(f)
+        return {k: v for k, v in d.items() if isinstance(v, dict)} if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save(state):
+    try:
+        os.makedirs(os.path.dirname(STATE), exist_ok=True)
+        tmp = STATE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+        os.replace(tmp, STATE)
+    except OSError:
+        pass
+
+
 def main():
+    parent = os.getppid()
+    stop_with_parent()
+    if os.getppid() != parent:          # it went before that took hold
+        return
     if not shutil.which("dbus-monitor"):
         sys.exit("launcher-entries: dbus-monitor isn't installed (it comes with D-Bus)")
-    proc = subprocess.Popen(["dbus-monitor", "--session", MATCH], stdout=subprocess.PIPE, text=True, bufsize=1)
-    state = {}                 # app id → its properties so far
+    state = load()             # app id → its properties so far (this session's, from before)
+    for entry in state.values():
+        print(json.dumps(entry), flush=True)
+    proc = subprocess.Popen(["dbus-monitor", "--session", MATCH], stdout=subprocess.PIPE, text=True, bufsize=1,
+                            preexec_fn=stop_with_parent)
     app = None                 # the app the signal being read is about
     key = None                 # the property whose value comes next
     for line in proc.stdout:
@@ -64,6 +109,7 @@ def main():
             key = None
         elif app and s == "]":                 # the end of its properties: one line for them all
             print(json.dumps(state[app]), flush=True)
+            save(state)
             app = None
 
 
