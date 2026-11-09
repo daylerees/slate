@@ -186,22 +186,23 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 @property --d-base-a { syntax: '<color>'; inherits: true; initial-value: #2a3446; }
 @property --d-base-b { syntax: '<color>'; inherits: true; initial-value: #161b24; }
 @property --d-blur { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --d-pill { syntax: '<color>'; inherits: true; initial-value: #0f1216; }
 @keyframes bar-looks {
-  0.00% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
-  10.71% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
-  14.29% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; }
-  25.00% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; }
-  28.57% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; }
-  39.29% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; }
-  42.86% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; }
-  53.57% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; }
-  57.14% { --d-bar: rgba(10,18,24,.78); --d-cap: rgba(143,208,232,.11); --d-sheen: rgba(143,208,232,.18); --d-rim: rgba(143,208,232,.28); --d-sep: rgba(190,210,220,.35); --d-accent: #8fd0e8; --d-occ: #a9bcc6; --d-empty: #475862; --d-tile: rgba(143,208,232,.16); --d-ink: #ecf3f6; --d-blob-a: rgba(40,200,220,.80); --d-blob-b: rgba(30,90,200,.75); --d-blob-c: rgba(120,240,220,.80); --d-blob-d: rgba(60,150,255,.75); --d-base-a: #0f3a4f; --d-base-b: #08161f; --d-blur: 18; }
-  67.86% { --d-bar: rgba(10,18,24,.78); --d-cap: rgba(143,208,232,.11); --d-sheen: rgba(143,208,232,.18); --d-rim: rgba(143,208,232,.28); --d-sep: rgba(190,210,220,.35); --d-accent: #8fd0e8; --d-occ: #a9bcc6; --d-empty: #475862; --d-tile: rgba(143,208,232,.16); --d-ink: #ecf3f6; --d-blob-a: rgba(40,200,220,.80); --d-blob-b: rgba(30,90,200,.75); --d-blob-c: rgba(120,240,220,.80); --d-blob-d: rgba(60,150,255,.75); --d-base-a: #0f3a4f; --d-base-b: #08161f; --d-blur: 18; }
-  71.43% { --d-bar: #15110d; --d-cap: #251e17; --d-sheen: rgba(232,180,120,0); --d-rim: rgba(232,180,120,0); --d-sep: #52483d; --d-accent: #e8b47a; --d-occ: #c4b8a8; --d-empty: #5c5246; --d-tile: #30281f; --d-ink: #f5f0ea; --d-blob-a: rgba(230,140,50,.50); --d-blob-b: rgba(170,70,40,.45); --d-blob-c: rgba(230,140,50,0); --d-blob-d: rgba(230,140,50,0); --d-base-a: #3e2a16; --d-base-b: #1a120a; --d-blur: 0; }
-  82.14% { --d-bar: #15110d; --d-cap: #251e17; --d-sheen: rgba(232,180,120,0); --d-rim: rgba(232,180,120,0); --d-sep: #52483d; --d-accent: #e8b47a; --d-occ: #c4b8a8; --d-empty: #5c5246; --d-tile: #30281f; --d-ink: #f5f0ea; --d-blob-a: rgba(230,140,50,.50); --d-blob-b: rgba(170,70,40,.45); --d-blob-c: rgba(230,140,50,0); --d-blob-d: rgba(230,140,50,0); --d-base-a: #3e2a16; --d-base-b: #1a120a; --d-blur: 0; }
-  85.71% { --d-bar: rgba(24,14,20,.78); --d-cap: rgba(240,160,200,.11); --d-sheen: rgba(240,160,200,.18); --d-rim: rgba(240,160,200,.28); --d-sep: rgba(220,196,210,.35); --d-accent: #f0a0c8; --d-occ: #c6b0bc; --d-empty: #5e4c58; --d-tile: rgba(240,160,200,.16); --d-ink: #f6ecf1; --d-blob-a: rgba(255,150,120,.75); --d-blob-b: rgba(200,70,150,.75); --d-blob-c: rgba(255,200,170,.80); --d-blob-d: rgba(255,110,170,.75); --d-base-a: #4d1f3a; --d-base-b: #1c0c16; --d-blur: 18; }
-  96.43% { --d-bar: rgba(24,14,20,.78); --d-cap: rgba(240,160,200,.11); --d-sheen: rgba(240,160,200,.18); --d-rim: rgba(240,160,200,.28); --d-sep: rgba(220,196,210,.35); --d-accent: #f0a0c8; --d-occ: #c6b0bc; --d-empty: #5e4c58; --d-tile: rgba(240,160,200,.16); --d-ink: #f6ecf1; --d-blob-a: rgba(255,150,120,.75); --d-blob-b: rgba(200,70,150,.75); --d-blob-c: rgba(255,200,170,.80); --d-blob-d: rgba(255,110,170,.75); --d-base-a: #4d1f3a; --d-base-b: #1c0c16; --d-blur: 18; }
-  100.00% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; }
+  0.00% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; --d-pill: #0f1216; }
+  10.71% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; --d-pill: #0f1216; }
+  14.29% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; --d-pill: rgba(22,13,15,.70); }
+  25.00% { --d-bar: rgba(22,13,15,.78); --d-cap: rgba(236,140,140,.11); --d-sheen: rgba(236,140,140,.18); --d-rim: rgba(236,140,140,.28); --d-sep: rgba(214,196,198,.35); --d-accent: #ec8c8c; --d-occ: #c2b0b2; --d-empty: #5f4f52; --d-tile: rgba(236,140,140,.16); --d-ink: #f5ecec; --d-blob-a: rgba(255,140,70,.85); --d-blob-b: rgba(220,50,60,.80); --d-blob-c: rgba(255,200,90,.80); --d-blob-d: rgba(255,90,80,.75); --d-base-a: #5a1a20; --d-base-b: #1e0d10; --d-blur: 18; --d-pill: rgba(22,13,15,.70); }
+  28.57% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; --d-pill: #0d1514; }
+  39.29% { --d-bar: #0d1514; --d-cap: #19231f; --d-sheen: rgba(127,209,185,0); --d-rim: rgba(127,209,185,0); --d-sep: #3d4d49; --d-accent: #7fd1b9; --d-occ: #a9bdb7; --d-empty: #4a5a56; --d-tile: #24302d; --d-ink: #ecf3f1; --d-blob-a: rgba(80,190,160,.45); --d-blob-b: rgba(40,110,120,.40); --d-blob-c: rgba(80,190,160,0); --d-blob-d: rgba(80,190,160,0); --d-base-a: #173a38; --d-base-b: #0c1716; --d-blur: 0; --d-pill: #0d1514; }
+  42.86% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; --d-pill: rgba(16,13,24,.70); }
+  53.57% { --d-bar: rgba(16,13,24,.78); --d-cap: rgba(185,166,232,.11); --d-sheen: rgba(185,166,232,.18); --d-rim: rgba(185,166,232,.28); --d-sep: rgba(200,196,220,.35); --d-accent: #b9a6e8; --d-occ: #b8b2c8; --d-empty: #555068; --d-tile: rgba(185,166,232,.16); --d-ink: #f0eef7; --d-blob-a: rgba(90,140,255,.75); --d-blob-b: rgba(255,130,200,.60); --d-blob-c: rgba(170,120,255,.85); --d-blob-d: rgba(110,170,255,.70); --d-base-a: #2c1f55; --d-base-b: #120d22; --d-blur: 18; --d-pill: rgba(16,13,24,.70); }
+  57.14% { --d-bar: rgba(10,18,24,.78); --d-cap: rgba(143,208,232,.11); --d-sheen: rgba(143,208,232,.18); --d-rim: rgba(143,208,232,.28); --d-sep: rgba(190,210,220,.35); --d-accent: #8fd0e8; --d-occ: #a9bcc6; --d-empty: #475862; --d-tile: rgba(143,208,232,.16); --d-ink: #ecf3f6; --d-blob-a: rgba(40,200,220,.80); --d-blob-b: rgba(30,90,200,.75); --d-blob-c: rgba(120,240,220,.80); --d-blob-d: rgba(60,150,255,.75); --d-base-a: #0f3a4f; --d-base-b: #08161f; --d-blur: 18; --d-pill: rgba(10,18,24,.70); }
+  67.86% { --d-bar: rgba(10,18,24,.78); --d-cap: rgba(143,208,232,.11); --d-sheen: rgba(143,208,232,.18); --d-rim: rgba(143,208,232,.28); --d-sep: rgba(190,210,220,.35); --d-accent: #8fd0e8; --d-occ: #a9bcc6; --d-empty: #475862; --d-tile: rgba(143,208,232,.16); --d-ink: #ecf3f6; --d-blob-a: rgba(40,200,220,.80); --d-blob-b: rgba(30,90,200,.75); --d-blob-c: rgba(120,240,220,.80); --d-blob-d: rgba(60,150,255,.75); --d-base-a: #0f3a4f; --d-base-b: #08161f; --d-blur: 18; --d-pill: rgba(10,18,24,.70); }
+  71.43% { --d-bar: #15110d; --d-cap: #251e17; --d-sheen: rgba(232,180,120,0); --d-rim: rgba(232,180,120,0); --d-sep: #52483d; --d-accent: #e8b47a; --d-occ: #c4b8a8; --d-empty: #5c5246; --d-tile: #30281f; --d-ink: #f5f0ea; --d-blob-a: rgba(230,140,50,.50); --d-blob-b: rgba(170,70,40,.45); --d-blob-c: rgba(230,140,50,0); --d-blob-d: rgba(230,140,50,0); --d-base-a: #3e2a16; --d-base-b: #1a120a; --d-blur: 0; --d-pill: #15110d; }
+  82.14% { --d-bar: #15110d; --d-cap: #251e17; --d-sheen: rgba(232,180,120,0); --d-rim: rgba(232,180,120,0); --d-sep: #52483d; --d-accent: #e8b47a; --d-occ: #c4b8a8; --d-empty: #5c5246; --d-tile: #30281f; --d-ink: #f5f0ea; --d-blob-a: rgba(230,140,50,.50); --d-blob-b: rgba(170,70,40,.45); --d-blob-c: rgba(230,140,50,0); --d-blob-d: rgba(230,140,50,0); --d-base-a: #3e2a16; --d-base-b: #1a120a; --d-blur: 0; --d-pill: #15110d; }
+  85.71% { --d-bar: rgba(24,14,20,.78); --d-cap: rgba(240,160,200,.11); --d-sheen: rgba(240,160,200,.18); --d-rim: rgba(240,160,200,.28); --d-sep: rgba(220,196,210,.35); --d-accent: #f0a0c8; --d-occ: #c6b0bc; --d-empty: #5e4c58; --d-tile: rgba(240,160,200,.16); --d-ink: #f6ecf1; --d-blob-a: rgba(255,150,120,.75); --d-blob-b: rgba(200,70,150,.75); --d-blob-c: rgba(255,200,170,.80); --d-blob-d: rgba(255,110,170,.75); --d-base-a: #4d1f3a; --d-base-b: #1c0c16; --d-blur: 18; --d-pill: rgba(24,14,20,.70); }
+  96.43% { --d-bar: rgba(24,14,20,.78); --d-cap: rgba(240,160,200,.11); --d-sheen: rgba(240,160,200,.18); --d-rim: rgba(240,160,200,.28); --d-sep: rgba(220,196,210,.35); --d-accent: #f0a0c8; --d-occ: #c6b0bc; --d-empty: #5e4c58; --d-tile: rgba(240,160,200,.16); --d-ink: #f6ecf1; --d-blob-a: rgba(255,150,120,.75); --d-blob-b: rgba(200,70,150,.75); --d-blob-c: rgba(255,200,170,.80); --d-blob-d: rgba(255,110,170,.75); --d-base-a: #4d1f3a; --d-base-b: #1c0c16; --d-blur: 18; --d-pill: rgba(24,14,20,.70); }
+  100.00% { --d-bar: #0f1216; --d-cap: #1d222a; --d-sheen: rgba(236,140,140,0); --d-rim: rgba(236,140,140,0); --d-sep: #444c58; --d-accent: #8fb3e8; --d-occ: #aeb6c2; --d-empty: #4f5866; --d-tile: #2a313c; --d-ink: #eef1f5; --d-blob-a: rgba(143,179,232,.38); --d-blob-b: rgba(122,104,170,.30); --d-blob-c: rgba(143,179,232,0); --d-blob-d: rgba(143,179,232,0); --d-base-a: #2a3446; --d-base-b: #161b24; --d-blur: 0; --d-pill: #0f1216; }
 }
 .screen { animation: bar-looks 14s ease-in-out infinite; background: var(--d-base-b); }
 .glass-scene {
@@ -267,6 +268,62 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .bar-demo .mark-accent { stroke: var(--d-accent); }
 @media (prefers-reduced-motion: reduce) {
   .screen { animation: none; }
+}
+
+/* The workspace switcher's pill under the bar (OSD.qml's sizes: 52 px tall, 20 px dots 10 px
+   apart, 20 px either side): a dot for each look, the accent marker gliding to the one showing,
+   in step with bar-looks. Glass: the usual glass opacity with the blur, a gentle sheen (as tall
+   shapes get) and a bright top edge; flat: solid, with a soft shadow */
+.ws-pill {
+  position: absolute; left: 50%; bottom: 22px; z-index: 1;
+  transform: translateX(-50%);
+  display: flex; align-items: center;
+  height: 52px; padding: 0 20px; border-radius: 26px;
+  background-color: var(--d-pill);
+  background-image: linear-gradient(to bottom,
+    color-mix(in srgb, var(--d-sheen) 75%, transparent) 0%,
+    color-mix(in srgb, var(--d-sheen) 30%, transparent) 18%, transparent 50%);
+  --gloss: calc(var(--d-blur) / 18);
+  box-shadow: inset 0 1px 0 var(--d-rim), 0 4px 16px rgba(0, 0, 0, calc(.4 * (1 - var(--gloss))));
+  -webkit-backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+  backdrop-filter: blur(calc(var(--d-blur) * 1px)) saturate(calc(1 + var(--d-blur) / 50));
+}
+.ws-dots { display: flex; gap: 10px; }
+.ws-dots span { width: 20px; height: 20px; border-radius: 50%; background: var(--d-occ); }
+.ws-marker {
+  position: absolute; left: 20px; top: 16px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background-color: var(--d-accent);
+  /* the same gloss as the bar's active workspace dot (see .ws span.on) */
+  --marker-sheen: color-mix(in srgb, var(--d-accent) 40%, white);
+  background-image:
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--marker-sheen) calc(85% * var(--gloss)), transparent) 0%,
+      color-mix(in srgb, var(--marker-sheen) calc(21% * var(--gloss)), transparent) 50%,
+      transparent 55%),
+    linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, calc(.3 * var(--gloss))) 100%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marker-sheen) calc(100% * var(--gloss)), transparent);
+  animation: pill-marker 14s ease-in-out infinite;
+}
+@keyframes pill-marker {
+  0.00% { transform: translateX(0px); }
+  10.71% { transform: translateX(0px); }
+  14.29% { transform: translateX(30px); }
+  25.00% { transform: translateX(30px); }
+  28.57% { transform: translateX(60px); }
+  39.29% { transform: translateX(60px); }
+  42.86% { transform: translateX(90px); }
+  53.57% { transform: translateX(90px); }
+  57.14% { transform: translateX(120px); }
+  67.86% { transform: translateX(120px); }
+  71.43% { transform: translateX(150px); }
+  82.14% { transform: translateX(150px); }
+  85.71% { transform: translateX(180px); }
+  96.43% { transform: translateX(180px); }
+  100.00% { transform: translateX(0px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ws-marker { animation: none; }
 }
 
 .what .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
