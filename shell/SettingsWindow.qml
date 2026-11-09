@@ -248,7 +248,7 @@ FloatingWindow {
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockShowMedia", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockShowMedia", "dockMediaArt", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2279,6 +2279,13 @@ FloatingWindow {
                     label: "Media controls"
                     detail: "After the Apps button while something's playing: its album art with Previous, Play/Pause and Next beside it (over the art on a side dock); right-click for them all"
                     key: "dockShowMedia"
+                }
+                Separator { visible: Config.s.dockShowMedia }
+                SettingRow {
+                    visible: Config.s.dockShowMedia
+                    label: "Album art"
+                    detail: "The track's artwork beside the controls; off, just the controls"
+                    Toggle { checked: Config.s.dockMediaArt; onToggled: v => Config.s.dockMediaArt = v }
                 }
                 Separator {}
                 ToggleSetting {

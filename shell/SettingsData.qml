@@ -154,6 +154,7 @@ JsonAdapter {
     property real dockSpread: 3.0
     property bool dockAutoHide: true          // hide when the workspace has windows
     property bool dockShowMedia: true         // what's playing, after the Apps button, with its controls
+    property bool dockMediaArt: true          // its album art
     property bool dockShowTrash: true         // the wastebasket at the end of the dock
 
     // Launcher

@@ -541,14 +541,22 @@ ShellRoot {
         // How many icons wide it is: along a bottom or top dock, a rectangle with the album art
         // and the controls beside it; on a side dock, one icon (the controls show over the art
         // under the pointer), as a wide tile doesn't fit there
-        readonly property real mediaWide: vertical ? 1 : 3.2
+        readonly property bool mediaArt: Config.s.dockMediaArt     // Settings → Dock → Album art
+        readonly property real mediaWide: vertical ? 1 : mediaArt ? 3.2 : 2.4
+        // Where the track is (for the progress bar): players don't announce it as it moves, so
+        // it's asked for each second while the bar can be seen
+        Timer {
+            interval: 1000; repeat: true
+            running: win.mediaShown && win.shown && !!win.player && win.player.isPlaying && win.mediaWide > 1
+            onTriggered: win.player.positionChanged()
+        }
         // A click on it. Wide: the art plays or pauses, then Previous / Play-Pause / Next in
         // thirds of the rest. One icon: Previous on its left third, Next on its right
         // Which part of it the pointer's on: "art" (wide), "previous", "toggle" or "next"
         function mediaControlAt() {
             const along = (pointerX - slotStart(mediaIndex)) / (mediaWide * base);    // 0 … 1 across it
             if (mediaWide > 1) {
-                const art = 1 / mediaWide;                       // the art: a square at the start
+                const art = mediaArt ? 1 / mediaWide : 0;        // the art: a square at the start
                 if (along <= art) return "art";
                 const third = (along - art) / (1 - art);
                 return third < 1 / 3 ? "previous" : third > 2 / 3 ? "next" : "toggle";
@@ -1091,8 +1099,9 @@ ShellRoot {
                             // The art, cut to the tile's corners; a note on a faint square without it
                             Item {
                                 id: wideArtBox
+                                visible: win.mediaArt
                                 x: mediaWideTile.inset; y: mediaWideTile.inset
-                                width: height; height: parent.height - mediaWideTile.inset * 2
+                                width: win.mediaArt ? height : 0; height: parent.height - mediaWideTile.inset * 2
                                 layer.enabled: true
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: wideArtMask }
                                 Rectangle {
@@ -1127,15 +1136,18 @@ ShellRoot {
                             // A faint edge round the art, so a dark cover still stands off the tile
                             Rectangle {
                                 anchors.fill: wideArtBox
-                                visible: mediaWideTile.hasArt
+                                visible: win.mediaArt && mediaWideTile.hasArt
                                 radius: mediaWideTile.artCorner
                                 color: "transparent"
                                 border.width: 1
                                 border.color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.12)
                             }
-                            // Previous, Play/Pause, Next: evenly across the rest of the tile
+                            // Previous, Play/Pause, Next: evenly across the rest of the tile (a little above
+                            // the middle, to leave room for the progress bar beneath)
                             Row {
-                                anchors { left: wideArtBox.right; right: parent.right; rightMargin: mediaWideTile.inset; verticalCenter: parent.verticalCenter }
+                                id: mediaControls
+                                anchors { left: wideArtBox.right; right: parent.right; rightMargin: mediaWideTile.inset; leftMargin: win.mediaArt ? 0 : mediaWideTile.inset }
+                                y: (parent.height - height) / 2 - parent.height * 0.08
                                 Repeater {
                                     model: [
                                         { id: "previous", code: 0xF693, size: 0.34, on: !!win.player && win.player.canGoPrevious },
@@ -1143,8 +1155,17 @@ ShellRoot {
                                         { id: "next", code: 0xF694, size: 0.34, on: !!win.player && win.player.canGoNext }
                                     ]
                                     delegate: Item {
+                                        id: mediaButton
                                         required property var modelData
-                                        width: parent.width / 3; height: mediaWideTile.height
+                                        width: parent.width / 3; height: mediaWideTile.height * 0.62
+                                        // A soft circle behind the one under the pointer
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: parent.height; height: width; radius: width / 2
+                                            color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b,
+                                                mediaCell.under === mediaButton.modelData.id && mediaButton.modelData.on ? 0.14 : 0)
+                                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                        }
                                         Text {
                                             anchors.centerIn: parent
                                             text: String.fromCodePoint(parent.modelData.code)
@@ -1155,6 +1176,22 @@ ShellRoot {
                                             font.pixelSize: Math.round(mediaWideTile.height * parent.modelData.size)
                                         }
                                     }
+                                }
+                            }
+                            // How far through the track: a slim bar under the controls (only for
+                            // players that say how long the track is)
+                            Rectangle {
+                                readonly property bool known: !!win.player && win.player.lengthSupported && win.player.length > 0
+                                visible: known
+                                x: mediaControls.x + parent.height * 0.12
+                                width: mediaControls.width - parent.height * 0.24
+                                y: parent.height - mediaWideTile.inset - height - parent.height * 0.04
+                                height: Math.max(2, Math.round(parent.height * 0.05)); radius: height / 2
+                                color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.15)
+                                Rectangle {
+                                    width: parent.known ? parent.width * Math.max(0, Math.min(1, win.player.position / win.player.length)) : 0
+                                    height: parent.height; radius: parent.radius
+                                    color: win.activeDotColor
                                 }
                             }
                         }
@@ -1168,7 +1205,7 @@ ShellRoot {
                             transform: Matrix4x4 { matrix: win.upright(mediaTile.width, mediaTile.height) }
                             readonly property real corner: Config.s.iconShape === "circle" ? width / 2
                                 : width * win.iconCorner / Math.max(1, win.base)
-                            readonly property bool hasArt: mediaArt.status === Image.Ready
+                            readonly property bool hasArt: win.mediaArt && mediaArt.status === Image.Ready
                             // No art: the tile the launcher button has, with a note on it
                             IconPlate {
                                 anchors.fill: parent
