@@ -131,23 +131,27 @@ Rectangle {
         width: parent.width - 24
         height: Math.max(icon.height, textCol.height)
 
-        // Icon: the notification's image, else the app's tile, else a bell
+        // Icon: Slate's own notices get its mark; others the notification's image, else the
+        // app's tile, else a bell
         Item {
             id: icon
             width: 40; height: 40
             property int version: 0
             property string tried: ""          // drawn once per icon file
+            // From Slate itself: its mark on the accent-tinted tile, like the glyph icons (a
+            // screenshot's picture still shows below, as the preview)
+            readonly property bool fromSlate: !!card.entry && card.entry.appName === "Slate"
             RoundImage {
                 id: picture
                 anchors.fill: parent
                 radius: 9
-                visible: card.image !== "" && !card.preview
+                visible: !icon.fromSlate && card.image !== "" && !card.preview
                 source: visible ? card.image : ""
             }
             Image {
                 id: tile
                 anchors.fill: parent
-                visible: !picture.visible && card.tilePath !== "" && status === Image.Ready
+                visible: !icon.fromSlate && !picture.visible && card.tilePath !== "" && status === Image.Ready
                 source: card.tilePath ? "file://" + card.tilePath + "?v=" + icon.version + "." + Config.tileVersion : ""
                 sourceSize: Qt.size(96, 96)
                 smooth: true; mipmap: true
@@ -164,9 +168,17 @@ Rectangle {
                 anchors.fill: parent
                 visible: !picture.visible && !tile.visible
                 radius: 9
-                // No icon: the bell on an accent-tinted tile
+                // No icon: the bell on an accent-tinted tile (Slate's mark for Slate's notices)
                 color: Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.16)
+                SlateMark {
+                    visible: icon.fromSlate
+                    anchors.centerIn: parent
+                    size: 24
+                    accent: card.accent
+                    body: Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.55)
+                }
                 Text {
+                    visible: !icon.fromSlate
                     anchors.centerIn: parent
                     text: String.fromCodePoint(0xEA35)
                     color: card.accent
