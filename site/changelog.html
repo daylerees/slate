@@ -29,11 +29,33 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.16.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.16.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Force Quit from the dock.</strong> Right-click an app in the dock and choose Force Quit to end an app that has stopped responding. Slate's own windows (such as Settings) are left alone, so it can't take your desktop down with it.</li>
+        <li><strong>Tuck the status icons away.</strong> A new option in Settings → Menu Bar (off by default) puts notifications, Wi-Fi, volume, battery and the rest behind one button. Click it and the group slides open; it closes again a few seconds after the pointer leaves, and stays open while one of its panels is showing.</li>
+        <li><strong>Smoother tray button.</strong> The collapsed tray now slides and fades open the same way, its arrow turning round as it opens, and stays open while an app's menu is showing.</li>
+        <li><strong>Factory reset.</strong> Settings → Debug → Factory reset puts Slate back as it was when first installed: every setting to its default, and your dock pins, saved Spaces, launcher and clipboard history, notifications, display layout and app theming forgotten. It asks twice before doing anything, and can also clear your own Hyprland tweaks and QML if you switch that on. Nothing is deleted: it's all moved to a backup folder in <code>~/.local/share/slate/backups</code>.</li>
+        <li><strong>Blur quality starts at Medium</strong> on new installs (and after a factory reset), alongside Fast blur. Your existing settings are kept.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>With glass on, the sheen on the dock, the workspace pop-ups, the window switcher and Settings' controls now picks up the wallpaper's colour, like the menu bar's containers, instead of a dull grey or plain white. Settings' buttons, switches, sliders, dropdowns and text fields also get the bar's frosted glass look, and the window switcher's workspace pill gets a sheen.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.15.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.15.0 <time datetime="2026-11-09">9 November 2026</time></h2>
   <div class="cl-grid">
