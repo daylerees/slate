@@ -3470,16 +3470,19 @@ FloatingWindow {
             }
             GroupLabel { text: "Window switcher (Super+Tab)" }
             Group {
-                SettingRow {
-                    label: "Live previews"
-                    detail: "Show each window's contents; turn off to show app icons only"
-                    Toggle { checked: Config.s.switcherPreviews; onToggled: v => Config.s.switcherPreviews = v }
-                }
-                Separator {}
-                SettingRow {
-                    label: "App icons on previews"
-                    detail: "A small app icon on the corner of each window's preview"
-                    Toggle { checked: Config.s.switcherAppIcons; onToggled: v => Config.s.switcherAppIcons = v }
+                // What each window's card shows (switcherPreviews and switcherAppIcons), as the
+                // overview's Windows show
+                DropdownSetting {
+                    label: "Windows show"
+                    detail: !Config.s.switcherPreviews ? "Each window's outline with its app icon; nothing is captured, which is lighter"
+                        : Config.s.switcherAppIcons ? "Each window's contents, with a small app icon on the corner"
+                        : "Each window's contents, live"
+                    options: [{ value: "previews", label: "Live previews" }, { value: "icons", label: "App icons" }, { value: "both", label: "Both" }]
+                    value: !Config.s.switcherPreviews ? "icons" : Config.s.switcherAppIcons ? "both" : "previews"
+                    onPicked: v => {
+                        Config.s.switcherPreviews = v !== "icons";
+                        if (v !== "icons") Config.s.switcherAppIcons = v === "both";
+                    }
                 }
 
             }

@@ -22,6 +22,8 @@ PanelWindow {
     readonly property real previewH: 140
     readonly property real tileSize: 64
     readonly property color selectColor: Config.tint("#262c35")
+    // Live pictures of the windows (Settings → Windows → Windows show), not in game mode
+    readonly property bool livePreviews: Config.s.switcherPreviews && !Config.gameMode
     readonly property color dim: Config.tint("#8b94a3")
     readonly property string tileDir: Config.tileDir
 
@@ -274,7 +276,7 @@ PanelWindow {
                     WallBlur {
                         readonly property var o: card.modelData.lastIpcObject
                         readonly property var m: o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null
-                        visible: Config.hyprBlur.enabled && Config.s.switcherPreviews && !!o && !!o.at && !!m && shot.hasContent
+                        visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!m && shot.hasContent
                         anchors.fill: shot
                         win: visible ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
                         screen: m ? Qt.size(m.width / (m.scale || 1), m.height / (m.scale || 1)) : Qt.size(1, 1)
@@ -287,8 +289,9 @@ PanelWindow {
                         anchors.centerIn: parent
                         width: Math.min(parent.width, parent.height * ratio)
                         height: width / ratio
-                        // Not in game mode: the window's shape and app tile instead (below)
-                        captureSource: Config.s.switcherPreviews && !Config.gameMode && sw.shown && card.modelData.wayland ? card.modelData.wayland : null
+                        // Without live previews (or in game mode): the window's shape and app tile instead (below)
+                        visible: sw.livePreviews       // a frame from before previews were turned off stays hidden
+                        captureSource: sw.livePreviews && sw.shown && card.modelData.wayland ? card.modelData.wayland : null
                         live: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask }
@@ -300,11 +303,12 @@ PanelWindow {
                         layer.enabled: true
                         Rectangle { anchors.fill: parent; radius: 8 }
                     }
-                    // Game mode: an outline in the window's proportions, with the app's tile in it
+                    // Without live previews (or in game mode): an outline in the window's proportions,
+                    // with the app's tile in it
                     Rectangle {
                         readonly property var o: card.modelData.lastIpcObject
                         readonly property real ratio: o && o.size && o.size[1] > 0 ? o.size[0] / o.size[1] : 16 / 10
-                        visible: Config.gameMode
+                        visible: !sw.livePreviews
                         anchors.centerIn: parent
                         width: Math.min(parent.width, parent.height * ratio)
                         height: width / ratio
@@ -316,7 +320,7 @@ PanelWindow {
                     // No capture available (or game mode): show the app's tile instead
                     Image {
                         anchors.centerIn: parent
-                        visible: !shot.hasContent
+                        visible: !sw.livePreviews || !shot.hasContent
                         width: sw.tileSize; height: sw.tileSize
                         source: card.key ? "file://" + card.tilePath + "?v=" + Config.tileVersion : ""
                         sourceSize: Qt.size(192, 192)
@@ -332,7 +336,7 @@ PanelWindow {
                     }
                     // Small app tile on the preview's corner (Settings → Windows)
                     Image {
-                        visible: shot.hasContent && Config.s.switcherAppIcons
+                        visible: sw.livePreviews && shot.hasContent && Config.s.switcherAppIcons
                         x: shot.x - 6; y: shot.y + shot.height - height + 6
                         width: 30; height: 30
                         source: card.key ? "file://" + card.tilePath + "?v=" + Config.tileVersion : ""
