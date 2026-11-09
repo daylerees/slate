@@ -171,14 +171,16 @@ Rectangle {
                 anchors.fill: parent
                 visible: !picture.visible && !tile.visible
                 radius: 9
-                // No icon: the bell on an accent-tinted tile (Slate's mark for Slate's notices)
-                color: Qt.rgba(icon.tint.r, icon.tint.g, icon.tint.b, 0.16)
+                // No icon: the bell on an accent-tinted tile. Slate's notices: Slate's mark coloured
+                // as on the bar's button (the accent along its top, the slab in the theme's slate),
+                // on an app icon's tile
+                color: icon.fromSlate ? Config.iconPlateColor : Qt.rgba(icon.tint.r, icon.tint.g, icon.tint.b, 0.16)
                 SlateMark {
                     visible: icon.fromSlate
                     anchors.centerIn: parent
                     size: 24
-                    accent: icon.tint
-                    body: Qt.rgba(icon.tint.r, icon.tint.g, icon.tint.b, 0.55)
+                    accent: card.bar.accent
+                    body: Config.tint("#566173")
                 }
                 Text {
                     visible: !icon.fromSlate
