@@ -3416,8 +3416,13 @@ FloatingWindow {
                 Separator { visible: Config.titleBarsAvailable }
                 DropdownSetting {
                     visible: Config.titleBarsAvailable
+                    // Title bars are only there in floating mode
+                    opacity: Config.floatingWindows ? 1 : 0.4
+                    enabled: Config.floatingWindows
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Title bar buttons"
-                    detail: "Which side of a floating window's title bar the close and maximise buttons sit on"
+                    detail: Config.floatingWindows ? "Which side of a floating window's title bar the close and maximise buttons sit on"
+                        : "For the title bars windows have in floating mode: choose Floating above to use it"
                     options: [{ value: "left", label: "Left" }, { value: "right", label: "Right" }]
                     value: Config.s.titleButtons
                     onPicked: v => Config.s.titleButtons = v
