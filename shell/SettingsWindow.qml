@@ -1833,11 +1833,27 @@ FloatingWindow {
                                     else if (e.key === Qt.Key_Escape) { text = ""; focus = false; e.accepted = true; }
                                 }
                             }
-                            Text {
+                            // Empty field: the place you've set (with a pin), or how to search
+                            Row {
                                 visible: placeInput.text === ""
-                                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                                text: "Search for your town or city"
-                                color: win.dim; font.family: win.font; font.pixelSize: 12
+                                anchors { left: parent.left; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                spacing: 6
+                                readonly property bool showsPlace: Config.s.locationName !== "" && !placeInput.activeFocus
+                                Text {
+                                    visible: parent.showsPlace
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: win.glyph(0xEAE8)                  // map pin
+                                    color: win.accent; font.family: win.bar.iconFont; font.pixelSize: 14
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - (parent.showsPlace ? 20 : 0)
+                                    text: parent.showsPlace ? Config.s.locationName
+                                        : Config.s.locationName !== "" ? "Search for a new place" : "Search for your town or city"
+                                    color: parent.showsPlace ? win.text : win.dim
+                                    font.family: win.font; font.pixelSize: 12; font.weight: parent.showsPlace ? Font.Medium : Font.Normal
+                                    elide: Text.ElideRight
+                                }
                             }
 
                             // Results, dropping down from the field over the page
