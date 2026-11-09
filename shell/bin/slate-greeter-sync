@@ -52,15 +52,16 @@ if [ "${1:-}" = "--prompt" ]; then
     version=$( { while read -r _ src; do cat "$src"; done < <(code_files); hypr_expected; } | md5sum | cut -d' ' -f1)
     [ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
     mkdir -p "$(dirname "$asked")"; echo "$version" > "$asked"
-    choice=$(notify-send -a Slate -i system-lock-screen -A update=Update -A later=Later \
+    icon="$SRC/assets/icon/icon-64.png"      # Slate's own icon, as its other notices use
+    choice=$(notify-send -a Slate -i "$icon" -A update=Update -A later=Later \
         "Login screen out of date" \
         "Its design has changed. Update it now? You'll be asked for your password." || true)
     [ "$choice" = update ] || exit 0
     if pkexec "$SRC/bin/slate-greeter-install" --code-only; then
-        notify-send -a Slate -i system-lock-screen "Login screen updated" "You'll see it at your next logout or restart."
+        notify-send -a Slate -i "$icon" "Login screen updated" "You'll see it at your next logout or restart."
     else
         rm -f "$asked"      # cancelled or failed: ask again next time
-        notify-send -a Slate -i dialog-warning "Login screen not updated" "Run: sudo ~/.config/slate/bin/slate-greeter-install --code-only"
+        notify-send -a Slate -i "$icon" "Login screen not updated" "Run: sudo ~/.config/slate/bin/slate-greeter-install --code-only"
     fi
     exit 0
 fi
