@@ -326,6 +326,12 @@ FloatingWindow {
         applyPreset(d);
         Qt.callLater(() => { if (!presetActive(d)) { console.warn("Slate Default didn't stick after Restore defaults; applying it again"); applyPreset(d); } });
     }
+    // Dark | Light | Auto. Moving off Dark asks first, while light mode is still being polished
+    function pickThemeMode(m) {
+        if (m === Config.themeMode) return;
+        if (m === "dark" || Config.themeMode !== "dark" || !Config.lightModeAsks) { Config.setThemeMode(m); return; }
+        ask = Object.assign(Config.lightModeQuestion(m), { run: () => Config.setThemeMode(m) });
+    }
     function applyPreset(p) {
         for (const k in p.settings) Config.s[k] = p.settings[k];
         if (p.settings.themeMode && p.settings.themeMode !== "auto") Config.s.lightMode = p.settings.themeMode === "light";
@@ -3656,13 +3662,7 @@ FloatingWindow {
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: win.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                     }
-                                    ClickTap {
-                                        onTapped: {
-                                            const m = parent.modelData.mode;
-                                            Config.s.themeMode = m;
-                                            if (m !== "auto") Config.s.lightMode = m === "light";
-                                        }
-                                    }
+                                    ClickTap { onTapped: win.pickThemeMode(parent.modelData.mode) }
                                 }
                             }
                         }

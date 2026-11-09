@@ -199,6 +199,21 @@ Singleton {
     // ---- Light/dark by time of day (themeMode "auto") -------------------------------
     // Light from sunrise to sunset at Settings' location, else 07:00–19:00
     readonly property string themeMode: s.themeMode !== "" ? s.themeMode : (s.lightMode ? "light" : "dark")
+    function setThemeMode(m) {
+        s.themeMode = m;
+        if (m !== "auto") s.lightMode = m === "light";
+    }
+    // Light mode isn't finished: moving off Dark asks first (Settings → Appearance, the welcome).
+    // Remove this, and the questions, once it is
+    readonly property bool lightModeAsks: true
+    function lightModeQuestion(m) {
+        return {
+            title: m === "light" ? "Switch to light mode?" : "Use light mode by day?",
+            body: "Light mode is still being polished, so some parts may not look as good as they do in dark mode yet. "
+                + "You can switch back to Dark at any time.",
+            button: m === "light" ? "Use Light" : "Use Auto"
+        };
+    }
     function lightHours(date) {
         if (s.locationName !== "") { const st = sunTimes(date); return { from: st.rise, to: st.set }; }
         return { from: 7 * 60, to: 19 * 60 };

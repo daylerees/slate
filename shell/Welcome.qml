@@ -62,6 +62,22 @@ PanelWindow {
     readonly property string iconFont: bar.iconFont
     function glyph(c) { return String.fromCodePoint(c); }
 
+    // ---- Asking before light mode (still being polished), as Settings does -----
+    property string askMode: ""                 // the mode waiting for an answer
+    property var askText: ({ title: "", body: "", button: "" })
+    function pickThemeMode(m) {
+        if (m === Config.themeMode) return;
+        if (m === "dark" || Config.themeMode !== "dark" || !Config.lightModeAsks) { Config.setThemeMode(m); return; }
+        askText = Config.lightModeQuestion(m);
+        askMode = m;
+        Config.attention();
+    }
+    function answer(yes) {
+        if (yes && askMode !== "") Config.setThemeMode(askMode);
+        askMode = "";
+        panel.forceActiveFocus();
+    }
+
     Rectangle {
         id: panel
         anchors.centerIn: parent
@@ -250,13 +266,7 @@ PanelWindow {
                                     Text { anchors.verticalCenter: parent.verticalCenter; text: themeOpt.modelData.label; color: themeOpt.on ? w.accentText : w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                                 }
                                 HoverHandler { id: themeHover }
-                                ClickTap {
-                                    onTapped: {
-                                        const m = themeOpt.modelData.mode;
-                                        Config.s.themeMode = m;
-                                        if (m !== "auto") Config.s.lightMode = m === "light";
-                                    }
-                                }
+                                ClickTap { onTapped: w.pickThemeMode(themeOpt.modelData.mode) }
                             }
                         }
                     }
@@ -705,6 +715,70 @@ PanelWindow {
                     }
                     HoverHandler { id: nextHover }
                     ClickTap { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
+                }
+            }
+        }
+    }
+
+    // The question: the welcome dimmed behind a card, like Settings' confirmations
+    Rectangle {
+        anchors.fill: parent
+        z: 10
+        color: Qt.rgba(0, 0, 0, 0.45)
+        visible: opacity > 0
+        opacity: w.askMode !== "" ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+        onVisibleChanged: if (visible) askCard.forceActiveFocus()
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: w.answer(false) }
+        Rectangle {
+            id: askCard
+            anchors.centerIn: parent
+            width: 380; height: askCol.implicitHeight + 40
+            radius: 16
+            color: Config.tint("#0f1216")
+            border.width: 1; border.color: w.line
+            scale: w.askMode !== "" ? 1 : 0.96
+            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            MouseArea { anchors.fill: parent }    // clicks on the card don't close it
+            Keys.onEscapePressed: w.answer(false)
+            Keys.onReturnPressed: w.answer(true)
+            Keys.onEnterPressed: w.answer(true)
+            Column {
+                id: askCol
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
+                spacing: 8
+                Text {
+                    width: parent.width
+                    text: w.askText.title
+                    color: w.text; font.family: w.font; font.pixelSize: 16; font.weight: Font.Medium
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: w.askText.body
+                    color: w.dim; font.family: w.font; font.pixelSize: 13
+                    wrapMode: Text.Wrap
+                }
+                Item { width: 1; height: 8 }
+                Row {
+                    anchors.right: parent.right
+                    spacing: 8
+                    Rectangle {
+                        width: askNo.implicitWidth + 28; height: 32; radius: 8
+                        color: askNoHover.hovered ? Config.hoverOn(w.card) : w.card
+                        Gloss { radius: parent.radius; opacity: askNoHover.hovered ? 1 : 0 }
+                        Text { id: askNo; anchors.centerIn: parent; text: "Cancel"; color: w.text; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
+                        HoverHandler { id: askNoHover }
+                        ClickTap { onTapped: w.answer(false) }
+                    }
+                    Rectangle {
+                        width: askYes.implicitWidth + 28; height: 32; radius: 8
+                        color: askYesHover.hovered ? Qt.lighter(w.accent, 1.08) : w.accent
+                        Gloss { radius: parent.radius }
+                        Text { id: askYes; anchors.centerIn: parent; text: w.askText.button; color: w.accentText; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
+                        HoverHandler { id: askYesHover }
+                        ClickTap { onTapped: w.answer(true) }
+                    }
                 }
             }
         }
