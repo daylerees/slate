@@ -1,5 +1,5 @@
-// The dock's wastebasket, drawn: a modern square bin (a straight-sided box in smooth satin metal,
-// rounded at its corners, with a lighter lip and a dark opening across its top), tinted towards
+// The dock's wastebasket, drawn: a modern angular bin (smooth satin metal, wider at the top than
+// the base, with a lighter lip and a dark opening across its top), tinted towards
 // the theme's accent; with crumpled paper sticking up out of it when there's something in it.
 // Drawn once at drawSize (the dock's magnified size) and scaled, so magnifying doesn't redraw
 // it; it follows light and dark and the wallpaper's tint through Config.tint.
@@ -43,11 +43,23 @@ Item {
             const ctx = getContext("2d");
             ctx.reset();
             const w = width, h = height, cx = w / 2;
-            // A straight-sided box, rounded at its corners, seen from just above: its lip and
-            // opening across the top, the body below
-            const left = w * 0.25, right = w * 0.75, top = h * 0.31, bottom = h * 0.85;
+            // An angular bin, wider at the top than the base, its corners slightly rounded, seen
+            // from just above: its lip and opening across the top, the body below
+            const left = w * 0.20, right = w * 0.80, top = h * 0.31, bottom = h * 0.85;
+            const footL = w * 0.31, footR = w * 0.69;       // the base, narrower
+            // The body's outline: straight sides, the bottom corners rounded
+            function bodyPath() {
+                ctx.beginPath();
+                ctx.moveTo(left, top);
+                ctx.lineTo(right, top);
+                ctx.lineTo(footR + (right - footR) * 0.08, bottom - h * 0.04);
+                ctx.quadraticCurveTo(footR, bottom, footR - w * 0.035, bottom);
+                ctx.lineTo(footL + w * 0.035, bottom);
+                ctx.quadraticCurveTo(footL, bottom, footL - (footL - left) * 0.08, bottom - h * 0.04);
+                ctx.closePath();
+            }
             const r = w * 0.06;
-            const lipL = w * 0.225, lipR = w * 0.775, lipT = h * 0.255, lipB = h * 0.335;
+            const lipL = w * 0.175, lipR = w * 0.825, lipT = h * 0.255, lipB = h * 0.335;
 
             // A soft shadow under it
             const sh = ctx.createRadialGradient(cx, bottom, 0, cx, bottom, w * 0.32);
@@ -63,20 +75,25 @@ Item {
             body.addColorStop(0.75, shade(-0.05));
             body.addColorStop(1.00, shade(-0.32));
             ctx.fillStyle = body;
-            ctx.beginPath(); ctx.roundedRect(left, top, right - left, bottom - top, r, r); ctx.fill();
+            bodyPath(); ctx.fill();
             // and a little darker towards its foot
             const foot = ctx.createLinearGradient(0, top, 0, bottom);
             foot.addColorStop(0.6, Qt.rgba(0, 0, 0, 0));
             foot.addColorStop(1.0, Qt.rgba(0, 0, 0, 0.18));
             ctx.fillStyle = foot;
-            ctx.beginPath(); ctx.roundedRect(left, top, right - left, bottom - top, r, r); ctx.fill();
-            // A soft highlight down its lit side
-            const hi = ctx.createLinearGradient(left + w * 0.05, 0, left + w * 0.13, 0);
+            bodyPath(); ctx.fill();
+            // A soft highlight down its lit side, sloping with it
+            const hi = ctx.createLinearGradient(left + w * 0.06, 0, left + w * 0.16, 0);
             hi.addColorStop(0, Qt.rgba(1, 1, 1, 0));
             hi.addColorStop(0.5, Qt.rgba(1, 1, 1, 0.18));
             hi.addColorStop(1, Qt.rgba(1, 1, 1, 0));
             ctx.fillStyle = hi;
-            ctx.fillRect(left + w * 0.05, top + h * 0.04, w * 0.08, (bottom - top) - h * 0.08);
+            ctx.beginPath();
+            ctx.moveTo(left + w * 0.05, top + h * 0.04);
+            ctx.lineTo(left + w * 0.13, top + h * 0.04);
+            ctx.lineTo(footL + w * 0.07, bottom - h * 0.05);
+            ctx.lineTo(footL + w * 0.01, bottom - h * 0.05);
+            ctx.closePath(); ctx.fill();
 
             // The lip round the top, a shade lighter, with the opening dark inside it
             const lip = ctx.createLinearGradient(0, lipT, 0, lipB);
