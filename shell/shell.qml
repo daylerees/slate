@@ -1087,10 +1087,10 @@ ShellRoot {
                                 : height * win.iconCorner / Math.max(1, win.base)
                             readonly property bool hasArt: wideArt.status === Image.Ready
                             // The art sits inside the tile, this far in from its edges. Album covers are
-                            // square, so it's only slightly rounded (as music apps show them), whatever
-                            // the icon shape: following the tile's own curve cut into the artwork
+                            // square, so it's rounded a little (as music apps show them), whatever the
+                            // icon shape: following the tile's own curve cut too far into the artwork
                             readonly property real inset: Math.round(height * 0.12)
-                            readonly property real artCorner: Math.max(2, Math.round((height - inset * 2) * 0.08))
+                            readonly property real artCorner: Math.max(3, Math.round((height - inset * 2) * 0.16))
                             Rectangle {
                                 anchors.fill: parent
                                 radius: mediaWideTile.corner
