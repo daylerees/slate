@@ -34,7 +34,8 @@ class Visual(LiveCase):
         cls.s = Session()
         atexit.register(cls.s.stop)
         cls.s.start()
-        cls.s.settle(4)         # the bar's segments and fonts settle before the first shot
+        cls.s.settle(8)         # the bar's segments and fonts settle before the first shot (under load
+                                # the clock was caught mid-layout, a fraction of a pixel off)
         os.makedirs(OUT, exist_ok=True)
 
     @classmethod
