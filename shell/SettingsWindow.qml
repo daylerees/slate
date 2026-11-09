@@ -48,6 +48,7 @@ FloatingWindow {
     onVisibleChanged: {
         const a = Bluetooth.defaultAdapter;
         if (!visible && a && a.discovering) a.discovering = false;
+        if (!visible) cancelConfirm();        // closing Settings answers an open question with Cancel
         if (visible && !keepSection) section = "overview";
         // Cleared a moment later, not now: showing the window can report "visible" twice,
         // and the second would otherwise send a requested page back to All Settings
@@ -185,7 +186,19 @@ FloatingWindow {
     onCurrentKeysChanged: countChanged()
     Connections { target: Config; function onSaved() { win.countChanged(); } }
     property bool confirmReset: false
-    onSectionChanged: { if (section !== "general") avatarPicking = false; confirmReset = false; }
+    // Any other question for the confirmation card: { title, body, button, run, cancel (optional) }.
+    // Esc, Cancel, clicking outside or changing page all count as cancelling. The card keeps
+    // showing the last one while it fades out
+    property var ask: null
+    property var lastAsk: null
+    onAskChanged: if (ask) lastAsk = ask
+    readonly property bool confirming: confirmReset || ask !== null
+    function closeConfirm() { confirmReset = false; ask = null; }
+    function cancelConfirm() { const c = ask && ask.cancel; closeConfirm(); if (c) c(); }
+    // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
+    readonly property bool resetRestarts: (currentKeys.includes("uiScale") && Math.abs(Config.s.uiScale - 1) > 0.001)
+        || (currentKeys.includes("logLevel") && (Config.s.logLevel || "normal") !== "normal")
+    onSectionChanged: { if (section !== "general") avatarPicking = false; cancelConfirm(); }
     property string pageTitle: ""
     // Descriptions wrap at a comfortable reading length (~70 characters of the UI font)
     FontMetrics { id: detailMetrics; font.family: win.font; font.pixelSize: 12 }
@@ -220,8 +233,9 @@ FloatingWindow {
         { id: "apptheming", label: "App theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
-        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" },
-        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" }
+        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
+        // About is always last
+        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
     ]
     readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
@@ -231,7 +245,7 @@ FloatingWindow {
     Item {
         anchors.fill: parent
         focus: win.visible
-        Keys.onEscapePressed: { if (win.confirmReset) win.confirmReset = false; else if (dropLayer.owner) dropLayer.owner = null; else win.visible = false; }
+        Keys.onEscapePressed: { if (win.confirming) win.cancelConfirm(); else if (dropLayer.owner) dropLayer.owner = null; else win.visible = false; }
 
         // ---- Sidebar -------------------------------------------------------
         Rectangle {
@@ -444,10 +458,12 @@ FloatingWindow {
         z: 120
         color: Qt.rgba(0, 0, 0, 0.45)
         visible: opacity > 0
-        opacity: win.confirmReset ? 1 : 0
+        opacity: win.confirming ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 140 } }
         onVisibleChanged: if (visible) resetConfirmCard.forceActiveFocus()
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: win.confirmReset = false }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: win.cancelConfirm() }
+        // Restoring defaults, or another question (win.ask)
+        readonly property var q: win.confirmReset ? null : win.lastAsk
         Rectangle {
             id: resetConfirmCard
             anchors.centerIn: parent
@@ -455,10 +471,10 @@ FloatingWindow {
             radius: 16
             color: win.bar.barColor
             border.width: 1; border.color: Config.tint("#2a313c")
-            scale: win.confirmReset ? 1 : 0.96
+            scale: win.confirming ? 1 : 0.96
             Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it
-            Keys.onEscapePressed: win.confirmReset = false
+            Keys.onEscapePressed: win.cancelConfirm()
             Keys.onReturnPressed: confirmYes.clicked()
             Keys.onEnterPressed: confirmYes.clicked()
             Column {
@@ -466,14 +482,16 @@ FloatingWindow {
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
                 spacing: 8
                 Text {
-                    text: "Restore " + win.pageTitle + " defaults?"
+                    text: resetConfirm.q ? resetConfirm.q.title : "Restore " + win.pageTitle + " defaults?"
                     color: win.text; font.family: win.font; font.pixelSize: 16; font.weight: Font.Medium
                     width: parent.width; elide: Text.ElideRight
                 }
                 Text {
                     width: parent.width
-                    text: win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
-                        + " back to how Slate starts out. Other pages aren't touched."
+                    text: resetConfirm.q ? resetConfirm.q.body
+                        : win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
+                          + " back to how Slate starts out. Other pages aren't touched."
+                          + (win.resetRestarts ? " Slate restarts to apply them; your apps and windows stay open." : "")
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                     wrapMode: Text.Wrap
                 }
@@ -481,11 +499,14 @@ FloatingWindow {
                 Row {
                     anchors.right: parent.right
                     spacing: 8
-                    Button { label: "Cancel"; onClicked: win.confirmReset = false }
+                    Button { label: "Cancel"; onClicked: win.cancelConfirm() }
                     Button {
                         id: confirmYes
-                        label: "Restore defaults"; primary: true
-                        onClicked: { Config.resetKeys(win.currentKeys); win.confirmReset = false; win.countChanged(); }
+                        label: resetConfirm.q ? resetConfirm.q.button : "Restore defaults"; primary: true
+                        onClicked: {
+                            if (win.ask) { const run = win.ask.run; win.closeConfirm(); run(); }
+                            else { Config.resetKeys(win.currentKeys); win.closeConfirm(); win.countChanged(); }
+                        }
                     }
                 }
             }
@@ -3660,13 +3681,28 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Interface size"
-                    detail: Math.abs(Config.s.uiScale - Config.uiScale) < 0.001
-                        ? "Scales all of Slate: the bar, dock, panels, launcher, title bars and this window"
-                        : "Slate restarts to apply this (Settings opens again)"
+                    detail: "Scales all of Slate: the bar, dock, panels, launcher, title bars and this window. Changing it restarts Slate"
                     ValueSlider {
                         from: 75; to: 150; stepSize: 5; suffix: "%"
                         value: Math.round(Config.s.uiScale * 100)
-                        onMoved: v => { Config.s.uiScale = v / 100; Config.uiScaleEdited(); }
+                        onMoved: v => { Config.s.uiScale = v / 100; scaleAsk.restart(); }
+                    }
+                    // Once the slider settles, ask before restarting; Cancel goes back to the size in use
+                    Timer {
+                        id: scaleAsk
+                        interval: 700
+                        onTriggered: {
+                            if (Math.abs(Config.s.uiScale - Config.uiScale) < 0.001) return;
+                            win.ask = {
+                                title: "Restart Slate?",
+                                body: "Interface size changes to " + Math.round(Config.s.uiScale * 100) + "% when Slate restarts. "
+                                    + "Your apps and windows stay open; the bar, dock and Settings disappear for a moment, "
+                                    + "and Settings opens again here.",
+                                button: "Restart",
+                                run: () => Config.uiScaleEdited(),
+                                cancel: () => Config.s.uiScale = Config.uiScale
+                            };
+                        }
                     }
                 }
             }
@@ -4604,10 +4640,21 @@ FloatingWindow {
             Group {
                 ChoiceSetting {
                     label: "Log detail"
-                    detail: "How much Slate writes to its log. Turn it up while tracking down a problem, then back down. Slate restarts to apply it"
+                    detail: "How much Slate writes to its log. Turn it up while tracking down a problem, then back down. Changing it restarts Slate"
                     options: [{ value: "normal", label: "Normal" }, { value: "detailed", label: "Detailed" }, { value: "everything", label: "Everything" }]
                     value: Config.s.logLevel || "normal"
-                    onPicked: v => { Config.s.logLevel = v; Config.logLevelEdited(); }
+                    // Asks first: changing it restarts Slate
+                    onPicked: v => {
+                        if (v === (Config.s.logLevel || "normal")) return;
+                        const name = ({ normal: "Normal", detailed: "Detailed", everything: "Everything" })[v];
+                        win.ask = {
+                            title: "Restart Slate?",
+                            body: "Log detail changes to " + name + " when Slate restarts. Your apps and windows stay open; "
+                                + "the bar, dock and Settings disappear for a moment, and Settings opens again here.",
+                            button: "Restart",
+                            run: () => { Config.s.logLevel = v; Config.logLevelEdited(); }
+                        };
+                    }
                 }
                 Separator {}
                 SettingRow {
