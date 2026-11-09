@@ -9,7 +9,7 @@ JsonAdapter {
     // General
     property string accent: "#8fb3e8"
     property bool accentFromWallpaper: false
-    property real accentBoldness: 0           // Settings → Appearance → Boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
+    property real accentBoldness: 0.6         // Settings → Appearance → Boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
     property bool lightMode: false           // light variant in use (set by themeMode)
     property string themeMode: ""            // dark, light or auto (light by day); "" = from lightMode
     property bool toneFromWallpaper: false   // tint the dark UI colours from the wallpaper
