@@ -185,7 +185,7 @@ JsonAdapter {
     property real glassGloss: 0.5             // how much glossy sheen (bar containers, hover highlights, tooltips): 0 = none, 1 = full, up to 2
     // Blur (Settings → Appearance → Blur): Hyprland's blur behind see-through windows and glass
     property bool fastBlur: true              // blur only the wallpaper (Hyprland's xray): much less work
-    property int blurPasses: 0                // 1–4; 0 = Hyprland's own
+    property int blurPasses: 2                // 1–4 (2 = Medium); 0 = Hyprland's own
     // The welcome has been seen (shown the first time Slate starts; again from Settings → About)
     property bool welcomeShown: false
     // Updates (Settings → Updates): look for new versions daily, with a notification
