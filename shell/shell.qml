@@ -503,7 +503,7 @@ ShellRoot {
         readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
         readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
-        readonly property color tileColor: Config.raised(Config.tint("#1d222a"))
+        readonly property color tileColor: Config.frostedTile(Config.tint("#1d222a"))
         readonly property color textColor: Config.tint("#eef1f5")
         readonly property color dotColor: Config.tint("#c5ccd6")
         readonly property color activeDotColor: Config.accent
@@ -1625,7 +1625,7 @@ ShellRoot {
                                 color: win.tileColor
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
                             // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                             Column {
                                 id: burger
@@ -1685,7 +1685,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 radius: mediaWideTile.corner
                                 color: win.tileColor
-                                Gloss { radius: parent.radius; glassHint: true }   // glass: a sheen
+                                Gloss { radius: parent.radius; glassHint: true; tall: false }   // glass: a sheen
                             }
                             // The art, cut to the tile's corners; a note on a faint square without it
                             Item {
@@ -1840,7 +1840,7 @@ ShellRoot {
                                 Rectangle { anchors.fill: parent; radius: mediaTile.corner }
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: mediaTile.corner; glassHint: true }
+                            Gloss { radius: mediaTile.corner; glassHint: true; tall: false }
                             // Under the pointer: the controls on a dark wash (over art or tile alike,
                             // so they read the same in light and dark)
                             Rectangle {
@@ -1937,11 +1937,7 @@ ShellRoot {
                                 IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
-                                Gloss {
-                                    glassHint: true
-                                    visible: Config.glassGloss && Config.s.iconShape !== "original"
-                                    radius: parent.width * win.iconCorner / Math.max(1, win.base)
-                                }
+                                IconGloss {}
                                 // How far a download or copy has got: a slim bar near the icon's foot
                                 Rectangle {
                                     visible: cell.badge.progress >= 0
@@ -2021,7 +2017,7 @@ ShellRoot {
                                 fill: false
                                 color: win.tileColor
                             }
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
                             Text {
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(0xF912)       // folder-down
@@ -2053,7 +2049,7 @@ ShellRoot {
                                 color: win.tileColor
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
                             // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
                             // once there's something in it
                             Text {

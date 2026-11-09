@@ -164,12 +164,7 @@ Rectangle {
                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                 onStatusChanged: if (status === Image.Error && !gen.running && icon.tried !== card.tilePath) { icon.tried = card.tilePath; gen.running = true; }
                 IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
-                // Glass: a sheen on the tile, as on the dock's icons (not on icons shown as they come)
-                Gloss {
-                    glassHint: true
-                    visible: Config.glassGloss && Config.s.iconShape !== "original"
-                    radius: Config.iconCornerFor(parent.width)
-                }
+                IconGloss {}                                    // glass: a sheen on the tile, as on the dock's icons
             }
             Process {
                 id: gen
@@ -179,7 +174,8 @@ Rectangle {
             Rectangle {
                 anchors.fill: parent
                 visible: !picture.visible && !tile.visible
-                radius: 9
+                // (Slate's: an app icon's shape, as the other apps' tiles beside it)
+                radius: icon.fromSlate ? Config.iconCornerFor(width) : 9
                 // No icon: the bell on an accent-tinted tile. Slate's notices: Slate's mark coloured
                 // as on the bar's button (the accent along its top, the slab in the theme's slate),
                 // on an app icon's tile
@@ -199,8 +195,10 @@ Rectangle {
                     font.family: card.bar.iconFont
                     font.pixelSize: 20
                 }
-                // Glass: a sheen on the tile (under the mark or bell, so it doesn't wash them out)
-                Gloss { radius: parent.radius; glassHint: icon.fromSlate; z: -0.5 }
+                // Glass: a sheen on the tile (under the mark or bell, so it doesn't wash them out);
+                // on Slate's, the app icons' own (IconGloss), so it matches theirs
+                Gloss { visible: !icon.fromSlate && Config.glassGloss; radius: parent.radius; z: -0.5 }
+                IconGloss { visible: icon.fromSlate && Config.glassGloss; z: -0.5 }
             }
         }
 

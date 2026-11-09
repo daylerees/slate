@@ -13,4 +13,5 @@ Image {
     layer.enabled: Config.iconTint > 0
     layer.effect: IconTint {}
     IconPlate { anchors.fill: parent; z: -1; visible: parent.status === Image.Ready && !Config.s.iconFill && Config.s.iconShape !== "original" }
+    IconGloss { visible: parent.status === Image.Ready && Config.glassGloss && Config.s.iconShape !== "original" }   // glass: as on the dock
 }

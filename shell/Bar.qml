@@ -554,6 +554,7 @@ PanelWindow {
                             shaded: !appTile.space && Config.iconTileShade(app) !== null
                             Behavior on color { ColorAnimation { duration: Config.ms(200) } }
                         }
+                        IconGloss {}            // glass: a sheen on the tile, as on the dock's icons
                     }
                     Process {
                         id: tileGen

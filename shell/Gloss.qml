@@ -64,8 +64,9 @@ Rectangle {
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
     // Taller than a bar capsule (a quick toggle, say): the shine and shade there are softer and
-    // blend smoothly into each other, rather than the short shapes' crisper bands
-    readonly property bool tall: height > 32 && !band
+    // blend smoothly into each other, rather than the short shapes' crisper bands. Something
+    // that changes size (the dock's magnified tiles) sets it, so its look doesn't flip as it grows
+    property bool tall: height > 32 && !band
     gradient: Gradient {
         // Tall shapes: a gentler shine fading smoothly over the top half, with no band edge (a
         // bright band, a flat middle and a dark band made them look like three-tone tubes)

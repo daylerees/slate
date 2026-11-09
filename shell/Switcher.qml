@@ -350,6 +350,7 @@ PanelWindow {
                         smooth: true; mipmap: true
                         layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                         IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                        IconGloss {}                                    // glass: a sheen, as on the dock's icons
                     }
                     // The window came from a space: its badge on the preview's top left corner
                     SpaceBadge {
@@ -367,6 +368,7 @@ PanelWindow {
                         smooth: true; mipmap: true
                         layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                         IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                        IconGloss {}                                    // glass: a sheen, as on the dock's icons
                     }
                 }
                 Text {

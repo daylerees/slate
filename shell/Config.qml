@@ -477,14 +477,20 @@ Singleton {
     // Drawn by scripts/appicon.py in the shape and style from Settings → Appearance → App
     // icons, and cached per style (the default keeps the original folder)
     readonly property string tileScript: Quickshell.shellPath("scripts/appicon.py")
-    // The tile behind icons that don't fill their shape (IconPlate.qml): slate, following the theme
-    // With glass, the same frosted see-through layer as the bar's containers (raised()), a
-    // little stronger so it still reads as a tile; solid, they stood out lighter than the rest
-    readonly property color iconPlateColor: {
-        const base = tint("#2a313c");
-        if (!glass) return base;
-        const f = raised(base);
-        return Qt.rgba(f.r, f.g, f.b, s.lightMode ? 0.5 : Math.min(1, f.a * 1.6));
+    // The tile behind icons that don't fill their shape (IconPlate.qml): slate, following the theme;
+    // with glass, solid with the frosting over it (frostedTile)
+    readonly property color iconPlateColor: frostedTile(tint("#2a313c"))
+    // Tiles with glass (behind app icons everywhere, and the dock's own buttons): the tile's own
+    // colour, solid, with the frosting over it (as one colour), so icons sit on something
+    // rather than on a faint film
+    readonly property real tileOpacity: 1
+    function frostedTile(c) {
+        c = Qt.lighter(c, 1.0);
+        if (!glass) return c;
+        const f = raised(c), a = tileOpacity;
+        const A = 1 - (1 - a) * (1 - f.a);
+        const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / A;
+        return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), A);
     }
     readonly property string tileDir: Quickshell.env("HOME") + "/.cache/slate/tiles"
         + (s.iconShape === "tile" && s.iconFill ? "" : "/" + s.iconShape + (s.iconFill ? "" : "-whole"))
@@ -623,7 +629,7 @@ Singleton {
         if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return null;
         const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
         const t = s.lightMode ? Qt.hsla(h, sat * 0.7, 0.84, 1) : Qt.hsla(h, sat * 0.8, 0.22, 1);
-        return glass && !solid ? Qt.rgba(t.r, t.g, t.b, 0.6) : t;
+        return glass && !solid ? Qt.rgba(t.r, t.g, t.b, tileOpacity) : t;
     }
 
     // ---- Keyboard shortcuts set (Settings → Shortcuts) ------------------------------

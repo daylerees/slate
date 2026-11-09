@@ -1004,6 +1004,7 @@ PanelWindow {
                         color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c"), true) : Config.iconTileFor(app, Config.iconPlateColor)
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     }
+                    IconGloss {}                // glass: a sheen on the tile, as on the dock's icons
                 }
                 // Calculator tile
                 Rectangle {
