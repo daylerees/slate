@@ -1019,16 +1019,20 @@ PanelWindow {
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     width: 36; height: 20; radius: 10
                     // On the accent highlight, the track can't be the accent too: it takes the
-                    // highlight's dark text colour instead
+                    // highlight's dark text colour instead. Off, it's an outline with a solid knob,
+                    // so it reads on the bright highlight as well as on the panel
+                    readonly property color ink: row.onAccent ? root.accentText : root.textColor
                     color: on ? (row.onAccent ? root.accentText : root.accent)
-                        : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, row.onAccent ? 0.25 : 0.15)
+                        : Qt.rgba(ink.r, ink.g, ink.b, row.onAccent ? 0.08 : 0.1)
+                    border.width: on ? 0 : 1.5
+                    border.color: Qt.rgba(ink.r, ink.g, ink.b, row.onAccent ? 0.75 : 0.4)
                     Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     Gloss { radius: parent.radius }   // glass: a sheen
                     Rectangle {
                         width: 14; height: 14; radius: 7
                         anchors.verticalCenter: parent.verticalCenter
                         x: toggleSwitch.on ? parent.width - width - 3 : 3
-                        color: toggleSwitch.on ? (row.onAccent ? root.accent : root.accentText) : root.textColor
+                        color: toggleSwitch.on ? (row.onAccent ? root.accent : root.accentText) : toggleSwitch.ink
                         Behavior on x { NumberAnimation { duration: Config.ms(120) } }
                     }
                 }
