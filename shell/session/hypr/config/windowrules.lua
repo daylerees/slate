@@ -77,6 +77,10 @@ hl.window_rule({ match = { class = "^(firefox|zen)$" }, opacity = "1.0 override"
 hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })
 hl.window_rule({ match = { class = "^(mpv|org.kde.haruna|.*plex.*|org\\.kde\\.gwenview|.*vlc.*)$" }, opacity = "1.0 override" })
 
+-- Slate's Settings window never dims when it isn't focused (Settings → Windows → Dim inactive
+-- windows), so you can see a change you make in it take effect on another window
+hl.window_rule({ name = "slate-settings-no-dim", match = { class = "^(slate-settings)$" }, no_dim = true })
+
 -- Float settings and utility windows
 local floatApps = {
     { class = "^(kvantummanager|qt[56]ct|nwg-look)$" },

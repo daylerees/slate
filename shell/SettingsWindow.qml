@@ -3165,7 +3165,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Dim inactive windows"
-                    detail: "Darken the windows you're not using, so the focused one stands out. 0 turns it off"
+                    detail: "Darken the windows you're not using, so the focused one stands out (Settings itself never dims). 0 turns it off"
                     ValueSlider { from: 0; to: 80; stepSize: 5; suffix: "%"; value: Config.s.inactiveDim; onMoved: v => Config.s.inactiveDim = v }
                 }
             }
