@@ -1710,7 +1710,6 @@ FloatingWindow {
                     }
                 }
             }
-            GroupLabel { visible: findField.text.trim().length < 2; text: "Every page" }
             Flow {
                 id: tiles
                 visible: findField.text.trim().length < 2
