@@ -402,7 +402,6 @@ PanelWindow {
     component RowButton: Rectangle {
         id: rb
         property bool selected: false
-        property bool danger: false
         signal clicked()
         height: 36
         radius: 8
@@ -861,7 +860,6 @@ PanelWindow {
             RowButton {
                 width: parent.width
                 visible: Config.s.clipboardHistory && clp.entries.length > 0
-                danger: true
                 onClicked: { clp.entries = []; Quickshell.execDetached(["python3", clp.script, "clear"]); }
                 Icon { id: clpClearIcon; code: 0xEB41; font.pixelSize: 16; color: pop.danger; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
                 Label { anchors { left: clpClearIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }

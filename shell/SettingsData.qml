@@ -44,7 +44,6 @@ JsonAdapter {
     property string locationName: ""         // Settings → General → Location; "" = not set
     property real latitude: 0                // for weather and sunset/sunrise
     property real longitude: 0
-    property real fontSize: 13                // no longer set in Settings (the UI scale replaced it)
     property string mainDisplay: ""           // Settings → Displays → Main display (monitor description; "" = the first)
     property string logLevel: "normal"        // Settings → Debug → Log detail: normal, detailed or everything (applied when Slate starts)
     property real uiScale: 1                  // Settings → Appearance → Interface size: scales all of Slate (applied when Slate starts)
@@ -135,7 +134,6 @@ JsonAdapter {
     property bool barShowVolume: true
     property bool barShowBattery: true
     property bool barShowGameMode: false     // game mode, with the status icons (off to start with)
-    property bool barShowValues: true         // (replaced by the three below; no longer used)
     property bool barValueClipboard: true     // how many items are in the clipboard history
     property bool barValueGameMode: true      // On or Off beside the game mode icon
     property bool barValueWifi: true          // the network name beside the Wi-Fi icon

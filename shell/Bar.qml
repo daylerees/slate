@@ -46,7 +46,6 @@ PanelWindow {
     readonly property color separatorColor: Config.s.glass ? withAlpha(Config.tint("#c5ccd6"), 0.35)
                                                            : Config.tint("#444c58")
     function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
-    readonly property color emptyDot: Config.tint("#5f6876")
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
     readonly property real fontSize: 13              // Settings → Interface size scales it with everything else
     readonly property string iconFont: tabler.name

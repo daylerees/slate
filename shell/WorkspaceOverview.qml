@@ -25,8 +25,6 @@ PanelWindow {
     readonly property real slotW: cardW + gap
     readonly property real dot: 14
     readonly property real dotGap: 6
-    readonly property color dim: Config.tint("#8b94a3")
-    readonly property color selectColor: Config.tint("#262c35")
 
     // Current wallpaper (Slate setting)
     readonly property string wallpaper: Config.wallpaper ? "file://" + Config.wallpaper : ""
@@ -550,11 +548,6 @@ PanelWindow {
                         fillMode: Image.PreserveAspectCrop
                         sourceSize: Qt.size(width * 2, height * 2)
                         asynchronous: true
-                    }
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "transparent"
-                        visible: ov.wallpaper === ""
                     }
 
                     Repeater {

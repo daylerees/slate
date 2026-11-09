@@ -37,7 +37,6 @@ PanelWindow {
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color accent: Config.accent
-    readonly property color accentText: Config.tint("#12151a")
     readonly property string fontFamily: Config.s.fontFamily
     readonly property string emojiFont: "Noto Color Emoji"
     readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate"

@@ -24,7 +24,6 @@ PanelWindow {
     readonly property color selectColor: Config.tint("#262c35")
     // Live pictures of the windows (Settings → Windows → Windows show), not in game mode
     readonly property bool livePreviews: Config.s.switcherPreviews && !Config.gameMode
-    readonly property color dim: Config.tint("#8b94a3")
 
     // ---- Most recently used order (window addresses, newest first) ----------
     property var mru: []

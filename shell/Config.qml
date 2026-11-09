@@ -174,7 +174,6 @@ Singleton {
     // ---- Where the bar and dock sit ------------------------------------------------
     readonly property bool barAtBottom: s.barPosition === "bottom"
     readonly property string barEdge: s.barPosition
-    readonly property bool barVertical: s.barPosition === "left" || s.barPosition === "right"
     readonly property string dockEdge: s.dockPosition
     // The bar and dock never share an edge: moving one onto the other's edge sends the other
     // to the opposite edge. Both change in one step (Settings and `slate ipc call config set`
