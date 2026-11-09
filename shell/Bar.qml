@@ -43,7 +43,7 @@ PanelWindow {
     readonly property color errorColor: Config.tint("#f28b8b")
     // With glass: a translucent line in the dim text colour (light in dark mode, dark in light
     // mode, tinted toward the wallpaper), which stays visible whatever's behind the bar
-    readonly property color separatorColor: Config.s.glass ? withAlpha(dimColor, 0.35)
+    readonly property color separatorColor: Config.glass ? withAlpha(dimColor, 0.35)
                                                            : Config.tint("#444c58")
     function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
