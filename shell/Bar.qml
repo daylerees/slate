@@ -676,9 +676,15 @@ PanelWindow {
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
             // Placed by the edge of what's actually shown: the grid's own size can include spacing
-            // for hidden items, which would leave a wider gap at this end of the bar
-            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : parent.width - (childrenRect.x + childrenRect.width) - bar.sidePadding
-            y: bar.vert ? parent.height - (childrenRect.y + childrenRect.height) - bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
+            // for hidden items, and so can childrenRect, which counts hidden items too, where
+            // they last were (hiding the power button left its space at the end of the bar)
+            readonly property real shownEnd: {
+                let e = 0;
+                for (const c of children) if (c.visible) e = Math.max(e, bar.vert ? c.y + c.height : c.x + c.width);
+                return e;
+            }
+            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : parent.width - shownEnd - bar.sidePadding
+            y: bar.vert ? parent.height - shownEnd - bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
 
             // The title area on a left bar (see titleSlotTop)
             Item {
