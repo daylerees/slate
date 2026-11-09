@@ -28,11 +28,9 @@ PanelWindow {
     readonly property real sidePadding: (barHeight - capsuleHeight) / 2   // space at the bar's ends: the same as above and below the buttons
     readonly property real gap: 6
     readonly property real cornerRadius: 12            // concave corners under the bar
-    // Rounded screen corners: a squircle (superellipse) shape
+    // Rounded screen corners (drawn by ScreenCorners.qml): a squircle (superellipse) shape
     readonly property real screenCornerRadius: 17
     readonly property real screenCornerShape: 3.0
-    // Outside the rounded screen corners: always black, in both themes
-    readonly property color screenCornerColor: "#000000"
     // (See-through with glass: Settings → Appearance → Glass)
     readonly property color barColor: Config.surface(Config.tint("#0f1216"))
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
@@ -336,48 +334,7 @@ PanelWindow {
                 }
             }
         }
-        // Rounded screen corners at the top (black outside the curve), to match
-        // the rounded corners at the bottom of the screen
-        Repeater {
-            model: 2
-            Canvas {
-                required property int index
-                readonly property real r: bar.screenCornerRadius
-                z: 10
-                // Make sure it paints after loading / reloading
-                onAvailableChanged: if (available) requestPaint()
-                onWidthChanged: requestPaint()
-                Component.onCompleted: requestPaint()
-                width: r; height: r
-                // The two screen corners at the bar's edge
-                x: bar.vert ? (bar.atRight ? parent.width - r : 0) : (index === 0 ? 0 : parent.width - width)
-                y: bar.vert ? (index === 0 ? 0 : parent.height - r) : (bar.atBottom ? parent.height - r : 0)
-                transform: Scale {
-                    xScale: bar.vert ? (bar.atRight ? -1 : 1) : (index === 0 ? 1 : -1)
-                    yScale: bar.vert ? (index === 0 ? 1 : -1) : (bar.atBottom ? -1 : 1)
-                    origin.x: r / 2; origin.y: r / 2
-                }
-                visible: Config.s.roundedScreenCorners
-                onVisibleChanged: if (visible) requestPaint()
-                readonly property color fill: bar.screenCornerColor
-                onFillChanged: requestPaint()
-                onPaint: {
-                    const ctx = getContext("2d"), n = bar.screenCornerShape;
-                    ctx.reset();
-                    ctx.fillStyle = fill;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(r, 0);
-                    // Squircle edge from the top (r, 0) round to the side (0, r)
-                    for (let i = 0; i <= 48; i++) {
-                        const t = Math.PI / 2 * (1 - i / 48);
-                        ctx.lineTo(r - r * Math.pow(Math.cos(t), 2 / n), r - r * Math.pow(Math.sin(t), 2 / n));
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                }
-            }
-        }
+        // (Rounded screen corners: ScreenCorners.qml draws all four, over the bar)
 
         // ---- Left side ---------------------------------------------------
         BarLine {
