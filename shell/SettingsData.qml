@@ -137,6 +137,7 @@ JsonAdapter {
     property bool barShowGameMode: false     // game mode, with the status icons (off to start with)
     property bool barShowValues: true         // (replaced by the three below; no longer used)
     property bool barValueClipboard: true     // how many items are in the clipboard history
+    property bool barValueGameMode: true      // On or Off beside the game mode icon
     property bool barValueWifi: true          // the network name beside the Wi-Fi icon
     property bool barValueKeyboard: true      // the active layout's code (GB, FR…) beside the keyboard icon
     property bool barValueBluetooth: true     // how many devices are connected, beside the Bluetooth icon

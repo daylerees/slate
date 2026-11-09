@@ -913,7 +913,7 @@ PanelWindow {
                         first: status.isFirst(3)
                         last: status.isLast(3)
                         iconCode: 0xF1D2
-                        label: Config.gameMode ? "On" : "Off"
+                        label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
                         hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
                         onClicked: bar.openPopout("gamemode", gameSeg)
