@@ -528,18 +528,17 @@ ShellRoot {
 
         // ---- Magnification -------------------------------------------------
         // ---- The dock's slots, in order ---------------------------------------------
-        // The launcher, what's playing (while something is) and a divider, the pinned apps, a
+        // The Apps button, what's playing (while something is) and a divider, the pinned apps, a
         // divider, the other running apps, a divider, Downloads and the Waste Basket. Each slot knows its
         // place (at); everything that finds or places one goes through this list
         readonly property var slots: {
             const s = [];
             const add = o => { o.at = s.length; s.push(o); };
-            add({ kind: "launcher" });
+            if (Config.s.dockShowLauncher) add({ kind: "launcher" });
+            if (mediaShown) add({ kind: "media" });
             const dividers = Config.s.dockDivider;
-            if (mediaShown) {
-                add({ kind: "media" });
-                if (dividers && items.length > 0) add({ kind: "divider" });     // and one after it
-            }
+            // after the Apps button and what's playing (while either is there)
+            if (dividers && s.length > 0 && items.length > 0) add({ kind: "divider" });
             items.forEach((it, i) => {
                 // between the pinned apps and the others (when there are both)
                 if (dividers && i > 0 && !it.pinned && items[i - 1].pinned) add({ kind: "divider" });
@@ -694,6 +693,7 @@ ShellRoot {
         readonly property bool trashShown: Config.s.dockShowTrash
         readonly property int trashIndex: indexOfKind("trash")         // always last
         readonly property int downloadsIndex: indexOfKind("downloads")
+        readonly property int launcherIndex: indexOfKind("launcher")       // (-1: switched off)
         readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
         // What's in it, watched (the folder made first if nothing's been thrown away yet, so
         // there's something to watch)
@@ -1448,9 +1448,9 @@ ShellRoot {
 
         function clickItem(i, right) {
             if (i < 0) return;
-            if (i === 0) {
+            if (i === launcherIndex) {
                 // The launcher button: opens the launcher; right-click for shortcuts to Settings pages
-                if (right) appMenu.openFor({ settingsMenu: true, key: "", windows: [] }, row.x + cellX(0) + base * scaleAt(0) / 2);
+                if (right) appMenu.openFor({ settingsMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
                 else appLauncher.shown ? appLauncher.closeLauncher() : appLauncher.openLauncher();
                 return;
             }
@@ -1531,9 +1531,10 @@ ShellRoot {
                     y: bg.y + bg.height - win.padding - height
                     height: win.base * win.maxScale
 
-                    // Launcher button
+                    // Launcher button (Settings → Dock → Apps button)
                     Item {
-                        readonly property real s: win.scaleAt(0)
+                        visible: win.launcherIndex >= 0
+                        readonly property real s: win.scaleAt(win.launcherIndex)
                         width: win.base * s
                         height: row.height
                         Item {
@@ -1979,7 +1980,7 @@ ShellRoot {
                 Rectangle {
                     id: label
                     readonly property string text: win.dragAway ? "Remove from Dock"
-                        : win.hoveredIndex === 0 ? "Apps"
+                        : win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                         : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")

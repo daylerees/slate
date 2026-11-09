@@ -248,7 +248,7 @@ FloatingWindow {
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2289,8 +2289,14 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Divider"
-                    detail: "A line after the media controls, between the pinned apps and the others running, and before the Waste Basket"
+                    detail: "A line after the Apps button and media controls, between the pinned apps and the others running, and before the Waste Basket"
                     key: "dockDivider"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Apps button"
+                    detail: "At the start of the dock: opens the launcher; right-click for Settings"
+                    key: "dockShowLauncher"
                 }
                 Separator {}
                 ToggleSetting {

@@ -153,6 +153,7 @@ JsonAdapter {
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockAutoHide: true          // hide when the workspace has windows
+    property bool dockShowLauncher: true      // the Apps button at the start of the dock
     property real dockPreviewDelay: 0.6       // seconds paused on an app before its window previews show (0 = off)
     property bool dockBadges: true            // unread counts and progress on app icons
     property bool dockDivider: true           // a line between pinned apps and the others
