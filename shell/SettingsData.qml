@@ -208,7 +208,7 @@ JsonAdapter {
     // Hot corners: none, lock, launcher, overview, control, notifications, screenoff
     property string hotCornerTopLeft: "none"
     property string hotCornerTopRight: "none"
-    property string hotCornerBottomLeft: "lock"
+    property string hotCornerBottomLeft: "none"
     property string hotCornerBottomRight: "none"
     property int hotCornerDelay: 500            // ms to rest in the corner
     property string notificationPosition: "top-right"   // top/bottom + left/center/right
