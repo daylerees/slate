@@ -5437,8 +5437,14 @@ FloatingWindow {
                     }
                     // The processor over the last minute: scaled to its own peak, so the small
                     // ups and downs show
+                    // Its room only once there's a graph to draw (two readings), so the card doesn't
+                    // sit with a gap under the meters while it waits
                     Item {
-                        width: parent.width; height: 64
+                        readonly property bool ready: usage.history.length >= 2
+                        width: parent.width; height: ready ? 64 : 0
+                        visible: height > 0
+                        clip: true
+                        Behavior on height { NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
                         readonly property real realPeak: usage.history.length ? Math.max(...usage.history) : 0
                         readonly property real peak: Math.max(2, realPeak)     // the graph's top (at least 2%, so tiny wobbles stay small)
                         Canvas {
@@ -5482,6 +5488,7 @@ FloatingWindow {
                     }
                 }
             }
+            GroupLabel { text: "Tools" }
             Group {
                 SettingRow {
                     label: "Welcome"
