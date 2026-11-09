@@ -70,7 +70,7 @@ check reports the same way.
   `packaging/*.txt` is well-formed; `SettingsIndex.pages` ids all have a page in
   `SettingsWindow.qml`'s loader map; every `Config.s.<key>` used exists in
   `SettingsData.qml`; every `pageKeys` key exists; site links/anchors resolve
-  (`site/*.html`); no "Noctalia" anywhere; shaders' `.qsb` newer than their `.frag`.
+  (`site/*.html`); no names of other shells anywhere; shaders' `.qsb` newer than their `.frag`.
 
 ### 2. Unit (seconds, scratch HOME, stub commands)
 A stub harness (`tests/lib/stubs.py`) puts fake `hyprctl`, `nmcli`, `lpstat`, `lpinfo`,

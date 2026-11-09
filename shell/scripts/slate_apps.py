@@ -106,7 +106,18 @@ def gtk(ctx):
     dark = not c["light"]
     ctx.ini(cfg("gtk-3.0", "settings.ini"), "Settings", "gtk-application-prefer-dark-theme", "1" if dark else "0")
     ctx.gsetting("org.gnome.desktop.interface", "color-scheme", "prefer-dark" if dark else "prefer-light")
-    ctx.gsetting("org.gnome.desktop.interface", "gtk-theme", "adw-gtk3-dark" if dark else "adw-gtk3")
+    # adw-gtk3 (libadwaita's look for GTK 3 apps) when it's installed: not every distro packages
+    # it, and naming a theme that isn't there leaves GTK 3 apps unstyled. Without it they keep
+    # Adwaita, still dark through prefer-dark and Slate's colours through gtk.css
+    theme = "adw-gtk3-dark" if dark else "adw-gtk3"
+    if theme_installed(theme):
+        ctx.gsetting("org.gnome.desktop.interface", "gtk-theme", theme)
+
+def theme_installed(name):
+    """A GTK theme by name in ~/.themes or any data folder's themes/ (XDG_DATA_HOME, XDG_DATA_DIRS)."""
+    dirs = [os.path.join(HOME, ".themes"), os.path.join(DATA, "themes")] + [
+        os.path.join(d, "themes") for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":") if d]
+    return any(os.path.isdir(os.path.join(d, name)) for d in dirs)
 
 @reloads("gtk")
 def gtk_reload(ctx):

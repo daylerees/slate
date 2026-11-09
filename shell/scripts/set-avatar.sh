@@ -23,6 +23,14 @@ with Image.open(src) as im:
     im.save(out, "PNG")
 PY
 
-busctl call org.freedesktop.Accounts "/org/freedesktop/Accounts/User$(id -u)" \
-    org.freedesktop.Accounts.User SetIconFile s "$out"
+# ~/.face first, so other apps get it even if AccountsService can't be reached
 cp "$out" "$HOME/.face"
+if ! busctl call org.freedesktop.Accounts "/org/freedesktop/Accounts/User$(id -u)" \
+        org.freedesktop.Accounts.User SetIconFile s "$out" >/dev/null 2>&1; then
+    if ! busctl status org.freedesktop.Accounts >/dev/null 2>&1; then
+        echo "AccountsService isn't running (install the accountsservice package); saved as ~/.face only" >&2
+    else
+        echo "AccountsService didn't accept the picture (was the password prompt cancelled?)" >&2
+    fi
+    exit 1
+fi

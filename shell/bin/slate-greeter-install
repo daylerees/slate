@@ -27,7 +27,14 @@ BACKUP=/etc/greetd/config.toml.before-slate
 CODE=/usr/local/share/slate-greeter
 DATA=/var/lib/slate-greeter
 CACHE=/var/cache/slate-greeter
-GREETER_USER=greeter
+# The user greetd runs its greeter as: whatever greetd's config already says (packages differ:
+# "greeter" on Arch and Fedora, "_greetd" on Debian), else the first of those that exists
+GREETER_USER=$(sed -n 's/^[[:space:]]*user[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$BACKUP" "$CONF" 2>/dev/null | head -1)
+if [ -z "$GREETER_USER" ] || ! id "$GREETER_USER" >/dev/null 2>&1; then
+    GREETER_USER=""
+    for u in greeter _greetd greetd; do id "$u" >/dev/null 2>&1 && { GREETER_USER=$u; break; }; done
+fi
+GREETER_USER=${GREETER_USER:-greeter}
 
 [ "$(id -u)" -eq 0 ] || { echo "Run with sudo: sudo $0 ${1:-}" >&2; exit 1; }
 OWNER="${SUDO_USER:-}"
@@ -53,7 +60,8 @@ if [ "$MODE" = revert ]; then
     exit 0
 fi
 
-id "$GREETER_USER" >/dev/null 2>&1 || { echo "No '$GREETER_USER' user; is greetd installed?" >&2; exit 1; }
+id "$GREETER_USER" >/dev/null 2>&1 || { echo "No user for greetd's greeter (greeter, _greetd or greetd); is greetd installed?" >&2; exit 1; }
+GREETER_GROUP=$(id -gn "$GREETER_USER")
 for f in greeter/shell.qml greeter/files; do
     [ -f "$SRC/$f" ] || { echo "Can't find $SRC/$f" >&2; exit 1; }
 done
@@ -111,7 +119,7 @@ fi
 
 # 2. Appearance folder (yours, so Slate can sync it) and the greeter's writable cache
 install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
-install -d -m 755 -o "$GREETER_USER" -g "$GREETER_USER" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
+install -d -m 755 -o "$GREETER_USER" -g "$GREETER_GROUP" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
 sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
 
 # 3. Point greetd at it (keeping a backup of the original config, once)
