@@ -219,7 +219,8 @@ FloatingWindow {
         { id: "apptheming", label: "App theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
-        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
+        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" },
+        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" }
     ]
     readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
@@ -392,7 +393,7 @@ FloatingWindow {
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
                     onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
                 }
             }
@@ -1242,39 +1243,6 @@ FloatingWindow {
                         }
                         HoverHandler { id: tileHover }
                         TapHandler { onTapped: win.section = tile.modelData.id }
-                    }
-                }
-            }
-            // ---- Troubleshooting: fixes you shouldn't normally need ----------------------
-            Item { visible: findField.text.trim().length < 2; width: 1; height: 12 }
-            GroupLabel { visible: findField.text.trim().length < 2; text: "Troubleshooting" }
-            Group {
-                visible: findField.text.trim().length < 2
-                SettingRow {
-                    id: resyncRow
-                    property bool installed: false
-                    property string status: ""
-                    label: "Resync the login screen"
-                    detail: status !== "" ? status
-                        : !installed ? "Only for Slate's own login screen, which isn't set up"
-                        : "The login screen copies your wallpaper, settings, picture and font whenever you change them in Slate. "
-                          + "Use this if you changed one outside Slate (replaced the wallpaper file, changed your picture, name "
-                          + "or keyboard layout elsewhere) and the login screen hasn't caught up"
-                    Process {
-                        running: true
-                        command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--check"]
-                        stdout: StdioCollector { onStreamFinished: { const t = text.trim(); resyncRow.installed = t === "outdated" || t === "current"; } }
-                    }
-                    Process {
-                        id: resyncRun
-                        command: [Quickshell.shellPath("bin/slate-greeter-sync")]
-                        onExited: code => resyncRow.status = code === 0 ? "Resynced just now" : "Couldn't resync; is the login screen set up?"
-                    }
-                    Button {
-                        enabled: resyncRow.installed
-                        opacity: enabled ? 1 : 0.4
-                        label: "Resync"
-                        onClicked: { resyncRow.status = "Resyncing…"; resyncRun.running = true; }
                     }
                 }
             }
@@ -4588,6 +4556,51 @@ FloatingWindow {
         }
     }
 
+    // Debug: fixes you shouldn't normally need (a tile on All Settings, not in the sidebar)
+    Component {
+        id: debugPage
+        Column {
+            spacing: 4
+            PageTitle { text: "Debug" }
+            Text {
+                width: Math.min(parent.width, win.introMeasure)
+                text: "Fixes for when something hasn't caught up. Slate normally does all of this by itself, so you shouldn't need them."
+                color: win.dim; font.family: win.font; font.pixelSize: 13
+                wrapMode: Text.Wrap
+                bottomPadding: 8
+            }
+            GroupLabel { text: "Login screen" }
+            Group {
+                SettingRow {
+                    id: resyncRow
+                    property bool installed: false
+                    property string status: ""
+                    label: "Resync the login screen"
+                    detail: status !== "" ? status
+                        : !installed ? "Only for Slate's own login screen, which isn't set up"
+                        : "The login screen copies your wallpaper, settings, picture and font whenever you change them in Slate. "
+                          + "Use this if you changed one outside Slate (replaced the wallpaper file, changed your picture, name "
+                          + "or keyboard layout elsewhere) and the login screen hasn't caught up"
+                    Process {
+                        running: true
+                        command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--check"]
+                        stdout: StdioCollector { onStreamFinished: { const t = text.trim(); resyncRow.installed = t === "outdated" || t === "current"; } }
+                    }
+                    Process {
+                        id: resyncRun
+                        command: [Quickshell.shellPath("bin/slate-greeter-sync")]
+                        onExited: code => resyncRow.status = code === 0 ? "Resynced just now" : "Couldn't resync; is the login screen set up?"
+                    }
+                    Button {
+                        enabled: resyncRow.installed
+                        opacity: enabled ? 1 : 0.4
+                        label: "Resync"
+                        onClicked: { resyncRow.status = "Resyncing…"; resyncRun.running = true; }
+                    }
+                }
+            }
+        }
+    }
     Component {
         id: aboutPage
         Column {

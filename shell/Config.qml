@@ -444,7 +444,7 @@ Singleton {
         bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc"
+        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc", debug: "#e8a0a0"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel
