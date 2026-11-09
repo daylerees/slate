@@ -75,3 +75,8 @@ message and the release notes both carry a summary of the changes since the prev
 (from `git log <previous>..HEAD`), grouped as Features, Fixes and Other, in plain words
 for people using Slate rather than a list of commit subjects. Leave out site- and
 docs-only changes unless they matter to users.
+
+Each release also gets a section at the top of `site/changelog.html` (newest first, below the
+`<!-- New releases go here -->` marker) with the same notes as the GitHub release: the tag
+as its heading with the date, Features / Fixes / Other as cards, and a link to it in the
+row of release links at the top. Commit it as `docs(site): add <tag> to the changelog`.

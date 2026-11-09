@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog · Slate</title>
+<meta name="description" content="What's new in each release of Slate: new features, fixes and other changes, newest first.">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="style.css?v=26">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html"><img src="assets/logo.png?v=5" alt="Slate" height="34"></a>
+  <nav>
+    <a href="index.html#features">Features</a>
+    <a href="index.html#previews">Previews</a>
+    <a href="index.html#install">Install</a>
+    <a href="changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<main class="fp">
+
+<section class="fp-hero">
+  <a class="back" href="index.html"><i class="ti">&#xEA19;</i> Back to the overview</a>
+  <h1>Changelog</h1>
+  <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
+    there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
+  <nav class="jump" aria-label="Releases">
+    <a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+  </nav>
+</section>
+
+<!-- New releases go here, newest first. -->
+<section id="v0.15.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.15.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Reopen your apps after restarting.</strong> The restart dialog has a new "Reopen my apps afterwards" switch (on by default, also in Settings → Power). After the reboot, your windows come back on their original workspaces and screens, with tiling layouts and floating positions restored, and you land on the workspace you were last on. Apps that already reopen themselves aren't started twice, and startup apps get workspaces of their own. A kept session is only restored once, after a real reboot within a day; logging out or shutting down forgets it.</li>
+        <li><strong>Fade in at login.</strong> Every screen fades in from the startup colour while the welcome sound plays, once per session.</li>
+        <li><strong>Fade out on log out, restart and shut down.</strong> Screens fade to black while the goodbye sound plays (a shorter fade if the sound is off). If the action fails, the screens come back after 20 seconds.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>The wallpaper and bar no longer flash for a moment before the login fade starts.</li>
+        <li>The login fade now starts from the same dark colour Hyprland shows while Slate loads, so there's no visible step.</li>
+        <li>Long password errors on the lock and login screens (such as an account-locked notice) now wrap inside the password frame, on a soft red strip with an alert icon, instead of running off the sides.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.14.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.14.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Sounds.</strong> Slate now has a small family of soft, calm sounds, each with its own volume slider in Settings → Sound (slide to Off to turn one off; letting go plays a preview):<ul>
+          <li><strong>Notifications:</strong> a soft, quick double tap when one pops up. Silent during Do Not Disturb and for low-priority notices.</li>
+          <li><strong>Questions and warnings:</strong> a gentle, questioning sound when Slate asks you to confirm something, an app asks for your password, or a notification is urgent.</li>
+          <li><strong>Switching</strong> (off to start with): a soft swish when you change workspace or move through the window switcher and overview, drifting slightly left or right the way you're going.</li>
+          <li><strong>Clicks</strong> (off to start with): a barely-there tap on Slate's buttons, menus and switches.</li>
+          <li><strong>Welcome:</strong> a gentle swell when you log in (not when Slate reloads), and <strong>Goodbye</strong>, a calm closing sound when you log out, restart or shut down.</li>
+          <li>The volume key tick moves here too. If you'd turned it off, it stays off.</li>
+          <li>Sounds play without delay when Qt Multimedia is installed (<code>qt6-multimedia</code>, now an optional package); clicks need it.</li></ul></li>
+        <li><strong>One pointer speed for mice and touchpads.</strong> Settings → Keyboard &amp; Mouse has a single Pointer speed that sets both, instead of separate sliders. If you'd only set the old touchpad speed, set Pointer speed instead.</li>
+        <li><strong>Settings page names in title case:</strong> Keyboard &amp; Mouse, Date &amp; Time, Menu Bar, Hot Corners, Lock &amp; Idle, Default Apps, Startup Apps, App Theming.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Touchpad speed and scroll speed now work.</strong> Slate couldn't find your touchpad, so these settings did nothing and any speed in your own Hyprland config stayed in force. Your touchpad may feel different after updating: adjust it in Settings → Keyboard &amp; Mouse.</li>
+        <li><strong>Menu bar separators are visible with glass on</strong>, in both dark and light mode, and follow the wallpaper tint.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.13.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.13.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Theme presets.</strong> Settings → Appearance now starts with a Preset menu that sets the theme, colours and glass in one go, leaving your wallpaper and everything else alone. It asks before changing anything, and shows "Custom" when your settings don't match a preset. Two presets to start:<ul>
+          <li><strong>Liquid Glass:</strong> dark and colourful, with accent and background tint taken from the wallpaper, and glass with shine and gloss.</li>
+          <li><strong>Metro Flat:</strong> dark and colourful with wallpaper colours, and no glass.</li></ul></li>
+        <li><strong>Geist Mono is the default code font</strong>, matching Geist as the interface font. If you've already picked a code font, you keep it.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Readable app colours.</strong> Colours Slate gives other apps (terminal colours, code highlighting, links) are adjusted just enough to read clearly against the background. Light mode gets crisp, saturated colours instead of washed-out pastels, and readable greys. kitty in light mode gets a nearly solid background, so dim text no longer disappears into the wallpaper.</li>
+        <li><strong>Geist Mono is installed for your other apps.</strong> If you already had the Geist font, the installer used to skip installing Geist Mono, so picking it as the code font did nothing in terminals. Installing or updating now adds it and keeps it up to date.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.12.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.12.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>A Debug page in Settings.</strong> Reached from its tile on All Settings, it has fixes for when something hasn't caught up:<ul>
+          <li><strong>Resync the login screen</strong>, if you changed your wallpaper file, picture, name or keyboard layout outside Slate.</li>
+          <li><strong>Log detail</strong> (Normal, Detailed, Everything), for tracking down a problem.</li>
+          <li><strong>Export recent logs</strong>, which saves Slate's recent log and system details to a file in Downloads to attach to a bug report. Your location is left out. <code>slate logs</code> does the same from a terminal.</li></ul></li>
+        <li><strong>Slate asks before restarting itself.</strong> Changing Interface size or Log detail now asks "Restart Slate?" first, and cancelling leaves everything as it was. Restore defaults says when it will restart Slate.</li>
+        <li><strong>Accent boldness.</strong> A slider under "Accent colour from wallpaper" makes the wallpaper's colour more vivid, while text on it stays readable. It defaults to 60% and works in light and dark mode.</li>
+        <li><strong>Tint boldness.</strong> A slider under "Background tint from wallpaper" sets how much of the wallpaper's colour the bar, panels and other backgrounds take.</li>
+        <li><strong>Nicer notification icons.</strong> Slate's own notices show its mark on an accent tile, matching the icons other notices fall back to. In Colourful mode, notice icons take the colour of the matching Settings page.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Quick toggles in the control centre that are on now light up when you point at them.</li>
+        <li>The login screen's notices use Slate's look rather than your icon theme's padlock.</li>
+        <li>Interface size asks only once you let go of the slider.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Slate's log is now timestamped.</li>
+        <li>About is always the last page on All Settings.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.11.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.11.0 <time datetime="2026-11-09">9 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Accent highlight in the launcher.</strong> The selected result in the launcher's list is now highlighted in your accent colour, as the grid already was. Its text fades to a readable colour as the highlight slides onto it. With glass on, the icon tiles of the highlighted app, setting or action turn solid so they don't vanish into the accent.</li>
+        <li><strong>Colourful settings icons in the launcher.</strong> In Colourful mode, settings found in the launcher show their icons in their page's colour, matching the Settings sidebar.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Settings reopens after Super+Q.</strong> Closing Settings from outside Slate (Super+Q or a title bar's close button) used to leave it unable to open again until Slate reloaded.</li>
+        <li><strong>Light mode looks better.</strong> Backgrounds are darker and less glaring, the wallpaper tint now shows clearly (even with muted wallpapers), and the bar's capsules and the control centre's forecast tiles stand out from what's behind them.</li>
+        <li><strong>Light-mode glass looks frosted, not flat.</strong> Containers get a near-white sheen, a crisp top edge with a faint darker line above it, a whiter frosted fill and a soft shade along the bottom.</li>
+        <li><strong>Smoother gloss on tall pieces.</strong> Taller glossy pieces, like the control centre's quick toggles, no longer look like two- or three-tone bands.</li>
+        <li><strong>Accent swatches match what you get.</strong> In light mode, the accent colour circles in Settings and the welcome screen show the deeper shade Slate actually uses.</li>
+        <li><strong>Scrollbars have breathing room.</strong> Scrollable lists leave a small gap before the scrollbar while it shows, and use the full width when it doesn't.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The login screen's log goes to the journal instead of appearing on tty1.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.10.1" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.10.1 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>No wallpaper flash at login:</strong> going from the login screen to the Slate desktop no longer briefly shows Hyprland's default wallpaper (or your distro's, such as CachyOS's). You see a plain dark background in the login screen's colour until Slate draws your wallpaper.</li>
+        <li><strong>Glass on the lock and login screens looks like the bar:</strong> with glass on, panels, buttons, menus and the password field get the bar's frosted sheen instead of a bright outline.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.10.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.10.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>A Colourful look.</strong> Settings → Appearance → Theme &amp; colour → Colour now offers <strong>Colourful</strong> alongside Monotone (the default, as before). In Colourful, each Settings page icon gets its own pastel. So do the bar's status icons (notifications, clipboard, Wi-Fi, volume, battery and more) and the Apps and Spaces buttons, and tray icons show in their own colours instead of black and white.</li>
+        <li><strong>Glass on the lock and login screens.</strong> With glass on, the password box, picture frame, corner buttons and menus are frosted glass like the rest of Slate, with the wallpaper blurred behind them, the shine and the gloss.</li>
+        <li><strong>A login screen that can't leave you stuck.</strong> Each update to the login screen is tested before it's installed, and isn't installed if it fails. If it still fails at boot, the last version you logged in with takes over, and failing that a basic emergency login screen, so you're never left at a text console. Update the login screen once (the "Login screen out of date" notification, or Settings → Lock &amp; idle) to get this.</li>
+        <li><strong>A clearer notice when Slate can't reload.</strong> If a change to Slate's files has a mistake, a Slate notification says what's wrong and where, instead of a popup across the top of the screen. Slate keeps running as it was and reloads by itself as soon as the fix is saved.</li>
+        <li>Scrollbar handles are in your accent colour, and keep hold while you drag them.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>The login screen failed to start after an update (you'd see a text console at boot), because one of its files wasn't installed.</li>
+        <li>The launcher and clipboard lists use the full width when everything fits, instead of leaving a gap for a scrollbar that isn't there.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.9.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.9.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Glass takes on your wallpaper's colour.</strong> With glass on, the gloss and the frosted containers (on the bar, the dock and elsewhere) pick up a hint of your wallpaper's colour, so they match a colourful wallpaper instead of looking grey. App icon tiles turn to the same tinted frosted glass. A new <strong>Gloss colour</strong> slider in Settings → Appearance → Glass sets how much colour they take, from plain white to full.</li>
+        <li><strong>Glossier accents.</strong> Selected items, switches, and progress bars (battery, CPU, memory, disk, volume and the settings sliders) get a clear glossy shine on top and a soft shade underneath, so they look rounded rather than flat.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Moving through launcher and clipboard results with the arrow keys glides smoothly instead of lurching from row to row.</li>
+        <li>Sliders keep hold while you drag them, even if the pointer drifts off.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.8.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.8.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Obsidian theming.</strong> Settings → App theming can now theme Obsidian: a Slate style snippet in each of your vaults, switched on for you, with Slate's colours for backgrounds, text, gentle dividing lines, links, inline code and code blocks. Reopen Obsidian once after switching it on; after that it follows Slate's colours live.</li>
+        <li><strong>A Refresh button for app theming</strong> that writes every switched-on app's theme again, for when an app update or reset has overwritten one.</li>
+        <li><strong>A menu on the Slate button.</strong> Right-click the Slate icon at the start of the bar for Settings, Appearance, the next wallpaper, Do Not Disturb, Night Light, glass, updates, restarting Slate, the welcome, locking, logging out and About.</li>
+        <li><strong>All Settings.</strong> Settings now opens on All Settings, with a tile for every page.</li>
+        <li><strong>What Slate is using.</strong> Settings → About shows Slate's memory and processor use as meters, with a graph of the last minute.</li>
+        <li><strong>Reload notices.</strong> Slate tells you with a notification when it reloads, and when Hyprland reloads its settings (including any errors in them), instead of Quickshell's popup, which covered the top of the screen and stopped the panels opening.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Searching Settings finds every themeable app by name, and lights up the right spot instead of just above it.</li>
+        <li>An icon sent with a notification as a small picture shows as an icon, not stretched across the card.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.7.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.7.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Glass.</strong> A new look in Settings → Appearance → Glass (off by default): the bar, dock, panels, Settings, the launcher, clipboard, window switcher, notifications, menus and dialogs turn see-through, with the desktop blurred behind them. Adjust how see-through they are, how strong the blur is, and a light rim around the edges.</li>
+        <li><strong>Gloss.</strong> With glass on, a glossy sheen with a bright edge that follows the corners, on the bar's containers, the dock and its icons, notifications, the workspace indicator, buttons, switches, and whatever's selected or under the pointer. A slider sets how much (none up to double).</li>
+        <li><strong>Smoother blur.</strong> A new Blur section in Settings → Appearance. <strong>Fast blur</strong> (on by default) blurs just the wallpaper behind see-through windows and glass, instead of re-blurring the windows underneath on every change, which was slowing animations and the pointer. <strong>Blur quality</strong> lets you choose how many blur passes to use, or keep Hyprland's own.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>See-through windows (like a translucent terminal) now look the same in the workspace overview, the Super+Tab switcher and New Space's previews as they do on screen, and zooming into a workspace no longer jumps from clear to blurred at the end.</li>
+        <li>Moving the mouse over rows of items in Settings is smoother.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.6.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.6.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>A welcome on first start.</strong> Slate introduces itself and walks you through a few big choices, each with a recommendation: tiling or floating windows; dark, light or auto; colours from your wallpaper; theming your other apps (with a clear note about what it changes and how to undo it); where the menu bar and dock go; and which keyboard shortcuts to use. It ends with the keys worth knowing. Skip it any time, or open it again from Settings → About.</li>
+        <li><strong>A Workspaces page in Settings</strong>, gathering everything about workspaces in one place: how switching looks, wrapping round, keeping an empty workspace, the indicator shape and the overview.</li>
+        <li><strong>Choose how switching workspace looks:</strong> Slide Fade (as before), Slide, Crossfade, the vertical versions, or none.</li>
+        <li><strong>The workspace overview zooms into the workspace you pick</strong>, so the card grows smoothly into the real thing.</li>
+        <li><strong>Workspaces can stop at the ends</strong> instead of wrapping round (Super+Left/Right and the overview), and the overview's row then ends there too.</li>
+        <li><strong>More visual settings:</strong> the menu bar and dock position are picked on a small picture of the screen, hot corners are set on a picture showing what each corner does, and the folder colour is chosen from a list of little folders in each colour.</li>
+        <li><strong>App theming has its own page</strong>, opened from Appearance, and search finds each app by name.</li>
+        <li><strong>Hide the app icon</strong> before the window title on the bar (Settings → Menu bar → App icon).</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Smooth scrolling with the mouse wheel and touchpad everywhere: notches glide in, and the touchpad glides on after you lift your fingers.</li>
+        <li>The pointer moves more smoothly over Slate's own windows. Buttons now keep the normal arrow, like other desktops, instead of switching to a pointing hand.</li>
+        <li>Long lists of Spaces scroll instead of making the panel taller than the screen, and the notification list shades its top edge once scrolled.</li>
+        <li>Scroll shadows fade out as you reach the edge, not after.</li>
+        <li>Going to an empty workspace slides your windows away instead of fading them where they are.</li>
+        <li>The menu bar and dock pickers no longer show a confusing second shape.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.5.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.5.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Updates.</strong> Slate now checks for new releases once a day and lets you know with a notification. The new Settings → Updates page shows what's new and updates in one click, always keeping your settings and your own tweaks (<code>settings.json</code>, <code>hypr/</code> and <code>user/</code>). The version you had is kept, and you can go back to it from the same page. If you've changed any of Slate's own files by hand, they're listed before an update replaces them. An update that needs new packages stops and asks you to run the full installer instead. This release is the first with the updater, so install it the usual way once; later versions can then be installed from Settings.</li>
+        <li><strong>Accent-coloured hover.</strong> Buttons, rows and menu items across Slate (the bar, panels, Settings, menus, dialogs and the login screen) now light up in your accent colour when you point at them.</li>
+        <li><strong>Following apps you're sent to.</strong> When an app opens something in another app, such as a link in your browser, Slate now takes you to that app, even on another workspace.</li>
+        <li>The notification close button sits on a small rounded square.</li>
+        <li>More room between rows in panel lists (Wi-Fi, Bluetooth, keyboard layouts, sound outputs, clipboard, Spaces and the power menu).</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Panels from the bar slide open and closed smoothly, without the brief hitch at the start, and fade along with their slide.</li>
+        <li>The launcher and clipboard list no longer grow in steps the first time they open.</li>
+        <li>The control centre's profile card shows its wallpaper straight away, instead of fading it in.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The installer keeps one backup of the previous version (<code>~/.config/slate.previous</code>) instead of a dated copy each time, and only swaps in the new version once it's fully copied.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.4.2" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.4.2 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>New Space no longer counts the workspace you're on when it's empty. Opened from an empty workspace, it used to say "1 workspace" with nothing ticked; now only workspaces with apps can be picked.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.4.1" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.4.1 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Notification pop-ups now all fade out when they go. Before, only the last one faded; any that left while others were still showing vanished at once.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.4.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.4.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Screensaver.</strong> After a while with no input (5 minutes by default, before the lock), a screensaver covers the screen: a clock on your wallpaper, dimmed and slowly drifting; a slideshow of your wallpaper folder; or a clock on black that moves so nothing burns in. Any key, click or move of the pointer puts it away without reaching your apps, and video holds it off. Turn on <strong>Lock on wake</strong> to need your password when you come back. Settings → Screensaver, with a preview.</li>
+        <li><strong>Choose your keyboard shortcuts.</strong> Settings → Shortcuts now offers three sets: <strong>Slate</strong> (as before), <strong>Hyprland Defaults</strong> (Super+Q terminal, Super+C close, Super+R launcher, Super+1–0 workspaces…), or <strong>Hyprland + Slate Extras</strong>, which adds Slate's shortcuts where Hyprland's leave the keys free.</li>
+        <li><strong>Your own tweaks, in files made for you.</strong> <code>~/.config/slate/hypr/</code> now has a file for each kind of Hyprland tweak (environment, default apps, monitors, shortcuts, window rules, startup commands and anything else), and <code>~/.config/slate/user/shell.qml</code> lets you add your own pieces to Slate. Each comes with instructions, is kept when you update, and takes effect as soon as you save it; a mistake shows in a notification.</li>
+        <li><strong>The launcher, clipboard history and emoji picker shrink to fit</strong> what they're showing as you type, smoothly, with the search box staying put.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Notifications no longer pop up again (and count as unread again) each time Slate restarts, such as a "Battery low" warning showing over and over.</li>
+        <li>Notification pop-ups now fade in and out properly, instead of vanishing or appearing half-faded with square-looking corners.</li>
+        <li>The coloured border on windows from a space now wraps round the window's rounded corners, and round the menu bar's curved ends on a full-screen window, instead of cutting across them.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.3.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.3.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Spaces.</strong> A new button on the menu bar, between Apps and the workspaces, saves the apps on one or more workspaces, and where their windows sit, as a space with a name, an icon and a colour. Click a space to bring it back: each workspace opens as a new one after your last, its apps start, and their windows go back to the same tiles, floating spots and sizes. Pick the workspaces from live previews of them; choose from 44 icons and 17 pastel colours, or any colour of your own. Deleting a space asks first, in the middle of the screen.</li>
+        <li><strong>Windows from a space are marked.</strong> They get a thin border in the space's colour along their top and the space's icon in their top left corner (it moves out of the pointer's way). The focused window's icon on the menu bar sits on the space's colour, and the window switcher and workspace overview show the space's badge on its windows.</li>
+        <li><strong>Settings → Spaces</strong>, a new page: the Spaces button, and a switch for each of the ways windows are marked.</li>
+        <li><strong>Workspace overview (Super+Down):</strong> the cards now show just the area your windows use, without a copy of the menu bar, and the window previews keep their rounded corners. A new option puts each window's app icon on it (Settings → Windows).</li>
+        <li><strong>Window switcher (Super+Tab):</strong> the app icon on each preview can now be switched off (Settings → Windows).</li>
+        <li><code>slate ipc call spaces restore &lt;name&gt;</code> brings a space back from a key binding or script.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Moving a window to a new workspace (Super+W) or opening an app on one from the launcher (Super+Return) now goes after your last workspace, rather than filling a gap such as workspace 1. With "Keep an empty workspace" on, it's the spare one at the end.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.2.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.2.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li>Bar: optional clipboard (with item count) and screenshot items, with their own panels: recent clipboard items to copy again or clear; screenshots of an area, a window or the screen. Clipboard history can be switched off.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Screenshots are always saved to the chosen folder with the chosen name, even when opened in swash to mark up (it no longer asks where to save).</li>
+        <li>Icons are placed correctly again after the bundled icon font was edited.</li>
+        <li>Lone bar icons (no label beside them) are centred.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Starting app configs are tidied and commented, with one look for every terminal.</li>
+        <li>Website: clips of tiling, floating windows and Settings; lighter on phones.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section id="v0.1.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.1.0 <time datetime="2026-11-08">8 November 2026</time></h2>
+  <p class="fp-intro">The first release of Slate: a calm, complete desktop for Linux, built on Hyprland and Quickshell. It installs as its own <strong>Slate</strong> session, so your existing setup is left alone.</p>
+  <div class="cl-grid">
+    <article>
+      <h3>What&#x27;s in it</h3>
+      <ul>
+        <li><strong>Menu bar</strong> with workspaces, the window title, app tray, notifications, Wi-Fi, keyboard layout, Bluetooth, volume, battery and the clock; every item opens its own panel.</li>
+        <li><strong>Magnifying dock</strong> with pinned and running apps, right-click menus and auto-hide.</li>
+        <li><strong>Launcher</strong> (tap Super) for apps, every setting and quick sums.</li>
+        <li><strong>Window switcher</strong> (Super+Tab) and <strong>workspace overview</strong> (Super+Down) with live previews.</li>
+        <li><strong>Tiling</strong> by default, or optional <strong>floating windows</strong> with title bars (hyprbars).</li>
+        <li><strong>Control centre</strong> with your profile, media, weather and quick toggles.</li>
+        <li><strong>Notifications</strong> with a history and Do not disturb; on-screen indicators.</li>
+        <li><strong>Theming</strong>: dark, light or automatic, an accent and tint that can follow the wallpaper, icon shapes, and opt-in theming for other apps (GTK, Qt, terminals, editors and more).</li>
+        <li><strong>Lock and login screens</strong> that match, with idle lock, screen-off and suspend.</li>
+        <li><strong>Settings app</strong> covering all of it, with search.</li>
+        <li>Clipboard history, emoji picker, colour picker, screenshots, night light and hot corners.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p class="ai"><i class="ti">&#xF6D7;</i> Built with Claude, Anthropic's AI model, by Dayle Rees: an experienced software
+    engineer and Linux user who's open to embracing new and emerging technologies, and to
+    understanding them better.</p>
+  <p>Slate is open source under the MIT licence. Made by Dayle Rees.</p>
+  <p><a href="index.html">Overview</a> · <a href="features.html">Every feature</a> · <a href="https://github.com/daylerees/slate/releases">Releases on GitHub</a></p>
+</footer>
+
+<script src="site.js?v=3" defer></script>
+</body>
+</html>
