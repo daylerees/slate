@@ -39,8 +39,10 @@ Scope {
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (["monitoradded", "monitoraddedv2", "monitorremoved", "monitorremovedv2", "configreloaded"].includes(event.name))
+            switch (event.name) {
+            case "monitoradded": case "monitoraddedv2": case "monitorremoved": case "monitorremovedv2": case "configreloaded":
                 refreshLater.restart();
+            }
         }
     }
     Timer { id: refreshLater; interval: 300; onTriggered: root.refresh() }

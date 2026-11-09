@@ -210,13 +210,20 @@ ShellRoot {
     }
     Timer { id: borderPush; interval: 300; running: true; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.borderCmd]) }
     Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            // (and see whether title bars can be used: hyprbars may have been rebuilt)
-            if (event.name === "configreloaded") { borderPush.restart(); Config.checkTitleBars(); root.barButtonsStale = false; }
-            // A window closed: GTK apps waiting to pick up new colours may now restart
-            else if (event.name === "closewindow") gtkRefresh.restart();
+        target: Config
+        // Hyprland reloaded: borders go back (and see whether title bars can be used: hyprbars
+        // may have been rebuilt), and check the config for errors
+        function onHyprConfigReloaded() {
+            borderPush.restart();
+            Config.checkTitleBars();
+            root.barButtonsStale = false;
+            hyprErrors.running = false; hyprErrors.running = true;
         }
+    }
+    Connections {
+        target: Hyprland
+        // A window closed: GTK apps waiting to pick up new colours may now restart
+        function onRawEvent(event) { if (event.name === "closewindow") gtkRefresh.restart(); }
     }
     Timer { id: gtkRefresh; interval: 1500; onTriggered: Quickshell.execDetached([Quickshell.shellPath("scripts/refresh-gtk-apps.sh")]) }
 
@@ -338,10 +345,7 @@ ShellRoot {
         onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:about",
             "Slate reloaded", "Slate restarted on its updated files and settings."])
     }
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") { hyprErrors.running = false; hyprErrors.running = true; } }
-    }
+    // (hyprErrors runs again whenever Hyprland reloads: see onHyprConfigReloaded above)
     Process {
         id: hyprErrors
         command: ["hyprctl", "-j", "configerrors"]

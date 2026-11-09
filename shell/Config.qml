@@ -355,9 +355,26 @@ Singleton {
             blurLater.restart();          // the blur may have changed: read it again
         }
     }
+    // ---- Hyprland's events -------------------------------------------------------------
+    // One handler for all of Config's (Hyprland sends many events a second while windows move),
+    // and hyprConfigReloaded for the rest of Slate, so other files needn't each look at every event
+    signal hyprConfigReloaded()
     Connections {
         target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") hyprPush.restart(); }
+        function onRawEvent(event) {
+            switch (event.name) {
+            case "activelayout":                 // the keyboard layout switched
+                kbActiveLater.restart();
+                break;
+            case "configreloaded":               // Hyprland reloaded: settings it lost go back
+                hyprPush.restart();
+                kbLater.restart();
+                blurLater.restart();
+                roundingProc.running = false; roundingProc.running = true;
+                root.hyprConfigReloaded();
+                break;
+            }
+        }
     }
 
     // ---- Keyboard layouts (for the menu bar's switcher) ---------------------------------
@@ -421,13 +438,7 @@ Singleton {
     Timer { id: kbLater; interval: 400; onTriggered: root.refreshKeyboard() }
     Timer { id: kbActiveLater; interval: 400; onTriggered: { kbState.running = false; kbState.running = true; } }
     onKbLayoutListChanged: kbLater.restart()
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            if (event.name === "activelayout") kbActiveLater.restart();
-            else if (event.name === "configreloaded") kbLater.restart();
-        }
-    }
+    // (both started from the Hyprland events handler above)
 
     // ---- Lid and power button (Settings → Power) --------------------------------------
     // When an action is chosen, the system's own handling (logind) is held back while Slate
@@ -681,10 +692,7 @@ Singleton {
         }
     }
     function readBlur() { blurProc.running = false; blurProc.running = true; }
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") blurLater.restart(); }
-    }
+    // (read again after Hyprland reloads: the Hyprland events handler starts blurLater)
     Timer { id: blurLater; interval: 600; onTriggered: root.readBlur() }
     // Glass's blur size put back to Hyprland's own (glass off, or "Hyprland's own" picked):
     // reload Hyprland's config so its value comes back
@@ -712,10 +720,7 @@ Singleton {
         command: ["hyprctl", "-j", "getoption", "decoration:rounding"]
         stdout: StdioCollector { onStreamFinished: { try { root.windowRounding = JSON.parse(text).int; } catch (e) {} } }
     }
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") { roundingProc.running = false; roundingProc.running = true; } }
-    }
+    // (read again after Hyprland reloads, from the Hyprland events handler)
     // A window's rounding (Hyprland's pixels) from its Hyprland data (lastIpcObject or
     // hyprctl clients), given how many tiled windows share its workspace
     function windowRadius(o, tiledOnWorkspace) {

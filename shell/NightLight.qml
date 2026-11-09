@@ -90,7 +90,7 @@ Scope {
 
     // A config reload resets the shader; put it back
     Connections {
-        target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") applyLater.restart(); }
+        target: Config
+        function onHyprConfigReloaded() { applyLater.restart(); }
     }
 }
