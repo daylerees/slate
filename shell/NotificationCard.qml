@@ -49,7 +49,9 @@ Rectangle {
     height: implicitHeight
     radius: 9
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
-    Gloss { radius: parent.radius }   // glass: a sheen
+    // Glass: a sheen. Stronger than on short shapes like the bar's capsules: on a card this tall
+    // the usual one spreads thin and barely showed
+    Gloss { radius: parent.radius; strength: 1.8 }
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
     // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
@@ -162,6 +164,12 @@ Rectangle {
                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                 onStatusChanged: if (status === Image.Error && !gen.running && icon.tried !== card.tilePath) { icon.tried = card.tilePath; gen.running = true; }
                 IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                // Glass: a sheen on the tile, as on the dock's icons (not on icons shown as they come)
+                Gloss {
+                    glassHint: true
+                    visible: Config.glassGloss && Config.s.iconShape !== "original"
+                    radius: Config.iconCornerFor(parent.width)
+                }
             }
             Process {
                 id: gen
@@ -191,6 +199,8 @@ Rectangle {
                     font.family: card.bar.iconFont
                     font.pixelSize: 20
                 }
+                // Glass: a sheen on the tile (under the mark or bell, so it doesn't wash them out)
+                Gloss { radius: parent.radius; glassHint: icon.fromSlate; z: -0.5 }
             }
         }
 

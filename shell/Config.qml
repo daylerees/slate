@@ -494,6 +494,12 @@ Singleton {
     function tileCommand(app, path) {
         return [tileScript, "--tile", app, path, "192", "--shape", s.iconShape, s.iconFill ? "--fill" : "--whole"];
     }
+    // How rounded an app icon's corners are at a given size (Settings → Appearance → App icons),
+    // for things drawn to match it, like a sheen on the tile
+    function iconCornerFor(size) {
+        const shape = s.iconShape;
+        return shape === "circle" ? size / 2 : shape === "square" ? 0 : shape === "squircle" ? size * 0.3 : size * 0.225;
+    }
     // Where an app's drawn icon lives: tilePath(app id, class or window key). Characters a file
     // name can't safely hold become "_", the same way scripts/appicon.py names them.
     function tilePath(key) { return tileDir + "/" + String(key).replace(/[^A-Za-z0-9._-]/g, "_") + ".png"; }
