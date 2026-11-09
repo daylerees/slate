@@ -513,7 +513,7 @@ ShellRoot {
                 const wins = tops.filter(t => !claimed.has(t) && belongsTo(t, id, e));
                 if (!e && wins.length === 0) continue;   // pinned app that's no longer installed
                 wins.forEach(t => claimed.add(t));
-                out.push({ key: id, entry: e, windows: wins });
+                out.push({ key: id, entry: e, windows: wins, pinned: true });
             }
             for (const t of tops) {
                 if (claimed.has(t)) continue;
@@ -521,14 +521,42 @@ ShellRoot {
                 const key = e ? e.id : t.appId;
                 const existing = out.find(o => o.key === key);
                 if (existing) existing.windows.push(t);
-                else out.push({ key: key, entry: e, windows: [t] });
+                else out.push({ key: key, entry: e, windows: [t], pinned: false });
             }
             return out;
         }
 
         // ---- Magnification -------------------------------------------------
-        // The launcher, what's playing (while something is), the apps, then the waste basket
-        readonly property int count: items.length + 1 + media + (trashShown ? 1 : 0)
+        // ---- The dock's slots, in order ---------------------------------------------
+        // The launcher, what's playing (while something is) and a divider, the pinned apps, a
+        // divider, the other running apps, a divider, Downloads and the Waste Basket. Each slot knows its
+        // place (at); everything that finds or places one goes through this list
+        readonly property var slots: {
+            const s = [];
+            const add = o => { o.at = s.length; s.push(o); };
+            add({ kind: "launcher" });
+            const dividers = Config.s.dockDivider;
+            if (mediaShown) {
+                add({ kind: "media" });
+                if (dividers && items.length > 0) add({ kind: "divider" });     // and one after it
+            }
+            items.forEach((it, i) => {
+                // between the pinned apps and the others (when there are both)
+                if (dividers && i > 0 && !it.pinned && items[i - 1].pinned) add({ kind: "divider" });
+                add({ kind: "app", item: it });
+            });
+            if (dividers && items.length > 0 && (downloadsShown || trashShown)) add({ kind: "divider" });
+            if (downloadsShown) add({ kind: "downloads" });
+            if (trashShown) add({ kind: "trash" });
+            return s;
+        }
+        // The slots drawn by the apps' Repeater: the apps and the dividers between them
+        readonly property var middleSlots: slots.filter(x => x.kind === "app" || x.kind === "divider")
+        function slotAt(i) { return i >= 0 && i < slots.length ? slots[i] : null; }
+        function indexOfKind(kind) { const x = slots.find(o => o.kind === kind); return x ? x.at : -1; }
+        readonly property int count: slots.length
+        readonly property real dividerWide: 0.35     // a divider's width, in icons
+        readonly property bool downloadsShown: false
 
         // ---- Media (Settings → Dock → Media controls) ----------------------------------
         // What's playing, right after the launcher button, while a media app has a track: its
@@ -536,8 +564,7 @@ ShellRoot {
         readonly property var player: Mpris.players.values.find(p => p.isPlaying)
             ?? Mpris.players.values.find(p => (p.trackTitle || "") !== "") ?? null
         readonly property bool mediaShown: Config.s.dockShowMedia && !!player && (player.trackTitle || "") !== ""
-        readonly property int media: mediaShown ? 1 : 0       // how far it moves the apps along
-        readonly property int mediaIndex: 1
+        readonly property int mediaIndex: indexOfKind("media")
         // How many icons wide it is: along a bottom or top dock, a rectangle with the album art
         // and the controls beside it; on a side dock, one icon (the controls show over the art
         // under the pointer), as a wide tile doesn't fit there
@@ -576,7 +603,7 @@ ShellRoot {
         // The bin after the apps: click to open it in the file manager, right-click to empty
         // it. The desktop's own (freedesktop) trash, so it's the same bin the file managers use
         readonly property bool trashShown: Config.s.dockShowTrash
-        readonly property int trashIndex: items.length + 1 + media       // always last
+        readonly property int trashIndex: indexOfKind("trash")         // always last
         readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
         // What's in it, watched (the folder made first if nothing's been thrown away yet, so
         // there's something to watch)
@@ -600,9 +627,20 @@ ShellRoot {
         function emptyTrash() { Quickshell.execDetached(["gio", "trash", "--empty"]); }
         // Slots along the dock: each an icon wide, except what's playing (mediaWide). Where one
         // starts at rest, and how wide it is in icons
-        function slotWidth(i) { return mediaShown && i === mediaIndex ? mediaWide : 1; }
-        function slotStart(i) { return i * (base + spacing) + (mediaShown && i > mediaIndex ? (mediaWide - 1) * base : 0); }
-        readonly property real restWidth: count * base + (count - 1) * spacing + (mediaShown ? (mediaWide - 1) * base : 0)
+        function slotWidth(i) {
+            const k = slotAt(i) ? slotAt(i).kind : "";
+            return k === "media" ? mediaWide : k === "divider" ? dividerWide : 1;
+        }
+        // Where each slot starts at rest (worked out once per change of the slots)
+        readonly property var slotStarts: {
+            const out = [];
+            let x = 0;
+            for (let i = 0; i < slots.length; i++) { out.push(x); x += slotWidth(i) * base + spacing; }
+            out.push(x - spacing);                   // the end
+            return out;
+        }
+        function slotStart(i) { return slotStarts[Math.max(0, Math.min(i, slotStarts.length - 1))]; }
+        readonly property real restWidth: Math.max(0, slotStarts[slotStarts.length - 1])
         property real pointerX: -1000                          // in rest-layout coordinates
         // Magnification stays frozen while the right-click menu is open
         property real hover: (mouse.containsMouse && shown) || appMenu.visible ? 1 : 0
@@ -663,10 +701,10 @@ ShellRoot {
         IpcHandler {
             target: "dock"
             function menu(key: string): void {
-                const i = win.items.findIndex(it => it.key === key);
-                if (i < 0) return;
-                const x = (strip.width - win.restWidth) / 2 + win.slotStart(i + 1 + win.media) + win.base / 2;
-                appMenu.openFor(win.items[i], x);
+                const sl = win.slots.find(o => o.kind === "app" && o.item.key === key);
+                if (!sl) return;
+                const x = (strip.width - win.restWidth) / 2 + win.slotStart(sl.at) + win.base / 2;
+                appMenu.openFor(sl.item, x);
             }
             function closeMenu(): void { appMenu.closeMenu(); }
         }
@@ -968,8 +1006,9 @@ ShellRoot {
                 else openTrash();
                 return;
             }
-            const item = items[i - 1 - media];
-            if (!item) return;
+            const sl = slotAt(i);
+            if (!sl || sl.kind !== "app") return;          // (a divider does nothing)
+            const item = sl.item;
             if (right) {   // menu by the icon's centre along the dock
                 appMenu.openFor(item, row.x + cellX(i) + base * scaleAt(i) / 2);
                 return;
@@ -1286,24 +1325,38 @@ ShellRoot {
                     }
 
                     Repeater {
-                        model: win.items
+                        model: win.middleSlots
                         delegate: Item {
                             id: cell
                             required property var modelData
-                            required property int index
-                            readonly property real s: win.scaleAt(index + 1 + win.media)
-                            readonly property string tilePath: Config.tilePath(modelData.key)
+                            readonly property bool isApp: modelData.kind === "app"
+                            // The app in this slot ({ key, entry, windows, pinned }; none for a divider)
+                            readonly property var app: isApp ? modelData.item : ({ key: "", entry: null, windows: [], pinned: false })
+                            readonly property real s: win.scaleAt(modelData.at)
+                            readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
                             property int version: 0
                             property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
                             // Bounces while the app is starting (clicked in the dock): see win.bounceOf
-                            readonly property real bounce: win.bounceOf(cell.modelData.key)
-                            readonly property int windowCount: cell.modelData.windows.length
-                            onWindowCountChanged: if (windowCount > 0) win.endLaunch(cell.modelData.key)
-                            Component.onCompleted: if (windowCount > 0) win.endLaunch(cell.modelData.key)
-                            width: win.base * s
+                            readonly property real bounce: win.bounceOf(cell.app.key)
+                            readonly property int windowCount: cell.app.windows.length
+                            onWindowCountChanged: if (windowCount > 0) win.endLaunch(cell.app.key)
+                            Component.onCompleted: if (windowCount > 0) win.endLaunch(cell.app.key)
+                            width: win.base * win.slotWidth(modelData.at) * s
                             height: row.height
 
+                            // A divider: a faint line across the dock, between the pinned apps and
+                            // the others (and before Downloads and the Waste Basket)
+                            Rectangle {
+                                visible: !cell.isApp
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: win.base * 0.12
+                                width: 1; height: win.base * 0.76
+                                color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.2)
+                            }
+
                             Image {
+                                visible: cell.isApp
                                 anchors.bottom: parent.bottom
                                 id: tileImg
                                 width: parent.width; height: width
@@ -1312,13 +1365,13 @@ ShellRoot {
                                     Matrix4x4 { matrix: win.upright(tileImg.width, tileImg.height) },
                                     Translate { y: -cell.bounce * win.base * 0.4 }
                                 ]
-                                source: "file://" + cell.tilePath + "?v=" + cell.version + "." + Config.tileVersion
+                                source: cell.isApp ? "file://" + cell.tilePath + "?v=" + cell.version + "." + Config.tileVersion : ""
                                 sourceSize: Qt.size(192, 192)
                                 smooth: true
                                 mipmap: true
                                 cache: false
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                                onStatusChanged: if (status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
+                                onStatusChanged: if (cell.isApp && status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
                                 // The tile behind, in the theme's colour: drawn once at its magnified size
                                 // and shrunk, not redrawn on every frame as the dock magnifies
                                 IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale }
@@ -1334,14 +1387,14 @@ ShellRoot {
                             // Draw the tile the first time this app shows up
                             Process {
                                 id: gen
-                                command: Config.tileCommand(cell.modelData.entry ? cell.modelData.entry.id : cell.modelData.key, cell.tilePath)
+                                command: Config.tileCommand(cell.app.entry ? cell.app.entry.id : cell.app.key, cell.tilePath)
                                 onExited: cell.version++
                             }
 
                             // Running indicator: a short rounded bar (accent for the focused app)
                             Rectangle {
-                                readonly property bool focusedApp: cell.modelData.windows.some(w => w.activated)
-                                visible: cell.modelData.windows.length > 0
+                                readonly property bool focusedApp: cell.app.windows.some(w => w.activated)
+                                visible: cell.app.windows.length > 0
                                 width: 12; height: 3; radius: 1.5
                                 color: focusedApp ? win.activeDotColor : win.dotColor
                                 // Snapped to whole device pixels: the icons move by fractions of a
@@ -1394,8 +1447,8 @@ ShellRoot {
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
                         : win.mediaShown && win.hoveredIndex === win.mediaIndex
                             ? win.player.trackTitle + (win.player.trackArtist ? " · " + win.player.trackArtist : "")
-                        : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1 - win.media]
-                            ? (win.items[win.hoveredIndex - 1 - win.media].entry?.name ?? win.items[win.hoveredIndex - 1 - win.media].key) : "")
+                        : (win.slotAt(win.hoveredIndex) && win.slotAt(win.hoveredIndex).kind === "app"
+                            ? (win.slotAt(win.hoveredIndex).item.entry?.name ?? win.slotAt(win.hoveredIndex).item.key) : "")
                     readonly property real iconSize: win.hoveredIndex >= 0 ? win.base * win.scaleAt(win.hoveredIndex) : 0
                     readonly property real slotLength: win.hoveredIndex >= 0 ? iconSize * win.slotWidth(win.hoveredIndex) : 0
                     visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible
