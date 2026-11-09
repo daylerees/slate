@@ -264,21 +264,18 @@ class ApplyTheme(Case):
         self.apply([])
         self.assertEqual(self.text(".vscode/extensions/extensions.json"), text)
 
-    # Known gaps in the undo (Slate bugs): see each test
-    @unittest.expectedFailure
     def test_no_trailing_newline_kept(self):
-        """A config whose last line has no newline gets one added by apply and switch-off
-        (slate_theme's line undo always ends the file with "\n"), so it isn't put back exactly."""
+        """A config whose last line has no newline comes back without one (the undo used to
+        always end the file with a newline)."""
         mine = "font_size 12\nmap ctrl+t new_tab"
         self.put({".config/kitty/kitty.conf": mine})
         self.apply(["kitty"])
         self.apply([])
         self.assertEqual(self.text(".config/kitty/kitty.conf"), mine)
 
-    @unittest.expectedFailure
     def test_kdeglobals_restored_exactly(self):
-        """Switching KDE off leaves a blank line at the end of kdeglobals: removing the groups
-        Slate added (del_ini_key) keeps the blank line that separated them from yours."""
+        """Switching KDE off puts kdeglobals back exactly (removing the groups Slate added used
+        to leave the blank line before them)."""
         mine = "[General]\nColorScheme=BreezeDark\n\n[KDE]\nSingleClick=false\n"
         self.put({".config/kdeglobals": mine})
         self.apply(["kde"])

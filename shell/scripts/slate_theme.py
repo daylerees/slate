@@ -221,6 +221,9 @@ def del_ini_key(text, section, key):
                 s2, e2 = _section_bounds(lines, section)
                 if s2 is not None and all(not l.strip() for l in lines[s2 + 1:e2]):
                     del lines[s2:e2]
+                    # and the blank line set_ini_key put before it, when nothing follows now
+                    if s2 > 0 and not lines[s2 - 1].strip() and (s2 == len(lines) or not lines[s2].strip()):
+                        del lines[s2 - 1]
             return "\n".join(lines) + ("\n" if lines else "")
     return text
 
@@ -398,7 +401,8 @@ class Ctx:
         if fn(cur) == cur:
             return False
         if not self._has("line", ("path", path), ("line", line)):
-            self._record({"t": "line", "path": path, "line": line})
+            # (whether the file ended in a newline, so taking the line out puts it back as it was)
+            self._record({"t": "line", "path": path, "line": line, "eof_nl": cur == "" or cur.endswith("\n")})
         return edit(path, fn)
 
     def replace(self, path, pattern, new):
@@ -548,11 +552,15 @@ def _undo_change(o, live):
     elif t == "line":
         def fn(x):
             lines = x.splitlines()
+            last = False
             for i, l in enumerate(lines):
                 if l.strip() == o["line"].strip():
+                    last = i == len(lines) - 1
                     del lines[i]
                     break
-            return "\n".join(lines) + ("\n" if lines else "")
+            # Slate's line was last: the file ends as it did before (with or without a newline)
+            nl = o.get("eof_nl", True) if last else x.endswith("\n")
+            return "\n".join(lines) + ("\n" if lines and nl else "")
         if read(path) is not None:
             write(path, fn(read(path)))
     elif t == "replace":
