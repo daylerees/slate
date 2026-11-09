@@ -128,7 +128,7 @@ Scope {
             message = "Password accepted"; messageIsError = false;
             previewCloseTimer.restart();
         } else {
-            sessionLock.locked = false;
+            root.unlock();
         }
     }
 
@@ -155,10 +155,13 @@ Scope {
         locked: false
         onLockedChanged: if (locked) root.startFresh()
         WlSessionLockSurface {
-            color: "#0f1216"
+            // See-through only while fading (then Hyprland draws the desktop underneath: xray);
+            // otherwise solid, so nothing beneath can ever show
+            color: Qt.rgba(0.059, 0.071, 0.086, root.lockFade)
             LoginScreen {
                 id: lockScreen
                 anchors.fill: parent
+                opacity: root.lockFade
                 mode: "lock"
                 wallpaper: Config.wallpaper
                 avatar: root.avatar
@@ -179,7 +182,71 @@ Scope {
     // Watch logind. While "lock before sleep" is on, also hold a short delay on
     // sleep so the lock screen is up before the machine suspends; let go once locked.
     readonly property bool locked: sessionLock.locked
-    function lockNow() { if (!sessionLock.locked) sessionLock.locked = true; }
+
+    // ---- Fading in and out --------------------------------------------------------
+    // The lock always engages at once: input goes to it from the first moment. The fade is
+    // only how it looks. Hyprland normally draws nothing beneath a lock; for the length of a
+    // fade Slate turns on its session_lock_xray, so the lock screen crossfades over the live
+    // desktop, then turns it straight off again. On the way out, xray goes on only once your
+    // password has been accepted, and the lock is held until the fade has finished, so input
+    // stays with it throughout. No fades for locks before sleep, or with animations off (or in
+    // game mode). Even if xray were left on, the lock screen at rest is opaque.
+    property real lockFade: 1                 // the lock screen's opacity
+    property bool unlocking: false
+    function xray(on) {
+        const cmd = `hl.config({ misc = { session_lock_xray = ${on ? "true" : "false"} } })`;
+        if (on) { xrayOn.command = ["hyprctl", "eval", cmd]; xrayOn.running = true; }
+        else Quickshell.execDetached(["hyprctl", "eval", cmd]);
+    }
+    // What to do once xray is on: fade in (locking) or out (unlocking)
+    Process {
+        id: xrayOn
+        onExited: {
+            if (root.unlocking) fadeOut.restart();
+            else fadeIn.restart();
+        }
+    }
+    NumberAnimation { id: fadeIn; target: root; property: "lockFade"; to: 1; duration: Config.ms(300); easing.type: Easing.OutCubic
+        onFinished: root.xray(false) }
+    NumberAnimation { id: fadeOut; target: root; property: "lockFade"; to: 0; duration: Config.ms(300); easing.type: Easing.InCubic
+        onFinished: { sessionLock.locked = false; root.unlocking = false; root.xray(false); } }
+    // fade: false for locks before sleep (and anything else that mustn't wait on a look)
+    function lockNow(fade) {
+        if (sessionLock.locked) return;
+        fadeOut.stop(); unlocking = false;
+        if (fade !== false && Config.animate) {
+            lockFade = 0;
+            xray(true);                       // the fade starts once it's on (xrayOn)
+            fadeInGuard.restart();
+        } else {
+            fadeIn.stop();
+            lockFade = 1;
+        }
+        sessionLock.locked = true;            // at once, whatever the fade
+    }
+    function unlock() {
+        if (!sessionLock.locked || unlocking) return;
+        fadeIn.stop();
+        if (Config.animate) {
+            unlocking = true;
+            lockFade = 1;
+            xray(true);                       // only now, after the password: then fade out
+            unlockGuard.restart();
+        } else {
+            sessionLock.locked = false;
+        }
+    }
+    // Safety nets, should a fade never start or finish (hyprctl stuck, say): the lock screen
+    // shows anyway, so you're never typing into a blank screen; and after your password, the
+    // lock lets go anyway, so you can't be left stuck behind it
+    Timer { id: fadeInGuard; interval: 1000; onTriggered: if (sessionLock.locked && !root.unlocking && root.lockFade < 1 && !fadeIn.running) root.lockFade = 1 }
+    Timer { id: unlockGuard; interval: 1500; onTriggered: if (root.unlocking) { fadeOut.stop(); sessionLock.locked = false; } }
+    // Never left on: off when Slate starts, and whenever the lock is let go
+    Component.onCompleted: xray(false)
+    Connections {
+        target: sessionLock
+        function onLockedChanged() { if (!sessionLock.locked) { fadeIn.stop(); fadeOut.stop(); root.unlocking = false; root.lockFade = 1; root.xray(false); } }
+    }
     Process {
         id: logind
         running: true
@@ -192,7 +259,7 @@ Scope {
         stdout: SplitParser {
             onRead: line => {
                 if (line.includes("PrepareForSleep (true")) {
-                    if (Config.s.lockBeforeSleep) { root.sleepPending = true; root.lockNow(); sleepFallback.restart(); root.releaseIfSecure(); }
+                    if (Config.s.lockBeforeSleep) { root.sleepPending = true; root.lockNow(false); sleepFallback.restart(); root.releaseIfSecure(); }
                 } else if (line.includes("org.freedesktop.login1.Session.Lock ")) {
                     root.lockNow();
                 }
@@ -240,7 +307,7 @@ Scope {
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: {
             if (!isIdle) return;
-            if (Config.s.lockBeforeSleep) { root.suspendPending = true; root.lockNow(); root.suspendIfSecure(); }
+            if (Config.s.lockBeforeSleep) { root.suspendPending = true; root.lockNow(false); root.suspendIfSecure(); }
             else Quickshell.execDetached(["systemctl", "suspend"]);
         }
     }

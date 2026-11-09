@@ -13,6 +13,16 @@ the gloss sheen like the bar's containers and no outline.
 - **Locking** uses the Wayland session-lock protocol (`WlSessionLock`): Hyprland shows
   only the lock surfaces and sends input only to them. Notifications, bar, OSD and
   hot corners are never drawn while locked.
+- **Fading** in and out is only a look; it never delays or shortens the lock. The lock
+  engages at once (input goes to it from the first moment), then Hyprland's
+  `misc:session_lock_xray` is turned on just for the fade, so the lock screen crossfades over
+  the live desktop, and off again when it's fully shown. On the way out, xray goes on only
+  after the password is accepted, and the lock is held until the fade ends, so input stays
+  with it. Locks before sleep (and idle suspend) don't fade; with Animations off or in game
+  mode nothing fades. xray is turned off whenever Slate starts and whenever the lock is let
+  go, and the lock screen at rest is opaque, so even if it were left on nothing would show
+  through. Safety nets: the lock screen appears after 1 s if a fade never starts, and after
+  the password the lock lets go after 1.5 s if a fade never finishes.
 - **Password** is checked by PAM (`PamContext`, the `login` stack, incl. `pam_faillock`).
   The field is emptied on Enter; Slate drops its copy after the check and runs `gc()`.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
