@@ -2327,7 +2327,9 @@ PanelWindow {
                                     required property int index
                                     readonly property int day: index + 1
                                     width: (parent.width - 18) / 4; height: 76; radius: 9
-                                    color: Qt.rgba(1, 1, 1, 0.03)
+                                    // A faint wash over the card: white on dark; on light, where white
+                                    // vanished, a shade darker
+                                    color: Config.s.lightMode ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.03)
                                     border.width: 0
                                     Column {
                                         anchors.centerIn: parent
