@@ -1,13 +1,14 @@
-// Space badges: a window opened from a space (Spaces.qml) gets a 3 px border along its top
-// in the space's colour, and wears the space's icon in its top left corner. When the pointer comes near, the badge fades across to the top
-// right corner, out of the way; it goes back once focus moves to another window.
-// Settings → Menu Bar → Mark windows from a space.
+// Space badges: a window opened from a space (Spaces.qml) gets a 3 px border along its top in
+// the space's colour, and wears the space's icon in its top left corner. When the pointer comes
+// near, the badge fades across to the top right corner, out of the way; it goes back once focus
+// moves to another window. Settings → Spaces.
 //
-// scripts/spaces.py notes which windows it opened for which space (by Hyprland's stable
-// window id, which isn't reused like addresses are). Each badge sits in a surface of its
-// own above the window's top edge, placed from Hyprland's window positions: those are read again on
-// Hyprland's window and workspace events, and every half second while any badge is up
-// (Hyprland sends no event when a window is resized or dragged).
+// scripts/spaces.py notes which windows it opened for which space (by Hyprland's stable window
+// id, which isn't reused like addresses are). Each badge sits in a surface of its own above the
+// window's top edge, placed from Hyprland's window positions. Those are read again on Hyprland's
+// window and workspace events, and every half second while a space feature is on and a window
+// from a space is open (Hyprland sends no event when a window is resized or dragged). With every
+// space feature off, none of this runs.
 
 import QtQuick
 import QtQuick.Shapes
@@ -46,7 +47,7 @@ Scope {
     readonly property var keys: Object.keys(geo)
 
     function refresh() {
-        if (!tracking) { geo = {}; Spaces.spaceOfAddress = {}; return; }
+        if (!tracking) { geo = {}; Spaces.spaceOfAddress = {}; lastAddrJson = "{}"; lastGeoJson = "{}"; return; }
         Hyprland.refreshToplevels();
         readTimer.restart();
     }
@@ -82,9 +83,13 @@ Scope {
     Timer { id: soon; interval: 60; onTriggered: root.refresh() }
     onTrackingChanged: refresh()
     onOwnersChanged: refresh()
+    // None of the space features on: nothing to keep up to date (every workspace switch used to
+    // start a hyprctl anyway). Turned back on, read what may have changed meanwhile
+    onWantedChanged: if (wanted) { monLater.restart(); ownersLater.restart(); }
     Connections {
         target: Hyprland
         function onRawEvent(event) {
+            if (!root.wanted) return;
             if (/^(workspace|activespecial|moveworkspace)/.test(event.name)) root.startSettling();
             if (event.name === "openwindow" || event.name === "closewindow") ownersLater.restart();
             if (/^(workspace|focusedmon|activespecial|moveworkspace|monitor)/.test(event.name)) monLater.restart();
@@ -112,7 +117,10 @@ Scope {
             const owned = o ? owners[String(o.stableId)] : null;
             if (owned) byAddr[t.address] = owned;
         }
-        Spaces.spaceOfAddress = byAddr;
+        // Shared with the bar and the switchers, so only replaced when it's changed: a fresh object
+        // on every poll (twice a second) made everything going by it work again for nothing
+        const addrJson = JSON.stringify(byAddr);
+        if (addrJson !== lastAddrJson) { lastAddrJson = addrJson; Spaces.spaceOfAddress = byAddr; }
         for (const t of tops) {
             const o = t.lastIpcObject;
             if (!o || !o.at || !o.size || !o.mapped || o.hidden) continue;
@@ -127,7 +135,7 @@ Scope {
             if (!scr) continue;
             const k = Config.uiScale;
             const w = o.size[0] / k, h = o.size[1] / k;
-            if (w < zone * 2 + inset * 2 || h < zone + inset * 2) continue;     // too small to wear one     // too small to wear one
+            if (w < zone * 2 + inset * 2 || h < zone + inset * 2) continue;     // too small to wear one
             // The border follows the window's corners (Config.windowRadius: lone tiled and
             // maximised windows are square)
             const radius = Config.windowRadius(o, tiled[wsId]);
@@ -140,8 +148,12 @@ Scope {
                                         flareL: underBar && o.at[0] - mon.x <= 1,
                                         flareR: underBar && Math.abs(o.at[0] + o.size[0] - (mon.x + mon.w)) <= 1 };
         }
-        geo = out;
+        // Likewise only when something's moved (screens compared by name)
+        const geoJson = JSON.stringify(out, (key, value) => key === "screen" ? value.name : value);
+        if (geoJson !== lastGeoJson) { lastGeoJson = geoJson; geo = out; }
     }
+    property string lastAddrJson: ""
+    property string lastGeoJson: ""
 
     // Switching workspace slides the windows, and Hyprland doesn't say where they are on the
     // way, so borders and badges can't follow them: they vanish when a switch starts and fade
