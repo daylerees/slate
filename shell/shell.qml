@@ -1391,7 +1391,7 @@ ShellRoot {
                     id: label
                     readonly property string text: win.hoveredIndex === 0 ? "Apps"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
-                            ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket (empty)")
+                            ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
                         : win.mediaShown && win.hoveredIndex === win.mediaIndex
                             ? win.player.trackTitle + (win.player.trackArtist ? " · " + win.player.trackArtist : "")
                         : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1 - win.media]
