@@ -167,6 +167,7 @@ JsonAdapter {
     property bool switcherAppIcons: true      // app icon on each window's preview in Super+Tab
     property bool wrapWorkspaces: true        // Super+Left/Right and the overview go from the last workspace to the first
     property bool overviewAppIcons: false     // app icon on each window in Super+Down
+    property bool overviewPreviews: true      // live pictures of the windows in Super+Down (off: their outlines and app icons)
     property real overviewCardWidth: 728
 
     // Notifications

@@ -57,7 +57,7 @@ PanelWindow {
         }
         contents = c;
         geo = g;
-        shotAddrs = Config.gameMode ? [] : all;        // game mode: no live captures (shapes instead)
+        shotAddrs = ov.livePreviews ? all : [];        // no live captures without previews (shapes instead)
     }
     // The part of a workspace's monitor that windows can use (without the space the bar and
     // other edges reserve), in Hyprland's units: window positions are in these; Slate's own
@@ -115,6 +115,9 @@ PanelWindow {
     // One live capture per window, kept for as long as the overview is open; cards
     // show copies of these, so moving windows between cards never blanks a preview
     property var shotAddrs: []
+    // Live pictures of the windows (Settings → Workspaces → Live previews), not in game mode;
+    // without them, each window's outline and app icon
+    readonly property bool livePreviews: Config.s.overviewPreviews && !Config.gameMode
     function shotFor(addr) {
         for (let i = 0; i < shotRepeater.count; i++) {
             const it = shotRepeater.itemAt(i);
@@ -589,9 +592,10 @@ PanelWindow {
                                 layer.enabled: ovWin.radius > 0
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
                             }
-                            // Game mode: the window's shape (an outline on a soft fill) instead of its live picture
+                            // Without live previews (or in game mode): the window's shape, an outline on a
+                            // soft fill, instead of its picture
                             Rectangle {
-                                visible: Config.gameMode
+                                visible: !ov.livePreviews
                                 anchors.fill: parent
                                 radius: Math.max(3, ovWin.radius)
                                 color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
@@ -599,7 +603,7 @@ PanelWindow {
                                 border.color: Qt.rgba(1, 1, 1, 0.35)
                             }
                             ShaderEffectSource {
-                                visible: !Config.gameMode
+                                visible: ov.livePreviews
                                 anchors.fill: parent
                                 sourceItem: ov.shotFor(parent.modelData.address)
                                 live: true
@@ -618,8 +622,8 @@ PanelWindow {
                             // Its app's icon in the middle (Settings → Workspaces), with a soft shadow
                             // so it reads over the window
                             Item {
-                                // Always in game mode, where it's all there is to tell windows apart
-                                visible: Config.s.overviewAppIcons || Config.gameMode
+                                // Always without live previews, where it's all there is to tell windows apart
+                                visible: Config.s.overviewAppIcons || !ov.livePreviews
                                 opacity: 1 - ov.zoomP
                                 anchors.centerIn: parent
                                 width: Math.round(Math.max(16, Math.min(44, parent.width * 0.28, parent.height * 0.4))); height: width

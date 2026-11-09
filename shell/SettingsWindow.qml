@@ -219,7 +219,7 @@ FloatingWindow {
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
         windows: ["windowMode", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons"],
-        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewAppIcons"],
+        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons"],
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
@@ -3585,9 +3585,21 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
+                    label: "Live previews"
+                    detail: "Show each window's contents on the cards; turn off to show their outlines and app icons only"
+                    Toggle { checked: Config.s.overviewPreviews; onToggled: v => Config.s.overviewPreviews = v }
+                }
+                Separator {}
+                SettingRow {
+                    // Without live previews the icons are always shown: they're all there is to go by
+                    opacity: Config.s.overviewPreviews ? 1 : 0.4
+                    enabled: Config.s.overviewPreviews
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "App icons on windows"
-                    detail: "Each window's app icon in the middle of it on the cards"
-                    Toggle { checked: Config.s.overviewAppIcons; onToggled: v => Config.s.overviewAppIcons = v }
+                    detail: Config.s.overviewPreviews ? "Each window's app icon in the middle of it on the cards"
+                        : "Always shown without live previews"
+                    // Shown on while live previews are off, as the icons are then; your choice is kept for when they're back
+                    Toggle { checked: Config.s.overviewAppIcons || !Config.s.overviewPreviews; onToggled: v => Config.s.overviewAppIcons = v }
                 }
             }
             GroupLabel { text: "Spaces" }
