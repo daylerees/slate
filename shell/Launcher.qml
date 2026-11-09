@@ -885,8 +885,10 @@ PanelWindow {
         GridView {
             id: list
             anchors { top: field.bottom; left: parent.left; right: parent.right; bottom: root.gridMode ? nameStrip.top : parent.bottom; margins: 14; rightMargin: listFits ? 14 : 28 }
-            // Rows use the full width when they all fit (no scrollbar); the grid's cells are a fixed size
-            readonly property bool listFits: !root.gridMode && contentHeight <= height
+            // Rows use the full width when they all fit (no scrollbar); the grid's cells are a fixed size.
+            // Worked out from the results and the panel's room, not this view's own count or
+            // height: those are signalled again as the width this sets changes (a binding loop)
+            readonly property bool listFits: !root.gridMode && root.chromeHeight + root.results.length * root.rowHeight <= root.panelHeight
             anchors.bottomMargin: root.gridMode ? 4 : 14
             clip: true
             // The results' keys (see syncResults), emptied and filled again when the layout

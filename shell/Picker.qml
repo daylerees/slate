@@ -26,8 +26,13 @@ PanelWindow {
     readonly property real rowHeight: 52
     readonly property real imageRowHeight: 92
     // As tall as what's listed needs (never taller than panelHeight), like the launcher: the
-    // search box, margins and footer (118), then the list's or grid's own height, at least a row
-    readonly property real fittedHeight: Math.min(panelHeight, 118 + Math.max(rowHeight, view().contentHeight))
+    // search box, margins and footer (118), then the list's or grid's own height, at least a row.
+    // Worked out from the results, not the views' contentHeight: the grid's cells size with its
+    // width, which depends on whether it scrolls, which depends on this height (a binding loop)
+    readonly property real contentNeeded: mode === "emoji"
+        ? Math.ceil(emojiResults.length / columns) * Math.floor((panelWidth - 28) / columns)
+        : clipResults.reduce((h, r) => h + (r.kind === "image" ? imageRowHeight : rowHeight), 0)
+    readonly property real fittedHeight: Math.min(panelHeight, 118 + Math.max(rowHeight, contentNeeded))
     readonly property int columns: 10            // emoji grid
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18
