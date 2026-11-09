@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
-# Print an accent colour (#rrggbb) taken from a wallpaper image.
-# Picks the most prominent vivid colour, then sets its lightness and saturation
-# to suit the dark slate theme (similar to the default #8fb3e8).
-import colorsys, re, subprocess, sys
+"""The colours Slate takes from a wallpaper: wallpaper-accent.py <image>
+
+Prints two lines: an accent colour (#rrggbb), the most prominent vivid colour with its
+lightness and saturation set to suit the dark theme (like the default #8fb3e8), then the
+wallpaper's overall tone (for tinting Slate's greys). Uses ImageMagick (magick). Copied to
+the login screen too (greeter/files), so it imports nothing of Slate's own.
+"""
+import colorsys
+import math
+import re
+import subprocess
+import sys
 
 img = sys.argv[1]
-out = subprocess.run(["magick", img + "[0]", "-resize", "96x96!", "-colors", "12",
-                      "-format", "%c", "histogram:info:"], capture_output=True, text=True).stdout
+try:
+    # A huge or broken image can keep magick busy: give up after 30 s (the defaults below)
+    out = subprocess.run(["magick", img + "[0]", "-resize", "96x96!", "-colors", "12",
+                          "-format", "%c", "histogram:info:"], capture_output=True, text=True,
+                         timeout=30).stdout
+except (OSError, subprocess.SubprocessError):
+    out = ""
 best, best_score = None, -1
-import math
 hx = hy = wsat = wtot = 0.0
 for line in out.splitlines():
     m = re.match(r"\s*(\d+):.*#([0-9A-Fa-f]{6})", line)
