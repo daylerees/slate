@@ -249,6 +249,9 @@ ShellRoot {
         dim: Config.tint("#8b94a3").toString(), error: Config.tint("#f28b8b").toString(),
         light: Config.s.lightMode,
         codeFont: Config.s.codeFontFamily,
+        // The cursor size set in Settings (0 = not set): Slate's own environment still has the
+        // size from when it started, so apps would get the old one back without this
+        cursorSize: Config.s.cursorSize,
         on: Config.s.themedApps || []
     })
     onThemeJsonChanged: themeApply.restart()
