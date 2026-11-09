@@ -79,35 +79,44 @@ Rectangle {
     // shape's rounded corners. The ellipse is 1.6× the shape's width and 1.4× its height, its
     // lowest point just past the middle (55%); bright down to the shape's top edge, then fading
     // towards the curve
-    Item {
+    // (Only built for a band: as plain bindings in every Gloss, they were re-run while rows on
+    // the login screen were taken down, logging "Unable to assign [undefined]")
+    Loader {
         anchors.fill: parent
-        visible: g.band
-        layer.enabled: g.band && Config.glassGloss
-        layer.effect: MultiEffect { maskEnabled: true; maskSource: bandClip; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-        Rectangle {
-            id: bandShine
-            readonly property real across: g.width * 1.6
-            readonly property real down: g.height * 1.4
-            // A circle, squashed into the ellipse by the Scale below (from its top)
-            width: across; height: across; radius: across / 2
-            x: (g.width - across) / 2
-            y: g.height * 0.55 - down
-            transform: Scale { yScale: bandShine.down / Math.max(1, bandShine.across) }
-            // Where the shape's top edge falls in the ellipse
-            readonly property real topAt: (down - g.height * 0.55) / Math.max(1, down)
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-                GradientStop { position: bandShine.topAt; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-                GradientStop { position: 1.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
+        active: g.band
+        sourceComponent: Component {
+            Item {
+                Item {
+                    anchors.fill: parent
+                    layer.enabled: Config.glassGloss
+                    layer.effect: MultiEffect { maskEnabled: true; maskSource: bandClip; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                    Rectangle {
+                        id: bandShine
+                        readonly property real across: g.width * 1.6
+                        readonly property real down: g.height * 1.4
+                        // A circle, squashed into the ellipse by the Scale below (from its top)
+                        width: across; height: across; radius: across / 2
+                        x: (g.width - across) / 2
+                        y: g.height * 0.55 - down
+                        transform: Scale { yScale: bandShine.down / Math.max(1, bandShine.across) }
+                        // Where the shape's top edge falls in the ellipse
+                        readonly property real topAt: (down - g.height * 0.55) / Math.max(1, down)
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
+                            GradientStop { position: bandShine.topAt; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
+                            GradientStop { position: 1.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
+                        }
+                    }
+                }
+                Item {
+                    id: bandClip
+                    anchors.fill: parent
+                    visible: false
+                    layer.enabled: Config.glassGloss
+                    Rectangle { anchors.fill: parent; radius: g.radius }
+                }
             }
         }
-    }
-    Item {
-        id: bandClip
-        anchors.fill: parent
-        visible: false
-        layer.enabled: g.band && Config.glassGloss
-        Rectangle { anchors.fill: parent; radius: g.radius }
     }
     // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
     // rounded, glossy surface rather than a flat one (Gloss sets how strong). Light frosted glass

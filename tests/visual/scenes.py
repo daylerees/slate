@@ -3,7 +3,7 @@ a check (on the "test" IPC's state) that it's there, and what to undo afterwards
 
     "name": {
         "settings": {key: value},        # set first (put back afterwards)
-        "do": [(target, function, *args), …],
+        "do": [(target, function, *args), …],    # or ("!command", *args), run in the session
         "wait": lambda st: …,            # true once the scene is on screen
         "settle": seconds,               # extra time for images and loaders (default 0.8)
         "undo": [(target, function, *args), …],
@@ -81,3 +81,13 @@ for _p in settings_pages():
         "wait": (lambda p: lambda st: st["settings"]["open"] and st["settings"]["section"] == p)(_p),
         "settle": 1.2, "undo": [("settings", "close")],
     }
+
+# Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)
+SCENES["notification-glass"] = {
+    "settings": {"glass": "true", "notificationSeconds": "30"},
+    "do": [("!notify-send", "-a", "Tests", "Backup finished", "1,204 files copied to the external drive")],
+    "wait": lambda st: st["notifications"]["history"] > 0, "settle": 5,     # (glass: its blur is made the first time)
+    # Just the toast: the bar and dock on glass shade a little differently with what ran
+    # before (desktop-glass covers them)
+    "mask": [(0, 0, 1440, 40), (0, 760, 1440, 140)],
+}

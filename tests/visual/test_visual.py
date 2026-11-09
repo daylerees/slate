@@ -47,7 +47,10 @@ class Visual(LiveCase):
                 old[k] = self.setting(k)
                 self.ipc("config", "set", k, v)
             for step in scene.get("do", []):
-                self.ipc(*step)
+                if step[0].startswith("!"):          # a command, in the session (notify-send…)
+                    self.s.run([step[0][1:]] + list(step[1:]), check=True)
+                else:
+                    self.ipc(*step)
             self.wait(scene["wait"], f"the {name} scene")
             self.s.settle(scene.get("settle", 0.8))
             return self.s.screenshot(os.path.join(OUT, name + ".actual.png"))
