@@ -86,3 +86,49 @@ class Dock(LiveCase):
                 self.wait(lambda st: st["dockEdge"] == edge)
                 time.sleep(0.5)
         self.config("dockPosition", old)
+
+
+class Badges(LiveCase):
+    """An app's notifications badge its dock icon until you go to the app (opening the
+    notification panel used to clear them, so a mail app's count vanished unseen)."""
+
+    def foot_badge(self, st):
+        return next(x for x in st["dock"]["slots"] if x["kind"] == "app" and x["key"] == "foot")["badge"]["count"]
+
+    def go(self, what):
+        self.s.hyprctl("eval", "hl.dispatch(hl.dsp.focus({ %s }))" % what)
+        self.s.settle(0.5)
+
+    def test_until_you_go_to_the_app(self):
+        self.keep_setting("dockBadges")
+        self.config("dockBadges", "true")
+        # A foot window to go to, then away to an empty workspace (no app in front)
+        clients = self.s.hyprctl("clients", json_out=True)
+        if not any(c["class"] == "foot" for c in clients):
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+            for _ in range(50):
+                clients = self.s.hyprctl("clients", json_out=True)
+                if any(c["class"] == "foot" for c in clients):
+                    break
+                self.s.settle(0.2)
+        foot = next(c for c in clients if c["class"] == "foot")
+        self.go("workspace = 9")
+        before = self.foot_badge(self.s.state())
+        self.s.run(["notify-send", "-a", "foot", "New mail", "From the test suite"])
+        self.wait(lambda st: self.foot_badge(st) == before + 1, "foot's badge to count the notification")
+        # Opening the notification panel no longer clears it
+        self.ipc("bar", "panel", "notifications")
+        self.wait(lambda st: st["popout"] == "notifications")
+        self.ipc("popout", "close")
+        self.s.settle(0.5)
+        self.assertEqual(self.foot_badge(self.s.state()), before + 1, "opening the panel cleared the badge")
+        # Going to the app does
+        self.go("window = [=[address:%s]=]" % foot["address"])
+        self.wait(lambda st: self.foot_badge(st) == 0, "the badge to clear when foot is in front")
+        # And while you're in it, its notifications don't badge it
+        self.s.run(["notify-send", "-a", "foot", "Another", "While you're in foot"])
+        self.s.settle(1)
+        self.assertEqual(self.foot_badge(self.s.state()), 0)
+        self.go("workspace = 9")
+        self.s.settle(0.5)
+        self.assertEqual(self.foot_badge(self.s.state()), 0, "the one that came while you were there counts as seen")

@@ -27,14 +27,27 @@ Scope {
     property var history: []
     property int unread: 0
     property int nextKey: 1
-    // The newest notification seen (its key): any newer ones are unread. Gives each app's count
-    // of unread ones (unreadByApp: entry id → count), for the dock's badges
+    // The newest notification seen in the panel (its key): any newer ones are unread (the
+    // bell's count)
     property int readUpTo: 0
+    // The dock's badges (unreadByApp: entry id → count): each app's notifications since you
+    // last went to that app (the dock marks it, markAppSeen), not since the panel was opened,
+    // so a mail or chat app's badge stays until you look at it. appSeen: entry id → the newest
+    // key seen there; appSeenBase for apps not gone to since this began
+    property var appSeen: ({})
+    property int appSeenBase: 0
     readonly property var unreadByApp: {
         const out = {};
         for (const h of history)
-            if (h.key > readUpTo && h.entryId) out[h.entryId] = (out[h.entryId] || 0) + 1;
+            if (h.entryId && h.key > (appSeen[h.entryId] ?? appSeenBase)) out[h.entryId] = (out[h.entryId] || 0) + 1;
         return out;
+    }
+    function markAppSeen(id) {
+        if (!id || appSeen[id] === nextKey - 1) return;
+        const m = Object.assign({}, appSeen);
+        m[id] = nextKey - 1;
+        appSeen = m;
+        save();
     }
     property var live: ({})           // key -> Notification still open (for actions)
 
@@ -159,14 +172,19 @@ Scope {
                 }));
                 notifs.dnd = !!d.dnd;
                 notifs.unread = d.unread || 0;
-                notifs.nextKey = Math.max(1, ...notifs.history.map(h => h.key + 1));
+                // (kept, so keys never start again below what's been seen, after Clear all)
+                notifs.nextKey = Math.max(1, d.nextKey || 1, ...notifs.history.map(h => h.key + 1));
                 // (saved by older versions without it: the newest "unread" of the history are unread)
                 notifs.readUpTo = d.readUpTo !== undefined ? d.readUpTo
                     : (notifs.history[notifs.unread] ? notifs.history[notifs.unread].key : 0);
+                notifs.appSeen = d.appSeen || {};
+                // (from before per-app badges: what had been seen in the panel counts as seen)
+                notifs.appSeenBase = d.appSeenBase !== undefined ? d.appSeenBase : notifs.readUpTo;
             } catch (e) {}
         }
     }
-    Timer { id: saveTimer; interval: 500; onTriggered: store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo, history: notifs.history }, null, 1)) }
+    Timer { id: saveTimer; interval: 500; onTriggered: store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo,
+        nextKey: notifs.nextKey, appSeen: notifs.appSeen, appSeenBase: notifs.appSeenBase, history: notifs.history }, null, 1)) }
     function save() { saveTimer.restart(); }
     onDndChanged: save()
 

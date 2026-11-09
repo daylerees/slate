@@ -638,13 +638,22 @@ ShellRoot {
                 }
             }
         }
+        // The app you're in: its notifications count as seen as you look at it (the one you
+        // leave and the one you go to are both marked), so its badge clears and stays clear
+        readonly property string focusedAppId: {
+            const t = ToplevelManager.activeToplevel;
+            const it = t ? items.find(o => o.windows.includes(t)) : null;
+            return it ? (it.entry ? it.entry.id : it.key) : "";
+        }
+        property string lastFocusedAppId: ""
+        onFocusedAppIdChanged: { notifs.markAppSeen(lastFocusedAppId); notifs.markAppSeen(focusedAppId); lastFocusedAppId = focusedAppId; }
         // An app's badge: { count (0: none), progress (0…1, or -1: none), urgent }
         function badgeFor(app) {
             if (!Config.s.dockBadges || !app || !app.key) return { count: 0, progress: -1, urgent: false };
             const id = app.entry ? app.entry.id : app.key;
             const le = launcherEntries[id.toLowerCase()] || launcherEntries[app.key.toLowerCase()] || null;
             const published = le && le.countVisible && le.count > 0 ? le.count : 0;
-            const unread = notifs.unreadByApp[id] || 0;
+            const unread = id === focusedAppId ? 0 : notifs.unreadByApp[id] || 0;
             return { count: published || unread, progress: le && le.progressVisible ? Math.max(0, Math.min(1, le.progress || 0)) : -1, urgent: !!(le && le.urgent) };
         }
 
