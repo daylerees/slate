@@ -35,7 +35,8 @@ PanelWindow {
     readonly property color screenCornerColor: "#000000"
     // (See-through with glass: Settings → Appearance → Glass)
     readonly property color barColor: Config.surface(Config.tint("#0f1216"))
-    readonly property color capsuleColor: Config.raised(Config.tint("#1d222a"))
+    // In light mode a shade deeper than other fields, to stand out from the tinted bar
+    readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimColor: Config.tint("#c5ccd6")
     readonly property color accent: Config.accent
