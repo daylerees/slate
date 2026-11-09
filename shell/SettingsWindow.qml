@@ -364,7 +364,7 @@ FloatingWindow {
             Column {
                 id: sideCol
                 width: parent.width
-                spacing: 2
+                spacing: 4                  // room between the pills for the page you're on and the one pointed at
                 // Slate's mark (as on the About page) beside the title
                 Row {
                     leftPadding: 4; topPadding: 4; bottomPadding: 14
