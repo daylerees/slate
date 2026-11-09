@@ -2,7 +2,9 @@
 """Download scenery videos for the screensaver's Videos style (Settings → Screensaver →
 Get scenery videos).
 
-Usage: screensaver-videos.py <folder>
+Usage: screensaver-videos.py <folder> [quality]
+  quality: 2160p, 1440p or 1080p (the default): each clip comes in the largest size it has up
+  to that. Clips already there in a smaller size than they could be are fetched again.
 
 Fetches each clip below into <folder>, one at a time (Wikimedia limits quick runs of requests),
 skipping any already there, and writes CREDITS.txt beside them with each clip's source and
@@ -13,7 +15,7 @@ as it goes, then "done n"; a clip that fails prints "error <title>: <message>".
 
 Every clip is public domain, CC0 or CC BY, checked by hand: a working link, the licence on its
 source page, and its frames looked at for burned-in text, logos or narration. 1080p VP9 webm
-transcodes from Wikimedia Commons, much smaller than the originals.
+transcodes from Wikimedia Commons (1080p, 1440p or 4K), much smaller than the originals.
 """
 import os
 import shutil
@@ -25,14 +27,18 @@ CLIPS = [
     {
         "file": "earth-from-the-iss.webm",
         "title": "View of Earth from the ISS",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c3/View_of_the_Earth_from_the_ISS_%288K%29.webm/View_of_the_Earth_from_the_ISS_%288K%29.webm.1080p.vp9.webm",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c3/View_of_the_Earth_from_the_ISS_%288K%29.webm/View_of_the_Earth_from_the_ISS_%288K%29.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
         "source": "https://commons.wikimedia.org/wiki/File:View_of_the_Earth_from_the_ISS_(8K).webm",
         "licence": "Public domain (NASA)",
     },
     {
         "file": "aurora-over-lapland.webm",
         "title": "Aurora over Lapland lakes",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/df/Aurora_borealis_timelapse.webm/Aurora_borealis_timelapse.webm.1080p.vp9.webm",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/df/Aurora_borealis_timelapse.webm/Aurora_borealis_timelapse.webm",
+        "sizes": ["1080p"],   # the transcodes Commons has
+
         "source": "https://commons.wikimedia.org/wiki/File:Aurora_borealis_timelapse.webm",
         "licence": "\"Aurora borealis timelapse\" by Harriniva Hotels & Safaris, CC BY 3.0 "
                    "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
@@ -40,14 +46,18 @@ CLIPS = [
     {
         "file": "clouds-over-bellevue-canyon.webm",
         "title": "Clouds over Bellevue Canyon",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d5/Timelapse_of_Clouds_over_Bellevue_Canyon.webm/Timelapse_of_Clouds_over_Bellevue_Canyon.webm.1080p.vp9.webm",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d5/Timelapse_of_Clouds_over_Bellevue_Canyon.webm/Timelapse_of_Clouds_over_Bellevue_Canyon.webm",
+        "sizes": ["1080p"],   # the transcodes Commons has
+
         "source": "https://commons.wikimedia.org/wiki/File:Timelapse_of_Clouds_over_Bellevue_Canyon.webm",
         "licence": "CC0 (public domain)",
     },
     {
         "file": "delaneys-falls-tasmania.webm",
         "title": "Delaneys Falls, Tasmania",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8b/Delaneys_Falls.webm/Delaneys_Falls.webm.1080p.vp9.webm",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8b/Delaneys_Falls.webm/Delaneys_Falls.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
         "source": "https://commons.wikimedia.org/wiki/File:Delaneys_Falls.webm",
         "licence": "CC0 (public domain)",
     },
@@ -98,6 +108,35 @@ def silence(path):
         os.remove(tmp)
 
 
+QUALITIES = ["1080p", "1440p", "2160p"]
+
+
+def best_size(clip, quality):
+    """The largest size the clip comes in, up to quality."""
+    cap = QUALITIES.index(quality) if quality in QUALITIES else 0
+    have = [q for q in clip["sizes"] if QUALITIES.index(q) <= cap]
+    return max(have, key=QUALITIES.index) if have else "1080p"
+
+
+# Which size each downloaded clip is, so a better quality later fetches only what improves
+SIZES_FILE = ".slate-scenery.json"
+
+
+def load_sizes(folder):
+    import json
+    try:
+        with open(os.path.join(folder, SIZES_FILE)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_sizes(folder, sizes):
+    import json
+    with open(os.path.join(folder, SIZES_FILE), "w") as f:
+        json.dump(sizes, f)
+
+
 def credits(folder):
     lines = ["Scenery videos for Slate's screensaver, downloaded from Wikimedia Commons.", ""]
     for c in CLIPS:
@@ -107,10 +146,12 @@ def credits(folder):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         sys.exit(__doc__)
     folder = sys.argv[1]
+    quality = sys.argv[2] if len(sys.argv) == 3 else "1080p"
     os.makedirs(folder, exist_ok=True)
+    sizes = load_sizes(folder)
     got, n = 0, len(CLIPS)
     # The whole download's progress: each clip an equal share
     progress = lambda i, f: print(f"progress {min(1.0, (i - 1 + f) / n):.3f}", flush=True)
@@ -118,14 +159,19 @@ def main():
         print(f"{i}/{n} {c['title']}", flush=True)
         progress(i, 0)
         dest = os.path.join(folder, c["file"])
-        if os.path.exists(dest):
+        want = best_size(c, quality)
+        have = sizes.get(c["file"], "1080p")     # downloaded before sizes were noted: 1080p
+        if os.path.exists(dest) and QUALITIES.index(have) >= QUALITIES.index(want):
             silence(dest)            # from before sound tracks were taken out
             got += 1
             progress(i, 1)
             continue
         try:
-            fetch(c["url"], dest, lambda f, i=i: progress(i, f))
+            # (a smaller copy already there stays until the better one has fully arrived)
+            fetch(f"{c['base']}.{want}.vp9.webm", dest, lambda f, i=i: progress(i, f))
             silence(dest)
+            sizes[c["file"]] = want
+            save_sizes(folder, sizes)
             got += 1
         except Exception as e:  # keep going: one failed clip shouldn't stop the rest
             try:

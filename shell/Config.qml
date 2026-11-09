@@ -607,6 +607,14 @@ Singleton {
     readonly property bool glass: s.glass && !gameMode
     // The screensaver's Videos style: its folder (Settings → Screensaver)
     readonly property string screensaverVideoFolder: s.screensaverVideoFolder || (Quickshell.env("HOME") + "/Videos/Screensaver")
+    // The size scenery videos download in: as set, or for Automatic, by the widest screen's real
+    // pixels (4K above 2560 wide, 1440p above 1920, else 1080p)
+    readonly property string screenSceneryQuality: {
+        let w = 0;
+        for (const m of Hyprland.monitors.values) w = Math.max(w, m.width || 0);
+        return w > 2560 ? "2160p" : w > 1920 ? "1440p" : "1080p";
+    }
+    readonly property string sceneryQuality: ["2160p", "1440p", "1080p"].includes(s.screensaverVideoQuality) ? s.screensaverVideoQuality : screenSceneryQuality
 
     // ---- Slate's own animations -----------------------------------------------------------
     // They follow Settings → Appearance → Animations, as Hyprland's do: Fast halves them, Off

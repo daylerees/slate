@@ -2360,10 +2360,10 @@ FloatingWindow {
                     property real progress: 0          // the whole download, 0 to 1
                     detail: status !== "" ? status
                         : Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + ": MP4, WebM, MKV or MOV, played in a shuffled order. "
-                          + "Get scenery videos adds four free clips (about 90 MB; credits in the folder's CREDITS.txt)"
+                          + "Get scenery videos adds four free clips (credits in the folder's CREDITS.txt)"
                     Process {
                         id: sceneryRun
-                        command: [Quickshell.shellPath("scripts/screensaver-videos.py"), Config.screensaverVideoFolder]
+                        command: [Quickshell.shellPath("scripts/screensaver-videos.py"), Config.screensaverVideoFolder, Config.sceneryQuality]
                         stdout: SplitParser {
                             onRead: line => {
                                 if (line.startsWith("progress ")) { vidRow.progress = Number(line.slice(9)) || 0; return; }
@@ -2407,6 +2407,19 @@ FloatingWindow {
                     detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
                         : "The time and date in the middle"
                     Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
+                }
+                Separator { visible: Config.s.screensaverStyle === "videos" }
+                // The size Get scenery videos downloads in (clips without that size come in their
+                // largest). Raising it later fetches again only the clips that get sharper
+                DropdownSetting {
+                    visible: Config.s.screensaverStyle === "videos"
+                    readonly property var names: ({ "2160p": "4K", "1440p": "1440p", "1080p": "1080p" })
+                    label: "Scenery quality"
+                    detail: "For Get scenery videos: sharper is bigger (4K is about 210 MB in all, 1080p about 95 MB). Choosing a higher one and getting them again replaces only the clips that get sharper"
+                    options: [{ value: "auto", label: "Automatic (" + names[Config.screenSceneryQuality] + " for this screen)" },
+                              { value: "2160p", label: "4K" }, { value: "1440p", label: "1440p" }, { value: "1080p", label: "1080p" }]
+                    value: Config.s.screensaverVideoQuality || "auto"
+                    onPicked: v => Config.s.screensaverVideoQuality = v
                 }
                 Separator { visible: Config.s.screensaverStyle === "slideshow" }
                 DropdownSetting {
