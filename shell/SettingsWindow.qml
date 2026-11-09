@@ -807,12 +807,24 @@ FloatingWindow {
         property real menuX: 0
         property real menuY: 0
         property real menuH: 0
+        property real menuW: 200
         readonly property real rowH: 34
+        // For the list's width: as wide as its longest choice, at least the button's, at most
+        // the window less a margin (longer ones shorten in the middle)
+        TextMetrics { id: rowMetrics; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
         function place() {
             const b = owner.button;
             const p = b.mapToItem(dropLayer, 0, 0);
             const full = (owner.options ? owner.options.length : 0) * rowH + 12;
-            menuX = Math.max(8, Math.min(width - menu.width - 8, p.x + b.width - menu.width));
+            let widest = 0;
+            for (const o of (owner.options || [])) {
+                rowMetrics.text = String(o.label);
+                widest = Math.max(widest, rowMetrics.advanceWidth + (o.folder ? 28 : 0));
+            }
+            // + the row's padding, the tick and the list's own margins (and room for a scrollbar)
+            menuW = Math.min(width - 16, Math.max(200, b.width, widest + 12 + 34 + 12 + 8));
+            // Measured before placing: placed by its old width, a wider list ran off the window
+            menuX = Math.max(8, Math.min(width - menuW - 8, p.x + b.width - menuW));
             // Below the button, or above it if there's no room; a long list goes on the
             // roomier side, as tall as fits, and scrolls
             const below = height - 8 - (p.y + b.height + 6), above = p.y - 6 - 8;
@@ -828,7 +840,7 @@ FloatingWindow {
         Rectangle {
             id: menu
             x: dropLayer.menuX; y: dropLayer.menuY
-            width: Math.max(200, dropLayer.owner ? dropLayer.owner.button.width : 0)
+            width: dropLayer.menuW
             height: dropLayer.menuH
             radius: 12
             color: Config.tint("#1d222a")
@@ -862,7 +874,7 @@ FloatingWindow {
                         text: parent.modelData.label
                         color: parent.current ? win.accent : win.text
                         font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
-                        elide: Text.ElideRight
+                        elide: Text.ElideMiddle      // device names differ at the end: keep it in view
                     }
                     Text {
                         id: tick
@@ -1303,7 +1315,9 @@ FloatingWindow {
           Rectangle {
             id: ddButton
             readonly property bool open: dropLayer.owner === dd
-            width: Math.max(150, ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)); height: 32; radius: 8
+            // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
+            readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
+            width: Math.max(150, Math.min(naturalWidth, dd.width * 0.45)); height: 32; radius: 8
             color: open || ddHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
             Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
@@ -1318,8 +1332,10 @@ FloatingWindow {
             Text {
                 id: ddText
                 anchors { left: ddFolder.visible ? ddFolder.right : parent.left; leftMargin: ddFolder.visible ? 8 : 12; verticalCenter: parent.verticalCenter }
+                width: Math.min(implicitWidth, ddButton.width - x - 32)
                 text: dd.current ? dd.current.label : dd.noneLabel !== "" ? dd.noneLabel : String(dd.value)
                 color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                elide: Text.ElideMiddle      // device names differ at the end: keep it in view
             }
             Text {
                 anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
