@@ -4,10 +4,11 @@
 // screen awake (video) hold it off, as they do the lock, when Lock & idle says so. With
 // "Lock on wake", waking it locks the screen first, and it goes once the lock is up, so the
 // desktop never shows unlocked (not for a preview).
-// Three styles:
-//   drift      your wallpaper, dimmed and slowly drifting, with a clock and the date
-//   slideshow  the pictures in your wallpaper folder, cross-fading, with a clock if wanted
-//   black      a clock and the date on black, moving now and then so nothing burns in
+// Four styles (each can show the clock and date: Settings → Screensaver → Show the clock):
+//   drift      your wallpaper, dimmed and slowly drifting
+//   slideshow  the pictures in your wallpaper folder, cross-fading
+//   black      plain black (the clock, when shown, moves now and then so nothing burns in)
+//   videos     the videos in a folder, muted, crossfading (ScreensaverVideos.qml; needs Qt Multimedia)
 //   slate ipc call screensaver start     (a preview: any input puts it away)
 
 import QtQuick

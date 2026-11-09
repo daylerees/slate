@@ -244,6 +244,13 @@ PanelWindow {
         onLoaded: { try { root.counts = JSON.parse(text()).counts || {}; } catch (e) {} }
     }
     function uses(a) { return Config.s.launcherSortByUsage ? (counts[a.id] || 0) : 0; }
+    // One more open of this entry, saved
+    function countUse(id) {
+        const updated = Object.assign({}, counts);
+        updated[id] = (updated[id] || 0) + 1;
+        counts = updated;
+        usage.setText(JSON.stringify({ counts: updated }, null, 1));
+    }
 
     function launch(entry) {
         if (!entry) return;
@@ -252,10 +259,7 @@ PanelWindow {
             closeLauncher();
             return;
         }
-        if (entry.app) {           // count it like an app, for usage sorting
-            const c2 = Object.assign({}, counts); c2[entry.id] = (c2[entry.id] || 0) + 1; counts = c2;
-            usage.setText(JSON.stringify({ counts: c2 }, null, 1));
-        }
+        if (entry.app) countUse(entry.id);     // the Slate Settings app: counted like an app
         if (entry.action) {        // lock / suspend / log out / restart / shut down
             const slate = Quickshell.shellPath("bin/slate");
             if (entry.action === "lock") Quickshell.execDetached([slate, "ipc", "call", "lock", "lock"]);
@@ -272,10 +276,7 @@ PanelWindow {
             closeLauncher();
             return;
         }
-        const c = Object.assign({}, counts);
-        c[entry.id] = (c[entry.id] || 0) + 1;
-        counts = c;
-        usage.setText(JSON.stringify({ counts: c }, null, 1));
+        countUse(entry.id);
         // The secret workspace is showing: open the app there, not on the workspace behind it
         const special = specialShown();
         if (special !== "" && entry.command && entry.command.length > 0) launchOn(entry, special);

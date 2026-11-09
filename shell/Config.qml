@@ -610,9 +610,8 @@ Singleton {
     }
     Process { id: keysetProc; onExited: root.keysetApplied() }
 
-    // ---- Window rounding -----------------------------------------------------------
-    // App theming (scripts/apply-theme.py, run by shell.qml): Settings → App Theming → Refresh
-    // asks for every switched-on app's theme to be written again
+    // ---- App theming (scripts/apply-theme.py, run by shell.qml) ----------------------------
+    // Settings → App Theming → Refresh asks for every switched-on app's theme to be written again
     signal refreshThemes()
     property bool themesBusy: false
 
@@ -644,15 +643,11 @@ Singleton {
     readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
     function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
-    // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
-    // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
-    // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).
     // ---- Game mode (the bar's game mode panel) -----------------------------------------
     // Turns off what costs the most to draw, and the touchpad ignoring it while you type (games
     // use both at once): Slate's glass, and Hyprland's blur, shadows, animations and see-through
-    // windows. Your own
-    // settings for them are kept, not changed, so turning it off puts them all back. Not on the
-    // login screen, which reads a copy of these settings
+    // windows. Your own settings for them are kept, not changed, so turning it off puts them
+    // all back. Not on the login screen, which reads a copy of these settings
     readonly property bool isLoginScreen: Quickshell.shellPath("").indexOf("slate-greeter") >= 0
     readonly property bool gameMode: s.gameMode && !isLoginScreen
     // Off again: Hyprland reloads its config (quietly), for its own blur, shadows, animations
@@ -660,7 +655,13 @@ Singleton {
     onGameModeChanged: if (!gameMode) reloadHyprland()
     function setGameMode(on) { s.gameMode = on; }
 
+    // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
+    // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
+    // Hyprland blurs what's behind them (a layer rule, pushed with the other settings). Off in
+    // game mode: always draw with this, not s.glass
     readonly property bool glass: s.glass && !gameMode
+
+    // ---- Shared by the bars and the screensaver ------------------------------------------
     // Tray apps that only have a menu (Ayatana indicators): found once, by the main bar (Bar.qml),
     // for every bar
     property var trayIndicatorIds: []
@@ -871,8 +872,6 @@ Singleton {
         return true;
     }
 
-    // ---- Defaults --------------------------------------------------------------------
-    // A spare copy of the settings, never loaded from disk, so it holds the defaults
     // ---- Slate's sounds (sounds/<name>.wav), each at its own volume (Settings → Sound) -------
     // With Qt Multimedia (optional) each is loaded once and plays straight away; without it
     // pw-play starts for each one, a little late (~80 ms) but fine for the chime and the tick
@@ -1015,9 +1014,10 @@ Singleton {
         lastClick = Date.now();
         playSound("click", "click");
     }
+    // ---- Defaults --------------------------------------------------------------------
+    // A spare copy of the settings, never loaded from disk, so it holds the defaults
     SettingsData { id: defaults }
     function defaultOf(key) { return defaults[key]; }
-    // Put these settings back to their defaults (Settings → each page's Restore defaults)
     // Settings Hyprland applies (hyprSettings): putting one back to "not set here" reloads
     // Hyprland's config, so its own value (or your hyprland.lua's) is used again
     readonly property var hyprKeys: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate",
@@ -1034,6 +1034,7 @@ Singleton {
     }
     function ownHyprReload() { return Date.now() - ownHyprReloadAt < 5000; }
     function sameValue(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+    // Put these settings back to their defaults (Settings → each page's Restore defaults)
     function resetKeys(keys) {
         for (const k of keys) {
             if (defaults[k] === undefined) continue;

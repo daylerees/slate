@@ -367,6 +367,8 @@ ShellRoot {
     // The welcome: the first time Slate starts, and from Settings → About
     Welcome { bar: topBar }
     // New releases: checked daily, a notification when one's out (Settings → Updates)
+    // Nothing reads this, but keep it: it's what creates the Updates singleton at start (its
+    // daily check and the "updates" IPC), as singletons are only made when first used
     readonly property bool updateAvailable: Updates.available
     // A space's colour and icon on the windows it opened (Settings → Menu Bar → Mark windows from a space)
     SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
