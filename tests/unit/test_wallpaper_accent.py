@@ -100,14 +100,19 @@ class WallpaperAccent(Case):
         accent, tone = self.accent(self.image("grey.png", (64, 64), (128, 128, 128)))
         self.assertEqual(tone, DEFAULTS[1])
 
-    # Bug: a grey wallpaper has no vivid colour, but a grey still scores 0 (> best_score's -1),
-    # so it's taken as the accent with hue 0 and its saturation raised to 0.45: a pink
-    # (#db9f9f) from an image with no pink in it. Expected: the default accent, as for black.
-    @unittest.expectedFailure
+    # A grey wallpaper used to give a pink accent: grey scored 0 (beating the start of -1) and
+    # its saturation was raised to 0.45 at hue 0. It gets the default, as black does
     def test_grey_accent(self):
         self.real()
         accent, tone = self.accent(self.image("grey2.png", (64, 64), (128, 128, 128)))
         self.assertEqual(accent, DEFAULTS[0])
+
+    def test_no_image_given(self):
+        """Without an image: the usage line and exit 1, not a traceback."""
+        code, out = run(["python3", SCRIPT], env=self.s.env)
+        self.assertEqual(code, 1)
+        self.assertNotIn("Traceback", out)
+        self.assertIn("wallpaper-accent.py <image>", out)
 
     def test_deterministic(self):
         self.real()

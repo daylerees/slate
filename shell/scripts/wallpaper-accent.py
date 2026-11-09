@@ -12,6 +12,8 @@ import re
 import subprocess
 import sys
 
+if len(sys.argv) != 2:
+    sys.exit(__doc__.split("\n")[0])
 img = sys.argv[1]
 try:
     # A huge or broken image can keep magick busy: give up after 30 s (the defaults below)
@@ -34,7 +36,9 @@ for line in out.splitlines():
     hy += math.sin(h * 2 * math.pi) * count * s
     wsat += s * count
     wtot += count
-    if l < 0.08 or l > 0.95:
+    # Not near-black, near-white or grey: those give no accent (a grey would come out pink,
+    # as its saturation is raised below)
+    if l < 0.08 or l > 0.95 or s < 0.06:
         continue
     score = count * (s ** 1.5) * (1 - abs(l - 0.5))
     if score > best_score:
