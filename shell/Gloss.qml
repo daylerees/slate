@@ -54,15 +54,15 @@ Rectangle {
     readonly property real hintAmount: hint.hslSaturation > 0.05 ? Config.glossTint * (onFill ? 0.4 : lightFrost ? 0.25 : 1) : 0
     readonly property color sheen: Qt.rgba(1 - hintAmount + hint.r * hintAmount, 1 - hintAmount + hint.g * hintAmount,
                                            1 - hintAmount + hint.b * hintAmount, 1)
-    // How far down the shine (and the shade up from the bottom) reach, as a share of the height:
-    // half on shapes up to a bar capsule's size, the same depth in pixels on taller ones (half of
-    // a tall quick toggle made it look two-tone), where it fades out more gently too
-    readonly property real reach: Math.min(1, 32 / Math.max(1, height))
-    readonly property bool tall: reach < 1
+    // Taller than a bar capsule (a quick toggle, say): the shine and shade there are softer and
+    // blend smoothly into each other, rather than the short shapes' crisper bands
+    readonly property bool tall: height > 32
     gradient: Gradient {
-        GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-        GradientStop { position: 0.5 * g.reach; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
-        GradientStop { position: (g.tall ? 0.8 : 0.55) * g.reach; color: "transparent" }
+        // Tall shapes: a gentler shine fading smoothly over the top half, with no band edge (a
+        // bright band, a flat middle and a dark band made them look like three-tone tubes)
+        GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * (g.tall ? 0.75 : 1)) }
+        GradientStop { position: g.tall ? 0.18 : 0.5; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * (g.tall ? 0.3 : 0.25)) }
+        GradientStop { position: g.tall ? 0.5 : 0.55; color: "transparent" }
         GradientStop { position: 1.0; color: "transparent" }
     }
     // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
@@ -74,8 +74,9 @@ Rectangle {
         visible: g.onFill || g.lightFrost
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 1 - 0.5 * g.reach; color: "transparent" }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.35, 0.3 * Config.glossAmount) : Math.min(0.14, 0.18 * Config.glossAmount)) }
+            // Tall shapes: from just past the middle, and softer, to meet the shine with no flat band
+            GradientStop { position: 0.5; color: "transparent" }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, (g.tall ? 0.7 : 1) * (g.onFill ? Math.min(0.35, 0.3 * Config.glossAmount) : Math.min(0.14, 0.18 * Config.glossAmount))) }
         }
     }
     // The bright edge: the shape's own rounded outline, so it bends around the top corners,
@@ -92,7 +93,20 @@ Rectangle {
             radius: g.radius
             color: "transparent"
             border.width: 1
-            // Crisper on light frosted glass, where a faint white edge didn't show
+            // Light mode: the outermost line is a darker one, so the shape's top edge is defined
+            // rather than its sheen running off into the light background (the bright line
+            // moves just inside it)
+            // (faint on frosted glass, a little stronger on coloured fills)
+            border.color: Config.s.lightMode ? Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.2, 0.24 * Config.glossAmount) : Math.min(0.08, 0.1 * Config.glossAmount))
+                // Crisper on light frosted glass, where a faint white edge didn't show
+                : Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
+        }
+        Rectangle {
+            visible: Config.s.lightMode
+            anchors { fill: parent; margins: 1 }
+            radius: Math.max(0, g.radius - 1)
+            color: "transparent"
+            border.width: 1
             border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))
         }
     }
