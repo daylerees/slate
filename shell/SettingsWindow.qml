@@ -1992,6 +1992,12 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
+                    label: "Tuck the status icons away"
+                    detail: "Show one button that opens to reveal notifications, Wi-Fi, volume, battery and the rest, and closes again after a few seconds"
+                    Toggle { checked: Config.s.barStatusCollapsed; onToggled: v => Config.s.barStatusCollapsed = v }
+                }
+                Separator {}
+                SettingRow {
                     label: "Notifications"
                     detail: "Bell with the number of unread notifications"
                     Toggle { checked: Config.s.barShowNotifications; onToggled: v => Config.s.barShowNotifications = v }
@@ -2044,12 +2050,6 @@ FloatingWindow {
                     label: "Battery"
                     detail: "Charge level; click for power profiles. Hidden on computers without a battery"
                     Toggle { checked: Config.s.barShowBattery; onToggled: v => Config.s.barShowBattery = v }
-                }
-                Separator {}
-                SettingRow {
-                    label: "Tuck the status icons away"
-                    detail: "Show one button that opens to reveal notifications, Wi-Fi, volume, battery and the rest, and closes again after a few seconds"
-                    Toggle { checked: Config.s.barStatusCollapsed; onToggled: v => Config.s.barStatusCollapsed = v }
                 }
                 Separator {}
                 SettingRow {
