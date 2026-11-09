@@ -1,10 +1,18 @@
 #!/bin/sh
 # Slate's pre-commit check. Turn it on once per clone:  git config core.hooksPath .githooks
 #
-# When a commit touches the login screen's code, checks its file list (shell/greeter/files)
-# and test-loads it, so a change that would break the login screen is caught here rather
-# than at the next reboot. Skip once with: git commit --no-verify
+# When a commit touches Slate's code, runs the quick tests (tests/run --tier static: lint,
+# configs, settings keys…; a few seconds, on this machine). When it touches the login
+# screen's code, also checks its file list (shell/greeter/files) and test-loads it, so a
+# change that would break the login screen is caught here rather than at the next reboot.
+# Skip once with: git commit --no-verify
 root=$(git rev-parse --show-toplevel)
+if [ -n "$(git diff --cached --name-only -- shell/ tests/ packaging/ install.sh site/)" ]; then
+    "$root/tests/run" -q --tier static --no-container || {
+        echo "pre-commit: the static tests failed (above); fix them or commit with --no-verify"
+        exit 1
+    }
+fi
 staged=$(git diff --cached --name-only -- shell/)
 [ -n "$staged" ] || exit 0
 

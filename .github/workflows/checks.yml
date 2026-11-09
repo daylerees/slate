@@ -1,32 +1,82 @@
-# Checks the login screen on every change to Slate: that its file list (shell/greeter/files)
-# has everything its code loads, and that it loads (offscreen, with the real Quickshell and
-# Hyprland), so a broken login screen never reaches a release.
-# Runs as a normal user: Hyprland refuses to run as root.
+# Slate's tests (tests/run, docs/TESTING.md), in the same container as on your machine.
+#   every push and pull request   static + unit (lint, configs, the login screen loads, scripts)
+#   release tags and by hand      everything: a real headless session and its screenshots too
+#   weekly                        everything against today's Arch packages, opening an issue
+#                                 when an update to Hyprland, Quickshell or Qt would break Slate
 name: Checks
 
 on:
   push:
     branches: [master]
-    paths: ["shell/**", "tools/check-greeter-files", ".github/workflows/checks.yml"]
+    tags: ["v*"]
+    paths: ["shell/**", "tests/**", "packaging/**", "tools/**", "install.sh", ".github/workflows/checks.yml"]
   pull_request:
-    paths: ["shell/**", "tools/check-greeter-files", ".github/workflows/checks.yml"]
+    paths: ["shell/**", "tests/**", "packaging/**", "tools/**", "install.sh", ".github/workflows/checks.yml"]
+  schedule:
+    - cron: "17 5 * * 1"        # Mondays
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  login-screen:
+  fast:
+    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    container: archlinux:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Quickshell and Hyprland
-        run: pacman -Syu --noconfirm --needed quickshell qt6-declarative hyprland python
-      - name: File list matches the code
-        run: python3 tools/check-greeter-files
-      - name: Login screen loads
+      - uses: docker/setup-buildx-action@v3
+      - uses: crazy-max/ghaction-github-runtime@v3     # lets docker build use the Actions cache
+      - name: Static and unit tests
+        env:
+          SLATE_TEST_BUILD_ARGS: --load --cache-from type=gha,scope=slate-tests --cache-to type=gha,mode=max,scope=slate-tests
+        run: tests/run -q --tier static,unit
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: test-results, path: tests/out }
+
+  full:
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: crazy-max/ghaction-github-runtime@v3
+      - name: Load vkms (Hyprland renders through it, in software)
+        run: sudo modprobe vkms || { sudo apt-get update && sudo apt-get install -y "linux-modules-extra-$(uname -r)" && sudo modprobe vkms; }
+      - name: Every tier
+        env:
+          SLATE_TEST_BUILD_ARGS: --load --cache-from type=gha,scope=slate-tests --cache-to type=gha,mode=max,scope=slate-tests
+        run: tests/run -q
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: test-results, path: tests/out }
+
+  latest-deps:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load vkms
+        run: sudo modprobe vkms || { sudo apt-get update && sudo apt-get install -y "linux-modules-extra-$(uname -r)" && sudo modprobe vkms; }
+      - name: Every tier, today's packages
+        id: run
+        run: tests/run -q --deps latest | tee results.txt
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: latest-deps-results, path: tests/out }
+      - name: Open an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          useradd -m ci
-          cp -r . /home/ci/slate && chown -R ci: /home/ci/slate
-          su ci -c "/home/ci/slate/shell/bin/slate-greeter-check --source /home/ci/slate/shell"
+          {
+            echo "This week's run against today's Arch packages failed, so an update to Hyprland,"
+            echo "Quickshell, Qt or another dependency may break Slate. Results:"
+            echo; echo '```'; tail -40 results.txt; echo '```'; echo
+            echo "Logs, screenshots and diffs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > body.md
+          gh issue create --title "Tests fail with the latest packages ($(date +%Y-%m-%d))" --body-file body.md
