@@ -161,7 +161,7 @@ FloatingWindow {
         debug: ["logLevel"],
         displays: ["mainDisplay"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
-            "mouseNaturalScroll", "cursorSize", "touchpadSpeed", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
+            "mouseNaturalScroll", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
         sound: ["volumeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC"],
@@ -2337,7 +2337,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Pointer speed"
-                    detail: ip.hasTouchpad ? "Mice only (the touchpad has its own speed below). Slower to faster; 0 is the mouse's own speed" : "Slower to faster; 0 is the mouse's own speed"
+                    detail: ip.hasTouchpad ? "Mice and touchpads. Slower to faster; 0 is the device's own speed" : "Slower to faster; 0 is the mouse's own speed"
                     ValueSlider {
                         from: -100; to: 100; stepSize: 5
                         value: Math.round((Config.s.mouseSpeed >= -1 ? Config.s.mouseSpeed : (ip.cur["input:sensitivity"] || 0)) * 100)
@@ -2375,16 +2375,6 @@ FloatingWindow {
             GroupLabel { visible: ip.hasTouchpad; text: "Touchpad" }
             Group {
                 visible: ip.hasTouchpad
-                SettingRow {
-                    label: "Speed"
-                    detail: Config.s.touchpadSpeed >= -1 ? "Slower to faster" : "Slower to faster (your own config may set the touchpad separately until it's changed here)"
-                    ValueSlider {
-                        from: -100; to: 100; stepSize: 5
-                        value: Math.round((Config.s.touchpadSpeed >= -1 ? Config.s.touchpadSpeed : (ip.cur["input:sensitivity"] || 0)) * 100)
-                        onMoved: v => Config.s.touchpadSpeed = v / 100
-                    }
-                }
-                Separator {}
                 SettingRow {
                     label: "Scroll speed"
                     ValueSlider {

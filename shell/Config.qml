@@ -277,10 +277,10 @@ Singleton {
         }
         if (s.keyRepeatDelay > 0) t.push(`repeat_delay = ${s.keyRepeatDelay}`);
         if (s.keyRepeatRate > 0) t.push(`repeat_rate = ${s.keyRepeatRate}`);
-        if (s.mouseSpeed >= -1) t.push(`sensitivity = ${s.mouseSpeed.toFixed(2)}`);
+        // Pointer speed: mice (the general setting) and touchpads (set on each, see slate.lua)
+        if (s.mouseSpeed >= -1) t.push(`sensitivity = ${s.mouseSpeed.toFixed(2)}, tp_sensitivity = ${s.mouseSpeed.toFixed(2)}`);
         if (s.mouseAccel !== "") t.push(`accel_profile = ${q(s.mouseAccel)}`);
         if (s.mouseNaturalScroll !== "") t.push(`natural_scroll = ${onOff(s.mouseNaturalScroll)}`);
-        if (s.touchpadSpeed >= -1) t.push(`tp_sensitivity = ${s.touchpadSpeed.toFixed(2)}`);
         if (s.touchpadScrollSpeed > 0) t.push(`tp_scroll = ${s.touchpadScrollSpeed.toFixed(2)}`);
         if (s.touchpadNaturalScroll !== "") t.push(`tp_natural_scroll = ${onOff(s.touchpadNaturalScroll)}`);
         if (s.touchpadTapToClick !== "") t.push(`tp_tap = ${onOff(s.touchpadTapToClick)}`);
@@ -683,7 +683,7 @@ Singleton {
     // Settings Hyprland applies (hyprSettings): putting one back to "not set here" reloads
     // Hyprland's config, so its own value (or your hyprland.lua's) is used again
     readonly property var hyprKeys: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate",
-        "mouseSpeed", "mouseAccel", "mouseNaturalScroll", "touchpadSpeed", "touchpadScrollSpeed", "touchpadNaturalScroll",
+        "mouseSpeed", "mouseAccel", "mouseNaturalScroll", "touchpadScrollSpeed", "touchpadNaturalScroll",
         "touchpadTapToClick", "touchpadIgnoreWhileTyping", "focusFollowsMouse", "animations", "cursorSize",
         "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"]
     Timer { id: hyprReload; interval: 300; onTriggered: Quickshell.execDetached(["hyprctl", "reload"]) }

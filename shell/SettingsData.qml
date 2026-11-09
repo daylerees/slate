@@ -52,7 +52,6 @@ JsonAdapter {
     property real mouseSpeed: -2              // -1 … 1 (0 = the device's own speed)
     property string mouseAccel: ""            // adaptive or flat
     property string mouseNaturalScroll: ""    // on / off
-    property real touchpadSpeed: -2           // -1 … 1
     property real touchpadScrollSpeed: -1     // 0.1 … 2 (1 = normal)
     property string touchpadNaturalScroll: "" // on / off
     property string touchpadTapToClick: ""    // on / off

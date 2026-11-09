@@ -59,7 +59,7 @@ Singleton {
         ["Caps Lock key", "input", "capslock ctrl escape remap"],
         ["Repeat delay", "input", "key repeat hold keyboard"],
         ["Repeat speed", "input", "key repeat rate hold keyboard"],
-        ["Pointer speed", "input", "mouse sensitivity cursor speed"],
+        ["Pointer speed", "input", "mouse touchpad trackpad sensitivity cursor speed"],
         ["Acceleration", "input", "mouse acceleration flat adaptive"],
         ["Natural scrolling", "input", "reverse scroll direction"],
         ["Pointer size", "input", "cursor size mouse pointer big large"],
