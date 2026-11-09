@@ -594,8 +594,12 @@ PanelWindow {
                                 live: true
                                 smooth: true
                                 mipmap: true
-                                layer.enabled: ovWin.radius > 0
-                                layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
+                                // Rounded as the window is, and brightened back if Hyprland dims it
+                                layer.enabled: true
+                                layer.effect: PreviewShape {
+                                    radius: ovWin.radius
+                                    gain: Config.undimGain(ovWin.modelData.activated, ovWin.modelData.lastIpcObject ? ovWin.modelData.lastIpcObject.class : "")
+                                }
                             }
                             Item {
                                 id: ovWinMask

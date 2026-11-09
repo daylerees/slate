@@ -319,15 +319,12 @@ PanelWindow {
                         // (below). A frame from before previews were turned off stays hidden, and so
                         // does the copy until its capture exists (it has nothing to show till then)
                         visible: sw.livePreviews && !!capture
+                        // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                         layer.enabled: true
-                        layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask }
-                    }
-                    Item {
-                        id: shotMask
-                        anchors.fill: shot
-                        visible: false
-                        layer.enabled: true
-                        Rectangle { anchors.fill: parent; radius: 8 }
+                        layer.effect: PreviewShape {
+                            radius: 8
+                            gain: Config.undimGain(card.modelData.activated, card.modelData.lastIpcObject ? card.modelData.lastIpcObject.class : "")
+                        }
                     }
                     // Without live previews (or in game mode): an outline in the window's proportions,
                     // with the app's tile in it

@@ -942,15 +942,9 @@ ShellRoot {
                                     height: width / ratio
                                     captureSource: previewPop.visible ? liveCard.modelData : null
                                     live: previewPop.visible
+                                    // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                                     layer.enabled: true
-                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: liveMask }
-                                }
-                                Item {
-                                    id: liveMask
-                                    anchors.fill: liveShot
-                                    visible: false
-                                    layer.enabled: true
-                                    Rectangle { anchors.fill: parent; radius: 6 }
+                                    layer.effect: PreviewShape { radius: 6; gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
                                 }
                                 Text {
                                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }

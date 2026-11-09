@@ -50,6 +50,7 @@ scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
 shaders/mono.frag(.qsb)       tray icons → single theme colour
+shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
                         everything it's installed with, greeter/emergency/ is its fallback
 ```
@@ -201,7 +202,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 |---|---|
 | `hyprland` (0.57+, Lua config) | the compositor; `hyprctl` for dispatches, borders, night light shader |
 | `quickshell` (0.3.x) | runs Slate (`qs`) |
-| `qt6-declarative`, `qt6-shadertools` | QML / QtQuick.Effects; `qsb` to build `shaders/mono.frag.qsb` |
+| `qt6-declarative`, `qt6-shadertools` | QML / QtQuick.Effects; `qsb` to build `shaders/*.frag.qsb` |
 | `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py` and the rest); Pillow for `appicon.py`'s tiles and `image-sizes.py` |
 | `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |

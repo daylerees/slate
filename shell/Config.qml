@@ -517,6 +517,16 @@ Singleton {
             slateCommand, page]);
     }
 
+    // ---- Live window previews ------------------------------------------------------
+    // Hyprland dims windows without focus (Settings → Windows → Dim inactive windows), and the
+    // live pictures of them come out dimmed too. Previews (shaders/preview.frag, through
+    // PreviewShape) brighten them back by this much: 1 for the focused window and for Settings
+    // (which is never dimmed), 1 / (1 - dim) for the rest
+    readonly property real inactiveDim: Math.max(0, Math.min(80, s.inactiveDim)) / 100
+    function undimGain(active, appClass) {
+        return active || inactiveDim <= 0 || appClass === "slate-settings" ? 1 : 1 / (1 - inactiveDim);
+    }
+
     // ---- App entries ---------------------------------------------------------------
     // The installed app (.desktop entry) for a window's app ID, as the dock, bar, switcher and
     // overview show it. Hyprland's app IDs don't always match an entry's name, so this tries,

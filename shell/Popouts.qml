@@ -1280,16 +1280,13 @@ PanelWindow {
                                                 captureSource: !Config.gameMode && pop.shown && spacesView.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
                                                 live: pop.shown && spacesView.mode === "new"
                                                 smooth: true
-                                                // Clipped to the window's rounded corners
-                                                layer.enabled: wsWin.radius > 0
-                                                layer.effect: MultiEffect { maskEnabled: true; maskSource: wsLiveMask }
-                                            }
-                                            Item {
-                                                id: wsLiveMask
-                                                anchors.fill: wsLive
-                                                visible: false
+                                                // Clipped to the window's rounded corners, and brightened
+                                                // back if Hyprland dims it (it isn't focused)
                                                 layer.enabled: true
-                                                Rectangle { anchors.fill: parent; radius: Math.max(0, wsWin.radius - 1) }
+                                                layer.effect: PreviewShape {
+                                                    radius: Math.max(0, wsWin.radius - 1)
+                                                    gain: wsWin.toplevel ? Config.undimGain(wsWin.toplevel.activated, wsWin.toplevel.lastIpcObject ? wsWin.toplevel.lastIpcObject.class : "") : 1
+                                                }
                                             }
                                             // Its app's icon on top, with a soft shadow so it
                                             // reads over whatever the window shows
