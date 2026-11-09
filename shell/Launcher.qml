@@ -418,7 +418,7 @@ PanelWindow {
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
         // Soft drop shadow so it stands out over windows
-        layer.enabled: true
+        layer.enabled: !Config.glass     // only for the shadow, which glass goes without
         layer.effect: MultiEffect {
             shadowEnabled: !Config.glass
             shadowColor: "#000000"

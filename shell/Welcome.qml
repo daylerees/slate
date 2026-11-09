@@ -88,7 +88,7 @@ PanelWindow {
         border.width: 1; border.color: w.line
         opacity: w.fade
         scale: 0.96 + 0.04 * w.fade
-        layer.enabled: true
+        layer.enabled: !Config.glass     // only for the shadow, which glass goes without
         layer.effect: MultiEffect { shadowEnabled: !Config.glass; shadowColor: "black"; shadowOpacity: 0.5; shadowBlur: 1; shadowVerticalOffset: 10; blurMax: 48 }
 
         focus: w.shown
