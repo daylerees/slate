@@ -79,6 +79,12 @@ ShellRoot {
     IpcHandler {
         target: "test"
         enabled: Config.testMode
+        // Magnify the dock as if the pointer were over slot i (-1: as if it had left): the
+        // test session has no pointer device to hover with
+        function dockHover(i: int): void {
+            win.testHover = i >= 0;
+            if (i >= 0) win.setPointer((strip.width - win.restWidth) / 2 + win.slotStart(i) + win.slotWidth(i) * win.base / 2);
+        }
         function state(): string {
             const settings = settingsLoader.item;
             const opt = v => v === undefined || v === null ? null : v;
@@ -790,7 +796,8 @@ ShellRoot {
             pointerX = sx - (strip.width - restWidth) / 2;
         }
         // Magnification stays frozen while the right-click menu is open
-        property real hover: (mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag ? 1 : 0
+        property real hover: (mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag || testHover ? 1 : 0
+        property bool testHover: false      // the test suite pointing at a slot (ipc call test dockHover <slot>)
         Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
         function scaleAt(i) {
@@ -1585,6 +1592,7 @@ ShellRoot {
                         readonly property real s: win.scaleAt(win.launcherIndex)
                         width: win.base * s
                         height: row.height
+                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
@@ -1632,6 +1640,16 @@ ShellRoot {
 
                         // Along a bottom or top dock: a rectangle, the album art at its start and the
                         // controls beside it (the one under the pointer brighter)
+                        DockBacking {
+                            visible: win.mediaWide > 1 && Config.glass
+                            tileHeight: win.base * mediaCell.s
+                            radius: mediaWideTile.corner
+                            dockTop: bg.y - row.y; color: win.bgColor
+                        }
+                        DockBacking {
+                            visible: win.mediaWide === 1 && Config.glass
+                            dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                        }
                         Item {
                             id: mediaWideTile
                             visible: win.mediaWide > 1
@@ -1871,6 +1889,11 @@ ShellRoot {
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.2)
                             }
 
+                            DockBacking {
+                                visible: cell.isApp && !Config.s.iconFill && Config.s.iconShape !== "original" && Config.glass
+                                tileWidth: cell.width; lift: cell.bounce * win.base * 0.4
+                                dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
                             Image {
                                 visible: cell.isApp
                                 // Being dragged off the dock to unpin it: faded, as it's about to go
@@ -1967,6 +1990,7 @@ ShellRoot {
                         readonly property real s: win.scaleAt(win.downloadsIndex)
                         width: win.base * s
                         height: row.height
+                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: downloadsTile
                             anchors.bottom: parent.bottom
@@ -1997,6 +2021,7 @@ ShellRoot {
                         readonly property real s: win.scaleAt(win.trashIndex)
                         width: win.base * s
                         height: row.height
+                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: trashTile
                             anchors.bottom: parent.bottom

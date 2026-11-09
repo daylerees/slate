@@ -44,6 +44,7 @@ AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
+DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
 sounds/                 volume tick; notification chime, attention, click, swish, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
@@ -134,7 +135,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen; only with `SLATE_TEST=1`, for the test suite) |
+| `test` | `state` (JSON of what's on screen), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 
