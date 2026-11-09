@@ -317,6 +317,15 @@ FloatingWindow {
         }
         return true;
     }
+    // Restore defaults on the page showing. On Appearance that's Slate Default too, set by name
+    // and checked again a moment later, so the preset reads Slate Default afterwards
+    function restoreDefaults() {
+        Config.resetKeys(currentKeys);
+        if (section !== "appearance") return;
+        const d = themePresets.find(p => p.name === "Slate Default");
+        applyPreset(d);
+        Qt.callLater(() => { if (!presetActive(d)) { console.warn("Slate Default didn't stick after Restore defaults; applying it again"); applyPreset(d); } });
+    }
     function applyPreset(p) {
         for (const k in p.settings) Config.s[k] = p.settings[k];
         if (p.settings.themeMode && p.settings.themeMode !== "auto") Config.s.lightMode = p.settings.themeMode === "light";
@@ -756,7 +765,7 @@ FloatingWindow {
                         primary: !destructive
                         onClicked: {
                             if (win.ask) { const run = win.ask.run, opt = win.askOption; win.closeConfirm(); run(opt); }
-                            else { Config.resetKeys(win.currentKeys); win.closeConfirm(); win.countChanged(); }
+                            else { win.restoreDefaults(); win.closeConfirm(); win.countChanged(); }
                         }
                     }
                 }
