@@ -193,10 +193,8 @@ class AppIcon(Case):
                 img = self.tile("no-such-app-anywhere", *style, folder="-".join(style))
                 self.assertIsNone(img.getchannel("A").getbbox(), "an empty image")
 
-    # Bug: with --whole and no icon, render_tile still fills the tile with INNER_FILL (it's
-    # only cleared inside `if icon_path`), so a fixed dark tile covers the theme's plate
-    # (IconPlate.qml), e.g. a dark square in light mode. --whole should draw nothing behind.
-    @unittest.expectedFailure
+    # With --whole and no icon, the tile used to be filled dark anyway, covering the theme's
+    # plate (IconPlate.qml): a dark square in light mode. Nothing is drawn behind now
     def test_missing_icon_whole(self):
         img = self.tile("no-such-app-anywhere", "--shape", "tile", "--whole")
         self.assertIsNone(img.getchannel("A").getbbox(), "--whole draws nothing behind the icon")

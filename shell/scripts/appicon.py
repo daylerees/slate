@@ -376,7 +376,8 @@ def render_tile(icon_path, px, shape="tile", fill=True):
             out.alpha_composite(icon, ((S - icon.width) // 2, (S - icon.height) // 2))
         return out.resize((px, px), Image.LANCZOS)
     tile = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    background = INNER_FILL
+    # (whole icons: Slate draws the tile behind, in the theme's colour, even with no icon found)
+    background = INNER_FILL if fill else None
     icon = None
     if icon_path:
         if fill:
@@ -388,7 +389,6 @@ def render_tile(icon_path, px, shape="tile", fill=True):
                 icon = scaled(icon, S * SHAPE_FILL.get(shape, FILL))
         else:
             icon = scaled(trim(load_icon(icon_path, px * 2)), S * WHOLE_SIZE)
-            background = None            # Slate draws the tile behind, in the theme's colour
     if background:
         ImageDraw.Draw(tile).rectangle((0, 0, S - 1, S - 1), fill=background)
     if icon:
