@@ -42,7 +42,7 @@ function slateApply(t)
     end
     local tp = {}
     if t.tp_natural_scroll ~= nil then tp.natural_scroll = t.tp_natural_scroll end
-    if t.tp_tap ~= nil then tp["tap-to-click"] = t.tp_tap end
+    if t.tp_tap ~= nil then tp.tap_to_click = t.tp_tap end    -- (Lua names use "_" where hyprlang has "-")
     if t.tp_dwt ~= nil then tp.disable_while_typing = t.tp_dwt end
     if next(tp) then input.touchpad = tp end
     if next(input) then pcall(hl.config, { input = input }) end
