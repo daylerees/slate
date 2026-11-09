@@ -15,7 +15,7 @@
 # What it does:
 #   1. installs the packages Slate needs (packaging/<distro>.txt)
 #   2. checks Hyprland (0.57+, Lua config) and Quickshell (0.3+) are new enough
-#   3. installs the Geist font (bundled) for your other apps if it's missing
+#   3. installs the bundled Geist and Geist Mono fonts for your other apps, unless already there
 #   4. puts Slate in ~/.config/slate (keeping your settings) and the `slate` command in ~/.local/bin
 #   5. adds "Slate" to your login screen's session list (two small files, needs sudo)
 #   6. optionally (--login-screen) switches greetd to Slate's login screen
@@ -240,16 +240,32 @@ if [ "$problems" -ne 0 ]; then
 fi
 
 # ---- 3. Fonts -------------------------------------------------------------------------
-# Geist (interface + mono) and the Tabler icons ship with Slate in shell/fonts, and Slate loads
-# them itself. Geist is also installed for your other apps if it isn't there already.
+# Geist, Geist Mono and the Tabler icons ship with Slate in shell/fonts, and Slate loads them
+# itself. Geist and Geist Mono are also installed for your other apps (terminals use Geist Mono
+# when it's the code font), each unless it's installed already from elsewhere. Slate's own copy
+# is kept up to date on every install and update.
 step "3. Fonts"
-if fc-list : family 2>/dev/null | grep -qi '^Geist\b\|^Geist,'; then ok "Geist is installed"
-else
-    fontdir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/Geist"
+fontdir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/Geist"
+fonts_changed=0
+for fam in "Geist" "Geist Mono"; do
+    file=${fam// /}                                   # Geist / GeistMono
+    # installed from somewhere other than Slate's copy? (a package, or fonts you added)
+    if fc-list : family file 2>/dev/null | grep -vE "^$fontdir/$file-(Italic-)?Variable\.ttf:" | grep -qiE "(: |,)$fam(,|$)"; then
+        ok "$fam is installed"; continue
+    fi
     mkdir -p "$fontdir"
-    cp "$ROOT"/shell/fonts/Geist*-Variable.ttf "$ROOT"/shell/fonts/Geist-LICENSE.txt "$fontdir/"
+    for f in "$ROOT"/shell/fonts/"$file"-*Variable.ttf; do
+        dest="$fontdir/$(basename "$f")"
+        cmp -s "$f" "$dest" && continue
+        # copy then move, so apps with the old file open never see a half-written font
+        cp "$f" "$dest.tmp" && mv -f "$dest.tmp" "$dest"
+        fonts_changed=1
+    done
+    ok "$fam: installed (bundled with Slate) in $fontdir"
+done
+if [ "$fonts_changed" -eq 1 ]; then
+    cp "$ROOT"/shell/fonts/Geist-LICENSE.txt "$fontdir/"
     fc-cache -f "$fontdir" >/dev/null 2>&1 || true
-    ok "Installed Geist (bundled with Slate) to $fontdir"
 fi
 ok "Icon font: bundled with Slate"
 

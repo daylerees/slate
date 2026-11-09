@@ -30,6 +30,7 @@ command -v start-hyprland >/dev/null && echo "start-hyprland: ok" || echo "start
 qs --version 2>/dev/null | head -1 || echo "qs: missing"
 test -f /usr/share/wayland-sessions/slate.desktop && echo "session entry: ok"
 sudo -u tester -H fc-list : family | grep -qi "^Geist" && echo "Geist font: ok" || echo "Geist font: missing"
+sudo -u tester -H fc-list : family | grep -qi "^Geist Mono" && echo "Geist Mono font: ok" || echo "Geist Mono font: missing"
 command -v slate >/dev/null || test -x /home/tester/.local/bin/slate && echo "slate command: ok"
 python3 -c "import PIL" && echo "python Pillow: ok" || echo "python Pillow: MISSING"
 echo "--- QML modules Slate imports (no display here, so windows are not created) ---"

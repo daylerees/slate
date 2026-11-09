@@ -52,7 +52,7 @@ says so and points here.
 
 `./install.sh` — everything is in the official repos. Optional extras from the AUR, if you
 have `paru` or `yay`: `swash` (screenshot editor; CachyOS has it in its own repo) and
-`otf-geist` (the installer downloads Geist otherwise).
+`otf-geist` (otherwise the installer installs the copy of Geist bundled with Slate).
 
 ### Debian testing / sid
 
@@ -95,7 +95,8 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 
 - **swash** (screenshot editor) is only packaged for Arch. Without it, screenshots are
   saved to `~/Pictures/Screenshots` and copied to the clipboard.
-- **Geist** (the interface font) is bundled with Slate, so nothing to install.
+- **Geist** and **Geist Mono** (the interface and code fonts) are bundled with Slate, so
+  nothing to install.
 - **hyprbars** (title bars in floating mode) is optional: without it Slate tiles windows,
   and Settings doesn't offer floating mode. It's only packaged for NixOS
   (`hyprlandPlugins.hyprbars`) and the AUR; Slate builds it from source, which needs Hyprland's headers
@@ -112,9 +113,10 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 1. **Packages** — installs the list for your distro from `packaging/` (you're shown the list
    and asked first).
 2. **Checks** Hyprland and Quickshell are new enough.
-3. **Font** — [Geist](https://vercel.com/font) ships with Slate (and Slate loads it itself);
-   the installer also installs it to `~/.local/share/fonts` for your other apps if it's
-   missing. Slate's icon font is bundled too.
+3. **Fonts** — [Geist and Geist Mono](https://vercel.com/font) ship with Slate (and Slate
+   loads them itself); the installer also installs each to `~/.local/share/fonts` for your
+   other apps (so terminals can use Geist Mono as the code font) unless it's installed
+   already, and keeps that copy up to date on updates. Slate's icon font is bundled too.
    **Icons and cursor** — the Papirus icon theme (a package) becomes your icon theme,
    Papirus-Dark, unless you've chosen one of your own; Slate's cursors (bundled) are
    linked into `~/.local/share/icons` for the session to use.
