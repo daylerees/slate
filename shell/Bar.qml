@@ -33,6 +33,12 @@ PanelWindow {
     readonly property real screenCornerShape: 3.0
     // (See-through with glass: Settings → Appearance → Glass)
     readonly property color barColor: Config.surface(Config.tint("#0f1216"))
+    // The menu bar's own background: with glass in dark mode, darker and less see-through
+    // than other glass (a quarter of the way from Glass → Opacity to solid), so the bar reads as a steady
+    // band whatever the wallpaper does behind it
+    readonly property color barBackground: Config.glass && !Config.s.lightMode
+        ? (c => Qt.rgba(c.r, c.g, c.b, Config.glassOpacity + (1 - Config.glassOpacity) * 0.25))(Config.tint("#0c0e12"))
+        : barColor
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
@@ -284,7 +290,7 @@ PanelWindow {
                 height: bar.vert ? parent.height : bar.barHeight
                 x: bar.vert ? bar.bgX : 0
                 y: bar.vert ? 0 : bar.bgY
-                color: bar.barColor
+                color: bar.barBackground
 
                 // Clicking an empty part of the bar closes any open panel
                 MouseArea {
@@ -317,7 +323,7 @@ PanelWindow {
                     visible: Config.s.roundedScreenCorners
                     onVisibleChanged: if (visible) requestPaint()
                     // Repaint when the theme colour changes
-                    readonly property color fill: bar.barColor
+                    readonly property color fill: bar.barBackground
                     onFillChanged: requestPaint()
                     onAvailableChanged: if (available) requestPaint()
                     onPaint: {
