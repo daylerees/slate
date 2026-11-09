@@ -1081,19 +1081,44 @@ FloatingWindow {
             }
         }
     }
-    // One of Slate's sounds: a volume slider, Off at 0; letting go plays it at that volume
+    // One of Slate's sounds: a play button to hear it, and a volume slider, Off at 0; letting go
+    // of the slider plays it too, at that volume
     component SoundSetting: SettingRow {
         id: snd
         property string which              // Config.soundSettings key
         property string sample             // sounds/<sample>.wav to play as a preview
         property bool available: true
-        ValueSlider {
-            enabled: snd.available
-            opacity: enabled ? 1 : 0.4
-            from: 0; to: 100; stepSize: 5; suffix: "%"; zeroText: "Off"
-            value: snd.available ? Config.soundVolume(snd.which) : 0
-            onMoved: v => Config.s[Config.soundSettings[snd.which][0]] = Math.round(v)
-            onReleased: Config.playSound(snd.sample, snd.which)
+        readonly property bool audible: available && Config.soundVolume(which) > 0
+        Row {
+            spacing: 6
+            // Play: the sound at its volume (dimmed while it's off, with nothing to hear). A plain
+            // TapHandler, not ClickTap: the sound it plays is its own feedback
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 28; height: 28; radius: 14
+                opacity: snd.audible ? 1 : 0.4
+                color: playHover.hovered && snd.audible ? win.controlHover(Config.tint("#323a46")) : win.control
+                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                Gloss { radius: parent.radius }   // glass: a sheen
+                Text {
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: 1      // the triangle looks centred a touch right
+                    text: win.glyph(0xED46)                // play
+                    color: snd.audible ? win.text : win.dim
+                    font.family: win.bar.iconFont; font.pixelSize: 14
+                }
+                HoverHandler { id: playHover; cursorShape: snd.audible ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                TapHandler { enabled: snd.audible; onTapped: Config.playSound(snd.sample, snd.which) }
+            }
+            ValueSlider {
+                anchors.verticalCenter: parent.verticalCenter
+                enabled: snd.available
+                opacity: enabled ? 1 : 0.4
+                from: 0; to: 100; stepSize: 5; suffix: "%"; zeroText: "Off"
+                value: snd.available ? Config.soundVolume(snd.which) : 0
+                onMoved: v => Config.s[Config.soundSettings[snd.which][0]] = Math.round(v)
+                onReleased: Config.playSound(snd.sample, snd.which)
+            }
         }
     }
     component Button: Rectangle {
