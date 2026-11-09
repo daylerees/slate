@@ -605,6 +605,8 @@ Singleton {
     function setGameMode(on) { s.gameMode = on; }
 
     readonly property bool glass: s.glass && !gameMode
+    // The screensaver's Videos style: its folder (Settings → Screensaver)
+    readonly property string screensaverVideoFolder: s.screensaverVideoFolder || (Quickshell.env("HOME") + "/Videos/Screensaver")
 
     // ---- Slate's own animations -----------------------------------------------------------
     // They follow Settings → Appearance → Animations, as Hyprland's do: Fast halves them, Off
@@ -831,6 +833,9 @@ Singleton {
     // The click needs to be on time, so it only plays with Qt Multimedia (Settings says so).
     // Worked out once at start (a binding would loop: loading a sound sets soundStamp)
     property bool clickAvailable: false
+    // Qt Multimedia (qt6-multimedia, optional) is there: the click sound and the screensaver's
+    // videos need it (found by loading the click, which only works with it)
+    readonly property bool multimediaAvailable: clickAvailable
     // How loud each sound is (Settings → Sound), 0-100, 0 = off. Not set yet: from the earlier
     // on/off switch and the single effects volume
     readonly property var soundSettings: ({

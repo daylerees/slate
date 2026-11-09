@@ -101,7 +101,7 @@ Scope {
                 Loader {
                     anchors.fill: parent
                     active: root.fade > 0
-                    sourceComponent: root.style === "slideshow" ? slideshow : root.style === "black" ? onBlack : drift
+                    sourceComponent: root.style === "slideshow" ? slideshow : root.style === "black" ? onBlack : root.style === "videos" ? videos : drift
                 }
 
                 // A click, scroll or real pointer move puts it away (a nudge of a few pixels
@@ -187,6 +187,32 @@ Scope {
         }
     }
 
+    // Videos: a folder of them (ScreensaverVideos.qml, which needs Qt Multimedia, so it's loaded
+    // rather than imported: without it, only this style says so)
+    Component {
+        id: videos
+        Item {
+            Loader {
+                id: vidLoader
+                anchors.fill: parent
+                source: Qt.resolvedUrl("ScreensaverVideos.qml")
+            }
+            Binding { target: vidLoader.item; property: "folder"; value: Config.screensaverVideoFolder; when: vidLoader.status === Loader.Ready }
+            Text {
+                readonly property bool noPlayer: vidLoader.status === Loader.Error
+                readonly property bool empty: vidLoader.status === Loader.Ready && vidLoader.item.listed && vidLoader.item.count === 0
+                visible: noPlayer || empty
+                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: parent.height * 0.12 }
+                width: Math.min(parent.width - 80, 620)
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                text: noPlayer ? "Videos need Qt Multimedia (the qt6-multimedia package)"
+                    : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " yet. Add some, or get scenery videos in Settings → Screensaver"
+                color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: 15
+            }
+            ClockFace { visible: Config.s.screensaverClock; anchors.centerIn: parent; anchors.verticalCenterOffset: -parent.height * 0.06 }
+        }
+    }
     Component {
         id: slideshow
         Item {

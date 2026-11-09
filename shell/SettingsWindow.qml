@@ -2339,12 +2339,67 @@ FloatingWindow {
                     label: "Style"
                     options: [{ value: "drift", label: "Your wallpaper" },
                               { value: "slideshow", label: "Wallpaper slideshow" },
+                              { value: "videos", label: "Videos" },
                               { value: "black", label: "Black" }]
                     value: Config.s.screensaverStyle
                     onPicked: v => Config.s.screensaverStyle = v
                     detail: Config.s.screensaverStyle === "drift" ? "Your wallpaper, dimmed and slowly drifting"
                         : Config.s.screensaverStyle === "slideshow" ? "The pictures in your wallpaper folder, fading from one to the next"
+                        : Config.s.screensaverStyle === "videos" ? (Config.multimediaAvailable ? "The videos in a folder, silent, fading from one to the next"
+                            : "The videos in a folder, silent. Needs Qt Multimedia (the qt6-multimedia package), which isn't installed")
                         : "Plain black; best for OLED screens"
+                }
+                Separator { visible: Config.s.screensaverStyle === "videos" }
+                SettingRow {
+                    id: vidRow
+                    visible: Config.s.screensaverStyle === "videos"
+                    label: "Videos folder"
+                    // Get scenery videos: four free clips (Earth from the ISS, an aurora, clouds, a
+                    // waterfall) from Wikimedia Commons, about 90 MB (scripts/screensaver-videos.py)
+                    property string status: ""
+                    property real progress: 0          // the whole download, 0 to 1
+                    detail: status !== "" ? status
+                        : Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + ": MP4, WebM, MKV or MOV, played in a shuffled order. "
+                          + "Get scenery videos adds four free clips (about 90 MB; credits in the folder's CREDITS.txt)"
+                    Process {
+                        id: sceneryRun
+                        command: [Quickshell.shellPath("scripts/screensaver-videos.py"), Config.screensaverVideoFolder]
+                        stdout: SplitParser {
+                            onRead: line => {
+                                if (line.startsWith("progress ")) { vidRow.progress = Number(line.slice(9)) || 0; return; }
+                                const m = line.match(/^(\d+)\/(\d+) (.*)$/);
+                                if (m) vidRow.status = "Downloading " + m[1] + " of " + m[2] + ": " + m[3] + "…";
+                                else if (line.startsWith("done ")) vidRow.status = line.slice(5) === "0" ? "Couldn't download any videos (offline?)"
+                                    : "Got " + line.slice(5) + " scenery videos, in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~");
+                            }
+                        }
+                        onExited: code => { if (code !== 0 && !vidRow.status.startsWith("Got")) vidRow.status = "Couldn't download the videos"; }
+                    }
+                    // How far the download's got: a thin bar along the bottom of the row while it runs
+                    Rectangle {
+                        parent: vidRow
+                        visible: sceneryRun.running
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 16; rightMargin: 16; bottomMargin: 6 }
+                        height: 4; radius: 2
+                        color: win.control
+                        Rectangle {
+                            width: Math.max(height, parent.width * vidRow.progress); height: parent.height; radius: 2
+                            color: win.accent
+                            Behavior on width { NumberAnimation { duration: Config.ms(200) } }
+                        }
+                    }
+                    Row {
+                        spacing: 8
+                        Button {
+                            icon: 0xEA96; label: sceneryRun.running ? "Downloading…" : "Get scenery videos"
+                            opacity: sceneryRun.running ? 0.5 : 1
+                            onClicked: if (!sceneryRun.running) { vidRow.status = "Starting…"; vidRow.progress = 0; sceneryRun.running = true; }
+                        }
+                        Button {
+                            icon: 0xEAAD; label: "Open folder"
+                            onClicked: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && exec xdg-open \"$0\"", Config.screensaverVideoFolder])
+                        }
+                    }
                 }
                 Separator {}
                 SettingRow {
