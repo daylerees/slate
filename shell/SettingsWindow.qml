@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import Quickshell.Networking
 import Quickshell.Services.Pipewire
@@ -61,21 +62,22 @@ FloatingWindow {
 
     IpcHandler {
         target: "settings"
-        function toggle(): void { win.visible = !win.visible; }
-        function open(): void { win.visible = true; }
+        // (open on another workspace, toggle brings it here rather than closing it out of sight)
+        function toggle(): void { if (win.visible && !win.isHere()) win.show(); else win.visible = !win.visible; }
+        function open(): void { win.show(); }
         function close(): void { win.visible = false; }
         // Old page names still work: switchers → windows, wallpaper → appearance (at the wallpapers)
         function page(name: string): void {
             if (name === "wallpaper") win.scrollTo = "wallpaper";
             win.keepSection = !win.visible;
             win.section = ({ switchers: "windows", wallpaper: "appearance" })[name] ?? name;
-            win.visible = true;
+            win.show();
         }
         // Open a page scrolled to one setting (or heading), lit up for a moment, e.g.
         //   slate ipc call settings find appearance "Interface size"
         function find(page: string, label: string): void { win.goTo(page, label); }
         // Open General with the account picture chooser showing (the control centre's avatar)
-        function avatar(): void { win.keepSection = !win.visible; win.section = "general"; win.avatarPicking = true; win.visible = true; }
+        function avatar(): void { win.keepSection = !win.visible; win.section = "general"; win.avatarPicking = true; win.show(); }
     }
 
     // ---- Look --------------------------------------------------------------
@@ -163,7 +165,21 @@ FloatingWindow {
         findLabel = label || "";
         if (section === page && pageLoader.item) Qt.callLater(showFound);
         section = page;
-        visible = true;
+        show();
+    }
+    // Show Settings. Already open on another workspace: it moves to the one you're on (and
+    // takes the focus), rather than staying out of sight there
+    function show() {
+        if (!visible) { visible = true; return; }
+        const ws = Hyprland.focusedWorkspace;
+        if (!ws || ws.id < 1 || isHere()) return;        // (not to the secret workspace)
+        const window = "title:^(Slate Settings)$";
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.window.move({ workspace = ${ws.id}, window = "${window}", follow = false })); hl.dispatch(hl.dsp.focus({ window = "${window}" })) end`]);
+    }
+    // Whether Settings is on the workspace you're looking at
+    function isHere() {
+        const mine = Hyprland.toplevels.values.find(t => t.title === "Slate Settings");
+        return !mine || !mine.workspace || !Hyprland.focusedWorkspace || mine.workspace.id === Hyprland.focusedWorkspace.id;
     }
     function showFound() {
         const label = findLabel || foundRetryLabel;
