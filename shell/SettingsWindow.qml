@@ -53,6 +53,7 @@ FloatingWindow {
         // Cleared a moment later, not now: showing the window can report "visible" twice,
         // and the second would otherwise send a requested page back to All Settings
         if (visible) keepClear.restart(); else keepSection = false;
+        placeSave.restart();                  // open: where it is; closed: forgotten
     }
 
     IpcHandler {
@@ -89,6 +90,43 @@ FloatingWindow {
     function glyph(code) { return String.fromCodePoint(code); }
 
     property string section: "overview"
+
+    // ---- Back where it was after Slate reloads or restarts ----------------
+    // While Settings is open, its page and how far down it's scrolled are kept in the runtime
+    // folder, named for this Hyprland session (so logging in again never opens it); closing it
+    // forgets them. When Slate starts again with them there, Settings reopens just as it was.
+    readonly property string placeFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/settings-open-"
+        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    FileView { id: placeView; path: win.placeFile; blockLoading: true; printErrors: false }
+    property real restoreY: -1           // scroll back to this once the page has loaded
+    property bool placeReady: false      // not saving until any earlier place has been read
+    function savePlace() {
+        if (!placeReady) return;
+        placeView.setText(JSON.stringify(visible ? { section: section, y: Math.round(scroller.contentY) } : {}));
+    }
+    // Saved a moment after a change, which also means a window that's closing only because Slate
+    // is reloading (and going away with it) doesn't forget the place first
+    Timer { id: placeSave; interval: 400; onTriggered: win.savePlace() }
+    // Scrolls back to restoreY once the page is laid out (from the page loading, or straight away
+    // when it's the page already showing)
+    function restorePlace() {
+        if (restoreY <= 0) { restoreY = -1; return; }
+        const y = restoreY;
+        restoreY = -1;
+        Qt.callLater(() => Qt.callLater(() => { scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, y)); }));
+    }
+    Component.onCompleted: {
+        let p = null;
+        try { p = JSON.parse(placeView.text() || "{}"); } catch (e) {}
+        placeReady = true;
+        if (p && p.section) {
+            keepSection = true;
+            restoreY = Number(p.y) || 0;       // before the page changes: it loads straight away
+            if (section === p.section) restorePlace(); else section = p.section;
+            visible = true;
+        }
+    }
+
     // Opening Settings starts on All Settings, unless it was asked for a page (keepSection)
     property bool keepSection: false
     Timer { id: keepClear; interval: 600; onTriggered: win.keepSection = false }
@@ -212,7 +250,11 @@ FloatingWindow {
     // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
     readonly property bool resetRestarts: (currentKeys.includes("uiScale") && Math.abs(Config.s.uiScale - 1) > 0.001)
         || (currentKeys.includes("logLevel") && (Config.s.logLevel || "normal") !== "normal")
-    onSectionChanged: { if (section !== "general") avatarPicking = false; cancelConfirm(); }
+    onSectionChanged: {
+        if (section !== "general") avatarPicking = false;
+        cancelConfirm();
+        if (visible) placeSave.restart();     // remember the page (see savePlace)
+    }
     property string pageTitle: ""
     // Descriptions wrap at a comfortable reading length (~70 characters of the UI font)
     FontMetrics { id: detailMetrics; font.family: win.font; font.pixelSize: 12 }
@@ -439,14 +481,18 @@ FloatingWindow {
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 SmoothWheel { flick: scroller }
-                onContentYChanged: dropLayer.owner = null      // an open dropdown would drift away
+                onContentYChanged: { dropLayer.owner = null; if (win.visible) placeSave.restart(); }      // an open dropdown would drift away
                 Loader {
                     id: pageLoader
                     width: scroller.width
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
                         apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
-                    onLoaded: { scroller.contentY = 0; dropLayer.owner = null; if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound)); }
+                    onLoaded: {
+                        scroller.contentY = 0; dropLayer.owner = null;
+                        if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
+                        else win.restorePlace();     // reopened after a reload: back to where it was scrolled
+                    }
                 }
             }
 
