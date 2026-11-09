@@ -886,6 +886,7 @@ ShellRoot {
                             // The same shape as the app icons (a tile when they're shown as they come)
                             IconPlate {
                                 anchors.fill: parent
+                                drawSize: win.base * win.maxScale      // drawn once, magnified size
                                 shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
                                 fill: false
                                 color: win.tileColor
@@ -944,7 +945,9 @@ ShellRoot {
                                 cache: false
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                                 onStatusChanged: if (status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
-                                IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
+                                // The tile behind, in the theme's colour: drawn once at its magnified size
+                                // and shrunk, not redrawn on every frame as the dock magnifies
+                                IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
                                 Gloss {

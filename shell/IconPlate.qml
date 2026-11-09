@@ -4,11 +4,16 @@
 // into the icon files, so it follows light/dark and the wallpaper tint straight away.
 // Put it inside the icon's Image:  IconPlate { anchors.fill: parent; z: -1 }
 // (z -1 draws it behind the image, and it moves with any transform on the image).
+// Something that changes size all the time (the dock's magnification) sets drawSize: the
+// tile is drawn once at that size and shrunk to fit, rather than redrawn on every frame.
 
 import QtQuick
 
-Canvas {
+Item {
     id: plate
+    // 0: drawn at its own size (redrawn when that changes); more: drawn once at this size
+    // (the largest it gets) and scaled to fit
+    property real drawSize: 0
     property string shape: Config.s.iconShape
     property bool fill: Config.s.iconFill
     // Which app's icon it's behind, from the tile image it sits in (for tiles in the icon's colour)
@@ -24,46 +29,57 @@ Canvas {
     property bool shaded: Config.iconTileShade(app) !== null
     visible: !fill && shape !== "original"
 
-    onShapeChanged: requestPaint()
-    onColorChanged: requestPaint()
-    onShadedChanged: requestPaint()
-    onVisibleChanged: if (visible) requestPaint()
-    onWidthChanged: requestPaint()
-    onHeightChanged: requestPaint()
-    onAvailableChanged: if (available) requestPaint()
+    onShapeChanged: canvas.requestPaint()
+    onColorChanged: canvas.requestPaint()
+    onShadedChanged: canvas.requestPaint()
+    onVisibleChanged: if (visible) canvas.requestPaint()
 
-    // The same outlines scripts/appicon.py cuts the filled icons to
-    onPaint: {
-        const ctx = getContext("2d");
-        ctx.reset();
-        if (!visible) return;
-        const w = width, h = height;
-        if (shaded) {
-            const c = plate.color, l = c.hslLightness;
-            // Mostly top to bottom, tilted a little: lightest towards the top left
-            const g = ctx.createLinearGradient(w * 0.3, 0, w * 0.7, h);
-            g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.08), c.a));
-            g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.08), c.a));
-            ctx.fillStyle = g;
-        } else ctx.fillStyle = plate.color;
-        ctx.beginPath();
-        if (shape === "circle") {
-            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, 2 * Math.PI);
-        } else if (shape === "square") {
-            ctx.rect(0, 0, w, h);
-        } else if (shape === "squircle") {
-            // Superellipse |x|^n + |y|^n = 1
-            const n = 4.5, steps = 180;
-            for (let i = 0; i <= steps; i++) {
-                const t = 2 * Math.PI * i / steps, c = Math.cos(t), s = Math.sin(t);
-                const x = w / 2 + w / 2 * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
-                const y = h / 2 + h / 2 * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
-                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-        } else {
-            ctx.roundedRect(0, 0, w, h, w * 0.225, h * 0.225);    // tile: a rounded square
+    Canvas {
+        id: canvas
+        width: plate.drawSize > 0 ? plate.drawSize : plate.width
+        height: plate.drawSize > 0 ? plate.drawSize : plate.height
+        // Shrunk (or grown) to the plate's size when drawn at a fixed size
+        transform: Scale {
+            xScale: plate.width / Math.max(1, canvas.width)
+            yScale: plate.height / Math.max(1, canvas.height)
         }
-        ctx.closePath();
-        ctx.fill();
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        onAvailableChanged: if (available) requestPaint()
+
+        // The same outlines scripts/appicon.py cuts the filled icons to
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.reset();
+            if (!plate.visible) return;
+            const w = width, h = height;
+            if (shaded) {
+                const c = plate.color, l = c.hslLightness;
+                // Mostly top to bottom, tilted a little: lightest towards the top left
+                const g = ctx.createLinearGradient(w * 0.3, 0, w * 0.7, h);
+                g.addColorStop(0, Qt.hsla(c.hslHue, c.hslSaturation, Math.min(1, l + 0.08), c.a));
+                g.addColorStop(1, Qt.hsla(c.hslHue, c.hslSaturation, Math.max(0, l - 0.08), c.a));
+                ctx.fillStyle = g;
+            } else ctx.fillStyle = plate.color;
+            ctx.beginPath();
+            if (shape === "circle") {
+                ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, 2 * Math.PI);
+            } else if (shape === "square") {
+                ctx.rect(0, 0, w, h);
+            } else if (shape === "squircle") {
+                // Superellipse |x|^n + |y|^n = 1
+                const n = 4.5, steps = 180;
+                for (let i = 0; i <= steps; i++) {
+                    const t = 2 * Math.PI * i / steps, c = Math.cos(t), s = Math.sin(t);
+                    const x = w / 2 + w / 2 * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+                    const y = h / 2 + h / 2 * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+            } else {
+                ctx.roundedRect(0, 0, w, h, w * 0.225, h * 0.225);    // tile: a rounded square
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
     }
 }
