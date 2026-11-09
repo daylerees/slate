@@ -50,7 +50,8 @@ Singleton {
     }
 
     function check(force) {
-        if (checkProc.running) return;
+        // (never under the test suite: no network, and Settings → Updates the same every run)
+        if (checkProc.running || Config.testMode) return;
         checkProc.command = ["python3", script, "check"].concat(force ? ["--force"] : []);
         checkProc.running = true;
     }

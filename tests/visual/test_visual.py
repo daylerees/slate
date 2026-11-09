@@ -58,7 +58,10 @@ class Visual(LiveCase):
         finally:
             for step in scene.get("undo", []):
                 try:
-                    self.ipc(*step)
+                    if step[0].startswith("!"):
+                        self.s.run([step[0][1:]] + list(step[1:]))
+                    else:
+                        self.ipc(*step)
                 except SessionError:
                     pass
             for k, v in old.items():

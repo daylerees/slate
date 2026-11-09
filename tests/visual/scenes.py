@@ -74,7 +74,7 @@ for _p in PANELS:
 # The control centre's "Up 1 h 29 min · Hyprland 0.57.1": the host's uptime
 SCENES["panel-control"]["mask"] = [(90, 105, 220, 20)]
 # The battery panel's System rows (CPU, memory, disk): the host machine's, live
-SCENES["panel-battery"]["mask"] = [(825, 272, 265, 115)]
+SCENES["panel-battery"]["mask"] = [(825, 272, 300, 115)]
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],
@@ -91,3 +91,17 @@ SCENES["notification-glass"] = {
     # before (desktop-glass covers them)
     "mask": [(0, 0, 1440, 40), (0, 760, 1440, 140)],
 }
+
+# The dock magnified under the pointer, on glass, with whole icons (tiles behind them): Slate's
+# tiles above the dock keep the dock's glass behind their frosting (DockBacking.qml)
+SCENES["dock-magnified-glass"] = {
+    "settings": {"glass": "true", "iconFill": "false"},
+    # (the Apps button: the slot most lifted, with its neighbours part way)
+    "do": [("test", "dockHover", 0)],
+    "wait": lambda st: True, "settle": 5,       # (glass: its blur is made the first time)
+    "undo": [("test", "dockHover", -1)],
+}
+
+# Settings → Displays lists the switched-off virtual screen by name: Virtual-1 here, Virtual-2
+# on GitHub's runners
+SCENES["settings-displays"]["mask"] = [(505, 538, 220, 24)]
