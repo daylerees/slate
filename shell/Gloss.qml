@@ -97,7 +97,7 @@ Rectangle {
             // rather than its sheen running off into the light background (the bright line
             // moves just inside it)
             // (faint on frosted glass, a little stronger on coloured fills)
-            border.color: Config.s.lightMode ? Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.08, 0.09 * Config.glossAmount) : Math.min(0.035, 0.045 * Config.glossAmount))
+            border.color: Config.s.lightMode ? Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.045, 0.05 * Config.glossAmount) : Math.min(0.035, 0.045 * Config.glossAmount))
                 // Crisper on light frosted glass, where a faint white edge didn't show
                 : Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
         }
