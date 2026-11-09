@@ -50,24 +50,26 @@ state() {
 
 if [ "${1:-}" = "--check" ]; then state; exit 0; fi
 
-# Whether the login screen's own code (not the shared files) or its keyboard layout has changed
-own_outdated() {
+# Whether the login screen's own code (not the shared files) or its keyboard layout has changed.
+# Takes the expected hyprland.lua (hypr_expected), so it's worked out once
+own_outdated() {   # own_outdated <expected hyprland.lua>
     [ -d "$CODE" ] || return 1
     while read -r name src; do
         cmp -s "$src" "$CODE/$name" || return 0
     done < <(own_files)
-    hypr_expected | cmp -s - "$CODE/hyprland.lua" || return 0
+    printf '%s\n' "$1" | cmp -s - "$CODE/hyprland.lua" || return 0
     return 1
 }
 
 if [ "${1:-}" = "--prompt" ]; then
     # Only for the login screen's own changes (see SHARED); --check still reports any change
-    own_outdated || exit 0
+    expected=$(hypr_expected)
+    own_outdated "$expected" || exit 0
     # Ask once per version of its own code; "Later" (or dismissing it) waits a week
     asked="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-asked"
     snooze="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-later"
     [ "$(date +%s)" -lt "$(cat "$snooze" 2>/dev/null || echo 0)" ] && exit 0
-    version=$( { while read -r _ src; do cat "$src"; done < <(own_files); hypr_expected; } | md5sum | cut -d' ' -f1)
+    version=$( { while read -r _ src; do cat "$src"; done < <(own_files); printf '%s\n' "$expected"; } | md5sum | cut -d' ' -f1)
     [ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
     mkdir -p "$(dirname "$asked")"; echo "$version" > "$asked"
     icon="$SRC/assets/icon/icon-64.png"      # Slate's own icon, as its other notices use
@@ -95,8 +97,11 @@ if [ ! -d "$DEST" ] || [ ! -w "$DEST" ]; then
     exit 1
 fi
 
-# Copy into place via a temporary file + rename, so the greeter never sees half a file
+# Copy into place via a temporary file + rename, so the greeter never sees half a file. A file
+# that's already the same is left alone: this runs after every settings change, and copying the
+# wallpaper (many MB) and fonts again each time was wasted work
 put() {   # put <source> <name in DEST>
+    cmp -s "$1" "$DEST/$2" && return 0
     local tmp="$DEST/.$(basename "$2").tmp"
     mkdir -p "$(dirname "$DEST/$2")"
     cp -f "$1" "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$DEST/$2"
@@ -109,8 +114,11 @@ write() {  # write <name in DEST>  (contents on stdin)
 # Theme settings (accent, light/dark, tint, fonts, rounded corners…)
 put "$SRC/settings.json" settings.json
 
-# Wallpaper (Slate's wallpaper setting); without it the login screen uses plain slate
-wall=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaper",""))' "$SRC/settings.json" 2>/dev/null || true)
+# The wallpaper and interface font, from Slate's settings (one read for both)
+{ read -r wall; read -r family; } < <(python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s.get("wallpaper","")); print(s.get("fontFamily","Geist") or "Geist")' "$SRC/settings.json" 2>/dev/null || printf '\nGeist\n')
+family=${family:-Geist}
+
+# Wallpaper; without it the login screen uses plain slate
 if [ -n "$wall" ] && [ -f "$wall" ]; then put "$wall" wallpaper; else rm -f "$DEST/wallpaper"; fi
 
 # Avatar
@@ -124,15 +132,19 @@ if [ -n "${SLATE_SESSION:-}" ]; then session=slate
 elif pgrep -u "$USER" -f 'uwsm/signal-handler' >/dev/null 2>&1; then session=hyprland-uwsm; else session=hyprland; fi
 printf '{ "user": "%s", "name": "%s", "session": "%s", "kb_layout": "%s" }\n' "$USER" "${name:-$USER}" "$session" "$(kb_layout)" | write user.json
 
-# Fonts: your interface font's files, and the icon font
+# Fonts: your interface font's files (system fonts are already readable, so not those), the
+# icon font and the bundled Geist. Only what's changed is copied, and only fonts no longer
+# wanted are removed
 mkdir -p "$DEST/fonts"
-family=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("fontFamily","Geist"))' "$SRC/settings.json" 2>/dev/null || echo Geist)
-find "$DEST/fonts" -type f ! -name tabler.ttf ! -name 'Geist*-Variable.ttf' -delete
-fc-list --format '%{file}\n' ":family=$family" 2>/dev/null | sort -u | while read -r f; do
-    case "$f" in /usr/share/*) ;; *) [ -f "$f" ] && put "$f" "fonts/$(basename "$f")" ;; esac   # system fonts are already readable
-done
+declare -A wanted=([tabler.ttf]=1)
+while read -r f; do
+    case "$f" in /usr/share/*|"") ;; *) [ -f "$f" ] && { put "$f" "fonts/$(basename "$f")"; wanted[$(basename "$f")]=1; } ;; esac
+done < <(fc-list --format '%{file}\n' ":family=$family" 2>/dev/null | sort -u)
 put "$SRC/fonts/tabler.ttf" fonts/tabler.ttf
-for f in "$SRC"/fonts/Geist*-Variable.ttf; do [ -f "$f" ] && put "$f" "fonts/$(basename "$f")"; done   # bundled Geist
+for f in "$SRC"/fonts/Geist*-Variable.ttf; do [ -f "$f" ] && { put "$f" "fonts/$(basename "$f")"; wanted[$(basename "$f")]=1; }; done
+for f in "$DEST"/fonts/*; do
+    [ -f "$f" ] && [ -z "${wanted[$(basename "$f")]:-}" ] && rm -f "$f"
+done
 
 chmod -R a+rX "$DEST"
 echo "slate-greeter-sync: login screen appearance updated"
