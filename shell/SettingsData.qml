@@ -153,6 +153,8 @@ JsonAdapter {
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockAutoHide: true          // hide when the workspace has windows
+    property bool dockShowMedia: true         // what's playing, after the Apps button, with its controls
+    property bool dockShowTrash: true         // the wastebasket at the end of the dock
 
     // Launcher
     property string launcherLayout: "list"     // Settings → Launcher → Layout: list or grid

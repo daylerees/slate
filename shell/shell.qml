@@ -16,11 +16,13 @@
 //   bring it back.
 
 import QtQuick
+import Qt.labs.folderlistmodel
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Services.Mpris
 
 ShellRoot {
     id: root
@@ -525,7 +527,54 @@ ShellRoot {
         }
 
         // ---- Magnification -------------------------------------------------
-        readonly property int count: items.length + 1          // +1 for the launcher
+        // The launcher, what's playing (while something is), the apps, then the wastebasket
+        readonly property int count: items.length + 1 + media + (trashShown ? 1 : 0)
+
+        // ---- Media (Settings → Dock → Media controls) ----------------------------------
+        // What's playing, right after the launcher button, while a media app has a track: its
+        // album art, with Previous / Play-Pause / Next across it under the pointer
+        readonly property var player: Mpris.players.values.find(p => p.isPlaying)
+            ?? Mpris.players.values.find(p => (p.trackTitle || "") !== "") ?? null
+        readonly property bool mediaShown: Config.s.dockShowMedia && !!player && (player.trackTitle || "") !== ""
+        readonly property int media: mediaShown ? 1 : 0       // how far it moves the apps along
+        readonly property int mediaIndex: 1
+        // A click on it: Previous on its left third, Next on its right, Play/Pause between
+        function mediaClick() {
+            const p = player;
+            if (!p) return;
+            const centre = mediaIndex * (base + spacing) + base / 2;
+            const along = (pointerX - centre) / base;           // -0.5 … 0.5 across the icon
+            if (along < -1 / 6) { if (p.canGoPrevious) p.previous(); }
+            else if (along > 1 / 6) { if (p.canGoNext) p.next(); }
+            else if (p.canTogglePlaying) p.togglePlaying();
+        }
+
+        // ---- Wastebasket (Settings → Dock → Wastebasket) ----------------------------
+        // The bin after the apps: click to open it in the file manager, right-click to empty
+        // it. The desktop's own (freedesktop) trash, so it's the same bin the file managers use
+        readonly property bool trashShown: Config.s.dockShowTrash
+        readonly property int trashIndex: items.length + 1 + media       // always last
+        readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
+        // What's in it, watched (the folder made first if nothing's been thrown away yet, so
+        // there's something to watch)
+        property bool trashReady: false
+        Process {
+            running: win.trashShown && !win.trashReady
+            command: ["mkdir", "-p", win.trashDir]
+            onExited: win.trashReady = true
+        }
+        FolderListModel {
+            id: trashFiles
+            folder: win.trashShown && win.trashReady ? "file://" + win.trashDir : ""
+            showDirs: true; showHidden: true; showDotAndDotDot: false
+        }
+        readonly property int trashCount: trashShown ? trashFiles.count : 0
+        // Opened in the file manager the shortcuts use (FILE_MANAGER, Hyprland's variable)
+        function openTrash() {
+            Quickshell.execDetached(["hyprctl", "dispatch",
+                `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. " trash:///") end`]);
+        }
+        function emptyTrash() { Quickshell.execDetached(["gio", "trash", "--empty"]); }
         readonly property real restWidth: count * base + (count - 1) * spacing
         property real pointerX: -1000                          // in rest-layout coordinates
         // Magnification stays frozen while the right-click menu is open
@@ -586,7 +635,7 @@ ShellRoot {
             function menu(key: string): void {
                 const i = win.items.findIndex(it => it.key === key);
                 if (i < 0) return;
-                const x = (strip.width - win.restWidth) / 2 + (i + 1) * (win.base + win.spacing) + win.base / 2;
+                const x = (strip.width - win.restWidth) / 2 + (i + 1 + win.media) * (win.base + win.spacing) + win.base / 2;
                 appMenu.openFor(win.items[i], x);
             }
             function closeMenu(): void { appMenu.closeMenu(); }
@@ -606,8 +655,11 @@ ShellRoot {
             readonly property bool isPinned: app && app.key ? win.pinned.includes(app.key) : false
 
             // x: the icon's centre along the dock (strip coordinates)
+            // The wastebasket's Empty asks once more, in the menu itself, before anything goes
+            property bool confirmEmpty: false
             function openFor(a, x) {
                 app = a;
+                confirmEmpty = false;
                 // A little off the dock: room for the menu's pointer
                 const p = strip.mapToItem(win.contentItem, x, bg.y - 16);
                 const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
@@ -615,13 +667,33 @@ ShellRoot {
                 menuY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
                 visible = true;
             }
-            function closeMenu() { visible = false; }
+            function closeMenu() { visible = false; confirmEmpty = false; }
 
             // Rows: open windows, the app's own actions, then New Window / Pin / Quit. For the
             // launcher button: Settings and a few of the places most often wanted in it
             readonly property var rows: {
                 if (!app) return [];
                 const r = [];
+                if (app.mediaMenu) {
+                    const p = win.player;
+                    if (!p) return r;
+                    r.push({ label: p.isPlaying ? "Pause" : "Play", kind: "media-toggle" });
+                    if (p.canGoNext) r.push({ label: "Next", kind: "media-next" });
+                    if (p.canGoPrevious) r.push({ label: "Previous", kind: "media-previous" });
+                    if (p.canRaise) {
+                        r.push({ kind: "sep" });
+                        r.push({ label: "Show " + (p.identity || "the player"), kind: "media-raise" });
+                    }
+                    return r;
+                }
+                if (app.trashMenu) {
+                    r.push({ label: "Open", kind: "trash-open" });
+                    if (win.trashCount > 0) {
+                        r.push({ kind: "sep" });
+                        r.push({ label: confirmEmpty ? "Empty for good? It can't be undone" : "Empty Wastebasket…", kind: "trash-empty", danger: true });
+                    }
+                    return r;
+                }
                 if (app.settingsMenu) {
                     r.push({ label: "Settings", kind: "settings", target: "overview" });
                     r.push({ kind: "sep" });
@@ -664,6 +736,16 @@ ShellRoot {
                 case "quit": for (const w of wins) w.close(); break;
                 case "kill": forceQuit(wins); break;
                 case "settings": if (settingsLoader.item) settingsLoader.item.goTo(row.target, row.find || ""); break;
+                case "trash-open": win.openTrash(); break;
+                case "media-toggle": if (win.player) win.player.togglePlaying(); break;
+                case "media-next": if (win.player) win.player.next(); break;
+                case "media-previous": if (win.player) win.player.previous(); break;
+                case "media-raise": if (win.player) win.player.raise(); break;
+                case "trash-empty":
+                    // First click: ask (the menu stays open); second: empty it
+                    if (!confirmEmpty) { confirmEmpty = true; Config.attention(); return; }
+                    win.emptyTrash();
+                    break;
                 }
                 closeMenu();
             }
@@ -842,7 +924,19 @@ ShellRoot {
                 else appLauncher.shown ? appLauncher.closeLauncher() : appLauncher.openLauncher();
                 return;
             }
-            const item = items[i - 1];
+            if (mediaShown && i === mediaIndex) {
+                // What's playing: the control under the pointer; right-click for them all
+                if (right) appMenu.openFor({ mediaMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+                else mediaClick();
+                return;
+            }
+            if (trashShown && i === trashIndex) {
+                // The wastebasket: opens it; right-click to empty it
+                if (right) appMenu.openFor({ trashMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+                else openTrash();
+                return;
+            }
+            const item = items[i - 1 - media];
             if (!item) return;
             if (right) {   // menu by the icon's centre along the dock
                 appMenu.openFor(item, row.x + cellX(i) + base * scaleAt(i) / 2);
@@ -938,13 +1032,117 @@ ShellRoot {
                         }
                     }
 
+                    // What's playing (see win.mediaShown): the album art cut to the icons' shape (or the
+                    // theme's tile with a note when there's none), a sheen with glass, and under the
+                    // pointer Previous / Play-Pause / Next across it on a dark wash. A bar beneath
+                    // while it plays, like a running app's
+                    Item {
+                        id: mediaCell
+                        visible: win.mediaShown
+                        readonly property real s: win.scaleAt(win.mediaIndex)
+                        readonly property bool pointed: win.hoveredIndex === win.mediaIndex && win.hover > 0.5 && !appMenu.visible
+                        width: win.base * s
+                        height: row.height
+                        Item {
+                            id: mediaTile
+                            anchors.bottom: parent.bottom
+                            width: parent.width; height: width
+                            transform: Matrix4x4 { matrix: win.upright(mediaTile.width, mediaTile.height) }
+                            readonly property real corner: Config.s.iconShape === "circle" ? width / 2
+                                : width * win.iconCorner / Math.max(1, win.base)
+                            readonly property bool hasArt: mediaArt.status === Image.Ready
+                            // No art: the tile the launcher button has, with a note on it
+                            IconPlate {
+                                anchors.fill: parent
+                                visible: !mediaTile.hasArt
+                                drawSize: win.base * win.maxScale
+                                shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
+                                fill: false
+                                color: win.tileColor
+                            }
+                            Text {
+                                visible: !mediaTile.hasArt && !mediaCell.pointed
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(0xEAFC)          // music
+                                color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
+                                font.family: "slate-tabler-icons"
+                                font.pixelSize: Math.round(parent.width * 0.5)
+                            }
+                            // The art, cut to the icons' shape
+                            Item {
+                                anchors.fill: parent
+                                visible: mediaTile.hasArt
+                                layer.enabled: visible
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: mediaMask }
+                                Image {
+                                    id: mediaArt
+                                    anchors.fill: parent
+                                    source: win.player ? (win.player.trackArtUrl || "") : ""
+                                    sourceSize: Qt.size(192, 192)
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    smooth: true; mipmap: true
+                                }
+                            }
+                            Item {
+                                id: mediaMask
+                                anchors.fill: parent
+                                visible: false
+                                layer.enabled: true
+                                Rectangle { anchors.fill: parent; radius: mediaTile.corner }
+                            }
+                            // Glass: a sheen, rounded like the tile
+                            Gloss { radius: mediaTile.corner; glassHint: true }
+                            // Under the pointer: the controls on a dark wash (over art or tile alike,
+                            // so they read the same in light and dark)
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: mediaTile.corner
+                                color: "black"
+                                opacity: mediaCell.pointed ? 0.5 : 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                            }
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: mediaTile.width * 0.04
+                                opacity: mediaCell.pointed ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                                Repeater {
+                                    model: [
+                                        { code: 0xF693, size: 0.22, on: !!win.player && win.player.canGoPrevious },
+                                        { code: win.player && win.player.isPlaying ? 0xF690 : 0xF691, size: 0.3, on: !!win.player && win.player.canTogglePlaying },
+                                        { code: 0xF694, size: 0.22, on: !!win.player && win.player.canGoNext }
+                                    ]
+                                    delegate: Text {
+                                        required property var modelData
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: String.fromCodePoint(modelData.code)
+                                        color: "white"
+                                        opacity: modelData.on ? 1 : 0.35
+                                        font.family: "slate-tabler-icons"
+                                        font.pixelSize: Math.round(mediaTile.width * modelData.size)
+                                    }
+                                }
+                            }
+                        }
+                        // Playing: a bar beneath, in the accent (as a focused app's)
+                        Rectangle {
+                            visible: !!win.player && win.player.isPlaying
+                            width: 12; height: 3; radius: 1.5
+                            color: win.activeDotColor
+                            readonly property real dpr: win.screen ? win.screen.devicePixelRatio : 1
+                            x: Math.round((mediaCell.width - width) / 2 * dpr) / dpr
+                            y: Math.round((parent.height + (win.padding - height) / 2) * dpr) / dpr
+                        }
+                    }
+
                     Repeater {
                         model: win.items
                         delegate: Item {
                             id: cell
                             required property var modelData
                             required property int index
-                            readonly property real s: win.scaleAt(index + 1)
+                            readonly property real s: win.scaleAt(index + 1 + win.media)
                             readonly property string tilePath: Config.tilePath(modelData.key)
                             property int version: 0
                             property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
@@ -1007,14 +1205,48 @@ ShellRoot {
 
                         }
                     }
+                    // The wastebasket: the bin on a tile like the launcher button's, outlined while
+                    // it's empty and filled (brighter) once something's in it
+                    Item {
+                        visible: win.trashShown
+                        readonly property real s: win.scaleAt(win.trashIndex)
+                        width: win.base * s
+                        height: row.height
+                        Item {
+                            id: trashTile
+                            anchors.bottom: parent.bottom
+                            width: parent.width; height: width
+                            transform: Matrix4x4 { matrix: win.upright(trashTile.width, trashTile.height) }
+                            IconPlate {
+                                anchors.fill: parent
+                                drawSize: win.base * win.maxScale      // drawn once, magnified size
+                                shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
+                                fill: false
+                                color: win.tileColor
+                            }
+                            // Glass: a sheen, rounded like the tile
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
+                            Text {
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
+                                color: win.trashCount > 0 ? win.textColor : Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
+                                font.family: "slate-tabler-icons"
+                                font.pixelSize: Math.round(parent.width * 0.52)
+                            }
+                        }
+                    }
                 }
 
                 // App name above the icon under the pointer
                 Rectangle {
                     id: label
                     readonly property string text: win.hoveredIndex === 0 ? "Apps"
-                        : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1]
-                            ? (win.items[win.hoveredIndex - 1].entry?.name ?? win.items[win.hoveredIndex - 1].key) : "")
+                        : win.trashShown && win.hoveredIndex === win.trashIndex
+                            ? (win.trashCount > 0 ? "Wastebasket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Wastebasket (empty)")
+                        : win.mediaShown && win.hoveredIndex === win.mediaIndex
+                            ? win.player.trackTitle + (win.player.trackArtist ? " · " + win.player.trackArtist : "")
+                        : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1 - win.media]
+                            ? (win.items[win.hoveredIndex - 1 - win.media].entry?.name ?? win.items[win.hoveredIndex - 1 - win.media].key) : "")
                     readonly property real iconSize: win.hoveredIndex >= 0 ? win.base * win.scaleAt(win.hoveredIndex) : 0
                     visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible
                     width: labelText.implicitWidth + 16

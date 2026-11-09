@@ -248,7 +248,7 @@ FloatingWindow {
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockShowMedia", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
         debug: ["logLevel"],
         displays: ["mainDisplay"],
@@ -2273,6 +2273,18 @@ FloatingWindow {
                     label: "Auto-hide"
                     detail: "Hide the dock while the workspace has tiled windows (floating ones leave it open, except in floating windows mode); push the pointer to the bottom edge to show it"
                     key: "dockAutoHide"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Media controls"
+                    detail: "After the Apps button while something's playing: its album art, with Previous, Play/Pause and Next under the pointer; right-click for them all"
+                    key: "dockShowMedia"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Wastebasket"
+                    detail: "At the end of the dock, filled when there's something in it: click to open it, right-click to empty it"
+                    key: "dockShowTrash"
                 }
             }
             GroupLabel { text: "Icons" }
