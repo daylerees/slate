@@ -2439,7 +2439,9 @@ FloatingWindow {
                 SettingRow {
                     label: "Preview"
                     detail: "Shows it now; any key, click or pointer move puts it away (it doesn't lock)"
-                    Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "screensaver", "start"]); } }
+                    // Settings stays open beneath it (the screensaver covers every window), so it's
+                    // still here when the preview ends
+                    Button { label: "Preview"; onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "screensaver", "start"]) }
                 }
             }
         }
