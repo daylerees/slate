@@ -71,6 +71,14 @@ class Session:
     _shared = None
 
     @classmethod
+    def stop_shared(cls):
+        """Stop the run's shared session, before starting one of a different kind: where a
+        session gets the vkms card to itself (CI), a second one at the same time can't use it."""
+        if cls._shared is not None:
+            cls._shared.stop()
+            cls._shared = None
+
+    @classmethod
     def shared(cls):
         """The run's one session, started on first use. Skips the test outside the container."""
         if not in_container():
@@ -110,8 +118,9 @@ class Session:
         self._write(os.path.join(hypr, "env.lua"),
                     "".join(f'hl.env("{k}", "{v}")\n' for k, v in envs.items() if v))
         # One headless output, the size under test; the vkms screen itself is switched off
+        # (Virtual-1 here, Virtual-2 on GitHub's runners: every number it might have)
         self._write(os.path.join(hypr, "monitors.lua"),
-                    'hl.monitor({ output = "Virtual-1", disabled = true })\n'
+                    "".join(f'hl.monitor({{ output = "Virtual-{n}", disabled = true }})\n' for n in range(1, 9)) +
                     f'hl.monitor({{ output = "{OUTPUT}", mode = "{self.width}x{self.height}@60", position = "0x0", scale = 1 }})\n')
         self._write(os.path.join(hypr, "autostart.lua"),
                     'hl.on("hyprland.start", function () hl.exec_cmd("hyprctl output create headless '

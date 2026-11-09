@@ -15,6 +15,7 @@ class SmallScreen(LiveCase):
     def setUpClass(cls):
         if not in_container():
             raise unittest.SkipTest("live tests run in the test container")
+        Session.stop_shared()
         cls.s = Session(width=853, height=480)
         atexit.register(cls.s.stop)
         cls.s.start()

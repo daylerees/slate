@@ -30,6 +30,7 @@ class Visual(LiveCase):
         if not in_container():
             raise unittest.SkipTest("screenshots are taken in the test container only (software rendering)")
         # A fresh session of its own: nothing left open or changed by the live tests
+        Session.stop_shared()
         cls.s = Session()
         atexit.register(cls.s.stop)
         cls.s.start()
