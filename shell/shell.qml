@@ -199,7 +199,7 @@ ShellRoot {
     }
     Process { id: folderRun }
 
-    // Apps switched on in Settings → Appearance → App theming follow Slate's theme:
+    // Apps switched on in Settings → Appearance → App Theming follow Slate's theme:
     // scripts/apply-theme.py writes their themes from these colours, a moment after a change
     readonly property string themeJson: JSON.stringify({
         accent: Config.accent.toString(), accentText: Config.tint("#12151a").toString(),
@@ -218,7 +218,7 @@ ShellRoot {
         themeProc.running = true;
     }
     Process { id: themeProc }
-    // Settings → App theming → Refresh: write every switched-on app's theme again now
+    // Settings → App Theming → Refresh: write every switched-on app's theme again now
     Binding { target: Config; property: "themesBusy"; value: themeProc.running }
     Connections { target: Config; function onRefreshThemes() { themeApply.stop(); root.applyThemes(); } }
 
@@ -328,7 +328,7 @@ ShellRoot {
     Welcome { bar: topBar }
     // New releases: checked daily, a notification when one's out (Settings → Updates)
     readonly property bool updateAvailable: Updates.available
-    // A space's colour and icon on the windows it opened (Settings → Menu bar → Mark windows from a space)
+    // A space's colour and icon on the windows it opened (Settings → Menu Bar → Mark windows from a space)
     SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
 
     PanelWindow {

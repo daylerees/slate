@@ -369,7 +369,7 @@ hl.bind(mainMod .. " + Return", function()
     if slateOverlayOpen("slate-launcher") then hl.exec_cmd(slate("launcher launchOnNewWorkspace")); return end
     hl.exec_cmd(launchPrefix .. TERMINAL)
 end)
--- The apps are read when pressed, so Settings → Default apps applies straight away
+-- The apps are read when pressed, so Settings → Default Apps applies straight away
 hl.bind(mainMod .. " + E",          function() hl.exec_cmd(launchPrefix .. FILE_MANAGER) end)
 hl.bind(mainMod .. " + T",          function() hl.exec_cmd(launchPrefix .. EDITOR) end)
 hl.bind(mainMod .. " + C",          function() hl.exec_cmd(launchPrefix .. CALCULATOR) end)

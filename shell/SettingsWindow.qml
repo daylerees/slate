@@ -219,18 +219,18 @@ FloatingWindow {
         { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
         { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
-        { id: "bar", label: "Menu bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
+        { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
         { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
         { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
         { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
-        { id: "hotcorners", label: "Hot corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
-        { id: "lock", label: "Lock & idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
+        { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
+        { id: "lock", label: "Lock & Idle", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
         { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper or a slideshow while you're away" },
         { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
-        { id: "apps", label: "Default apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
-        { id: "startup", label: "Startup apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
+        { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
+        { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
         { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
-        { id: "apptheming", label: "App theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
+        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
@@ -1601,7 +1601,7 @@ FloatingWindow {
         id: barPage
         Column {
             spacing: 4
-            PageTitle { text: "Menu bar" }
+            PageTitle { text: "Menu Bar" }
             Group {
                 SettingRow {
                     label: "Position"
@@ -1829,7 +1829,7 @@ FloatingWindow {
                 color: win.dim; font.family: win.font; font.pixelSize: 13
                 wrapMode: Text.Wrap; leftPadding: 4; bottomPadding: 6
             }
-            GroupLabel { text: "Menu bar" }
+            GroupLabel { text: "Menu Bar" }
             Group {
                 SettingRow {
                     label: "Spaces button"
@@ -2696,7 +2696,7 @@ FloatingWindow {
         Column {
             id: dap
             spacing: 4
-            PageTitle { text: "Default apps" }
+            PageTitle { text: "Default Apps" }
             readonly property var all: DesktopEntries.applications.values.filter(e => !e.noDisplay)
                 .slice().sort((a, b) => a.name.localeCompare(b.name))
             // Apps of a kind (by their categories), or every app if none say so
@@ -2770,7 +2770,7 @@ FloatingWindow {
         Column {
             id: stp
             spacing: 4
-            PageTitle { text: "Startup apps" }
+            PageTitle { text: "Startup Apps" }
             readonly property var all: DesktopEntries.applications.values.filter(e => !e.noDisplay)
                 .slice().sort((a, b) => a.name.localeCompare(b.name))
             Group {
@@ -3785,7 +3785,7 @@ FloatingWindow {
             GroupLabel { text: "Other apps" }
             Group {
                 SettingRow {
-                    label: "App theming"
+                    label: "App Theming"
                     readonly property int count: (Config.s.themedApps || []).length
                     detail: "Terminals, editors, GTK, Qt and more following Slate's colours and accent · "
                         + (count === 0 ? "none switched on" : count + (count === 1 ? " app" : " apps") + " themed")
@@ -4050,7 +4050,7 @@ FloatingWindow {
         id: appThemingPage
         Column {
             spacing: 4
-            PageTitle { text: "App theming" }
+            PageTitle { text: "App Theming" }
             Group {
                 id: appTheming
                 // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail, installed}]
@@ -4242,7 +4242,7 @@ FloatingWindow {
             id: lockCol
             spacing: 4
             readonly property var minutes: [0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60].map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") }))
-            PageTitle { text: "Lock & idle" }
+            PageTitle { text: "Lock & Idle" }
             Group {
                 SettingRow {
                     label: "Lock screen"
@@ -4344,7 +4344,7 @@ FloatingWindow {
                 { value: "notifications", label: "Notifications" },
                 { value: "screenoff", label: "Turn screen off" }
             ]
-            PageTitle { text: "Hot corners" }
+            PageTitle { text: "Hot Corners" }
             Text {
                 width: Math.min(parent.width, win.introMeasure)
                 text: "Rest the pointer in a corner of the screen to run an action."

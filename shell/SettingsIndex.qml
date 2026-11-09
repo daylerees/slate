@@ -18,8 +18,8 @@ Singleton {
         startup: 0xEC45, datetime: 0xEA70, screenshots: 0xF201, general: 0xEB20, appearance: 0xEB01, bar: 0xEAD7, dock: 0xEAD3, launcher: 0xEB1C, spaces: 0xEEF6,
         windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, workspaces: 0xEDBA, lock: 0xEAE2, debug: 0xEA48, screensaver: 0xEAF8, apptheming: 0xEB01, updates: 0xEA96, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
     readonly property var pageNames: ({ overview: "All Settings", input: "Keyboard & Mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
-        apps: "Default apps", startup: "Startup apps", datetime: "Date & Time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
-        windows: "Windows", displays: "Displays", hotcorners: "Hot corners", notifications: "Notifications", workspaces: "Workspaces", lock: "Lock & idle", debug: "Debug", screensaver: "Screensaver", apptheming: "App theming", updates: "Updates", wifi: "Wi-Fi",
+        apps: "Default Apps", startup: "Startup Apps", datetime: "Date & Time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu Bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
+        windows: "Windows", displays: "Displays", hotcorners: "Hot Corners", notifications: "Notifications", workspaces: "Workspaces", lock: "Lock & Idle", debug: "Debug", screensaver: "Screensaver", apptheming: "App Theming", updates: "Updates", wifi: "Wi-Fi",
         bluetooth: "Bluetooth", about: "About" })
     readonly property var curated: [
         // [name, page, extra search words]
@@ -28,7 +28,7 @@ Singleton {
         ["Theme presets", "appearance", "preset look style liquid glass theme colours glass"],
         ["Debug", "debug", "troubleshooting troubleshoot fix problems resync sync login screen greeter"],
         ["Screensaver", "screensaver", "screen saver idle clock slideshow away burn-in oled"],
-        ["App theming", "apptheming", "theme other apps colours colors dark light accent gtk qt kde terminal editor"],
+        ["App Theming", "apptheming", "theme other apps colours colors dark light accent gtk qt kde terminal editor"],
         ["Theme other apps", "apptheming", "app theming colours colors match follow"],
         ["Welcome", "about", "welcome introduction tour first start getting started setup onboarding"],
         ["Glass", "appearance", "glass glassy liquid frosted translucent transparent see-through blur acrylic"],
@@ -79,8 +79,8 @@ Singleton {
         ["Volume percentage", "bar", "values text beside icons volume number"],
         ["Battery percentage", "bar", "values text beside icons battery number"],
         ["Shortcuts", "shortcuts", "keyboard shortcuts keybinds hotkeys keys"],
-        ["Default apps", "apps", "terminal browser file manager editor calculator default applications"],
-        ["Startup apps", "startup", "autostart login start open at login"],
+        ["Default Apps", "apps", "terminal browser file manager editor calculator default applications"],
+        ["Startup Apps", "startup", "autostart login start open at login"],
         ["Date & Time", "datetime", "time zone timezone clock ntp automatic"],
         ["Time zone", "datetime", "timezone region clock"],
         ["Screenshots", "screenshots", "screenshot print screen capture folder"],
@@ -88,7 +88,7 @@ Singleton {
         ["Focus follows the pointer", "windows", "focus follows mouse click to focus hover"],
         ["Wallpaper", "appearance", "background picture image desktop"],
         ["Change wallpaper", "appearance", "automatically rotate shuffle slideshow timer login cycle background theme"],
-        ["Menu bar", "bar", "top bar panel status"],
+        ["Menu Bar", "bar", "top bar panel status"],
         ["Clock format", "bar", "time 24 hour 12 hour seconds date"],
         ["Bar items", "bar", "tray battery wifi volume notifications power show hide"],
         ["Dock", "dock", "pinned apps magnification icon size auto-hide"],
@@ -114,7 +114,7 @@ Singleton {
         ["Workspaces", "workspaces", "workspace switching animation slide fade crossfade wrap around empty overview indicators dots"],
         ["Workspace switching", "workspaces", "animation slide fade crossfade vertical transition effect"],
         ["Workspaces wrap around", "workspaces", "circular loop cycle last first ends"],
-        ["Hot corners", "hotcorners", "screen corners actions"],
+        ["Hot Corners", "hotcorners", "screen corners actions"],
         ["Notifications", "notifications", "pop-ups toasts position do not disturb history"],
         ["Lock screen", "lock", "password lock"],
         ["Idle and sleep", "lock", "screen off suspend sleep idle timeout"],
@@ -146,7 +146,7 @@ Singleton {
     readonly property var entries: {
         const out = [], byKey = {};
         for (const a of themeApps)
-            out.push({ label: a.label, page: "apptheming", detail: a.detail || "", group: "App theming",
+            out.push({ label: a.label, page: "apptheming", detail: a.detail || "", group: "App Theming",
                        words: "theme colours colors " + a.id + (a.installed ? "" : " not installed"), row: true });
         for (const r of rows) {
             const e = { label: r.label, page: r.page, detail: r.detail || "", group: r.group || "", words: "", row: true };
@@ -161,7 +161,7 @@ Singleton {
         return out;
     }
 
-    // Ignore case and punctuation, so "wifi" finds "Wi-Fi" and "and idle" finds "Lock & idle"
+    // Ignore case and punctuation, so "wifi" finds "Wi-Fi" and "and idle" finds "Lock & Idle"
     function norm(t) { return (t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim(); }
     // Best matches first: the label starting with it, then a word in the label, then
     // anywhere in the label, then its heading, page, extra words or description

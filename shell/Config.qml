@@ -246,7 +246,7 @@ Singleton {
         onExited: code => { if (code === 0) loginSettle.start(); }
     }
     Timer { id: loginSettle; interval: 2500; onTriggered: root.atLogin() }
-    // Startup apps (Settings → Startup apps)
+    // Startup apps (Settings → Startup Apps)
     onAtLogin: {
         for (const id of (s.startupApps || [])) {
             const e = DesktopEntries.byId(id);
@@ -463,7 +463,7 @@ Singleton {
     Process { id: keysetProc; onExited: root.keysetApplied() }
 
     // ---- Window rounding -----------------------------------------------------------
-    // App theming (scripts/apply-theme.py, run by shell.qml): Settings → App theming → Refresh
+    // App theming (scripts/apply-theme.py, run by shell.qml): Settings → App Theming → Refresh
     // asks for every switched-on app's theme to be written again
     signal refreshThemes()
     property bool themesBusy: false

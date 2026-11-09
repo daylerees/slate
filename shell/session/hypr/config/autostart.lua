@@ -1,5 +1,5 @@
 -- Started with the Slate session. Your own startup commands go in ~/.config/slate/hypr/autostart.lua
--- (or Settings → Startup apps)
+-- (or Settings → Startup Apps)
 
 hl.on("hyprland.start", function ()
     hl.exec_cmd("dbus-update-activation-environment --systemd --all")

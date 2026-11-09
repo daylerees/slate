@@ -1,7 +1,7 @@
 // Space badges: a window opened from a space (Spaces.qml) gets a 3 px border along its top
 // in the space's colour, and wears the space's icon in its top left corner. When the pointer comes near, the badge fades across to the top
 // right corner, out of the way; it goes back once focus moves to another window.
-// Settings → Menu bar → Mark windows from a space.
+// Settings → Menu Bar → Mark windows from a space.
 //
 // scripts/spaces.py notes which windows it opened for which space (by Hyprland's stable
 // window id, which isn't reused like addresses are). Each badge sits in a surface of its

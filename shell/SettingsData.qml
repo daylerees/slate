@@ -64,7 +64,7 @@ JsonAdapter {
     property string colourStyle: "monotone"
     // How switching workspace looks: slidefade, slidefadevert, slide, slidevert, crossfade or none
     property string workspaceAnimation: "slidefade"
-    // ---- Default apps (Settings → Default apps): desktop entry ids ("" = not set here)
+    // ---- Default apps (Settings → Default Apps): desktop entry ids ("" = not set here)
     property string defaultTerminal: ""
     property string defaultBrowser: ""
     property string defaultFileManager: ""
@@ -77,7 +77,7 @@ JsonAdapter {
     property string profileOnAC: ""
     // ---- Sound, startup, screenshots
     property int soundEffectsVolume: 100      // %, Slate's own sounds (the volume tick)
-    property var themedApps: []               // Appearance → App theming: app ids that follow Slate's colours (none until switched on)
+    property var themedApps: []               // Appearance → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login
     property string screenshotFolder: ""      // "" = ~/Pictures/Screenshots
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)
@@ -96,7 +96,7 @@ JsonAdapter {
     property string dockPosition: "bottom"    // bottom, top, left or right (never the bar's edge)
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: true  // describe hovered items in the title area
-    // What the bar shows (Settings → Menu bar)
+    // What the bar shows (Settings → Menu Bar)
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
     // Spaces (Settings → Spaces): how windows opened from a space are marked

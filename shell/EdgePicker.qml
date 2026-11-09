@@ -1,4 +1,4 @@
-// A small screen to pick an edge for the menu bar or dock (Settings → Menu bar / Dock):
+// A small screen to pick an edge for the menu bar or dock (Settings → Menu Bar / Dock):
 // click an edge; the chosen one is in the accent. bar: true draws the edges as full-length
 // bars, false as short dock-like pills.
 

@@ -65,7 +65,7 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             text: "Slate's login screen couldn't start, so this basic one is standing in. "
-                + "Log in as usual, then update the login screen from Settings → Lock & idle."
+                + "Log in as usual, then update the login screen from Settings → Lock & Idle."
             color: box.dim
             font.pixelSize: 13
         }

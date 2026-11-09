@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply Slate's colours to other apps (Settings → App theming): GTK, Qt, KDE,
+"""Apply Slate's colours to other apps (Settings → App Theming): GTK, Qt, KDE,
 terminals (kitty, Alacritty, Ghostty, foot, WezTerm), editors (GNOME Text Editor, VS Code,
 Zed, Helix, Vim/Neovim), command-line tools (bat, fzf, Yazi, cava, zathura), Discord
 (Vencord), Spotify (Spicetify) and Firefox. The apps themselves are in slate_apps.py.

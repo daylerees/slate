@@ -25,7 +25,7 @@ the gloss sheen like the bar's containers and no outline.
   (`secure`), or after 4 s (logind's limit is 5 s). Wrapped in
   `setpriv --pdeathsig` so it never outlives Slate.
 - **Idle** (`IdleMonitor`): lock / screen off (`hl.dsp.dpms`) / suspend after the
-  times in Settings → Lock & idle; respects idle inhibitors (video) if enabled.
+  times in Settings → Lock & Idle; respects idle inhibitors (video) if enabled.
   Slate's own idle suspend locks first and waits for `secure`.
 - **Crash safety:** if Slate dies while locked, Hyprland stays locked. Recover from a
   text console (Ctrl+Alt+F3): `slate restart` (or `~/.config/slate/bin/slate restart`) — `allow_session_lock_restore`
@@ -58,7 +58,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 - **Updating the code:** when the login screen's code changes, Slate shows a notification
   ("Login screen out of date") with an **Update** button that asks for your password
   (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
-  code; "Later" waits for the next change. Settings → Lock & idle has the same Update button.
+  code; "Later" waits for the next change. Settings → Lock & Idle has the same Update button.
   Files are read with your own permissions, not root's.
 - **Safety net**, so a broken update never leaves anyone at a text console:
   1. **Tested before it's installed.** `slate-greeter-install` test-loads the new copy with
@@ -77,7 +77,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
      copy started.
 - The greeter can't read your home folder, hence the copies. Code is root-owned; the
   user-owned folder holds only data (images, fonts, setting values).
-- Settings → Lock & idle → "Slate login screen" shows whether the installed code
+- Settings → Lock & Idle → "Slate login screen" shows whether the installed code
   matches yours (`slate-greeter-sync --check`) and offers Preview / Sync now.
 - Default session: the last one chosen on the login screen, else the one you were
   using at the last sync (uwsm-managed or plain Hyprland).
@@ -86,7 +86,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 ### If the login screen doesn't come up
 
 The fallbacks above should cover this; if you see the emergency login screen, log in and
-update the login screen from Settings → Lock & idle. If even that fails:
+update the login screen from Settings → Lock & Idle. If even that fails:
 
 1. Ctrl+Alt+F3, log in on the text console.
 2. `sudo ~/.config/slate/bin/slate-greeter-install --revert` (restores the previous greeter).

@@ -1,6 +1,6 @@
 -- Apps to start with the Slate session: ~/.config/slate/hypr/autostart.lua
 --
--- Settings → Startup apps is the easy way; this file is for commands. They run once when
+-- Settings → Startup Apps is the easy way; this file is for commands. They run once when
 -- you log in (not again when the config reloads), so saving this file doesn't start them
 -- twice; changes apply from your next login. If something in it is wrong, Slate shows the
 -- error in a notification.

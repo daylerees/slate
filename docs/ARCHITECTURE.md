@@ -233,7 +233,7 @@ Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon 
 Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down),
 `scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming and the code font — fontconfig's "monospace",
 GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when the theme, accent, code font or the
-apps switched on in Settings → App theming change). The apps live in `scripts/slate_apps.py`
+apps switched on in Settings → App Theming change). The apps live in `scripts/slate_apps.py`
 (one function each, all off until switched on); `scripts/slate_theme.py` makes every change through an
 undo log (`~/.local/state/slate/app-theming.json`) so switching an app off puts its config back, and backs
 config files up once (`.bak-slate-theme`). Open apps reload live where they can: kitty SIGUSR1, Ghostty

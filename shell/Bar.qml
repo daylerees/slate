@@ -1,6 +1,6 @@
 // Slate's menu bar: workspaces, the focused window's title, tray, status, clock and power.
 //
-// Auto-hide (Settings → Menu bar): while hidden the bar reserves no space, so windows use
+// Auto-hide (Settings → Menu Bar): while hidden the bar reserves no space, so windows use
 // the whole screen; pushing the pointer against the bar's screen edge slides it in and moves
 // the windows aside to make room, and it slides away again shortly after the pointer leaves
 // (it stays while one of its panels is open). `slate ipc call bar reveal` shows it for a few
@@ -75,7 +75,7 @@ PanelWindow {
     function glyph(code) { return String.fromCodePoint(code); }
 
     // ---- Window ------------------------------------------------------------
-    // Which screen edge (Settings → Menu bar → Position). Laid out for the top; at the bottom
+    // Which screen edge (Settings → Menu Bar → Position). Laid out for the top; at the bottom
     // the curves and corners flip, and on a side the groups stack top to bottom, the status
     // icons drop their text, the clock stacks and the window title is turned to run along it.
     readonly property string side: Config.barEdge
@@ -578,7 +578,7 @@ PanelWindow {
                     Behavior on color { ColorAnimation { duration: 200 } }
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
-                    // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu bar)
+                    // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu Bar)
                     visible: !titleArea.s && !!focusedTop && Config.s.barShowTitleIcon
                     length: bar.capsuleHeight
                     hoverTint: false
@@ -678,7 +678,7 @@ PanelWindow {
                 width: childrenRect.width; height: childrenRect.height
             }
 
-            // Tray. Collapsed (Settings → Menu bar): one button that opens to show the icons, and
+            // Tray. Collapsed (Settings → Menu Bar): one button that opens to show the icons, and
             // closes again a few seconds after the pointer leaves (or when clicked)
             Capsule {
                 id: trayCapsule
@@ -791,7 +791,7 @@ PanelWindow {
             Capsule {
                 id: status
                 hoverTint: false
-                // Which sections are shown (Settings → Menu bar); the rounded hover ends and
+                // Which sections are shown (Settings → Menu Bar); the rounded hover ends and
                 // separators follow whichever are visible
                 readonly property bool hasBell: Config.s.barShowNotifications
                 readonly property bool hasClip: Config.s.barShowClipboard

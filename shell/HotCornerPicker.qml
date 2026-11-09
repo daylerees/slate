@@ -1,4 +1,4 @@
-// Settings → Hot corners: a small screen with what each corner does, as an icon and name
+// Settings → Hot Corners: a small screen with what each corner does, as an icon and name
 // (in the accent when it does something). Click a corner to choose it; the page's action
 // list below then sets it.
 

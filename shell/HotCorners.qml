@@ -1,5 +1,5 @@
 // Hot corners: rest the pointer in a screen corner to trigger an action.
-// Each corner's action and the delay are set in Settings → Hot corners.
+// Each corner's action and the delay are set in Settings → Hot Corners.
 
 import QtQuick
 import Quickshell

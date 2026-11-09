@@ -401,7 +401,7 @@ PanelWindow {
                         width: parent.width
                         spacing: 16
                         Repeater {
-                            model: [{ bar: true, title: "Menu bar", detail: "Apps, workspaces, the window title, status icons and the clock" },
+                            model: [{ bar: true, title: "Menu Bar", detail: "Apps, workspaces, the window title, status icons and the clock" },
                                     { bar: false, title: "Dock", detail: "Your favourite and open apps" }]
                             delegate: Rectangle {
                                 id: edgeCard
