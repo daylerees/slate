@@ -685,11 +685,8 @@ ShellRoot {
             readonly property bool isPinned: app && app.key ? win.pinned.includes(app.key) : false
 
             // x: the icon's centre along the dock (strip coordinates)
-            // The wastebasket's Empty asks once more, in the menu itself, before anything goes
-            property bool confirmEmpty: false
             function openFor(a, x) {
                 app = a;
-                confirmEmpty = false;
                 // A little off the dock: room for the menu's pointer
                 const p = strip.mapToItem(win.contentItem, x, bg.y - 16);
                 const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
@@ -697,7 +694,7 @@ ShellRoot {
                 menuY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
                 visible = true;
             }
-            function closeMenu() { visible = false; confirmEmpty = false; }
+            function closeMenu() { visible = false; }
 
             // Rows: open windows, the app's own actions, then New Window / Pin / Quit. For the
             // launcher button: Settings and a few of the places most often wanted in it
@@ -720,7 +717,7 @@ ShellRoot {
                     r.push({ label: "Open", kind: "trash-open" });
                     if (win.trashCount > 0) {
                         r.push({ kind: "sep" });
-                        r.push({ label: confirmEmpty ? "Empty for good? It can't be undone" : "Empty Wastebasket…", kind: "trash-empty", danger: true });
+                        r.push({ label: "Empty Wastebasket…", kind: "trash-empty", danger: true });
                     }
                     return r;
                 }
@@ -771,11 +768,16 @@ ShellRoot {
                 case "media-next": if (win.player) win.player.next(); break;
                 case "media-previous": if (win.player) win.player.previous(); break;
                 case "media-raise": if (win.player) win.player.raise(); break;
-                case "trash-empty":
-                    // First click: ask (the menu stays open); second: empty it
-                    if (!confirmEmpty) { confirmEmpty = true; Config.attention(); return; }
-                    win.emptyTrash();
+                case "trash-empty": {
+                    // Asks first, in the same confirmation window as shutting down and the rest
+                    const n = win.trashCount;
+                    powerConfirm.confirmWith({
+                        title: "Empty the wastebasket?",
+                        body: (n === 1 ? "The item in it is" : "The " + n + " items in it are") + " deleted for good. This can't be undone.",
+                        button: "Empty", code: 0xEB41, danger: true
+                    }, () => win.emptyTrash());
                     break;
+                }
                 }
                 closeMenu();
             }
