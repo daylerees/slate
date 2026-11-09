@@ -17,6 +17,7 @@ Every change Slate makes to an app's config is recorded in
   command   a command that sets something, with the command that sets it back
 Config files are also backed up once (<file>.bak-slate-theme) before Slate first edits them.
 """
+import colorsys
 import json
 import os
 import re
@@ -47,6 +48,35 @@ def mix(a, b, t):
     a, b = rgb(a), rgb(b)
     return hexc(tuple(a[i] + (b[i] - a[i]) * t for i in range(3)))
 
+def luminance(h):
+    v = [x / 255 for x in rgb(h)]
+    v = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in v]
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+
+def contrast(a, b):
+    x, y = sorted((luminance(a), luminance(b)), reverse=True)
+    return (x + 0.05) / (y + 0.05)
+
+def readable(h, bg, ratio=4.5):
+    """h, darkened (on a light bg) or lightened (on a dark bg) just enough to reach ratio"""
+    if contrast(h, bg) >= ratio:
+        return h
+    toward = "#000000" if luminance(bg) > 0.18 else "#ffffff"
+    lo, hi = 0.0, 1.0
+    for _ in range(20):
+        mid = (lo + hi) / 2
+        if contrast(mix(h, toward, mid), bg) >= ratio:
+            hi = mid
+        else:
+            lo = mid
+    return mix(h, toward, hi)
+
+def ink(h):
+    """A pastel turned into a clear, saturated colour for light backgrounds (same hue)"""
+    r, g, b = (x / 255 for x in rgb(h))
+    hue, _, sat = colorsys.rgb_to_hls(r, g, b)
+    return hexc(tuple(x * 255 for x in colorsys.hls_to_rgb(hue, 0.36, max(sat, 0.6))))
+
 def bare(h):
     return h.lstrip("#")
 
@@ -57,12 +87,13 @@ def palette(p):
     c["light"] = light
     c["onVariant"] = mix(text, dim, 0.4)              # secondary text
     c["secondary"] = mix(acc, dim, 0.45)              # links, mid gradient stops
-    # Colours that aren't part of Slate's palette, deepened in light mode so they read
-    deep = (lambda h: mix(h, "#000000", 0.4)) if light else (lambda h: h)
+    # Colours that aren't part of Slate's palette: saturated inks in light mode, and always
+    # readable as text on the background (WCAG 4.5:1)
+    deep = (lambda h: readable(ink(h), bg)) if light else (lambda h: readable(h, bg))
     c["tertiary"] = deep("#7fc4c0")                  # positive / neutral / warning
     c["green"], c["yellow"], c["magenta"] = deep("#a6d3a0"), deep("#e6cf8e"), deep("#c3a6e6")
     c["orange"] = deep("#e8b48f")
-    c["red"] = p["error"]
+    c["red"] = readable(p["error"], bg)
     c["between"] = mix(bg, surf, 0.5)                 # alternate rows
     c["selection"] = mix(surf, acc, 0.22)             # Qt highlight, KDE window alt
     c["selectedBg"] = mix(surf, acc, 0.1)
@@ -74,23 +105,26 @@ def palette(p):
     c["onPositive"] = mix(surf, c["tertiary"], 0.25)
     c["currentLine"] = mix(bg, surf, 0.55)
     # Terminal ANSI colours
+    # Programs print "white" as ordinary text, so on a light background it has to be a grey
+    # that still reads (as in GitHub Light, Tokyo Night Day), not a near-background tint
     if light:
-        c["black"], c["brightBlack"] = mix(text, bg, 0.1), dim
-        c["white"], c["brightWhite"] = mix(bg, text, 0.25), mix(bg, text, 0.12)
-        bright = lambda h: mix(h, "#000000", 0.2)
+        c["black"], c["brightBlack"] = mix(text, bg, 0.1), readable(dim, bg, 3.5)
+        c["white"] = readable(mix(text, bg, 0.45), bg, 4.5)
+        c["brightWhite"] = readable(mix(text, bg, 0.6), bg, 3.0)
+        bright = lambda h: readable(mix(h, "#000000", 0.2), bg)
     else:
-        c["black"], c["brightBlack"] = mix(bg, surf, 0.78), mix(bg, dim, 0.6)
+        c["black"], c["brightBlack"] = mix(bg, surf, 0.78), readable(mix(bg, dim, 0.6), bg, 3.0)
         c["white"] = c["brightWhite"] = text
-        bright = lambda h: mix(h, "#ffffff", 0.22)
-    c["blue"] = acc
+        bright = lambda h: readable(mix(h, "#ffffff", 0.22), bg)
+    c["blue"] = readable(acc, bg)
     c["ansi"] = [c["black"], c["red"], c["green"], c["yellow"], c["blue"], c["magenta"], c["tertiary"], c["white"]]
     c["ansiBright"] = [c["brightBlack"]] + [bright(h) for h in c["ansi"][1:7]] + [c["brightWhite"]]
     # Code: the same roles in every editor
-    c["syn"] = {"comment": dim, "keyword": acc, "string": c["green"], "number": c["magenta"],
+    c["syn"] = {"comment": readable(dim, bg, 3.5), "keyword": c["blue"], "string": c["green"], "number": c["magenta"],
                 "constant": c["magenta"], "function": c["tertiary"], "type": c["yellow"],
                 "variable": text, "property": mix(text, acc, 0.35), "operator": c["onVariant"],
-                "punctuation": c["onVariant"], "tag": acc, "attribute": c["yellow"],
-                "heading": acc, "link": acc, "escape": c["orange"], "error": c["red"]}
+                "punctuation": c["onVariant"], "tag": c["blue"], "attribute": c["yellow"],
+                "heading": c["blue"], "link": c["blue"], "escape": c["orange"], "error": c["red"]}
     return c
 
 

@@ -236,6 +236,12 @@ def kitty(ctx):
               "inactive_tab_foreground %s" % c["onVariant"],
               "inactive_tab_background %s" % c["surface"],
               "cursor_trail_color      %s" % c["onVariant"]]
+    if c["light"]:
+        # A see-through light background lets the wallpaper turn it mid-grey, and kitty's
+        # default 40% "dim" text then all but vanishes: keep it nearly solid, dim text firmer
+        lines += ["",
+                  "background_opacity      0.92",
+                  "dim_opacity             0.7"]
     ctx.file(cfg("kitty", "themes", "slate.conf"), "\n".join(lines) + "\n")
     conf = cfg("kitty", "kitty.conf")
     ctx.start(conf, starting("kitty.conf"))
