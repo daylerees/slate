@@ -687,6 +687,7 @@ FloatingWindow {
         property string suffix: ""
         property int decimals: 0
         signal moved(real value)
+        signal released()          // let go of the slider (after moving it, or a click)
         spacing: 12
         Text {
             anchors.verticalCenter: parent.verticalCenter
@@ -743,6 +744,7 @@ FloatingWindow {
                 }
                 onPressed: m => set(m.x)
                 onPositionChanged: m => { if (pressed) set(m.x); }
+                onReleased: vs.released()
             }
         }
     }
@@ -3685,12 +3687,13 @@ FloatingWindow {
                     ValueSlider {
                         from: 75; to: 150; stepSize: 5; suffix: "%"
                         value: Math.round(Config.s.uiScale * 100)
-                        onMoved: v => { Config.s.uiScale = v / 100; scaleAsk.restart(); }
+                        onMoved: v => Config.s.uiScale = v / 100
+                        onReleased: scaleAsk.restart()
                     }
-                    // Once the slider settles, ask before restarting; Cancel goes back to the size in use
+                    // Once you let go, ask before restarting; Cancel goes back to the size in use
                     Timer {
                         id: scaleAsk
-                        interval: 700
+                        interval: 150
                         onTriggered: {
                             if (Math.abs(Config.s.uiScale - Config.uiScale) < 0.001) return;
                             win.ask = {
