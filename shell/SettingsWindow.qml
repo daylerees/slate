@@ -2252,7 +2252,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Auto-hide"
-                    detail: "Hide the dock while the workspace has windows; push the pointer to the bottom edge to show it"
+                    detail: "Hide the dock while the workspace has tiled windows (floating ones leave it open, except in floating windows mode); push the pointer to the bottom edge to show it"
                     key: "dockAutoHide"
                 }
             }

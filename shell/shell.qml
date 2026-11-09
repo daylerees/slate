@@ -546,7 +546,28 @@ ShellRoot {
         }
 
         // ---- Auto-hide -----------------------------------------------------
-        readonly property bool workspaceBusy: (Hyprland.focusedWorkspace?.toplevels?.values?.length ?? 0) > 0
+        // Something on the workspace the dock would cover: a tiled window. Floating ones don't
+        // count (the dock stays open over a workspace of just floating windows), except in
+        // floating windows mode, where every window floats. A window whose details Hyprland
+        // hasn't given yet counts as tiled, so the dock hides as it did before
+        readonly property bool workspaceBusy: {
+            const tops = Hyprland.focusedWorkspace?.toplevels?.values ?? [];
+            if (Config.floatingWindows) return tops.length > 0;
+            return tops.some(t => !(t.lastIpcObject && t.lastIpcObject.floating));
+        }
+        // Which windows float comes from Hyprland's window details: fetched again when a window
+        // opens, moves or changes floating (only while that matters to the dock)
+        Connections {
+            target: Hyprland
+            enabled: Config.s.dockAutoHide && !Config.floatingWindows
+            function onRawEvent(event) {
+                switch (event.name) {
+                case "openwindow": case "changefloatingmode": case "movewindow": case "movewindowv2":
+                    floatCheck.restart();
+                }
+            }
+        }
+        Timer { id: floatCheck; interval: 100; onTriggered: Hyprland.refreshToplevels() }
         property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible
         Timer { id: holdTimer; interval: win.hideDelay }
         readonly property real dockHeight: base + padding * 2
