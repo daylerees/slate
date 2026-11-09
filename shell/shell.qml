@@ -538,14 +538,29 @@ ShellRoot {
         readonly property bool mediaShown: Config.s.dockShowMedia && !!player && (player.trackTitle || "") !== ""
         readonly property int media: mediaShown ? 1 : 0       // how far it moves the apps along
         readonly property int mediaIndex: 1
-        // A click on it: Previous on its left third, Next on its right, Play/Pause between
+        // How many icons wide it is: along a bottom or top dock, a rectangle with the album art
+        // and the controls beside it; on a side dock, one icon (the controls show over the art
+        // under the pointer), as a wide tile doesn't fit there
+        readonly property real mediaWide: vertical ? 1 : 3.2
+        // A click on it. Wide: the art plays or pauses, then Previous / Play-Pause / Next in
+        // thirds of the rest. One icon: Previous on its left third, Next on its right
+        // Which part of it the pointer's on: "art" (wide), "previous", "toggle" or "next"
+        function mediaControlAt() {
+            const along = (pointerX - slotStart(mediaIndex)) / (mediaWide * base);    // 0 … 1 across it
+            if (mediaWide > 1) {
+                const art = 1 / mediaWide;                       // the art: a square at the start
+                if (along <= art) return "art";
+                const third = (along - art) / (1 - art);
+                return third < 1 / 3 ? "previous" : third > 2 / 3 ? "next" : "toggle";
+            }
+            return along < 1 / 3 ? "previous" : along > 2 / 3 ? "next" : "toggle";
+        }
         function mediaClick() {
             const p = player;
             if (!p) return;
-            const centre = mediaIndex * (base + spacing) + base / 2;
-            const along = (pointerX - centre) / base;           // -0.5 … 0.5 across the icon
-            if (along < -1 / 6) { if (p.canGoPrevious) p.previous(); }
-            else if (along > 1 / 6) { if (p.canGoNext) p.next(); }
+            const control = mediaControlAt();
+            if (control === "previous") { if (p.canGoPrevious) p.previous(); }
+            else if (control === "next") { if (p.canGoNext) p.next(); }
             else if (p.canTogglePlaying) p.togglePlaying();
         }
 
@@ -575,27 +590,34 @@ ShellRoot {
                 `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. " trash:///") end`]);
         }
         function emptyTrash() { Quickshell.execDetached(["gio", "trash", "--empty"]); }
-        readonly property real restWidth: count * base + (count - 1) * spacing
+        // Slots along the dock: each an icon wide, except what's playing (mediaWide). Where one
+        // starts at rest, and how wide it is in icons
+        function slotWidth(i) { return mediaShown && i === mediaIndex ? mediaWide : 1; }
+        function slotStart(i) { return i * (base + spacing) + (mediaShown && i > mediaIndex ? (mediaWide - 1) * base : 0); }
+        readonly property real restWidth: count * base + (count - 1) * spacing + (mediaShown ? (mediaWide - 1) * base : 0)
         property real pointerX: -1000                          // in rest-layout coordinates
         // Magnification stays frozen while the right-click menu is open
         property real hover: (mouse.containsMouse && shown) || appMenu.visible ? 1 : 0
         Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
         function scaleAt(i) {
-            const centre = i * (base + spacing) + base / 2;
-            const t = Math.abs(pointerX - centre) / (base * spread);
+            const w = slotWidth(i);
+            const centre = slotStart(i) + w * base / 2;
+            // (from its nearest edge, for a wide slot: it grows as soon as the pointer's on it)
+            const t = Math.max(0, Math.abs(pointerX - centre) - (w - 1) * base / 2) / (base * spread);
             const f = t >= 1 ? 0 : (Math.cos(Math.PI * t) + 1) / 2;
             return 1 + (maxScale - 1) * f * hover;
         }
         function cellX(i) {
             let x = 0;
-            for (let j = 0; j < i; j++) x += base * scaleAt(j) + spacing;
+            for (let j = 0; j < i; j++) x += base * slotWidth(j) * scaleAt(j) + spacing;
             return x;
         }
         readonly property int hoveredIndex: {
             if (hover <= 0) return -1;
-            const i = Math.floor((pointerX + spacing / 2) / (base + spacing));
-            return i >= 0 && i < count ? i : -1;
+            for (let i = 0; i < count; i++)
+                if (pointerX < slotStart(i) + slotWidth(i) * base + spacing / 2) return pointerX >= slotStart(i) - spacing / 2 ? i : -1;
+            return -1;
         }
 
         // ---- Auto-hide -----------------------------------------------------
@@ -635,7 +657,7 @@ ShellRoot {
             function menu(key: string): void {
                 const i = win.items.findIndex(it => it.key === key);
                 if (i < 0) return;
-                const x = (strip.width - win.restWidth) / 2 + (i + 1 + win.media) * (win.base + win.spacing) + win.base / 2;
+                const x = (strip.width - win.restWidth) / 2 + win.slotStart(i + 1 + win.media) + win.base / 2;
                 appMenu.openFor(win.items[i], x);
             }
             function closeMenu(): void { appMenu.closeMenu(); }
@@ -926,7 +948,7 @@ ShellRoot {
             }
             if (mediaShown && i === mediaIndex) {
                 // What's playing: the control under the pointer; right-click for them all
-                if (right) appMenu.openFor({ mediaMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+                if (right) appMenu.openFor({ mediaMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * slotWidth(i) * scaleAt(i) / 2);
                 else mediaClick();
                 return;
             }
@@ -1041,10 +1063,95 @@ ShellRoot {
                         visible: win.mediaShown
                         readonly property real s: win.scaleAt(win.mediaIndex)
                         readonly property bool pointed: win.hoveredIndex === win.mediaIndex && win.hover > 0.5 && !appMenu.visible
-                        width: win.base * s
+                        readonly property string under: pointed ? win.mediaControlAt() : ""
+                        width: win.base * win.mediaWide * s
                         height: row.height
+
+                        // Along a bottom or top dock: a rectangle, the album art at its start and the
+                        // controls beside it (the one under the pointer brighter)
+                        Item {
+                            id: mediaWideTile
+                            visible: win.mediaWide > 1
+                            anchors.bottom: parent.bottom
+                            width: parent.width; height: win.base * mediaCell.s
+                            readonly property real corner: Config.s.iconShape === "circle" ? height / 2
+                                : height * win.iconCorner / Math.max(1, win.base)
+                            readonly property bool hasArt: wideArt.status === Image.Ready
+                            // The art sits inside the tile, this far in from its edges, with corners
+                            // that follow the tile's (smaller by the same amount)
+                            readonly property real inset: Math.round(height * 0.12)
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: mediaWideTile.corner
+                                color: win.tileColor
+                                Gloss { radius: parent.radius; glassHint: true }   // glass: a sheen
+                            }
+                            // The art, cut to the tile's corners; a note on a faint square without it
+                            Item {
+                                id: wideArtBox
+                                x: mediaWideTile.inset; y: mediaWideTile.inset
+                                width: height; height: parent.height - mediaWideTile.inset * 2
+                                layer.enabled: true
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: wideArtMask }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    visible: !mediaWideTile.hasArt
+                                    color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.06)
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: String.fromCodePoint(0xEAFC)      // music
+                                        color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
+                                        font.family: "slate-tabler-icons"
+                                        font.pixelSize: Math.round(parent.height * 0.5)
+                                    }
+                                }
+                                Image {
+                                    id: wideArt
+                                    anchors.fill: parent
+                                    source: win.player ? (win.player.trackArtUrl || "") : ""
+                                    sourceSize: Qt.size(192, 192)
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    smooth: true; mipmap: true
+                                }
+                            }
+                            Item {
+                                id: wideArtMask
+                                anchors.fill: wideArtBox
+                                visible: false
+                                layer.enabled: true
+                                Rectangle { anchors.fill: parent; radius: Math.max(3, mediaWideTile.corner - mediaWideTile.inset) }
+                            }
+                            // Previous, Play/Pause, Next: evenly across the rest of the tile
+                            Row {
+                                anchors { left: wideArtBox.right; right: parent.right; rightMargin: mediaWideTile.inset; verticalCenter: parent.verticalCenter }
+                                Repeater {
+                                    model: [
+                                        { id: "previous", code: 0xF693, size: 0.34, on: !!win.player && win.player.canGoPrevious },
+                                        { id: "toggle", code: win.player && win.player.isPlaying ? 0xF690 : 0xF691, size: 0.42, on: !!win.player && win.player.canTogglePlaying },
+                                        { id: "next", code: 0xF694, size: 0.34, on: !!win.player && win.player.canGoNext }
+                                    ]
+                                    delegate: Item {
+                                        required property var modelData
+                                        width: parent.width / 3; height: mediaWideTile.height
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: String.fromCodePoint(parent.modelData.code)
+                                            color: win.textColor
+                                            opacity: !parent.modelData.on ? 0.3 : mediaCell.under === parent.modelData.id ? 1 : 0.75
+                                            Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
+                                            font.family: "slate-tabler-icons"
+                                            font.pixelSize: Math.round(mediaWideTile.height * parent.modelData.size)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // On a side dock: one icon, the controls over the art under the pointer
                         Item {
                             id: mediaTile
+                            visible: win.mediaWide === 1
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
                             transform: Matrix4x4 { matrix: win.upright(mediaTile.width, mediaTile.height) }
@@ -1248,13 +1355,14 @@ ShellRoot {
                         : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1 - win.media]
                             ? (win.items[win.hoveredIndex - 1 - win.media].entry?.name ?? win.items[win.hoveredIndex - 1 - win.media].key) : "")
                     readonly property real iconSize: win.hoveredIndex >= 0 ? win.base * win.scaleAt(win.hoveredIndex) : 0
+                    readonly property real slotLength: win.hoveredIndex >= 0 ? iconSize * win.slotWidth(win.hoveredIndex) : 0
                     visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible
                     width: labelText.implicitWidth + 16
                     height: labelText.implicitHeight + 8
                     radius: 6
                     color: win.bgColor
                     Gloss { radius: parent.radius }   // glass: a sheen
-                    x: row.x + win.cellX(Math.max(0, win.hoveredIndex)) + iconSize / 2 - width / 2
+                    x: row.x + win.cellX(Math.max(0, win.hoveredIndex)) + slotLength / 2 - width / 2
                     // On a side dock the label is turned upright, so its width runs across the strip
                     readonly property real across: win.vertical ? width : height
                     y: row.y + row.height - iconSize - 8 - across / 2 - height / 2
