@@ -439,13 +439,17 @@ PREVIEW_APPS = ["firefox", "org.mozilla.firefox", "chromium", "google-chrome", "
 
 
 def preview(out_dir, px):
-    """One installed app drawn in every shape, filled and whole: <shape>-fill.png, <shape>-whole.png."""
+    """One installed app drawn in every shape, filled and whole: <shape>-fill.png, <shape>-whole.png,
+    and its main colour (accent_colour) in colour.txt."""
     path = next((p for p in (icon_for(a) for a in PREVIEW_APPS) if p), None)
     os.makedirs(out_dir, exist_ok=True)
     for shape in SHAPES:
         for fill in (True, False):
             img = render_tile(path, px, shape, fill)
             img.save(os.path.join(out_dir, f"{shape}-{'fill' if fill else 'whole'}.png"), format="PNG")
+    # Its colour, for the preview of Tiles in the icon's colour
+    with open(os.path.join(out_dir, "colour.txt"), "w") as f:
+        f.write(accent_colour(render_tile(path, px, "original", False)) + "\n")
 
 
 def style(args):

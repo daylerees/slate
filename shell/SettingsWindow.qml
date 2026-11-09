@@ -4005,8 +4005,11 @@ FloatingWindow {
                 Process {
                     running: true
                     command: [Config.tileScript, "--preview", iconGroup.previewDir, "96"]
-                    onExited: iconGroup.previewVersion++
+                    onExited: { iconGroup.previewVersion++; previewColourFile.reload(); }
                 }
+                // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too
+                FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false }
+                readonly property var previewShade: { previewColourFile.text(); return Config.iconTileShadeOf(previewColourFile.text().trim()); }
                 SettingRow {
                     label: "Shape"
                     detail: "For app icons in the dock, launcher, switcher, bar and notifications"
@@ -4027,6 +4030,8 @@ FloatingWindow {
                             Gloss { radius: parent.radius; opacity: (on || shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: 100 } }
+                            // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
+                            // in the icon's colour, and Tint app icons (and its strength)
                             Image {
                                 anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 12 }
                                 width: 48; height: 48
@@ -4035,7 +4040,12 @@ FloatingWindow {
                                 source: iconGroup.previewVersion > 0
                                     ? "file://" + iconGroup.previewDir + "/" + shapeCard.modelData.value + (Config.s.iconFill ? "-fill" : "-whole") + ".png?v=" + iconGroup.previewVersion
                                     : ""
-                                IconPlate { anchors.fill: parent; z: -1; shape: shapeCard.modelData.value }
+                                layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
+                                IconPlate {
+                                    anchors.fill: parent; z: -1; shape: shapeCard.modelData.value
+                                    color: iconGroup.previewShade ?? Config.iconPlateColor
+                                    shaded: iconGroup.previewShade !== null
+                                }
                             }
                             Text {
                                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }

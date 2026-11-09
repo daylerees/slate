@@ -518,6 +518,11 @@ Singleton {
         if (!s.iconTileColour || s.iconFill || !app) return null;
         const hex = iconColours[app];
         if (!hex) { askIconColour(app); return null; }
+        return iconTileShadeOf(hex, solid);
+    }
+    // The shade for an icon whose main colour is `hex` (also Settings' preview of it)
+    function iconTileShadeOf(hex, solid) {
+        if (!s.iconTileColour || s.iconFill || !hex) return null;
         const c = Qt.color(hex);
         if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return null;
         const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
