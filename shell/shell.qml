@@ -69,7 +69,26 @@ ShellRoot {
     NightLight {}
     PolkitAgent {}          // password prompts for apps (pkexec, system settings…)
     Notifications { id: notifs; bar: topBar }
-    SettingsWindow { id: settingsWin; bar: topBar; notifs: notifs }
+    // Settings, built afresh whenever it's closed from outside Slate (Super+Q, a title bar's close
+    // button): after that the window couldn't be shown again until Slate reloaded
+    LazyLoader {
+        id: settingsLoader
+        active: true
+        SettingsWindow {
+            bar: topBar; notifs: notifs
+            onClosed: settingsRebuild.restart()
+        }
+    }
+    // Out here, not in the window: it has to outlive the window it replaces. Runs twice: the first
+    // time drops the old window, the second builds the new one
+    Timer {
+        id: settingsRebuild
+        interval: 0
+        onTriggered: {
+            if (settingsLoader.active) { settingsLoader.active = false; restart(); }
+            else settingsLoader.active = true;
+        }
+    }
     Variants {
         model: Quickshell.screens
         ScreenCorners { required property var modelData; screen: modelData; bar: topBar }
@@ -579,7 +598,7 @@ ShellRoot {
                 case "new": entry.execute(); break;
                 case "pin": win.setPinned(app.key, !isPinned); break;
                 case "quit": for (const w of wins) w.close(); break;
-                case "settings": settingsWin.goTo(row.target, row.find || ""); break;
+                case "settings": if (settingsLoader.item) settingsLoader.item.goTo(row.target, row.find || ""); break;
                 }
                 closeMenu();
             }
