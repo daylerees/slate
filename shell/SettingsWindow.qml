@@ -1771,6 +1771,7 @@ FloatingWindow {
                 command: ["getent", "passwd", Quickshell.env("USER")]
                 stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) generalCol.fullName = n; } }
             }
+            GroupLabel { text: "Account" }
             Group {
                 Item {
                     width: parent.width; height: 88
@@ -2055,6 +2056,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Menu Bar" }
+            GroupLabel { text: "Position & behaviour" }
             Group {
                 SettingRow {
                     label: "Position"
@@ -2259,6 +2261,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Dock" }
+            GroupLabel { text: "Position & behaviour" }
             Group {
                 SettingRow {
                     label: "Position"
@@ -2345,6 +2348,7 @@ FloatingWindow {
             readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30])
             PageTitle { text: "Screensaver" }
             IntroText { text: "Covers the screen while you're away, before the lock and screen-off times in Lock & idle. Any key, click or move of the pointer puts it away." }
+            GroupLabel { text: "Style & timing" }
             Group {
                 DropdownSetting {
                     label: "Start after"
@@ -2474,6 +2478,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Launcher" }
+            GroupLabel { text: "Layout" }
             Group {
                 SettingRow {
                     label: "Layout"
@@ -2820,7 +2825,7 @@ FloatingWindow {
                     }
                 }
             }
-            Item { width: 1; height: 6 }
+            GroupLabel { text: "Your layouts" }
             // The layouts in use, in their own container under Add a layout
             Group {
                 Repeater {
@@ -2840,7 +2845,7 @@ FloatingWindow {
                     }
                 }
             }
-            Item { width: 1; height: 6 }
+            GroupLabel { text: "Switching & keys" }
             Group {
                 DropdownSetting {
                     visible: inputPane.layouts.length > 1
@@ -3196,6 +3201,7 @@ FloatingWindow {
                 return Object.keys(g).sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)).map(k => ({ name: k, rows: g[k] }));
             }
 
+            GroupLabel { text: "Shortcut set" }
             // Which set of shortcuts (binds.lua); changing it reloads Hyprland's config
             Group {
                 DropdownSetting {
@@ -3288,6 +3294,7 @@ FloatingWindow {
                 return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "" }));
             }
             function nameOf(id) { const e = id ? DesktopEntries.byId(id) : null; return e ? e.name : ""; }
+            GroupLabel { text: "Apps" }
             Group {
                 SearchPicker {
                     label: "Terminal"
@@ -3351,6 +3358,7 @@ FloatingWindow {
             PageTitle { text: "Startup Apps" }
             readonly property var all: DesktopEntries.applications.values.filter(e => !e.noDisplay)
                 .slice().sort((a, b) => a.name.localeCompare(b.name))
+            GroupLabel { text: "At login" }
             Group {
                 SettingRow {
                     visible: (Config.s.startupApps || []).length === 0
@@ -3424,6 +3432,7 @@ FloatingWindow {
                 command: ["timedatectl", "list-timezones"]
                 stdout: StdioCollector { onStreamFinished: dateTimePane.zones = text.trim().split("\n").filter(z => z !== "").map(z => ({ value: z, label: z.replace(/_/g, " ") })) }
             }
+            GroupLabel { text: "Clock" }
             Group {
                 SettingRow {
                     label: Qt.formatDateTime(dateTimePane.now, "dddd d MMMM yyyy")
@@ -3466,6 +3475,7 @@ FloatingWindow {
             readonly property string home: Quickshell.env("HOME")
             readonly property string folder: Config.s.screenshotFolder || (home + "/Pictures/Screenshots")
             readonly property date example: new Date()
+            GroupLabel { text: "Saving" }
             Group {
                 DropdownSetting {
                     label: "After taking one"
@@ -3511,6 +3521,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Windows" }
+            GroupLabel { text: "Layout & borders" }
             Group {
                 // Floating mode and its title bars need hyprbars (Config.titleBarsAvailable)
                 SettingRow {
@@ -3667,6 +3678,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Workspaces" }
+            GroupLabel { text: "Switching" }
             Group {
                 DropdownSetting {
                     label: "Workspace switching"
@@ -3792,6 +3804,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Notifications" }
+            GroupLabel { text: "Do not disturb & sound" }
             Group {
                 SettingRow {
                     label: "Do not disturb"
@@ -3870,6 +3883,7 @@ FloatingWindow {
             function chooseFolder() { browseDir = folder; choosingFolder = true; }
 
             PageTitle { text: "Appearance" }
+            GroupLabel { text: "Preset" }
             // ---- Presets: theme, colour and glass in one go (asks first) --------------------
             Group {
                 DropdownSetting {
@@ -4667,6 +4681,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "App Theming" }
+            GroupLabel { text: "Apps" }
             Group {
                 id: appTheming
                 // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail, installed}]
@@ -4744,6 +4759,7 @@ FloatingWindow {
             Binding { target: wifiPane.dev; property: "scannerEnabled"; value: true; when: wifiPane.dev !== null && win.visible }
 
             PageTitle { text: "Wi-Fi" }
+            GroupLabel { text: "Status" }
             Group {
                 SettingRow {
                     label: "Wi-Fi"
@@ -4867,6 +4883,7 @@ FloatingWindow {
             spacing: 4
             readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60])
             PageTitle { text: "Lock & Idle" }
+            GroupLabel { text: "Locking" }
             Group {
                 SettingRow {
                     label: "Lock screen"
@@ -4973,6 +4990,7 @@ FloatingWindow {
             // The screen, with each corner's action; click one to set it below
             property string corner: "TopLeft"
             readonly property string cornerName: ({ TopLeft: "Top left", TopRight: "Top right", BottomLeft: "Bottom left", BottomRight: "Bottom right" })[corner]
+            GroupLabel { text: "Corners" }
             Group {
                 Item {
                     width: parent.width
@@ -5027,6 +5045,7 @@ FloatingWindow {
             }
 
             PageTitle { text: "Bluetooth" }
+            GroupLabel { text: "Status" }
             Group {
                 SettingRow {
                     label: "Bluetooth"
@@ -5197,6 +5216,7 @@ FloatingWindow {
             PageTitle { text: "Printers & Scanners" }
             IntroText { text: "The printers and scanners this computer can use. Most printers from the last ten years work straight away, over the network or USB, with no driver to install." }
 
+            GroupLabel { visible: printersPane.state.service === "missing" || printersPane.state.service === "off"; text: "Printing service" }
             // The printing service: not installed, or not running
             Group {
                 visible: printersPane.state.service === "missing" || printersPane.state.service === "off"
@@ -5449,6 +5469,7 @@ FloatingWindow {
 
             PageTitle { text: "Updates" }
             IntroText { text: "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it." }
+            GroupLabel { text: "Version" }
             Group {
                 SettingRow {
                     label: "Installed version"
@@ -5535,6 +5556,7 @@ FloatingWindow {
                 }
             }
 
+            GroupLabel { visible: Updates.status === "done" || Updates.status === "reverted"; text: "Latest change" }
             // ---- Just updated, or went back ----
             Group {
                 visible: Updates.status === "done" || Updates.status === "reverted"
