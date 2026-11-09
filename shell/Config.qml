@@ -672,21 +672,38 @@ Singleton {
         id: file
         path: Qt.resolvedUrl("settings.json").toString().replace("file://", "")
         watchChanges: true
-        // Reload when something else edits the file. Our own writes also trigger this; reloading
-        // then could read the file between two quick changes and undo them, so skip those.
-        property real lastWrite: 0
+        // Each save finishes before anything else happens, so the file is never caught halfway
+        blockWrites: true
+        // Reload when something else edits the file (a hand edit). Our own saves trigger this too,
+        // sometimes late (while Slate is busy applying a theme); reloading one of those could put
+        // back settings changed since, which is how a preset sometimes came out as Custom. So it
+        // goes by what's in the file, not the time: only a file that differs from the settings in
+        // use is loaded.
         onFileChanged: {
-            if (Date.now() - lastWrite < 600) return;
+            if (root.diskMatches()) return;
             reload();
             root.saved();
             Qt.callLater(root.separateBarAndDock);
         }
-        // Write any change straight back to disk
-        onAdapterUpdated: { lastWrite = Date.now(); writeAdapter(); root.saved(); }
+        // Changes are saved together, a moment after the last one: a preset or Restore defaults
+        // changes many at once, and is written once rather than once for each
+        onAdapterUpdated: { settingsSave.restart(); root.saved(); }
         // First run: create the file with the defaults (SettingsData.qml)
         onLoadFailed: error => { if (error === FileViewError.FileNotFound) writeAdapter(); }
 
         adapter: SettingsData { id: adapter }
+    }
+    Timer { id: settingsSave; interval: 50; onTriggered: file.writeAdapter() }
+    // settings.json as it is on disk, read only to compare (diskMatches)
+    FileView { id: diskCopy; path: file.path; blockLoading: true; printErrors: false }
+    // Whether the file holds the settings in use (our own save), rather than an edit made elsewhere
+    function diskMatches() {
+        if (settingsSave.running) return true;          // our save is still to come; it wins
+        diskCopy.reload();
+        let d;
+        try { d = JSON.parse(diskCopy.text()); } catch (e) { return true; }   // half-written: wait for the next change
+        for (const k in d) if (adapter[k] !== undefined && !sameValue(d[k], adapter[k])) return false;
+        return true;
     }
 
     // ---- Defaults --------------------------------------------------------------------
