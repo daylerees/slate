@@ -13,6 +13,10 @@ Rectangle {
     // Take the wallpaper's colour hint as on glass, for a shape whose fill isn't its parent's
     // colour (an app icon's tile)
     property bool glassHint: false
+    // A bold glossy band over the top half, as short shapes get, even on a tall one (where the
+    // usual sheen is a gentle fade): for things that should look most like glass, like
+    // notifications
+    property bool band: false
     anchors.fill: parent
     // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
     // drawing), so its effect isn't rebuilt each time it shows
@@ -61,7 +65,7 @@ Rectangle {
                                            1 - hintAmount + hint.b * hintAmount, 1)
     // Taller than a bar capsule (a quick toggle, say): the shine and shade there are softer and
     // blend smoothly into each other, rather than the short shapes' crisper bands
-    readonly property bool tall: height > 32
+    readonly property bool tall: height > 32 && !band
     gradient: Gradient {
         // Tall shapes: a gentler shine fading smoothly over the top half, with no band edge (a
         // bright band, a flat middle and a dark band made them look like three-tone tubes)
