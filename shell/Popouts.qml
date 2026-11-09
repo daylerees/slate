@@ -1,6 +1,7 @@
-// Drop-down panels attached to the top bar: spaces, volume, Wi-Fi, battery & power,
-// calendar and session. Each opens under the button that was clicked, joins the
-// bar with curved corners, and slides out of it.
+// Drop-down panels attached to the bar (on whichever edge it's on): the control centre,
+// spaces, notifications, clipboard, screenshot, volume, Wi-Fi, keyboard layout, Bluetooth,
+// game mode, battery & power, calendar and session. Each opens beside the button that was
+// clicked, joins the bar with curved corners, and slides out of it.
 //
 // Open from the bar with bar.openPopout("<name>", item). Close by clicking outside,
 // pressing Escape, or clicking the same button again.
@@ -412,6 +413,95 @@ PanelWindow {
         ClickTap { onTapped: rb.clicked() }
     }
 
+    // A link at the foot of a panel ("Keyboard settings", "Show all and search"…): an icon,
+    // then what it does
+    component LinkRow: RowButton {
+        id: link
+        property int code: 0
+        property string text: ""
+        property color iconColor: pop.dim
+        property color textColor: pop.text
+        width: parent ? parent.width : 0
+        Icon {
+            id: linkIcon
+            code: link.code; font.pixelSize: 16; color: link.iconColor
+            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+        }
+        Label {
+            anchors { left: linkIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+            text: link.text; color: link.textColor; font.weight: Font.Normal
+        }
+    }
+
+    // An on/off switch, as in the Wi-Fi, Bluetooth, game mode and notifications panels
+    component Switch: Rectangle {
+        id: onOff
+        property bool checked: false
+        signal toggled()
+        width: 40; height: 22; radius: 11
+        color: checked ? pop.accent : pop.card
+        Gloss { radius: parent.radius }   // glass: a sheen
+        Rectangle {
+            width: 16; height: 16; radius: 8
+            anchors.verticalCenter: parent.verticalCenter
+            x: onOff.checked ? parent.width - width - 3 : 3
+            color: onOff.checked ? pop.accentText : pop.text
+            Behavior on x { NumberAnimation { duration: Config.ms(120) } }
+        }
+        ClickTap { onTapped: onOff.toggled() }
+    }
+
+    // A panel's title row: its name on the left; anything put inside it (a switch, a count)
+    // anchors itself, usually to the right
+    component PanelTitle: Item {
+        property alias text: titleLabel.text
+        width: parent ? parent.width : 0
+        height: 26
+        Label { id: titleLabel; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 15 }
+    }
+
+    // One of the next few days' weather: its name, its weather's icon, then the high and low.
+    // The calendar and the control centre each size it their own way
+    component ForecastDay: Rectangle {
+        id: forecastDay
+        property int day: 0              // days from today (an index into pop.forecast)
+        property bool gloss: false       // glass's sheen, as on the bar's containers
+        property real gap: 3             // between its lines
+        property real iconSize: 16
+        property real tempSize: 11
+        radius: 9
+        Gloss { visible: forecastDay.gloss && Config.glassGloss; radius: parent.radius }
+        Column {
+            anchors.centerIn: parent
+            spacing: forecastDay.gap
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Qt.formatDate(new Date(pop.forecast.time[forecastDay.day] + "T12:00"), "ddd")
+                color: pop.dim; font.pixelSize: 11
+            }
+            Icon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                code: pop.weatherInfo(pop.forecast.weather_code[forecastDay.day]).icon
+                font.pixelSize: forecastDay.iconSize
+            }
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Math.round(pop.forecast.temperature_2m_max[forecastDay.day]) + "° "
+                    + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[forecastDay.day]) + "°</font>"
+                textFormat: Text.StyledText
+                font.pixelSize: forecastDay.tempSize
+            }
+        }
+    }
+
+    // A section's dim heading, over its rows ("Output device", "Power mode"…)
+    component Heading: Label { color: pop.dim; font.pixelSize: 12 }
+
+    // Run one of Slate's IPC calls (bin/slate ipc call …)
+    function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
+    // Close the panel and open Settings on one of its pages
+    function openSettingsPage(page) { close(); slate(["settings", "page", page]); }
+
     // ---- Volume ------------------------------------------------------------
     Component {
         id: volumePanel
@@ -430,6 +520,7 @@ PanelWindow {
                     { node: vol.source, title: "Input", on: 0xEAF0, off: 0xED16 }
                 ]
                 delegate: Column {
+                    id: audioChannel
                     required property var modelData
                     readonly property var a: modelData.node && modelData.node.audio ? modelData.node.audio : null
                     visible: a !== null
@@ -439,18 +530,18 @@ PanelWindow {
                         width: parent.width; height: 22
                         Icon {
                             id: muteIcon
-                            code: parent.parent.a && parent.parent.a.muted ? parent.parent.modelData.off : parent.parent.modelData.on
-                            color: parent.parent.a && parent.parent.a.muted ? pop.danger : pop.text
+                            code: audioChannel.a && audioChannel.a.muted ? audioChannel.modelData.off : audioChannel.modelData.on
+                            color: audioChannel.a && audioChannel.a.muted ? pop.danger : pop.text
                             anchors.verticalCenter: parent.verticalCenter
-                            ClickTap { onTapped: { const a = muteIcon.parent.parent.a; if (a) a.muted = !a.muted; } }
+                            ClickTap { onTapped: { const a = audioChannel.a; if (a) a.muted = !a.muted; } }
                         }
                         Label {
                             anchors { left: muteIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            text: parent.parent.modelData.title
+                            text: audioChannel.modelData.title
                         }
                         Label {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            text: parent.parent.a ? Math.round(parent.parent.a.volume * 100) + "%" : ""
+                            text: audioChannel.a ? Math.round(audioChannel.a.volume * 100) + "%" : ""
                             color: pop.dim
                         }
                     }
@@ -464,7 +555,7 @@ PanelWindow {
             }
 
             Divider { visible: vol.sinks.length > 1 }
-            Label { visible: vol.sinks.length > 1; text: "Output device"; color: pop.dim; font.pixelSize: 12 }
+            Heading { visible: vol.sinks.length > 1; text: "Output device" }
             Column {
                 visible: vol.sinks.length > 1
                 width: parent.width
@@ -501,7 +592,7 @@ PanelWindow {
     Component {
         id: wifiPanel
         Column {
-            id: wf
+            id: wifiView
             width: 320
             spacing: 10
             readonly property var dev: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
@@ -514,26 +605,14 @@ PanelWindow {
             }
             property string askingFor: ""      // network waiting for a password
             // Scan while the panel is open
-            Binding { target: wf.dev; property: "scannerEnabled"; value: true; when: wf.dev !== null && pop.shown }
+            Binding { target: wifiView.dev; property: "scannerEnabled"; value: true; when: wifiView.dev !== null && pop.shown }
 
-            Item {
-                width: parent.width; height: 26
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Wi-Fi"; font.pixelSize: 15 }
-                // On/off switch
-                Rectangle {
-                    id: sw
+            PanelTitle {
+                text: "Wi-Fi"
+                Switch {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width: 40; height: 22; radius: 11
-                    color: Networking.wifiEnabled ? pop.accent : pop.card
-                    Gloss { radius: parent.radius }   // glass: a sheen
-                    Rectangle {
-                        width: 16; height: 16; radius: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: Networking.wifiEnabled ? parent.width - width - 3 : 3
-                        color: Networking.wifiEnabled ? pop.accentText : pop.text
-                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
-                    }
-                    ClickTap { onTapped: Networking.wifiEnabled = !Networking.wifiEnabled }
+                    checked: Networking.wifiEnabled
+                    onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
                 }
             }
 
@@ -550,7 +629,7 @@ PanelWindow {
                             const i = line.indexOf("=");
                             if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
                         }
-                        wf.info = o;
+                        wifiView.info = o;
                     }
                 }
             }
@@ -565,20 +644,20 @@ PanelWindow {
             }
 
             Label {
-                visible: !Networking.wifiEnabled || wf.nets.length === 0
+                visible: !Networking.wifiEnabled || wifiView.nets.length === 0
                 text: Networking.wifiEnabled ? "Searching…" : "Wi-Fi is off"
                 color: pop.dim
             }
 
             ListView {
                 id: netList
-                visible: Networking.wifiEnabled && wf.nets.length > 0
+                visible: Networking.wifiEnabled && wifiView.nets.length > 0
                 width: parent.width
                 height: Math.min(contentHeight, 320)
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
-                model: wf.nets
+                model: wifiView.nets
                 SmoothWheel { flick: netList }
                 delegate: Column {
                     id: netRow
@@ -592,11 +671,11 @@ PanelWindow {
                         onClicked: {
                             const n = netRow.modelData;
                             if (n.connected) return;
-                            if (n.known || !netRow.secure) { n.connect(); wf.askingFor = ""; }
-                            else wf.askingFor = (wf.askingFor === n.name ? "" : n.name);
+                            if (n.known || !netRow.secure) { n.connect(); wifiView.askingFor = ""; }
+                            else wifiView.askingFor = (wifiView.askingFor === n.name ? "" : n.name);
                         }
                         Icon {
-                            id: sig
+                            id: signalIcon
                             readonly property real s: netRow.modelData.signalStrength
                             code: s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4
                             color: parent.selected ? pop.accentText : pop.text
@@ -604,12 +683,12 @@ PanelWindow {
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         }
                         Label {
-                            anchors { left: sig.right; leftMargin: 10; right: status.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            anchors { left: signalIcon.right; leftMargin: 10; right: netStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                             text: netRow.modelData.name
                             color: parent.selected ? pop.accentText : pop.text
                         }
                         Row {
-                            id: status
+                            id: netStatus
                             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             spacing: 6
                             Label {
@@ -631,7 +710,7 @@ PanelWindow {
                     }
                     // Password entry for a new secured network
                     Rectangle {
-                        visible: wf.askingFor === netRow.modelData.name
+                        visible: wifiView.askingFor === netRow.modelData.name
                         width: parent.width; height: 34; radius: 8
                         color: pop.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
@@ -645,8 +724,8 @@ PanelWindow {
                             font.pixelSize: 13
                             focus: parent.visible
                             onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
-                            onAccepted: { netRow.modelData.connectWithPsk(text); wf.askingFor = ""; }
-                            Keys.onEscapePressed: wf.askingFor = ""
+                            onAccepted: { netRow.modelData.connectWithPsk(text); wifiView.askingFor = ""; }
+                            Keys.onEscapePressed: wifiView.askingFor = ""
                         }
                         Label {
                             visible: psk.text === ""
@@ -659,23 +738,24 @@ PanelWindow {
             }
 
             // ---- Connection: signal, then details as small tiles (click to copy) ----
-            readonly property bool showInfo: Networking.wifiEnabled && wf.connected !== null && wf.info.ip !== undefined
-            Divider { visible: wf.showInfo }
-            Label { visible: wf.showInfo; text: "Connection"; color: pop.dim; font.pixelSize: 12 }
+            readonly property bool showInfo: Networking.wifiEnabled && wifiView.connected !== null && wifiView.info.ip !== undefined
+            Divider { visible: wifiView.showInfo }
+            Heading { visible: wifiView.showInfo; text: "Connection" }
             // Signal strength, as a meter like the battery panel's
             Column {
-                visible: wf.showInfo
+                id: signalInfo
+                visible: wifiView.showInfo
                 width: parent.width
                 spacing: 5
                 // Glides between readings (the bar and the number together)
-                property real sig: wf.connected ? wf.connected.signalStrength : 0
+                property real sig: wifiView.connected ? wifiView.connected.signalStrength : 0
                 Behavior on sig { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
                 Item {
                     width: parent.width; height: sigLabel.height
                     Label { id: sigLabel; text: "Signal"; font.pixelSize: 12 }
                     Label {
                         anchors.right: parent.right
-                        text: Math.round(parent.parent.sig * 100) + "%" + (wf.info.security ? " · " + wf.info.security : "")
+                        text: Math.round(signalInfo.sig * 100) + "%" + (wifiView.info.security ? " · " + wifiView.info.security : "")
                         color: pop.dim; font.pixelSize: 12
                     }
                 }
@@ -683,35 +763,35 @@ PanelWindow {
                     width: parent.width; height: 6; radius: 3
                     color: pop.card
                     Rectangle {
-                        width: Math.max(height, parent.width * parent.parent.sig)
+                        width: Math.max(height, parent.width * signalInfo.sig)
                         height: parent.height; radius: 3
-                        color: parent.parent.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
+                        color: signalInfo.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
                         Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                     }
                 }
             }
             // Details: two columns of tiles
             Grid {
-                visible: wf.showInfo
+                visible: wifiView.showInfo
                 width: parent.width
                 columns: 2
                 spacing: 6
                 Repeater {
                     model: {
-                        const ip = (wf.info.ip || "").split("/")[0];
+                        const ip = (wifiView.info.ip || "").split("/")[0];
                         const t = [
-                            { k: "Band", v: [wf.band(wf.info.freq), wf.info.channel ? "ch " + wf.info.channel : ""].filter(x => x).join(" · "), copy: false },
-                            { k: "Link speed", v: wf.info.rate || "", copy: false },
+                            { k: "Band", v: [wifiView.band(wifiView.info.freq), wifiView.info.channel ? "ch " + wifiView.info.channel : ""].filter(x => x).join(" · "), copy: false },
+                            { k: "Link speed", v: wifiView.info.rate || "", copy: false },
                             { k: "IP address", v: ip, copy: true },
-                            { k: "Gateway", v: wf.info.gateway || "", copy: true }
+                            { k: "Gateway", v: wifiView.info.gateway || "", copy: true }
                         ];
-                        if (wf.info.dns && wf.info.dns !== wf.info.gateway) t.push({ k: "DNS", v: wf.info.dns, copy: true });
+                        if (wifiView.info.dns && wifiView.info.dns !== wifiView.info.gateway) t.push({ k: "DNS", v: wifiView.info.dns, copy: true });
                         return t.filter(x => x.v);
                     }
                     delegate: Rectangle {
                         id: tile
                         required property var modelData
-                        width: (wf.width - 6) / 2
+                        width: (wifiView.width - 6) / 2
                         height: 46
                         radius: 9
                         color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
@@ -740,7 +820,7 @@ PanelWindow {
             }
             // VPN, when one is active
             Rectangle {
-                visible: wf.showInfo && !!wf.info.vpn
+                visible: wifiView.showInfo && !!wifiView.info.vpn
                 width: parent.width; height: 36; radius: 9
                 color: Qt.rgba(pop.accent.r, pop.accent.g, pop.accent.b, 0.14)
                 Row {
@@ -748,16 +828,15 @@ PanelWindow {
                     spacing: 8
                     Icon { anchors.verticalCenter: parent.verticalCenter; code: 0xED58; color: pop.accent; font.pixelSize: 16 }
                     Label { anchors.verticalCenter: parent.verticalCenter; text: "VPN"; color: pop.accent; font.pixelSize: 12 }
-                    Label { anchors.verticalCenter: parent.verticalCenter; text: wf.info.vpn || ""; font.pixelSize: 12 }
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: wifiView.info.vpn || ""; font.pixelSize: 12 }
                 }
             }
 
             // Disconnect from the current network
             RowButton {
-                readonly property var cur: wf.nets.find(n => n.connected) ?? null
-                visible: cur !== null
+                visible: wifiView.connected !== null
                 width: parent.width
-                onClicked: if (cur) cur.disconnect()
+                onClicked: if (wifiView.connected) wifiView.connected.disconnect()
                 Label {
                     anchors.centerIn: parent
                     text: "Disconnect"
@@ -773,7 +852,7 @@ PanelWindow {
     Component {
         id: clipboardPanel
         Column {
-            id: clp
+            id: clipView
             width: 320
             spacing: 10
             readonly property string script: Quickshell.shellPath("scripts/clipstore.py")
@@ -784,24 +863,23 @@ PanelWindow {
                 watchChanges: true
                 printErrors: false
                 onFileChanged: reload()
-                onLoaded: { try { clp.entries = JSON.parse(text()).entries || []; } catch (e) { clp.entries = []; } }
-                onLoadFailed: clp.entries = []
+                onLoaded: { try { clipView.entries = JSON.parse(text()).entries || []; } catch (e) { clipView.entries = []; } }
+                onLoadFailed: clipView.entries = []
             }
-            function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
 
-            Item {
-                width: parent.width; height: 22
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Clipboard"; font.pixelSize: 15 }
+            PanelTitle {
+                text: "Clipboard"
+                height: 22
                 Label {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     visible: Config.s.clipboardHistory
-                    text: clp.entries.length === 1 ? "1 item" : clp.entries.length + " items"
+                    text: clipView.entries.length === 1 ? "1 item" : clipView.entries.length + " items"
                     color: pop.dim; font.weight: Font.Normal
                 }
             }
             Label {
                 width: parent.width
-                visible: !Config.s.clipboardHistory || clp.entries.length === 0
+                visible: !Config.s.clipboardHistory || clipView.entries.length === 0
                 text: !Config.s.clipboardHistory ? "Clipboard history is off, so nothing you copy is kept."
                     : "Nothing copied yet."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
@@ -809,21 +887,21 @@ PanelWindow {
             Column {
                 width: parent.width
                 spacing: 6
-                visible: Config.s.clipboardHistory && clp.entries.length > 0
+                visible: Config.s.clipboardHistory && clipView.entries.length > 0
                 Repeater {
-                    model: clp.entries.slice(0, 8)
+                    model: clipView.entries.slice(0, 8)
                     delegate: RowButton {
                         id: clipRow
                         required property var modelData
                         width: parent.width
                         height: modelData.kind === "image" ? 52 : 36
-                        onClicked: { Quickshell.execDetached(["python3", clp.script, "copy", modelData.id]); pop.close(); }
+                        onClicked: { Quickshell.execDetached(["python3", clipView.script, "copy", modelData.id]); pop.close(); }
                         Image {
                             id: clipThumb
                             visible: clipRow.modelData.kind === "image"
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                             width: visible ? 56 : 0; height: 40
-                            source: visible ? "file://" + clp.dir + "/" + clipRow.modelData.file : ""
+                            source: visible ? "file://" + clipView.dir + "/" + clipRow.modelData.file : ""
                             sourceSize: Qt.size(112, 80)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
@@ -849,28 +927,20 @@ PanelWindow {
                 }
             }
             Divider {}
-            RowButton {
-                width: parent.width
+            LinkRow {
                 visible: Config.s.clipboardHistory
-                onClicked: { pop.close(); clp.slate(["picker", "clipboard"]); }
-                Icon { id: clpAllIcon; code: 0xEA6D; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: clpAllIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Show all and search (Super+V)"; font.weight: Font.Normal }
+                code: 0xEA6D; text: "Show all and search (Super+V)"
+                onClicked: { pop.close(); pop.slate(["picker", "clipboard"]); }
             }
-            RowButton {
-                width: parent.width
-                visible: Config.s.clipboardHistory && clp.entries.length > 0
-                onClicked: { clp.entries = []; Quickshell.execDetached(["python3", clp.script, "clear"]); }
-                Icon { id: clpClearIcon; code: 0xEB41; font.pixelSize: 16; color: pop.danger; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: clpClearIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Clear history"; color: pop.danger; font.weight: Font.Normal }
+            LinkRow {
+                visible: Config.s.clipboardHistory && clipView.entries.length > 0
+                code: 0xEB41; text: "Clear history"
+                iconColor: pop.danger; textColor: pop.danger
+                onClicked: { clipView.entries = []; Quickshell.execDetached(["python3", clipView.script, "clear"]); }
             }
-            RowButton {
-                width: parent.width
-                onClicked: { pop.close(); clp.slate(["settings", "find", "general", "Clipboard history"]); }
-                Icon { id: clpSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: clpSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Clipboard settings"; font.weight: Font.Normal }
+            LinkRow {
+                code: 0xEB20; text: "Clipboard settings"
+                onClicked: { pop.close(); pop.slate(["settings", "find", "general", "Clipboard history"]); }
             }
         }
     }
@@ -881,7 +951,7 @@ PanelWindow {
     Component {
         id: spacesPanel
         Column {
-            id: spp
+            id: spacesView
             width: 440
             spacing: 10
             property string mode: "list"          // list, or new (saving the workspaces now)
@@ -901,9 +971,9 @@ PanelWindow {
             Connections {
                 target: Spaces
                 function onLiveChanged() {
-                    if (spp.autoPick < 0) return;
-                    spp.picked = Spaces.live.some(w => w.id === spp.autoPick) ? [spp.autoPick] : [];
-                    spp.autoPick = -1;
+                    if (spacesView.autoPick < 0) return;
+                    spacesView.picked = Spaces.live.some(w => w.id === spacesView.autoPick) ? [spacesView.autoPick] : [];
+                    spacesView.autoPick = -1;
                 }
             }
             function startNew() {
@@ -928,14 +998,14 @@ PanelWindow {
             }
             Connections {
                 target: pop
-                function onCurrentChanged() { if (pop.current === "spaces") { spp.mode = "list"; } }
+                function onCurrentChanged() { if (pop.current === "spaces") { spacesView.mode = "list"; } }
             }
 
             // ---- The saved spaces ----
-            Item {
-                visible: spp.mode === "list"
-                width: parent.width; height: 22
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Spaces"; font.pixelSize: 15 }
+            PanelTitle {
+                visible: spacesView.mode === "list"
+                text: "Spaces"
+                height: 22
                 Label {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     visible: Spaces.list.length > 0
@@ -944,7 +1014,7 @@ PanelWindow {
                 }
             }
             Label {
-                visible: spp.mode === "list" && Spaces.list.length === 0
+                visible: spacesView.mode === "list" && Spaces.list.length === 0
                 width: parent.width
                 text: "Set up your apps across workspaces the way you like them, then save them as a space to bring them all back in one click."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
@@ -953,7 +1023,7 @@ PanelWindow {
             // there's more), with a soft shadow at an edge that has more beyond it
             Item {
                 id: spListBox
-                visible: spp.mode === "list" && Spaces.list.length > 0
+                visible: spacesView.mode === "list" && Spaces.list.length > 0
                 width: parent.width
                 readonly property real rowH: 52
                 readonly property bool overflow: Spaces.list.length > 5
@@ -986,7 +1056,7 @@ PanelWindow {
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                     width: 34; height: 34; radius: 9
                                     color: spRow.modelData.colour
-                                    Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spp.inkColour; font.pixelSize: 19 }
+                                    Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spacesView.inkColour; font.pixelSize: 19 }
                                 }
                                 Column {
                                     anchors { left: spBadge.right; leftMargin: 10; right: spSide.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
@@ -1081,27 +1151,21 @@ PanelWindow {
                     anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                 }
             }
-            Divider { visible: spp.mode === "list" }
-            RowButton {
-                visible: spp.mode === "list"
-                width: parent.width
-                onClicked: spp.startNew()
-                Icon { id: spNewIcon; code: 0xEB0B; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: spNewIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "New Space"; font.weight: Font.Normal }
+            Divider { visible: spacesView.mode === "list" }
+            LinkRow {
+                visible: spacesView.mode === "list"
+                code: 0xEB0B; text: "New Space"
+                onClicked: spacesView.startNew()
             }
-            RowButton {
-                visible: spp.mode === "list"
-                width: parent.width
-                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "spaces"]); }
-                Icon { id: spSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: spSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Spaces settings"; font.weight: Font.Normal }
+            LinkRow {
+                visible: spacesView.mode === "list"
+                code: 0xEB20; text: "Spaces settings"
+                onClicked: pop.openSettingsPage("spaces")
             }
 
             // ---- New Space ----
             Item {
-                visible: spp.mode === "new"
+                visible: spacesView.mode === "new"
                 width: parent.width; height: 26
                 Rectangle {
                     id: spBack
@@ -1110,18 +1174,18 @@ PanelWindow {
                     Gloss { radius: parent.radius; opacity: (spBackHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover }
-                    ClickTap { onTapped: spp.mode = "list" }
+                    ClickTap { onTapped: spacesView.mode = "list" }
                 }
                 Label { anchors { left: spBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     text: "New Space"; font.pixelSize: 15 }
             }
             Label {
-                visible: spp.mode === "new"
-                text: spp.picked.length === 0 ? "Pick the workspaces to save" : spp.picked.length === 1 ? "1 workspace" : spp.picked.length + " workspaces"
+                visible: spacesView.mode === "new"
+                text: spacesView.picked.length === 0 ? "Pick the workspaces to save" : spacesView.picked.length === 1 ? "1 workspace" : spacesView.picked.length + " workspaces"
                 color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
             }
             Label {
-                visible: spp.mode === "new" && Spaces.live.length === 0
+                visible: spacesView.mode === "new" && Spaces.live.length === 0
                 width: parent.width
                 text: "No workspace has apps open yet: open the apps you want, arranged how you like, then come back here."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
@@ -1131,7 +1195,7 @@ PanelWindow {
             // to say there's more)
             Item {
                 id: wsBox
-                visible: spp.mode === "new" && Spaces.live.length > 0
+                visible: spacesView.mode === "new" && Spaces.live.length > 0
                 width: parent.width
                 readonly property bool overflow: Math.ceil(Spaces.live.length / 3) > 2
                 readonly property real cardW: Math.floor((width - 16 - (overflow ? 18 : 0)) / 3)
@@ -1154,7 +1218,7 @@ PanelWindow {
                             delegate: Column {
                                 id: wsCard
                                 required property var modelData
-                                readonly property bool on: spp.picked.includes(modelData.id)
+                                readonly property bool on: spacesView.picked.includes(modelData.id)
                                 width: wsBox.cardW
                                 spacing: 5
                                 Rectangle {
@@ -1208,8 +1272,8 @@ PanelWindow {
                                                 anchors.fill: parent
                                                 anchors.margins: 1
                                                 // Not in game mode: just the window's outline and app icon
-                                                captureSource: !Config.gameMode && pop.shown && spp.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
-                                                live: pop.shown && spp.mode === "new"
+                                                captureSource: !Config.gameMode && pop.shown && spacesView.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
+                                                live: pop.shown && spacesView.mode === "new"
                                                 smooth: true
                                                 // Clipped to the window's rounded corners
                                                 layer.enabled: wsWin.radius > 0
@@ -1260,7 +1324,7 @@ PanelWindow {
                                         Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
                                     }
                                     HoverHandler { id: wsShotHover }
-                                    ClickTap { onTapped: spp.toggle(wsCard.modelData.id) }
+                                    ClickTap { onTapped: spacesView.toggle(wsCard.modelData.id) }
                                 }
                                 Label {
                                     width: parent.width
@@ -1276,9 +1340,9 @@ PanelWindow {
                 ThinScrollbar { flick: wsFlick; color: pop.text; anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
             }
 
-            Label { visible: spp.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Label { visible: spacesView.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Rectangle {
-                visible: spp.mode === "new"
+                visible: spacesView.mode === "new"
                 width: parent.width; height: 34; radius: 8
                 color: pop.card
                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
@@ -1293,11 +1357,11 @@ PanelWindow {
                     font.pixelSize: 13
                     maximumLength: 40
                     selectByMouse: true
-                    text: spp.name
-                    onTextEdited: spp.name = text
-                    onVisibleChanged: if (visible) { text = spp.name; forceActiveFocus(); }
-                    onAccepted: spp.save()
-                    Keys.onEscapePressed: spp.mode = "list"
+                    text: spacesView.name
+                    onTextEdited: spacesView.name = text
+                    onVisibleChanged: if (visible) { text = spacesView.name; forceActiveFocus(); }
+                    onAccepted: spacesView.save()
+                    Keys.onEscapePressed: spacesView.mode = "list"
                 }
                 Label {
                     visible: spName.text === ""
@@ -1307,15 +1371,15 @@ PanelWindow {
                 }
             }
             Label {
-                visible: spp.mode === "new" && spp.sameName !== null
+                visible: spacesView.mode === "new" && spacesView.sameName !== null
                 width: parent.width
-                text: "Saving replaces the space already called " + (spp.sameName ? spp.sameName.name : "")
+                text: "Saving replaces the space already called " + (spacesView.sameName ? spacesView.sameName.name : "")
                 color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; wrapMode: Text.Wrap
             }
 
-            Label { visible: spp.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Label { visible: spacesView.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Grid {
-                visible: spp.mode === "new"
+                visible: spacesView.mode === "new"
                 columns: 15
                 spacing: 2
                 Repeater {
@@ -1323,24 +1387,24 @@ PanelWindow {
                     delegate: Rectangle {
                         id: icCell
                         required property int modelData
-                        readonly property bool on: spp.icon === modelData
-                        width: (spp.width - 28) / 15; height: width; radius: 7
-                        color: on ? spp.colour : icHover.hovered ? Config.hover : "transparent"
+                        readonly property bool on: spacesView.icon === modelData
+                        width: (spacesView.width - 28) / 15; height: width; radius: 7
+                        color: on ? spacesView.colour : icHover.hovered ? Config.hover : "transparent"
                         Gloss { radius: parent.radius; opacity: (on || icHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
+                        Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spacesView.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
-                        ClickTap { onTapped: spp.icon = icCell.modelData }
+                        ClickTap { onTapped: spacesView.icon = icCell.modelData }
                     }
                 }
             }
 
-            Label { visible: spp.mode === "new"; text: "Colour"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Label { visible: spacesView.mode === "new"; text: "Colour"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Grid {
-                visible: spp.mode === "new"
+                visible: spacesView.mode === "new"
                 columns: 9
                 readonly property real cell: 28
-                columnSpacing: (spp.width - cell * 9) / 8
+                columnSpacing: (spacesView.width - cell * 9) / 8
                 rowSpacing: 10
                 Repeater {
                     // The pastels, then your own colour
@@ -1349,7 +1413,7 @@ PanelWindow {
                         id: swatch
                         required property string modelData
                         readonly property bool isCustom: modelData === "custom"
-                        readonly property bool on: isCustom ? spp.custom : !spp.custom && Qt.colorEqual(spp.colour, modelData)
+                        readonly property bool on: isCustom ? spacesView.custom : !spacesView.custom && Qt.colorEqual(spacesView.colour, modelData)
                         width: 28; height: 28
                         // A ring around the picked one
                         Rectangle {
@@ -1361,12 +1425,12 @@ PanelWindow {
                         Rectangle {
                             anchors.centerIn: parent
                             width: swatch.on ? 20 : swHover.hovered ? 24 : 22; height: width; radius: width / 2
-                            color: swatch.isCustom ? (spp.custom ? spp.colour : "transparent") : swatch.modelData
+                            color: swatch.isCustom ? (spacesView.custom ? spacesView.colour : "transparent") : swatch.modelData
                             Behavior on width { NumberAnimation { duration: Config.ms(100) } }
                             // Your own colour: a colour wheel until one is chosen
                             Canvas {
                                 anchors.fill: parent
-                                visible: swatch.isCustom && !spp.custom
+                                visible: swatch.isCustom && !spacesView.custom
                                 onPaint: {
                                     const ctx = getContext("2d"), r = width / 2;
                                     ctx.reset();
@@ -1381,14 +1445,14 @@ PanelWindow {
                                 }
                                 onWidthChanged: requestPaint()
                             }
-                            Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spp.inkColour }
+                            Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spacesView.inkColour }
                         }
                         HoverHandler { id: swHover }
                         ClickTap {
                             onTapped: {
                                 if (swatch.isCustom) {
-                                    if (!spp.custom) { spp.custom = true; spHex.text = spp.colour.toString().slice(0, 7); }
-                                } else { spp.custom = false; spp.colour = swatch.modelData; }
+                                    if (!spacesView.custom) { spacesView.custom = true; spHex.text = spacesView.colour.toString().slice(0, 7); }
+                                } else { spacesView.custom = false; spacesView.colour = swatch.modelData; }
                             }
                         }
                     }
@@ -1396,7 +1460,7 @@ PanelWindow {
             }
             // Your own colour: drag along the hues, or type a hex value
             Row {
-                visible: spp.mode === "new" && spp.custom
+                visible: spacesView.mode === "new" && spacesView.custom
                 width: parent.width
                 spacing: 10
                 Item {
@@ -1419,19 +1483,19 @@ PanelWindow {
                         onWidthChanged: requestPaint()
                     }
                     Rectangle {
-                        readonly property real hue: Math.max(0, spp.colour.hslHue)
+                        readonly property real hue: Math.max(0, spacesView.colour.hslHue)
                         x: hue * (hueStrip.width - width)
                         anchors.verticalCenter: parent.verticalCenter
                         width: 20; height: 20; radius: 10
-                        color: spp.colour
+                        color: spacesView.colour
                         border.width: 2; border.color: pop.text
                     }
                     MouseArea {
                         anchors.fill: parent
                         function set(mx) {
                             const h = Math.max(0, Math.min(0.999, mx / width));
-                            spp.colour = Qt.hsla(h, 0.65, 0.78, 1);
-                            spHex.text = spp.colour.toString().slice(0, 7);
+                            spacesView.colour = Qt.hsla(h, 0.65, 0.78, 1);
+                            spHex.text = spacesView.colour.toString().slice(0, 7);
                         }
                         onPressed: m => set(m.x)
                         onPositionChanged: m => { if (pressed) set(m.x); }
@@ -1455,16 +1519,16 @@ PanelWindow {
                         selectByMouse: true
                         onTextEdited: {
                             const t = text.startsWith("#") ? text : "#" + text;
-                            if (/^#[0-9a-fA-F]{6}$/.test(t)) spp.colour = t;
+                            if (/^#[0-9a-fA-F]{6}$/.test(t)) spacesView.colour = t;
                         }
-                        Keys.onEscapePressed: spp.mode = "list"
+                        Keys.onEscapePressed: spacesView.mode = "list"
                     }
                 }
             }
 
-            Divider { visible: spp.mode === "new" }
+            Divider { visible: spacesView.mode === "new" }
             Row {
-                visible: spp.mode === "new"
+                visible: spacesView.mode === "new"
                 anchors.right: parent.right
                 spacing: 8
                 Rectangle {
@@ -1473,14 +1537,14 @@ PanelWindow {
                     Gloss { radius: parent.radius; opacity: (spCancelHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover }
-                    ClickTap { onTapped: spp.mode = "list" }
+                    ClickTap { onTapped: spacesView.mode = "list" }
                 }
                 Rectangle {
                     width: spSave.implicitWidth + 28; height: 32; radius: 8
-                    color: spp.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
-                    Label { id: spSave; anchors.centerIn: parent; text: spp.sameName ? "Replace" : "Save"; color: spp.canSave ? pop.accentText : pop.dim }
+                    color: spacesView.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
+                    Label { id: spSave; anchors.centerIn: parent; text: spacesView.sameName ? "Replace" : "Save"; color: spacesView.canSave ? pop.accentText : pop.dim }
                     HoverHandler { id: spSaveHover }
-                    ClickTap { onTapped: spp.save() }
+                    ClickTap { onTapped: spacesView.save() }
                 }
             }
         }
@@ -1492,7 +1556,7 @@ PanelWindow {
     Component {
         id: screenshotPanel
         Column {
-            id: shp
+            id: shotView
             width: 300
             spacing: 10
             readonly property string folder: Config.s.screenshotFolder !== "" ? Config.s.screenshotFolder
@@ -1512,7 +1576,7 @@ PanelWindow {
                     delegate: Rectangle {
                         id: shotTile
                         required property var modelData
-                        width: (shp.width - 16) / 3; height: 76
+                        width: (shotView.width - 16) / 3; height: 76
                         radius: 10
                         color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
                         Gloss { radius: parent.radius; opacity: (shotHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
@@ -1524,29 +1588,23 @@ PanelWindow {
                             Label { anchors.horizontalCenter: parent.horizontalCenter; text: shotTile.modelData.label; font.weight: Font.Normal }
                         }
                         HoverHandler { id: shotHover }
-                        ClickTap { onTapped: shp.take(shotTile.modelData.mode) }
+                        ClickTap { onTapped: shotView.take(shotTile.modelData.mode) }
                     }
                 }
             }
             Label {
                 width: parent.width
-                text: "Saved to " + shp.folder.replace(Quickshell.env("HOME"), "~") + " and copied"
+                text: "Saved to " + shotView.folder.replace(Quickshell.env("HOME"), "~") + " and copied"
                 color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; elide: Text.ElideMiddle
             }
             Divider {}
-            RowButton {
-                width: parent.width
-                onClicked: { pop.close(); Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && exec xdg-open \"$0\"", shp.folder]); }
-                Icon { id: shpFolderIcon; code: 0xEAAD; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: shpFolderIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Open screenshots folder"; font.weight: Font.Normal }
+            LinkRow {
+                code: 0xEAAD; text: "Open screenshots folder"
+                onClicked: { pop.close(); Quickshell.execDetached(["sh", "-c", "mkdir -p \"$0\" && exec xdg-open \"$0\"", shotView.folder]); }
             }
-            RowButton {
-                width: parent.width
-                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "screenshots"]); }
-                Icon { id: shpSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: shpSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Screenshot settings"; font.weight: Font.Normal }
+            LinkRow {
+                code: 0xEB20; text: "Screenshot settings"
+                onClicked: pop.openSettingsPage("screenshots")
             }
         }
     }
@@ -1556,7 +1614,6 @@ PanelWindow {
     Component {
         id: keyboardPanel
         Column {
-            id: kbp
             width: 280
             spacing: 10
             Label { text: "Keyboard layout"; font.pixelSize: 15 }
@@ -1595,22 +1652,9 @@ PanelWindow {
                 }
             }
             Divider {}
-            RowButton {
-                width: parent.width
-                onClicked: {
-                    pop.close();
-                    Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "input"]);
-                }
-                Icon {
-                    id: kbSettingsIcon
-                    code: 0xEB20; font.pixelSize: 16; color: pop.dim
-                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                }
-                Label {
-                    anchors { left: kbSettingsIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Keyboard settings"
-                    font.weight: Font.Normal
-                }
+            LinkRow {
+                code: 0xEB20; text: "Keyboard settings"
+                onClicked: pop.openSettingsPage("input")
             }
         }
     }
@@ -1621,7 +1665,7 @@ PanelWindow {
     Component {
         id: bluetoothPanel
         Column {
-            id: btp
+            id: btView
             width: 300
             spacing: 10
             readonly property var adapter: Bluetooth.defaultAdapter
@@ -1638,43 +1682,32 @@ PanelWindow {
                 return 0xEA37;
             }
 
-            Item {
-                width: parent.width; height: 26
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Bluetooth"; font.pixelSize: 15 }
-                // On/off switch
-                Rectangle {
+            PanelTitle {
+                text: "Bluetooth"
+                Switch {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    visible: !!btp.adapter
-                    width: 40; height: 22; radius: 11
-                    color: btp.on ? pop.accent : pop.card
-                    Gloss { radius: parent.radius }   // glass: a sheen
-                    Rectangle {
-                        width: 16; height: 16; radius: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: btp.on ? parent.width - width - 3 : 3
-                        color: btp.on ? pop.accentText : pop.text
-                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
-                    }
-                    ClickTap { onTapped: if (btp.adapter) btp.adapter.enabled = !btp.adapter.enabled }
+                    visible: !!btView.adapter
+                    checked: btView.on
+                    onToggled: if (btView.adapter) btView.adapter.enabled = !btView.adapter.enabled
                 }
             }
 
             Label {
-                visible: !btp.on || btp.devices.length === 0
+                visible: !btView.on || btView.devices.length === 0
                 width: parent.width
                 wrapMode: Text.Wrap
                 color: pop.dim
                 font.pixelSize: 12
                 font.weight: Font.Normal
-                text: !btp.adapter ? "No Bluetooth adapter found" : !btp.on ? "Bluetooth is off"
+                text: !btView.adapter ? "No Bluetooth adapter found" : !btView.on ? "Bluetooth is off"
                     : "No paired devices yet. Pair one in Bluetooth settings"
             }
             Column {
-                visible: btp.on && btp.devices.length > 0
+                visible: btView.on && btView.devices.length > 0
                 width: parent.width
                 spacing: 6
                 Repeater {
-                    model: btp.devices
+                    model: btView.devices
                     delegate: RowButton {
                         id: devRow
                         required property var modelData
@@ -1686,7 +1719,7 @@ PanelWindow {
                         onClicked: d.connected ? d.disconnect() : d.connect()
                         Icon {
                             id: devIcon
-                            code: btp.iconFor(devRow.d)
+                            code: btView.iconFor(devRow.d)
                             color: devRow.selected ? pop.accentText : pop.text
                             font.pixelSize: 17
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -1714,22 +1747,9 @@ PanelWindow {
             }
 
             Divider {}
-            RowButton {
-                width: parent.width
-                onClicked: {
-                    pop.close();
-                    Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "bluetooth"]);
-                }
-                Icon {
-                    id: btSettingsIcon
-                    code: 0xEB20; font.pixelSize: 16; color: pop.dim
-                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                }
-                Label {
-                    anchors { left: btSettingsIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Bluetooth settings"
-                    font.weight: Font.Normal
-                }
+            LinkRow {
+                code: 0xEB20; text: "Bluetooth settings"
+                onClicked: pop.openSettingsPage("bluetooth")
             }
         }
     }
@@ -1740,26 +1760,14 @@ PanelWindow {
         // Laid out like the other panels: the title with its switch, a line of status, a
         // section (a dim heading over rows), then a link to the settings it touches
         Column {
-            id: gmp
             width: 300
             spacing: 10
-            Item {
-                width: parent.width; height: 26
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Game mode"; font.pixelSize: 15 }
-                // On/off switch
-                Rectangle {
+            PanelTitle {
+                text: "Game mode"
+                Switch {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width: 40; height: 22; radius: 11
-                    color: Config.gameMode ? pop.accent : pop.card
-                    Gloss { radius: parent.radius }   // glass: a sheen
-                    Rectangle {
-                        width: 16; height: 16; radius: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: Config.gameMode ? parent.width - width - 3 : 3
-                        color: Config.gameMode ? pop.accentText : pop.text
-                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
-                    }
-                    ClickTap { onTapped: Config.setGameMode(!Config.gameMode) }
+                    checked: Config.gameMode
+                    onToggled: Config.setGameMode(!Config.gameMode)
                 }
             }
             Label {
@@ -1772,7 +1780,7 @@ PanelWindow {
                     : "Turns off what costs the most to draw, for smoother games. Your settings come back when you turn it off"
             }
             Divider {}
-            Label { text: Config.gameMode ? "Turned off" : "Turns off"; color: pop.dim; font.pixelSize: 12 }
+            Heading { text: Config.gameMode ? "Turned off" : "Turns off" }
             Column {
                 width: parent.width
                 Repeater {
@@ -1803,12 +1811,9 @@ PanelWindow {
                 }
             }
             Divider {}
-            RowButton {
-                width: parent.width
-                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "appearance"]); }
-                Icon { id: gmSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
-                Label { anchors { left: gmSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: "Appearance settings"; font.weight: Font.Normal }
+            LinkRow {
+                code: 0xEB20; text: "Appearance settings"
+                onClicked: pop.openSettingsPage("appearance")
             }
         }
     }
@@ -1859,7 +1864,7 @@ PanelWindow {
             }
 
             Divider {}
-            Label { text: "Power mode"; color: pop.dim; font.pixelSize: 12 }
+            Heading { text: "Power mode" }
             Row {
                 width: parent.width
                 spacing: 6
@@ -1870,6 +1875,7 @@ PanelWindow {
                         { p: PowerProfile.Performance, label: "Performance", code: 0xEC45 }
                     ].filter(x => x.p !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
                     delegate: RowButton {
+                        id: profileButton
                         required property var modelData
                         width: (bat.width - 12) / 3
                         height: 56
@@ -1880,15 +1886,15 @@ PanelWindow {
                             spacing: 2
                             Icon {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                code: parent.parent.modelData.code
+                                code: profileButton.modelData.code
                                 font.pixelSize: 18
-                                color: parent.parent.selected ? pop.accentText : pop.text
+                                color: profileButton.selected ? pop.accentText : pop.text
                             }
                             Label {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: parent.parent.modelData.label
+                                text: profileButton.modelData.label
                                 font.pixelSize: 12
-                                color: parent.parent.selected ? pop.accentText : pop.text
+                                color: profileButton.selected ? pop.accentText : pop.text
                             }
                         }
                     }
@@ -1897,7 +1903,7 @@ PanelWindow {
 
             // ---- System: CPU, memory and the main drive, refreshed while the panel is open
             Divider {}
-            Label { text: "System"; color: pop.dim; font.pixelSize: 12 }
+            Heading { text: "System" }
             property real cpu: 0                 // 0..1
             property var lastCpu: null           // [busy, total] from the previous reading
             property real memUsed: 0
@@ -1955,6 +1961,7 @@ PanelWindow {
             Repeater {
                 model: ["CPU", "Memory", "Disk"]
                 delegate: Column {
+                    id: meter
                     required property string modelData
                     readonly property real frac: modelData === "CPU" ? bat.cpuShown : modelData === "Memory" ? bat.memShown : bat.diskShown
                     readonly property string value: modelData === "CPU" ? Math.round(bat.cpuShown * 100) + "%"
@@ -1964,10 +1971,10 @@ PanelWindow {
                     spacing: 5
                     Item {
                         width: parent.width; height: meterLabel.height
-                        Label { id: meterLabel; text: parent.parent.modelData; font.pixelSize: 12 }
+                        Label { id: meterLabel; text: meter.modelData; font.pixelSize: 12 }
                         Label {
                             anchors.right: parent.right
-                            text: parent.parent.value
+                            text: meter.value
                             color: pop.dim; font.pixelSize: 12
                         }
                     }
@@ -1975,10 +1982,10 @@ PanelWindow {
                         width: parent.width; height: 6; radius: 3
                         color: pop.card
                         Rectangle {
-                            width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
+                            width: Math.max(height, parent.width * Math.min(1, meter.frac))
                             height: parent.height; radius: 3
                             // Red when above 80%
-                            color: parent.parent.frac > 0.8 ? pop.danger : pop.accent
+                            color: meter.frac > 0.8 ? pop.danger : pop.accent
                             Gloss { radius: parent.radius }   // glass: a sheen
                             Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                         }
@@ -1999,6 +2006,8 @@ PanelWindow {
             readonly property date today: calClock.date
             property int monthOffset: 0
             readonly property date shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+            // Days from last month before the 1st, in a week that starts on Monday
+            readonly property int leadDays: (shownMonth.getDay() + 6) % 7
 
             // Weather, when a location is set (Settings → General → Location) and it has loaded
             readonly property bool hasWeather: Config.s.locationName !== "" && pop.weather !== null
@@ -2065,7 +2074,7 @@ PanelWindow {
                 }
             }
             Grid {
-                id: grid
+                id: monthGrid
                 columns: 7
                 readonly property real cell: cal.width / 7
                 // Weekday initials, Monday first
@@ -2073,7 +2082,7 @@ PanelWindow {
                     model: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
                     delegate: Label {
                         required property string modelData
-                        width: grid.cell; height: 22
+                        width: monthGrid.cell; height: 22
                         horizontalAlignment: Text.AlignHCenter
                         text: modelData
                         color: pop.dim
@@ -2084,11 +2093,10 @@ PanelWindow {
                     model: 42
                     delegate: Item {
                         required property int index
-                        readonly property int lead: (cal.shownMonth.getDay() + 6) % 7
-                        readonly property date day: new Date(cal.shownMonth.getFullYear(), cal.shownMonth.getMonth(), index - lead + 1)
+                        readonly property date day: new Date(cal.shownMonth.getFullYear(), cal.shownMonth.getMonth(), index - cal.leadDays + 1)
                         readonly property bool inMonth: day.getMonth() === cal.shownMonth.getMonth()
                         readonly property bool isToday: day.toDateString() === cal.today.toDateString()
-                        width: grid.cell; height: 32
+                        width: monthGrid.cell; height: 32
                         Rectangle {
                             anchors.centerIn: parent
                             width: 28; height: 28; radius: 14
@@ -2111,33 +2119,12 @@ PanelWindow {
                 spacing: 6
                 Repeater {
                     model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
-                    delegate: Rectangle {
+                    delegate: ForecastDay {
                         required property int index
-                        readonly property int day: index + 1
-                        width: (cal.width - 18) / 4; height: 64; radius: 9
+                        day: index + 1
+                        width: (cal.width - 18) / 4; height: 64
                         color: pop.card
-                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 3
-                            Label {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: Qt.formatDate(new Date(pop.forecast.time[parent.parent.day] + "T12:00"), "ddd")
-                                color: pop.dim; font.pixelSize: 11
-                            }
-                            Icon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                code: pop.weatherInfo(pop.forecast.weather_code[parent.parent.day]).icon
-                                font.pixelSize: 16
-                            }
-                            Label {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: Math.round(pop.forecast.temperature_2m_max[parent.parent.day]) + "° "
-                                    + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[parent.parent.day]) + "°</font>"
-                                textFormat: Text.StyledText
-                                font.pixelSize: 11
-                            }
-                        }
+                        gloss: true
                     }
                 }
             }
@@ -2150,7 +2137,7 @@ PanelWindow {
     Component {
         id: sessionPanel
         Column {
-            id: ses
+            id: sessionView
             width: 220
             spacing: 6
             Repeater {
@@ -2163,24 +2150,24 @@ PanelWindow {
                 ]
                 delegate: RowButton {
                     required property var modelData
-                    width: ses.width
+                    width: sessionView.width
                     height: 40
                     onClicked: {
                         pop.close();
                         if (modelData.confirm && pop.powerConfirm) pop.powerConfirm.ask(modelData.id);
-                        else if (modelData.id === "lock") Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "lock"]);
+                        else if (modelData.id === "lock") pop.slate(["lock", "lock"]);
                         else if (modelData.id === "lock_and_suspend")   // lock first, then sleep
                             Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Quickshell.shellPath("bin/slate")]);
                         else Config.sessionAction(modelData.id);
                     }
                     Icon {
-                        id: sIcon
+                        id: sessionIcon
                         code: parent.modelData.code
                         color: parent.modelData.id === "shutdown" ? pop.danger : pop.text
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                     }
                     Label {
-                        anchors { left: sIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        anchors { left: sessionIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
                     }
                 }
@@ -2192,7 +2179,7 @@ PanelWindow {
     Component {
         id: controlPanel
         Column {
-            id: cc
+            id: controlView
             width: 470
             spacing: 12
             readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
@@ -2273,7 +2260,7 @@ PanelWindow {
                     ClickTap {
                         onTapped: {
                             pop.close();
-                            Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "avatar"]);
+                            pop.slate(["settings", "avatar"]);
                         }
                     }
                 }
@@ -2297,14 +2284,14 @@ PanelWindow {
                             // solid card colour, mostly opaque (not the glass card colour, which is
                             // already see-through white), a faint light edge and the sheen
                             readonly property color base: Config.tint("#1d222a")
-                            color: hovered2.hovered ? Config.hoverOn(base) : Qt.rgba(base.r, base.g, base.b, 0.82)
+                            color: controlButtonHover.hovered ? Config.hoverOn(base) : Qt.rgba(base.r, base.g, base.b, 0.82)
                             border.width: 1
-                            border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, hovered2.hovered ? 0.22 : 0.14)
+                            border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, controlButtonHover.hovered ? 0.22 : 0.14)
                             // glass: a sheen (RowButton's own takes over while hovered)
-                            Gloss { radius: parent.radius; opacity: hovered2.hovered ? 0 : 1 }
-                            HoverHandler { id: hovered2 }
+                            Gloss { radius: parent.radius; opacity: controlButtonHover.hovered ? 0 : 1 }
+                            HoverHandler { id: controlButtonHover }
                             onClicked: {
-                                if (modelData.act === "settings") { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]); }
+                                if (modelData.act === "settings") { pop.close(); pop.slate(["settings", "open"]); }
                                 else { pop.anchorX = pop.width - 40; pop.displayed = "session"; pop.current = "session"; }
                             }
                             Icon { anchors.centerIn: parent; code: parent.modelData.code; color: parent.modelData.act === "session" ? pop.danger : pop.text }
@@ -2322,39 +2309,39 @@ PanelWindow {
                     spacing: 12
 
                     Rectangle {
-                        visible: cc.player !== null
+                        visible: controlView.player !== null
                         width: parent.width; height: 104; radius: 12
                         color: pop.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         Item {
-                            visible: cc.player !== null
+                            visible: controlView.player !== null
                             anchors { fill: parent; margins: 12 }
                             RoundImage {
                                 id: art
                                 width: 80; height: 80; radius: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                source: cc.player ? cc.player.trackArtUrl : ""
-                                visible: cc.player && cc.player.trackArtUrl !== ""
+                                source: controlView.player ? controlView.player.trackArtUrl : ""
+                                visible: controlView.player && controlView.player.trackArtUrl !== ""
                             }
                             Column {
                                 anchors { left: art.visible ? art.right : parent.left; leftMargin: art.visible ? 12 : 0; right: parent.right; verticalCenter: parent.verticalCenter }
                                 spacing: 2
-                                Label { width: parent.width; text: cc.player ? (cc.player.trackTitle || cc.player.identity) : "" }
-                                Label { width: parent.width; text: cc.player ? (cc.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
+                                Label { width: parent.width; text: controlView.player ? (controlView.player.trackTitle || controlView.player.identity) : "" }
+                                Label { width: parent.width; text: controlView.player ? (controlView.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
                                 Row {
                                     spacing: 4
                                     topPadding: 6
                                     Repeater {
                                         model: [
                                             { code: 0xF693, act: "prev" },
-                                            { code: cc.player && cc.player.isPlaying ? 0xF690 : 0xF691, act: "play" },
+                                            { code: controlView.player && controlView.player.isPlaying ? 0xF690 : 0xF691, act: "play" },
                                             { code: 0xF694, act: "next" }
                                         ]
                                         delegate: RowButton {
                                             required property var modelData
                                             width: 32; height: 30
                                             onClicked: {
-                                                const p = cc.player; if (!p) return;
+                                                const p = controlView.player; if (!p) return;
                                                 if (modelData.act === "prev") p.previous();
                                                 else if (modelData.act === "next") p.next();
                                                 else p.togglePlaying();
@@ -2370,7 +2357,7 @@ PanelWindow {
                     Rectangle {
                         id: clockCard
                         // Nothing playing: take the media card's space too
-                        readonly property bool roomy: cc.player === null
+                        readonly property bool roomy: controlView.player === null
                         width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: 12
                         color: pop.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
@@ -2414,35 +2401,14 @@ PanelWindow {
                             spacing: 6
                             Repeater {
                                 model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
-                                delegate: Rectangle {
+                                delegate: ForecastDay {
                                     required property int index
-                                    readonly property int day: index + 1
-                                    width: (parent.width - 18) / 4; height: 76; radius: 9
+                                    day: index + 1
+                                    width: (parent.width - 18) / 4; height: 76
                                     // A faint wash over the card: white on dark; on light, where white
                                     // vanished, a shade darker
                                     color: Config.s.lightMode ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.03)
-                                    border.width: 0
-                                    Column {
-                                        anchors.centerIn: parent
-                                        spacing: 4
-                                        Label {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            text: Qt.formatDate(new Date(pop.forecast.time[parent.parent.day] + "T12:00"), "ddd")
-                                            color: pop.dim; font.pixelSize: 11
-                                        }
-                                        Icon {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            code: pop.weatherInfo(pop.forecast.weather_code[parent.parent.day]).icon
-                                            font.pixelSize: 18
-                                        }
-                                        Label {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            text: Math.round(pop.forecast.temperature_2m_max[parent.parent.day]) + "° "
-                                                + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[parent.parent.day]) + "°</font>"
-                                            textFormat: Text.StyledText
-                                            font.pixelSize: 12
-                                        }
-                                    }
+                                    gap: 4; iconSize: 18; tempSize: 12
                                 }
                             }
                         }
@@ -2454,19 +2420,22 @@ PanelWindow {
                     id: ccTiles
                     columns: 2
                     spacing: 8
-                    readonly property real tileW: (cc.width - 262 - 12 - 8) / 2
-                    readonly property int rowCount: Math.ceil(6 / columns)
+                    readonly property real tileW: (controlView.width - 262 - 12 - 8) / 2
+                    // The toggles, each lit while it's on
+                    readonly property var toggles: [
+                        { id: "wifi", label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                        { id: "bt", label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                        { id: "caffeine", label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                        { id: "night", label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                        { id: "dnd", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                        { id: "perf", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
+                    ]
+                    readonly property int rowCount: Math.ceil(toggles.length / columns)
                     readonly property real tileH: (ccLeft.height - spacing * (rowCount - 1)) / rowCount
                     Repeater {
-                        model: [
-                            { id: "wifi", label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
-                            { id: "bt", label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
-                            { id: "caffeine", label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
-                            { id: "night", label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
-                            { id: "dnd", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
-                            { id: "perf", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
-                        ]
+                        model: ccTiles.toggles
                         delegate: RowButton {
+                            id: controlTile
                             required property var modelData
                             width: ccTiles.tileW
                             height: ccTiles.tileH
@@ -2493,15 +2462,15 @@ PanelWindow {
                                 spacing: 3
                                 Icon {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    code: parent.parent.modelData.code
-                                    color: parent.parent.selected ? pop.accentText : pop.text
+                                    code: controlTile.modelData.code
+                                    color: controlTile.selected ? pop.accentText : pop.text
                                 }
                                 Label {
                                     width: parent.width
                                     horizontalAlignment: Text.AlignHCenter
-                                    text: parent.parent.modelData.label
+                                    text: controlTile.modelData.label
                                     font.pixelSize: 11
-                                    color: parent.parent.selected ? pop.accentText : pop.text
+                                    color: controlTile.selected ? pop.accentText : pop.text
                                 }
                             }
                         }
@@ -2515,35 +2484,25 @@ PanelWindow {
     Component {
         id: notificationsPanel
         Column {
-            id: np
+            id: notifView
             width: 380
             spacing: 10
             readonly property var list: pop.notifs ? pop.notifs.history : []
 
-            Item {
-                width: parent.width; height: 28
-                Label { anchors.verticalCenter: parent.verticalCenter; text: "Notifications"; font.pixelSize: 15 }
+            PanelTitle {
+                text: "Notifications"
+                height: 28
                 Row {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 8
                     Label { anchors.verticalCenter: parent.verticalCenter; text: "Do not disturb"; color: pop.dim; font.pixelSize: 12 }
-                    Rectangle {
+                    Switch {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 40; height: 22; radius: 11
-                        readonly property bool on: pop.notifs ? pop.notifs.dnd : false
-                        color: on ? pop.accent : pop.card
-                        Gloss { radius: parent.radius }   // glass: a sheen
-                        Rectangle {
-                            width: 16; height: 16; radius: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: parent.on ? parent.width - width - 3 : 3
-                            color: parent.on ? pop.accentText : pop.text
-                            Behavior on x { NumberAnimation { duration: Config.ms(120) } }
-                        }
-                        ClickTap { onTapped: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd }
+                        checked: pop.notifs ? pop.notifs.dnd : false
+                        onToggled: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd
                     }
                     RowButton {
-                        visible: np.list.length > 0
+                        visible: notifView.list.length > 0
                         width: 30; height: 28
                         onClicked: if (pop.notifs) pop.notifs.clearAll()
                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.dim }
@@ -2552,7 +2511,7 @@ PanelWindow {
             }
 
             Item {
-                visible: np.list.length === 0
+                visible: notifView.list.length === 0
                 width: parent.width; height: 120
                 Column {
                     anchors.centerIn: parent
@@ -2564,13 +2523,13 @@ PanelWindow {
 
             ListView {
                 id: nList
-                visible: np.list.length > 0
+                visible: notifView.list.length > 0
                 width: parent.width
                 height: Math.min(contentHeight, 480)
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
-                model: np.list
+                model: notifView.list
                 readonly property bool overflowing: contentHeight > height
                 SmoothWheel { flick: nList }
                 delegate: NotificationCard {

@@ -43,7 +43,7 @@ PanelWindow {
     readonly property color errorColor: Config.tint("#f28b8b")
     // With glass: a translucent line in the dim text colour (light in dark mode, dark in light
     // mode, tinted toward the wallpaper), which stays visible whatever's behind the bar
-    readonly property color separatorColor: Config.s.glass ? withAlpha(Config.tint("#c5ccd6"), 0.35)
+    readonly property color separatorColor: Config.s.glass ? withAlpha(dimColor, 0.35)
                                                            : Config.tint("#444c58")
     function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
@@ -153,25 +153,30 @@ PanelWindow {
 
     // App tray menus (TrayMenu.qml), opened from a tray icon at its centre on the bar's inner edge
     TrayMenu { id: trayMenuWin; bar: bar }
-    function openTrayMenu(menu, item) {
-        // The icon's centre in the bar's window, then on the screen (the bar's window sits
+    // Where a menu opened from one of the bar's items points from: the item's centre on the
+    // screen, moved out to the bar's inner edge, where the menu's pointer meets it
+    function menuAnchor(item) {
+        // The item's centre in the bar's window, then on the screen (the bar's window sits
         // against its edge of the screen)
         const p = item.mapToItem(bar.contentItem, item.width / 2, item.height / 2);
         const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
         let x = p.x + (bar.side === "right" ? sw - bar.width : 0);
         let y = p.y + (bar.side === "bottom" ? sh - bar.height : 0);
-        // To the bar's inner edge, where the menu's pointer meets it
         if (bar.side === "top") y = bar.barHeight;
         else if (bar.side === "bottom") y = sh - bar.barHeight;
         else if (bar.side === "left") x = bar.barHeight;
         else x = sw - bar.barHeight;
-        trayMenuWin.openFor(menu, x, y);
+        return Qt.point(x, y);
+    }
+    function openTrayMenu(menu, item) {
+        const at = menuAnchor(item);
+        trayMenuWin.openFor(menu, at.x, at.y);
     }
     // The Slate button's right-click menu: quick access to useful things
     function openSlateMenu(item) {
         if (bar.popouts) bar.popouts.close();
         const slate = args => () => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args));
-        const notifs = bar.popouts ? bar.popouts.notifs : null;
+        const notifs = bar.notifs;
         const list = [
             { text: "Settings", glyph: 0xEB20, action: slate(["settings", "open"]) },
             { text: "Appearance", glyph: 0xEB01, action: slate(["settings", "page", "appearance"]) },
@@ -189,15 +194,8 @@ PanelWindow {
             { text: "Log out…", glyph: 0xEBA8, action: slate(["power", "confirm", "logout"]) },
             { text: "About Slate", glyph: 0xEAC5, action: slate(["settings", "page", "about"]) }
         ];
-        const p = item.mapToItem(bar.contentItem, item.width / 2, item.height / 2);
-        const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
-        let x = p.x + (bar.side === "right" ? sw - bar.width : 0);
-        let y = p.y + (bar.side === "bottom" ? sh - bar.height : 0);
-        if (bar.side === "top") y = bar.barHeight;
-        else if (bar.side === "bottom") y = sh - bar.barHeight;
-        else if (bar.side === "left") x = bar.barHeight;
-        else x = sw - bar.barHeight;
-        trayMenuWin.openList(list, x, y);
+        const at = menuAnchor(item);
+        trayMenuWin.openList(list, at.x, at.y);
     }
     function focusedBar() { return Config.barFor(Config.focusedScreen) || bar; }
     IpcHandler {
@@ -208,7 +206,8 @@ PanelWindow {
         function reveal(): void { bar.focusedBar().revealNow(); }
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
-        // names: control, spaces, notifications, session, volume, wifi, keyboard, bluetooth, battery, calendar
+        // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
+        // keyboard, bluetooth, battery, calendar
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
     }
 
@@ -275,7 +274,7 @@ PanelWindow {
             layer.effect: MultiEffect {
                 shadowEnabled: true
                 shadowColor: "black"
-                shadowOpacity: Config.glass ? 0 : (Config.s.lightMode ? 0.22 : 0.5) * bar.shadow
+                shadowOpacity: (Config.s.lightMode ? 0.22 : 0.5) * bar.shadow   // (the layer's off with glass)
                 shadowBlur: 0.9
                 blurMax: 24
                 shadowHorizontalOffset: bar.vert ? (bar.atRight ? -4 : 4) : 0
@@ -381,16 +380,11 @@ PanelWindow {
         }
 
         // ---- Left side ---------------------------------------------------
-        Grid {
+        BarLine {
             id: left
             opacity: bar.dimmed ? 0.4 : 1
             Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
             spacing: bar.gap
-            // One row across the bar, or one column down a side bar, sized to what it holds
-            // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-            // for every column it's told to have, even empty ones)
-            columns: bar.vert ? 1 : -1
-            rows: bar.vert ? -1 : 1
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
             x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding
@@ -478,15 +472,10 @@ PanelWindow {
                 readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
                 length: (bar.vert ? wsRow.height : wsRow.width) + 16
 
-                Grid {
+                BarLine {
                     id: wsRow
                     anchors.centerIn: parent
                     spacing: wsCap.dotGap
-                    // One row across the bar, or one column down a side bar, sized to what it holds
-                    // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-                    // for every column it's told to have, even empty ones)
-                    columns: bar.vert ? 1 : -1
-                    rows: bar.vert ? -1 : 1
                     Repeater {
                         model: wsCap.spaces
                         delegate: Rectangle {
@@ -533,18 +522,13 @@ PanelWindow {
                 visible: titleArea.parent === titleSlotTop && Config.s.barShowTitle
                 width: childrenRect.width; height: childrenRect.height
             }
-            Grid {
+            BarLine {
                 id: titleArea
                 // On a left bar the title reads upwards, so it sits at the bottom, just above
                 // the tray, and grows up from there
                 parent: bar.vert && !bar.atRight ? titleSlotBottom : titleSlotTop
                 visible: Config.s.barShowTitle
                 spacing: bar.gap
-                // One row across the bar, or one column down a side bar, sized to what it holds
-                // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-                // for every column it's told to have, even empty ones)
-                columns: bar.vert ? 1 : -1
-                rows: bar.vert ? -1 : 1
                 horizontalItemAlignment: Grid.AlignHCenter
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
@@ -591,6 +575,7 @@ PanelWindow {
                         IconPlate {
                             id: tilePlate
                             anchors.fill: parent; z: -1
+                            // (app: IconPlate's own, worked out from the tile image it sits behind)
                             color: appTile.space ? appTile.space.colour : Config.iconTileFor(app, Config.iconPlateColor)
                             shaded: !appTile.space && Config.iconTileShade(app) !== null
                             Behavior on color { ColorAnimation { duration: Config.ms(200) } }
@@ -651,16 +636,11 @@ PanelWindow {
         }
 
         // ---- Right side --------------------------------------------------
-        Grid {
+        BarLine {
             id: right
             opacity: bar.dimmed ? 0.4 : 1
             Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
             spacing: bar.gap
-            // One row across the bar, or one column down a side bar, sized to what it holds
-            // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-            // for every column it's told to have, even empty ones)
-            columns: bar.vert ? 1 : -1
-            rows: bar.vert ? -1 : 1
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
             // Placed by the edge of what's actually shown: the grid's own size can include spacing
@@ -701,17 +681,12 @@ PanelWindow {
                 HoverHandler { id: trayAreaHover; onHoveredChanged: if (hovered) trayClose.stop(); else if (trayCapsule.expanded) trayClose.restart() }
                 // Stays open while one of its apps' menus is open
                 Timer { id: trayClose; interval: 4000; onTriggered: if (trayMenuWin.visible) restart(); else trayCapsule.expanded = false }
-                Grid {
+                BarLine {
                     id: trayRow
                     // Held at the end with the button, so the icons slide out from it
                     x: bar.vert ? (parent.width - width) / 2 : parent.width - width - 5
                     y: bar.vert ? parent.height - height - 5 : (parent.height - height) / 2
                     spacing: 2
-                    // One row across the bar, or one column down a side bar, sized to what it holds
-                    // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-                    // for every column it's told to have, even empty ones)
-                    columns: bar.vert ? 1 : -1
-                    rows: bar.vert ? -1 : 1
                     Repeater {
                         model: trayCapsule.showIcons ? SystemTray.items.values : []
                         delegate: Item {
@@ -775,7 +750,7 @@ PanelWindow {
                     Item {
                         id: trayToggle
                         visible: trayCapsule.collapsible
-                        width: bar.vert ? 22 : 22; height: 22
+                        width: 22; height: 22
                         readonly property string hoverText: trayCapsule.expanded ? "Hide the tray" : SystemTray.items.values.length + " tray " + (SystemTray.items.values.length === 1 ? "app" : "apps")
                         readonly property int hoverCode: 0
                         readonly property string hoverTile: ""
@@ -802,7 +777,8 @@ PanelWindow {
                 }
             }
 
-            // Notifications | Wi-Fi | keyboard | Bluetooth | volume | battery: one container, hover fills each section to the separator
+            // Notifications | clipboard | screenshot | game mode | Wi-Fi | keyboard | Bluetooth | volume |
+            // battery: one container, hover fills each section to the separator
             Capsule {
                 id: status
                 hoverTint: false
@@ -826,12 +802,15 @@ PanelWindow {
                 property real openness: !collapsible || expanded ? 1 : 0
                 Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
                 readonly property bool showIcons: !collapsible || openness > 0
-                // In order along the bar, then the button; first/last/separators follow whichever are shown
-                readonly property var shown: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat].map(x => x && showIcons).concat([collapsible])
+                // Which icons are switched on, in order along the bar (each Segment's slot)
+                readonly property var switchedOn: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat]
+                // The same while they're laid out, then the button; first/last/separators follow
+                // whichever are shown
+                readonly property var shown: switchedOn.map(x => x && showIcons).concat([collapsible])
                 function isFirst(i) { return !shown.slice(0, i).some(x => x); }
                 function isLast(i) { return !shown.slice(i + 1).some(x => x); }
                 function sepBefore(i) { return shown[i] && !isFirst(i); }
-                visible: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat].some(x => x)
+                visible: switchedOn.some(x => x)
                 readonly property real fullLength: bar.vert ? statusRow.height : statusRow.width
                 readonly property real closedLength: bar.vert ? statusToggle.height : statusToggle.width
                 length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
@@ -839,25 +818,17 @@ PanelWindow {
                 HoverHandler { onHoveredChanged: if (hovered) statusClose.stop(); else if (status.expanded) statusClose.restart() }
                 // Stays open while one of its panels is open
                 Timer { id: statusClose; interval: 4000; onTriggered: if (bar.popoutHere) restart(); else status.expanded = false }
-                Grid {
+                BarLine {
                     id: statusRow
                     // Held at the end with the button, so the icons slide out from it
                     x: bar.vert ? 0 : parent.width - width
                     y: bar.vert ? parent.height - height : 0
-                    // One row across the bar, or one column down a side bar, sized to what it holds
-                    // (one row or column, left open: a grid counts what it shows itself, and leaves a gap
-                    // for every column it's told to have, even empty ones)
-                    columns: bar.vert ? 1 : -1
-                    rows: bar.vert ? -1 : 1
 
                     // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
                     Segment {
                         id: bellBtn
-                        opacity: status.openness
+                        group: status; slot: 0
                         pastel: "notifications"            // its colour when the look is Colourful
-                        visible: status.shown[0]
-                        first: true
-                        last: status.isLast(0)
                         iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
                         hoverText: !bar.notifs ? "Notifications"
                             : bar.notifs.dnd ? "Do not disturb is on"
@@ -868,15 +839,12 @@ PanelWindow {
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
                     }
-                    Separator { visible: status.sepBefore(1) }
+                    Separator { group: status; before: 1 }
                     // Clipboard history: how many items it holds; click for the list
                     Segment {
                         id: clipSeg
-                        opacity: status.openness
+                        group: status; slot: 1
                         pastel: "clipboard"            // its colour when the look is Colourful
-                        visible: status.shown[1]
-                        first: status.isFirst(1)
-                        last: status.isLast(1)
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
                         label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
                         hoverText: !Config.s.clipboardHistory ? "Clipboard history is off"
@@ -884,42 +852,33 @@ PanelWindow {
                             : "Clipboard · " + Config.clipCount + (Config.clipCount === 1 ? " item" : " items")
                         onClicked: bar.openPopout("clipboard", clipSeg)
                     }
-                    Separator { visible: status.sepBefore(2) }
+                    Separator { group: status; before: 2 }
                     // Screenshots: click for area / window / screen
                     Segment {
                         id: shotSeg
-                        opacity: status.openness
+                        group: status; slot: 2
                         pastel: "screenshot"            // its colour when the look is Colourful
-                        visible: status.shown[2]
-                        first: status.isFirst(2)
-                        last: status.isLast(2)
                         iconCode: 0xF201
                         hoverText: "Screenshot"
                         onClicked: bar.openPopout("screenshot", shotSeg)
                     }
-                    Separator { visible: status.sepBefore(3) }
+                    Separator { group: status; before: 3 }
                     // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
                     Segment {
                         id: gameSeg
-                        opacity: status.openness
+                        group: status; slot: 3
                         pastel: "gamemode"            // its colour when the look is Colourful
-                        visible: status.shown[3]
-                        first: status.isFirst(3)
-                        last: status.isLast(3)
                         iconCode: 0xF1D2
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
                         hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
-                    Separator { visible: status.sepBefore(4) }
+                    Separator { group: status; before: 4 }
                     Segment {
                         id: wifiSeg
-                        opacity: status.openness
+                        group: status; slot: 4
                         pastel: "wifi"            // its colour when the look is Colourful
-                        visible: status.shown[4]
-                        first: status.isFirst(4)
-                        last: status.isLast(4)
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
@@ -929,15 +888,12 @@ PanelWindow {
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
-                    Separator { visible: status.sepBefore(5) }
+                    Separator { group: status; before: 5 }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
-                        opacity: status.openness
+                        group: status; slot: 5
                         pastel: "keyboard"            // its colour when the look is Colourful
-                        visible: status.shown[5]
-                        first: status.isFirst(5)
-                        last: status.isLast(5)
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
                         label: Config.s.barValueKeyboard && current ? current.code : ""
@@ -945,15 +901,12 @@ PanelWindow {
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
-                    Separator { visible: status.sepBefore(6) }
+                    Separator { group: status; before: 6 }
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
-                        opacity: status.openness
+                        group: status; slot: 6
                         pastel: "bluetooth"            // its colour when the look is Colourful
-                        visible: status.shown[6]
-                        first: status.isFirst(6)
-                        last: status.isLast(6)
                         readonly property var adapter: Bluetooth.defaultAdapter
                         readonly property bool on: !!adapter && adapter.enabled
                         readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
@@ -964,14 +917,11 @@ PanelWindow {
                             : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
-                    Separator { visible: status.sepBefore(7) }
+                    Separator { group: status; before: 7 }
                     Segment {
                         id: volSeg
-                        opacity: status.openness
+                        group: status; slot: 7
                         pastel: "volume"            // its colour when the look is Colourful
-                        visible: status.shown[7]
-                        first: status.isFirst(7)
-                        last: status.isLast(7)
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
                         readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
@@ -988,29 +938,24 @@ PanelWindow {
                         }
                         PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
                     }
-                    Separator { visible: status.sepBefore(8) }
+                    Separator { group: status; before: 8 }
                     Segment {
                         id: batSeg
-                        opacity: status.openness
+                        group: status; slot: 8
                         pastel: "battery"            // its colour when the look is Colourful
-                        first: status.isFirst(8)
-                        last: status.isLast(8)
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
                         readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
-                        visible: status.shown[8]
                         iconCode: charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         label: Config.s.barValueBattery ? Math.round(pct * 100) + "%" : ""
                         hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
-                    Separator { visible: status.sepBefore(9) }
+                    Separator { group: status; before: 9 }
                     // The button that opens and closes the group (collapsed only)
                     Segment {
                         id: statusToggle
-                        visible: status.collapsible
-                        first: status.isFirst(9)
-                        last: true
+                        group: status; slot: 9
                         iconCode: 0xEC38
                         hoverText: status.expanded ? "Hide the status icons" : "Wi-Fi, volume, battery and more"
                         onClicked: { status.expanded = !status.expanded; statusClose.stop(); }
@@ -1059,6 +1004,15 @@ PanelWindow {
     readonly property real hoverStrength: Config.hoverStrength
 
     // Rounded container with a soft hover tint and click handling
+    // One row across the bar, or one column down a side bar, sized to what it holds (one row
+    // or column, left open: a grid counts what it shows itself, and leaves a gap for every
+    // column it's told to have, even empty ones)
+    component BarLine: Grid {
+        columns: bar.vert ? 1 : -1
+        rows: bar.vert ? -1 : 1
+    }
+
+
     component Capsule: Rectangle {
         id: cap
         property bool hoverTint: true
@@ -1106,8 +1060,15 @@ PanelWindow {
     // separators (square there) and follows the container's rounding at the ends.
     component Segment: Item {
         id: seg
-        property bool first: false
-        property bool last: false
+        // Its place in a group of segments (the status icons): slot is its position along the
+        // group, which says whether it shows and if it's at either end (rounded there). The
+        // group's last slot is its open/close button, which doesn't fade with the others
+        property var group: null
+        property int slot: -1
+        property bool first: group ? group.isFirst(slot) : false
+        property bool last: group ? group.isLast(slot) : false
+        visible: group ? group.shown[slot] : true
+        opacity: group && slot < group.shown.length - 1 ? group.openness : 1
         property int iconCode: 0
         property string label: ""
         property color tint: bar.textColor
@@ -1171,7 +1132,12 @@ PanelWindow {
         WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
     }
 
+    // The line between two segments; with a group, shown only when the segment after it
+    // (slot "before") shows and isn't the first
     component Separator: Item {
+        property var group: null
+        property int before: -1
+        visible: group ? group.sepBefore(before) : true
         width: bar.vert ? bar.capsuleHeight : 1
         height: bar.vert ? 1 : bar.capsuleHeight
         Rectangle {
