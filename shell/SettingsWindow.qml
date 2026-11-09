@@ -4035,7 +4035,8 @@ FloatingWindow {
                             border.width: on ? 2 : 0; border.color: win.accent
                             Behavior on color { ColorAnimation { duration: 100 } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
-                            // in the icon's colour, and Tint app icons (and its strength)
+                            // in the icon's colour, and Tint app icons (and its strength); with glass,
+                            // see-through tiles and the sheen, as in the dock
                             Image {
                                 anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 12 }
                                 width: 48; height: 48
@@ -4049,6 +4050,13 @@ FloatingWindow {
                                     anchors.fill: parent; z: -1; shape: shapeCard.modelData.value
                                     color: iconGroup.previewShade ?? Config.iconPlateColor
                                     shaded: iconGroup.previewShade !== null
+                                }
+                                // Glass: the sheen the dock puts on its icons, rounded to this shape
+                                Gloss {
+                                    glassHint: true
+                                    visible: Config.glassGloss && shapeCard.modelData.value !== "original"
+                                    radius: { const v = shapeCard.modelData.value, w = parent.width;
+                                              return v === "circle" ? w / 2 : v === "square" ? 0 : v === "squircle" ? w * 0.3 : w * 0.225; }
                                 }
                             }
                             Text {
