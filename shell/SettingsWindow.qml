@@ -2694,9 +2694,11 @@ FloatingWindow {
             Displays { id: disp }
             // The monitor being set up below the arrangement (Hyprland's name, e.g. DP-1)
             property string selected: ""
-            readonly property var mon: disp.monitors.find(m => m.name === selected) || disp.monitors[0] || null
+            // (with none chosen yet, the first one in use rather than one that's off)
+            readonly property var mon: disp.monitors.find(m => m.name === selected) || disp.monitors.find(m => !m.disabled) || disp.monitors[0] || null
             readonly property var cfg: mon ? disp.configOf(mon) : null
             readonly property int enabledCount: disp.monitors.filter(m => !m.disabled).length
+            readonly property bool hdrShown: !!mon && !!cfg && !cfg.disabled && disp.hdrCapable(mon)
 
             // Change one thing about the selected monitor, and apply it
             function change(field, value) {
@@ -2863,6 +2865,30 @@ FloatingWindow {
                     options: disp.transformOptions
                     value: displaysPane.cfg ? displaysPane.cfg.transform : 0
                     onPicked: v => displaysPane.change("transform", v)
+                }
+                // HDR: only for displays that can show it
+                Separator { visible: displaysPane.hdrShown }
+                DropdownSetting {
+                    visible: displaysPane.hdrShown
+                    label: "HDR"
+                    detail: "Auto: HDR while a game or video fills the screen with HDR content. On: always, in 10-bit colour. Off: never"
+                    options: disp.hdrOptions
+                    value: displaysPane.cfg ? displaysPane.cfg.hdr : "auto"
+                    onPicked: v => displaysPane.change("hdr", v)
+                }
+                Separator { visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on" }
+                SettingRow {
+                    visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on"
+                    label: "SDR brightness"
+                    detail: "How bright everything that isn't HDR (most apps, the desktop) looks while HDR is on"
+                    ValueSlider { from: 0.5; to: 2; stepSize: 0.05; decimals: 2; suffix: "×"; value: displaysPane.cfg ? displaysPane.cfg.sdrBrightness : 1; onMoved: v => displaysPane.change("sdrBrightness", v) }
+                }
+                Separator { visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on" }
+                SettingRow {
+                    visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on"
+                    label: "SDR colour"
+                    detail: "How colourful everything that isn't HDR looks while HDR is on"
+                    ValueSlider { from: 0.5; to: 1.5; stepSize: 0.05; decimals: 2; suffix: "×"; value: displaysPane.cfg ? displaysPane.cfg.sdrSaturation : 1; onMoved: v => displaysPane.change("sdrSaturation", v) }
                 }
                 Separator { visible: disp.monitors.length > 1 }
                 DropdownSetting {

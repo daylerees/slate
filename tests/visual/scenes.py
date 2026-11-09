@@ -105,3 +105,19 @@ SCENES["dock-magnified-glass"] = {
 # Settings → Displays lists the switched-off virtual screen by name: Virtual-1 here, Virtual-2
 # on GitHub's runners
 SCENES["settings-displays"]["mask"] = [(505, 538, 220, 24)]
+
+# Settings → Displays with HDR on (the test screen can't really show HDR: Slate remembers
+# displays that could, in displays.json, which is what this sets up; its name is "")
+_HDR = '{"": {"hdrCapable": true, "hdr": "on"}}'
+SCENES["settings-displays-hdr"] = {
+    "do": [("!sh", "-c", 'mkdir -p "$HOME/.local/state/slate" && printf %s \'' + _HDR + '\' > "$HOME/.local/state/slate/displays.json"'),
+           ("settings", "find", "displays", "HDR")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "displays", "settle": 2,
+    "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.local/state/slate/displays.json"')],
+}
+
+# About → What Slate is using: its memory and processor right now
+SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
+
+# The launcher's scrollbar: its length follows how many apps have loaded so far
+SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]

@@ -47,6 +47,27 @@ Scope {
     }
     Timer { id: refreshLater; interval: 300; onTriggered: root.refresh() }
 
+    // ---- HDR ----------------------------------------------------------------------
+    // Per display: "auto" (Hyprland's own: HDR while a fullscreen game or video shows HDR
+    // content), "on" (always, 10-bit, with how bright and colourful everything else looks) or
+    // "off" (never). Hyprland can't say which of auto and off is set, so Slate keeps the choice:
+    // saved (displays.json, by description) and, until a change is kept, picked here
+    property var saved: ({})
+    property var hdrPicked: ({})
+    readonly property var hdrOptions: [
+        { value: "auto", label: "Auto" }, { value: "on", label: "On" }, { value: "off", label: "Off" }
+    ]
+    // Can show HDR: as the display reports (Off hides that from Hyprland, so also once seen)
+    function hdrCapable(m) {
+        if (m.hardwareDetails && m.hardwareDetails.hdr) return true;
+        const s = saved[m.description];
+        return !!(s && s.hdrCapable);
+    }
+    function hdrOf(m) {
+        const s = saved[m.description];
+        return hdrPicked[m.description] ?? (s && s.hdr) ?? (m.colorManagementPreset === "hdr" ? "on" : "auto");
+    }
+
     // ---- Describing a monitor -----------------------------------------------
     // A monitor's settings as Slate keeps them
     function configOf(m) {
@@ -59,7 +80,10 @@ Scope {
             x: m.x, y: m.y,
             scale: m.scale > 0 ? m.scale : 1,
             transform: m.transform,
-            disabled: !!m.disabled
+            disabled: !!m.disabled,
+            hdr: hdrOf(m),
+            sdrBrightness: m.sdrBrightness > 0 ? m.sdrBrightness : 1,
+            sdrSaturation: m.sdrSaturation > 0 ? m.sdrSaturation : 1
         };
     }
     // Its size on the layout (what windows and positions are measured in)
@@ -130,11 +154,16 @@ Scope {
     }
 
     // ---- Applying ---------------------------------------------------------------
-    function luaFor(desc, name, cfg) {
+    function luaFor(desc, name, cfg, hdrCapable) {
         const out = desc ? `desc:${desc}` : name;
         if (cfg.disabled) return `hl.monitor({ output = [==[${out}]==], disabled = true })`;
+        // HDR only for displays that can show it (the rest are left as Hyprland has them)
+        const hdr = !hdrCapable && cfg.hdr !== "on" ? ""
+            : cfg.hdr === "on" ? `, cm = "hdr", bitdepth = 10, supports_hdr = 0, sdrbrightness = ${Number(cfg.sdrBrightness).toFixed(2)}, sdrsaturation = ${Number(cfg.sdrSaturation).toFixed(2)}`
+            : cfg.hdr === "off" ? `, cm = "auto", bitdepth = 8, supports_hdr = -1`
+            : `, cm = "auto", supports_hdr = 0`;
         return `hl.monitor({ output = [==[${out}]==], disabled = false, mode = "${cfg.mode}", position = "${Math.round(cfg.x)}x${Math.round(cfg.y)}", `
-            + `scale = ${Number(cfg.scale).toFixed(6)}, transform = ${cfg.transform} })`;
+            + `scale = ${Number(cfg.scale).toFixed(6)}, transform = ${cfg.transform}${hdr} })`;
     }
     // configs: { "<monitor name>": cfg } for every monitor (unchanged ones included)
     function apply(configs) {
@@ -148,7 +177,12 @@ Scope {
     }
     function send(configs) {
         const lines = [];
-        for (const m of monitors) if (configs[m.name]) lines.push(luaFor(m.description, m.name, configs[m.name]));
+        const picked = Object.assign({}, hdrPicked);
+        for (const m of monitors) if (configs[m.name]) {
+            lines.push(luaFor(m.description, m.name, configs[m.name], hdrCapable(m)));
+            if (m.description) picked[m.description] = configs[m.name].hdr;
+        }
+        hdrPicked = picked;
         if (lines.length === 0) return;
         Quickshell.execDetached(["hyprctl", "eval", lines.join("; ")]);
         refreshLater.restart();
@@ -184,13 +218,20 @@ Scope {
         const saved = {}, lines = ["-- Written by Slate (Settings → Displays). Changes here are replaced when you change displays there."];
         for (const m of monitors) {
             const cfg = configOf(m);
-            if (m.description) saved[m.description] = cfg;
-            lines.push(luaFor(m.description, m.name, cfg));
+            const capable = hdrCapable(m);
+            if (m.description) saved[m.description] = Object.assign({ hdrCapable: capable }, cfg);
+            lines.push(luaFor(m.description, m.name, cfg, capable));
         }
+        root.saved = saved;
         jsonFile.setText(JSON.stringify(saved, null, 2) + "\n");
         luaFile.setText(lines.join("\n") + "\n");
     }
-    FileView { id: jsonFile; path: root.stateDir + "/displays.json"; printErrors: false }
+    FileView {
+        id: jsonFile
+        path: root.stateDir + "/displays.json"
+        printErrors: false
+        onLoaded: { try { root.saved = JSON.parse(text()) || {}; } catch (e) {} }
+    }
     FileView { id: luaFile; path: root.stateDir + "/displays.lua"; printErrors: false }
 
     // ---- Arranging ----------------------------------------------------------------
