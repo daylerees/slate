@@ -76,6 +76,7 @@ Singleton {
         ["Power button", "power", "power key shut down suspend"],
         ["On battery", "power", "power mode profile saver battery"],
         ["Plugged in", "power", "power mode profile performance charger"],
+        ["Reopen apps after restarting", "power", "restart reboot reopen restore apps windows workspaces session"],
         ["Keyboard layout", "bar", "language switcher layout menu bar input"],
         ["Bluetooth", "bar", "menu bar bluetooth icon devices"],
         ["Keyboard layout code", "bar", "language code text beside icon layout gb us"],

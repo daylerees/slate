@@ -1,7 +1,8 @@
 // Confirmation dialog in the middle of the screen over a dimmed desktop: for log out /
 // restart / shut down, and for anything else that needs a yes first (deleting a space…).
 // Keyboard: Left/Right or Tab pick a button (the action is picked first), Enter or Space
-// presses it, Escape or a click outside cancels.
+// presses it, Escape or a click outside cancels. Restart also has a switch to reopen your
+// apps afterwards (Settings → Power): Up or Tab reaches it, Enter or Space flips it.
 // Open with powerConfirm.ask("<logout|reboot|shutdown>"), or from anywhere with:
 //   slate ipc call power confirm shutdown
 // For other questions:
@@ -40,7 +41,9 @@ PanelWindow {
     property var customAction: null
     readonly property var info: action === "custom" && custom ? custom : (actions[action] ?? actions.shutdown)
 
-    property int focusedButton: 1          // 0 = Cancel, 1 = the action
+    property int focusedButton: 1          // 0 = Cancel, 1 = the action, 2 = the reopen switch
+    readonly property bool hasReopen: action === "reboot"
+    readonly property var focusOrder: hasReopen ? [2, 0, 1] : [0, 1]   // Tab order, top to bottom
     function ask(name) {
         if (!actions[name]) return;
         open(name);
@@ -60,7 +63,15 @@ PanelWindow {
         Config.attention();
         Qt.callLater(() => keys.forceActiveFocus());
     }
-    function press() { if (focusedButton === 0) cancel(); else confirm(); }
+    function press() {
+        if (focusedButton === 2) Config.s.reopenAppsAfterRestart = !Config.s.reopenAppsAfterRestart;
+        else if (focusedButton === 0) cancel();
+        else confirm();
+    }
+    function step(d) {
+        const i = focusOrder.indexOf(focusedButton);
+        focusedButton = focusOrder[(i + d + focusOrder.length) % focusOrder.length];
+    }
     function cancel() { shown = false; customAction = null; }
     function confirm() {
         if (!shown) return;
@@ -125,7 +136,10 @@ PanelWindow {
                 case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space: root.press(); break;
                 case Qt.Key_Left: root.focusedButton = 0; break;
                 case Qt.Key_Right: root.focusedButton = 1; break;
-                case Qt.Key_Tab: case Qt.Key_Backtab: root.focusedButton = 1 - root.focusedButton; break;
+                case Qt.Key_Up: if (root.hasReopen) root.focusedButton = 2; break;
+                case Qt.Key_Down: if (root.focusedButton === 2) root.focusedButton = 1; break;
+                case Qt.Key_Tab: root.step(1); break;
+                case Qt.Key_Backtab: root.step(-1); break;
                 default: return;
                 }
                 e.accepted = true;
@@ -171,6 +185,63 @@ PanelWindow {
                     font.weight: Font.Medium
                 }
                 Item { width: 1; height: 22 }
+
+                // Restart: reopen your apps afterwards
+                Rectangle {
+                    id: reopen
+                    visible: root.hasReopen
+                    width: parent.width
+                    height: reopenText.implicitHeight + 24
+                    radius: 12
+                    readonly property bool on: Config.s.reopenAppsAfterRestart
+                    color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Gloss { radius: parent.radius; opacity: reopenHover.hovered ? 1 : 0 }
+                    HoverHandler { id: reopenHover; onHoveredChanged: if (hovered) root.focusedButton = 2 }
+                    ClickTap { onTapped: Config.s.reopenAppsAfterRestart = !reopen.on }
+                    // Keyboard focus ring, as on the buttons
+                    Rectangle {
+                        anchors { fill: parent; margins: -4 }
+                        radius: parent.radius + 4
+                        color: "transparent"
+                        border.width: 2; border.color: root.textColor
+                        opacity: root.focusedButton === 2 ? 0.35 : 0
+                        Behavior on opacity { NumberAnimation { duration: 100 } }
+                    }
+                    Column {
+                        id: reopenText
+                        anchors { left: parent.left; leftMargin: 14; right: reopenSwitch.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        spacing: 2
+                        Text {
+                            width: parent.width
+                            text: "Reopen my apps afterwards"
+                            color: root.textColor
+                            font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold
+                        }
+                        Text {
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: "On the same workspaces, just where you left them"
+                            color: root.dimTextColor
+                            font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        }
+                    }
+                    Rectangle {
+                        id: reopenSwitch
+                        anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        width: 42; height: 24; radius: 12
+                        color: reopen.on ? root.accent : Config.tint("#2a313c")
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Rectangle {
+                            width: 18; height: 18; radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: reopen.on ? parent.width - width - 3 : 3
+                            color: reopen.on ? root.accentText : root.textColor
+                            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
+                    }
+                }
+                Item { width: 1; height: 16; visible: root.hasReopen }
 
                 // Buttons
                 Row {

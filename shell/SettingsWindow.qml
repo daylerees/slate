@@ -165,7 +165,7 @@ FloatingWindow {
             "touchpadIgnoreWhileTyping"],
         sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume",
             "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
-        power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC"],
+        power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC", "reopenAppsAfterRestart"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
@@ -2599,6 +2599,14 @@ FloatingWindow {
                     options: pwp.profileOptions
                     value: Config.s.profileOnAC
                     onPicked: v => { Config.s.profileOnAC = v; Config.applyPowerProfile(); }
+                }
+            }
+            GroupLabel { text: "Restarting" }
+            Group {
+                SettingRow {
+                    label: "Reopen apps after restarting"
+                    detail: "Your apps open again on the same workspaces, where you left them. Also on the restart dialog"
+                    Toggle { checked: Config.s.reopenAppsAfterRestart; onToggled: v => Config.s.reopenAppsAfterRestart = v }
                 }
             }
         }

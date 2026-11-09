@@ -35,6 +35,7 @@ emergency/Box.qml            greeter/emergency/Box.qml
 -  scripts/appicon.py
 -  scripts/set-avatar.sh
 -  scripts/session.sh  # log out, restart, shut down: the login screen has its own
+-  scripts/spaces.py  # reopening apps after a restart: the login screen has no apps
 -  bin/slate  # restarts Slate when the interface size changes
 -  fonts/tabler.ttf  # the login screen passes the copy in /var/lib/slate-greeter
 -  sounds  # the login screen plays no sounds (Config.qml checks the welcome is there first)

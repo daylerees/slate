@@ -91,6 +91,7 @@ JsonAdapter {
     property string powerKeyAction: ""        // "" (the system's), menu, suspend, poweroff, lock or nothing
     property string profileOnBattery: ""      // "" (leave it), power-saver, balanced or performance
     property string profileOnAC: ""
+    property bool reopenAppsAfterRestart: true  // the restart dialog's switch: open your apps again after restarting, where they were
     // ---- Sound, startup, screenshots
     property var themedApps: []               // Appearance → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login

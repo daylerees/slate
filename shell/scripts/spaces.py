@@ -10,8 +10,15 @@
     spaces.py delete <id>                   forget a space
     spaces.py restore <id-or-name>          open each of its workspaces as a new workspace,
                                             start its apps and put their windows back
+    spaces.py session-save                  before a restart: keep every workspace's apps
+    spaces.py session-pending               exit 0 if there are apps to reopen at this login
+    spaces.py session-restore [<desktop-id>…]
+                                            after the restart: reopen them on the same
+                                            workspaces, in the same places; then open the
+                                            startup apps given, each on a workspace of its own
 
-Spaces are kept in $XDG_DATA_HOME/slate/spaces.json.
+Spaces are kept in $XDG_DATA_HOME/slate/spaces.json; the apps kept for a restart in
+$XDG_STATE_HOME/slate/session.json, until the next login reopens them.
 
 Each window is saved with the command that starts it (from the app's .desktop file, else
 the process's own command line) and its place relative to the screen's usable area, so a
@@ -44,6 +51,10 @@ LOCK = os.path.join(RUNTIME, "spaces.lock")
 # id}}. Hyprland numbers windows the same way each time it starts, so a file from another
 # Hyprland session is ignored. Windows that have closed are dropped on each write.
 OWNERS = os.path.join(RUNTIME, "space-windows.json")
+
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate")
+SESSION = os.path.join(STATE, "session.json")
+SESSION_MAX_AGE = 24 * 3600     # a session kept longer ago than this isn't reopened
 
 WINDOW_TIMEOUT = 15     # seconds to wait for an app's window
 TOLERANCE = 12          # px: windows this close count as touching (gaps between tiles)
@@ -186,13 +197,25 @@ def launch_info(client):
 
 # ---- Snapshot and the store ------------------------------------------------------------
 
+def is_slate(client):
+    """One of Slate's own windows (Settings…): starting its command again would start a
+    second Slate."""
+    if (client.get("class") or "").lower().startswith("org.quickshell"):
+        return True
+    try:
+        with open(f"/proc/{client['pid']}/comm", encoding="utf-8") as fh:
+            return fh.read().strip() in ("quickshell", "qs")
+    except (OSError, KeyError):
+        return False
+
+
 def snapshot():
     """Every normal workspace with windows: its screen and its windows, placed as fractions
     of the screen's usable area."""
     monitors = {m["name"]: m for m in hypr("monitors")}
     workspaces = {w["id"]: w for w in hypr("workspaces") if w.get("id", 0) > 0}
     clients = [c for c in hypr("clients") if c.get("mapped") and not c.get("hidden")
-               and c.get("workspace", {}).get("id", 0) > 0]
+               and c.get("workspace", {}).get("id", 0) > 0 and not is_slate(c)]
     # Window rounding, for the previews (a lone tiled window and a maximised one are square:
     # see windowrules.lua)
     opt = subprocess.run(["hyprctl", "-j", "getoption", "decoration:rounding"], capture_output=True, text=True).stdout
@@ -336,10 +359,33 @@ def remember(stable_id, space_id):
 
 
 class Restorer:
-    def __init__(self, space_id):
-        self.space_id = space_id
+    def __init__(self, space_id, adopt=False):
+        self.space_id = space_id    # None: not a space (reopening apps after a restart)
         self.failed = []
         self.ratio_form = None      # which "splitratio" form this Hyprland takes, once known
+        # After a restart, windows already open came from this login (startup apps, apps
+        # that reopen their own windows): they're put in place rather than started again
+        self.adopt = adopt
+        self.claimed = set()        # windows already put in place
+        self.started = set()        # classes started once already
+        self.reopens = set()        # classes whose app opened more than one window itself
+
+    def adoptable(self, want):
+        """An open window of this class that hasn't been put in place yet."""
+        for a, c in self.clients().items():
+            if a not in self.claimed and c.get("mapped") and want in (
+                    (c.get("class") or "").lower(), (c.get("initialClass") or "").lower()):
+                return c
+        return None
+
+    def take(self, c, ws):
+        """Put an open window on workspace ws, as if it had just been started there."""
+        self.claimed.add(c["address"])
+        if c["workspace"]["id"] != ws:
+            dispatch("hl.dsp.window.move({ workspace = " + str(ws) + ", follow = false, window = "
+                     + win_sel(c["address"]) + " })")
+            time.sleep(0.3)
+        return c["address"]
 
     def clients(self):
         return {c["address"]: c for c in hypr("clients")}
@@ -347,6 +393,19 @@ class Restorer:
     def launch(self, win, ws, floating=False):
         """Start an app on workspace ws and wait for its window. Returns the window's
         address, or None if none came."""
+        want = (win.get("class") or "").lower()
+        if self.adopt and want:
+            c = self.adoptable(want)
+            if c is None and want in self.reopens:
+                # The app reopens its own windows: give the rest a moment to appear
+                end = time.time() + 5
+                while c is None and time.time() < end:
+                    time.sleep(0.25)
+                    c = self.adoptable(want)
+            if c is not None:
+                if floating and not c.get("floating"):
+                    dispatch("hl.dsp.window.float({ action = 'enable', window = " + win_sel(c["address"]) + " })")
+                return self.take(c, ws)
         before = set(self.clients())
         cmd = win["command"]
         if win.get("cwd"):
@@ -356,11 +415,10 @@ class Restorer:
         reply = lua("hl.exec_cmd(" + expr + ", { " + rules + " })")
         if reply.startswith("error"):
             print(reply, file=sys.stderr)
-        want = (win.get("class") or "").lower()
         end = time.time() + WINDOW_TIMEOUT
         while time.time() < end:
             time.sleep(0.15)
-            new = [c for a, c in self.clients().items() if a not in before and c.get("mapped")]
+            new = [c for a, c in self.clients().items() if a not in before and a not in self.claimed and c.get("mapped")]
             if not new:
                 continue
             new.sort(key=lambda c: (c.get("class", "").lower() != want, c["workspace"]["id"] != ws))
@@ -369,8 +427,15 @@ class Restorer:
                 dispatch("hl.dsp.window.move({ workspace = " + str(ws) + ", follow = false, window = "
                          + win_sel(c["address"]) + " })")
             time.sleep(0.3)        # let it settle into its place
-            if c.get("stableId") is not None:
+            self.claimed.add(c["address"])
+            if self.space_id is not None and c.get("stableId") is not None:
                 remember(c["stableId"], self.space_id)
+            if self.adopt and want and want not in self.started:
+                self.started.add(want)
+                time.sleep(1.2)    # did it open more windows of its own (a browser's session)?
+                if any(a not in before and a not in self.claimed and c2.get("mapped")
+                       and (c2.get("class") or "").lower() == want for a, c2 in self.clients().items()):
+                    self.reopens.add(want)
             return c["address"]
         self.failed.append(win.get("name") or win.get("class") or win["command"].split(" ")[0])
         return None
@@ -537,6 +602,111 @@ def restore(key):
                " just switch to its existing window).")
 
 
+# ---- Reopening apps after a restart ------------------------------------------------------
+
+def boot_id():
+    try:
+        with open("/proc/sys/kernel/random/boot_id", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
+
+
+def session_save():
+    """Keep every workspace's apps, where they are, for the next login."""
+    workspaces = [{k: v for k, v in w.items() if k != "width"} for w in snapshot()]
+    for w in workspaces:
+        w["windows"] = [{k: v for k, v in win.items() if k not in ("address", "rounding")} for win in w["windows"]]
+    monitors = hypr("monitors")
+    data = {"boot": boot_id(), "saved": int(time.time()), "workspaces": workspaces,
+            "active": [{"monitor": m["name"], "workspace": m.get("activeWorkspace", {}).get("id", 0)} for m in monitors],
+            "focused": next((m["name"] for m in monitors if m.get("focused")), "")}
+    os.makedirs(STATE, exist_ok=True)
+    tmp = SESSION + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=1)
+    os.replace(tmp, SESSION)
+
+
+def session_forget():
+    try:
+        os.remove(SESSION)
+    except OSError:
+        pass
+
+
+def session_pending():
+    """The kept session, if this is the first login since the restart it was kept for."""
+    try:
+        with open(SESSION, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or not data.get("workspaces"):
+        return None
+    if data.get("boot") == boot_id():
+        return None             # the restart hasn't happened (yet)
+    if time.time() - data.get("saved", 0) > SESSION_MAX_AGE:
+        session_forget()
+        return None
+    return data
+
+
+def startup_launch_info(desktop_id):
+    path = desktop_files().get(desktop_id.lower().removesuffix(".desktop"))
+    v = entry_values(path) if path else {}
+    if not v.get("Exec"):
+        return None
+    return {"desktopId": desktop_id, "command": exec_command(v["Exec"]), "terminal": v.get("Terminal", "").lower() == "true",
+            "cwd": v.get("Path", ""), "name": v.get("Name", ""), "class": v.get("StartupWMClass", "") or desktop_id}
+
+
+def session_restore(startup):
+    data = session_pending()
+    if not data:
+        return
+    session_forget()            # once only, even if something below goes wrong
+    os.makedirs(RUNTIME, exist_ok=True)
+    lock = open(LOCK, "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+    except OSError:
+        return
+    r = Restorer(None, adopt=True)
+    monitors = {m["name"] for m in hypr("monitors")}
+    for saved in sorted(data["workspaces"], key=lambda w: w["id"]):
+        if saved.get("monitor") not in monitors:
+            saved["monitor"] = ""   # that screen isn't connected: wherever it lands
+        r.restore_workspace(saved, saved["id"])
+    # Startup apps (Settings → Startup Apps), each on an empty workspace of its own after the
+    # reopened ones. One already open (reopened above) is left alone: starting it again would
+    # only bring its window forward.
+    open_entries = {find_entry(c.get("initialClass") or c.get("class")) for c in hypr("clients")}
+    used = {w["id"] for w in hypr("workspaces") if w.get("windows", 0) > 0}
+    nxt = max(used | {w["id"] for w in data["workspaces"]}, default=0) + 1
+    starter = Restorer(None)
+    for desktop_id in startup:
+        info = startup_launch_info(desktop_id)
+        if not info or desktop_files().get(desktop_id.lower().removesuffix(".desktop")) in open_entries:
+            continue
+        while nxt in used:
+            nxt += 1
+        dispatch("hl.dsp.focus({ workspace = " + str(nxt) + " })")
+        if starter.launch(info, nxt):
+            used.add(nxt)
+    r.failed += starter.failed
+    # Back to the workspaces that were showing, ending on the screen that had focus
+    active = sorted(data.get("active", []), key=lambda a: a.get("monitor") == data.get("focused"))
+    for a in active:
+        if a.get("monitor") in monitors and a.get("workspace", 0) > 0:
+            if len(monitors) > 1:
+                dispatch("hl.dsp.focus({ monitor = " + lstr(a["monitor"]) + " })")
+            dispatch("hl.dsp.focus({ workspace = " + str(a["workspace"]) + " })")
+    if r.failed:
+        names = sorted(set(r.failed))
+        notify("Some apps didn't reopen", ", ".join(names) + " didn't open a window after the restart.")
+
+
 def main():
     args = sys.argv[1:]
     if not args:
@@ -548,6 +718,14 @@ def main():
         save(args[1], args[2], args[3], args[4])
     elif cmd == "delete" and len(args) == 2:
         delete(args[1])
+    elif cmd == "session-save":
+        session_save()
+    elif cmd == "session-forget":
+        session_forget()
+    elif cmd == "session-pending":
+        sys.exit(0 if session_pending() else 1)
+    elif cmd == "session-restore":
+        session_restore(args[1:])
     elif cmd == "restore" and len(args) == 2:
         time.sleep(0.3)        # let the bar's panel let go of the keyboard first
         restore(args[1])

@@ -249,11 +249,22 @@ Singleton {
         onExited: code => { if (code === 0) loginSettle.start(); }
     }
     Timer { id: loginSettle; interval: 2500; onTriggered: root.atLogin() }
-    // Startup apps (Settings → Startup Apps)
-    onAtLogin: {
-        for (const id of (s.startupApps || [])) {
-            const e = DesktopEntries.byId(id);
-            if (e) e.execute();
+    // Startup apps (Settings → Startup Apps). After a restart that kept your apps (the restart
+    // dialog's "Reopen apps"), spaces.py reopens those first, back where they were, then opens
+    // the startup apps, each on a workspace of its own, and returns to your last workspace.
+    onAtLogin: reopenCheck.running = true
+    Process {
+        id: reopenCheck
+        command: ["python3", Quickshell.shellPath("scripts/spaces.py"), "session-pending"]
+        onExited: code => {
+            if (code === 0) {
+                Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/spaces.py"), "session-restore"].concat(root.s.startupApps || []));
+                return;
+            }
+            for (const id of (root.s.startupApps || [])) {
+                const e = DesktopEntries.byId(id);
+                if (e) e.execute();
+            }
         }
     }
 
@@ -763,7 +774,8 @@ Singleton {
         else leaveAfterFade.restart();
     }
     function runSessionAction() {
-        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), leaveAction, (soundVolume("goodbye") / 100).toFixed(2)]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), leaveAction, (soundVolume("goodbye") / 100).toFixed(2)]
+            .concat(leaveAction === "reboot" && s.reopenAppsAfterRestart ? ["reopen"] : []));
     }
     Timer { id: leaveAfterFade; interval: root.leaveFade; onTriggered: root.runSessionAction() }
     Timer { id: leaveGiveUp; interval: 20000; onTriggered: root.leaving = false }

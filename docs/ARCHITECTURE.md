@@ -236,7 +236,9 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).
 
-Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down; the goodbye sound first),
+Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down; the goodbye sound first;
+before a restart with "Reopen my apps" on, `spaces.py session-save` keeps the windows, and the next login's
+`spaces.py session-restore` reopens them, then the startup apps on workspaces of their own),
 `scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming and the code font — fontconfig's "monospace",
 GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when the theme, accent, code font or the
 apps switched on in Settings → App Theming change). The apps live in `scripts/slate_apps.py`
