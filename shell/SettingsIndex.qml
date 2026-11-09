@@ -176,26 +176,33 @@ Singleton {
 
     // Ignore case and punctuation, so "wifi" finds "Wi-Fi" and "and idle" finds "Lock & Idle"
     function norm(t) { return (t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, "").replace(/\s+/g, " ").trim(); }
+    // Each entry's text as search compares it, worked out once when the list changes rather
+    // than for all ~400 entries on every keystroke (the launcher searches as you type too)
+    readonly property var prepared: entries.map(e => {
+        const n = norm(e.label);
+        const more = norm(e.group + " " + (pageNames[e.page] || "") + " " + e.words + " " + e.detail);
+        return { e: e, n: n, nWords: n.split(" "), more: more, moreWords: more.split(" "), page: norm(pageNames[e.page] || "") };
+    })
     // Best matches first: the label starting with it, then a word in the label, then
     // anywhere in the label, then its heading, page, extra words or description
     function search(text, limit) {
         const q = norm(text);
         if (q.length < 2) return [];
         const hidden = l => !Config.titleBarsAvailable && (l === "Window mode" || l === "Title bar buttons" || l === "Window mode (tiling or floating)");
-        return entries.filter(e => !hidden(e.label)).map(e => {
-            const n = norm(e.label);
-            const more = norm(e.group + " " + (pageNames[e.page] || "") + " " + e.words + " " + e.detail);
-            let s = n.startsWith(q) ? 0 : n.split(" ").some(w => w.startsWith(q)) ? 1 : n.includes(q) ? 2
-                : more.split(" ").some(w => w.startsWith(q)) ? 3 : more.includes(q) ? 4 : -1;
+        return prepared.filter(p => !hidden(p.e.label)).map(p => {
+            const n = p.n, more = p.more;
+            let s = n.startsWith(q) ? 0 : p.nWords.some(w => w.startsWith(q)) ? 1 : n.includes(q) ? 2
+                : p.moreWords.some(w => w.startsWith(q)) ? 3 : more.includes(q) ? 4 : -1;
             // Several words ("dock size"): each has to start a word somewhere
             if (s < 0 && q.includes(" ")) {
-                const starts = (text, w) => text.split(" ").some(x => x.startsWith(w));
-                const all = n + " " + more, qs = q.split(" ");
-                if (qs.every(w => starts(all, w))) s = qs.every(w => starts(n, w)) ? 2.5 : 3.5;
+                const qs = q.split(" ");
+                const inLabel = w => p.nWords.some(x => x.startsWith(w));
+                if (qs.every(w => inLabel(w) || p.moreWords.some(x => x.startsWith(w))))
+                    s = qs.every(inLabel) ? 2.5 : 3.5;
             }
             // On the page it names ("wifi" → the Wi-Fi page before the bar's Wi-Fi switch)
-            const home = norm(pageNames[e.page] || "").startsWith(q) ? 0 : 1;
-            return { e: e, s: s, home: home };
+            const home = p.page.startsWith(q) ? 0 : 1;
+            return { e: p.e, s: s, home: home };
         }).filter(x => x.s >= 0)
           .sort((a, b) => a.s - b.s || a.home - b.home || a.e.label.length - b.e.label.length)
           .slice(0, limit || 50)

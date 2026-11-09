@@ -338,15 +338,10 @@ PanelWindow {
                         width: parent.width; height: appsText.implicitHeight + 28; radius: 12
                         color: w.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
-                        // Installed apps Slate can theme (scripts/apply-theme.py --apps)
-                        property var installed: []
-                        Process {
-                            running: true
-                            command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
-                            stdout: StdioCollector {
-                                onStreamFinished: { try { appsRow.installed = JSON.parse(text).filter(a => a.installed).map(a => a.id); } catch (e) {} }
-                            }
-                        }
+                        // Installed apps Slate can theme: the list Settings' search already reads at
+                        // start (SettingsIndex.themeApps, from scripts/apply-theme.py --apps), rather
+                        // than running the script again for a page that's seldom seen
+                        readonly property var installed: SettingsIndex.themeApps.filter(a => a.installed).map(a => a.id)
                         readonly property var themed: Config.s.themedApps || []
                         readonly property bool on: installed.length > 0 && installed.every(a => themed.includes(a))
                         Column {
