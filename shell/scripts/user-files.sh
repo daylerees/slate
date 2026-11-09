@@ -11,6 +11,7 @@ src="$dir/data/user-files"
 cd "$src" || exit 1
 find . -type f | while read -r f; do
     dest="$dir/${f#./}"
-    [ -e "$dest" ] && continue
+    # yours already (a link of yours too, even one that points nowhere: never written through)
+    { [ -e "$dest" ] || [ -L "$dest" ]; } && continue
     mkdir -p "$(dirname "$dest")" && cp "$f" "$dest" && echo "created ${dest}"
 done

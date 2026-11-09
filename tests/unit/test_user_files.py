@@ -95,6 +95,7 @@ class UserFiles(Case):
         os.symlink(os.path.join(dots, "rules.lua"), os.path.join(self.slate, "hypr", "rules.lua"))
         os.symlink(os.path.join(dots, "binds.lua"), os.path.join(self.slate, "hypr", "binds.lua"))
         out = self.make()
+        self.assertNotIn("cp:", out, "tried to write through a link (GNU cp refused; others might not)")
         self.assertNotIn("hypr/rules.lua", out)
         self.assertNotIn("created " + os.path.join(self.slate, "hypr", "binds.lua"), out)
         self.assertEqual(read(os.path.join(dots, "rules.lua")), b"-- from my dotfiles\n")
