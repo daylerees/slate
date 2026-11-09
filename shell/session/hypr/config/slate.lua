@@ -22,8 +22,11 @@ local function touchpads()
     local ok, devices = pcall(hl.get_devices)
     if ok and type(devices) == "table" then
         for _, d in ipairs(devices.mice or devices) do
-            local name = type(d) == "table" and d.name or nil
-            if name and name:lower():find("touchpad") then table.insert(out, name) end
+            -- devices are userdata objects (not tables), so read the name defensively
+            local okName, name = pcall(function() return d.name end)
+            if okName and type(name) == "string" and name:lower():find("touchpad") then
+                table.insert(out, name)
+            end
         end
     end
     return out
