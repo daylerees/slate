@@ -4762,12 +4762,19 @@ FloatingWindow {
                                 }
                             }
                             Column {
+                                id: netLabels
                                 anchors { left: netIcon.right; leftMargin: 12; right: netButtons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                 spacing: 2
                                 Row {
                                     spacing: 6
-                                    Text { text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
-                                    Text { visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: win.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
+                                    // A long name stops short of the buttons (… at the end), leaving
+                                    // room for the lock beside it
+                                    Text {
+                                        width: Math.min(implicitWidth, netLabels.width - (netLock.visible ? netLock.width + 6 : 0))
+                                        elide: Text.ElideRight
+                                        text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    }
+                                    Text { id: netLock; visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: win.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
                                 }
                                 Text {
                                     text: (netRow.n.connected ? "Connected" : netRow.n.stateChanging ? "Connecting…" : netRow.n.known ? "Saved" : netRow.secure ? "Secured" : "Open")
