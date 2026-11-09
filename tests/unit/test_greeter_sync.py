@@ -7,7 +7,6 @@ The installed code's folder (/usr/local/share/slate-greeter) is fixed in the scr
 --check tests run a copy with it pointed at a scratch folder instead."""
 import json
 import os
-import re
 import shutil
 
 import slate
@@ -58,14 +57,10 @@ class GreeterCase(Case):
 class Check(GreeterCase):
     def setUp(self):
         super().setUp()
+        # The installed code's folder, in the scratch dir
         self.code = os.path.join(self.h.dir, "usr-local-share-slate-greeter")
-        # The script, with its code folder in the scratch dir
-        with open(SCRIPT) as f:
-            src, n = re.subn(r"^CODE=/usr/local/share/slate-greeter$", f"CODE={self.code}", f.read(), flags=re.M)
-        self.assertEqual(n, 1, "the script's CODE= line has changed; update this test")
-        self.script = os.path.join(self.h.dir, "slate-greeter-sync")
-        with open(self.script, "w") as f:
-            f.write(src)
+        self.s.env["SLATE_GREETER_CODE"] = self.code
+        self.script = SCRIPT
 
     def install_code(self, layout="us"):
         """What slate-greeter-install puts in place: the listed files and hyprland.lua."""
@@ -158,7 +153,8 @@ class Check(GreeterCase):
     def test_real_script(self):
         """The script itself, unchanged: --check only reads, answers one word, and exits 0.
         (Its answer depends on this machine's login screen, so any of the three is fine.)"""
-        code, out = run(["bash", SCRIPT, "--check"], env=self.s.env)
+        env = {k: v for k, v in self.s.env.items() if k != "SLATE_GREETER_CODE"}
+        code, out = run(["bash", SCRIPT, "--check"], env=env)
         self.assertEqual(code, 0, out)
         self.assertIn(out, ("not-installed\n", "outdated\n", "current\n"))
         if not os.path.isdir(REAL_CODE):

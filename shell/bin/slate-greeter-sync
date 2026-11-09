@@ -14,8 +14,8 @@
 #                                Asks once per version of the code. Slate runs this.
 set -euo pipefail
 
-DEST="${SLATE_GREETER_DIR:-/var/lib/slate-greeter}"      # override only for testing
-CODE=/usr/local/share/slate-greeter
+DEST="${SLATE_GREETER_DIR:-/var/lib/slate-greeter}"      # overrides only for testing
+CODE="${SLATE_GREETER_CODE:-/usr/local/share/slate-greeter}"
 SRC="$HOME/.config/slate"
 
 # Files making up the login screen's code (greeter/files): <installed name> <source path>
