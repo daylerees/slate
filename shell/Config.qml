@@ -75,8 +75,10 @@ Singleton {
     function tint(hex) {
         const light = s.lightMode;
         const toned = s.toneFromWallpaper && wallpaperTone !== "";
-        if (!light && !toned) return hex;
+        // (a colour, not the text: surface() and others read its channels; from the text, glass
+        // made dark-theme surfaces fully transparent unless the wallpaper tinted them)
         const c = Qt.lighter(hex, 1.0);
+        if (!light && !toned) return c;
         const neutral = c.hslSaturation < 0.3;
         const surface = c.hslLightness < 0.5;          // backgrounds (vs text) in the dark theme
         let h = c.hslHue, sat = c.hslSaturation, l = c.hslLightness;
