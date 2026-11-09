@@ -3840,6 +3840,57 @@ FloatingWindow {
                         onMoved: v => Config.s.toneBoldness = v / 100
                     }
                 }
+                Separator {}
+                // Folder colour for file managers: Papirus's coloured folders (scripts/folder-colour.py)
+                Column {
+                    id: folderSet
+                    width: parent.width
+                    property var info: ({ supported: true, base: "", colours: [] })
+                    Process {
+                        running: true
+                        command: [Quickshell.shellPath("scripts/folder-colour.py"), "--list"]
+                        stdout: StdioCollector { onStreamFinished: { try { folderSet.info = JSON.parse(text); } catch (e) {} } }
+                    }
+                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
+                        darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
+                    function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
+                    readonly property var colours: folderSet.info.colours || []
+                    function hexOf(name) { const c = colours.find(x => x.name === name); return c ? c.hex : ""; }
+                    // Auto: the Papirus colour closest to the wallpaper's, picked as folder-colour.py
+                    // does (nearest()): by hue for colourful ones, else a grey
+                    readonly property string autoHex: {
+                        const a = Config.wallpaperAccent ? Qt.color(Config.wallpaperAccent) : null;
+                        if (!a || colours.length === 0) return hexOf("blue") || "#5294e2";
+                        const greys = ["black", "grey", "white", "bluegrey"];
+                        const hue = c => Math.max(0, c.hslHue);
+                        const grey = a.hslSaturation < 0.18;
+                        let best = "", d = 1e9;
+                        for (const c of colours) {
+                            if (c.name === "yaru" || greys.includes(c.name) !== grey) continue;
+                            const k = Qt.color(c.hex);
+                            const dh0 = Math.abs(hue(k) - hue(a)), dh = Math.min(dh0, 1 - dh0);
+                            const e = dh * 4 + Math.abs(k.hslLightness - a.hslLightness) + Math.abs(k.hslSaturation - a.hslSaturation) * 0.5;
+                            if (e < d) { d = e; best = c.hex; }
+                        }
+                        return best || hexOf("blue") || "#5294e2";
+                    }
+                    SettingRow {
+                        visible: !folderSet.info.supported
+                        label: "Folder colour"
+                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs the Papirus icon theme (this system uses " + folderSet.info.base + ")"
+                    }
+                    DropdownSetting {
+                        visible: folderSet.info.supported
+                        label: "Folder colour"
+                        detail: Config.s.folderColour === "auto" ? "Folders in Nautilus, Dolphin and other file managers, in the Papirus colour closest to the wallpaper's"
+                            : "Folders in Nautilus, Dolphin and other file managers"
+                        options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
+                                  { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
+                            .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
+                        value: Config.s.folderColour === "" ? "default" : Config.s.folderColour
+                        onPicked: v => Config.s.folderColour = v
+                    }
+                }
             }
             GroupLabel { text: "Glass" }
             Group {
@@ -3909,57 +3960,6 @@ FloatingWindow {
                     label: "Rounded screen corners"
                     detail: "Round off the corners of the screen and curve the bar into the screen edges"
                     Toggle { checked: Config.s.roundedScreenCorners; onToggled: v => Config.s.roundedScreenCorners = v }
-                }
-                Separator {}
-                // Folder colour for file managers: Papirus's coloured folders (scripts/folder-colour.py)
-                Column {
-                    id: folderSet
-                    width: parent.width
-                    property var info: ({ supported: true, base: "", colours: [] })
-                    Process {
-                        running: true
-                        command: [Quickshell.shellPath("scripts/folder-colour.py"), "--list"]
-                        stdout: StdioCollector { onStreamFinished: { try { folderSet.info = JSON.parse(text); } catch (e) {} } }
-                    }
-                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
-                        darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
-                    function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
-                    readonly property var colours: folderSet.info.colours || []
-                    function hexOf(name) { const c = colours.find(x => x.name === name); return c ? c.hex : ""; }
-                    // Auto: the Papirus colour closest to the wallpaper's, picked as folder-colour.py
-                    // does (nearest()): by hue for colourful ones, else a grey
-                    readonly property string autoHex: {
-                        const a = Config.wallpaperAccent ? Qt.color(Config.wallpaperAccent) : null;
-                        if (!a || colours.length === 0) return hexOf("blue") || "#5294e2";
-                        const greys = ["black", "grey", "white", "bluegrey"];
-                        const hue = c => Math.max(0, c.hslHue);
-                        const grey = a.hslSaturation < 0.18;
-                        let best = "", d = 1e9;
-                        for (const c of colours) {
-                            if (c.name === "yaru" || greys.includes(c.name) !== grey) continue;
-                            const k = Qt.color(c.hex);
-                            const dh0 = Math.abs(hue(k) - hue(a)), dh = Math.min(dh0, 1 - dh0);
-                            const e = dh * 4 + Math.abs(k.hslLightness - a.hslLightness) + Math.abs(k.hslSaturation - a.hslSaturation) * 0.5;
-                            if (e < d) { d = e; best = c.hex; }
-                        }
-                        return best || hexOf("blue") || "#5294e2";
-                    }
-                    SettingRow {
-                        visible: !folderSet.info.supported
-                        label: "Folder colour"
-                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs the Papirus icon theme (this system uses " + folderSet.info.base + ")"
-                    }
-                    DropdownSetting {
-                        visible: folderSet.info.supported
-                        label: "Folder colour"
-                        detail: Config.s.folderColour === "auto" ? "Folders in Nautilus, Dolphin and other file managers, in the Papirus colour closest to the wallpaper's"
-                            : "Folders in Nautilus, Dolphin and other file managers"
-                        options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
-                                  { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
-                            .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
-                        value: Config.s.folderColour === "" ? "default" : Config.s.folderColour
-                        onPicked: v => Config.s.folderColour = v
-                    }
                 }
             }
             GroupLabel { text: "App icons" }
