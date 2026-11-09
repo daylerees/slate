@@ -2401,13 +2401,6 @@ FloatingWindow {
                         }
                     }
                 }
-                Separator {}
-                SettingRow {
-                    label: "Show the clock"
-                    detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
-                        : "The time and date in the middle"
-                    Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
-                }
                 Separator { visible: Config.s.screensaverStyle === "videos" }
                 // The size Get scenery videos downloads in (clips without that size come in their
                 // largest). Raising it later fetches again only the clips that get sharper
@@ -2420,6 +2413,13 @@ FloatingWindow {
                               { value: "2160p", label: "4K" }, { value: "1440p", label: "1440p" }, { value: "1080p", label: "1080p" }]
                     value: Config.s.screensaverVideoQuality || "auto"
                     onPicked: v => Config.s.screensaverVideoQuality = v
+                }
+                Separator {}
+                SettingRow {
+                    label: "Show the clock"
+                    detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
+                        : "The time and date in the middle"
+                    Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
                 }
                 Separator { visible: Config.s.screensaverStyle === "slideshow" }
                 DropdownSetting {
