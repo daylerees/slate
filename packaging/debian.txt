@@ -36,6 +36,7 @@ pkexec
 libpam-modules-bin
 systemd
 util-linux
+diffutils           # cmp: is the installed copy (Slate, the login screen) up to date
 dbus-bin
 libglib2.0-bin
 procps

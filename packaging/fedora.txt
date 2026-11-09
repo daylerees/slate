@@ -26,6 +26,7 @@ polkit
 pam
 systemd
 util-linux
+diffutils           # cmp: is the installed copy (Slate, the login screen) up to date
 dbus-tools
 glib2
 procps-ng

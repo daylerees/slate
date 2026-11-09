@@ -21,6 +21,7 @@
     # (python's modules have to come with it to be found: a separate package isn't on its path)
     (python3.withPackages (ps: [ ps.pillow ps.numpy ]))
     librsvg imagemagick wl-clipboard libnotify curl unzip xdg-utils xdg-user-dirs
+    diffutils   # cmp: is the installed copy (Slate, the login screen) up to date
     glib gsettings-desktop-schemas fontconfig   # gio / gsettings / gdbus, and fc-list (font lists)
     hyprland-guiutils btop ffmpeg pciutils      # optional extras
     grim slurp hyprpicker brightnessctl adw-gtk3 papirus-icon-theme
