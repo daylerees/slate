@@ -295,7 +295,12 @@ FloatingWindow {
     ]
     // Theme presets (Settings → Appearance → Presets): a named set of the Theme & colour and Glass
     // settings, applied together. Only those keys; lightMode follows themeMode
+    // Slate Default: the same settings the other presets set (and light or dark), at Slate's
+    // defaults, read from Config.defaultOf so it never falls out of step with them
+    readonly property var presetKeys: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent",
+        "toneFromWallpaper", "toneBoldness", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "folderColour"]
     readonly property var themePresets: [
+        { name: "Slate Default", settings: presetKeys.reduce((o, k) => { const d = Config.defaultOf(k); if (d !== undefined) o[k] = d; return o; }, {}) },
         { name: "Liquid Glass", settings: {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
