@@ -2589,6 +2589,24 @@ FloatingWindow {
 
             GroupLabel { text: "Keyboard" }
             Group {
+                SearchPicker {
+                    label: "Add a layout"
+                    detail: "Search by language or name, e.g. French or Dvorak"
+                    buttonLabel: "Add…"
+                    buttonIcon: 0xEB0B
+                    options: ip.layoutOptions
+                    onPicked: v => {
+                        const parts = String(v).split(":");
+                        const l = ip.layouts.slice();
+                        if (!l.some(x => x.layout === parts[0] && x.variant === (parts[1] || "")))
+                            l.push({ layout: parts[0], variant: parts[1] || "" });
+                        ip.setLayouts(l);
+                    }
+                }
+            }
+            Item { width: 1; height: 6 }
+            // The layouts in use, in their own container under Add a layout
+            Group {
                 Repeater {
                     model: ip.layouts
                     delegate: Column {
@@ -2605,22 +2623,9 @@ FloatingWindow {
                         }
                     }
                 }
-                Separator {}
-                SearchPicker {
-                    label: "Add a layout"
-                    detail: "Search by language or name, e.g. French or Dvorak"
-                    buttonLabel: "Add…"
-                    buttonIcon: 0xEB0B
-                    options: ip.layoutOptions
-                    onPicked: v => {
-                        const parts = String(v).split(":");
-                        const l = ip.layouts.slice();
-                        if (!l.some(x => x.layout === parts[0] && x.variant === (parts[1] || "")))
-                            l.push({ layout: parts[0], variant: parts[1] || "" });
-                        ip.setLayouts(l);
-                    }
-                }
-                Separator { visible: ip.layouts.length > 1 }
+            }
+            Item { width: 1; height: 6 }
+            Group {
                 DropdownSetting {
                     visible: ip.layouts.length > 1
                     label: "Switch layouts with"
@@ -2629,7 +2634,7 @@ FloatingWindow {
                     value: ip.switchValue
                     onPicked: v => Config.s.kbSwitch = v
                 }
-                Separator {}
+                Separator { visible: ip.layouts.length > 1 }
                 DropdownSetting {
                     label: "Caps Lock key"
                     detail: ip.switchValue === "caps" && ip.layouts.length > 1 ? "It switches layouts (above)" : "What the Caps Lock key does"
