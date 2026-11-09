@@ -83,6 +83,30 @@ Scope {
         if (m.width > 0) add(configOf(m).mode);
         return out.sort((a, b) => b.w * b.h - a.w * a.h || b.hz - a.hz);
     }
+    // The resolutions alone, largest first ("2880x1800"), the monitor's own marked native
+    function resolutionOptions(m) {
+        const modes = modeOptions(m), seen = {}, out = [];
+        const native = (m.availableModes || [])[0] ? String(m.availableModes[0]).split("@")[0] : "";
+        for (const o of modes) {
+            const res = o.w + "x" + o.h;
+            if (seen[res]) continue;
+            seen[res] = true;
+            out.push({ value: res, label: o.w + " × " + o.h + (res === native ? " (native)" : "") });
+        }
+        return out;
+    }
+    // The refresh rates a resolution has, fastest first ("120.00", labelled "120 Hz")
+    function refreshOptions(m, res) {
+        const hzLabel = hz => (Math.abs(hz - Math.round(hz)) < 0.05 ? Math.round(hz) : hz.toFixed(2)) + " Hz";
+        return modeOptions(m).filter(o => o.w + "x" + o.h === res)
+            .map(o => ({ value: o.hz.toFixed(2), label: hzLabel(o.hz) }));
+    }
+    // A mode for `res`, at `hz` if it has that rate, else its fastest
+    function modeAt(m, res, hz) {
+        const rates = refreshOptions(m, res);
+        const keep = rates.find(r => Math.abs(Number(r.value) - Number(hz)) < 0.05);
+        return res + "@" + (keep ? keep.value : rates.length ? rates[0].value : Number(hz).toFixed(2));
+    }
     // Scales that give a whole-pixel layout size for this resolution (Hyprland needs that)
     function scaleOptions(mode, current) {
         const p = mode.split("@")[0].split("x").map(Number);

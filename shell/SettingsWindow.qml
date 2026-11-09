@@ -2476,10 +2476,20 @@ FloatingWindow {
                 DropdownSetting {
                     visible: dp.cfg && !dp.cfg.disabled
                     label: "Resolution"
-                    detail: "Size and refresh rate"
-                    options: dp.mon ? disp.modeOptions(dp.mon) : []
-                    value: dp.cfg ? dp.cfg.mode : ""
-                    onPicked: v => dp.change("mode", v)
+                    detail: "The sizes this display reports. Laptop panels often report only their own; to make things larger or smaller there, use Scale"
+                    options: dp.mon ? disp.resolutionOptions(dp.mon) : []
+                    value: dp.cfg ? dp.cfg.mode.split("@")[0] : ""
+                    // Keeps the refresh rate if the new size has it, else its fastest
+                    onPicked: v => dp.change("mode", disp.modeAt(dp.mon, v, dp.cfg.mode.split("@")[1]))
+                }
+                Separator { visible: dp.cfg && !dp.cfg.disabled }
+                DropdownSetting {
+                    visible: dp.cfg && !dp.cfg.disabled
+                    label: "Refresh rate"
+                    detail: "How many times a second the picture updates, from the rates this resolution has. Higher is smoother"
+                    options: dp.mon && dp.cfg ? disp.refreshOptions(dp.mon, dp.cfg.mode.split("@")[0]) : []
+                    value: dp.cfg ? dp.cfg.mode.split("@")[1] : ""
+                    onPicked: v => dp.change("mode", dp.cfg.mode.split("@")[0] + "@" + v)
                 }
                 Separator { visible: dp.cfg && !dp.cfg.disabled }
                 DropdownSetting {
