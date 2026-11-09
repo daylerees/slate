@@ -243,7 +243,11 @@ FloatingWindow {
         { name: "Liquid Glass", settings: {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } }
+            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } },
+        { name: "Metro Flat", settings: {
+            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.4, accent: "#8fb3e8",
+            toneFromWallpaper: true, toneBoldness: 0.5,
+            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1 } }
     ]
     function presetActive(p) {
         for (const k in p.settings) {
