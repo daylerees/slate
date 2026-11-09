@@ -3,6 +3,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 Scope {
@@ -61,18 +62,39 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "slate-hotcorner"
             WlrLayershell.layer: WlrLayer.Overlay
-            // Armed = allowed to fire. Locking disarms every corner; after unlocking a
-            // corner re-arms straight away if the pointer is elsewhere, or once the
-            // pointer leaves it (so you can't land back on the lock corner and re-lock).
+            // Armed = allowed to fire. Locking disarms every corner. While locked, the lock
+            // screen has the pointer, so a corner never hears it leave: one used to lock
+            // stayed "pointed at" and never re-armed until Slate reloaded. So unlocking
+            // starts the pointer tracking afresh and, a moment later, asks Hyprland where the
+            // pointer really is: elsewhere, the corner re-arms; still in it, it waits until the
+            // pointer leaves (so you can't land back on the lock corner and re-lock).
             property bool armed: true
             Connections {
                 target: hc.lock
                 function onLockedChanged() {
                     if (hc.lock.locked) { corner.armed = false; wait.stop(); }
-                    else settle.restart();
+                    else { hover.enabled = false; settle.restart(); }
                 }
             }
-            Timer { id: settle; interval: 400; onTriggered: corner.armed = !hover.hovered }
+            Timer { id: settle; interval: 400; onTriggered: { hover.enabled = true; cursorCheck.running = true; } }
+            Process {
+                id: cursorCheck
+                command: ["hyprctl", "-j", "cursorpos"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        let inCorner = false;
+                        try {
+                            const p = JSON.parse(text), sc = corner.screen;
+                            if (sc) {
+                                const cx = corner.modelData.left ? sc.x : sc.x + sc.width;
+                                const cy = corner.modelData.top ? sc.y : sc.y + sc.height;
+                                inCorner = Math.abs(p.x - cx) <= 4 && Math.abs(p.y - cy) <= 4;
+                            }
+                        } catch (e) {}
+                        corner.armed = !inCorner;     // in it: armed again once the pointer leaves
+                    }
+                }
+            }
             HoverHandler {
                 id: hover
                 // Trigger once per visit: leave the corner to go again
