@@ -869,6 +869,39 @@ FloatingWindow {
                     }
                 }
             }
+            // While the list scrolls: a soft shadow at the top once scrolled down and at the bottom
+            // while there's more below (like Settings' pages), and a 1 px scrollbar
+            Rectangle {
+                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
+                height: 18
+                topLeftRadius: menu.radius - 1; topRightRadius: menu.radius - 1
+                opacity: Math.max(0, Math.min(1, menuList.contentY / 24))
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
+                    GradientStop { position: 1; color: "transparent" }
+                }
+            }
+            Rectangle {
+                anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
+                height: 18
+                bottomLeftRadius: menu.radius - 1; bottomRightRadius: menu.radius - 1
+                opacity: Math.max(0, Math.min(1, (menuList.contentHeight - menuList.height - menuList.contentY) / 24))
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
+                }
+            }
+            Rectangle {
+                readonly property real range: menuList.contentHeight - menuList.height
+                visible: range > 0
+                x: menu.width - 4
+                width: 1
+                height: Math.max(16, menuList.height * menuList.height / Math.max(1, menuList.contentHeight))
+                y: menuList.y + (range > 0 ? (menuList.height - height) * Math.max(0, Math.min(1, menuList.contentY / range)) : 0)
+                radius: 0.5
+                color: win.text
+                opacity: 0.4
+            }
         }
     }
 
