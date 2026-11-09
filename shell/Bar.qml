@@ -532,6 +532,17 @@ PanelWindow {
                 horizontalItemAlignment: Grid.AlignHCenter
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
+                // Room for the title before the right-hand group (with a gap), when the title
+                // sits at the end of the left group: a long title stops there and fades out
+                // rather than running under the status icons. (On a left bar it sits in the
+                // right group's own end, where there's nothing to run into: no limit.)
+                readonly property real room: {
+                    if (parent !== titleSlotTop) return Infinity;
+                    const start = bar.vert ? left.y + titleSlotTop.y : left.x + titleSlotTop.x;
+                    const end = bar.vert ? right.y : right.x;
+                    const icon = tileSlotStart.visible ? (bar.vert ? tileSlotStart.height : tileSlotStart.width) + spacing : 0;
+                    return Math.max(0, end - start - icon - 2 * bar.gap);
+                }
 
                 // The icon's place before the title (or, on a left bar, after it). It goes by whether
                 // the icon wants to show (appTile.wanted), not its visible, which reads false while
@@ -620,8 +631,11 @@ PanelWindow {
                         id: titleText
                         anchors.centerIn: parent
                         rotation: bar.textRotation
-                        width: Math.min(implicitWidth, bar.vert ? 320 : 560)
-                        elide: Text.ElideRight
+                        width: Math.min(implicitWidth, bar.vert ? 320 : 560, titleArea.room)
+                        // Too long for its room: the end fades away (drawn through fadeMask)
+                        readonly property bool cut: implicitWidth > width + 0.5
+                        layer.enabled: cut
+                        layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade }
                         text: titleArea.s ? titleArea.s.hoverText
                             : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
                         leftPadding: titleArea.s || !Config.s.barShowTitleIcon ? 8 : 0      // a little space for a hover description, or with no app icon
@@ -629,6 +643,23 @@ PanelWindow {
                         font.family: bar.fontFamily
                         font.pixelSize: bar.fontSize
                         font.weight: Font.Medium
+                    }
+                    // The title's fade: solid, then clear over its last 32 px (in the text's own
+                    // direction, so it works turned down a side bar too)
+                    Item {
+                        id: titleFade
+                        width: titleText.width; height: titleText.height
+                        visible: false
+                        layer.enabled: titleText.cut
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0; color: "white" }
+                                GradientStop { position: Math.max(0, 1 - 32 / Math.max(1, titleFade.width)); color: "white" }
+                                GradientStop { position: 1; color: "transparent" }
+                            }
+                        }
                     }
                 }
                 Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.wanted; width: appTile.width; height: appTile.height }
