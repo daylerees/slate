@@ -9,7 +9,8 @@ Usage:
   printers.py test <name>      print CUPS's test page
   printers.py cancel <name>    cancel your waiting jobs on a printer
   printers.py add <uri> <name> add a printer that needs no driver (IPP Everywhere); asks
-                               for your password
+                               for your password. The first printer added becomes your
+                               default
   printers.py remove <name>    remove a printer; asks for your password
   printers.py service-on       start the printing service (CUPS) and keep it on; asks for
                                your password
@@ -48,23 +49,26 @@ def run(cmd, timeout=15):
         return ""
 
 
-def act(cmd, timeout=60):
-    """Run an action and print "ok" or "error <message>"."""
+def act(cmd, timeout=60, report=True):
+    """Run an action and print "ok" or "error <message>" (returns whether it worked)."""
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=ENV)
     except FileNotFoundError:
         print("error %s isn't installed" % cmd[0])
-        return
+        return False
     except subprocess.SubprocessError:
         print("error it took too long")
-        return
+        return False
     if r.returncode == 0:
-        print("ok")
+        if report:
+            print("ok")
+        return True
     elif cmd[0] == "pkexec" and r.returncode in (126, 127):
         print("error cancelled")              # the password prompt was dismissed
     else:
         msg = (r.stderr or r.stdout).strip().splitlines()
         print("error " + (msg[-1] if msg else "it didn't work"))
+    return False
 
 
 def service_state():
@@ -191,7 +195,14 @@ def main():
     elif cmd == "cancel" and len(a) == 2:
         act(["cancel", "-a", a[1]])
     elif cmd == "add" and len(a) == 3:
-        act(["pkexec", "lpadmin", "-p", safe_name(a[2]), "-D", a[2], "-E", "-v", a[1], "-m", "everywhere"], timeout=120)
+        name = safe_name(a[2])
+        first = not re.search(r"^device for ", run(["lpstat", "-v"]), re.M)
+        if act(["pkexec", "lpadmin", "-p", name, "-D", a[2], "-E", "-v", a[1], "-m", "everywhere"],
+               timeout=120, report=False):
+            # The first printer: your default straight away (there's nothing else to print to)
+            if first:
+                run(["lpoptions", "-d", name])
+            print("ok")
     elif cmd == "remove" and len(a) == 2:
         act(["pkexec", "lpadmin", "-x", a[1]], timeout=120)
     elif cmd == "service-on":
