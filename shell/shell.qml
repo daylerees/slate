@@ -1352,8 +1352,8 @@ ShellRoot {
 
                         }
                     }
-                    // The wastebasket: the bin on a tile like the launcher button's, outlined while
-                    // it's empty and filled (brighter) once something's in it
+                    // The wastebasket: a drawn metal bin (TrashCan.qml) on a tile like the launcher
+                    // button's, with crumpled paper over the rim once something's in it
                     Item {
                         visible: win.trashShown
                         readonly property real s: win.scaleAt(win.trashIndex)
@@ -1373,12 +1373,12 @@ ShellRoot {
                             }
                             // Glass: a sheen, rounded like the tile
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
-                            Text {
-                                anchors.centerIn: parent
-                                text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
-                                color: win.trashCount > 0 ? win.textColor : Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
-                                font.family: "slate-tabler-icons"
-                                font.pixelSize: Math.round(parent.width * 0.52)
+                            // The bin itself, drawn (TrashCan.qml): paper over its rim when it's full
+                            TrashCan {
+                                anchors.fill: parent
+                                anchors.margins: parent.width * 0.06
+                                full: win.trashCount > 0
+                                drawSize: win.base * win.maxScale
                             }
                         }
                     }
