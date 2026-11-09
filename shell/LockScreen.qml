@@ -349,6 +349,9 @@ Scope {
         color: "#0f1216"
         LoginScreen {
             id: previewScreen
+            // Hidden along with its window: a hidden window doesn't hide what's in it, so its Caps
+            // Lock check (a process every 250 ms) ran for the whole session while no preview showed
+            visible: root.previewing
             anchors.fill: parent
             mode: root.previewMode
             wallpaper: Config.wallpaper
