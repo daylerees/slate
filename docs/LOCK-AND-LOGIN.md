@@ -59,7 +59,9 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
   notification ("Login screen out of date": it stays until answered, shows through Do Not
   Disturb and plays the attention sound) with an **Update** button that asks for your password
   (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
-  code; "Later" waits for the next change. Settings → Lock & Idle has the same Update button.
+  code; "Later" waits for the next change. If the update is cancelled or fails, an urgent
+  "Login screen not updated" notification gives the command to run instead. Settings → Lock
+  & Idle has the same Update button.
   Files are read with your own permissions, not root's.
 - **Safety net**, so a broken update never leaves anyone at a text console:
   1. **Tested before it's installed.** `slate-greeter-install` test-loads the new copy with
