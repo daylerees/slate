@@ -17,7 +17,7 @@ Singleton {
     readonly property var pageIcons: ({ overview: 0xEA03, input: 0xEBD6, sound: 0xEB51, power: 0xEA38, shortcuts: 0xEA78, apps: 0xEBB6,
         startup: 0xEC45, datetime: 0xEA70, screenshots: 0xF201, general: 0xEB20, appearance: 0xEB01, bar: 0xEAD7, dock: 0xEAD3, launcher: 0xEB1C, spaces: 0xEEF6,
         windows: 0xEFE6, displays: 0xEA89, hotcorners: 0xF7A0, notifications: 0xEA35, workspaces: 0xEDBA, lock: 0xEAE2, debug: 0xEA48, screensaver: 0xEAF8, apptheming: 0xEB01, updates: 0xEA96, wifi: 0xEB52, bluetooth: 0xEA37, about: 0xEAC5 })
-    readonly property var pageNames: ({ overview: "All Settings", input: "Keyboard & mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
+    readonly property var pageNames: ({ overview: "All Settings", input: "Keyboard & Mouse", sound: "Sound", power: "Power", shortcuts: "Shortcuts",
         apps: "Default apps", startup: "Startup apps", datetime: "Date & time", screenshots: "Screenshots", general: "General", appearance: "Appearance", bar: "Menu bar", dock: "Dock", launcher: "Launcher", spaces: "Spaces",
         windows: "Windows", displays: "Displays", hotcorners: "Hot corners", notifications: "Notifications", workspaces: "Workspaces", lock: "Lock & idle", debug: "Debug", screensaver: "Screensaver", apptheming: "App theming", updates: "Updates", wifi: "Wi-Fi",
         bluetooth: "Bluetooth", about: "About" })
@@ -54,7 +54,7 @@ Singleton {
         ["Sound", "sound", "audio speakers headphones output input microphone volume mute"],
         ["Play sound through", "sound", "output speakers headphones device audio"],
         ["Microphone", "sound", "input mic recording device"],
-        ["Keyboard & mouse", "input", "keyboard mouse touchpad trackpad input"],
+        ["Keyboard & Mouse", "input", "keyboard mouse touchpad trackpad input"],
         ["Add a layout", "input", "keyboard layout language qwerty azerty dvorak region"],
         ["Caps Lock key", "input", "capslock ctrl escape remap"],
         ["Repeat delay", "input", "key repeat hold keyboard"],

@@ -211,7 +211,7 @@ FloatingWindow {
         { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
         { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, icons, fonts, size and wallpaper" },
         { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
-        { id: "input", label: "Keyboard & mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
+        { id: "input", label: "Keyboard & Mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
         { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
         { id: "power", label: "Power", icon: 0xEA38, about: "Power mode, the lid and the power button" },
         { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling or floating, gaps, borders, focus and Super+Tab" },
@@ -1690,7 +1690,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Keyboard layout"
                     detail: Config.kbLayoutList.length > 1 ? "The layout in use; click to switch, scroll to cycle"
-                        : "Shows once you have more than one layout (Keyboard & mouse settings)"
+                        : "Shows once you have more than one layout (Keyboard & Mouse settings)"
                     Toggle { checked: Config.s.barShowKeyboard; onToggled: v => Config.s.barShowKeyboard = v }
                 }
                 Separator {}
@@ -2205,7 +2205,7 @@ FloatingWindow {
         }
     }
 
-    // ---- Keyboard & mouse ----------------------------------------------------
+    // ---- Keyboard & Mouse ----------------------------------------------------
     // Only what's changed here is set (Config.hyprSettings); the rest shows what Hyprland's
     // config (and your own hyprland.lua) has, read when the page opens
     Component {
@@ -2213,7 +2213,7 @@ FloatingWindow {
         Column {
             id: ip
             spacing: 4
-            PageTitle { text: "Keyboard & mouse" }
+            PageTitle { text: "Keyboard & Mouse" }
             property var cur: ({})
             property var layoutOptions: []
             property bool hasTouchpad: false

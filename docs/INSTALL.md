@@ -148,7 +148,7 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 - **Monitors** (resolution, refresh rate, scale, rotation, arrangement and which is the
   main display) are in Settings → Displays; **how big Slate itself is** is Settings →
   Appearance → Interface size.
-- **Keyboard & mouse** (layouts, Caps Lock, key repeat, pointer and touchpad), **Sound**,
+- **Keyboard & Mouse** (layouts, Caps Lock, key repeat, pointer and touchpad), **Sound**,
   **Power** (lid, power button, power mode on battery and plugged in), **Default apps**,
   **Startup apps**, **Date & time**, **Screenshots** and a searchable list of **Shortcuts**
   are all in Settings (Super+Z; All Settings, the first page, has a tile for every page). Settings only
