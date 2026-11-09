@@ -1,4 +1,4 @@
-// The dock's wastebasket, drawn: a modern angular bin (smooth satin metal, wider at the top than
+// The dock's waste basket, drawn: a modern angular bin (smooth satin metal, wider at the top than
 // the base, with a lighter lip and a dark opening across its top), tinted towards
 // the theme's accent; with crumpled paper sticking up out of it when there's something in it.
 // Drawn once at drawSize (the dock's magnified size) and scaled, so magnifying doesn't redraw

@@ -527,7 +527,7 @@ ShellRoot {
         }
 
         // ---- Magnification -------------------------------------------------
-        // The launcher, what's playing (while something is), the apps, then the wastebasket
+        // The launcher, what's playing (while something is), the apps, then the waste basket
         readonly property int count: items.length + 1 + media + (trashShown ? 1 : 0)
 
         // ---- Media (Settings → Dock → Media controls) ----------------------------------
@@ -572,7 +572,7 @@ ShellRoot {
             else if (p.canTogglePlaying) p.togglePlaying();
         }
 
-        // ---- Wastebasket (Settings → Dock → Wastebasket) ----------------------------
+        // ---- Waste Basket (Settings → Dock → Waste Basket) ----------------------------
         // The bin after the apps: click to open it in the file manager, right-click to empty
         // it. The desktop's own (freedesktop) trash, so it's the same bin the file managers use
         readonly property bool trashShown: Config.s.dockShowTrash
@@ -717,7 +717,7 @@ ShellRoot {
                     r.push({ label: "Open", kind: "trash-open" });
                     if (win.trashCount > 0) {
                         r.push({ kind: "sep" });
-                        r.push({ label: "Empty Wastebasket…", kind: "trash-empty", danger: true });
+                        r.push({ label: "Empty Waste Basket…", kind: "trash-empty", danger: true });
                     }
                     return r;
                 }
@@ -772,7 +772,7 @@ ShellRoot {
                     // Asks first, in the same confirmation window as shutting down and the rest
                     const n = win.trashCount;
                     powerConfirm.confirmWith({
-                        title: "Empty the wastebasket?",
+                        title: "Empty the waste basket?",
                         body: (n === 1 ? "The item in it is" : "The " + n + " items in it are") + " deleted for good. This can't be undone.",
                         button: "Empty", code: 0xEB41, danger: true
                     }, () => win.emptyTrash());
@@ -963,7 +963,7 @@ ShellRoot {
                 return;
             }
             if (trashShown && i === trashIndex) {
-                // The wastebasket: opens it; right-click to empty it
+                // The waste basket: opens it; right-click to empty it
                 if (right) appMenu.openFor({ trashMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
                 else openTrash();
                 return;
@@ -1354,7 +1354,7 @@ ShellRoot {
 
                         }
                     }
-                    // The wastebasket: a drawn metal bin (TrashCan.qml) on a tile like the launcher
+                    // The waste basket: a drawn metal bin (TrashCan.qml) on a tile like the launcher
                     // button's, with crumpled paper over the rim once something's in it
                     Item {
                         visible: win.trashShown
@@ -1391,7 +1391,7 @@ ShellRoot {
                     id: label
                     readonly property string text: win.hoveredIndex === 0 ? "Apps"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
-                            ? (win.trashCount > 0 ? "Wastebasket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Wastebasket (empty)")
+                            ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket (empty)")
                         : win.mediaShown && win.hoveredIndex === win.mediaIndex
                             ? win.player.trackTitle + (win.player.trackArtist ? " · " + win.player.trackArtist : "")
                         : (win.hoveredIndex > 0 && win.items[win.hoveredIndex - 1 - win.media]

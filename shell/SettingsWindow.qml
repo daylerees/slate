@@ -2289,7 +2289,7 @@ FloatingWindow {
                 }
                 Separator {}
                 ToggleSetting {
-                    label: "Wastebasket"
+                    label: "Waste Basket"
                     detail: "At the end of the dock, filled when there's something in it: click to open it, right-click to empty it"
                     key: "dockShowTrash"
                 }
