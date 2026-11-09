@@ -421,13 +421,18 @@ FloatingWindow {
             // own), then the page's title; the close button sits top right. The page scrolls beneath
             Item {
                 id: header
-                z: 2
+                // Over the page; while the search's results show, over everything else in the pane
+                // too (the scrollbar, close button and find highlight)
+                z: pageHits.visible ? 5 : 2
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 height: titleRow.height + (pageSearch.visible ? pageSearch.height + 14 : 0)
 
                 // ---- Search every setting (SettingsIndex), from any page -------------------
                 Rectangle {
                     id: pageSearch
+                    // Above the rest of the header (the title row and Restore defaults come after it,
+                    // so they'd otherwise draw over its results)
+                    z: 2
                     visible: win.section !== "overview"
                     // Level with the close button (top right), and clear of it
                     anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 10 : 58 }
