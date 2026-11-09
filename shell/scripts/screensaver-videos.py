@@ -62,6 +62,86 @@ CLIPS = [
         "source": "https://commons.wikimedia.org/wiki/File:Delaneys_Falls.webm",
         "licence": "CC0 (public domain)",
     },
+    {
+        "file": "sunrise-at-lake-bled.webm",
+        "title": "Sunrise at Lake Bled",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/4/40/Sunrise_atLake_Bled.webm/Sunrise_atLake_Bled.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Sunrise_atLake_Bled.webm",
+        "licence": "\"Sunrise @Lake Bled\" by Klemen Smolej, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "lake-bled-at-dawn.webm",
+        "title": "Lake Bled at dawn",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/cf/Slovenia_-_Lake_Bled_-_4K_drone_video.webm/Slovenia_-_Lake_Bled_-_4K_drone_video.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Slovenia_-_Lake_Bled_-_4K_drone_video.webm",
+        "licence": "\"SLOVENIA | BLED LAKE | 4K DRONE VIDEO\" by Danny Rest, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "right-whale-bay-south-georgia.webm",
+        "title": "Right Whale Bay, South Georgia",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/06/Right_Whale_Bay%2C_South_Georgia_Island.webm/Right_Whale_Bay%2C_South_Georgia_Island.webm",
+        "sizes": ["1440p", "1080p"],   # 1440p at most: its 4K file is over 300 MB
+
+        "source": "https://commons.wikimedia.org/wiki/File:Right_Whale_Bay,_South_Georgia_Island.webm",
+        "licence": "\"Right Whale Bay, South Georgia 4K\" by Blagoj Klincharski, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "crimean-coast.webm",
+        "title": "Crimean coast",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8a/Crimea_Mountains_Russia_-_4K_Video.webm/Crimea_Mountains_Russia_-_4K_Video.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Crimea_Mountains_Russia_-_4K_Video.webm",
+        "licence": "\"Crimea Mountains Russia | 4K Video\" by The View, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "gold-harbour-south-georgia.webm",
+        "title": "Gold Harbour, South Georgia",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/77/Time-lapse_of_Gold_Harbour%2C_South_Georgia_Island.webm/Time-lapse_of_Gold_Harbour%2C_South_Georgia_Island.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Time-lapse_of_Gold_Harbour,_South_Georgia_Island.webm",
+        "licence": "\"Gold Harbour, South Georgia, Timelapse 4K\" by Blagoj Klincharski, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "emperor-penguin-coulman-island.webm",
+        "title": "Emperor penguin, Coulman Island",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/27/Emperor_penguin%2C_Coulman_Island%2C_Antarctica.webm/Emperor_penguin%2C_Coulman_Island%2C_Antarctica.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Emperor_penguin,_Coulman_Island,_Antarctica.webm",
+        "licence": "\"Emperor penguin, Coulman Island, Antarctica 4K\" by Blagoj Klincharski, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "black-balsam-knob.webm",
+        "title": "Black Balsam Knob, North Carolina",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8a/Drone_Footage_Black_Balsam_Knob_NC_4k.webm/Drone_Footage_Black_Balsam_Knob_NC_4k.webm",
+        "sizes": ["1440p", "1080p"],   # 1440p at most: its 4K file is over 300 MB
+
+        "source": "https://commons.wikimedia.org/wiki/File:Drone_Footage_Black_Balsam_Knob_NC_4k.webm",
+        "licence": "\"Drone Footage Black Balsam Knob NC 4k\" by Royalty Free Drone Footage, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
+    {
+        "file": "la-caleta-cadiz.webm",
+        "title": "La Caleta beach, Cádiz",
+        "base": "https://upload.wikimedia.org/wikipedia/commons/transcoded/4/47/Timelapse_of_beach_of_La_Caleta_in_Cadiz%2C_Spain.webm/Timelapse_of_beach_of_La_Caleta_in_Cadiz%2C_Spain.webm",
+        "sizes": ["2160p", "1440p", "1080p"],   # the transcodes Commons has
+
+        "source": "https://commons.wikimedia.org/wiki/File:Timelapse_of_beach_of_La_Caleta_in_Cadiz,_Spain.webm",
+        "licence": "\"Timelapse de la playa de La Caleta 4K\" by davidyeahmonkey, CC BY 3.0 "
+                   "(https://creativecommons.org/licenses/by/3.0/), via Wikimedia Commons",
+    },
 ]
 
 # Wikimedia asks automated clients to say who they are

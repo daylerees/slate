@@ -2356,13 +2356,13 @@ FloatingWindow {
                     id: vidRow
                     visible: Config.s.screensaverStyle === "videos"
                     label: "Videos folder"
-                    // Get scenery videos: four free clips (Earth from the ISS, an aurora, clouds, a
-                    // waterfall) from Wikimedia Commons, about 90 MB (scripts/screensaver-videos.py)
+                    // Get scenery videos: twelve free clips (Earth from the ISS, an aurora, lakes,
+                    // coasts, mountains, penguins…) from Wikimedia Commons (scripts/screensaver-videos.py)
                     property string status: ""
                     property real progress: 0          // the whole download, 0 to 1
                     detail: status !== "" ? status
                         : Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + ": MP4, WebM, MKV or MOV, played in a shuffled order. "
-                          + "Get scenery videos adds four free clips (credits in the folder's CREDITS.txt)"
+                          + "Get scenery videos adds twelve free clips (credits in the folder's CREDITS.txt)"
                     Process {
                         id: sceneryRun
                         command: [Quickshell.shellPath("scripts/screensaver-videos.py"), Config.screensaverVideoFolder, Config.sceneryQuality]
@@ -2410,7 +2410,7 @@ FloatingWindow {
                     visible: Config.s.screensaverStyle === "videos"
                     readonly property var names: ({ "2160p": "4K", "1440p": "1440p", "1080p": "1080p" })
                     label: "Scenery quality"
-                    detail: "For Get scenery videos: sharper is bigger (4K is about 210 MB in all, 1080p about 95 MB). Choosing a higher one and getting them again replaces only the clips that get sharper"
+                    detail: "For Get scenery videos: sharper is bigger (4K is about 1.1 GB in all, 1440p about 780 MB, 1080p about 410 MB). Choosing a higher one and getting them again replaces only the clips that get sharper"
                     options: [{ value: "auto", label: "Automatic (" + names[Config.screenSceneryQuality] + " for this screen)" },
                               { value: "2160p", label: "4K" }, { value: "1440p", label: "1440p" }, { value: "1080p", label: "1080p" }]
                     value: Config.s.screensaverVideoQuality || "auto"
