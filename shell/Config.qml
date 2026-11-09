@@ -48,7 +48,10 @@ Singleton {
         if (toned && neutral) {
             const t = Qt.lighter(wallpaperTone, 1.0);
             if (t.hslHue >= 0) h = t.hslHue;
-            sat = Math.min(0.32, Math.max(sat, t.hslSaturation * (surface ? 0.45 : 0.22)));
+            // Light backgrounds take more: the same saturation that reads clearly on near-black
+            // all but vanishes on near-white
+            const lightSurface = light && surface;
+            sat = Math.min(lightSurface ? 0.5 : 0.32, Math.max(sat, t.hslSaturation * (lightSurface ? 1.0 : surface ? 0.45 : 0.22)));
         }
         return Qt.hsla(h < 0 ? 0 : h, sat, l, c.a);
     }
