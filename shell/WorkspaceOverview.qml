@@ -444,7 +444,7 @@ PanelWindow {
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: ov.animate ? 260 : 0
+            highlightMoveDuration: ov.animate ? Config.ms(260) : 0     // in step with swapAnim (Config.ms too)
             // It resets to the first card when it fills in (after the window shows), so
             // put it back on the chosen workspace then
             onCountChanged: { currentIndex = ov.index; positionViewAtIndex(ov.index, PathView.Center); }

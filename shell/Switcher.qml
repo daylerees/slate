@@ -270,7 +270,7 @@ PanelWindow {
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: sw.animate ? 220 : 0
+            highlightMoveDuration: sw.animate ? Config.ms(220) : 0     // (Animations: Fast halves it, Off makes it instant)
 
             delegate: Item {
                 id: card
