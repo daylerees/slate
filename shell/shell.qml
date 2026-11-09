@@ -152,8 +152,10 @@ ShellRoot {
     }
     onBorderCmdChanged: borderPush.restart()
     // Title bar button colours and size (hyprbars.lua reads them when Hyprland's config loads, as
-    // hyprbars can't recolour buttons later): written here, then Hyprland reloads, only
-    // when they've changed
+    // hyprbars can't recolour buttons later): written here, then Hyprland reloads, only when
+    // they've changed and title bars are showing (floating mode). In tiling mode there are none to
+    // recolour, so the reload waits until floating mode comes on: a reload makes the screen
+    // flicker, and the accent changes with every theme preset and, from the wallpaper, with it
     readonly property string barButtonsLua: {
         const rgb = c => "rgb(" + c.toString().slice(1, 7) + ")";
         return `return { accent = "${rgb(Config.accent)}", accent_text = "${rgb(Config.tint("#12151a"))}", `
@@ -172,10 +174,17 @@ ShellRoot {
         onTriggered: {
             if (barButtonsFile.text() === root.barButtonsLua) return;
             barButtonsFile.setText(root.barButtonsLua);
-            barButtonsReload.restart();
+            if (Config.floatingWindows) barButtonsReload.restart();
+            else root.barButtonsStale = true;
         }
     }
-    Timer { id: barButtonsReload; interval: 300; onTriggered: Quickshell.execDetached(["hyprctl", "reload"]) }
+    // Written while there were no title bars; Hyprland hasn't read them yet
+    property bool barButtonsStale: false
+    Connections {
+        target: Config
+        function onFloatingWindowsChanged() { if (Config.floatingWindows && root.barButtonsStale) barButtonsReload.restart(); }
+    }
+    Timer { id: barButtonsReload; interval: 300; onTriggered: { root.barButtonsStale = false; Config.reloadHyprland(); } }
     // Switching window mode also floats (or re-tiles) the windows already open. Only when
     // the setting changes: title bars turning up or going away just changes new windows
     Connections {
@@ -190,7 +199,7 @@ ShellRoot {
         target: Hyprland
         function onRawEvent(event) {
             // (and see whether title bars can be used: hyprbars may have been rebuilt)
-            if (event.name === "configreloaded") { borderPush.restart(); Config.checkTitleBars(); }
+            if (event.name === "configreloaded") { borderPush.restart(); Config.checkTitleBars(); root.barButtonsStale = false; }
             // A window closed: GTK apps waiting to pick up new colours may now restart
             else if (event.name === "closewindow") gtkRefresh.restart();
         }
@@ -327,6 +336,8 @@ ShellRoot {
                 let errs = [];
                 try { errs = JSON.parse(text).filter(e => e && String(e).trim() !== ""); } catch (e) {}
                 const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
+                // No news when Slate reloaded it itself (to apply a setting); errors always show
+                if (errs.length === 0 && Config.ownHyprReload()) return;
                 if (errs.length === 0)
                     Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland read its config again."]);
                 else

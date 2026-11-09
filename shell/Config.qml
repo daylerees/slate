@@ -472,6 +472,7 @@ Singleton {
         s.keyset = v;
         keysetProc.command = ["sh", "-c", "mkdir -p \"$(dirname \"$0\")\" && printf 'KEYSET = \"%s\"\\n' \"$1\" > \"$0\" && hyprctl reload >/dev/null",
                               keysetPath, v];
+        ownHyprReloadAt = Date.now();      // Slate's own reload: no "reloaded" notice
         keysetProc.running = true;
     }
     Process { id: keysetProc; onExited: root.keysetApplied() }
@@ -856,7 +857,15 @@ Singleton {
         "mouseSpeed", "mouseAccel", "mouseNaturalScroll", "touchpadScrollSpeed", "touchpadNaturalScroll",
         "touchpadTapToClick", "touchpadIgnoreWhileTyping", "focusFollowsMouse", "animations", "cursorSize",
         "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"]
-    Timer { id: hyprReload; interval: 300; onTriggered: Quickshell.execDetached(["hyprctl", "reload"]) }
+    Timer { id: hyprReload; interval: 300; onTriggered: root.reloadHyprland() }
+    // Slate reloading Hyprland's config itself (to apply something of its own), rather than you
+    // editing your Hyprland files: shell.qml leaves out the "reloaded" notice for these
+    property real ownHyprReloadAt: 0
+    function reloadHyprland() {
+        ownHyprReloadAt = Date.now();
+        Quickshell.execDetached(["hyprctl", "reload"]);
+    }
+    function ownHyprReload() { return Date.now() - ownHyprReloadAt < 5000; }
     function sameValue(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
     function resetKeys(keys) {
         for (const k of keys) {
