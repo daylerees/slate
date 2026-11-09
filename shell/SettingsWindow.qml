@@ -191,12 +191,20 @@ FloatingWindow {
     onCurrentKeysChanged: countChanged()
     Connections { target: Config; function onSaved() { win.countChanged(); } }
     property bool confirmReset: false
-    // Any other question for the confirmation card: { title, body, button, run, cancel (optional) }.
+    // Any other question for the confirmation card: { title, body, button, run, cancel (optional),
+    // destructive (optional: a red button Enter doesn't press), option (optional: { label, detail },
+    // a switch on the card, off to start; run gets whether it's on) }.
     // Esc, Cancel, clicking outside or changing page all count as cancelling. The card keeps
     // showing the last one while it fades out
     property var ask: null
     property var lastAsk: null
-    onAskChanged: if (ask) lastAsk = ask
+    property bool askOption: false
+    onAskChanged: if (ask) { lastAsk = ask; askOption = false; }
+    // A follow-up question (asking again, more seriously): shown once the card has faded out, so
+    // it's clearly a new one, with its own attention sound
+    property var nextAsk: null
+    function askAfter(q) { nextAsk = q; nextAskTimer.restart(); }
+    Timer { id: nextAskTimer; interval: 260; onTriggered: { win.ask = win.nextAsk; win.nextAsk = null; } }
     readonly property bool confirming: confirmReset || ask !== null
     onConfirmingChanged: if (confirming) Config.attention()
     function closeConfirm() { confirmReset = false; ask = null; }
@@ -525,6 +533,25 @@ FloatingWindow {
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                     wrapMode: Text.Wrap
                 }
+                // The question's switch (an option to go further), when it has one
+                Item {
+                    readonly property var opt: resetConfirm.q ? resetConfirm.q.option : null
+                    visible: !!opt
+                    width: parent.width; height: visible ? Math.max(optCol.implicitHeight, optToggle.height) + 12 : 0
+                    Column {
+                        id: optCol
+                        anchors { left: parent.left; right: optToggle.left; rightMargin: 12; bottom: parent.bottom }
+                        spacing: 2
+                        Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.label : ""; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; wrapMode: Text.Wrap }
+                        Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.detail || "" : ""; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
+                    }
+                    Toggle {
+                        id: optToggle
+                        anchors { right: parent.right; verticalCenter: optCol.verticalCenter }
+                        checked: win.askOption
+                        onToggled: v => win.askOption = v
+                    }
+                }
                 Item { width: 1; height: 8 }
                 Row {
                     anchors.right: parent.right
@@ -536,7 +563,7 @@ FloatingWindow {
                         destructive: !!(resetConfirm.q && resetConfirm.q.destructive)
                         primary: !destructive
                         onClicked: {
-                            if (win.ask) { const run = win.ask.run; win.closeConfirm(); run(); }
+                            if (win.ask) { const run = win.ask.run, opt = win.askOption; win.closeConfirm(); run(opt); }
                             else { Config.resetKeys(win.currentKeys); win.closeConfirm(); win.countChanged(); }
                         }
                     }
@@ -4833,20 +4860,33 @@ FloatingWindow {
                     label: "Factory reset"
                     detail: "Puts Slate back as it was when first installed: every setting to its default, and your dock pins, "
                         + "saved Spaces, launcher history, notifications, clipboard history, display layout and app theming "
-                        + "forgotten. Everything is kept in a backup folder (~/.local/share/slate/backups). Your own files in "
-                        + "~/.config/slate/hypr and user/ aren't touched"
+                        + "forgotten. You'll be asked twice before anything changes, and can choose to clear your own files "
+                        + "(~/.config/slate/hypr and user/) as well. Everything is kept in a backup folder "
+                        + "(~/.local/share/slate/backups)"
                     Button {
                         label: "Reset…"
                         destructive: true
                         onClicked: win.ask = {
                             title: "Reset Slate?",
                             body: "Every setting goes back to its default, and Slate forgets your dock pins, saved Spaces, launcher "
-                                + "history, notifications, clipboard history, display layout and app theming. Slate restarts and "
-                                + "the welcome tour opens; your apps and windows stay open. A copy of everything is kept in "
-                                + "~/.local/share/slate/backups.",
-                            button: "Reset Slate",
-                            destructive: true,
-                            run: () => Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("bin/slate-factory-reset")])
+                                + "history, notifications, clipboard history, display layout and app theming. Your apps and "
+                                + "windows stay open.",
+                            option: { label: "Also clear my own files",
+                                      detail: "Your Hyprland tweaks (~/.config/slate/hypr) and your own QML (user/) go back to the blank versions Slate starts with" },
+                            button: "Continue",
+                            run: userFiles => win.askAfter({
+                                title: userFiles ? "Erase everything, including your own files?" : "Erase all of Slate's settings?",
+                                body: "This is the last step. Straight away, Slate forgets every setting, your dock pins, saved Spaces, "
+                                    + "launcher and clipboard history, notifications, display layout and app theming"
+                                    + (userFiles ? ", and your own files are replaced with blank ones: every keybind, monitor, "
+                                        + "window rule and autostart you added in ~/.config/slate/hypr, and your QML in user/" : "")
+                                    + ". Slate restarts and the welcome tour opens.\n\nThere's no undo in Settings. The old files are "
+                                    + "moved to ~/.local/share/slate/backups, and you'd have to copy them back by hand.",
+                                button: userFiles ? "Erase everything" : "Erase and reset",
+                                destructive: true,
+                                run: () => Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("bin/slate-factory-reset")]
+                                    .concat(userFiles ? ["--user-files"] : []))
+                            })
                         }
                     }
                 }

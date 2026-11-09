@@ -246,7 +246,9 @@ Slate's state in `~/.local/state/slate` and `~/.cache/slate` can be deleted by h
 - **Starting over** — Settings → Debug → **Factory reset** (or
   `~/.config/slate/bin/slate-factory-reset`) puts every setting back to its default and forgets
   dock pins, saved Spaces, launcher and clipboard history, notifications, the display layout and
-  app theming. They're moved to `~/.local/share/slate/backups/factory-reset-<date>`, not
-  deleted; your own `hypr/*.lua` and `user/` files aren't touched.
+  app theming. It asks twice first. Your own `hypr/*.lua` and `user/` files are kept unless you
+  switch on **Also clear my own files** (or pass `--user-files`), which swaps them for the blank
+  ones Slate starts with. Everything is moved to
+  `~/.local/share/slate/backups/factory-reset-<date>`, not deleted.
 - **Login screen problems** — switch back from a text console (Ctrl+Alt+F3):
   `sudo ~/.config/slate/bin/slate-greeter-install --revert`, then reboot.

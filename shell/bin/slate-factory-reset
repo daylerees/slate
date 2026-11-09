@@ -3,11 +3,16 @@
 # setting back to its default, and everything Slate remembers forgotten (dock pins, launcher
 # history, notifications, clipboard history, saved Spaces, the display layout, app theming).
 # Nothing is deleted: it's all moved into a dated folder in ~/.local/share/slate/backups, so it
-# can be put back by hand. Your own files (hypr/*.lua, user/shell.qml) aren't touched.
+# can be put back by hand. Your own files (hypr/*.lua, user/shell.qml) aren't touched, unless
+# asked for with --user-files: then they're moved to the backup too, and replaced with the blank
+# ones Slate starts with (data/user-files).
+#   slate-factory-reset [--user-files]
 #
 # Slate is stopped first, so it can't write its settings straight back, and started again
 # afterwards. Prints the backup folder.
 set -u
+userFiles=false
+[ "${1:-}" = "--user-files" ] && userFiles=true
 SLATE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 state="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
 share="${XDG_DATA_HOME:-$HOME/.local/share}/slate"
@@ -20,6 +25,11 @@ sleep 0.3
 [ -e "$SLATE_DIR/settings.json" ] && mv "$SLATE_DIR/settings.json" "$backup/"
 [ -e "$share/spaces.json" ] && mv "$share/spaces.json" "$backup/"
 [ -d "$state" ] && find "$state" -mindepth 1 -maxdepth 1 -exec mv -t "$backup/state/" {} +
+if $userFiles; then
+    for d in hypr user; do [ -e "$SLATE_DIR/$d" ] && mv "$SLATE_DIR/$d" "$backup/"; done
+    # Blank ones back before Hyprland reloads, since its config loads them
+    sh "$SLATE_DIR/scripts/user-files.sh" "$SLATE_DIR" >/dev/null
+fi
 
 # Hyprland drops the display layout, title bar colours and shortcut set Slate had written
 hyprctl reload >/dev/null 2>&1
