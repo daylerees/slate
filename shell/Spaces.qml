@@ -18,7 +18,7 @@ Singleton {
     property var list: []                 // saved spaces, from spaces.json
     property var live: []                 // the workspaces now (snapshot), for New Space
     property string restoring: ""         // id of the space being brought back ("" = none)
-    readonly property var restoringSpace: list.find(s => s.id === restoring) ?? null
+    readonly property var restoringSpace: spaceById(restoring)
 
     // Which open windows came from which space: stableId -> space id, from scripts/spaces.py
     // (only this Hyprland session's: window ids start over each session; the first version of

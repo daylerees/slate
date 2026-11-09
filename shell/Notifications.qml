@@ -22,7 +22,9 @@ Scope {
 
     // ---- State -------------------------------------------------------------
     property bool dnd: false
-    property var history: []          // newest first: { key, id, appName, summary, body, entryId, image, appIcon, time, urgency }
+    // Newest first: { key, id, appName, summary, body, entryId, image, appIcon, time, urgency,
+    // page } (page: the Settings page Slate's own notices open, from their x-slate-page hint)
+    property var history: []
     property int unread: 0
     property int nextKey: 1
     property var live: ({})           // key -> Notification still open (for actions)
@@ -43,15 +45,8 @@ Scope {
         save();
     }
     // Run the notification's main action (if the app is still listening), then dismiss
-    function activate(key) {
-        const n = live[key];
-        if (n) {
-            const act = n.actions.find(a => a.identifier === "default");
-            if (act) act.invoke();
-            n.dismiss();
-        }
-        dismissToast(key);
-    }
+    function activate(key) { invokeAction(key, "default"); }
+    // Run one of its actions (its buttons) by identifier, then dismiss
     function invokeAction(key, identifier) {
         const n = live[key];
         if (n) {
