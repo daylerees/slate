@@ -148,7 +148,7 @@ JsonAdapter {
     property bool barShowPower: true          // power button
     property string barClockFormat: "12h"     // 12h or 24h
     property bool barClockSeconds: false
-    property bool barClockDate: false         // e.g. "Sat 7 Nov" before the time
+    property bool barClockDate: true          // e.g. "Sat 7 Nov" before the time
 
     // Dock
     property real dockIconSize: 40
