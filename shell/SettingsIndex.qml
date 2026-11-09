@@ -85,6 +85,7 @@ Singleton {
         ["Tuck the status icons away", "bar", "status collapse hide wifi volume battery bluetooth notifications expand button"],
         ["Tiles in the icon's colour", "appearance", "icon tile background colour colourful dock launcher plate match"],
         ["Game mode", "bar", "game gaming performance fps smooth effects glass blur animations shadows touchpad"],
+        ["Windows show", "workspaces", "overview live previews app icons windows cards thumbnails screenshots"],
         ["Factory reset", "debug", "reset defaults start over wipe erase fresh install restore clear everything"],
         ["Wi-Fi network name", "bar", "values text beside icons network name ssid"],
         ["Volume percentage", "bar", "values text beside icons volume number"],

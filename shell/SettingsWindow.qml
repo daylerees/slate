@@ -3584,22 +3584,20 @@ FloatingWindow {
                     ValueSlider { from: 480; to: 1000; stepSize: 8; suffix: " px"; value: Config.s.overviewCardWidth; onMoved: v => Config.s.overviewCardWidth = v }
                 }
                 Separator {}
-                SettingRow {
-                    label: "Live previews"
-                    detail: "Show each window's contents on the cards; turn off to show their outlines and app icons only"
-                    Toggle { checked: Config.s.overviewPreviews; onToggled: v => Config.s.overviewPreviews = v }
-                }
-                Separator {}
-                SettingRow {
-                    // Without live previews the icons are always shown: they're all there is to go by
-                    opacity: Config.s.overviewPreviews ? 1 : 0.4
-                    enabled: Config.s.overviewPreviews
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                    label: "App icons on windows"
-                    detail: Config.s.overviewPreviews ? "Each window's app icon in the middle of it on the cards"
-                        : "Always shown without live previews"
-                    // Shown on while live previews are off, as the icons are then; your choice is kept for when they're back
-                    Toggle { checked: Config.s.overviewAppIcons || !Config.s.overviewPreviews; onToggled: v => Config.s.overviewAppIcons = v }
+                // What each window on the cards shows (overviewPreviews and overviewAppIcons): its
+                // live picture, its outline with its app icon (nothing captured), or the picture
+                // with the icon on it
+                DropdownSetting {
+                    label: "Windows show"
+                    detail: !Config.s.overviewPreviews ? "Each window's outline with its app icon; nothing is captured, which is lighter"
+                        : Config.s.overviewAppIcons ? "Each window's contents, with its app icon in the middle"
+                        : "Each window's contents, live"
+                    options: [{ value: "previews", label: "Live previews" }, { value: "icons", label: "App icons" }, { value: "both", label: "Both" }]
+                    value: !Config.s.overviewPreviews ? "icons" : Config.s.overviewAppIcons ? "both" : "previews"
+                    onPicked: v => {
+                        Config.s.overviewPreviews = v !== "icons";
+                        if (v !== "icons") Config.s.overviewAppIcons = v === "both";
+                    }
                 }
             }
             GroupLabel { text: "Spaces" }
