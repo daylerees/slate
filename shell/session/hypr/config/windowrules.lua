@@ -149,6 +149,8 @@ hl.layer_rule({
 -- Slate Settings (Super+Z): floats in the middle of the screen, at the size it asks for
 -- (880×620 times the interface size), kept within the screen by the floating-window limit above
 hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true })
+-- Choosing your account picture (Settings → General): a dialog of Slate's own
+hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true })
 
 -- Window mode (Settings → Windows). Floating: every new window opens floating and centred,
 -- like a traditional desktop (move with Super+drag or the title bar). Slate switches it

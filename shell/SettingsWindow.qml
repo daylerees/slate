@@ -11,7 +11,6 @@ import Quickshell.Networking
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import Qt.labs.folderlistmodel
-import QtQuick.Dialogs as Dialogs
 
 FloatingWindow {
     id: win
@@ -186,7 +185,15 @@ FloatingWindow {
         foundFlash.width = Math.min(hit.width + 12, contentPane.width - foundFlash.x - 8); foundFlash.height = hit.height + 8;
     }
     Timer { interval: 40; repeat: true; running: foundFade.running; onTriggered: win.placeFound() }
-    property bool avatarPicking: false     // General: the account picture chooser is open
+    // Choosing your account picture: its own window (AvatarPicker.qml), opened from General or
+    // the control centre's picture
+    property bool avatarPicking: false
+    onAvatarPickingChanged: if (avatarPicking) avatarPicker.open()
+    AvatarPicker {
+        id: avatarPicker
+        bar: win.bar
+        onVisibleChanged: if (!visible) win.avatarPicking = false
+    }
     property string scrollTo: ""           // a part of the next page to scroll to ("wallpaper")
     // The settings each page can restore to their defaults. Left out on purpose: your
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
@@ -1648,7 +1655,7 @@ FloatingWindow {
                             Behavior on opacity { NumberAnimation { duration: 150 } }
                         }
                         HoverHandler { id: acctHover }
-                        ClickTap { onTapped: win.avatarPicking = !win.avatarPicking }
+                        ClickTap { onTapped: win.avatarPicking = true }
                     }
                     Column {
                         anchors { left: acctPic.right; leftMargin: 14; right: acctButtons.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
@@ -1667,85 +1674,8 @@ FloatingWindow {
                     Row {
                         id: acctButtons
                         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-                        Button { icon: 0xEB0A; label: win.avatarPicking ? "Done" : "Change picture"; onClicked: win.avatarPicking = !win.avatarPicking }
+                        Button { icon: 0xEB0A; label: "Change picture"; onClicked: win.avatarPicking = true }
                     }
-                }
-            }
-            // The chooser: pictures in ~/Pictures, or browse for any image
-            Column {
-                id: picker
-                visible: win.avatarPicking
-                width: parent.width
-                spacing: 0
-                readonly property string folder: Quickshell.env("HOME") + "/Pictures"
-                Item {
-                    width: parent.width; height: pickLabel.implicitHeight
-                    GroupLabel { id: pickLabel; text: avatarFiles.count > 0 ? "Pick a picture from Pictures" : "No pictures in ~/Pictures" }
-                    Button {
-                        anchors { right: parent.right; bottom: parent.bottom; bottomMargin: 4 }
-                        icon: 0xFAF7; label: "Browse…"
-                        onClicked: avatarDialog.open()
-                    }
-                }
-                Item { width: 1; height: 6 }
-                FolderListModel {
-                    id: avatarFiles
-                    folder: "file://" + picker.folder
-                    nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.JPG", "*.JPEG", "*.PNG"]
-                    showDirs: false
-                    sortField: FolderListModel.Time
-                }
-                Grid {
-                    id: avatarGrid
-                    width: parent.width
-                    spacing: 12
-                    leftPadding: 4
-                    columns: Math.max(1, Math.floor((width - 4 + spacing) / (72 + spacing)))
-                    Repeater {
-                        model: avatarFiles
-                        delegate: Item {
-                            required property string filePath
-                            width: 72; height: 72
-                            Rectangle {
-                                anchors.fill: parent; radius: width / 2
-                                color: win.card
-                                border.width: pickHover.hovered ? 2 : 0
-                                border.color: win.accent
-                            }
-                            Item {
-                                anchors { fill: parent; margins: pickHover.hovered ? 4 : 0 }
-                                Behavior on anchors.margins { NumberAnimation { duration: 100 } }
-                                layer.enabled: true
-                                layer.effect: MultiEffect { maskEnabled: true; maskSource: pickMask }
-                                Image {
-                                    anchors.fill: parent
-                                    source: "file://" + filePath
-                                    sourceSize.width: 160
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    opacity: status === Image.Ready ? 1 : 0
-                                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                                }
-                                Item {
-                                    id: pickMask
-                                    anchors.fill: parent
-                                    visible: false
-                                    layer.enabled: true
-                                    Rectangle { anchors.fill: parent; radius: width / 2 }
-                                }
-                            }
-                            HoverHandler { id: pickHover }
-                            ClickTap { onTapped: { Config.setAvatar(filePath); win.avatarPicking = false; } }
-                        }
-                    }
-                }
-                Item { width: 1; height: 10 }
-                Dialogs.FileDialog {
-                    id: avatarDialog
-                    title: "Choose a picture"
-                    currentFolder: "file://" + picker.folder
-                    nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.PNG *.JPG *.JPEG)"]
-                    onAccepted: { Config.setAvatar(selectedFile.toString()); win.avatarPicking = false; }
                 }
             }
             GroupLabel { text: "Clipboard" }
