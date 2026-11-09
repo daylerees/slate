@@ -222,6 +222,19 @@ class Clipstore(Case):
         self.clip("store")
         self.assertEqual([e["text"] for e in self.entries()], ["new"])
 
+    def test_index_not_an_object(self):
+        """An index that's valid JSON but not the expected shape starts afresh too (every
+        command used to fail with a traceback until it was removed by hand)."""
+        for bad in ("[]", '{"entries": 5}', '{"entries": ["x", 3]}'):
+            with self.subTest(bad):
+                os.makedirs(self.dir, exist_ok=True)
+                with open(self.index, "w") as f:
+                    f.write(bad)
+                self.offer_types(UTF8, data=b"new")
+                out = self.clip("store")
+                self.assertNotIn("Traceback", out)
+                self.assertEqual([e["text"] for e in self.entries()], ["new"])
+
     # ---- copy, delete, clear ----
 
     def test_copy_text(self):
@@ -240,6 +253,14 @@ class Clipstore(Case):
         self.assertEqual(self.calls("wl-copy"), [["--type", "image/png"]])
         with open(os.path.join(self.fake, "copied", "0"), "rb") as f:
             self.assertEqual(f.read(), data)
+
+    def test_copy_image_gone(self):
+        """An image entry whose picture has gone: exit 1, nothing copied (it used to be a
+        FileNotFoundError traceback)."""
+        self.seed([{"id": "i", "kind": "image", "file": "gone.png", "mime": "image/png"}])
+        out = self.clip("copy", "i", code=1)
+        self.assertNotIn("Traceback", out)
+        self.assertEqual(self.calls("wl-copy"), [])
 
     def test_copy_unknown(self):
         self.seed([{"id": "a", "kind": "text", "text": "x"}])

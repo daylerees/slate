@@ -34,9 +34,12 @@ SECRET_HINTS = ("x-kde-passwordmanagerhint", "password")
 def load():
     try:
         with open(INDEX) as f:
-            return json.load(f).get("entries", [])
+            d = json.load(f)
     except (OSError, ValueError):
         return []
+    # (a damaged index that isn't the expected shape starts afresh rather than failing every time)
+    e = d.get("entries", []) if isinstance(d, dict) else []
+    return [x for x in e if isinstance(x, dict)] if isinstance(e, list) else []
 
 
 def save(entries):
@@ -136,7 +139,11 @@ def copy(eid):
     if not e:
         return 1
     if e.get("kind") == "image":
-        with open(os.path.join(DIR, e["file"]), "rb") as f:
+        try:
+            f = open(os.path.join(DIR, e["file"]), "rb")
+        except (OSError, KeyError):
+            return 1                 # its picture has gone
+        with f:
             subprocess.run(["wl-copy", "--type", e.get("mime", "image/png")], stdin=f, timeout=5)
     else:
         subprocess.run(["wl-copy", "--type", "text/plain;charset=utf-8"], input=e["text"].encode(), timeout=5)
