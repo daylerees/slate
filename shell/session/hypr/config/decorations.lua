@@ -37,7 +37,7 @@ hl.config({
         fullscreen_opacity = 1,
         -- Dim the windows that don't have focus, so the focused one stands out
         dim_inactive = true,
-        dim_strength = 0.7,
+        dim_strength = 0.5,
         dim_special = 0.3,                 -- dim what's behind the special workspace
         blur = {
             size = 5,

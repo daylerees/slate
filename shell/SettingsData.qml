@@ -57,8 +57,8 @@ JsonAdapter {
     property bool iconTileColour: false       // the tile behind an icon in a deep shade of the icon's own colour (icons not filling their shape)
     property string folderColour: "default"    // file manager folders: default, auto (from the wallpaper) or a Papirus colour
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
-    property int windowBorderSize: 0          // px, around windows on workspaces with more than one (0 = none)
-    property int inactiveDim: 70              // %, how much windows without focus are dimmed (0 = off)
+    property int windowBorderSize: 3          // px, around windows on workspaces with more than one (0 = none)
+    property int inactiveDim: 50              // %, how much windows without focus are dimmed (0 = off)
     // ---- Keyboard & Mouse (Settings → Keyboard & Mouse). "" / -1 / -2 = not set here: whatever
     // Hyprland's config (and your ~/.config/slate/hypr/hyprland.lua) sets is left alone
     property string kbLayouts: ""             // xkb layouts, comma-separated, e.g. "gb,us"

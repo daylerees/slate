@@ -13,7 +13,7 @@ TRANSPARENT   = "rgba(00000000)"
 
 -- Window borders: shown only when a workspace has more than one window (see
 -- windowrules.lua). Translucent, since Hyprland can't blur behind borders.
-BORDER_SIZE     = 0
+BORDER_SIZE     = 3
 ACTIVE_BORDER   = { colors = { "rgba(8fb3e899)" } }   -- accent at 60%; also restored after resize mode
 INACTIVE_BORDER = "rgba(0f1216d9)"                     -- bar colour at 85%
 RESIZE_BORDER   = "rgba(ff1493ff)"                     -- bright pink while in resize mode (Super+R)
