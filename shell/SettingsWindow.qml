@@ -81,6 +81,10 @@ FloatingWindow {
     readonly property color accent: bar.accent
     readonly property color accentText: Config.tint("#12151a")
     readonly property color danger: bar.errorColor
+    // Buttons, switches, fields and other controls: solid grey, or with glass the frosted fill the
+    // bar's containers have (a hint of the wallpaper's colour), so their sheen picks it up too
+    readonly property color control: Config.raised(Config.tint("#2a313c"))
+    function controlHover(solid) { return Config.glass ? Config.hoverOn(control) : solid; }
     readonly property string font: bar.fontFamily
     function glyph(code) { return String.fromCodePoint(code); }
 
@@ -683,7 +687,7 @@ FloatingWindow {
         signal toggled(bool value)
         width: 42; height: 24; radius: 12
         color: checked ? (tgHover.hovered ? Qt.lighter(win.accent, 1.08) : win.accent)
-            : (tgHover.hovered ? Config.tint("#38414e") : Config.tint("#2a313c"))
+            : (tgHover.hovered ? win.controlHover(Config.tint("#38414e")) : win.control)
         Behavior on color { ColorAnimation { duration: 120 } }
         // Hover: a soft accent ring around the switch
         Rectangle {
@@ -735,7 +739,7 @@ FloatingWindow {
                 id: trk
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: 3
-                color: sliderBox.hot ? Config.tint("#38414e") : Config.tint("#2a313c")
+                color: sliderBox.hot ? win.controlHover(Config.tint("#38414e")) : win.control
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Rectangle {
                     width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
@@ -802,7 +806,7 @@ FloatingWindow {
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? (btnHover.hovered ? Qt.lighter(win.accent, 1.1) : win.accent)
-            : btnHover.hovered ? Config.tint("#323a46") : Config.tint("#2a313c")
+            : btnHover.hovered ? win.controlHover(Config.tint("#323a46")) : win.control
         Behavior on color { ColorAnimation { duration: 100 } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
         Gloss { radius: parent.radius }   // glass: a sheen
@@ -896,7 +900,8 @@ FloatingWindow {
                 id: fontSearchBox
                 anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 16; rightMargin: 16 }
                 height: 34; radius: 8
-                color: Config.tint("#2a313c")
+                color: win.control
+                Gloss { radius: parent.radius }   // glass: a sheen
                 // Hover: a faint accent outline (solid while typing)
                 HoverHandler { id: fontSearchHover; cursorShape: Qt.IBeamCursor }
                 border.width: fontSearch.activeFocus || fontSearchHover.hovered ? 1 : 0; border.color: fontSearch.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
@@ -981,7 +986,7 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool on: modelData.value === ch.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
-                    color: on ? win.accent : optHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
+                    color: on ? win.accent : optHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
                     Gloss { radius: parent.radius; opacity: (on || optHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
@@ -1010,7 +1015,7 @@ FloatingWindow {
             id: ddButton
             readonly property bool open: dropLayer.owner === dd
             width: Math.max(150, ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)); height: 32; radius: 8
-            color: open || ddHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
+            color: open || ddHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
             Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: 100 } }
@@ -1513,7 +1518,8 @@ FloatingWindow {
                             : "Not set: weather is hidden. Search for your town or city"
                         Rectangle {
                             width: 200; height: 30; radius: 8
-                            color: Config.tint("#2a313c")
+                            color: win.control
+                            Gloss { radius: parent.radius }   // glass: a sheen
                             // Hover: a faint accent outline (solid while typing)
                             HoverHandler { id: placeInputHover; cursorShape: Qt.IBeamCursor }
                             border.width: placeInput.activeFocus || placeInputHover.hovered ? 1 : 0
@@ -1552,7 +1558,7 @@ FloatingWindow {
                                 required property var modelData
                                 readonly property string place: [modelData.name, modelData.admin1, modelData.country].filter(x => x).join(", ")
                                 width: placeText.implicitWidth + 26; height: 32; radius: 8
-                                color: placeHover.hovered ? Config.hoverOn(Config.tint("#2a313c")) : Config.tint("#2a313c")
+                                color: placeHover.hovered ? win.controlHover(Config.hoverOn(Config.tint("#2a313c"))) : win.control
                                 Gloss { radius: parent.radius; opacity: (placeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                 HoverHandler { id: placeHover }
@@ -3545,7 +3551,8 @@ FloatingWindow {
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 92; height: 30; radius: 8
-                                color: Config.tint("#2a313c")
+                                color: win.control
+                                Gloss { radius: parent.radius }   // glass: a sheen
                                 // Hover: a faint accent outline (solid while typing)
                                 HoverHandler { id: hexInputHover; cursorShape: Qt.IBeamCursor }
                                 border.width: hexInput.activeFocus || hexInputHover.hovered ? 1 : 0
@@ -4281,7 +4288,8 @@ FloatingWindow {
                             Rectangle {
                                 anchors { left: parent.left; right: parent.right; leftMargin: 60; rightMargin: 14; top: parent.top }
                                 height: 36; radius: 8
-                                color: Config.tint("#2a313c")
+                                color: win.control
+                                Gloss { radius: parent.radius }   // glass: a sheen
                                 border.width: 1; border.color: win.accent
                                 TextInput {
                                     id: psk

@@ -153,6 +153,7 @@ PanelWindow {
         width: wsDots.width + 28; height: 34; radius: 17
         color: sw.bar.barColor
         opacity: sw.fade
+        Gloss { radius: parent.radius }   // glass: a sheen, like the bar's workspace container
         readonly property real dot: 14
         readonly property real gap: 8
         readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)

@@ -31,23 +31,28 @@ Rectangle {
     readonly property real a: Math.min(0.85, (Config.s.lightMode ? 0.35 : 0.13) * strength * Config.glossAmount * boost * tinted * (onFill ? 2 : 1))
     // A coloured sheen is a little stronger, so its colour shows rather than reading as grey
     readonly property real tinted: hintAmount > 0 ? 1.35 : 1
-    // The sheen's colour: light, with a hint of what it's on. A coloured fill (an accent-filled
-    // selection, a space's colour) lends its colour; on see-through glass, the wallpaper's
-    // overall colour (the scene showing through); otherwise plain white
-    readonly property color hint: {
+    // On a coloured fill: an accent-filled selection, a space's colour. Goes by how much colour
+    // shows (chroma), not saturation: the dark and light surfaces tinted by the wallpaper (Tint
+    // boldness) are highly saturated by the numbers but still read as grey, and counted as
+    // coloured they lent the sheen their own dull colour
+    readonly property bool coloured: {
         const c = parent ? parent.color : undefined;
-        if (c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2) return c;
-        if (glassHint || (c !== undefined && c.a < 0.95)) {
-            // The wallpaper's vivid colour (the one an accent from the wallpaper uses); its
-            // overall tone averages the whole picture and came out too grey
-            const t = Config.wallpaperAccent || Config.wallpaperTone;
-            if (t) return Qt.color(t);
-        }
-        return "white";
+        return !glassHint && c !== undefined && c.a >= 0.5
+            && c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) > 0.2;
+    }
+    // The sheen's colour: light, with a hint of what it's on. A coloured fill lends its colour;
+    // anything else (frosted glass, the dock, a grey button) the wallpaper's, as the scene
+    // showing through, like the bar's capsules
+    readonly property color hint: {
+        if (coloured) return parent.color;
+        // The wallpaper's vivid colour (the one an accent from the wallpaper uses); its
+        // overall tone averages the whole picture and came out too grey
+        const t = Config.wallpaperAccent || Config.wallpaperTone;
+        return t ? Qt.color(t) : "white";
     }
     // Settings → Glass → Gloss colour. On a coloured fill at most 40% of it, so the sheen stays
     // a lighter tint of the fill (at full strength it was the fill's own colour, and vanished)
-    readonly property bool onFill: { const c = parent ? parent.color : undefined; return !glassHint && c !== undefined && c.a >= 0.5 && c.hslSaturation > 0.2; }
+    readonly property bool onFill: coloured
     // Light frosted glass (light mode, not on a coloured fill): the sheen stays close to white,
     // since a sheen in the wallpaper's colour vanished into the tinted surface beneath it
     readonly property bool lightFrost: Config.s.lightMode && !onFill
