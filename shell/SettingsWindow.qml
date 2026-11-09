@@ -1917,7 +1917,7 @@ FloatingWindow {
                     ValueSlider { from: 2500; to: 6000; stepSize: 100; suffix: " K"; value: Config.s.nightLightTemperature; onMoved: v => Config.s.nightLightTemperature = v }
                 }
                 Separator {}
-                ChoiceSetting {
+                DropdownSetting {
                     label: "Schedule"
                     detail: {
                         if (Config.s.nightLightSchedule === "sun") {
