@@ -632,7 +632,7 @@ PanelWindow {
                     // see-through, and the accent behind would show through it
                     IconPlate {
                         anchors.fill: parent; z: -1
-                        color: row.selected && Config.glass ? Config.tint("#2a313c") : Config.iconPlateColor
+                        color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c"), true) : Config.iconTileFor(app, Config.iconPlateColor)
                         Behavior on color { ColorAnimation { duration: row.fadeMs } }
                     }
                 }

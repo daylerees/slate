@@ -474,7 +474,52 @@ Singleton {
     Process {
         id: tileAllRun
         command: [root.tileScript, "--tile-all", root.tileDir, "192"].concat(root.tileStyle)
-        onExited: root.tileVersion++
+        onExited: { root.tileVersion++; if (root.s.iconTileColour) iconColoursSoon.restart(); }
+    }
+
+    // ---- Tiles in each icon's colour (Settings → Appearance → App icons) ------------------
+    // appicon.py --colours notes each drawn icon's main colour (colours.json in the tiles
+    // folder); the tile behind an icon (IconPlate.qml) then takes a deep shade of it
+    readonly property string iconColoursPath: tileDir + "/colours.json"
+    property var iconColours: ({})                 // icon file name → "#rrggbb"
+    FileView {
+        id: iconColoursFile
+        path: root.s.iconTileColour ? root.iconColoursPath : ""
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text()), m = {};
+                for (const k in d) if (d[k] && d[k].c) m[k] = d[k].c;
+                root.iconColours = m;
+            } catch (e) {}
+        }
+        onLoadFailed: iconColoursSoon.restart()      // not made yet
+    }
+    Timer { id: iconColoursSoon; interval: 1500; onTriggered: if (root.s.iconTileColour) { iconColoursRun.running = false; iconColoursRun.running = true; } }
+    Process { id: iconColoursRun; command: [root.tileScript, "--colours", root.tileDir, root.iconColoursPath] }
+    Connections { target: root.s; function onIconTileColourChanged() { if (root.s.iconTileColour) iconColoursSoon.restart(); } }
+    // An icon with no colour noted yet (an app just drawn): look again, at most every 30 s each
+    property var iconColourAsked: ({})
+    function askIconColour(app) {
+        const now = Date.now();
+        if (now - (iconColourAsked[app] || 0) < 30000) return;
+        iconColourAsked[app] = now;
+        iconColoursSoon.restart();
+    }
+    // The tile behind an app's icon: a deep shade of the icon's colour (a light one in light
+    // mode) with the setting on, else `fallback`. Grey icons keep the fallback. `solid`: never
+    // see-through, even with glass (the launcher's highlighted row)
+    function iconTileFor(app, fallback, solid) {
+        if (!s.iconTileColour || s.iconFill || !app) return fallback;
+        const hex = iconColours[app];
+        if (!hex) { askIconColour(app); return fallback; }
+        const c = Qt.color(hex);
+        if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return fallback;
+        const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
+        const t = s.lightMode ? Qt.hsla(h, sat * 0.7, 0.84, 1) : Qt.hsla(h, sat * 0.8, 0.22, 1);
+        return glass && !solid ? Qt.rgba(t.r, t.g, t.b, 0.6) : t;
     }
 
     // ---- Keyboard shortcuts set (Settings → Shortcuts) ------------------------------

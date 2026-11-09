@@ -4,6 +4,7 @@
 Usage: appicon.py --tile <app-id-or-class> <out.png> <pixels> [--shape S] [--fill|--whole]
        appicon.py --tile-all <dir> <pixels> [--shape S] [--fill|--whole]   (every installed app)
        appicon.py --preview <dir> <pixels>   (one app in every shape and style, for Settings)
+       appicon.py --colours <dir> <out.json> (each drawn icon's main colour, for tiles in it)
 
 Settings → Appearance → App icons:
   --shape  tile (default: a rounded square), squircle, circle, square, or original
@@ -244,6 +245,60 @@ def main_colour(icon):
     return (r * 16 + 8, g * 16 + 8, b * 16 + 8, 255)
 
 
+def accent_colour(icon):
+    """The colour an icon reads as: its most common strong colour, so a white or dark outline
+    doesn't win over the colour that fills it; for a mostly grey icon, its most common colour.
+    Returns "#rrggbb", or "" for an empty image."""
+    import colorsys
+    small = icon.convert("RGBA").resize((48, 48))
+    strong, every, opaque = {}, {}, 0
+    for r, g, b, a in pixels(small):
+        if a <= 200:
+            continue
+        opaque += 1
+        h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+        key = (r // 24, g // 24, b // 24)
+        for counts in ([every, strong] if s > 0.3 and 0.15 < l < 0.85 else [every]):
+            n, sr, sg, sb = counts.get(key, (0, 0, 0, 0))
+            counts[key] = (n + 1, sr + r, sg + g, sb + b)
+    if not opaque:
+        return ""
+    # Strong colours win when there's a fair amount of them (8% of the icon)
+    pool = strong if sum(v[0] for v in strong.values()) >= opaque * 0.08 else every
+    n, sr, sg, sb = max(pool.values(), key=lambda v: v[0])
+    return "#%02x%02x%02x" % (sr // n, sg // n, sb // n)
+
+
+def colours(tile_dir, out):
+    """Write each drawn icon's colour (accent_colour) to out as JSON, by its file name. Icons
+    already listed (and unchanged) are kept, so running it again only reads new ones."""
+    import json
+    try:
+        with open(out) as f:
+            known = json.load(f)
+    except (OSError, ValueError):
+        known = {}
+    found = {}
+    for f in sorted(os.listdir(tile_dir)):
+        if not f.endswith(".png"):
+            continue
+        path = os.path.join(tile_dir, f)
+        stamp = int(os.path.getmtime(path))
+        name = f[:-4]
+        old = known.get(name)
+        if isinstance(old, dict) and old.get("t") == stamp:
+            found[name] = old
+            continue
+        try:
+            found[name] = {"c": accent_colour(Image.open(path)), "t": stamp}
+        except Exception as e:  # one broken file shouldn't stop the rest
+            print(f"{f}: {e}", file=sys.stderr)
+    tmp = out + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(found, f, separators=(",", ":"))
+    os.replace(tmp, out)
+
+
 def render(icon_path):
     S = SIZE * SS
     canvas = Image.new("RGBA", (S, S), (0, 0, 0, 0))
@@ -425,6 +480,9 @@ def main():
     shape, fill = style(args)
     if len(args) >= 3 and args[0] == "--preview":
         preview(args[1], int(args[2]))
+        return
+    if len(args) >= 3 and args[0] == "--colours":
+        colours(args[1], args[2])
         return
     if len(args) >= 3 and args[0] == "--tile-all":
         shape, fill = style_of_folder(args[1]) or (shape, fill)

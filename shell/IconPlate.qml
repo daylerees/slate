@@ -1,5 +1,6 @@
 // The tile behind an app icon when icons don't fill their shape (Settings → Appearance →
-// App icons → Fill the shape off): the shape in the theme's colour, drawn here rather than
+// App icons → Fill the shape off): the shape in the theme's colour (or, with Tiles in the icon's
+// colour, a deep shade of the icon's own: Config.iconTileFor), drawn here rather than
 // into the icon files, so it follows light/dark and the wallpaper tint straight away.
 // Put it inside the icon's Image:  IconPlate { anchors.fill: parent; z: -1 }
 // (z -1 draws it behind the image, and it moves with any transform on the image).
@@ -10,7 +11,14 @@ Canvas {
     id: plate
     property string shape: Config.s.iconShape
     property bool fill: Config.s.iconFill
-    property color color: Config.iconPlateColor
+    // Which app's icon it's behind, from the tile image it sits in (for tiles in the icon's colour)
+    readonly property string app: {
+        const src = parent && parent.source !== undefined ? String(parent.source) : "";
+        if (src.indexOf("/tiles/") < 0) return "";
+        return src.split("?")[0].split("/").pop().replace(/\.png$/, "");
+    }
+    // The theme's tile, or with Settings → App icons → Tiles in the icon's colour, a shade of the icon's
+    property color color: Config.iconTileFor(app, Config.iconPlateColor)
     visible: !fill && shape !== "original"
 
     onShapeChanged: requestPaint()

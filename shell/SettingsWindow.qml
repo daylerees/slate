@@ -193,7 +193,7 @@ FloatingWindow {
     readonly property var pageKeys: ({
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
@@ -4055,6 +4055,18 @@ FloatingWindow {
                         ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
                         : "Crop each icon's own border and shadow and grow it to fill the shape, on its main colour. Off: the whole icon, smaller, on a plain tile"
                     Toggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
+                }
+                Separator {}
+                SettingRow {
+                    // Only for icons on a tile: filled icons and original ones have none
+                    readonly property bool applies: !Config.s.iconFill && Config.s.iconShape !== "original"
+                    opacity: applies ? 1 : 0.4
+                    enabled: applies
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    label: "Tiles in the icon's colour"
+                    detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
+                        : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
+                    Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
                 }
                 Separator {}
                 SettingRow {
