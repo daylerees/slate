@@ -267,7 +267,9 @@ Singleton {
     // Startup apps (Settings → Startup Apps). After a restart that kept your apps (the restart
     // dialog's "Reopen apps"), spaces.py reopens those first, back where they were, then opens
     // the startup apps, each on a workspace of its own, and returns to your last workspace.
-    onAtLogin: reopenCheck.running = true
+    // Not on the login screen, which loads this file with a copy of your settings: there,
+    // spaces.py isn't installed, so the check failed and every startup app was launched
+    onAtLogin: if (!isLoginScreen) reopenCheck.running = true
     Process {
         id: reopenCheck
         command: ["python3", Quickshell.shellPath("scripts/spaces.py"), "session-pending"]
@@ -428,7 +430,9 @@ Singleton {
     readonly property string inhibitWhat: [s.lidAction !== "" ? "handle-lid-switch" : "", s.powerKeyAction !== "" ? "handle-power-key" : ""]
         .filter(x => x !== "").join(":")
     onInhibitWhatChanged: { inhibitor.running = false; inhibitRestart.restart(); }
-    Timer { id: inhibitRestart; interval: 200; onTriggered: inhibitor.running = root.inhibitWhat !== "" }
+    // Not on the login screen: nothing there does the action, so holding the system's own handling
+    // back left the lid (or power button) doing nothing
+    Timer { id: inhibitRestart; interval: 200; onTriggered: inhibitor.running = root.inhibitWhat !== "" && !root.isLoginScreen }
     Process {
         id: inhibitor
         running: false
@@ -479,7 +483,8 @@ Singleton {
     // startup, any that are missing); tileVersion goes up when that's done, to reload images
     property int tileVersion: 0
     onTileDirChanged: tileAll.restart()
-    Timer { id: tileAll; interval: 600; running: true; onTriggered: { tileAllRun.running = false; tileAllRun.running = true; } }
+    // (not on the login screen, which has neither the script nor any use for the tiles)
+    Timer { id: tileAll; interval: 600; running: !root.isLoginScreen; onTriggered: { if (root.isLoginScreen) return; tileAllRun.running = false; tileAllRun.running = true; } }
     Process {
         id: tileAllRun
         command: [root.tileScript, "--tile-all", root.tileDir, "192"].concat(root.tileStyle)
