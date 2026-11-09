@@ -46,9 +46,12 @@ Item {
         asynchronous: true
     }
     MultiEffect {
-        visible: wb.drawn
+        // Only once the picture has loaded: before then there's nothing to blur, and a blur of
+        // an image still loading logs a warning ("not assigned a valid texture provider")
+        readonly property bool ready: wb.drawn && wbImg.status === Image.Ready
+        visible: ready
         anchors.fill: wbImg
-        source: wb.drawn ? wbImg : null
+        source: ready ? wbImg : null
         blurEnabled: true
         blur: 1
         blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * wb.pixelScale)))
