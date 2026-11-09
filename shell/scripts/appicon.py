@@ -33,18 +33,20 @@ FILL = 1.0           # --fill, other shapes: longest side relative to the tile (
 INNER_FILL = (0x2A, 0x31, 0x3C, 255)   # the tile's colour behind an icon with no main colour
 SS = 4               # supersampling for smooth edges
 
-APP_DIRS = [
-    os.path.expanduser("~/.local/share/applications"),
-    os.path.expanduser("~/.local/share/flatpak/exports/share/applications"),
-    "/var/lib/flatpak/exports/share/applications",
-    "/usr/share/applications",
-]
-ICON_BASES = [
-    os.path.expanduser("~/.local/share/icons"),
-    os.path.expanduser("~/.local/share/flatpak/exports/share/icons"),  # Flatpak apps
-    "/var/lib/flatpak/exports/share/icons",
-    "/usr/share/icons",
-]
+def data_dirs():
+    """Where the desktop keeps shared data, most personal first: XDG_DATA_HOME, then
+    XDG_DATA_DIRS (the standard: NixOS has nothing in /usr/share, and /usr/local/share
+    counts everywhere), with Flatpak's exports kept in their usual place."""
+    home = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    out = [home, os.path.join(home, "flatpak", "exports", "share"), "/var/lib/flatpak/exports/share"]
+    for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":"):
+        if d and d not in out:
+            out.append(d)
+    return out
+
+
+APP_DIRS = [os.path.join(d, "applications") for d in data_dirs()]
+ICON_BASES = [os.path.join(d, "icons") for d in data_dirs()]
 THEMES = ["Papirus-Dark", "Papirus", "hicolor", "breeze-dark", "breeze", "Adwaita"]
 SIZES = ["scalable", "1024x1024", "512x512", "256x256", "128x128", "96x96", "64x64",
          "48x48", "32x32", "24x24", "22x22", "16x16"]
@@ -148,9 +150,10 @@ def find_icon_file(name):
                     if os.path.isfile(p):
                         return p
     for ext in ("svg", "png"):
-        p = f"/usr/share/pixmaps/{name}.{ext}"
-        if os.path.isfile(p):
-            return p
+        for d in data_dirs():
+            p = os.path.join(d, "pixmaps", f"{name}.{ext}")
+            if os.path.isfile(p):
+                return p
     return None
 
 

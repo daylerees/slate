@@ -6,12 +6,28 @@
 -- their own transparency (windowrules.lua), and they "swallow" apps started from them (misc.lua)
 TERMINAL_CLASSES = "kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal"
 
--- Apps opened by the keyboard shortcuts in binds.lua
-TERMINAL     = TERMINAL     or "kitty"                            -- Super+Return
-FILE_MANAGER = FILE_MANAGER or "dolphin"                          -- Super+E
-BROWSER      = BROWSER      or "firefox"
-EDITOR       = EDITOR       or "gnome-text-editor --new-window"   -- Super+T
-CALCULATOR   = CALCULATOR   or "gnome-calculator"                 -- Super+C
+-- Apps opened by the keyboard shortcuts in binds.lua: the first of each list that's installed
+-- (found on PATH here, without starting a shell), else the first. Settings → Default Apps
+-- picks yours on top of these.
+local function installed(cmd)
+    local bin = cmd:match("^(%S+)")
+    for dir in (os.getenv("PATH") or "/usr/bin"):gmatch("[^:]+") do
+        local f = io.open(dir .. "/" .. bin, "r")
+        if f then f:close(); return true end
+    end
+    return false
+end
+local function firstInstalled(list)
+    for _, cmd in ipairs(list) do if installed(cmd) then return cmd end end
+    return list[1]
+end
+TERMINAL     = TERMINAL     or firstInstalled({ "kitty", "foot", "alacritty", "ghostty", "wezterm", "konsole",
+                                                "gnome-terminal", "kgx", "ptyxis", "xfce4-terminal" })                  -- Super+Return
+FILE_MANAGER = FILE_MANAGER or firstInstalled({ "dolphin", "nautilus", "thunar", "nemo", "pcmanfm-qt", "pcmanfm", "caja" })  -- Super+E
+BROWSER      = BROWSER      or firstInstalled({ "firefox", "chromium", "google-chrome-stable", "brave", "librewolf", "epiphany" })
+EDITOR       = EDITOR       or firstInstalled({ "gnome-text-editor --new-window", "kate", "kwrite", "mousepad", "gedit",
+                                                "xed", "pluma", "code" })                                               -- Super+T
+CALCULATOR   = CALCULATOR   or firstInstalled({ "gnome-calculator", "kcalc", "qalculate-gtk", "galculator", "mate-calc" })  -- Super+C
 
 -- Monitors, by output name ("" = whichever monitor Hyprland finds; see `hyprctl monitors`)
 MONITOR1 = MONITOR1 or ""

@@ -3,8 +3,14 @@
 [{"value": "gb", "label": "English (UK)"}, {"value": "gb:extd", "label": "English (UK, extended, with Win keys)"}, ...]
 A value is "layout" or "layout:variant". Read from xkb's own list (evdev.lst)."""
 import json
+import os
 
-PATH = "/usr/share/X11/xkb/rules/evdev.lst"
+# xkb's data: XKB_CONFIG_ROOT if set, else the first X11/xkb in the standard data dirs
+# (XDG_DATA_DIRS: NixOS keeps it outside /usr/share)
+_roots = ([os.environ["XKB_CONFIG_ROOT"]] if os.environ.get("XKB_CONFIG_ROOT") else []) + [
+    os.path.join(d, "X11", "xkb") for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":") if d]
+PATH = next((os.path.join(r, "rules", "evdev.lst") for r in _roots if os.path.isfile(os.path.join(r, "rules", "evdev.lst"))),
+            "/usr/share/X11/xkb/rules/evdev.lst")
 layouts, variants, section = [], [], None
 try:
     for line in open(PATH, encoding="utf-8"):

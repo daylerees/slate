@@ -29,8 +29,9 @@ DATA = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
 CFG = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")
 NAME = "Slate-Icons"
 OURS = os.path.join(DATA, "icons", NAME)
-ICON_DIRS = [os.path.join(DATA, "icons"), os.path.join(HOME, ".icons"),
-             "/usr/local/share/icons", "/usr/share/icons"]
+# Icon themes: yours, then the system's (XDG_DATA_DIRS: NixOS keeps them outside /usr/share)
+ICON_DIRS = [os.path.join(DATA, "icons"), os.path.join(HOME, ".icons")] + [
+    os.path.join(d, "icons") for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":") if d]
 COLOURS = ["adwaita", "black", "blue", "bluegrey", "breeze", "brown", "carmine", "cyan", "darkcyan",
            "deeporange", "green", "grey", "indigo", "magenta", "nordic", "orange", "palebrown",
            "paleorange", "pink", "red", "teal", "violet", "white", "yaru", "yellow"]

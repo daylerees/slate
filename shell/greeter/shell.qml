@@ -58,12 +58,14 @@ ShellRoot {
         onExited: code => { root.haveWallpaper = code === 0; if (code === 0) Config.wallpaper = root.wallpaper; }
     }
 
-    // ---- Sessions (from /usr/share/wayland-sessions), last one remembered -------
+    // ---- Sessions (wayland-sessions in the standard data folders), last one remembered ----
     property var sessions: []
     property int sessionIndex: 0
     Process {
         running: true
-        command: ["sh", "-c", "for f in /usr/share/wayland-sessions/*.desktop; do printf '%s\\t%s\\t%s\\t%s\\n' \"$(basename \"$f\" .desktop)\" \"$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-)\" \"$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2-)\" \"$(grep -m1 '^DesktopNames=' \"$f\" | cut -d= -f2-)\"; done"]
+        // (every standard data folder: XDG_DATA_DIRS, as NixOS keeps them outside /usr/share;
+        // the first of each name wins)
+        command: ["sh", "-c", "IFS=:; seen=; for d in ${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do for f in \"$d\"/wayland-sessions/*.desktop; do [ -f \"$f\" ] || continue; n=$(basename \"$f\" .desktop); case \" $seen \" in *\" $n \"*) continue ;; esac; seen=\"$seen $n\"; printf '%s\\t%s\\t%s\\t%s\\n' \"$n\" \"$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-)\" \"$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2-)\" \"$(grep -m1 '^DesktopNames=' \"$f\" | cut -d= -f2-)\"; done; done"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.sessions = text.trim().split("\n").filter(l => l).map(l => {

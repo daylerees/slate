@@ -60,12 +60,19 @@ SESSION_MAX_AGE = 24 * 3600     # a session kept longer ago than this isn't reop
 WINDOW_TIMEOUT = 15     # seconds to wait for an app's window
 TOLERANCE = 12          # px: windows this close count as touching (gaps between tiles)
 
-APP_DIRS = [
-    os.path.expanduser("~/.local/share/applications"),
-    os.path.expanduser("~/.local/share/flatpak/exports/share/applications"),
-    "/var/lib/flatpak/exports/share/applications",
-    "/usr/share/applications",
-]
+def data_dirs():
+    """Where the desktop keeps shared data, most personal first: XDG_DATA_HOME, then
+    XDG_DATA_DIRS (the standard: NixOS has nothing in /usr/share, and /usr/local/share
+    counts everywhere), with Flatpak's exports kept in their usual place."""
+    home = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    out = [home, os.path.join(home, "flatpak", "exports", "share"), "/var/lib/flatpak/exports/share"]
+    for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":"):
+        if d and d not in out:
+            out.append(d)
+    return out
+
+
+APP_DIRS = [os.path.join(d, "applications") for d in data_dirs()]
 # Reverse-domain prefixes many unrelated apps share: never matched just by the prefix
 SHARED_PREFIXES = {"org.gnome", "org.kde", "org.freedesktop", "org.gtk", "com.github", "io.github",
                    "com.gitlab", "io.gitlab", "org.gitlab", "net.sourceforge", "app.drey", "page.tesk",
