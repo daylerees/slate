@@ -11,6 +11,8 @@ qt6-shadertools
 # Scripts and images
 python
 python-pillow
+python-numpy
+librsvg
 imagemagick
 wl-clipboard
 

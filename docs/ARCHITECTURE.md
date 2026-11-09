@@ -203,6 +203,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `quickshell` (0.3.x) | runs Slate (`qs`) |
 | `qt6-declarative`, `qt6-shadertools` | QML / QtQuick.Effects; `qsb` to build `shaders/mono.frag.qsb` |
 | `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py` and the rest); Pillow for `appicon.py`'s tiles and `image-sizes.py` |
+| `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
 | `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |

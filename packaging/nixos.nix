@@ -12,7 +12,7 @@
   environment.systemPackages = with pkgs; [
     quickshell qt6.qtdeclarative qt6.qtsvg qt6Packages.qt6ct
     qt6.qtmultimedia   # optional: click sound, and sounds without a delay
-    python3 python3Packages.pillow imagemagick wl-clipboard libnotify curl unzip xdg-utils
+    python3 python3Packages.pillow python3Packages.numpy librsvg imagemagick wl-clipboard libnotify curl unzip xdg-utils
     grim slurp hyprpicker brightnessctl adw-gtk3 papirus-icon-theme
     # Title bars in floating mode: Nix builds the plugin; link it where Slate looks, e.g.
     #   ln -s ${pkgs.hyprlandPlugins.hyprbars}/lib/libhyprbars.so ~/.local/share/slate/plugins/hyprbars.so

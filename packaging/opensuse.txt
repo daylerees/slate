@@ -8,6 +8,8 @@ libQt6Svg6
 # Scripts and images
 python3
 python3-Pillow
+python3-numpy
+rsvg-convert
 ImageMagick
 wl-clipboard
 
