@@ -304,7 +304,8 @@ PanelWindow {
                                                 id: sw
                                                 required property string modelData
                                                 width: 22; height: 22; radius: 11
-                                                color: Config.accentShade(modelData)      // as it'll look (deeper in light mode)
+                                                // As it'll look: deeper in light mode, and the wallpaper's as bold as set
+                                                color: accOpt.modelData.wall && Config.wallpaperAccent ? Config.fromWallpaper(modelData) : Config.accentShade(modelData)
                                                 border.width: !accOpt.modelData.wall && !Config.s.accentFromWallpaper && Config.s.accent.toLowerCase() === modelData ? 2 : 0
                                                 border.color: w.text
                                                 TapHandler {

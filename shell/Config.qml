@@ -16,7 +16,27 @@ Singleton {
     signal saved()                         // settings.json changed (here or on disk)
 
     // The accent in use: picked by hand, or taken from the wallpaper
-    readonly property color accent: accentShade(s.accentFromWallpaper && wallpaperAccent !== "" ? wallpaperAccent : s.accent)
+    readonly property color accent: s.accentFromWallpaper && wallpaperAccent !== "" ? fromWallpaper(wallpaperAccent) : accentShade(s.accent)
+    // The wallpaper's colour as the accent: deeper in light mode (accentShade), and in dark mode as
+    // bold as Settings → Appearance → Boldness asks
+    function fromWallpaper(c) { return s.lightMode ? accentShade(c) : boldAccent(c, s.accentBoldness); }
+    // A colour made bolder by k (0: as it is, 1: fully): towards nearly full saturation, lightened
+    // only as far as the dark text on the accent needs to stay readable (so blues and purples
+    // end up lighter than reds and oranges)
+    function boldAccent(c, k) {
+        const a = Qt.lighter(c, 1.0);
+        k = Math.max(0, Math.min(1, Number(k) || 0));
+        if (k === 0 || a.hslSaturation < 0.08) return a;     // a grey wallpaper stays grey
+        const h = a.hslHue < 0 ? 0 : a.hslHue;
+        const lin = v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        let t = a;
+        for (let l = 0.5; l <= 0.8; l += 0.005) {
+            t = Qt.hsla(h, 0.9, l, 1);
+            if (0.2126 * lin(t.r) + 0.7152 * lin(t.g) + 0.0722 * lin(t.b) >= 0.25) break;
+        }
+        const sat = a.hslSaturation + (Math.max(a.hslSaturation, t.hslSaturation) - a.hslSaturation) * k;
+        return Qt.hsla(h, sat, a.hslLightness + (t.hslLightness - a.hslLightness) * k, 1);
+    }
     // A colour as the accent shows it: in light mode a deeper shade, so it stands out on light
     // backgrounds (Settings' accent swatches use this too, to show what you'll get)
     function accentShade(c) {
