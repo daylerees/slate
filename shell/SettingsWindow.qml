@@ -157,6 +157,7 @@ FloatingWindow {
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
+        debug: ["logLevel"],
         displays: ["mainDisplay"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorSize", "touchpadSpeed", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
@@ -4596,6 +4597,40 @@ FloatingWindow {
                         opacity: enabled ? 1 : 0.4
                         label: "Resync"
                         onClicked: { resyncRow.status = "Resyncing…"; resyncRun.running = true; }
+                    }
+                }
+            }
+            GroupLabel { text: "Logs" }
+            Group {
+                ChoiceSetting {
+                    label: "Log detail"
+                    detail: "How much Slate writes to its log. Turn it up while tracking down a problem, then back down. Slate restarts to apply it"
+                    options: [{ value: "normal", label: "Normal" }, { value: "detailed", label: "Detailed" }, { value: "everything", label: "Everything" }]
+                    value: Config.s.logLevel || "normal"
+                    onPicked: v => { Config.s.logLevel = v; Config.logLevelEdited(); }
+                }
+                Separator {}
+                SettingRow {
+                    id: exportRow
+                    property string saved: ""          // the file, once exported
+                    property string status: ""
+                    label: "Export recent logs"
+                    detail: status !== "" ? status
+                        : "Saves Slate's recent log and details about your system to a text file in Downloads, to attach "
+                          + "when reporting a problem. Your location is left out; look the file over before sharing it, as "
+                          + "the log can name apps, windows and file paths"
+                    Process {
+                        id: exportRun
+                        command: [Quickshell.shellPath("bin/slate-logs")]
+                        stdout: StdioCollector { onStreamFinished: exportRow.saved = text.trim() }
+                        onExited: code => exportRow.status = code === 0 && exportRow.saved !== ""
+                            ? "Saved to " + exportRow.saved.replace(Quickshell.env("HOME"), "~") + ". Look it over before sharing it"
+                            : "Couldn't save the logs"
+                    }
+                    Row {
+                        spacing: 8
+                        Button { visible: exportRow.saved !== ""; label: "Show"; onClicked: Quickshell.execDetached(["xdg-open", exportRow.saved.substring(0, exportRow.saved.lastIndexOf("/"))]) }
+                        Button { label: "Export"; onClicked: { exportRow.saved = ""; exportRow.status = "Saving…"; exportRun.running = true; } }
                     }
                 }
             }

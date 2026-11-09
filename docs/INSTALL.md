@@ -237,5 +237,9 @@ Slate's state in `~/.local/state/slate` and `~/.cache/slate` can be deleted by h
   `slate` and read the error, or see `~/.cache/slate.log`.
 - **Icons show as boxes** — the bundled icon font didn't load; reinstall Slate
   (`./install.sh --no-deps`).
+- **Reporting a problem** — Settings → Debug → **Export recent logs** (or `slate logs` in a
+  terminal) saves Slate's recent log and system details to a file in Downloads, without your
+  location; look it over, then attach it to the issue. Turning **Log detail** up first (it
+  restarts Slate) and reproducing the problem gives a fuller log.
 - **Login screen problems** — switch back from a text console (Ctrl+Alt+F3):
   `sudo ~/.config/slate/bin/slate-greeter-install --revert`, then reboot.

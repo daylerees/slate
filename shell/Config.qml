@@ -561,6 +561,20 @@ Singleton {
     // mismatch can never restart Slate over and over): restarts Slate a moment after the
     // last change, then reopens Settings where it was
     function uiScaleEdited() { scaleRestart.restart(); }
+    // Settings → Debug → Log detail: the level Slate started with (bin/slate passes it on), and
+    // a full restart to apply a different one, back on the Debug page
+    readonly property string runningLogLevel: Quickshell.env("SLATE_LOG_LEVEL") || "normal"
+    function logLevelEdited() { logRestart.restart(); }
+    Timer {
+        id: logRestart
+        interval: 1200
+        onTriggered: {
+            if ((root.s.logLevel || "normal") === root.runningLogLevel) return;
+            const slate = Quickshell.shellPath("bin/slate");
+            Quickshell.execDetached(["setsid", "-f", "sh", "-c",
+                `sleep 0.5; "${slate}" restart --full; for i in $(seq 40); do sleep 0.25; "${slate}" ipc call settings page debug >/dev/null 2>&1 && break; done`]);
+        }
+    }
     Timer {
         id: scaleRestart
         interval: 1200
@@ -646,6 +660,7 @@ Singleton {
             else if (!sameValue(root.s[k], defaults[k])) {
                 root.s[k] = defaults[k];
                 if (k === "uiScale") uiScaleEdited();
+                if (k === "logLevel") logLevelEdited();
                 if (hyprKeys.includes(k)) hyprReload.restart();
             }
         }

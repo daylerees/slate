@@ -6,6 +6,7 @@
 #   slate ipc call <target> <function> [args]   e.g. slate ipc call settings toggle
 #   slate ipc show         list what can be called
 #   slate log              follow Slate's log
+#   slate logs             save recent logs and system details to a file, for bug reports
 #   slate dir              print where Slate is installed
 #   slate build-hyprbars   build the title-bar plugin for floating windows (after Hyprland updates)
 # Slate's folder is the one this script lives in (bin/..), or $SLATE_DIR.
@@ -18,15 +19,25 @@ ui_scale() {
     case "$s" in ""|1|1.0|1.00) ;; *) echo "$s" ;; esac
 }
 
+# Settings → Debug → Log detail (logLevel in settings.json): normal, detailed or everything
+log_level() {
+    l=$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)
+    case "$l" in detailed|everything) echo "$l" ;; *) echo normal ;; esac
+}
+
 start() {
     mkdir -p "$(dirname "$LOG")"
     scale=$(ui_scale)
+    level=$(log_level)
+    # Always timestamped; more of Quickshell's own messages at the higher levels.
+    # SLATE_LOG_LEVEL tells Slate which level it started with.
+    case "$level" in detailed) verbose=-v ;; everything) verbose=-vv ;; *) verbose= ;; esac
     # -n: don't start a second copy. Detach with setsid rather than qs -d, which can leave
     # two copies running.
     if [ -n "$scale" ]; then
-        QT_SCALE_FACTOR="$scale" setsid qs -n -p "$SLATE_DIR" >"$LOG" 2>&1 </dev/null &
+        SLATE_LOG_LEVEL="$level" QT_SCALE_FACTOR="$scale" setsid qs -n -p "$SLATE_DIR" --log-times $verbose >"$LOG" 2>&1 </dev/null &
     else
-        env -u QT_SCALE_FACTOR setsid qs -n -p "$SLATE_DIR" >"$LOG" 2>&1 </dev/null &
+        SLATE_LOG_LEVEL="$level" env -u QT_SCALE_FACTOR setsid qs -n -p "$SLATE_DIR" --log-times $verbose >"$LOG" 2>&1 </dev/null &
     fi
 }
 
@@ -49,8 +60,9 @@ case "${1:-start}" in
     stop) stop ;;
     ipc) shift; exec qs -p "$SLATE_DIR" ipc "$@" ;;
     log) exec tail -f "$LOG" ;;
+    logs) exec "$SLATE_DIR/bin/slate-logs" ;;
     dir) echo "$SLATE_DIR" ;;
     build-hyprbars) exec "$SLATE_DIR/bin/slate-build-hyprbars" ;;
-    -h|--help|help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' ;;
+    -h|--help|help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) echo "slate: unknown command '$1' (see slate --help)" >&2; exit 1 ;;
 esac

@@ -1,0 +1,54 @@
+#!/bin/sh
+# Save Slate's recent log and some system details to a text file, to attach to a bug report.
+# Prints the file's path. Run as `slate logs`, or from Settings → Debug → Export recent logs.
+#
+# Leaves out your location (latitude, longitude, place name). The log itself can still name
+# apps, windows and file paths, so the file says to look it over before sharing it.
+SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate.log"
+LINES=2000
+
+# Downloads (the XDG folder if set), else home
+dir=$(xdg-user-dir DOWNLOAD 2>/dev/null)
+[ -n "$dir" ] && [ "$dir" != "$HOME" ] && [ -d "$dir" ] || dir="$HOME/Downloads"
+[ -d "$dir" ] || dir="$HOME"
+out="$dir/slate-logs-$(date +%Y%m%d-%H%M%S).txt"
+
+nocolour() { sed 's/\x1b\[[0-9;]*m//g'; }
+section() { printf '\n===== %s =====\n' "$1"; }
+
+{
+    echo "Slate logs, saved $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    echo "Look this over before sharing it: the log can name apps, windows and file paths."
+
+    section "Versions"
+    echo "Slate:       $(cat "$SLATE_DIR/VERSION" 2>/dev/null || echo unknown)$(git -C "$SLATE_DIR" describe --tags 2>/dev/null | sed 's/^/ (git: /; s/$/)/')"
+    echo "Quickshell:  $(qs --version 2>/dev/null | head -n 1)"
+    echo "Hyprland:    $(hyprctl version 2>/dev/null | head -n 1)"
+    . /etc/os-release 2>/dev/null
+    echo "System:      ${PRETTY_NAME:-unknown}, $(uname -sr)"
+    level=${SLATE_LOG_LEVEL:-$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)}
+    echo "Log detail:  ${level:-normal}"
+    echo "Session:     ${XDG_SESSION_TYPE:-?}${SLATE_SESSION:+ (Slate session)}"
+
+    section "Displays"
+    hyprctl monitors 2>/dev/null | grep -E '^Monitor|^\s+[0-9]+x[0-9]+@|scale:' | sed 's/^\s*/  /'
+    lspci 2>/dev/null | grep -iE 'vga|3d|display' | sed 's/^/  GPU: /'
+
+    section "Settings (location left out)"
+    python3 -c '
+import json, sys
+s = json.load(open(sys.argv[1]))
+for k in ("latitude", "longitude", "locationName"):
+    s.pop(k, None)
+print(json.dumps(s, indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" 2>/dev/null || echo "(couldn't read settings.json)"
+
+    section "Slate's log (last $LINES lines)"
+    if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour
+    else qs log -p "$SLATE_DIR" -t "$LINES" 2>/dev/null | nocolour; fi
+
+    section "Login screen's log (last 200 lines, if readable)"
+    journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"
+} > "$out" 2>&1
+
+echo "$out"

@@ -28,6 +28,7 @@ JsonAdapter {
     property real longitude: 0
     property real fontSize: 13                // no longer set in Settings (the UI scale replaced it)
     property string mainDisplay: ""           // Settings → Displays → Main display (monitor description; "" = the first)
+    property string logLevel: "normal"        // Settings → Debug → Log detail: normal, detailed or everything (applied when Slate starts)
     property real uiScale: 1                  // Settings → Appearance → Interface size: scales all of Slate (applied when Slate starts)
     property string workspaceShape: "square"  // workspace indicators: square (rounded) or circle
     property string iconShape: "tile"          // Settings → Appearance → App icons: tile, squircle, circle, square or original
