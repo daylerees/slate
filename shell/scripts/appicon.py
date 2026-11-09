@@ -16,10 +16,10 @@ Settings → Appearance → App icons:
            the theme's colour (IconPlate.qml), so it follows the theme. Original: untouched.
            Slate's default (Settings → Appearance → App icons) is tile with --whole
 
-Draws a square container (matching the bar's capsules) with a rounded inner
-frame a few pixels in, and the app icon slightly oversized and cropped to that
-inner frame. Slate caches the tiles in ~/.cache/slate/tiles.
+Each tile is drawn at 4× and scaled down for smooth edges (render_tile). Slate caches the
+tiles in ~/.cache/slate/tiles, a folder per style.
 """
+import functools
 import os
 import subprocess
 import sys
@@ -27,15 +27,10 @@ import tempfile
 
 from PIL import Image, ImageDraw
 
-# --- Look (pixels for a 54 px tile; tiles are rendered at the size asked for and scaled) ---
-SIZE = 54            # outer square = capsule height (27 logical)
-OUTER_RADIUS = 12    # matches capsule_radius = 6 logical
-INSET = 6            # gap between outer and inner frame (3 logical)
-INNER_RADIUS = 8
-ZOOM = 1.18          # square icons: size relative to the inner frame (>1 = cropped)
-FILL = 1.0           # other shapes: longest side relative to the inner frame
-OUTER_FILL = (0x1D, 0x22, 0x2A, 255)
-INNER_FILL = (0x2A, 0x31, 0x3C, 255)
+# --- Look ---
+ZOOM = 1.18          # --fill, square icons: size relative to the tile (>1 = their own border is cropped)
+FILL = 1.0           # --fill, other shapes: longest side relative to the tile (see SHAPE_FILL)
+INNER_FILL = (0x2A, 0x31, 0x3C, 255)   # the tile's colour behind an icon with no main colour
 SS = 4               # supersampling for smooth edges
 
 APP_DIRS = [
@@ -62,14 +57,36 @@ SHARED_PREFIXES = {"org.gnome", "org.kde", "org.freedesktop", "org.gtk", "com.gi
                    "io.elementary", "com.system76", "org.mozilla", "com.belmoussaoui", "de.haeckerfelix"}
 
 
-def desktop_icon(cls):
-    """Find the Icon= value from the app's .desktop file."""
-    want = cls.lower()
+@functools.lru_cache(maxsize=None)
+def desktop_files():
+    """Every installed .desktop file, and the same by lower-case name (a later folder in
+    APP_DIRS wins a name). Listed once per run: --tile-all looks up every app."""
     files = []
     for d in APP_DIRS:
         if os.path.isdir(d):
             files += [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".desktop")]
     by_name = {os.path.basename(f)[:-8].lower(): f for f in files}
+    return files, by_name
+
+
+@functools.lru_cache(maxsize=None)
+def wm_classes(path):
+    """Every StartupWMClass= value in a .desktop file (any section), lower case."""
+    found = set()
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if line.lower().startswith("startupwmclass="):
+                    found.add(line.split("=", 1)[1].strip().lower())
+    except OSError:
+        pass
+    return frozenset(found)
+
+
+def desktop_icon(cls):
+    """Find the Icon= value from the app's .desktop file."""
+    want = cls.lower()
+    files, by_name = desktop_files()
     candidates = [by_name.get(want), by_name.get(want.split(".")[-1])]
     parts = want.split(".")
     if not any(candidates) and len(parts) >= 3 and ".".join(parts[:2]) not in SHARED_PREFIXES:
@@ -78,15 +95,7 @@ def desktop_icon(cls):
         prefix = ".".join(parts[:2]) + "."
         candidates += [f for n, f in sorted(by_name.items()) if n.startswith(prefix)]
     if not any(candidates):
-        for f in files:  # match StartupWMClass
-            try:
-                with open(f, encoding="utf-8", errors="ignore") as fh:
-                    for line in fh:
-                        if line.lower().startswith("startupwmclass=") and line.split("=", 1)[1].strip().lower() == want:
-                            candidates.append(f)
-                            break
-            except OSError:
-                pass
+        candidates += [f for f in files if want in wm_classes(f)]   # match StartupWMClass
     for f in filter(None, candidates):
         icon = entry_value(f, "Icon")
         if icon:
@@ -95,25 +104,34 @@ def desktop_icon(cls):
 
 
 def entry_value(path, key):
-    """Read a key from a .desktop file's [Desktop Entry] section.
+    """Read a key from a .desktop file's [Desktop Entry] section (None if it isn't there)."""
+    return entry_values(path).get(key)
+
+
+@functools.lru_cache(maxsize=None)
+def entry_values(path):
+    """A .desktop file's [Desktop Entry] keys (the first of each), read once per run.
 
     Parsed by hand because some generated files (e.g. EmuDeck's) indent every
     line, which a standard INI parser misreads."""
-    section = None
+    vals, section = {}, None
     try:
         with open(path, encoding="utf-8", errors="ignore") as fh:
             for line in fh:
                 line = line.strip()
                 if line.startswith("["):
                     section = line
-                elif section == "[Desktop Entry]" and line.startswith(key + "="):
-                    return line.split("=", 1)[1].strip()
+                elif section == "[Desktop Entry]" and "=" in line:
+                    k, v = line.split("=", 1)
+                    vals.setdefault(k, v.strip())
     except OSError:
         pass
-    return None
+    return vals
 
 
+@functools.lru_cache(maxsize=None)
 def find_icon_file(name):
+    """The icon file for an icon name, from the themes in THEMES (in order), then pixmaps."""
     if os.path.isabs(name):
         if os.path.isfile(name):
             return name
@@ -122,6 +140,8 @@ def find_icon_file(name):
         name = os.path.splitext(os.path.basename(name))[0]
     for base in ICON_BASES:
         for theme in THEMES:
+            if not os.path.isdir(os.path.join(base, theme)):
+                continue                 # most themes aren't in most places: skip their 24 checks
             for size in SIZES:
                 for ext in ("svg", "png"):
                     p = os.path.join(base, theme, size, "apps", f"{name}.{ext}")
@@ -185,17 +205,12 @@ def load_icon(path, px):
         img = Image.open(BytesIO(png)).convert("RGBA")
     else:
         img = Image.open(path).convert("RGBA")
-    img.thumbnail((px, px), Image.LANCZOS) if max(img.size) > px else None
+    if max(img.size) > px:
+        img.thumbnail((px, px), Image.LANCZOS)
     if max(img.size) < px:
         scale = px / max(img.size)
         img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
     return img
-
-
-def rounded_mask(size, box, radius):
-    m = Image.new("L", size, 0)
-    ImageDraw.Draw(m).rounded_rectangle(box, radius=radius, fill=255)
-    return m
 
 
 def pixels(img):
@@ -299,31 +314,6 @@ def colours(tile_dir, out):
     os.replace(tmp, out)
 
 
-def render(icon_path):
-    S = SIZE * SS
-    canvas = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(canvas)
-    d.rounded_rectangle((0, 0, S - 1, S - 1), radius=OUTER_RADIUS * SS, fill=OUTER_FILL)
-    i0, i1 = INSET * SS, S - 1 - INSET * SS
-    inner = (i0, i0, i1, i1)
-    if icon_path:
-        inner_size = i1 - i0 + 1
-        icon = trim(remove_shadow(load_icon(icon_path, inner_size * 2)))
-        if is_square(icon):
-            # Already a tile: enlarge a little and let the frame crop the edges
-            background, target = INNER_FILL, inner_size * ZOOM
-        else:
-            # Any other shape: grow it to fill the frame, on its own main colour
-            background, target = main_colour(icon), inner_size * FILL
-        scale = target / max(icon.size)
-        icon = icon.resize((max(1, round(icon.width * scale)), max(1, round(icon.height * scale))), Image.LANCZOS)
-        tile = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-        ImageDraw.Draw(tile).rounded_rectangle(inner, radius=INNER_RADIUS * SS, fill=background)
-        tile.alpha_composite(icon, ((S - icon.width) // 2, (S - icon.height) // 2))
-        canvas.paste(tile, (0, 0), rounded_mask((S, S), inner, INNER_RADIUS * SS))
-    return canvas.resize((SIZE, SIZE), Image.LANCZOS)
-
-
 def icon_for(cls):
     if not cls:
         return None
@@ -340,8 +330,10 @@ SHAPE_FILL = {"tile": 1.0, "squircle": 0.94, "circle": 0.84, "square": 1.0}
 WHOLE_SIZE = 0.72    # --whole: the icon's size within its tile (the tile itself is drawn by Slate)
 
 
+@functools.lru_cache(maxsize=None)
 def shape_mask(S, shape):
-    """The tile's outline, white on black, S×S."""
+    """The tile's outline, white on black, S×S. Made once per size and shape (only ever used
+    as a mask, never changed)."""
     m = Image.new("L", (S, S), 0)
     d = ImageDraw.Draw(m)
     box = (0, 0, S - 1, S - 1)

@@ -15,6 +15,7 @@ Papirus draws every folder icon in ~25 colours. Instead of changing the system's
 folder icons, then points GTK, Qt and KDE apps at it. Nothing outside your home changes.
 """
 import colorsys
+import functools
 import json
 import os
 import re
@@ -39,7 +40,10 @@ LINKED = re.compile(r"^(folder|user)-(%s)(-[\w-]+)?\.svg$" % "|".join(COLOURS))
 
 
 # ---- The current icon theme ------------------------------------------------------------
+@functools.lru_cache(maxsize=None)
 def gsettings_get(key):
+    """A GNOME interface setting. Read once per run: every read comes before this script sets
+    anything (use_theme), so the answer can't change in between."""
     try:
         return subprocess.run(["gsettings", "get", "org.gnome.desktop.interface", key],
                               capture_output=True, text=True, timeout=5).stdout.strip().strip("'")
@@ -96,10 +100,15 @@ def face(svg):
         return fills[1] if len(fills) > 1 else "#ff7446"
     return fills[2] if len(fills) > 2 else (fills[0] if fills else "#888888")
 
-def colours(root):
+def colour_names(root):
+    """The folder colours this Papirus has (each a places/folder-<colour>.svg)."""
     places = os.path.join(root, "64x64", "places")
-    return [{"name": c, "hex": face(os.path.join(places, "folder-%s.svg" % c))}
-            for c in COLOURS if os.path.exists(os.path.join(places, "folder-%s.svg" % c))]
+    return [c for c in COLOURS if os.path.exists(os.path.join(places, "folder-%s.svg" % c))]
+
+def colours(root):
+    """Each folder colour with the colour it's drawn in (read from its SVG)."""
+    places = os.path.join(root, "64x64", "places")
+    return [{"name": c, "hex": face(os.path.join(places, "folder-%s.svg" % c))} for c in colour_names(root)]
 
 
 # ---- Pointing apps at a theme ------------------------------------------------------------
@@ -221,14 +230,13 @@ def main():
         return
     if not root:
         sys.exit("folder-colour: the icon theme (%s) isn't Papirus, which has the coloured folders" % base)
-    options = colours(root)
     if args[0] == "--auto":
         if len(args) < 2 or not re.fullmatch(r"#[0-9a-fA-F]{6}", args[1]):
             sys.exit("folder-colour: --auto needs a colour like #4a90d9")
-        colour = nearest(args[1], options)
+        colour = nearest(args[1], colours(root))
     else:
-        colour = args[0]
-    if colour not in [o["name"] for o in options]:
+        colour = args[0]          # (a name: only whether it's there matters, not its SVG's colour)
+    if colour not in colour_names(root):
         sys.exit("folder-colour: no '%s' folders in %s" % (colour, root))
     # Already like this: nothing to do (so apps don't flicker on every start)
     if gsettings_get("icon-theme") == NAME and ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Colour") == colour:

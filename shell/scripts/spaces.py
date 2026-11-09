@@ -33,6 +33,7 @@ window of the second group is started, and the split is set to the saved proport
 Floating windows are started floating and moved and sized after.
 """
 import fcntl
+import functools
 import json
 import os
 import re
@@ -73,18 +74,28 @@ SHARED_PREFIXES = {"org.gnome", "org.kde", "org.freedesktop", "org.gtk", "com.gi
 
 # ---- Hyprland ------------------------------------------------------------------------
 
+# hyprctl normally answers at once; the timeout only matters if Hyprland is stuck, so that
+# session-save (run just before logging out or restarting) can't hold the logout up
+HYPRCTL_TIMEOUT = 5
+
+
 def hypr(*args):
-    out = subprocess.run(["hyprctl", "-j", *args], capture_output=True, text=True).stdout
+    """hyprctl's JSON reply (an empty list if it didn't answer or made no sense)."""
     try:
+        out = subprocess.run(["hyprctl", "-j", *args], capture_output=True, text=True,
+                             timeout=HYPRCTL_TIMEOUT).stdout
         return json.loads(out)
-    except ValueError:
+    except (subprocess.SubprocessError, ValueError):
         return []
 
 
 def lua(code):
     """Run Lua in Hyprland (its 0.57+ config API). Returns hyprctl's reply ("ok" or an error)."""
-    return subprocess.run(["hyprctl", "dispatch", "function() " + code + " end"],
-                          capture_output=True, text=True).stdout.strip()
+    try:
+        return subprocess.run(["hyprctl", "dispatch", "function() " + code + " end"],
+                              capture_output=True, text=True, timeout=HYPRCTL_TIMEOUT).stdout.strip()
+    except subprocess.SubprocessError:
+        return ""
 
 
 def lstr(s):
@@ -116,9 +127,12 @@ def monitor_area(m):
 
 # ---- Finding how to start an app -------------------------------------------------------
 
+@functools.lru_cache(maxsize=None)
 def entry_values(path):
     """The [Desktop Entry] section of a .desktop file, parsed by hand (some generated
-    files indent every line, which an INI parser misreads)."""
+    files indent every line, which an INI parser misreads). Each file is read once per run
+    (finding a window's app can look through every file, for every window); callers only
+    read the result, never change it."""
     vals, section = {}, None
     try:
         with open(path, encoding="utf-8", errors="ignore") as fh:
@@ -218,11 +232,8 @@ def snapshot():
                and c.get("workspace", {}).get("id", 0) > 0 and not is_slate(c)]
     # Window rounding, for the previews (a lone tiled window and a maximised one are square:
     # see windowrules.lua)
-    opt = subprocess.run(["hyprctl", "-j", "getoption", "decoration:rounding"], capture_output=True, text=True).stdout
-    try:
-        rounding = json.loads(opt).get("int", 0)
-    except ValueError:
-        rounding = 0
+    opt = hypr("getoption", "decoration:rounding")
+    rounding = opt.get("int", 0) if isinstance(opt, dict) else 0
     out = []
     for wid in sorted(workspaces):
         ws = workspaces[wid]
@@ -511,8 +522,9 @@ class Restorer:
             dispatch("hl.dsp.focus({ monitor = " + lstr(saved["monitor"]) + " })")
         dispatch("hl.dsp.focus({ workspace = " + str(ws) + " })")
         time.sleep(0.2)
-        mon = next((m for m in hypr("monitors") if m.get("activeWorkspace", {}).get("id") == ws), None) \
-            or next(iter(hypr("monitors")), None)
+        now = hypr("monitors")             # (after the focus moved: which shows it now)
+        mon = next((m for m in now if m.get("activeWorkspace", {}).get("id") == ws), None) \
+            or next(iter(now), None)
         area = monitor_area(mon) if mon else {"x": 0, "y": 0, "w": 1920, "h": 1080}
         wins = saved["windows"]
         for w in wins:
