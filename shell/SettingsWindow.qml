@@ -4641,7 +4641,7 @@ FloatingWindow {
             }
             GroupLabel { text: "Logs" }
             Group {
-                ChoiceSetting {
+                DropdownSetting {
                     label: "Log detail"
                     detail: "How much Slate writes to its log. Turn it up while tracking down a problem, then back down. Changing it restarts Slate"
                     options: [{ value: "normal", label: "Normal" }, { value: "detailed", label: "Detailed" }, { value: "everything", label: "Everything" }]
