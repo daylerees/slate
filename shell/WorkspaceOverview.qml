@@ -57,7 +57,7 @@ PanelWindow {
         }
         contents = c;
         geo = g;
-        shotAddrs = all;
+        shotAddrs = Config.gameMode ? [] : all;        // game mode: no live captures (shapes instead)
     }
     // The part of a workspace's monitor that windows can use (without the space the bar and
     // other edges reserve), in Hyprland's units: window positions are in these; Slate's own
@@ -589,7 +589,17 @@ PanelWindow {
                                 layer.enabled: ovWin.radius > 0
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
                             }
+                            // Game mode: the window's shape (an outline on a soft fill) instead of its live picture
+                            Rectangle {
+                                visible: Config.gameMode
+                                anchors.fill: parent
+                                radius: Math.max(3, ovWin.radius)
+                                color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
+                                border.width: 1.5
+                                border.color: Qt.rgba(1, 1, 1, 0.35)
+                            }
                             ShaderEffectSource {
+                                visible: !Config.gameMode
                                 anchors.fill: parent
                                 sourceItem: ov.shotFor(parent.modelData.address)
                                 live: true
@@ -608,7 +618,8 @@ PanelWindow {
                             // Its app's icon in the middle (Settings → Workspaces), with a soft shadow
                             // so it reads over the window
                             Item {
-                                visible: Config.s.overviewAppIcons
+                                // Always in game mode, where it's all there is to tell windows apart
+                                visible: Config.s.overviewAppIcons || Config.gameMode
                                 opacity: 1 - ov.zoomP
                                 anchors.centerIn: parent
                                 width: Math.round(Math.max(16, Math.min(44, parent.width * 0.28, parent.height * 0.4))); height: width

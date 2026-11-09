@@ -313,11 +313,13 @@ Singleton {
         if (s.touchpadScrollSpeed > 0) t.push(`tp_scroll = ${s.touchpadScrollSpeed.toFixed(2)}`);
         if (s.touchpadNaturalScroll !== "") t.push(`tp_natural_scroll = ${onOff(s.touchpadNaturalScroll)}`);
         if (s.touchpadTapToClick !== "") t.push(`tp_tap = ${onOff(s.touchpadTapToClick)}`);
-        if (s.touchpadIgnoreWhileTyping !== "") t.push(`tp_dwt = ${onOff(s.touchpadIgnoreWhileTyping)}`);
+        if (gameMode) t.push(`tp_dwt = false`);             // game mode: the touchpad works while you type
+        else if (s.touchpadIgnoreWhileTyping !== "") t.push(`tp_dwt = ${onOff(s.touchpadIgnoreWhileTyping)}`);
         // Focus: follows the pointer (1), or a click, with scrolling still reaching the window under it (2)
         if (s.focusFollowsMouse !== "") t.push(`follow_mouse = ${s.focusFollowsMouse === "on" ? 1 : 2}`);
         if (s.cursorSize > 0) t.push(`cursor_size = ${s.cursorSize}`);
-        if (s.animations !== "") t.push(`animations = ${q(s.animations)}`);
+        if (gameMode) t.push(`animations = "off"`);          // game mode: no animations
+        else if (s.animations !== "") t.push(`animations = ${q(s.animations)}`);
         const apps = { terminal: s.defaultTerminal, browser: s.defaultBrowser, file_manager: s.defaultFileManager,
                        editor: s.defaultEditor, calculator: s.defaultCalculator };
         for (const k in apps) { const c = appCommand(apps[k]); if (c) t.push(`${k} = ${q(c)}`); }
@@ -329,11 +331,18 @@ Singleton {
             // blur size if one's picked
             + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
             + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
-            + `SLATE_GLASS:set_enabled(${s.glass ? "true" : "false"})`
-            + (s.glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
+            + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"})`
+            + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
             + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`
-            + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "");
+            + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "")
+            // Game mode: no blur or shadows behind anything, and every window fully opaque
+            + (gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
+            // ...terminals too, which draw their own see-through background (kitty's
+            // background_opacity): with the blur gone that showed the bare wallpaper. Only
+            // terminals: apps drawing their own rounded corners or shadows would turn them black
+            + `; if not SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE = hl.window_rule({ name = "slate-game-opaque", match = { class = "^(kitty|ghostty|com.mitchellh.ghostty|[Kk]onsole|org.kde.konsole|Alacritty|foot|footclient|org.wezfurlong.wezterm|gnome-terminal-server|org.gnome.Terminal|org.gnome.Ptyxis|xfce[0-9]?-terminal|com.raggesilver.BlackBox)$" }, force_rgbx = true }) end; `
+            + `SLATE_GAME_OPAQUE:set_enabled(${gameMode ? "true" : "false"})`;
     }
     onHyprSettingsChanged: hyprPush.restart()
     Timer {
@@ -569,7 +578,8 @@ Singleton {
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel
     readonly property var statusPastels: ({
         notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",
-        keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0"
+        keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0",
+        gamemode: "#e8a6b4"
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }
     // The bar's Apps button (its three bars) and Spaces button (its four squares), each part
@@ -581,15 +591,28 @@ Singleton {
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings).
-    readonly property bool glass: s.glass
+    // ---- Game mode (the bar's game mode panel) -----------------------------------------
+    // Turns off what costs the most to draw, and the touchpad ignoring it while you type (games
+    // use both at once): Slate's glass, and Hyprland's blur, shadows, animations and see-through
+    // windows. Your own
+    // settings for them are kept, not changed, so turning it off puts them all back. Not on the
+    // login screen, which reads a copy of these settings
+    readonly property bool isLoginScreen: Quickshell.shellPath("").indexOf("slate-greeter") >= 0
+    readonly property bool gameMode: s.gameMode && !isLoginScreen
+    // Off again: Hyprland reloads its config (quietly), for its own blur, shadows, animations
+    // and touchpad setting, then Slate's settings go back on top (hyprPush)
+    onGameModeChanged: if (!gameMode) reloadHyprland()
+    function setGameMode(on) { s.gameMode = on; }
+
+    readonly property bool glass: s.glass && !gameMode
 
     // ---- Slate's own animations -----------------------------------------------------------
     // They follow Settings → Appearance → Animations, as Hyprland's do: Fast halves them, Off
-    // makes them instant. Every animation in Slate takes its time from here:
+    // (and game mode) makes them instant. Every animation in Slate takes its time from here:
     //   NumberAnimation { duration: Config.ms(200) }
     // except motion that's the point of the thing (the screensaver's drift, busy spinners, a
     // notification's countdown) and scrolling's glide
-    readonly property real animScale: s.animations === "off" ? 0 : s.animations === "fast" ? 0.5 : 1
+    readonly property real animScale: gameMode || s.animations === "off" ? 0 : s.animations === "fast" ? 0.5 : 1
     readonly property bool animate: animScale > 0
     function ms(t) { return Math.round(Number(t) * animScale); }
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))

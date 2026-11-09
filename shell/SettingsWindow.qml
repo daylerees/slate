@@ -203,7 +203,7 @@ FloatingWindow {
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
         bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
-            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
+            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockIconSize", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage"],
@@ -1989,6 +1989,12 @@ FloatingWindow {
                     label: "Screenshot"
                     detail: "Click to take one of an area, a window or the screen"
                     Toggle { checked: Config.s.barShowScreenshot; onToggled: v => Config.s.barShowScreenshot = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Game mode"
+                    detail: "A button to turn off glass, blur, see-through windows, shadows, animations, live window previews, notification pop-ups and ignoring the touchpad while you type, for smoother games, and back on after"
+                    Toggle { checked: Config.s.barShowGameMode; onToggled: v => Config.s.barShowGameMode = v }
                 }
                 Separator {}
                 SettingRow {

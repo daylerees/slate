@@ -53,6 +53,7 @@ JsonAdapter {
     property bool iconFill: false             // icons crop their own borders and grow to fill the shape (off, the default: whole and smaller, on slate)
     property bool tintIcons: false            // tint app icons with the accent colour
     property int iconTintStrength: 60         // %, how strongly
+    property bool gameMode: false             // game mode (the bar's game mode panel): costly effects off, see Config.gameMode
     property bool iconTileColour: false       // the tile behind an icon in a deep shade of the icon's own colour (icons not filling their shape)
     property string folderColour: "default"    // file manager folders: default, auto (from the wallpaper) or a Papirus colour
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
@@ -133,6 +134,7 @@ JsonAdapter {
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)
     property bool barShowVolume: true
     property bool barShowBattery: true
+    property bool barShowGameMode: false     // game mode, with the status icons (off to start with)
     property bool barShowValues: true         // (replaced by the three below; no longer used)
     property bool barValueClipboard: true     // how many items are in the clipboard history
     property bool barValueWifi: true          // the network name beside the Wi-Fi icon

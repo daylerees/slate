@@ -813,6 +813,7 @@ PanelWindow {
                 readonly property bool hasBell: Config.s.barShowNotifications
                 readonly property bool hasClip: Config.s.barShowClipboard
                 readonly property bool hasShot: Config.s.barShowScreenshot
+                readonly property bool hasGame: Config.s.barShowGameMode
                 readonly property bool hasWifi: Config.s.barShowWifi
                 readonly property bool hasKb: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
                 readonly property bool hasBt: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
@@ -828,11 +829,11 @@ PanelWindow {
                 Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
                 readonly property bool showIcons: !collapsible || openness > 0
                 // In order along the bar, then the button; first/last/separators follow whichever are shown
-                readonly property var shown: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat].map(x => x && showIcons).concat([collapsible])
+                readonly property var shown: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat].map(x => x && showIcons).concat([collapsible])
                 function isFirst(i) { return !shown.slice(0, i).some(x => x); }
                 function isLast(i) { return !shown.slice(i + 1).some(x => x); }
                 function sepBefore(i) { return shown[i] && !isFirst(i); }
-                visible: [hasBell, hasClip, hasShot, hasWifi, hasKb, hasBt, hasVol, hasBat].some(x => x)
+                visible: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat].some(x => x)
                 readonly property real fullLength: bar.vert ? statusRow.height : statusRow.width
                 readonly property real closedLength: bar.vert ? statusToggle.height : statusToggle.width
                 length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
@@ -899,13 +900,28 @@ PanelWindow {
                         onClicked: bar.openPopout("screenshot", shotSeg)
                     }
                     Separator { visible: status.sepBefore(3) }
+                    // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
+                    Segment {
+                        id: gameSeg
+                        opacity: status.openness
+                        pastel: "gamemode"            // its colour when the look is Colourful
+                        visible: status.shown[3]
+                        first: status.isFirst(3)
+                        last: status.isLast(3)
+                        iconCode: 0xF1D2
+                        label: Config.gameMode ? "On" : "Off"
+                        tint: Config.gameMode ? bar.accent : bar.textColor
+                        hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
+                        onClicked: bar.openPopout("gamemode", gameSeg)
+                    }
+                    Separator { visible: status.sepBefore(4) }
                     Segment {
                         id: wifiSeg
                         opacity: status.openness
                         pastel: "wifi"            // its colour when the look is Colourful
-                        visible: status.shown[3]
-                        first: status.isFirst(3)
-                        last: status.isLast(3)
+                        visible: status.shown[4]
+                        first: status.isFirst(4)
+                        last: status.isLast(4)
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
@@ -915,15 +931,15 @@ PanelWindow {
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
-                    Separator { visible: status.sepBefore(4) }
+                    Separator { visible: status.sepBefore(5) }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
                         opacity: status.openness
                         pastel: "keyboard"            // its colour when the look is Colourful
-                        visible: status.shown[4]
-                        first: status.isFirst(4)
-                        last: status.isLast(4)
+                        visible: status.shown[5]
+                        first: status.isFirst(5)
+                        last: status.isLast(5)
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
                         label: Config.s.barValueKeyboard && current ? current.code : ""
@@ -931,15 +947,15 @@ PanelWindow {
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
-                    Separator { visible: status.sepBefore(5) }
+                    Separator { visible: status.sepBefore(6) }
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
                         opacity: status.openness
                         pastel: "bluetooth"            // its colour when the look is Colourful
-                        visible: status.shown[5]
-                        first: status.isFirst(5)
-                        last: status.isLast(5)
+                        visible: status.shown[6]
+                        first: status.isFirst(6)
+                        last: status.isLast(6)
                         readonly property var adapter: Bluetooth.defaultAdapter
                         readonly property bool on: !!adapter && adapter.enabled
                         readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
@@ -950,14 +966,14 @@ PanelWindow {
                             : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
-                    Separator { visible: status.sepBefore(6) }
+                    Separator { visible: status.sepBefore(7) }
                     Segment {
                         id: volSeg
                         opacity: status.openness
                         pastel: "volume"            // its colour when the look is Colourful
-                        visible: status.shown[6]
-                        first: status.isFirst(6)
-                        last: status.isLast(6)
+                        visible: status.shown[7]
+                        first: status.isFirst(7)
+                        last: status.isLast(7)
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
                         readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
@@ -974,28 +990,28 @@ PanelWindow {
                         }
                         PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
                     }
-                    Separator { visible: status.sepBefore(7) }
+                    Separator { visible: status.sepBefore(8) }
                     Segment {
                         id: batSeg
                         opacity: status.openness
                         pastel: "battery"            // its colour when the look is Colourful
-                        first: status.isFirst(7)
-                        last: status.isLast(7)
+                        first: status.isFirst(8)
+                        last: status.isLast(8)
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
                         readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
-                        visible: status.shown[7]
+                        visible: status.shown[8]
                         iconCode: charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         label: Config.s.barValueBattery ? Math.round(pct * 100) + "%" : ""
                         hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
-                    Separator { visible: status.sepBefore(8) }
+                    Separator { visible: status.sepBefore(9) }
                     // The button that opens and closes the group (collapsed only)
                     Segment {
                         id: statusToggle
                         visible: status.collapsible
-                        first: status.isFirst(8)
+                        first: status.isFirst(9)
                         last: true
                         iconCode: 0xEC38
                         hoverText: status.expanded ? "Hide the status icons" : "Wi-Fi, volume, battery and more"

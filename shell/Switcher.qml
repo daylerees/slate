@@ -287,7 +287,8 @@ PanelWindow {
                         anchors.centerIn: parent
                         width: Math.min(parent.width, parent.height * ratio)
                         height: width / ratio
-                        captureSource: Config.s.switcherPreviews && sw.shown && card.modelData.wayland ? card.modelData.wayland : null
+                        // Not in game mode: the window's shape and app tile instead (below)
+                        captureSource: Config.s.switcherPreviews && !Config.gameMode && sw.shown && card.modelData.wayland ? card.modelData.wayland : null
                         live: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask }
@@ -299,7 +300,20 @@ PanelWindow {
                         layer.enabled: true
                         Rectangle { anchors.fill: parent; radius: 8 }
                     }
-                    // No capture available: show the app's tile instead
+                    // Game mode: an outline in the window's proportions, with the app's tile in it
+                    Rectangle {
+                        readonly property var o: card.modelData.lastIpcObject
+                        readonly property real ratio: o && o.size && o.size[1] > 0 ? o.size[0] / o.size[1] : 16 / 10
+                        visible: Config.gameMode
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, parent.height * ratio)
+                        height: width / ratio
+                        radius: 8
+                        color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
+                        border.width: 1.5
+                        border.color: Qt.rgba(1, 1, 1, 0.35)
+                    }
+                    // No capture available (or game mode): show the app's tile instead
                     Image {
                         anchors.centerIn: parent
                         visible: !shot.hasContent

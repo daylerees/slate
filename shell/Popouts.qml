@@ -239,6 +239,7 @@ PanelWindow {
                         : pop.displayed === "screenshot" ? screenshotPanel
                         : pop.displayed === "bluetooth" ? bluetoothPanel
                         : pop.displayed === "battery" ? batteryPanel
+                        : pop.displayed === "gamemode" ? gameModePanel
                         : pop.displayed === "calendar" ? calendarPanel
                         : pop.displayed === "session" ? sessionPanel
                         : pop.displayed === "control" ? controlPanel
@@ -1194,6 +1195,7 @@ PanelWindow {
                                             // Behind a see-through window: the wallpaper blurred as on
                                             // screen, from where the window sits on this card
                                             WallBlur {
+                                                visible: !Config.gameMode           // game mode: no blur
                                                 anchors.fill: wsLive
                                                 win: Qt.rect(wsWin.modelData.x * wsShot.width, wsWin.modelData.y * wsShot.height,
                                                              wsWin.modelData.w * wsShot.width, wsWin.modelData.h * wsShot.height)
@@ -1206,7 +1208,8 @@ PanelWindow {
                                                 id: wsLive
                                                 anchors.fill: parent
                                                 anchors.margins: 1
-                                                captureSource: pop.shown && spp.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
+                                                // Not in game mode: just the window's outline and app icon
+                                                captureSource: !Config.gameMode && pop.shown && spp.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
                                                 live: pop.shown && spp.mode === "new"
                                                 smooth: true
                                                 // Clipped to the window's rounded corners
@@ -1726,6 +1729,85 @@ PanelWindow {
                     text: "Bluetooth settings"
                     font.weight: Font.Normal
                 }
+            }
+        }
+    }
+
+    // ---- Game mode: costly effects off while you play (Config.gameMode) ------------------
+    Component {
+        id: gameModePanel
+        // Laid out like the other panels: the title with its switch, a line of status, a
+        // section (a dim heading over rows), then a link to the settings it touches
+        Column {
+            id: gmp
+            width: 300
+            spacing: 10
+            Item {
+                width: parent.width; height: 26
+                Label { anchors.verticalCenter: parent.verticalCenter; text: "Game mode"; font.pixelSize: 15 }
+                // On/off switch
+                Rectangle {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    width: 40; height: 22; radius: 11
+                    color: Config.gameMode ? pop.accent : pop.card
+                    Gloss { radius: parent.radius }   // glass: a sheen
+                    Rectangle {
+                        width: 16; height: 16; radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: Config.gameMode ? parent.width - width - 3 : 3
+                        color: Config.gameMode ? pop.accentText : pop.text
+                        Behavior on x { NumberAnimation { duration: Config.ms(120) } }
+                    }
+                    ClickTap { onTapped: Config.setGameMode(!Config.gameMode) }
+                }
+            }
+            Label {
+                width: parent.width
+                wrapMode: Text.Wrap
+                color: pop.dim
+                font.pixelSize: 12
+                font.weight: Font.Normal
+                text: Config.gameMode ? "On: these are off for smoother games. Turning it off puts them back as you had them"
+                    : "Turns off what costs the most to draw, for smoother games. Your settings come back when you turn it off"
+            }
+            Divider {}
+            Label { text: Config.gameMode ? "Turned off" : "Turns off"; color: pop.dim; font.pixelSize: 12 }
+            Column {
+                width: parent.width
+                Repeater {
+                    model: [
+                        { code: 0xF4CF, label: "Glass and blur" },
+                        { code: 0xEB2F, label: "See-through windows" },
+                        { code: 0xEC6C, label: "Shadows" },
+                        { code: 0xEA38, label: "Animations" },
+                        { code: 0xEA9B, label: "Live window previews (shapes instead)" },
+                        { code: 0xEA35, label: "Notification pop-ups (they still go to the list)" },
+                        { code: 0xEB63, label: "Ignoring the touchpad while you type" }
+                    ]
+                    delegate: Item {
+                        required property var modelData
+                        width: parent.width; height: 32
+                        Icon {
+                            id: gmIcon
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            code: parent.modelData.code; font.pixelSize: 16
+                            color: Config.gameMode ? pop.accent : pop.dim
+                        }
+                        Label {
+                            anchors { left: gmIcon.right; leftMargin: 10; right: parent.right; verticalCenter: parent.verticalCenter }
+                            text: parent.modelData.label; font.weight: Font.Normal
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+            Divider {}
+            RowButton {
+                width: parent.width
+                onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "page", "appearance"]); }
+                Icon { id: gmSetIcon; code: 0xEB20; font.pixelSize: 16; color: pop.dim; anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter } }
+                Label { anchors { left: gmSetIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Appearance settings"; font.weight: Font.Normal }
             }
         }
     }

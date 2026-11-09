@@ -117,7 +117,9 @@ Scope {
             notifs.history = [item].concat(notifs.history).slice(0, notifs.maxHistory);
             notifs.unread++;
             notifs.save();
-            if (!notifs.dnd || n.urgency === NotificationUrgency.Critical) {
+            // Do Not Disturb holds back all but urgent ones; game mode holds back every one (they
+            // still go to the history, and the bell counts them)
+            if (!Config.gameMode && (!notifs.dnd || n.urgency === NotificationUrgency.Critical)) {
                 notifs.showToast(item, n);
                 notifs.chime(n);
             }
