@@ -113,7 +113,7 @@ JsonAdapter {
     property string barPosition: "top"        // top, bottom, left or right
     property string dockPosition: "bottom"    // bottom, top, left or right (never the bar's edge)
     property bool barAutoHide: false          // hide when one window fills the screen
-    property bool barHoverDescriptions: true  // describe hovered items in the title area
+    property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
