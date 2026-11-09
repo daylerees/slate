@@ -831,7 +831,8 @@ FloatingWindow {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool current: dropLayer.owner && modelData.value === dropLayer.owner.value
-                    width: menuList.width; height: dropLayer.rowH; radius: 8
+                    // Clear of the scrollbar, when there is one
+                    width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
                     color: rowHover.hovered ? Config.hover : "transparent"
                     Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     FolderSwatch {
@@ -893,11 +894,14 @@ FloatingWindow {
             }
             Rectangle {
                 readonly property real range: menuList.contentHeight - menuList.height
+                // In the gap the rows leave for it, kept in from the menu's top and bottom
+                readonly property real inset: 6
+                readonly property real track: menuList.height - 2 * inset
                 visible: range > 0
-                x: menu.width - 4
+                x: menuList.x + menuList.width - 4
                 width: 1
-                height: Math.max(16, menuList.height * menuList.height / Math.max(1, menuList.contentHeight))
-                y: menuList.y + (range > 0 ? (menuList.height - height) * Math.max(0, Math.min(1, menuList.contentY / range)) : 0)
+                height: Math.max(16, track * menuList.height / Math.max(1, menuList.contentHeight))
+                y: menuList.y + inset + (range > 0 ? (track - height) * Math.max(0, Math.min(1, menuList.contentY / range)) : 0)
                 radius: 0.5
                 color: win.text
                 opacity: 0.4
