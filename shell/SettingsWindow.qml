@@ -3289,12 +3289,13 @@ FloatingWindow {
                     detail: Qt.formatTime(dtp.now, "HH:mm:ss")
                 }
                 Separator {}
-                SearchPicker {
+                // Every zone in one dropdown, opening at the current one (it scrolls)
+                DropdownSetting {
                     label: "Time zone"
-                    detail: dtp.zone.replace(/_/g, " ")
-                    buttonLabel: "Change…"
+                    detail: "Where you are, for the clock"
                     options: dtp.zones
-                    onPicked: v => { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); }
+                    value: dtp.zone
+                    onPicked: v => { if (v !== dtp.zone) { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); } }
                 }
                 Separator { visible: dtp.canNtp }
                 SettingRow {
