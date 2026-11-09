@@ -1234,6 +1234,8 @@ FloatingWindow {
         property var value
         signal picked(var value)
         readonly property var current: options.find(o => o.value === value) ?? null
+        // Shown when the value isn't one of the options (it isn't offered in the list itself)
+        property string noneLabel: ""
         property alias button: ddButton
         SettingRow {
           id: ddRow
@@ -1257,7 +1259,7 @@ FloatingWindow {
             Text {
                 id: ddText
                 anchors { left: ddFolder.visible ? ddFolder.right : parent.left; leftMargin: ddFolder.visible ? 8 : 12; verticalCenter: parent.verticalCenter }
-                text: dd.current ? dd.current.label : String(dd.value)
+                text: dd.current ? dd.current.label : dd.noneLabel !== "" ? dd.noneLabel : String(dd.value)
                 color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
             }
             Text {
@@ -3590,10 +3592,12 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Preset"
-                    detail: "Sets the theme, colours and glass below in one go. Your wallpaper and other settings stay as they are"
-                    // "Custom" while the settings don't match a preset
+                    detail: "A quick way to a finished look, if you'd rather not fine-tune every setting: sets the theme, colours, glass and folder colours below in one go. Your wallpaper and other settings stay as they are"
+                    // Reads "Custom" while the settings don't match a preset; that's not something to
+                    // pick, so it isn't in the list
                     readonly property var match: win.themePresets.find(p => win.presetActive(p)) ?? null
-                    options: [{ value: "", label: "Custom" }].concat(win.themePresets.map(p => ({ value: p.name, label: p.name })))
+                    options: win.themePresets.map(p => ({ value: p.name, label: p.name }))
+                    noneLabel: "Custom"
                     value: match ? match.name : ""
                     onPicked: v => {
                         const p = win.themePresets.find(x => x.name === v);
