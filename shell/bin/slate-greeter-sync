@@ -53,7 +53,8 @@ if [ "${1:-}" = "--prompt" ]; then
     [ "$(cat "$asked" 2>/dev/null)" = "$version" ] && exit 0
     mkdir -p "$(dirname "$asked")"; echo "$version" > "$asked"
     icon="$SRC/assets/icon/icon-64.png"      # Slate's own icon, as its other notices use
-    choice=$(notify-send -a Slate -i "$icon" -h string:x-slate-page:lock -A update=Update -A later=Later \
+    # Critical: it stays until answered, shows through Do Not Disturb and plays the attention sound
+    choice=$(notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock -A update=Update -A later=Later \
         "Login screen out of date" \
         "Its design has changed. Update it now? You'll be asked for your password." || true)
     [ "$choice" = update ] || exit 0

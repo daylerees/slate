@@ -55,8 +55,9 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
   wallpaper, settings or avatar change. If something changed outside Slate (the wallpaper file
   replaced in place, the picture, name or keyboard layout changed elsewhere), Settings → Debug
   (a tile on All Settings) → **Resync** runs it by hand.
-- **Updating the code:** when the login screen's code changes, Slate shows a notification
-  ("Login screen out of date") with an **Update** button that asks for your password
+- **Updating the code:** when the login screen's code changes, Slate shows an urgent
+  notification ("Login screen out of date": it stays until answered, shows through Do Not
+  Disturb and plays the attention sound) with an **Update** button that asks for your password
   (pkexec) and runs `slate-greeter-install --code-only`. It asks once per version of the
   code; "Later" waits for the next change. Settings → Lock & Idle has the same Update button.
   Files are read with your own permissions, not root's.
