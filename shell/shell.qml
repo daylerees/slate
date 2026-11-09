@@ -1661,8 +1661,8 @@ ShellRoot {
                         }
                     }
 
-                    // The waste basket: a drawn metal bin (TrashCan.qml) on a tile like the launcher
-                    // button's, with crumpled paper over the rim once something's in it
+                    // The waste basket: the bin on a tile like the launcher button's (and Downloads'),
+                    // outlined while empty and filled once something's in it
                     Item {
                         visible: win.trashShown
                         readonly property real s: win.scaleAt(win.trashIndex)
@@ -1682,12 +1682,14 @@ ShellRoot {
                             }
                             // Glass: a sheen, rounded like the tile
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true }
-                            // The bin itself, drawn (TrashCan.qml): paper over its rim when it's full
-                            TrashCan {
-                                anchors.fill: parent
-                                anchors.margins: parent.width * 0.06
-                                full: win.trashCount > 0
-                                drawSize: win.base * win.maxScale
+                            // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
+                            // once there's something in it
+                            Text {
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
+                                color: win.textColor
+                                font.family: "slate-tabler-icons"
+                                font.pixelSize: Math.round(parent.width * 0.5)
                             }
                         }
                     }
