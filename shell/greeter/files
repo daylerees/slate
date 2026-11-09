@@ -36,6 +36,7 @@ emergency/Box.qml            greeter/emergency/Box.qml
 -  scripts/set-avatar.sh
 -  bin/slate  # restarts Slate when the interface size changes
 -  fonts/tabler.ttf  # the login screen passes the copy in /var/lib/slate-greeter
+-  sounds  # the login screen plays no sounds (Config.qml checks the welcome is there first)
 
 # Made by the installer
 +  hyprland.lua  # greeter/hyprland.lua with your keyboard layout

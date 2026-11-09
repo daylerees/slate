@@ -216,7 +216,7 @@ PanelWindow {
                             Gloss { radius: parent.radius; opacity: (current || chipHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             Behavior on color { ColorAnimation { duration: 100 } }
                             HoverHandler { id: chipHover }
-                            TapHandler {
+                            ClickTap {
                                 onTapped: {
                                     if (root.flow && !root.busy) root.flow.selectedIdentity = chip.modelData;
                                     password.forceActiveFocus();
@@ -321,7 +321,7 @@ PanelWindow {
         Behavior on color { ColorAnimation { duration: 100 } }
         Behavior on opacity { NumberAnimation { duration: 100 } }
         HoverHandler { id: hh }
-        TapHandler { onTapped: btn.clicked() }
+        ClickTap { onTapped: btn.clicked() }
         Text {
             anchors.centerIn: parent
             text: btn.label

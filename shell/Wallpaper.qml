@@ -91,7 +91,7 @@ Scope {
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
             // Right-click the desktop: a menu of things to do from here
-            MouseArea {
+            ClickArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: m => desktopMenu.openAt(m.x, m.y)

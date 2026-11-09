@@ -336,7 +336,7 @@ PanelWindow {
                     font.family: sw.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
-                MouseArea {
+                ClickArea {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: { sw.index = card.index; sw.commit(); }

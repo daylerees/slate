@@ -40,7 +40,7 @@ Rectangle {
             Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
             Behavior on color { ColorAnimation { duration: 100 } }
             HoverHandler { id: spotHover }
-            TapHandler { onTapped: ep.picked(spot.modelData) }
+            ClickTap { onTapped: ep.picked(spot.modelData) }
         }
     }
 }

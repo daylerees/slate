@@ -649,7 +649,7 @@ PanelWindow {
                     font.family: ov.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
                 }
 
-                MouseArea {
+                ClickArea {
                     anchors.fill: preview
                     onClicked: { ov.index = card.index; list.currentIndex = card.index; ov.choose(); }
                 }

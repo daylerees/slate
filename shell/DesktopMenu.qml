@@ -83,7 +83,7 @@ PanelWindow {
                             elide: Text.ElideRight
                         }
                         HoverHandler { id: itemHover }
-                        TapHandler {
+                        ClickTap {
                             onTapped: {
                                 const run = row.modelData.run;
                                 dm.close();

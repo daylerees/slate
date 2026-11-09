@@ -86,7 +86,7 @@ Rectangle {
                 }
             }
             HoverHandler { id: cornerHover }
-            TapHandler { onTapped: hp.picked(corner.modelData.key) }
+            ClickTap { onTapped: hp.picked(corner.modelData.key) }
         }
     }
 

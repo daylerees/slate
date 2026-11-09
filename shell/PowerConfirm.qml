@@ -216,7 +216,7 @@ PanelWindow {
             opacity: btn.focused ? (btn.primary ? 0.55 : 0.35) : 0
             Behavior on opacity { NumberAnimation { duration: 100 } }
         }
-        TapHandler { onTapped: btn.clicked() }
+        ClickTap { onTapped: btn.clicked() }
         Text {
             anchors.centerIn: parent
             text: btn.label

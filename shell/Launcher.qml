@@ -715,7 +715,7 @@ PanelWindow {
                     }
                 }
 
-                MouseArea {
+                ClickArea {
                     anchors.fill: parent
                     hoverEnabled: true
                     onPositionChanged: m => {

@@ -17,7 +17,8 @@ wl-clipboard
 # System services Slate shows or controls
 pipewire
 wireplumber
-pipewire-audio      # pw-play: volume key sound
+pipewire-audio      # pw-play: volume key sound, notification chime
+?qt6-multimedia     # click sound, and sounds without a delay
 networkmanager
 bluez
 bluez-utils

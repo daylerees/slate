@@ -111,7 +111,7 @@ Rectangle {
     }
 
     HoverHandler { id: cardHover }
-    TapHandler { onTapped: card.activated() }
+    ClickTap { onTapped: card.activated() }
 
     // Refresh "2 min ago" text
     property int tick: 0
@@ -240,7 +240,7 @@ Rectangle {
                         font.family: card.bar.iconFont; font.pixelSize: 13
                     }
                     HoverHandler { id: closeHover }
-                    TapHandler { onTapped: card.closed() }
+                    ClickTap { onTapped: card.closed() }
                 }
             }
             Text {
@@ -298,7 +298,7 @@ Rectangle {
                             font.family: card.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
                         HoverHandler { id: actHover }
-                        TapHandler { onTapped: card.action(modelData.identifier) }
+                        ClickTap { onTapped: card.action(modelData.identifier) }
                     }
                 }
             }

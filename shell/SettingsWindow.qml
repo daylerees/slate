@@ -163,7 +163,7 @@ FloatingWindow {
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
-        sound: ["volumeSound", "soundEffectsVolume"],
+        sound: ["volumeSound", "notificationSound", "clickSound", "welcomeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
@@ -326,7 +326,7 @@ FloatingWindow {
                             font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                         }
                         HoverHandler { id: navHover }
-                        TapHandler { onTapped: win.section = parent.modelData.id }
+                        ClickTap { onTapped: win.section = parent.modelData.id }
                     }
                 }
             }
@@ -363,7 +363,7 @@ FloatingWindow {
                         font.family: win.bar.iconFont; font.pixelSize: 18
                     }
                     HoverHandler { id: backHover }
-                    TapHandler { onTapped: win.section = "overview" }
+                    ClickTap { onTapped: win.section = "overview" }
                 }
                 Text {
                     anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.left; rightMargin: 12; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
@@ -399,7 +399,7 @@ FloatingWindow {
                     font.family: win.bar.iconFont; font.pixelSize: 18
                 }
                 HoverHandler { id: closeHover }
-                TapHandler { onTapped: win.visible = false }
+                ClickTap { onTapped: win.visible = false }
             }
 
             // Lights up a setting found by search (showFound), then fades
@@ -615,7 +615,7 @@ FloatingWindow {
                     HoverHandler { id: rowHover }
                     // A MouseArea (not a TapHandler): the menu's own MouseArea underneath would otherwise
                     // take the click first and the pick would never happen
-                    MouseArea {
+                    ClickArea {
                         anchors.fill: parent
                         onClicked: {
                             const o = dropLayer.owner;
@@ -698,7 +698,7 @@ FloatingWindow {
             color: tg.checked ? win.accentText : win.text
             Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
         }
-        TapHandler { onTapped: tg.toggled(!tg.checked) }
+        ClickTap { onTapped: tg.toggled(!tg.checked) }
     }
     // Slider with its value shown alongside
     component ValueSlider: Row {
@@ -805,7 +805,7 @@ FloatingWindow {
             }
         }
         HoverHandler { id: btnHover }
-        TapHandler { onTapped: btn.clicked() }
+        ClickTap { onTapped: btn.clicked() }
     }
     // A font choice: shows the current font, and opens a searchable list of
     // installed fonts (each shown in its own typeface). key = Config.s property.
@@ -923,7 +923,7 @@ FloatingWindow {
                         font.family: parent.modelData; font.pixelSize: 13
                     }
                     HoverHandler { id: fontHover }
-                    TapHandler { onTapped: fs.choose(parent.modelData) }
+                    ClickTap { onTapped: fs.choose(parent.modelData) }
                 }
             }
         }
@@ -964,7 +964,7 @@ FloatingWindow {
                     Gloss { radius: parent.radius; opacity: (on || optHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
-                    TapHandler { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
+                    ClickTap { onTapped: { ch.picked(parent.modelData.value); ch.open = false; } }
                 }
             }
         }
@@ -1014,7 +1014,7 @@ FloatingWindow {
                 color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
             }
             HoverHandler { id: ddHover }
-            TapHandler { onTapped: dropLayer.owner = ddButton.open ? null : dd }
+            ClickTap { onTapped: dropLayer.owner = ddButton.open ? null : dd }
           }
         }
     }
@@ -1096,7 +1096,7 @@ FloatingWindow {
                             Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
                         }
                         HoverHandler { id: pickHover }
-                        TapHandler { onTapped: { sp.picked(parent.modelData.value); sp.open = false; } }
+                        ClickTap { onTapped: { sp.picked(parent.modelData.value); sp.open = false; } }
                     }
                     Text {
                         anchors.centerIn: parent
@@ -1184,7 +1184,7 @@ FloatingWindow {
                     color: clearHover.hovered ? win.text : win.dim
                     font.family: win.bar.iconFont; font.pixelSize: 16
                     HoverHandler { id: clearHover }
-                    TapHandler { onTapped: { findField.text = ""; findField.forceActiveFocus(); } }
+                    ClickTap { onTapped: { findField.text = ""; findField.forceActiveFocus(); } }
                 }
             }
             Item { width: 1; height: 6 }
@@ -1235,7 +1235,7 @@ FloatingWindow {
                             }
                         }
                         HoverHandler { id: hitHover; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
-                        TapHandler { onTapped: ovPage.open(hitRow.modelData) }
+                        ClickTap { onTapped: ovPage.open(hitRow.modelData) }
                     }
                 }
             }
@@ -1289,7 +1289,7 @@ FloatingWindow {
                             }
                         }
                         HoverHandler { id: tileHover }
-                        TapHandler { onTapped: win.section = tile.modelData.id }
+                        ClickTap { onTapped: win.section = tile.modelData.id }
                     }
                 }
             }
@@ -1340,7 +1340,7 @@ FloatingWindow {
                             Behavior on opacity { NumberAnimation { duration: 150 } }
                         }
                         HoverHandler { id: acctHover }
-                        TapHandler { onTapped: win.avatarPicking = !win.avatarPicking }
+                        ClickTap { onTapped: win.avatarPicking = !win.avatarPicking }
                     }
                     Column {
                         anchors { left: acctPic.right; leftMargin: 14; right: acctButtons.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
@@ -1427,7 +1427,7 @@ FloatingWindow {
                                 }
                             }
                             HoverHandler { id: pickHover }
-                            TapHandler { onTapped: { Config.setAvatar(filePath); win.avatarPicking = false; } }
+                            ClickTap { onTapped: { Config.setAvatar(filePath); win.avatarPicking = false; } }
                         }
                     }
                 }
@@ -1535,7 +1535,7 @@ FloatingWindow {
                                 Gloss { radius: parent.radius; opacity: (placeHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Text { id: placeText; anchors.centerIn: parent; text: parent.place; color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                 HoverHandler { id: placeHover }
-                                TapHandler {
+                                ClickTap {
                                     onTapped: {
                                         Config.s.latitude = parent.modelData.latitude;
                                         Config.s.longitude = parent.modelData.longitude;
@@ -1978,7 +1978,7 @@ FloatingWindow {
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: win.glyph(layoutOpt.modelData.icon); color: layoutOpt.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 15 }
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: layoutOpt.modelData.label; color: layoutOpt.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                     }
-                                    TapHandler { onTapped: Config.s.launcherLayout = layoutOpt.modelData.mode }
+                                    ClickTap { onTapped: Config.s.launcherLayout = layoutOpt.modelData.mode }
                                 }
                             }
                         }
@@ -2120,7 +2120,7 @@ FloatingWindow {
                                 }
                             }
                             HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.ArrowCursor }
-                            TapHandler { onTapped: dp.selected = tile.modelData.name }
+                            ClickTap { onTapped: dp.selected = tile.modelData.name }
                             DragHandler {
                                 id: drag
                                 enabled: arrange.live.length > 1
@@ -2485,6 +2485,30 @@ FloatingWindow {
                     label: "Volume key sound"
                     detail: "A short tick at the new volume when you press the volume keys"
                     Toggle { checked: Config.s.volumeSound; onToggled: v => Config.s.volumeSound = v }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Notification sound"
+                    detail: "A soft chime when a notification pops up (silent during Do Not Disturb)"
+                    Toggle { checked: Config.s.notificationSound; onToggled: v => { Config.s.notificationSound = v; if (v) Config.playSound("notification"); } }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Click sound"
+                    detail: Config.clickAvailable ? "A very quiet click when you press Slate's buttons, menus and switches"
+                                                  : "Needs Qt Multimedia (qt6-multimedia), so the click is on time"
+                    Toggle {
+                        enabled: Config.clickAvailable
+                        opacity: enabled ? 1 : 0.4
+                        checked: Config.s.clickSound && Config.clickAvailable
+                        onToggled: v => { Config.s.clickSound = v; }
+                    }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Welcome sound"
+                    detail: "A gentle, warm swell when you log in (not when Slate reloads)"
+                    Toggle { checked: Config.s.welcomeSound; onToggled: v => { Config.s.welcomeSound = v; if (v) Config.playSound("welcome"); } }
                 }
                 Separator {}
                 SettingRow {
@@ -3014,7 +3038,7 @@ FloatingWindow {
                                         }
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: modeOpt.modelData.label; color: modeOpt.ink; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                     }
-                                    TapHandler { onTapped: Config.s.windowMode = modeOpt.modelData.mode }
+                                    ClickTap { onTapped: Config.s.windowMode = modeOpt.modelData.mode }
                                 }
                             }
                         }
@@ -3166,7 +3190,7 @@ FloatingWindow {
                                         }
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                     }
-                                    TapHandler { onTapped: Config.s.workspaceShape = parent.modelData.shape }
+                                    ClickTap { onTapped: Config.s.workspaceShape = parent.modelData.shape }
                                 }
                             }
                         }
@@ -3214,6 +3238,12 @@ FloatingWindow {
                     detail: "Silence pop-ups (critical ones still show); everything still goes to history"
                     Toggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
                 }
+                Separator {}
+                SettingRow {
+                    label: "Sound"
+                    detail: "A soft chime when a notification pops up (also in Sound settings)"
+                    Toggle { checked: Config.s.notificationSound; onToggled: v => { Config.s.notificationSound = v; if (v) Config.playSound("notification"); } }
+                }
             }
             GroupLabel { text: "Pop-ups" }
             Group {
@@ -3239,7 +3269,7 @@ FloatingWindow {
                                 Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 HoverHandler { id: spotHover }
-                                TapHandler { onTapped: Config.s.notificationPosition = parent.modelData }
+                                ClickTap { onTapped: Config.s.notificationPosition = parent.modelData }
                             }
                         }
                     }
@@ -3346,7 +3376,7 @@ FloatingWindow {
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: win.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
                                         Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                                     }
-                                    TapHandler {
+                                    ClickTap {
                                         onTapped: {
                                             const m = parent.modelData.mode;
                                             Config.s.themeMode = m;
@@ -3419,7 +3449,7 @@ FloatingWindow {
                                     scale: swHover.hovered ? 1.12 : 1
                                     Behavior on scale { NumberAnimation { duration: 100 } }
                                     HoverHandler { id: swHover }
-                                    TapHandler { onTapped: Config.s.accent = parent.modelData }
+                                    ClickTap { onTapped: Config.s.accent = parent.modelData }
                                 }
                             }
                         }
@@ -3699,7 +3729,7 @@ FloatingWindow {
                                 font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
                             }
                             HoverHandler { id: shapeHover }
-                            TapHandler { onTapped: Config.s.iconShape = shapeCard.modelData.value }
+                            ClickTap { onTapped: Config.s.iconShape = shapeCard.modelData.value }
                         }
                     }
                 }
@@ -3867,7 +3897,7 @@ FloatingWindow {
                                     elide: Text.ElideRight
                                 }
                                 HoverHandler { id: dirHover }
-                                TapHandler { onTapped: wp.browseDir = parent.filePath }
+                                ClickTap { onTapped: wp.browseDir = parent.filePath }
                             }
                         }
                         Text {
@@ -4039,7 +4069,7 @@ FloatingWindow {
                             horizontalAlignment: Text.AlignHCenter
                         }
                         HoverHandler { id: wallHover }
-                        TapHandler { onTapped: wp.setWallpaper(filePath) }
+                        ClickTap { onTapped: wp.setWallpaper(filePath) }
                     }
                 }
             }

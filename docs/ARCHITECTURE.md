@@ -30,7 +30,9 @@ shell.qml               root: creates everything below, plus the dock itself
 └─ HotCorners.qml       hot corners ("slate-hotcorner")
 
 Config.qml              singleton: settings.json + theme helpers (accent, tint()), window
-                        rounding (windowRounding, windowRadius()) for previews and borders
+                        rounding (windowRounding, windowRadius()) for previews and borders,
+                        Slate's sounds (playSound(), click())
+ClickTap.qml, ClickArea.qml  TapHandler / MouseArea that also play the click (Settings → Sound)
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
 UserFiles.qml           your hypr/*.lua and user/shell.qml: made if missing, reload on save
 Screensaver.qml         idle screensaver, before the lock ("slate-screensaver")
@@ -40,6 +42,7 @@ AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
+sounds/                 volume tick; notification chime, click and welcome (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
@@ -200,7 +203,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py`); `appicon.py` tiles |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
-| `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick (`sounds/volume-tick.wav`) |
+| `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |
 | `networkmanager` | Wi-Fi panel |
 | `bluez` | Bluetooth |
 | `upower` | battery |
@@ -226,6 +229,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
 | hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Title bars on floating windows in floating mode. Built per Hyprland version by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
+| `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Appearance → Folder colour |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).

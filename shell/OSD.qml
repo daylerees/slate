@@ -89,11 +89,7 @@ PanelWindow {
     function tick() {
         if (!Config.s.volumeSound || Date.now() - lastTick < 70) return;
         lastTick = Date.now();
-        // At Settings → Sound → Sound effects volume (0 = none)
-        const v = Math.max(0, Math.min(100, Config.s.soundEffectsVolume)) / 100;
-        if (v <= 0) return;
-        Quickshell.execDetached(["sh", "-c", "pw-play --volume=\"$1\" \"$0\" 2>/dev/null || paplay --volume=\"$2\" \"$0\"",
-            Quickshell.shellPath("sounds/volume-tick.wav"), v.toFixed(2), String(Math.round(v * 65536))]);
+        Config.playSound("volume-tick");
     }
 
     // ---- Brightness (screen and keyboard) -------------------------------------

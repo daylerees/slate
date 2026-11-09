@@ -89,7 +89,7 @@ PanelWindow {
             color: skipHover.hovered ? w.text : w.dim
             font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium
             HoverHandler { id: skipHover }
-            TapHandler { onTapped: w.finish() }
+            ClickTap { onTapped: w.finish() }
         }
 
         // The pages: one shows at a time, sliding a little as it fades in
@@ -205,7 +205,7 @@ PanelWindow {
                                     }
                                 }
                                 HoverHandler { id: modeHover }
-                                TapHandler { onTapped: if (modeCard.usable) Config.s.windowMode = modeCard.modelData.key }
+                                ClickTap { onTapped: if (modeCard.usable) Config.s.windowMode = modeCard.modelData.key }
                             }
                         }
                     }
@@ -250,7 +250,7 @@ PanelWindow {
                                     Text { anchors.verticalCenter: parent.verticalCenter; text: themeOpt.modelData.label; color: themeOpt.on ? w.accentText : w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                                 }
                                 HoverHandler { id: themeHover }
-                                TapHandler {
+                                ClickTap {
                                     onTapped: {
                                         const m = themeOpt.modelData.mode;
                                         Config.s.themeMode = m;
@@ -308,7 +308,7 @@ PanelWindow {
                                                 color: accOpt.modelData.wall && Config.wallpaperAccent ? Config.fromWallpaper(modelData) : Config.accentShade(modelData)
                                                 border.width: !accOpt.modelData.wall && !Config.s.accentFromWallpaper && Config.s.accent.toLowerCase() === modelData ? 2 : 0
                                                 border.color: w.text
-                                                TapHandler {
+                                                ClickTap {
                                                     enabled: !accOpt.modelData.wall
                                                     onTapped: { Config.s.accentFromWallpaper = false; Config.s.accent = sw.modelData; }
                                                 }
@@ -317,7 +317,7 @@ PanelWindow {
                                     }
                                 }
                                 HoverHandler { id: accHover }
-                                TapHandler { onTapped: Config.s.accentFromWallpaper = accOpt.modelData.wall }
+                                ClickTap { onTapped: Config.s.accentFromWallpaper = accOpt.modelData.wall }
                             }
                         }
                     }
@@ -372,7 +372,7 @@ PanelWindow {
                             }
                         }
                         // On: all installed ones; off: none of them (their configs are put back)
-                        TapHandler {
+                        ClickTap {
                             onTapped: {
                                 const others = appsRow.themed.filter(x => !appsRow.installed.includes(x));
                                 Config.s.themedApps = appsRow.on ? others : others.concat(appsRow.installed);
@@ -455,7 +455,7 @@ PanelWindow {
                                 Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                             }
                         }
-                        TapHandler { onTapped: Config.s.dockAutoHide = !Config.s.dockAutoHide }
+                        ClickTap { onTapped: Config.s.dockAutoHide = !Config.s.dockAutoHide }
                     }
                 }
             }
@@ -514,7 +514,7 @@ PanelWindow {
                                 color: w.accent; font.family: w.iconFont; font.pixelSize: 20
                             }
                             HoverHandler { id: keyHover }
-                            TapHandler { onTapped: Config.setKeyset(keyOpt.modelData.key) }
+                            ClickTap { onTapped: Config.setKeyset(keyOpt.modelData.key) }
                         }
                     }
                 }
@@ -661,7 +661,7 @@ PanelWindow {
                         color: index === w.page ? w.accent : w.line
                         Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: 180 } }
-                        TapHandler { onTapped: w.page = parent.index }
+                        ClickTap { onTapped: w.page = parent.index }
                     }
                 }
             }
@@ -674,7 +674,7 @@ PanelWindow {
                 Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                 HoverHandler { id: backHover }
-                TapHandler { onTapped: w.page-- }
+                ClickTap { onTapped: w.page-- }
             }
             // Next / Get started / Open Settings + Start using Slate
             Row {
@@ -687,7 +687,7 @@ PanelWindow {
                     Gloss { radius: parent.radius; opacity: (setHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                     HoverHandler { id: setHover }
-                    TapHandler {
+                    ClickTap {
                         onTapped: {
                             w.finish();
                             Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "open"]);
@@ -704,7 +704,7 @@ PanelWindow {
                         color: w.accentText; font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
                     }
                     HoverHandler { id: nextHover }
-                    TapHandler { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
+                    ClickTap { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
                 }
             }
         }

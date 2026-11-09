@@ -24,7 +24,8 @@ wl-clipboard
 # System services
 pipewire
 wireplumber
-pipewire-bin        # pw-play: volume key sound
+pipewire-bin        # pw-play: volume key sound, notification chime
+?qml6-module-qtmultimedia  # click sound, and sounds without a delay
 network-manager
 bluez
 upower

@@ -117,8 +117,23 @@ Scope {
             notifs.history = [item].concat(notifs.history).slice(0, notifs.maxHistory);
             notifs.unread++;
             notifs.save();
-            if (!notifs.dnd || n.urgency === NotificationUrgency.Critical) notifs.showToast(item, n);
+            if (!notifs.dnd || n.urgency === NotificationUrgency.Critical) {
+                notifs.showToast(item, n);
+                notifs.chime(n);
+            }
         }
+    }
+
+    // A soft chime with each pop-up (Settings → Sound): not for low-urgency notices, nor when the
+    // app asks for silence (suppress-sound); a burst of notifications chimes once
+    property real lastChime: 0
+    function chime(n) {
+        if (!Config.s.notificationSound || n.urgency === NotificationUrgency.Low) return;
+        const h = n.hints || {};
+        if (h["suppress-sound"]) return;
+        if (Date.now() - lastChime < 1500) return;
+        lastChime = Date.now();
+        Config.playSound("notification");
     }
 
     // ---- Saving / loading --------------------------------------------------

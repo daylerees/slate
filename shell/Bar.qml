@@ -522,7 +522,7 @@ PanelWindow {
                             color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
                                 : occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
                             Behavior on color { ColorAnimation { duration: 150 } }
-                            MouseArea { anchors.fill: parent; onClicked: modelData.activate() }
+                            ClickArea { anchors.fill: parent; onClicked: modelData.activate() }
                         }
                     }
                 }
@@ -746,7 +746,7 @@ PanelWindow {
                             // Right-click (or any click, for apps that only have a menu): the app's
                             // menu, drawn by Slate (TrayMenu.qml). Left-click: the app's own action;
                             // middle-click: its other one
-                            MouseArea {
+                            ClickArea {
                                 anchors.fill: parent
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                                 onClicked: m => {
@@ -786,7 +786,7 @@ PanelWindow {
                             color: bar.textColor
                             font.family: bar.iconFont; font.pixelSize: 16
                         }
-                        TapHandler { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
+                        ClickTap { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
                     }
                 }
             }
@@ -1013,8 +1013,8 @@ PanelWindow {
         }
         Gloss { radius: cap.radius }          // glass: a sheen
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
-        TapHandler { onTapped: cap.clicked() }
-        TapHandler { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
+        ClickTap { onTapped: cap.clicked() }
+        ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
 
     // Capsule holding one icon glyph
@@ -1097,7 +1097,7 @@ PanelWindow {
             }
         }
         HoverHandler { id: segHover; onHoveredChanged: if (seg.hoverText !== "") bar.setHover(seg, hovered) }
-        TapHandler { onTapped: seg.clicked() }
+        ClickTap { onTapped: seg.clicked() }
         WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
     }
 

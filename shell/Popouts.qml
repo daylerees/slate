@@ -409,7 +409,7 @@ PanelWindow {
         Gloss { radius: parent.radius; opacity: (selected || rbHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
         Behavior on color { ColorAnimation { duration: 100 } }
         HoverHandler { id: rbHover }
-        TapHandler { onTapped: rb.clicked() }
+        ClickTap { onTapped: rb.clicked() }
     }
 
     // ---- Volume ------------------------------------------------------------
@@ -442,7 +442,7 @@ PanelWindow {
                             code: parent.parent.a && parent.parent.a.muted ? parent.parent.modelData.off : parent.parent.modelData.on
                             color: parent.parent.a && parent.parent.a.muted ? pop.danger : pop.text
                             anchors.verticalCenter: parent.verticalCenter
-                            TapHandler { onTapped: { const a = muteIcon.parent.parent.a; if (a) a.muted = !a.muted; } }
+                            ClickTap { onTapped: { const a = muteIcon.parent.parent.a; if (a) a.muted = !a.muted; } }
                         }
                         Label {
                             anchors { left: muteIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -533,7 +533,7 @@ PanelWindow {
                         color: Networking.wifiEnabled ? pop.accentText : pop.text
                         Behavior on x { NumberAnimation { duration: 120 } }
                     }
-                    TapHandler { onTapped: Networking.wifiEnabled = !Networking.wifiEnabled }
+                    ClickTap { onTapped: Networking.wifiEnabled = !Networking.wifiEnabled }
                 }
             }
 
@@ -730,7 +730,7 @@ PanelWindow {
                             }
                         }
                         HoverHandler { id: tileHover }
-                        TapHandler {
+                        ClickTap {
                             enabled: tile.modelData.copy
                             onTapped: { Quickshell.execDetached(["wl-copy", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
                         }
@@ -1035,7 +1035,7 @@ PanelWindow {
                                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                         HoverHandler { id: spDelHover }
                                         // A MouseArea, so the click stops here rather than also opening the space
-                                        MouseArea {
+                                        ClickArea {
                                             anchors.fill: parent
                                             onClicked: {
                                                 const sp = spRow.modelData;
@@ -1110,7 +1110,7 @@ PanelWindow {
                     Gloss { radius: parent.radius; opacity: (spBackHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover }
-                    TapHandler { onTapped: spp.mode = "list" }
+                    ClickTap { onTapped: spp.mode = "list" }
                 }
                 Label { anchors { left: spBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     text: "New Space"; font.pixelSize: 15 }
@@ -1258,7 +1258,7 @@ PanelWindow {
                                         Icon { anchors.centerIn: parent; visible: wsCard.on; code: 0xEA5E; font.pixelSize: 12; color: pop.accentText }
                                     }
                                     HoverHandler { id: wsShotHover }
-                                    TapHandler { onTapped: spp.toggle(wsCard.modelData.id) }
+                                    ClickTap { onTapped: spp.toggle(wsCard.modelData.id) }
                                 }
                                 Label {
                                     width: parent.width
@@ -1327,7 +1327,7 @@ PanelWindow {
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spp.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
-                        TapHandler { onTapped: spp.icon = icCell.modelData }
+                        ClickTap { onTapped: spp.icon = icCell.modelData }
                     }
                 }
             }
@@ -1381,7 +1381,7 @@ PanelWindow {
                             Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spp.inkColour }
                         }
                         HoverHandler { id: swHover }
-                        TapHandler {
+                        ClickTap {
                             onTapped: {
                                 if (swatch.isCustom) {
                                     if (!spp.custom) { spp.custom = true; spHex.text = spp.colour.toString().slice(0, 7); }
@@ -1469,14 +1469,14 @@ PanelWindow {
                     Gloss { radius: parent.radius; opacity: (spCancelHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover }
-                    TapHandler { onTapped: spp.mode = "list" }
+                    ClickTap { onTapped: spp.mode = "list" }
                 }
                 Rectangle {
                     width: spSave.implicitWidth + 28; height: 32; radius: 8
                     color: spp.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
                     Label { id: spSave; anchors.centerIn: parent; text: spp.sameName ? "Replace" : "Save"; color: spp.canSave ? pop.accentText : pop.dim }
                     HoverHandler { id: spSaveHover }
-                    TapHandler { onTapped: spp.save() }
+                    ClickTap { onTapped: spp.save() }
                 }
             }
         }
@@ -1520,7 +1520,7 @@ PanelWindow {
                             Label { anchors.horizontalCenter: parent.horizontalCenter; text: shotTile.modelData.label; font.weight: Font.Normal }
                         }
                         HoverHandler { id: shotHover }
-                        TapHandler { onTapped: shp.take(shotTile.modelData.mode) }
+                        ClickTap { onTapped: shp.take(shotTile.modelData.mode) }
                     }
                 }
             }
@@ -1651,7 +1651,7 @@ PanelWindow {
                         color: btp.on ? pop.accentText : pop.text
                         Behavior on x { NumberAnimation { duration: 120 } }
                     }
-                    TapHandler { onTapped: if (btp.adapter) btp.adapter.enabled = !btp.adapter.enabled }
+                    ClickTap { onTapped: if (btp.adapter) btp.adapter.enabled = !btp.adapter.enabled }
                 }
             }
 
@@ -2185,7 +2185,7 @@ PanelWindow {
                         Behavior on opacity { NumberAnimation { duration: 150 } }
                     }
                     HoverHandler { id: avatarHover }
-                    TapHandler {
+                    ClickTap {
                         onTapped: {
                             pop.close();
                             Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "settings", "avatar"]);
@@ -2449,7 +2449,7 @@ PanelWindow {
                             color: parent.on ? pop.accentText : pop.text
                             Behavior on x { NumberAnimation { duration: 120 } }
                         }
-                        TapHandler { onTapped: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd }
+                        ClickTap { onTapped: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd }
                     }
                     RowButton {
                         visible: np.list.length > 0

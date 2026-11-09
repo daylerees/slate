@@ -72,7 +72,9 @@ def read_manifest():
             if name == "+":
                 made.add(src)
                 continue
-            if not os.path.isfile(os.path.join(SHELL, src)):
+            # "-" can name a whole folder the login screen does without (e.g. sounds)
+            exists = os.path.isfile(os.path.join(SHELL, src)) or (name == "-" and os.path.isdir(os.path.join(SHELL, src)))
+            if not exists:
                 errors.append(f"{MANIFEST}:{n}: {src} doesn't exist")
             if name == "-":
                 skipped.add(src)
@@ -113,6 +115,8 @@ def main():
                     continue
                 if source in skipped or inst in skipped or inst in made:
                     continue
+                if any(p == s or p.startswith(s.rstrip("/") + "/") for s in skipped for p in (source, inst)):
+                    continue                                  # inside a folder listed with "-"
                 errors.append(f"{src} loads \"{ref}\" ({inst} in the installed copy), but {MANIFEST} "
                               f"neither installs it nor lists it with \"-\" or \"+\"")
 

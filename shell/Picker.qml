@@ -382,7 +382,7 @@ PanelWindow {
                     }
                 }
 
-                MouseArea {
+                ClickArea {
                     anchors.fill: parent
                     hoverEnabled: true
                     onPositionChanged: m => {
@@ -436,7 +436,7 @@ PanelWindow {
                     font.family: root.emojiFont
                     font.pixelSize: 26
                 }
-                MouseArea {
+                ClickArea {
                     anchors.fill: parent
                     hoverEnabled: true
                     onPositionChanged: m => {
@@ -496,7 +496,7 @@ PanelWindow {
                 Gloss { radius: parent.radius; opacity: (clearHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Behavior on color { ColorAnimation { duration: 100 } }
                 HoverHandler { id: clearHover }
-                TapHandler { onTapped: root.clearClips() }
+                ClickTap { onTapped: root.clearClips() }
                 Text {
                     id: clearLabel
                     anchors.centerIn: parent

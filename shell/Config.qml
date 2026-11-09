@@ -677,6 +677,53 @@ Singleton {
 
     // ---- Defaults --------------------------------------------------------------------
     // A spare copy of the settings, never loaded from disk, so it holds the defaults
+    // ---- Slate's sounds (sounds/<name>.wav), at Settings → Sound → Sound effects volume -----
+    // With Qt Multimedia (optional) each is loaded once and plays straight away; without it
+    // pw-play starts for each one, a little late (~80 ms) but fine for the chime and the tick
+    property var effects: ({})
+    // Qt keeps loaded sounds for as long as Slate runs, even across reloads; a stamp per load
+    // makes a reload (or an update) pick up changed sound files
+    property real soundStamp: 0
+    function effect(name) {
+        if (name in effects) return effects[name];
+        if (!soundStamp) soundStamp = Date.now();     // set on first use, whatever the load order
+        let e = null;
+        try {
+            e = Qt.createQmlObject("import QtMultimedia; SoundEffect { source: "
+                + JSON.stringify(Qt.resolvedUrl("sounds/" + name + ".wav").toString() + "?v=" + soundStamp) + " }", root, "sound-" + name);
+        } catch (err) { e = null; }
+        effects[name] = e;
+        return e;
+    }
+    // The click needs to be on time, so it only plays with Qt Multimedia (Settings says so)
+    readonly property bool clickAvailable: effect("click") !== null
+    function playSound(name) {
+        const v = Math.max(0, Math.min(100, s.soundEffectsVolume)) / 100;
+        if (v <= 0) return;
+        const e = effect(name);
+        if (e) { e.volume = v; e.play(); return; }
+        Quickshell.execDetached(["sh", "-c", "pw-play --volume=\"$1\" \"$0\" 2>/dev/null || paplay --volume=\"$2\" \"$0\"",
+            Quickshell.shellPath("sounds/" + name + ".wav"), v.toFixed(2), String(Math.round(v * 65536))]);
+    }
+    // Welcome sound when you log in: once per session (per start of Hyprland), not when Slate
+    // reloads or restarts. A marker in the runtime folder, named for this Hyprland instance,
+    // says it's played; a moment's wait lets the sound system come up at login. The login
+    // screen loads this file too but has no sounds/ (greeter/files), so it stays silent.
+    Process {
+        id: welcomeCheck
+        command: ["sh", "-c", '[ -e "$0" ] || exit 1; d="${XDG_RUNTIME_DIR:-/tmp}/slate"; f="$d/welcomed-${HYPRLAND_INSTANCE_SIGNATURE:-none}"; '
+            + '[ -e "$f" ] && exit 1; mkdir -p "$d" && : > "$f"', Quickshell.shellPath("sounds/welcome.wav")]
+        onExited: code => { if (code === 0 && root.s.welcomeSound) root.playSound("welcome"); }
+    }
+    Timer { interval: 1500; running: true; onTriggered: welcomeCheck.running = true }
+
+    // A very quiet click for Slate's buttons, menus and toggles (ClickTap / ClickArea)
+    property real lastClick: 0
+    function click() {
+        if (!s.clickSound || !clickAvailable || Date.now() - lastClick < 40) return;
+        lastClick = Date.now();
+        playSound("click");
+    }
     SettingsData { id: defaults }
     function defaultOf(key) { return defaults[key]; }
     // Put these settings back to their defaults (Settings → each page's Restore defaults)

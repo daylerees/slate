@@ -125,7 +125,7 @@ PanelWindow {
                         font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                     }
                     HoverHandler { id: backHover }
-                    TapHandler { onTapped: tm.stack = tm.stack.slice(0, -1) }
+                    ClickTap { onTapped: tm.stack = tm.stack.slice(0, -1) }
                 }
             }
             Rectangle {
@@ -207,7 +207,7 @@ PanelWindow {
                             font.family: tm.bar.iconFont; font.pixelSize: 14
                         }
                         HoverHandler { id: entryHover }
-                        TapHandler {
+                        ClickTap {
                             onTapped: {
                                 const e = entryRow.e;
                                 if (!e || !e.enabled) return;

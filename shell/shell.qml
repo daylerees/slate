@@ -692,7 +692,7 @@ ShellRoot {
                                     elide: Text.ElideRight
                                 }
                                 HoverHandler { id: rowHover }
-                                TapHandler { onTapped: appMenu.run(menuRow.modelData) }
+                                ClickTap { onTapped: appMenu.run(menuRow.modelData) }
                             }
                         }
                     }
@@ -705,7 +705,7 @@ ShellRoot {
         // for hover under a mirroring/rotating transform, so a pointer area inside the strip
         // thinks the pointer has left when it hasn't (top and side docks). This one sits
         // over the dock in window coordinates and maps the pointer into the strip itself.
-        MouseArea {
+        ClickArea {
             id: mouse
             z: 10
             anchors.fill: maskBox
