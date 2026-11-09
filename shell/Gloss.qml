@@ -13,9 +13,9 @@ Rectangle {
     // Take the wallpaper's colour hint as on glass, for a shape whose fill isn't its parent's
     // colour (an app icon's tile)
     property bool glassHint: false
-    // A bold glossy band over the top half, as short shapes get, even on a tall one (where the
-    // usual sheen is a gentle fade): for things that should look most like glass, like
-    // notifications
+    // A bold glossy band over the top half, its lower edge curving (dipping lowest in the
+    // middle, like the top of a wide ellipse), rather than the gentle fade tall shapes
+    // otherwise get: for things that should look most like glass, like notifications
     property bool band: false
     anchors.fill: parent
     // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
@@ -69,10 +69,45 @@ Rectangle {
     gradient: Gradient {
         // Tall shapes: a gentler shine fading smoothly over the top half, with no band edge (a
         // bright band, a flat middle and a dark band made them look like three-tone tubes)
-        GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * (g.tall ? 0.75 : 1)) }
-        GradientStop { position: g.tall ? 0.18 : 0.5; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * (g.tall ? 0.3 : 0.25)) }
+        // (none with band: the curved shine below takes its place)
+        GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.band ? 0 : g.a * (g.tall ? 0.75 : 1)) }
+        GradientStop { position: g.tall ? 0.18 : 0.5; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.band ? 0 : g.a * (g.tall ? 0.3 : 0.25)) }
         GradientStop { position: g.tall ? 0.5 : 0.55; color: "transparent" }
         GradientStop { position: 1.0; color: "transparent" }
+    }
+    // band: the shine as the top of a wide ellipse, so its lower edge curves, kept inside the
+    // shape's rounded corners. The ellipse is 1.6× the shape's width and 1.4× its height, its
+    // lowest point just past the middle (55%); bright down to the shape's top edge, then fading
+    // towards the curve
+    Item {
+        anchors.fill: parent
+        visible: g.band
+        layer.enabled: g.band && Config.glassGloss
+        layer.effect: MultiEffect { maskEnabled: true; maskSource: bandClip; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+        Rectangle {
+            id: bandShine
+            readonly property real across: g.width * 1.6
+            readonly property real down: g.height * 1.4
+            // A circle, squashed into the ellipse by the Scale below (from its top)
+            width: across; height: across; radius: across / 2
+            x: (g.width - across) / 2
+            y: g.height * 0.55 - down
+            transform: Scale { yScale: bandShine.down / Math.max(1, bandShine.across) }
+            // Where the shape's top edge falls in the ellipse
+            readonly property real topAt: (down - g.height * 0.55) / Math.max(1, down)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
+                GradientStop { position: bandShine.topAt; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
+                GradientStop { position: 1.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
+            }
+        }
+    }
+    Item {
+        id: bandClip
+        anchors.fill: parent
+        visible: false
+        layer.enabled: g.band && Config.glassGloss
+        Rectangle { anchors.fill: parent; radius: g.radius }
     }
     // On a coloured fill, a soft shade along the bottom too: with the shine on top it reads as a
     // rounded, glossy surface rather than a flat one (Gloss sets how strong). Light frosted glass
