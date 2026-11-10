@@ -124,7 +124,13 @@ sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
 
 # 3. Point greetd at it (keeping a backup of the original config, once)
 # (systemd-cat sends Hyprland's log to the journal; otherwise it scrolls past on tty1
-# before the login screen appears and after you log in)
+# before the login screen appears and after you log in. Without systemd it goes to a file in
+# the greeter's cache instead)
+if command -v systemd-cat >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    START="systemd-cat -t slate-greeter -- dbus-run-session -- start-hyprland -- -c $CODE/hyprland.lua"
+else
+    START="sh -c 'exec dbus-run-session -- start-hyprland -- -c $CODE/hyprland.lua >$CACHE/hyprland.log 2>&1'"
+fi
 [ -f "$BACKUP" ] || cp -f "$CONF" "$BACKUP"
 cat > "$CONF" <<EOF
 # Slate login screen (set up by slate-greeter-install; previous config: $BACKUP)
@@ -132,7 +138,7 @@ cat > "$CONF" <<EOF
 vt = 1
 
 [default_session]
-command = "systemd-cat -t slate-greeter -- dbus-run-session -- start-hyprland -- -c $CODE/hyprland.lua"
+command = "$START"
 user = "$GREETER_USER"
 EOF
 

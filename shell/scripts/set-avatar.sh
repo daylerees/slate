@@ -25,9 +25,10 @@ PY
 
 # ~/.face first, so other apps get it even if AccountsService can't be reached
 cp "$out" "$HOME/.face"
-if ! busctl call org.freedesktop.Accounts "/org/freedesktop/Accounts/User$(id -u)" \
-        org.freedesktop.Accounts.User SetIconFile s "$out" >/dev/null 2>&1; then
-    if ! busctl status org.freedesktop.Accounts >/dev/null 2>&1; then
+# (gdbus, from glib, rather than busctl, which only systemd has)
+if ! gdbus call --system --dest org.freedesktop.Accounts --object-path "/org/freedesktop/Accounts/User$(id -u)" \
+        --method org.freedesktop.Accounts.User.SetIconFile "$out" >/dev/null 2>&1; then
+    if ! gdbus introspect --system --dest org.freedesktop.Accounts --object-path /org/freedesktop/Accounts >/dev/null 2>&1; then
         echo "AccountsService isn't running (install the accountsservice package); saved as ~/.face only" >&2
     else
         echo "AccountsService didn't accept the picture (was the password prompt cancelled?)" >&2

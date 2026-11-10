@@ -95,7 +95,10 @@ ShellRoot {
         function onError(error) { root.fail("Login error: " + error); }
     }
 
-    function power(action) { Quickshell.execDetached(["systemctl", action]); }
+    function power(action) {
+        // systemctl with systemd; loginctl (elogind) without
+        Quickshell.execDetached(["sh", "-c", 'if [ -d /run/systemd/system ]; then exec systemctl "$0"; else exec loginctl "$0"; fi', action]);
+    }
 
     // ---- The window (Window.qml; not loaded in check mode, which has no display) ------
     readonly property Component windowComponent: checking ? null : Qt.createComponent("Window.qml")

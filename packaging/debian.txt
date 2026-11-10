@@ -56,7 +56,7 @@ brightnessctl
 ?power-profiles-daemon
 ?qt6ct
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
-# hyprbars: title bars in floating mode, built by Slate (slate build-hyprbars)
+# Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars)
 ?hyprland-dev
 git
 make

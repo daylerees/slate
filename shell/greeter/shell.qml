@@ -155,7 +155,10 @@ ShellRoot {
     FileView { id: proven; path: root.stateDir + "/proven"; blockWrites: true; printErrors: false }
 
     // ---- Power ------------------------------------------------------------------
-    function power(action) { Quickshell.execDetached(["systemctl", action]); }
+    function power(action) {
+        // systemctl with systemd; loginctl (elogind) without
+        Quickshell.execDetached(["sh", "-c", 'if [ -d /run/systemd/system ]; then exec systemctl "$0"; else exec loginctl "$0"; fi', action]);
+    }
 
     // ---- Screens: the login box on the first screen, wallpaper on the others -----
     // (LoginWindow.qml; not loaded in check mode, which has no display)

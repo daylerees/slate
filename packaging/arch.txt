@@ -50,7 +50,7 @@ power-profiles-daemon
 adw-gtk-theme
 qt6ct
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
-# hyprbars: title bars in floating mode, built by Slate (slate build-hyprbars) — Hyprland ships its headers
+# Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars) — Hyprland ships its headers
 git
 make
 gcc

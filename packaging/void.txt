@@ -1,0 +1,76 @@
+# Slate packages for Void Linux (runit, glibc or musl)
+# One per line. "?" = optional (installed if available)
+#
+# Hyprland isn't in Void's own repositories: add a third-party repository that has Hyprland
+# 0.57 or newer first (see docs/INSTALL.md). The names below are Void's as far as we know
+# them; the installer installs one at a time and tells you any it couldn't find, so a name
+# that has changed doesn't stop the rest.
+
+# Compositor and shell
+hyprland
+quickshell
+qt6-declarative
+qt6-shadertools
+
+# Scripts and images
+python3
+python3-Pillow
+python3-gobject     # the tray's register, apart from Slate (scripts/tray-watcher.py)
+python3-numpy
+librsvg
+ImageMagick
+wl-clipboard
+
+# System services Slate shows or controls
+pipewire
+wireplumber
+?qt6-multimedia     # click sound, and sounds without a delay
+NetworkManager
+bluez
+upower
+polkit
+pam
+elogind             # the login service: suspend, restart, lock before sleep, password prompts
+util-linux
+diffutils           # cmp: is the installed copy (Slate, the login screen) up to date
+dbus
+glib
+procps-ng
+libnotify
+fontconfig
+curl
+xdg-utils
+unzip
+
+# Features
+grim
+slurp
+?hyprpicker
+brightnessctl
+?power-profiles-daemon
+?qt6ct
+papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
+# Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen
+git
+make
+gcc
+?greetd
+
+# Printing and scanning (Settings → Printers & Scanners)
+?cups
+?system-config-printer
+?sane
+?sane-airscan
+?simple-scan
+
+# Emoji, your account picture (AccountsService), and extras
+noto-fonts-emoji
+accountsservice
+pkg-config
+?btop
+?ffmpeg
+?xdg-user-dirs
+?pciutils
+
+# Settings → Webcam: the camera's picture settings (v4l2-ctl)
+?v4l-utils

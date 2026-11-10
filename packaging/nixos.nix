@@ -27,7 +27,7 @@
     grim slurp hyprpicker brightnessctl adw-gtk3 papirus-icon-theme
     system-config-printer simple-scan   # printer settings, and scanning
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
-    # Title bars in floating mode: Nix builds the plugin; link it where Slate looks, e.g.
+    # Optional: Hyprbars title bars instead of Slate's own. Nix builds the plugin; link it where Slate looks, e.g.
     #   ln -s ${pkgs.hyprlandPlugins.hyprbars}/lib/libhyprbars.so ~/.local/share/slate/plugins/hyprbars.so
     hyprlandPlugins.hyprbars
   ];

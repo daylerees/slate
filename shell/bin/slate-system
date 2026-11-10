@@ -7,6 +7,8 @@
 #                                   of changes ("Later" waits a week). Slate runs this.
 #   slate-system --fix [--packages] fix it now (asks for your password); --packages: only the
 #                                   packages (the updater does those before installing a version)
+#   slate-system --install <pkg>…   install these packages from the distro's repositories (asks
+#                                   for your password); Settings → App Theming's Install buttons
 # The packages are the required ones in packaging/<distro>.txt; optional ones ("?") are left to
 # ./install.sh. NixOS is left to your configuration (packaging/nixos.nix).
 set -uo pipefail
@@ -21,6 +23,9 @@ family() {
     . /etc/os-release 2>/dev/null || true
     for id in ${ID:-} ${ID_LIKE:-}; do
         case "$id" in
+            artix) echo artix; return ;;         # (like Arch, without systemd: its own list)
+            void) echo void; return ;;
+            gentoo) echo gentoo; return ;;       # (listed, never installed for you: emerge is yours)
             arch|cachyos|endeavouros|manjaro|garuda) echo arch; return ;;
             debian|ubuntu|linuxmint|pop|elementary|zorin) echo debian; return ;;
             fedora|rhel|centos|nobara|ultramarine) echo fedora; return ;;
@@ -43,7 +48,8 @@ missing_packages() {
     read_list | while read -r p; do
         case "$p" in \?*|copr:*|"") continue ;; esac
         case "$FAMILY" in
-            arch) pacman -T "$p" >/dev/null 2>&1 || echo "$p" ;;
+            arch|artix) pacman -T "$p" >/dev/null 2>&1 || echo "$p" ;;
+            void) xbps-query "$p" >/dev/null 2>&1 || echo "$p" ;;
             debian) dpkg -s "$p" 2>/dev/null | grep -q '^Status:.* installed' || echo "$p" ;;
             fedora|opensuse) rpm -q --whatprovides "$p" >/dev/null 2>&1 || echo "$p" ;;
         esac
@@ -80,7 +86,8 @@ if [ "${1:-}" = "--as-root" ]; then
     rc=0
     if [ "${#pkgs[@]}" -gt 0 ]; then
         case "$FAMILY" in
-            arch) pacman -S --needed --noconfirm "${pkgs[@]}" || rc=1 ;;
+            arch|artix) pacman -S --needed --noconfirm "${pkgs[@]}" || rc=1 ;;
+            void) xbps-install -Sy "${pkgs[@]}" || rc=1 ;;
             debian) apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkgs[@]}" || rc=1 ;;
             fedora)
                 # a new version may add a repository (copr) too
@@ -105,8 +112,25 @@ fix() {   # fix <only packages: 0/1>
     pkexec "$SELF" --as-root "${args[@]}"
 }
 
+# ---- install: packages named by Settings (an app to theme), with your password -------------
+install() {
+    [ "$#" -gt 0 ] || { echo "slate-system: --install needs package names" >&2; return 1; }
+    local p
+    for p in "$@"; do
+        [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]] || { echo "slate-system: bad package name: $p" >&2; return 1; }
+    done
+    case "$FAMILY" in
+        arch|debian|fedora|opensuse) ;;
+        nixos) echo "slate-system: on NixOS, add it to your configuration" >&2; return 1 ;;
+        *) echo "slate-system: don't know how to install packages here" >&2; return 1 ;;
+    esac
+    command -v pkexec >/dev/null || { echo "slate-system: pkexec isn't installed (it comes with polkit)" >&2; return 1; }
+    pkexec "$SELF" --as-root "$@"
+}
+
 case "${1:-}" in
     --check) check; exit 0 ;;
+    --install) shift; install "$@"; exit $? ;;
     --fix) [ "${2:-}" = --packages ] && only=1 || only=0; fix "$only"; exit $? ;;
     --prompt) ;;
     *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 1 ;;

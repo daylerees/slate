@@ -84,6 +84,15 @@ def service_state():
     return "on" if "is running" in r.stdout else "off"
 
 
+def service_hint():
+    """Without systemd, Slate doesn't switch services on: the command that does, for this
+    computer's init system (bin/slate-init), to show instead. "" with systemd."""
+    if shutil.which("systemctl"):
+        return ""
+    tool = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bin", "slate-init")
+    return run([tool, "service-hint", "printing"]).strip()
+
+
 def list_printers():
     state = service_state()
     printers = []
@@ -114,7 +123,8 @@ def list_printers():
                 if d:
                     current["info"] = d.group(1).strip()
     tool = next((t for t in CONFIG_TOOLS if shutil.which(t)), "")
-    print(json.dumps({"service": state, "printers": printers, "configTool": tool}))
+    print(json.dumps({"service": state, "printers": printers, "configTool": tool,
+                      "hint": service_hint() if state == "off" else ""}))
 
 
 def nice_name(uri, model, info=""):
@@ -209,7 +219,11 @@ def main():
     elif cmd == "remove" and len(a) == 2:
         act(["pkexec", "lpadmin", "-x", a[1]], timeout=120)
     elif cmd == "service-on":
-        act(["pkexec", "systemctl", "enable", "--now", "cups.socket", "cups.service"], timeout=120)
+        if shutil.which("systemctl"):
+            act(["pkexec", "systemctl", "enable", "--now", "cups.socket", "cups.service"], timeout=120)
+        else:
+            hint = service_hint()
+            print("error " + ("switch it on with: " + hint if hint else "switch the cupsd service on with your init system"))
     else:
         sys.exit(__doc__)
 

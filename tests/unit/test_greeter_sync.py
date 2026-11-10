@@ -162,6 +162,122 @@ class Check(GreeterCase):
         self.no_password_asked()
 
 
+class Status(Check):
+    """--status: what Settings → Lock & Idle needs to offer installing, updating or switching
+    back, one key=value a line. Only reads; never asks for a password."""
+
+    def setUp(self):
+        super().setUp()
+        self.etc = os.path.join(self.h.dir, "etc-greetd")
+        os.makedirs(self.etc)
+        self.s.env["SLATE_GREETD_ETC"] = self.etc
+        # A computer run by systemd (bin/slate-init goes by /run/systemd/system; the tests'
+        # container has no init system at all)
+        self.s.env["SLATE_INIT_ROOT"] = os.path.join(self.h.dir, "root")
+        os.makedirs(os.path.join(self.h.dir, "root", "run", "systemd", "system"))
+        self.s.add("systemctl", by_args={"show -P Id display-manager.service": "sddm.service\n", "cat greetd.service": ""})
+
+    def status(self):
+        code, out = run(["bash", self.script, "--status"], env=self.s.env)
+        self.assertEqual(code, 0, out)
+        self.no_password_asked()
+        return dict(l.split("=", 1) for l in out.splitlines())
+
+    def use_slate(self, backup=True):
+        """What slate-greeter-install leaves in /etc/greetd."""
+        with open(os.path.join(self.etc, "config.toml"), "w") as f:
+            f.write('[default_session]\ncommand = "start-hyprland -- -c /usr/local/share/slate-greeter/hyprland.lua"\n')
+        if backup:
+            with open(os.path.join(self.etc, "config.toml.before-slate"), "w") as f:
+                f.write('[default_session]\ncommand = "agreety"\n')
+
+    def test_keys(self):
+        self.assertEqual(sorted(self.status()), ["backup", "dm", "enable", "greetd", "state", "switch", "used"])
+
+    def test_not_installed(self):
+        st = self.status()
+        self.assertEqual(st["state"], "not-installed")
+        self.assertEqual((st["used"], st["backup"], st["dm"]), ("no", "no", "sddm"))
+
+    def test_in_use(self):
+        self.install_code()
+        self.use_slate()
+        self.s.add("systemctl", by_args={"show -P Id display-manager.service": "greetd.service\n"})
+        st = self.status()
+        self.assertEqual((st["state"], st["used"], st["backup"], st["dm"]), ("current", "yes", "yes", "greetd"))
+
+    def test_switched_back(self):
+        """--revert puts greetd's old config back but leaves the code: installed, not used."""
+        self.install_code()
+        self.use_slate()
+        os.replace(os.path.join(self.etc, "config.toml.before-slate"), os.path.join(self.etc, "config.toml"))
+        st = self.status()
+        self.assertEqual((st["state"], st["used"], st["backup"]), ("current", "no", "no"))
+
+    def test_no_display_manager(self):
+        self.s.add("systemctl", by_args={"show -P Id display-manager.service": "display-manager.service\n"})
+        self.assertEqual(self.status()["dm"], "none")
+        self.s.add("systemctl", code=1)
+        self.assertEqual(self.status()["dm"], "none")
+
+    def test_command_to_switch_greetd_on(self):
+        st = self.status()
+        self.assertEqual(st["enable"], "sudo systemctl enable --now greetd.service")
+        self.assertEqual(st["switch"], "sudo systemctl disable sddm && sudo systemctl enable greetd", "sddm is the one running")
+
+    def test_without_systemd(self):
+        """OpenRC and elogind (Artix, Gentoo): the login manager and the command are its own."""
+        import shutil
+        shutil.rmtree(os.path.join(self.h.dir, "root", "run", "systemd"))
+        os.makedirs(os.path.join(self.h.dir, "root", "run", "openrc"))
+        self.s.add("rc-service", by_args={"greetd status": ""}, code=3)
+        self.s.add("pgrep", code=1)
+        st = self.status()
+        self.assertEqual((st["dm"], st["enable"], st["switch"]), ("greetd", "sudo rc-update add greetd default && sudo rc-service greetd start", ""))
+
+    def test_greetd(self):
+        self.s.add("greetd")
+        self.assertEqual(self.status()["greetd"], "yes")
+        if not any(os.path.exists(p) for p in ("/usr/bin/greetd", "/usr/sbin/greetd")):
+            self.s.add("greetd", missing=True)
+            self.assertEqual(self.status()["greetd"], "no")
+
+
+class Prompt(Status):
+    """--prompt offers an update only while greetd uses Slate's login screen: once you've
+    switched back (or never installed it), its changes are none of your business."""
+
+    def setUp(self):
+        super().setUp()
+        self.s.add("notify-send", stdout="later\n")
+        self.s.env["XDG_STATE_HOME"] = os.path.join(self.h.dir, "state")
+
+    def prompt(self):
+        code, out = run(["bash", self.script, "--prompt"], env=self.s.env)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.s.calls("pkexec"), [])
+        self.assertEqual(self.s.calls("sudo"), [])
+        return self.s.calls("notify-send")
+
+    def test_asks_when_in_use(self):
+        self.install_code()
+        self.use_slate()
+        self.edit("LoginScreen.qml")
+        calls = self.prompt()
+        self.assertEqual(len(calls), 1)
+        self.assertIn("Login screen out of date", calls[0])
+
+    def test_quiet_when_switched_back(self):
+        self.install_code()
+        self.use_slate()
+        os.replace(os.path.join(self.etc, "config.toml.before-slate"), os.path.join(self.etc, "config.toml"))
+        self.edit("LoginScreen.qml")
+        self.assertEqual(self.prompt(), [])
+
+    def test_quiet_when_not_installed(self):
+        self.assertEqual(self.prompt(), [])
+
+
 class Sync(GreeterCase):
     """A plain run, copying the appearance into SLATE_GREETER_DIR."""
 

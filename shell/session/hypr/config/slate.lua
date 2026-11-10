@@ -105,7 +105,7 @@ local function lidClosed()
         for _, name in ipairs(laptopPanels()) do hl.dispatch(hl.dsp.dpms({ action = "off", monitor = name })) end
         return
     end
-    if LID_ACTION == "suspend" then hl.exec_cmd("systemctl suspend")
+    if LID_ACTION == "suspend" then hl.exec_cmd(SLATE_DIR .. "/bin/slate-init suspend")
     elseif LID_ACTION == "lock" then hl.exec_cmd(SLATE .. " ipc call lock lock") end
 end
 local function lidOpened()
@@ -118,7 +118,7 @@ hl.bind("switch:off:Lid Switch", lidOpened, { locked = true })
 local function powerKey()
     local a = POWER_KEY_ACTION
     if a == "menu" then hl.exec_cmd(SLATE .. " ipc call bar panel session")
-    elseif a == "suspend" then hl.exec_cmd("systemctl suspend")
+    elseif a == "suspend" then hl.exec_cmd(SLATE_DIR .. "/bin/slate-init suspend")
     elseif a == "poweroff" then hl.exec_cmd(SLATE .. " ipc call power confirm poweroff")
     elseif a == "lock" then hl.exec_cmd(SLATE .. " ipc call lock lock") end
 end

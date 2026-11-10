@@ -4,7 +4,9 @@
 #
 #   ./install.sh                  install everything (asks before each system change)
 #   ./install.sh --yes            same, without questions
-#   ./install.sh --login-screen   also make Slate's login screen the system's (greetd)
+#   ./install.sh --login-screen   also make Slate's login screen the system's (greetd). Optional
+#                                 and off by default; it can also be installed later from
+#                                 Settings → Lock & Idle. See docs/LOCK-AND-LOGIN.md for the risks
 #   ./install.sh --no-deps        skip installing packages (you've done it yourself)
 #   ./install.sh --link           link ~/.config/slate to this folder (for development)
 #   ./install.sh --update         just put this version of Slate in place, keeping your files, with
@@ -93,6 +95,10 @@ fi
 family=""
 for id in ${ID:-} ${ID_LIKE:-}; do
     case "$id" in
+        # (Artix says it's like Arch, but has no systemd: its own list, so before "arch")
+        artix) family=artix ;;
+        void) family=void ;;
+        gentoo) family=gentoo ;;
         arch|cachyos|endeavouros|manjaro|garuda) family=arch ;;
         debian|ubuntu|linuxmint|pop|elementary|zorin) family=debian ;;
         fedora|rhel|centos|nobara|ultramarine) family=fedora ;;
@@ -108,9 +114,9 @@ echo "${B}Slate installer${N}  ·  ${PRETTY_NAME:-unknown system}${family:+ ($fa
 # optional (skipped if the distro doesn't have it)
 read_list() { grep -v '^\s*\(#\|$\)' "$ROOT/packaging/$1.txt" | sed 's/\s*#.*//'; }
 
-install_arch() {
+install_arch() {   # install_arch [list: arch (the default) or artix]
     local req=() opt=() p
-    while read -r p; do case "$p" in \?*) opt+=("${p#\?}") ;; *) req+=("$p") ;; esac; done < <(read_list arch)
+    while read -r p; do case "$p" in \?*) opt+=("${p#\?}") ;; *) req+=("$p") ;; esac; done < <(read_list "${1:-arch}")
     sudo pacman -S --needed --noconfirm "${req[@]}"
     for p in "${opt[@]}"; do
         if pacman -Si "$p" >/dev/null 2>&1; then sudo pacman -S --needed --noconfirm "$p" || warn "Couldn't install $p"
@@ -118,6 +124,32 @@ install_arch() {
         elif have yay; then yay -S --needed --noconfirm "$p" || warn "Couldn't install $p (AUR)"
         else warn "$p isn't in the official repos; install it from the AUR if you want it"; fi
     done
+}
+# Artix: Arch's way, then each service's package for the init system in use (OpenRC, runit,
+# dinit or s6), which is what lets that init system start it (networkmanager-openrc…)
+install_artix() {
+    install_arch artix
+    local init svc
+    init=$("$ROOT/shell/bin/slate-init" info | sed -n 's/^init=//p')
+    case "$init" in openrc|runit|dinit|s6) ;; *) warn "Couldn't tell which init system this is; install your services' own packages (networkmanager-<init>…) yourself"; return 0 ;; esac
+    for svc in elogind networkmanager bluez cups greetd; do
+        pacman -Q "$svc" >/dev/null 2>&1 || continue
+        if pacman -Si "$svc-$init" >/dev/null 2>&1; then sudo pacman -S --needed --noconfirm "$svc-$init" || warn "Couldn't install $svc-$init"; fi
+    done
+}
+# Void: one at a time, so a package Void names differently (or doesn't have) is reported
+# rather than stopping the rest
+install_void() {
+    local p name failed=()
+    sudo xbps-install -S
+    while read -r p; do
+        name=${p#\?}
+        xbps-query "$name" >/dev/null 2>&1 && continue
+        if ! sudo xbps-install -y "$name" >/dev/null 2>&1; then
+            case "$p" in \?*) warn "$name isn't available here; skipped" ;; *) failed+=("$name") ;; esac
+        fi
+    done < <(read_list void)
+    [ "${#failed[@]}" -eq 0 ] || warn "Couldn't install: ${failed[*]}. Slate needs these: find Void's name for each (xbps-query -Rs <name>) and install it. Hyprland comes from a third-party repository (docs/INSTALL.md)."
 }
 install_debian() {
     local req=() opt=() p
@@ -162,7 +194,8 @@ install_opensuse() {
 # One package, by the distro's package manager (for the extras below)
 install_one() {
     case "$family" in
-        arch) sudo pacman -S --needed --noconfirm "$1" ;;
+        arch|artix) sudo pacman -S --needed --noconfirm "$1" ;;
+        void) sudo xbps-install -y "$1" ;;
         debian) sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$1" ;;
         fedora) sudo dnf install -y "$1" ;;
         opensuse) sudo zypper --non-interactive install "$1" ;;
@@ -183,6 +216,18 @@ ensure_one() {
 # off); the Bluetooth and Wi-Fi panels are empty without them. Another network service
 # already running (iwd on its own, systemd-networkd, connman) is left alone, with a note.
 enable_services() {
+    # Without systemd Slate doesn't switch services on for you (each init system has its own
+    # way): it says which aren't running, with the command for yours (bin/slate-init)
+    if [ ! -d /run/systemd/system ]; then
+        local init="$ROOT/shell/bin/slate-init" svc hint
+        for svc in bluetooth network; do
+            "$init" service-active "$svc"; [ $? -eq 1 ] || continue
+            hint=$("$init" service-hint "$svc")
+            warn "The $svc service isn't running (Slate's $([ "$svc" = network ] && echo Wi-Fi || echo Bluetooth) panel needs it)${hint:+. To switch it on: $hint}"
+        done
+        "$init" info | grep -qx 'logind=none' && warn "elogind isn't running: without it Slate can't suspend, restart or shut down, lock before sleep, or show password prompts. See docs/INSTALL.md (Without systemd)."
+        return 0
+    fi
     have systemctl || return 0
     local want=() other
     if systemctl cat bluetooth.service >/dev/null 2>&1 && ! systemctl is-enabled --quiet bluetooth.service 2>/dev/null; then
@@ -232,7 +277,7 @@ fi
 if [ "$DEPS" -eq 1 ]; then
     step "1. Packages"
     case "$family" in
-        arch|debian|fedora|opensuse)
+        arch|artix|void|debian|fedora|opensuse)
             echo "  Slate needs these packages (packaging/$family.txt):"
             read_list "$family" | tr '\n' ' ' | fold -s -w 76 | sed 's/^/    /'; echo
             if ask "Install them now (uses sudo)?"; then "install_$family"; ok "Packages installed"
@@ -242,6 +287,12 @@ if [ "$DEPS" -eq 1 ]; then
             enable_services ;;
         nixos)
             warn "On NixOS, add the packages in packaging/nixos.nix to your configuration, rebuild, then run: ./install.sh --no-deps"
+            exit 1 ;;
+        gentoo)
+            echo "  On Gentoo, Slate leaves emerge to you (USE flags, overlays and build time are yours to choose)."
+            echo "  It needs these (packaging/gentoo.txt; a ? marks the optional ones):"
+            read_list gentoo | tr '\n' ' ' | fold -s -w 76 | sed 's/^/    /'; echo
+            warn "Emerge them (Hyprland 0.57+ from hyproverlay, Quickshell from GURU; see docs/INSTALL.md), then run: ./install.sh --no-deps"
             exit 1 ;;
         *)
             warn "Unknown distro; install the packages listed in docs/INSTALL.md yourself, then run: ./install.sh --no-deps"
@@ -375,17 +426,9 @@ ok "Settings icon and desktop entry"
 # Slate Cursors (the session's mouse cursor): linked where Hyprland and apps look for themes
 mkdir -p "$data/icons"
 ln -sfn "$DEST/cursors/Slate-Cursors" "$data/icons/Slate-Cursors"; ok "Slate Cursors"
-# hyprbars: title bars for floating windows (Settings → Windows → Window mode), built for
-# this Hyprland into ~/.local/share/slate/plugins. Optional: without it, no title bars.
-if [ "$UPDATE" -eq 1 ]; then
-    ok "hyprbars: kept as built (rebuild with: slate build-hyprbars)"
-elif have g++ && have git && have make; then
-    echo "  Building hyprbars (title bars for floating windows)…"
-    if "$DEST/bin/slate-build-hyprbars" >/tmp/slate-hyprbars.log 2>&1; then ok "hyprbars built"
-    else warn "Couldn't build hyprbars (see /tmp/slate-hyprbars.log); floating windows won't have title bars. Retry later with: slate build-hyprbars"; fi
-else
-    warn "Skipped hyprbars (needs git, make and g++); floating windows won't have title bars until you run: slate build-hyprbars"
-fi
+# Floating windows' title bars are Slate's own, with nothing to build. Hyprbars (the optional
+# Hyprland plugin for them) is built only when chosen: Settings → Windows → Title bars, or
+# `slate build-hyprbars`. A build that's already there is left as it is.
 # Icon theme: Papirus-Dark (its coloured folders back Settings → Appearance → Folder colour),
 # unless you've already picked an icon theme of your own
 if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark ] || [ -d /run/current-system/sw/share/icons/Papirus-Dark ]; }; then
@@ -433,8 +476,12 @@ if [ "$LOGIN" -eq 1 ]; then
     if ! have greetd && [ ! -x /usr/bin/greetd ] && [ ! -x /usr/sbin/greetd ]; then
         warn "greetd isn't installed; install it, then run: sudo $DEST/bin/slate-greeter-install"
     else
-        echo "  This replaces your current login screen with Slate's (greetd). Your old setup is kept"
-        echo "  and can be restored with: sudo $DEST/bin/slate-greeter-install --revert"
+        echo "  This replaces your computer's login screen with Slate's (greetd). If it breaks, it can"
+        echo "  stop you logging in: each copy is tested before it's installed and a basic fallback is"
+        echo "  kept, and from a text console (Ctrl+Alt+F3) this puts your old one back:"
+        echo "    sudo $DEST/bin/slate-greeter-install --revert"
+        echo "  Changes to Slate and updates to Hyprland, Quickshell or greetd can need it updated;"
+        echo "  Slate asks when (each update needs your password)."
         if ask "Switch the login screen to Slate's (uses sudo)?"; then
             sudo "$DEST/bin/slate-greeter-install" | sed 's/^/  /'
             echo "  If your distro used another display manager (GDM, SDDM, LightDM), switch to greetd:"

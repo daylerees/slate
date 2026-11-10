@@ -13,7 +13,8 @@ distros replace with their own), so nothing flashes up between the login screen 
 ```
 login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
    └─ uwsm start -e -D Hyprland -N Slate -- start-hyprland -- -c <slate>/session/hypr/hyprland.lua
-      (plain start-hyprland when uwsm isn't installed)
+      (plain start-hyprland when uwsm isn't installed, or systemd isn't running: then inside
+       dbus-run-session if there's no session bus yet)
          ├─ ~/.config/slate/hypr/env.lua, variables.lua        (yours, first)
          ├─ Slate's config: colors, variables, animations, autostart, decorations,
          │  inputs, binds, misc, monitors, windowrules, workspaces

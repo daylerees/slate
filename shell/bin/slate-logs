@@ -48,7 +48,9 @@ print(json.dumps(s, indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" 2>/de
     else qs log -p "$SLATE_DIR" -t "$LINES" 2>/dev/null | nocolour; fi
 
     section "Login screen's log (last 200 lines, if readable)"
-    journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"
+    # (the journal with systemd; the greeter's own file without)
+    if command -v journalctl >/dev/null 2>&1; then journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"
+    else tail -n 200 /var/cache/slate-greeter/hyprland.log 2>/dev/null || echo "(not readable)"; fi
 } > "$out" 2>&1
 
 echo "$out"

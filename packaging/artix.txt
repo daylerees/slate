@@ -1,0 +1,84 @@
+# Slate packages for Artix (Arch without systemd: OpenRC, runit, dinit or s6)
+# One per line. "?" = optional (installed if available, AUR via paru/yay if present)
+# Arch's list (arch.txt) without systemd and uwsm, with elogind. Hyprland is in Artix's
+# `world` repository and Quickshell in `galaxy`: both need to be switched on in pacman.conf.
+# Each service also needs its init system's own package (networkmanager-openrc, bluez-runit…):
+# the installer adds those for the init system you run.
+
+# Compositor and shell
+hyprland
+?hyprland-guiutils
+quickshell
+qt6-declarative
+qt6-shadertools
+
+# Scripts and images
+python
+python-pillow
+python-gobject      # the tray's register, apart from Slate (scripts/tray-watcher.py)
+python-numpy
+librsvg
+imagemagick
+wl-clipboard
+
+# System services Slate shows or controls
+pipewire
+wireplumber
+pipewire-audio      # pw-play: volume key sound, notification chime
+?qt6-multimedia     # click sound, and sounds without a delay
+networkmanager
+bluez
+bluez-utils
+upower
+polkit
+pam
+elogind             # the login service: suspend, restart, lock before sleep, password prompts
+util-linux
+diffutils           # cmp: is the installed copy (Slate, the login screen) up to date
+dbus
+glib2
+procps-ng
+libnotify
+fontconfig
+curl
+xdg-utils
+unzip
+
+# Features
+grim
+slurp
+hyprpicker
+brightnessctl
+power-profiles-daemon
+adw-gtk-theme
+qt6ct
+papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
+# Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars) — Hyprland ships its headers
+git
+make
+gcc
+?swash
+?otf-geist
+?greetd
+
+# Printing and scanning (Settings → Printers & Scanners): CUPS, its printer tool, SANE with
+# network scanners (airscan), and an app to scan with
+?cups
+?system-config-printer
+?sane
+?sane-airscan
+?simple-scan
+
+# Emoji (the picker, the launcher's :emoji), your account picture (AccountsService), and
+# extras: btop (Ctrl+Shift+Esc), ffmpeg (silent screensaver videos), xdg-user-dirs (your
+# Downloads and Pictures folders), pciutils (Debug → Export logs)
+noto-fonts-emoji
+accountsservice
+pkgconf
+?btop
+?ffmpeg
+?xdg-user-dirs
+?pciutils
+
+# Settings → Webcam: the camera's picture settings (v4l2-ctl)
+v4l-utils

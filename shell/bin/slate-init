@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# The one place in Slate that knows how this computer is run: which init system starts its
+# services, and which login service (logind) looks after sessions, sleep and power. Slate
+# works with systemd, and without it on systems that have elogind (Artix, Void, Gentoo…);
+# everything that used to call systemctl, systemd-inhibit or timedatectl asks here instead.
+# On systemd it runs exactly the commands Slate always has.
+#
+#   slate-init info                  what's here, one key=value a line (below)
+#   slate-init suspend|hibernate|reboot|poweroff
+#   slate-init inhibit <systemd-inhibit's options…> <command…>
+#                                    run the command while holding sleep, the lid or the
+#                                    power button (plainly, where nothing can hold them)
+#   slate-init service-active <service>     exit 0 running, 1 not, 2 can't tell
+#   slate-init service-hint <service>       the command that switches it on, for you to run
+#   slate-init service-swap-hint <login manager running> <the one wanted>
+#                                           the command that switches from one to the other
+#   slate-init service-enable <service>     switch it on now (as root; systemd only: exit 2
+#                                           elsewhere, where service-hint is shown instead)
+#   slate-init display-manager       the login manager in use (greetd, sddm…), none or unknown
+#   slate-init timedate show         Timezone=, NTP=yes|no, CanNTP=yes|no, CanSet=yes|no
+#   slate-init timedate zones        every time zone, one a line
+#   slate-init timedate set-zone <zone> | set-ntp true|false
+#
+# Services are named for what they do (bluetooth, network, printing, greetd); each init
+# system's own name for them is worked out here.
+#
+# info prints: init (systemd, openrc, runit, dinit, s6 or unknown), logind (systemd, elogind
+# or none), suspend, power (restart and shut down), inhibit, timedate (each yes or no: whether
+# Slate can do it here).
+#
+# It goes by what's running, never by which commands are installed (loginctl exists with
+# systemd and with elogind). SLATE_INIT_ROOT stands in for / in the tests.
+set -uo pipefail
+ROOT="${SLATE_INIT_ROOT:-}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+running() { pgrep -x "$1" >/dev/null 2>&1; }
+
+init_system() {
+    if [ -d "$ROOT/run/systemd/system" ]; then echo systemd
+    elif [ -d "$ROOT/run/openrc" ]; then echo openrc
+    elif [ -d "$ROOT/run/runit" ] || running runsvdir; then echo runit
+    elif [ -e "$ROOT/run/dinitctl" ] || running dinit; then echo dinit
+    elif [ -d "$ROOT/run/s6-rc" ] || running s6-svscan; then echo s6
+    else echo unknown; fi
+}
+INIT=$(init_system)
+
+# Something owns org.freedesktop.login1 on the system bus
+login1_owned() {
+    gdbus call --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.NameHasOwner org.freedesktop.login1 2>/dev/null | grep -q true
+}
+logind() {
+    if [ "$INIT" = systemd ]; then echo systemd
+    elif running elogind || login1_owned; then echo elogind
+    else echo none; fi
+}
+
+# Each init system's name for a service: service_name <service> → names to try, best first
+service_names() {
+    case "$INIT:$1" in
+        systemd:bluetooth) echo bluetooth.service ;;
+        systemd:network) echo NetworkManager.service ;;
+        systemd:printing) echo cups.service cups.socket ;;
+        systemd:greetd) echo greetd.service ;;
+        openrc:bluetooth) echo bluetooth bluetoothd ;;
+        openrc:printing) echo cupsd ;;
+        *:bluetooth) echo bluetoothd bluetooth ;;
+        *:network) echo NetworkManager ;;
+        *:printing) echo cupsd cups ;;
+        *:greetd) echo greetd ;;
+        *) echo "$1" ;;
+    esac
+}
+# Where runit keeps its services, and where the running ones are linked (Void; Artix)
+runit_dirs() {
+    if [ -d "$ROOT/etc/runit/sv" ]; then echo "/etc/runit/sv /run/runit/service"
+    else echo "/etc/sv /var/service"; fi
+}
+service_active() {
+    local n
+    case "$INIT" in
+        systemd) for n in $(service_names "$1"); do systemctl is-active --quiet "$n" 2>/dev/null && return 0; done; return 1 ;;
+        openrc) for n in $(service_names "$1"); do rc-service "$n" status >/dev/null 2>&1 && return 0; done; return 1 ;;
+        runit) set -- $(service_names "$1") -- $(runit_dirs)
+               while [ "$1" != -- ]; do sv status "${*: -1}/$1" 2>/dev/null | grep -q '^run:' && return 0; shift; done; return 1 ;;
+        dinit) for n in $(service_names "$1"); do dinitctl status "$n" 2>/dev/null | grep -q 'STARTED' && return 0; done; return 1 ;;
+        s6) for n in $(service_names "$1"); do s6-rc -a list 2>/dev/null | grep -qx "$n\(-srv\)\?" && return 0; done; return 1 ;;
+        *) return 2 ;;
+    esac
+}
+# The first of a service's names this system has
+service_known() {
+    local n avail
+    for n in $(service_names "$1"); do
+        case "$INIT" in
+            systemd) systemctl cat "$n" >/dev/null 2>&1 && { echo "$n"; return 0; } ;;
+            openrc) [ -e "$ROOT/etc/init.d/$n" ] && { echo "$n"; return 0; } ;;
+            runit) avail=$(runit_dirs); [ -d "$ROOT${avail%% *}/$n" ] && { echo "$n"; return 0; } ;;
+            dinit) { [ -e "$ROOT/etc/dinit.d/$n" ] || [ -e "$ROOT/usr/lib/dinit.d/$n" ]; } && { echo "$n"; return 0; } ;;
+            s6) [ -d "$ROOT/etc/s6/sv/$n-srv" ] && { echo "$n"; return 0; } ;;
+        esac
+    done
+    return 1
+}
+service_hint() {
+    local n dirs
+    n=$(service_known "$1") || n=$(service_names "$1" | cut -d' ' -f1)
+    case "$INIT" in
+        systemd) echo "sudo systemctl enable --now $n" ;;
+        openrc) echo "sudo rc-update add $n default && sudo rc-service $n start" ;;
+        runit) dirs=$(runit_dirs); echo "sudo ln -s ${dirs%% *}/$n ${dirs##* }/" ;;
+        dinit) echo "sudo dinitctl enable $n" ;;
+        s6) echo "sudo s6-service add default $n && sudo s6-db-reload" ;;
+        *) echo "" ;;
+    esac
+}
+
+case "${1:-}" in
+info)
+    l=$(logind)
+    echo "init=$INIT"; echo "logind=$l"
+    yn() { if "$@"; then echo yes; else echo no; fi; }
+    echo "suspend=$(yn test "$l" != none)"
+    echo "power=$(yn test "$l" != none)"
+    if [ "$l" = systemd ]; then echo "inhibit=yes"
+    else echo "inhibit=$(yn eval '[ "$l" = elogind ] && have elogind-inhibit')"; fi
+    if [ "$INIT" = systemd ]; then echo "timedate=yes"
+    else echo "timedate=$(yn eval 'gdbus call --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.ListActivatableNames 2>/dev/null | grep -q org.freedesktop.timedate1')"; fi
+    ;;
+suspend|hibernate|reboot|poweroff)
+    case "$(logind)" in
+        systemd) exec systemctl "$1" ;;
+        elogind) exec loginctl "$1" ;;
+        *) echo "slate-init: nothing here can $1 for you (it needs systemd or elogind)" >&2; exit 1 ;;
+    esac ;;
+inhibit)
+    shift
+    case "$(logind)" in
+        systemd) exec systemd-inhibit "$@" ;;
+        elogind) if have elogind-inhibit; then exec elogind-inhibit "$@"; fi ;;
+    esac
+    # Nothing to hold them with: just the command (after the options)
+    while [ $# -gt 0 ]; do case "$1" in --*) shift ;; *) break ;; esac; done
+    [ $# -gt 0 ] && exec "$@"
+    exit 0 ;;
+service-active) service_active "${2:?which service}" ;;
+service-hint) service_hint "${2:?which service}" ;;
+service-swap-hint)
+    old=${2:?which one is running}; new=${3:?which one is wanted}
+    case "$INIT" in
+        systemd) echo "sudo systemctl disable $old && sudo systemctl enable $new" ;;
+        openrc) echo "sudo rc-update del $old default && sudo rc-update add $new default" ;;
+        runit) dirs=$(runit_dirs); echo "sudo rm ${dirs##* }/$old && sudo ln -s ${dirs%% *}/$new ${dirs##* }/" ;;
+        dinit) echo "sudo dinitctl disable $old && sudo dinitctl enable $new" ;;
+        *) echo "" ;;
+    esac ;;
+service-enable)
+    [ "$INIT" = systemd ] || exit 2
+    # shellcheck disable=SC2046
+    exec systemctl enable --now $(service_names "${2:?which service}") ;;
+display-manager)
+    if [ "$INIT" = systemd ]; then
+        dm=$(systemctl show -P Id display-manager.service 2>/dev/null || true)
+        case "$dm" in ""|display-manager.service) echo none ;; *) echo "${dm%.service}" ;; esac
+    elif [ "$INIT" = unknown ]; then echo unknown
+    else
+        for dm in greetd sddm gdm lightdm ly lxdm; do service_active "$dm" && { echo "$dm"; exit 0; }; done
+        echo none
+    fi ;;
+timedate)
+    prop() {
+        gdbus call --system --dest org.freedesktop.timedate1 --object-path /org/freedesktop/timedate1 \
+            --method org.freedesktop.DBus.Properties.Get org.freedesktop.timedate1 "$1" 2>/dev/null
+    }
+    yes_no() { case "$1" in *true*) echo yes ;; *) echo no ;; esac; }
+    service=no
+    [ "$INIT" = systemd ] || { "$0" info | grep -qx timedate=yes && service=yes; }
+    case "${2:-}" in
+    show)
+        if [ "$INIT" = systemd ]; then
+            timedatectl show -p Timezone -p NTP -p CanNTP; echo "CanSet=yes"
+        elif [ "$service" = yes ]; then
+            echo "Timezone=$(prop Timezone | sed -n "s/.*'\(.*\)'.*/\1/p")"
+            echo "NTP=$(yes_no "$(prop NTP)")"; echo "CanNTP=$(yes_no "$(prop CanNTP)")"; echo "CanSet=yes"
+        else
+            zone=$(readlink -f "$ROOT/etc/localtime" 2>/dev/null | sed -n 's|.*/zoneinfo/||p')
+            echo "Timezone=${zone:-}"; echo "NTP=no"; echo "CanNTP=no"; echo "CanSet=no"
+        fi ;;
+    zones)
+        if [ "$INIT" = systemd ]; then timedatectl list-timezones
+        elif [ -r "$ROOT/usr/share/zoneinfo/tzdata.zi" ]; then
+            awk '$1 == "Z" || $1 == "L" { print ($1 == "Z" ? $2 : $3) }' "$ROOT/usr/share/zoneinfo/tzdata.zi" | sort -u
+        else (cd "$ROOT/usr/share/zoneinfo" 2>/dev/null && find . -type f -path './[A-Z]*/*' ! -path './posix/*' ! -path './right/*' | sed 's|^\./||' | sort); fi ;;
+    set-zone)
+        if [ "$INIT" = systemd ]; then exec timedatectl set-timezone "${3:?which zone}"
+        elif [ "$service" = yes ]; then
+            gdbus call --system --dest org.freedesktop.timedate1 --object-path /org/freedesktop/timedate1 \
+                --method org.freedesktop.timedate1.SetTimezone "${3:?which zone}" true >/dev/null
+        else echo "slate-init: nothing here can set the time zone" >&2; exit 1; fi ;;
+    set-ntp)
+        if [ "$INIT" = systemd ]; then exec timedatectl set-ntp "${3:?true or false}"
+        elif [ "$service" = yes ]; then
+            gdbus call --system --dest org.freedesktop.timedate1 --object-path /org/freedesktop/timedate1 \
+                --method org.freedesktop.timedate1.SetNTP "${3:?true or false}" true >/dev/null
+        else echo "slate-init: nothing here can switch network time" >&2; exit 1; fi ;;
+    *) echo "slate-init timedate show|zones|set-zone <zone>|set-ntp true|false" >&2; exit 2 ;;
+    esac ;;
+*) sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0" >&2; exit 2 ;;
+esac

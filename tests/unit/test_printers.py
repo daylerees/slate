@@ -69,12 +69,12 @@ class List(PrintersCase):
     def test_several_printers(self):
         """Status, description, address, waiting jobs, accepting and the default, per printer."""
         self.cups()
-        self.json("list", expected={"service": "on", "printers": self.FOUR, "configTool": ""})
+        self.json("list", expected={"service": "on", "printers": self.FOUR, "configTool": "", "hint": ""})
 
     def test_no_default(self):
         self.cups(default=None)
         expected = [dict(p, default=False) for p in self.FOUR]
-        self.json("list", expected={"service": "on", "printers": expected, "configTool": ""})
+        self.json("list", expected={"service": "on", "printers": expected, "configTool": "", "hint": ""})
 
     def test_default_not_a_printer_here(self):
         """A default that names no printer in the list marks none of them."""
@@ -83,12 +83,12 @@ class List(PrintersCase):
 
     def test_none_at_all(self):
         self.cups(printers=False, default=None)
-        self.json("list", expected={"service": "on", "printers": [], "configTool": ""})
+        self.json("list", expected={"service": "on", "printers": [], "configTool": "", "hint": ""})
 
     def test_service_off(self):
         """CUPS installed but not running: no printers asked for."""
         self.cups(running=False)
-        self.json("list", expected={"service": "off", "printers": [], "configTool": ""})
+        self.json("list", expected={"service": "off", "printers": [], "configTool": "", "hint": ""})
         self.assertEqual(self.s.calls("lpstat"), [["-r"]])
 
     def test_service_on_from_systemd(self):
@@ -108,7 +108,7 @@ class List(PrintersCase):
 
     def test_cups_missing(self):
         self.s.add("lpstat", missing=True)
-        self.json("list", expected={"service": "missing", "printers": [], "configTool": ""})
+        self.json("list", expected={"service": "missing", "printers": [], "configTool": "", "hint": ""})
 
     def test_config_tool(self):
         self.cups(printers=False)

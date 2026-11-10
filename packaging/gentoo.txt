@@ -1,0 +1,70 @@
+# Slate packages for Gentoo (OpenRC; systemd Gentoo works too)
+# One atom per line. "?" = optional
+#
+# The installer doesn't run emerge for you (USE flags, overlays and long builds are yours to
+# decide): it shows this list. Hyprland 0.57+ comes from the hyproverlay overlay and Quickshell
+# from GURU. Without systemd, build with USE="elogind -systemd". Atoms are as far as we know
+# them; check with `emerge -p` (see docs/INSTALL.md).
+
+# Compositor and shell
+gui-wm/hyprland
+gui-apps/quickshell
+dev-qt/qtdeclarative:6
+dev-qt/qtshadertools:6
+
+# Scripts and images
+dev-lang/python
+dev-python/pillow
+dev-python/pygobject
+dev-python/numpy
+gnome-base/librsvg
+media-gfx/imagemagick
+gui-apps/wl-clipboard
+
+# System services Slate shows or controls
+media-video/pipewire
+media-video/wireplumber
+?dev-qt/qtmultimedia:6
+net-misc/networkmanager
+net-wireless/bluez
+sys-power/upower
+sys-auth/polkit
+sys-libs/pam
+sys-auth/elogind     # the login service: suspend, restart, lock before sleep, password prompts
+?app-admin/openrc-settingsd   # Settings → Date & Time can change the time zone
+sys-apps/util-linux
+sys-apps/diffutils
+sys-apps/dbus
+dev-libs/glib
+sys-process/procps
+x11-libs/libnotify
+media-libs/fontconfig
+net-misc/curl
+x11-misc/xdg-utils
+app-arch/unzip
+
+# Features
+gui-apps/grim
+gui-apps/slurp
+?gui-apps/hyprpicker
+app-misc/brightnessctl
+?sys-power/power-profiles-daemon
+?gui-apps/qt6ct
+x11-themes/papirus-icon-theme
+dev-vcs/git
+?gui-libs/greetd
+
+# Printing and scanning
+?net-print/cups
+?media-gfx/sane-backends
+?media-gfx/simple-scan
+
+# Emoji, your account picture, and extras
+media-fonts/noto-emoji
+sys-apps/accountsservice
+dev-util/pkgconf
+?sys-process/btop
+?media-video/ffmpeg
+?x11-misc/xdg-user-dirs
+?sys-apps/pciutils
+?media-tv/v4l-utils

@@ -12,8 +12,16 @@
 #   slate-greeter-sync --prompt  if the code is out of date, offer to update it (a
 #                                notification with an Update button, then your password).
 #                                Asks once per version of the code. Slate runs this.
+#   slate-greeter-sync --status  what Settings needs to offer installing it, one key=value a line:
+#                                state (as --check), greetd (yes/no: installed), dm (the
+#                                login manager that's running, none or unknown), enable (the
+#                                command that switches greetd on here), switch (the one that
+#                                switches from another login manager to it), used (yes/no:
+#                                greetd's config starts Slate's), backup (yes/no: there's a
+#                                setup to switch back to)
 set -euo pipefail
 
+GREETD_ETC="${SLATE_GREETD_ETC:-/etc/greetd}"               # overrides only for testing
 DEST="${SLATE_GREETER_DIR:-/var/lib/slate-greeter}"      # overrides only for testing
 CODE="${SLATE_GREETER_CODE:-/usr/local/share/slate-greeter}"
 SRC="$HOME/.config/slate"
@@ -50,6 +58,23 @@ state() {
 
 if [ "${1:-}" = "--check" ]; then state; exit 0; fi
 
+# Whether greetd is set to start Slate's login screen (not switched back with --revert)
+in_use() { grep -qs "slate-greeter" "$GREETD_ETC/config.toml"; }
+
+if [ "${1:-}" = "--status" ]; then
+    echo "state=$(state)"
+    if command -v greetd >/dev/null 2>&1 || [ -x /usr/bin/greetd ] || [ -x /usr/sbin/greetd ]; then echo "greetd=yes"; else echo "greetd=no"; fi
+    # (which login manager runs, and the command that switches greetd on: bin/slate-init,
+    # which knows systemd and the init systems used without it)
+    dm=$("$SRC/bin/slate-init" display-manager 2>/dev/null || echo unknown)
+    echo "dm=$dm"
+    echo "enable=$("$SRC/bin/slate-init" service-hint greetd 2>/dev/null || true)"
+    case "$dm" in none|greetd|unknown) echo "switch=" ;; *) echo "switch=$("$SRC/bin/slate-init" service-swap-hint "$dm" greetd 2>/dev/null || true)" ;; esac
+    if in_use; then echo "used=yes"; else echo "used=no"; fi
+    if [ -f "$GREETD_ETC/config.toml.before-slate" ]; then echo "backup=yes"; else echo "backup=no"; fi
+    exit 0
+fi
+
 # Whether the login screen's own code (not the shared files) or its keyboard layout has changed.
 # Takes the expected hyprland.lua (hypr_expected), so it's worked out once
 own_outdated() {   # own_outdated <expected hyprland.lua>
@@ -65,6 +90,7 @@ if [ "${1:-}" = "--prompt" ]; then
     # Only for the login screen's own changes (see SHARED); --check still reports any change
     expected=$(hypr_expected)
     own_outdated "$expected" || exit 0
+    in_use || exit 0              # switched back to another login screen: nothing to keep up to date
     # Ask once per version of its own code; "Later" (or dismissing it) waits a week
     asked="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-asked"
     snooze="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-later"

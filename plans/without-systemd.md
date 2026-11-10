@@ -1,6 +1,12 @@
 # Plan: Slate on systems without systemd
 
-Status: **planned** (2026-11-10). Nothing built yet.
+Status: **built for Artix, Void and Gentoo** (2026-11-10), against stand-ins: not yet tried
+on a real install of any of them, and the Artix test image (step 5) isn't made. Built:
+`bin/slate-init` and every call site moved to it, `Config.system` with the explanations in
+Settings and the panels, session start (D-Bus, PipeWire), the three package lists and the
+installer, docs. Differences from the plan: the login screen picks `systemctl` or
+`loginctl` inline (it has no `slate-init` in its root-owned copy); date and time go through
+`slate-init timedate` (timedatectl with systemd, the D-Bus service without).
 
 ## Goal
 

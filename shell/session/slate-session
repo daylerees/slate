@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start a Slate desktop: Hyprland with Slate's own config, under uwsm when it's installed.
+# Start a Slate desktop: Hyprland with Slate's own config, under uwsm where systemd runs and it's installed.
 # Installed as /usr/local/bin/slate-session by slate-session-install and listed on the
 # login screen as "Slate". Your normal Hyprland session (~/.config/hypr) is untouched.
 
@@ -14,7 +14,13 @@ done
 [ -n "$conf" ] || { echo "slate-session: Slate isn't installed for $USER" >&2; exit 1; }
 
 export SLATE_SESSION=1
-if command -v uwsm >/dev/null 2>&1; then
+# uwsm runs the session through systemd, so only where systemd is running
+if [ -d /run/systemd/system ] && command -v uwsm >/dev/null 2>&1; then
     exec uwsm start -e -D Hyprland -N Slate -C "Slate desktop on Hyprland" -- start-hyprland -- -c "$conf"
+fi
+# Without systemd nothing has started a D-Bus session bus yet (Slate, its notifications and
+# the tray all need one)
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ ! -d /run/systemd/system ] && command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session -- start-hyprland -- -c "$conf"
 fi
 exec start-hyprland -- -c "$conf"
