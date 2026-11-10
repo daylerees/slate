@@ -70,9 +70,19 @@ internet connection. Until then, Slate's own title bars are used." **Build and u
 - Already built for the running Hyprland and loaded → just switch, no build.
 - Otherwise run the build (step 5). The setting stays on Slate's until Hyprbars has loaded;
   then it switches to Hyprbars by itself (they asked for it; no second question).
-- **Remove Hyprbars** (Settings → Windows, shown when a Slate build exists and the style is
-  Slate's): deletes Slate's builds and their records. "Gone after your next restart"
-  (the loaded plugin can't be skipped mid-session, see step 4).
+- **Remove Hyprbars** (Settings → Windows, shown whenever a Slate build exists, whichever
+  style is in use; asks first):
+  - If the style is Hyprbars, switch it to Slate's straight away: every floating window,
+    on every floating workspace, changes to Slate's title bars now (Hyprbars' bars are
+    hidden with the same rule that hides them when Slate's style is chosen), not after the
+    restart.
+  - This is the user's own choice, so no fallback note is written and no "Switch back?"
+    question follows; a note left from an earlier fallback is removed.
+  - Stop a build that's running, then delete Slate's builds, their records and the build
+    state.
+  - The plugin itself stays loaded, unused, until Hyprland starts again (it can't be
+    skipped mid-session, see step 4): "Removed. Fully gone after your next restart".
+  - Hyprbars goes back to "not built"; choosing it again asks as in step 2.
 
 ### 3. Builds are named for their Hyprland (`shell/bin/slate-build-hyprbars`)
 - Build for the **installed** Hyprland and install as
@@ -214,7 +224,7 @@ Plus **Remove Hyprbars** (step 2). Search entries in `SettingsIndex.qml` ("title
 | 25 | Distro package of hyprbars doesn't match | Slate's bars; notice to update the package or build Slate's. |
 | 26 | NixOS | Slate's bars, or Nix's hyprbars; never a Slate build. |
 | 27 | Game mode on | Build waits until it ends. |
-| 28 | Remove Hyprbars | Builds deleted; "Gone after your next restart". |
+| 28 | Remove Hyprbars | Style switches to Slate's and every floating window gets Slate's bars at once; builds deleted; no switch-back question; "Fully gone after your next restart". |
 | 29 | Hyprland downgraded | Same as updated (7 or 12). |
 | 30 | Test mode | No checks, questions, builds or notifications. |
 
@@ -228,7 +238,9 @@ Plus **Remove Hyprbars** (step 2). Search entries in `SettingsIndex.qml` ("title
   another Hyprland is never passed to `hl.plugin.load`.
 - **Live** (stub `slate-build-hyprbars`; state in the `test` IPC target:
   `titleBars: slate|hyprbars`, `hyprbars: none|building|built|ready|loaded|stale|failed`,
-  `hyprbarsFallback`): scenarios 1, 4 to 14, 17, 18, 20, 22, 23, 27, 30. A stale build in
+  `hyprbarsFallback`): scenarios 1, 4 to 14, 17, 18, 20, 22, 23, 27, 28, 30
+  (28: with Hyprbars in use on two floating workspaces, Remove → `titleBars: slate`, Slate's
+  bar on the topmost floating window, Hyprbars' bars hidden, builds gone, no fallback note). A stale build in
   the scratch HOME → the Hyprland log has no "Failed to load plugin". The settings
   migration (2, 3) as a unit test of whatever does it.
 - **Visual**: the three questions (use Hyprbars, needs rebuilding, switch back) and the
