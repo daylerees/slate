@@ -29,11 +29,60 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.26.0">v0.26.0</a><a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.27.0">v0.27.0</a><a href="#v0.26.0">v0.26.0</a><a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.27.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.27.0 <time datetime="2026-11-10">10 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Window modes.</strong> Besides tiling and floating, windows can now be arranged as a Side Stack (one main window, the rest beside it), Scrolling (columns on a strip that scrolls sideways), Stacking (one window at a time, the others behind it) or Solo (every window on a workspace of its own). Settings → Windows sets the default, and Super+J and the focus keys follow the mode you're in.</li>
+        <li><strong>A mode for each workspace.</strong> A new button beside the workspace dots shows the mode of the workspace you're on; its panel gives that workspace a mode of its own. Changing the default with windows open asks whether to tidy every workspace into the new mode or leave them as they are. Spaces remember each workspace's mode.</li>
+        <li><strong>Name your workspaces.</strong> The pencil on that panel names a workspace ("Coding", "Music"). The name takes the place of "Workspace 3" in the workspace switcher, the bar and the Spaces panel, stays while the workspace is around, and is saved with a Space.</li>
+        <li><strong>Slate Bars: Slate's own title bars, now the default.</strong> Floating windows get a title bar Slate draws itself, on the window in front: nothing to build, and nothing that breaks when Hyprland updates. Hyprbars (the plugin, with a bar on every floating window) is now an option you choose in Settings → Windows, which explains what's involved and builds it for you. If you already had Hyprbars working, you keep it.</li>
+        <li><strong>Hyprbars looks after itself across Hyprland updates.</strong> A build made for another Hyprland is never loaded, so there are no more red errors at login. Slate switches to Slate Bars, asks whether to rebuild, offers a reload when it's done, then asks whether to switch back. If Hyprland was updated but not yet restarted, it offers to rebuild ahead of time.</li>
+        <li><strong>Ten wallpapers of Slate's own</strong>, in 4K: soft glows of colour over a deep base, each with Slate's mark in the middle or plain. Ember, Iris, Lagoon and Blossom in mixed colours; Fern, Cobalt, Ruby, Honey, Graphite and Mist in single ones. They're listed below your own pictures in Settings → Appearance (a switch hides them), and are drawn without colour banding.</li>
+        <li><strong>More ways to switch.</strong> The window switcher and the workspace switcher each have a choice of animations (slide, hop, wheel, tilt, orbit, deck, fan or instant), and the workspace switcher can be a grid. Holding Super, the arrow keys move through the window switcher.</li>
+        <li><strong>Dock hover effects.</strong> Magnify, tilt, fade, glow or raise (Settings → Dock). Window previews fade in from their icon, scroll sideways when there are many, and can appear instantly: a switch turns them on or off, and a slider sets the wait (now 0.2 s by default).</li>
+        <li><strong>The login screen is opt-in.</strong> Installing Slate no longer touches your login screen. Settings → Lock &amp; Idle has Install (with a plain account of the risks), Update and Switch back.</li>
+        <li><strong>App Theming knows more about each app.</strong> A description, its website, an Install or Open button, and whether it's installed. Flatpak builds of Discord, VS Code, Zed, Helix, Neovim, zathura, WezTerm, Text Editor and Firefox are themed too.</li>
+        <li><strong>Themes that survive app updates.</strong> When a Spotify or Discord update removes Slate's theme (Spicetify's and Vencord's patches), Slate notices within a few minutes, puts it back and tells you to restart the app.</li>
+        <li><strong>Without systemd: Artix, Void and Gentoo.</strong> Slate now runs where elogind stands in for systemd. This is new and hasn't been tried on real installs yet: docs/INSTALL.md says what's needed and what's different (Slate shows you the command to switch a service on rather than doing it).</li>
+        <li><strong>A warmer voice.</strong> The Welcome window, questions, notifications and empty screens are friendlier, and the Welcome window follows your theme (glass included), lets you choose Glass or flat, and explains what the Super key is.</li>
+        <li><strong>Smaller things:</strong> a note in the middle of the screen when the secret workspace is empty; a themed Slate logo as the session fades in; removing a startup app asks first; every question in Settings uses Slate's main confirmation window.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Tray icons no longer go missing</strong> for apps such as Mullvad after Slate reloads or at login.</li>
+        <li><strong>No more flash of the default colours</strong> when Slate reloads: your settings and the wallpaper's colours are in place before anything is drawn.</li>
+        <li><strong>Pressing Print Screen repeatedly</strong> opened a new area chooser each time, dimming the screen further with every press. Only one opens now.</li>
+        <li><strong>A config error at login when Hyprbars wasn't loaded</strong> is gone.</li>
+        <li><strong>Switching windows now and then did nothing</strong> when the computer was busy: the switcher asked Hyprland to focus the window a moment too early. It checks and asks again.</li>
+        <li><strong>Windows opened on a floating workspace stayed floating</strong> when that workspace went back to tiling. They're tiled again now.</li>
+        <li>The menu bar's icons are all drawn the same height and lined up; the window mode button sits closer to its neighbours.</li>
+        <li>Hyprbars' top edge resizes the window.</li>
+        <li>The diagonal resize cursors point the right way.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>"Master &amp; stack" is now called Side Stack, and "Monocle" is Stacking.</li>
+        <li>The installer no longer builds Hyprbars. If you choose it, building needs a compiler, git, Hyprland's headers and a connection.</li>
+        <li>Slate's wallpapers add about 46 MB to a download of Slate.</li>
+        <li>Slate is an early preview: you may run into bugs. Please report them in <a href="https://github.com/daylerees/slate/issues">GitHub issues</a>.</li>
+        <li>Updating may ask twice for your password: once for the login session's start script, and (if you use Slate's login screen) once for the login screen.</li>
+        <li>Heads-up: with today's Arch packages, one test screenshot (an emoji in the emoji picker) still draws slightly differently, as in v0.26.0. That check ran earlier today, before this release's changes went in.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.26.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.26.0 <time datetime="2026-11-10">10 November 2026</time></h2>
   <div class="cl-grid">
