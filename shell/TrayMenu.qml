@@ -87,16 +87,12 @@ PanelWindow {
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
         // Pointer to the icon, on the side facing the bar (as on the dock's menus)
-        Rectangle {
-            readonly property real along: menuBox.sideBar
+        MenuPointer {
+            edge: menuBox.edge
+            along: menuBox.sideBar
                 ? Math.max(18, Math.min(parent.height - 18, tm.anchorY - parent.y))
                 : Math.max(18, Math.min(parent.width - 18, tm.anchorX - parent.x))
-            z: -1
-            width: 14; height: 14
-            rotation: 45
             color: parent.color
-            x: menuBox.edge === "left" ? -width / 2 : menuBox.edge === "right" ? parent.width - width / 2 : along - width / 2
-            y: menuBox.edge === "top" ? -height / 2 : menuBox.edge === "bottom" ? parent.height - height / 2 : along - height / 2
         }
 
         // The rows, scrolling when the menu is taller than the screen allows (long menus from

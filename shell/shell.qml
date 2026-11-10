@@ -890,7 +890,7 @@ ShellRoot {
                 if (!sl || sl.item.windows.length === 0 || win.previewMode === "off") return;
                 win.previewApp = sl.item;
                 const x = (strip.width - win.restWidth) / 2 + win.slotStart(sl.at) + win.base / 2;
-                const p = strip.mapToItem(win.contentItem, x, bg.y - 16);
+                const p = strip.mapToItem(win.contentItem, x, win.previewEdge());
                 const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
                 previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
                 previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
@@ -968,11 +968,14 @@ ShellRoot {
             else if (pointedApp) previewDwell.restart();
             else { previewDwell.stop(); previewLeave.restart(); }
         }
+        // Where window previews sit (strip coordinates): a little above the top of a magnified icon,
+        // or above the dock when icons don't grow that far
+        function previewEdge() { return Math.min(bg.y - 16, row.y + row.height - base * maxScale - 12); }
         function showPreview() {
             const sl = slots.find(o => o.kind === "app" && pointedApp && o.item.key === pointedApp.key);
             if (!sl) return;
             previewApp = sl.item;
-            const p = strip.mapToItem(win.contentItem, row.x + cellX(sl.at) + base * scaleAt(sl.at) / 2, bg.y - 16);
+            const p = strip.mapToItem(win.contentItem, row.x + cellX(sl.at) + base * scaleAt(sl.at) / 2, win.previewEdge());
             const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
             previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
@@ -1253,20 +1256,14 @@ ShellRoot {
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
                 // Pointer: a small triangle on the side facing the dock, at the icon (it slides along
-                // the edge to stay on the icon when the menu is held in from the screen's edge). A
-                // turned square under the menu, so only its point shows.
-                Rectangle {
-                    readonly property bool sideDock: win.edge === "left" || win.edge === "right"
-                    // Where the icon is along the menu's edge, kept clear of the rounded corners
-                    readonly property real along: sideDock
+                // the edge to stay on the icon when the menu is held in from the screen's edge),
+                // kept clear of the rounded corners
+                MenuPointer {
+                    edge: win.edge
+                    along: win.edge === "left" || win.edge === "right"
                         ? Math.max(18, Math.min(parent.height - 18, appMenu.menuY - parent.y))
                         : Math.max(18, Math.min(parent.width - 18, appMenu.menuX - parent.x))
-                    z: -1
-                    width: 14; height: 14
-                    rotation: 45
                     color: parent.color
-                    x: win.edge === "left" ? -width / 2 : win.edge === "right" ? parent.width - width / 2 : along - width / 2
-                    y: win.edge === "top" ? -height / 2 : win.edge === "bottom" ? parent.height - height / 2 : along - height / 2
                 }
 
                 Column {
