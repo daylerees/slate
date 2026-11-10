@@ -69,7 +69,7 @@ PanelWindow {
     }
     function wrong(msg) {
         busy = false;
-        error = msg || "Wrong password, try again";
+        error = msg || "That password didn't match. Please try again";
         password.text = "";
         shake.restart();
         password.forceActiveFocus();
@@ -168,7 +168,7 @@ PanelWindow {
                 Text {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
-                    text: "Authentication required"
+                    text: "Your password, please"
                     color: root.textColor
                     font.family: root.fontFamily
                     font.pixelSize: 18

@@ -193,6 +193,17 @@ Singleton {
     // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
     function separateBarAndDock() { if (s.dockPosition === s.barPosition) s.dockPosition = opposite(s.barPosition); }
     Component.onCompleted: {
+        // Settings and the wallpaper's colours are in place before anything is drawn, so a
+        // reload starts in the right colours rather than the defaults (see loadColourCache)
+        const saved = file.text();
+        titleBarStyleUnset = saved !== "" && saved.indexOf('"titleBarStyle"') < 0;
+        // The dock's window previews: a delay of 0 used to mean "off"; now it means "at once",
+        // and there's a switch. Settings from before the switch with 0 keep them off
+        if (saved !== "" && saved.indexOf('"dockPreviews"') < 0 && s.dockPreviewDelay <= 0) {
+            s.dockPreviews = false;
+            s.dockPreviewDelay = defaults.dockPreviewDelay;
+        }
+        loadColourCache();
         Qt.callLater(separateBarAndDock);
         clickAvailable = effect("click") !== null;        // Slate's sounds, below
     }
@@ -206,12 +217,31 @@ Singleton {
     }
     // Light mode isn't finished: moving off Dark asks first (Settings → Appearance, the welcome).
     // Remove this, and the questions, once it is
+    // Two finished looks (Settings → Appearance → Preset, and the Welcome window's "Glass or
+    // flat?"): what each sets
+    readonly property var lookPresets: ({
+        "Liquid Glass": {
+            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
+            toneFromWallpaper: true, toneBoldness: 0.5,
+            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" },
+        "Metro Flat": {
+            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.4, accent: "#8fb3e8",
+            toneFromWallpaper: true, toneBoldness: 0.5,
+            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" }
+    })
+    // One of them for its look alone: the theme (dark, light or auto) and the accent stay as
+    // they are (the Welcome window, where those are chosen on the page before)
+    function applyLook(name) {
+        const p = lookPresets[name];
+        if (!p) return;
+        for (const k in p) if (k !== "themeMode" && k !== "accent" && k !== "accentFromWallpaper") s[k] = p[k];
+    }
     readonly property bool lightModeAsks: true
     function lightModeQuestion(m) {
         return {
             title: m === "light" ? "Switch to light mode?" : "Use light mode by day?",
-            body: "Light mode is still being polished, so some parts may not look as good as they do in dark mode yet. "
-                + "You can switch back to Dark at any time.",
+            body: "Light mode is still being polished, so a few parts may not look quite as good as they do in dark mode just yet. "
+                + "You're welcome to switch back to Dark at any time.",
             button: m === "light" ? "Use Light" : "Use Auto"
         };
     }
@@ -322,8 +352,10 @@ Singleton {
         if (s.touchpadTapToClick !== "") t.push(`tp_tap = ${onOff(s.touchpadTapToClick)}`);
         if (gameMode) t.push(`tp_dwt = false`);             // game mode: the touchpad works while you type
         else if (s.touchpadIgnoreWhileTyping !== "") t.push(`tp_dwt = ${onOff(s.touchpadIgnoreWhileTyping)}`);
-        // Focus: follows the pointer (1), or a click, with scrolling still reaching the window under it (2)
-        if (s.focusFollowsMouse !== "") t.push(`follow_mouse = ${s.focusFollowsMouse === "on" ? 1 : 2}`);
+        // Focus: follows the pointer (1), or a click, with scrolling still reaching the window under it (2).
+        // With Slate's own title bars, always a click (the setting's kept, and hidden meanwhile)
+        if (clickToFocus) t.push(`follow_mouse = 2`);
+        else if (s.focusFollowsMouse !== "") t.push(`follow_mouse = ${s.focusFollowsMouse === "on" ? 1 : 2}`);
         if (s.cursorSize > 0) t.push(`cursor_size = ${s.cursorSize}`);
         if (gameMode) t.push(`animations = "off"`);          // game mode: no animations
         else if (s.animations !== "") t.push(`animations = ${q(s.animations)}`);
@@ -371,6 +403,22 @@ Singleton {
             case "activelayout":                 // the keyboard layout switched
                 kbActiveLater.restart();
                 break;
+            case "activespecial": {              // a secret workspace shown or hidden: "special:name,monitor"
+                const i = event.data.lastIndexOf(",");
+                const o = Object.assign({}, root.specialOpen);
+                o[event.data.slice(i + 1)] = event.data.slice(0, i);
+                root.specialOpen = o;
+                break;
+            }
+            case "destroyworkspacev2": {         // a workspace is gone ("id,name"): so is its name
+                const gone = event.data.split(",")[0];
+                if (root.workspaceNames[gone] !== undefined) {
+                    const m = Object.assign({}, root.workspaceNames);
+                    delete m[gone];
+                    root.saveWorkspaceNames(m);
+                }
+                break;
+            }
             case "configreloaded":               // Hyprland reloaded: settings it lost go back
                 hyprPush.restart();
                 kbLater.restart();
@@ -378,6 +426,30 @@ Singleton {
                 roundingProc.running = false; roundingProc.running = true;
                 root.hyprConfigReloaded();
                 break;
+            }
+        }
+    }
+
+    // ---- The secret (special) workspace: which is showing on each monitor ("" = hidden) ----
+    // From Hyprland's events (above); for the launcher (apps open there while it shows) and
+    // the note that says it's empty (SecretEmpty.qml)
+    property var specialOpen: ({})
+    // Showing on this monitor, with no windows on it
+    function secretEmpty(monitor) {
+        const name = specialOpen[monitor] || "";
+        return name !== "" && !Hyprland.toplevels.values.some(t => t.workspace && t.workspace.name === name);
+    }
+    Process {
+        // Already showing when Slate starts
+        running: true
+        command: ["hyprctl", "monitors", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const o = {};
+                    for (const m of JSON.parse(text)) o[m.name] = (m.specialWorkspace && m.specialWorkspace.name) || "";
+                    root.specialOpen = o;
+                } catch (e) {}
             }
         }
     }
@@ -446,6 +518,32 @@ Singleton {
     // (both started from the Hyprland events handler above)
 
     // ---- Lid and power button (Settings → Power) --------------------------------------
+    // ---- What this computer can do (bin/slate-init info) -----------------------------------
+    // Slate runs with systemd, and without it where elogind is (Artix, Void, Gentoo…). With
+    // neither (seatd alone, say) it still runs, but nothing can suspend, restart or shut down
+    // for it, tell it the computer's about to sleep, or hold the lid and power button: those
+    // are left out, or shown greyed with why. Assumed all there until slate-init has answered
+    // (and on the login screen, which doesn't ask).
+    property var system: ({ init: "systemd", logind: "systemd", suspend: "yes", power: "yes", inhibit: "yes", timedate: "yes" })
+    readonly property bool canSuspend: system.suspend !== "no"
+    readonly property bool canPowerOff: system.power !== "no"          // restart and shut down
+    readonly property bool canInhibit: system.inhibit !== "no"         // hold sleep, the lid, the power button
+    readonly property bool hasLogind: system.logind !== "none"         // told when the computer's about to sleep
+    readonly property string noLogindNote: "This needs systemd or elogind, and neither is running on this computer"
+    Process {
+        // (not in the tests: their container has no init system, and they say what they want
+        // through the `test` IPC target)
+        running: !root.isLoginScreen && !root.testMode
+        command: [Quickshell.shellPath("bin/slate-init"), "info"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const o = {};
+                for (const line of text.split("\n")) { const i = line.indexOf("="); if (i > 0) o[line.slice(0, i)] = line.slice(i + 1).trim(); }
+                if (o.init) root.system = o;
+            }
+        }
+    }
+
     // When an action is chosen, the system's own handling (logind) is held back while Slate
     // runs, and Hyprland does the action (slate.lua). Restarted when the choice changes.
     readonly property string inhibitWhat: [s.lidAction !== "" ? "handle-lid-switch" : "", s.powerKeyAction !== "" ? "handle-power-key" : ""]
@@ -453,11 +551,12 @@ Singleton {
     onInhibitWhatChanged: { inhibitor.running = false; inhibitRestart.restart(); }
     // Not on the login screen: nothing there does the action, so holding the system's own handling
     // back left the lid (or power button) doing nothing
-    Timer { id: inhibitRestart; interval: 200; onTriggered: inhibitor.running = root.inhibitWhat !== "" && !root.isLoginScreen }
+    Timer { id: inhibitRestart; interval: 200; onTriggered: inhibitor.running = root.inhibitWhat !== "" && !root.isLoginScreen && root.canInhibit }
+    onCanInhibitChanged: inhibitRestart.restart()
     Process {
         id: inhibitor
         running: false
-        command: ["systemd-inhibit", "--what=" + root.inhibitWhat, "--who=Slate", "--why=Slate handles the lid and power button (Settings → Power)",
+        command: [Quickshell.shellPath("bin/slate-init"), "inhibit", "--what=" + root.inhibitWhat, "--who=Slate", "--why=Slate handles the lid and power button (Settings → Power)",
                   "--mode=block", "sleep", "infinity"]
     }
 
@@ -586,17 +685,19 @@ Singleton {
     Process {
         id: tileAllRun
         command: [root.tileScript, "--tile-all", root.tileDir, "192"].concat(root.tileStyle)
-        onExited: { root.tileVersion++; if (root.s.iconTileColour) iconColoursSoon.restart(); }
+        onExited: { root.tileVersion++; if (root.iconColoursWanted) iconColoursSoon.restart(); }
     }
 
     // ---- Tiles in each icon's colour (Settings → Appearance → App icons) ------------------
     // appicon.py --colours notes each drawn icon's main colour (colours.json in the tiles
     // folder); the tile behind an icon (IconPlate.qml) then takes a deep shade of it
     readonly property string iconColoursPath: tileDir + "/colours.json"
+    // Wanted for coloured tiles, and for the dock's glow (Settings → Dock → Hover effect)
+    readonly property bool iconColoursWanted: s.iconTileColour || s.dockHoverEffect === "glow" || s.dockHoverEffect === "glowmagnify"
     property var iconColours: ({})                 // icon file name → "#rrggbb"
     FileView {
         id: iconColoursFile
-        path: root.s.iconTileColour ? root.iconColoursPath : ""
+        path: root.iconColoursWanted ? root.iconColoursPath : ""
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
@@ -609,9 +710,9 @@ Singleton {
         }
         onLoadFailed: iconColoursSoon.restart()      // not made yet
     }
-    Timer { id: iconColoursSoon; interval: 1500; onTriggered: if (root.s.iconTileColour) { iconColoursRun.running = false; iconColoursRun.running = true; } }
+    Timer { id: iconColoursSoon; interval: 1500; onTriggered: if (root.iconColoursWanted) { iconColoursRun.running = false; iconColoursRun.running = true; } }
     Process { id: iconColoursRun; command: [root.tileScript, "--colours", root.tileDir, root.iconColoursPath] }
-    Connections { target: root.s; function onIconTileColourChanged() { if (root.s.iconTileColour) iconColoursSoon.restart(); } }
+    onIconColoursWantedChanged: if (iconColoursWanted) iconColoursSoon.restart()
     // An icon with no colour noted yet (an app just drawn): look again, at most every 30 s each
     property var iconColourAsked: ({})
     function askIconColour(app) {
@@ -852,36 +953,255 @@ Singleton {
         }
     }
 
-    // Floating window mode needs title bars: the hyprbars plugin loaded, with Slate's patch
-    // (it adds idle_button_color). Without them Slate stays tiling and Settings hides the
-    // choice. The saved setting is kept, so floating comes back once hyprbars is (re)built,
-    // e.g. after a Hyprland update stops the old build loading. Rechecked when Hyprland's
-    // config reloads (shell.qml).
-    property bool titleBarsAvailable: false
-    readonly property bool floatingWindows: s.windowMode === "floating" && titleBarsAvailable
-    function checkTitleBars() { titleBarsCheck.running = true; }
-    Process {
-        id: titleBarsCheck
-        running: true
-        command: ["sh", "-c", "hyprctl plugin list -j | grep -q '\"name\": *\"hyprbars\"' "
-            + "&& hyprctl getoption plugin:hyprbars:idle_button_color -j | grep -q '\"option\"'"]
-        onExited: code => root.titleBarsAvailable = code === 0
+    // ---- Title bars on floating windows (Settings → Windows → Title bars) -------------------
+    // Slate's own (TitleBar.qml) are the default: Slate draws them, so there's nothing to build
+    // and nothing that breaks when Hyprland updates. Hyprbars, a Hyprland plugin Slate builds, is
+    // the option: a bar on every floating window, but it has to be rebuilt for every new
+    // Hyprland. Whenever Hyprbars can't be used, Slate's are, so floating windows always have
+    // title bars. HyprbarsWatch.qml keeps `hyprbars` up to date and does the asking.
+    property var hyprbars: ({})              // what slate-build-hyprbars --status says (its keys)
+    property bool hyprbarsKnown: false       // …once it has said it
+    // (after Remove Hyprbars it stays in the running Hyprland until that restarts, unused)
+    readonly property bool hyprbarsLoaded: hyprbars.loaded === "yes" && hyprbars.removed !== "yes"
+    // Slate's title bars are in use: chosen, or Hyprbars is chosen but isn't loaded (whatever the
+    // settings file says: a Spaces restore, a hand-edited file, a build that failed)
+    readonly property bool slateTitleBars: s.titleBarStyle !== "hyprbars" || (hyprbarsKnown && !hyprbarsLoaded)
+    // The Hyprland that's running, and the one that's installed (they differ between a package
+    // update and the next restart; a build is always for the installed one)
+    readonly property string hyprbarsRunning: hyprbars.runningCommit || hyprbars.running || ""
+    readonly property string hyprbarsInstalled: hyprbars.installedCommit || hyprbars.installed || hyprbarsRunning
+    readonly property bool hyprlandUpdated: hyprbarsRunning !== "" && hyprbarsInstalled !== hyprbarsRunning
+    // Where Hyprbars stands, for Settings:
+    //   none      never built (and no distro package)
+    //   building  being built now
+    //   loaded    in the running Hyprland
+    //   ready     built for the running Hyprland, loads at the next Hyprland reload
+    //   stale     built for another Hyprland: needs rebuilding
+    //   failed    the last build failed (hyprbars.error says why)
+    //   system    a distro's package is there but didn't load
+    //   removed   removed, but still in the running Hyprland until that restarts
+    readonly property string hyprbarsState: !hyprbarsKnown ? ""
+        : hyprbars.state === "building" ? "building"
+        : hyprbarsLoaded ? "loaded"
+        : hyprbars.build === "yes" ? "ready"
+        : hyprbars.state === "failed" ? "failed"
+        : hyprbars.any === "yes" ? "stale"
+        : hyprbars.removed === "yes" ? "removed"
+        : hyprbars.system === "yes" ? "system"
+        : "none"
+    // Asked of HyprbarsWatch.qml (Settings → Windows): use Hyprbars (asks first, with its risks,
+    // and builds it if need be); build it again; reload Hyprland to load a finished build;
+    // remove it; look again
+    signal hyprbarsChoose()
+    signal hyprbarsRebuild()
+    signal hyprbarsReload()
+    signal hyprbarsRemove()
+    signal hyprbarsCheck()
+    // Slate switched from Hyprbars to its own title bars because Hyprbars couldn't load (it asks
+    // whether to switch back once it can): for Settings and the tests
+    property bool hyprbarsFallback: false
+    // The settings file is from before there was a title bar setting: someone with Hyprbars
+    // working keeps it, rather than getting the new default (HyprbarsWatch.qml)
+    property bool titleBarStyleUnset: false
+    function checkTitleBars() { hyprbarsCheck(); }
+    property string titleBarOn: ""          // the window Slate's title bar is showing on (its address; for the tests)
+    property bool titleBarAway: false       // ...and it's stepped away while the window's moved by something else (tests)
+    // Floating windows with Slate's own title bars: a window takes focus when it's clicked, not
+    // when the pointer passes over it (focus moving on its own would leave the bar on a window
+    // that isn't the one you're using). Overrides the setting without changing it; when it
+    // ends and the setting isn't Slate's, Hyprland's config is read again for its own value
+    readonly property bool clickToFocus: anyFloating && slateTitleBars
+    onClickToFocusChanged: if (!clickToFocus && s.focusFollowsMouse === "") hyprReload.restart()
+    // Maximising with Slate's title bars (the bar's button, double-click, Super+D): the title bar
+    // on that window's screen does it; where each window was before, to put it back
+    signal titleBarMaximise(string address)
+    property var titleBarRestore: ({})
+    // The focused workspace is floating (each workspace can have its own mode: below)
+    readonly property bool floatingWindows: focusedMode === "floating"
+    // The window modes (Settings → Windows): Hyprland's layouts, and floating (every window
+    // floats over dwindle, which a window tiled with Super+Alt+Space then uses). ink: how much of
+    // its icon's height is drawn (measured), so the menu bar can draw each the same visible height
+    readonly property var windowModes: [
+        { value: "tiling", label: "Tiling", icon: 0xEF94, ink: 0.75, layout: "dwindle" },
+        { value: "master", label: "Side Stack", icon: 0xEAD9, ink: 0.75, layout: "master" },
+        { value: "scrolling", label: "Scrolling", icon: 0xF659, ink: 0.667, layout: "scrolling" },
+        { value: "monocle", label: "Stacking", icon: 0xEAEA, ink: 0.75, layout: "monocle" },
+        // Solo: one window per workspace, filling it (a lone tile does); a second one moves on to
+        // a new workspace of its own (windowrules.lua)
+        { value: "solo", label: "Solo", icon: 0xEFE6, ink: 0.667, layout: "dwindle" },
+        { value: "floating", label: "Floating", icon: 0xEE17, ink: 0.833, layout: "dwindle" }
+    ]
+    // A mode that can be used: an unknown one is tiling
+    function usableMode(v) {
+        const m = windowModes.find(x => x.value === v);
+        return m ? m.value : "tiling";
     }
+    // The default window mode (Settings → Windows), for every workspace without one of its own
+    readonly property string windowMode: usableMode(s.windowMode)
 
+    // ---- Each workspace's own mode (the menu bar's workspace indicator) ----------------------
+    // Workspace id → mode, for the ones set; the rest follow the default. Kept for this Hyprland
+    // session in the runtime folder (so it survives Slate reloading and restarting, and Spaces
+    // can read it: scripts/spaces.py), not in Settings: workspaces come and go
+    readonly property string workspaceModesPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/workspace-modes-"
+        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    FileView { id: workspaceModesFile; path: root.workspaceModesPath; blockLoading: true; printErrors: false }
+    property var workspaceModes: {
+        try { const m = JSON.parse(workspaceModesFile.text() || "{}"); return m && typeof m === "object" ? m : {}; }
+        catch (e) { return {}; }
+    }
+    function workspaceMode(id) {
+        const own = workspaceModes[String(id)];
+        return own ? usableMode(own) : windowMode;
+    }
+    readonly property int focusedWorkspaceId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
+    readonly property string focusedMode: workspaceMode(focusedWorkspaceId)
+    // Any workspace floating (title bars, click to focus)
+    readonly property bool anyFloating: windowMode === "floating"
+        || Object.keys(workspaceModes).some(k => workspaceMode(k) === "floating")
+    // Set (mode "" or the default: back to following it) and apply at once: Hyprland floats
+    // or re-tiles that workspace's windows (setWorkspaceMode, windowrules.lua)
+    function setWorkspaceMode(id, mode) {
+        if (id <= 0) return;
+        const m = Object.assign({}, workspaceModes);
+        if (!mode || mode === windowMode) delete m[String(id)];
+        else m[String(id)] = mode;
+        workspaceModes = m;
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceModesPath]);
+        workspaceModesFile.setText(JSON.stringify(m));
+        Quickshell.execDetached(["hyprctl", "dispatch",
+            `function() SLATE_TITLEBARS = ${slateTitleBars}; WINDOW_MODE = "${windowMode}"; if setWorkspaceMode then setWorkspaceMode(${id}, "${m[String(id)] || ""}") end end`]);
+    }
+    // ---- Each workspace's own name (the pencil on the window mode panel) -----------------
+    // "Coding" in place of "Workspace 3", everywhere Slate would show the number. Kept like the
+    // modes above (the runtime folder, for this Hyprland session: it survives Slate reloading,
+    // and Spaces reads it), but a name describes what's on the workspace, so it goes when
+    // Hyprland removes the workspace (its last window closed and you've moved off it).
+    // Slate keeps it itself rather than renaming Hyprland's workspace: Hyprland's own name is
+    // what its config and other tools match on.
+    readonly property int workspaceNameLimit: 20
+    readonly property string workspaceNamesPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/workspace-names-"
+        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    FileView { id: workspaceNamesFile; path: root.workspaceNamesPath; blockLoading: true; printErrors: false }
+    property var workspaceNames: {
+        try { const m = JSON.parse(workspaceNamesFile.text() || "{}"); return m && typeof m === "object" ? m : {}; }
+        catch (e) { return {}; }
+    }
+    function workspaceName(id) { const n = workspaceNames[String(id)]; return typeof n === "string" ? n : ""; }
+    // What to call a workspace: its name, or "Workspace 3". Every place that shows one uses this
+    function workspaceLabel(id) { return workspaceName(id) || workspaceNumber(id); }
+    function workspaceNumber(id) { return "Workspace " + id; }      // (what it's called without a name)
+    function saveWorkspaceNames(m) {
+        workspaceNames = m;
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceNamesPath]);
+        workspaceNamesFile.setText(JSON.stringify(m));
+    }
+    // Name it (an empty name: back to its number)
+    function setWorkspaceName(id, name) {
+        if (!(id > 0)) return;
+        const m = Object.assign({}, workspaceNames);
+        const n = String(name || "").replace(/\s+/g, " ").trim().slice(0, workspaceNameLimit).trim();
+        if (n === "") delete m[String(id)];
+        else m[String(id)] = n;
+        saveWorkspaceNames(m);
+    }
+    // Forget the names of workspaces that are gone. Not before Hyprland's list is in (just
+    // after Slate starts or reloads it's empty for a moment, which would forget them all), and
+    // a moment after a change, since a workspace can blink out while its windows move
+    Timer {
+        id: workspaceNamesPrune
+        interval: 1500
+        onTriggered: {
+            const live = Hyprland.workspaces.values.filter(w => w.id > 0).map(w => String(w.id));
+            if (live.length === 0) return;
+            const m = {};
+            let gone = false;
+            for (const k in root.workspaceNames) { if (live.includes(k)) m[k] = root.workspaceNames[k]; else gone = true; }
+            if (gone) root.saveWorkspaceNames(m);
+        }
+    }
+    Connections { target: Hyprland.workspaces; function onValuesChanged() { if (Object.keys(root.workspaceNames).length > 0) workspaceNamesPrune.restart(); } }
+
+    // Changing the default mode (Settings → Windows) can shift every workspace in use to it.
+    // These are the ones that would change: with windows open, in another mode (the default
+    // they follow, or one of their own)
+    function workspacesNotIn(v) {
+        return Hyprland.workspaces.values.filter(w => w.id > 0 && workspaceMode(w.id) !== v
+            && (w.toplevels?.values?.length ?? 0) > 0).map(w => w.id);
+    }
+    // Change the default. tidy: every workspace takes the new mode, those with a mode of their
+    // own included (they go back to following the default), and their windows are rearranged.
+    // Otherwise the workspaces in use are left as they are: each keeps the mode it has, as its
+    // own, and only new workspaces get the new one
+    function setDefaultMode(v, tidy) {
+        if (!windowModes.some(x => x.value === v) || v === s.windowMode) return;
+        const m = tidy ? {} : Object.assign({}, workspaceModes);
+        if (!tidy) for (const id of workspacesNotIn(v)) m[String(id)] = workspaceMode(id);
+        // (one whose own mode is the new default just follows it from now on)
+        for (const k in m) if (m[k] === v) delete m[k];
+        workspaceModes = m;
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceModesPath]);
+        workspaceModesFile.setText(JSON.stringify(m));
+        s.windowMode = v;          // (shell.qml tells Hyprland, with each workspace's mode)
+    }
+    // For the Lua config: { [3] = "floating", … } (shell.qml sends it with the rest)
+    readonly property string workspaceModesLua: "{ " + Object.keys(workspaceModes)
+        .filter(k => /^\d+$/.test(k)).map(k => `[${k}] = "${workspaceMode(k)}"`).join(", ") + " }"
+    // Hyprland's layout for it (binds.lua also gets the mode, as WINDOW_MODE, for Super+J and
+    // focusing in monocle)
+    readonly property string hyprLayout: windowModes.find(x => x.value === windowMode).layout
     function refreshWallpaperAccent() {
         if (wallpaper === "") return;
+        picker.forWallpaper = wallpaper;
         picker.command = [Qt.resolvedUrl("scripts/wallpaper-accent.py").toString().replace("file://", ""), wallpaper];
         picker.running = true;
     }
     Process {
         id: picker
+        property string forWallpaper: ""
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
                 if (/^#[0-9a-f]{6}$/i.test(lines[0])) root.wallpaperAccent = lines[0];
                 if (lines[1] && /^#[0-9a-f]{6}$/i.test(lines[1])) root.wallpaperTone = lines[1];
+                root.saveColourCache(picker.forWallpaper);
             }
         }
+    }
+    // The wallpaper's colours, kept between reloads: working them out takes a moment, and until
+    // then the theme showed in its default colours. Only a cache for the wallpaper in use, with
+    // colours in the right form, is used; anything else (no file, unreadable, another wallpaper)
+    // is ignored and they're worked out as before. Not on the login screen.
+    function isHex(c) { return typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c); }
+    FileView {
+        id: colourCache
+        path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/wallpaper-colours.json"
+        blockLoading: true
+        printErrors: false
+    }
+    function loadColourCache() {
+        if (isLoginScreen) return;
+        try {
+            const c = JSON.parse(colourCache.text() || "null");
+            if (!c || c.wallpaper !== s.wallpaper || s.wallpaper === "") return;
+            if (isHex(c.accent) && wallpaperAccent === "") wallpaperAccent = c.accent;
+            if (isHex(c.tone) && wallpaperTone === "") wallpaperTone = c.tone;
+        } catch (e) {
+            // A damaged cache: start without it (it's written again once the colours are worked out)
+        }
+    }
+    function saveColourCache(forWallpaper) {
+        if (isLoginScreen || forWallpaper === "" || forWallpaper !== wallpaper || !isHex(wallpaperAccent)) return;
+        const text = JSON.stringify({ wallpaper: forWallpaper, accent: wallpaperAccent, tone: isHex(wallpaperTone) ? wallpaperTone : "" }) + "\n";
+        if (colourCache.text() === text) return;
+        cacheDir.running = false; cacheDir.pending = text; cacheDir.running = true;
+    }
+    // (the folder may not exist yet)
+    Process {
+        id: cacheDir
+        property string pending: ""
+        command: ["mkdir", "-p", colourCache.path.replace(/\/[^/]*$/, "")]
+        onExited: code => { if (code === 0) colourCache.setText(pending); }
     }
 
     FileView {
@@ -908,6 +1228,9 @@ Singleton {
         onLoadFailed: error => { if (error === FileViewError.FileNotFound) writeAdapter(); }
 
         adapter: SettingsData { id: adapter }
+        // Read before anything is drawn (Config's Component.onCompleted), not in the background:
+        // otherwise the first frames after a reload used the default theme
+        blockLoading: true
     }
     Timer { id: settingsSave; interval: 50; onTriggered: file.writeAdapter() }
     // settings.json as it is on disk, read only to compare (diskMatches)

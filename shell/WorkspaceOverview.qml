@@ -1,6 +1,7 @@
 // Workspace overview (Super+Down on a normal workspace): large live previews of each
 // workspace in a circular strip with the selected one centred, and a row of workspace
-// dots underneath. Left/Right choose, Enter goes there, Escape / Super+Up close.
+// dots underneath. Left/Right choose, Enter or Up goes there (on the grid, Up/Down move a row),
+// Escape closes.
 //
 // Driven from Hyprland (config/binds.lua):  slate ipc call overview open | close
 
@@ -19,9 +20,17 @@ PanelWindow {
     // The width set in Settings, made smaller when the screen can't fit it: a card (the
     // screen's shape) plus the dots and title below must fit the height, and neighbours
     // should still peek in at the sides
-    readonly property real cardW: Math.max(160, Math.min(Config.s.overviewCardWidth, width * 0.72,
+    readonly property real rowCardW: Math.max(160, Math.min(Config.s.overviewCardWidth, width * 0.72,
         (height - 260) * width / Math.max(1, height)))
-    readonly property real gap: 28
+    // The grid (Settings → Workspaces → Grid size): that many columns, the cards as large as
+    // fits that many rows too (smaller grids have bigger cards), never tiny; more rows scroll
+    readonly property int gridSize: Math.max(2, Math.min(9, Math.round(Config.s.overviewGridSize || 3)))
+    readonly property real gridGap: gridSize > 4 ? 14 : 28
+    readonly property real gridCardW: Math.max(150, Math.min((width - 160 - (gridSize - 1) * gridGap) / gridSize,
+        ((height - 240 - (gridSize - 1) * gridGap) / gridSize - 40) / Math.max(0.1, areaAspect)))
+    readonly property real cardW: isGrid ? gridCardW : rowCardW
+    readonly property real cardH: cardW * areaAspect
+    readonly property real gap: isGrid ? gridGap : 28
     readonly property real slotW: cardW + gap
     readonly property real dot: 14
     readonly property real dotGap: 6
@@ -137,14 +146,25 @@ PanelWindow {
     property bool handover: false
 
     // Repeat the workspaces round the loop so the strip always feels endless
-    readonly property int reps: spaces.length < 2 ? 1
-        : Math.max(1, Math.ceil((width + 2 * slotW) / (spaces.length * slotW)))
+    readonly property int reps: spaces.length < 2 || isGrid ? 1
+        : Math.max(1, Math.ceil((width + 2 * slotW) / (spaces.length * slotW)),
+                   Math.ceil(({ tilt: 9, orbit: 10, deck: 6, fan: 12 })[moveAnim] / spaces.length) || 1)     // (far enough round that the strip's ends are never seen)
     readonly property var strip: {
         const out = [];
         for (let r = 0; r < reps; r++) for (const w of spaces) out.push(w);
         return out;
     }
     readonly property int selected: spaces.length ? index % spaces.length : 0
+    // Settings → Workspaces: how the selection moves (slide: the row slides, the chosen card in
+    // the middle; hop: the cards hop as they go; wheel: round the outside of a turning circle;
+    // tilt: the others turned away in 3D either side; orbit: round a 3D ring; deck: a pile dealt
+    // from; fan: a hand of cards; grid; or instant) and how it goes to the workspace picked (zoom into the card,
+    // fade, the workspace animation, instant)
+    readonly property string moveAnim: ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "grid", "instant"].includes(Config.s.overviewMoveAnimation) ? Config.s.overviewMoveAnimation : "slide"
+    // Grid: every workspace laid out in rows (gridSize across), the selection moving round it
+    readonly property bool isGrid: moveAnim === "grid"
+    readonly property string pickAnim: ["zoom", "fade", "workspace", "instant"].includes(Config.s.overviewPickAnimation) ? Config.s.overviewPickAnimation : "zoom"
+    readonly property bool moveAnimated: animate && moveAnim !== "instant"
 
     function open() {
         screen = Config.focusedScreen;     // open on the focused screen
@@ -169,7 +189,11 @@ PanelWindow {
         index = Math.max(0, cur);
         // The strip resets to its first card when its contents load, so set the
         // position after that, then animate from there
-        Qt.callLater(() => { list.currentIndex = ov.index; list.positionViewAtIndex(ov.index, PathView.Center); ov.animate = true; });
+        Qt.callLater(() => {
+            if (ov.isGrid) grid.positionViewAtIndex(ov.index, GridView.Contain);
+            else { list.currentIndex = ov.index; list.positionViewAtIndex(ov.index, PathView.Center); }
+            ov.animate = true;
+        });
         shown = true;
     }
     function close() { shown = false; shiftHeld = false; }
@@ -181,7 +205,21 @@ PanelWindow {
         if (!Config.s.wrapWorkspaces && (selected + step < 0 || selected + step >= spaces.length)) return;
         if (spaces.length > 1) Config.swish(step);         // one workspace: nothing moves
         index = (index + step + n) % n;
-        list.currentIndex = index;
+        if (!isGrid) list.currentIndex = index;
+    }
+    // Grid: Up/Down, a row at a time (stopping at the top and bottom)
+    function moveRow(dir) {
+        if (!isGrid) return;
+        const t = index + dir * grid.cols;
+        if (t < 0 || t >= spaces.length) return;
+        Config.swish(dir);
+        index = t;
+    }
+    // Grid: how far apart two workspaces' cards are (a swap moves each to the other's place)
+    function cellDelta(a, b) {
+        const ia = spaces.findIndex(w => w.id === a), ib = spaces.findIndex(w => w.id === b), c = grid.cols;
+        if (ia < 0 || ib < 0) return Qt.point(0, 0);
+        return Qt.point((ib % c - ia % c) * grid.cellWidth, (Math.floor(ib / c) - Math.floor(ia / c)) * grid.cellHeight);
     }
     // Shift+Left/Right: move the selected workspace along by swapping its windows
     // with the neighbouring workspace's (Hyprland workspaces are numbered, so
@@ -201,7 +239,7 @@ PanelWindow {
         id: swapAnim
         target: ov; property: "swapProg"
         from: 0; to: 1
-        duration: Config.ms(260)
+        duration: ov.moveAnim === "instant" ? 0 : Config.ms(260)
         easing.type: Easing.InOutQuad
         onFinished: ov.finishSwap()
     }
@@ -278,16 +316,28 @@ PanelWindow {
     property real backdropGone: zooming && arrived ? zoomP : 0
     Behavior on backdropGone { NumberAnimation { duration: Config.ms(90) } }
     function goNow() {
-        Quickshell.execDetached(["hyprctl", "dispatch", `function() instantTo(hl.dsp.focus({ workspace = ${ov.pendingId} })) end`]);
+        // With the workspace animation it plays as the overview goes; otherwise the switch is
+        // instant, under the overview (animations.lua)
+        const how = ov.pickAnim === "workspace" ? "hl.dispatch" : "instantTo";
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() ${how}(hl.dsp.focus({ workspace = ${ov.pendingId} })) end`]);
+    }
+    // Going to the workspace without the zoom (Fade, Workspace animation, Instant): the
+    // overview just goes, and for a moment, as with the zoom, a switch that's lost or undone
+    // is tried again
+    property bool leaving: false
+    Timer {
+        id: leaveEnd
+        interval: 800
+        onTriggered: { ov.leaving = false; ov.arrived = false; arriveCheck.stop(); }
     }
     Connections {
         target: Hyprland
         function onFocusedWorkspaceChanged() {
-            if (!ov.zooming) return;
+            if (!ov.zooming && !ov.leaving) return;
             const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
             if (id === ov.pendingId) {
                 ov.arrived = true;
-                if (!zoomAnim.running) ov.shown = false;      // the zoom's already done
+                if (ov.zooming && !zoomAnim.running) ov.shown = false;      // the zoom's already done
             } else if (ov.arrived) {
                 // Hyprland went back (giving focus back to the window from before, after we let
                 // go of the keyboard): go again, while it's still covered
@@ -301,14 +351,14 @@ PanelWindow {
         id: arriveCheck
         interval: 250
         onTriggered: {
-            if (!ov.zooming) return;
+            if (!ov.zooming && !ov.leaving) return;
             const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
-            if (id === ov.pendingId) { ov.arrived = true; if (!zoomAnim.running) ov.shown = false; }
+            if (id === ov.pendingId) { ov.arrived = true; if (ov.zooming && !zoomAnim.running) ov.shown = false; }
             else { ov.goNow(); restart(); }
         }
     }
     function startZoom() {
-        const card = list.currentItem;
+        const card = (isGrid ? grid : list).currentItem;
         const box = monitorBox(pendingId);
         const s = Config.uiScale || 1;
         if (!card || !card.previewItem) { shown = false; return; }
@@ -331,7 +381,8 @@ PanelWindow {
             ov.arrived = Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === ov.pendingId;
             ov.goNow();
             ov.releasing = false;
-            ov.startZoom();
+            if (ov.pickAnim === "zoom") ov.startZoom();
+            else { ov.leaving = true; leaveEnd.restart(); ov.shown = false; }
             arriveCheck.restart();
         }
     }
@@ -344,6 +395,8 @@ PanelWindow {
         function toggle(): void { if (ov.shown) ov.close(); else ov.open(); }
         function next(): void { ov.move(1); }
         function prev(): void { ov.move(-1); }
+        function up(): void { ov.moveRow(-1); }         // (grid)
+        function down(): void { ov.moveRow(1); }
         function go(): void { ov.choose(); }
         function moveRight(): void { ov.reorder(1); }
         function moveLeft(): void { ov.reorder(-1); }
@@ -352,9 +405,16 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    // After zooming into a workspace the overview matches it, so it just goes, quickly
-    Behavior on fade { NumberAnimation { duration: Config.ms(ov.zooming ? 120 : 360); easing.type: Easing.InOutCubic } }
-    onFadeChanged: if (fade === 0) { zooming = false; zoomP = 0; arrived = false; arriveCheck.stop(); }
+    // After zooming into a workspace the overview matches it, so it just goes, quickly. Going
+    // without the zoom: Fade takes its time, the workspace animation needs it gone quickly, and
+    // Instant goes at once
+    Behavior on fade {
+        NumberAnimation {
+            duration: Config.ms(ov.zooming ? 120 : !ov.leaving ? 360 : ({ fade: 360, workspace: 150, instant: 0 })[ov.pickAnim] ?? 360)
+            easing.type: Easing.InOutCubic
+        }
+    }
+    onFadeChanged: if (fade === 0) { zooming = false; zoomP = 0; if (!leaving) { arrived = false; arriveCheck.stop(); } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: Qt.rgba(0.04, 0.05, 0.06, 0.94 * fade * (1 - backdropGone))
@@ -421,6 +481,10 @@ PanelWindow {
                 case Qt.Key_Left: case Qt.Key_Backtab:
                     if (e.modifiers & Qt.ShiftModifier) ov.reorder(-1); else ov.move(-1);
                     break;
+                // Up: go to the chosen workspace (as Enter, and Super+Up); on the grid, up a row.
+                // Down: on the grid, down a row (the row layouts don't use it)
+                case Qt.Key_Up: if (ov.isGrid) ov.moveRow(-1); else ov.choose(); break;
+                case Qt.Key_Down: if (!ov.isGrid) return; ov.moveRow(1); break;
                 default: return;
                 }
                 e.accepted = true;
@@ -431,48 +495,132 @@ PanelWindow {
         // ---- Workspace previews --------------------------------------------
         PathView {
             id: list
+            visible: !ov.isGrid
             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; verticalCenterOffset: -30 }
-            height: cardH + 60
-            readonly property real cardH: ov.cardW * ov.areaAspect
+            height: ov.cardH + 60
             interactive: false
-            model: ov.strip
+            model: ov.isGrid ? [] : ov.strip
             currentIndex: ov.index
             readonly property real len: Math.max(1, ov.strip.length) * ov.slotW
-            path: Path {
+            // Each card's distance along the strip from the middle ("side", in pixels) and the
+            // wheel's turn there ("turn", in degrees), for the cards to lean and tilt by
+            Path {
+                id: linePath
                 startX: list.width / 2 - list.len / 2; startY: list.height / 2
+                PathAttribute { name: "side"; value: -list.len / 2 }
+                PathAttribute { name: "turn"; value: 0 }
                 PathLine { x: list.width / 2 + list.len / 2; y: list.height / 2 }
+                PathAttribute { name: "side"; value: list.len / 2 }
+                PathAttribute { name: "turn"; value: 0 }
             }
+            // The wheel: the strip bent round a circle below, the chosen card at the top
+            readonly property real wheelR: Math.max(len / (2 * Math.PI) * 1.02, ov.slotW * 1.6)
+            readonly property real sweep: len / wheelR * 180 / Math.PI
+            readonly property real a0: (-90 - sweep / 2) * Math.PI / 180
+            Path {
+                id: wheelPath
+                startX: list.width / 2 + list.wheelR * Math.cos(list.a0); startY: list.height / 2 + list.wheelR + list.wheelR * Math.sin(list.a0)
+                PathAttribute { name: "side"; value: -list.len / 2 }
+                PathAttribute { name: "turn"; value: -list.sweep / 2 }
+                PathAngleArc {
+                    centerX: list.width / 2; centerY: list.height / 2 + list.wheelR
+                    radiusX: list.wheelR; radiusY: list.wheelR
+                    startAngle: -90 - list.sweep / 2; sweepAngle: list.sweep
+                    moveToStart: false
+                }
+                PathAttribute { name: "side"; value: list.len / 2 }
+                PathAttribute { name: "turn"; value: list.sweep / 2 }
+            }
+            path: ov.moveAnim === "wheel" ? wheelPath : linePath
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: ov.animate ? Config.ms(260) : 0     // in step with swapAnim (Config.ms too)
+            highlightMoveDuration: ov.moveAnimated ? Config.ms(260) : 0     // in step with swapAnim (Config.ms too)
             // It resets to the first card when it fills in (after the window shows), so
             // put it back on the chosen workspace then
             onCountChanged: { currentIndex = ov.index; positionViewAtIndex(ov.index, PathView.Center); }
 
-            delegate: Item {
+            delegate: cardDelegate
+        }
+
+
+        // One workspace card, for the strip and the grid
+        Component {
+            id: cardDelegate
+            Item {
                 id: card
                 required property var modelData
                 required property int index
                 // While swapping, the lifted card stays the selected one
-                readonly property bool isSelected: ov.swapping ? modelData.id === ov.swapA : PathView.isCurrentItem
+                readonly property bool isSelected: ov.swapping ? modelData.id === ov.swapA : index === ov.index
                 readonly property bool lifted: isSelected && (ov.shiftHeld || ov.swapping)
                 readonly property var wins: (ov.contents[modelData.id] || []).map(a => ov.byAddr[a])
                     .filter(t => t && ov.geoFor(t.address))
-                // Swap motion: lifted card keeps pace with the row, neighbour crosses over
-                transform: Translate {
-                    x: card.modelData.id === ov.swapA ? ov.swapStep * ov.slotW * ov.swapProg
-                     : card.modelData.id === ov.swapB ? -ov.swapStep * ov.slotW * ov.swapProg : 0
-                    y: card.lifted ? -26 : 0
-                    Behavior on y { enabled: !ov.handover; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
-                }
-                z: lifted ? 10 : (modelData.id === ov.swapB ? 5 : 0)
+                // Movement (ov.moveAnim), on the strip: how far along it is from the middle, in cards
+                readonly property real side: ov.isGrid ? 0 : (PathView.side ?? 0)
+                readonly property real t: side / ov.slotW
+                // Hop: every card rises and falls once for each step the strip moves
+                readonly property real hop: ov.moveAnim === "hop" ? Math.sin(Math.PI * Math.abs(list.offset - Math.round(list.offset))) : 0
+                // Tilt: the others turned away, packed closer the further out they are, and fading
+                // out before the strip's ends (the lifted card stays as it is)
+                readonly property bool tilted: ov.moveAnim === "tilt" && !lifted && modelData.id !== ov.swapB
+                readonly property real packed: Math.sign(t) * (Math.min(Math.abs(t), 1) * 0.7 + Math.max(Math.abs(t) - 1, 0) * 0.28) * ov.slotW
+                // Orbit: round a flat ring seen from above the front, the far side small, dim and
+                // higher (kept to the screen's width); fan: turned about a point well below, like
+                // a hand of cards, the chosen one lifted; deck: a pile, the next ones behind it
+                readonly property string fx: ov.moveAnim
+                readonly property bool moving: !lifted && modelData.id !== ov.swapB      // (the lifted card stays as it is)
+                readonly property real th: t * 0.7
+                readonly property real orbitR: Math.min(ov.slotW * 2.3, ov.width * 0.4)
+                readonly property real fanPivot: height + height * 2.2
+                readonly property real fanStep: (ov.cardW * 0.45 / fanPivot) * 180 / Math.PI
+                readonly property real fxScale: !moving ? 1 : fx === "orbit" ? 0.45 + 0.55 * (Math.cos(th) + 1) / 2
+                    : fx === "deck" && t > 0 ? Math.max(0.5, 1 - 0.07 * t) : 1
+                readonly property real fxOpacity: !moving ? 1
+                    : tilted ? Math.max(0, Math.min(1, 3.2 - Math.abs(t)))
+                    : fx === "orbit" ? (0.35 + 0.65 * (Math.cos(th) + 1) / 2) * Math.max(0, Math.min(1, (Math.PI - Math.abs(th)) * 1.5))
+                    : fx === "deck" ? (t < 0 ? Math.max(0, 1 + t * 1.2) : Math.max(0, Math.min(1, 4.5 - t)))
+                    : fx === "fan" ? Math.max(0, Math.min(1, 5.5 - Math.abs(t))) : 1
+                rotation: ov.moveAnim === "wheel" ? (PathView.turn ?? 0) : 0
+                // Swap motion: the lifted card keeps pace with the row (or, on the grid, goes to the
+                // other's place), the other crosses over
+                readonly property point swapBy: ov.isGrid ? ov.cellDelta(ov.swapA, ov.swapB) : Qt.point(ov.swapStep * ov.slotW, 0)
+                transform: [
+                    Rotation {
+                        origin.x: card.width / 2; origin.y: card.height / 2
+                        axis { x: 0; y: 1; z: 0 }
+                        angle: card.tilted ? -Math.max(-1, Math.min(1, card.t)) * 55 : 0
+                    },
+                    Rotation {
+                        origin.x: card.width / 2; origin.y: card.fanPivot
+                        angle: card.fx === "fan" && card.moving ? card.t * card.fanStep : 0
+                    },
+                    Translate {
+                        x: !card.moving ? 0 : card.tilted ? card.packed - card.side
+                         : card.fx === "orbit" ? card.orbitR * Math.sin(card.th) - card.side
+                         : card.fx === "deck" ? (card.t > 0 ? card.t * 60 - card.side : card.side * 0.6)
+                         : card.fx === "fan" ? -card.side : 0
+                        y: -card.hop * 50 - (!card.moving ? 0
+                         : card.fx === "orbit" ? (1 - Math.cos(card.th)) * 90
+                         : card.fx === "deck" ? (card.t > 0 ? card.t * 34 : card.t * 20)
+                         : card.fx === "fan" ? 40 * Math.max(0, 1 - Math.abs(card.t)) : 0)
+                    },
+                    Translate {
+                        x: card.modelData.id === ov.swapA ? card.swapBy.x * ov.swapProg
+                         : card.modelData.id === ov.swapB ? -card.swapBy.x * ov.swapProg : 0
+                        y: (card.modelData.id === ov.swapA ? card.swapBy.y * ov.swapProg
+                          : card.modelData.id === ov.swapB ? -card.swapBy.y * ov.swapProg : 0) + (card.lifted ? -26 : 0)
+                        Behavior on y { enabled: !ov.handover && !ov.swapping; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+                    }
+                ]
+                z: lifted ? 10 : modelData.id === ov.swapB ? 5 : fx === "orbit" ? Math.cos(th) * 3
+                    : ["tilt", "deck", "fan"].includes(fx) ? -Math.abs(t) : 0
                 // Hyprland units to card units, for this workspace's monitor
                 readonly property var mon: ov.monitorBox(modelData.id)
                 readonly property real sx: ov.cardW / Math.max(1, mon.w)
                 width: ov.cardW
-                height: list.cardH + 40
-                scale: lifted ? 1.04 : isSelected ? 1 : 0.86
+                height: ov.cardH + 40
+                scale: (lifted ? 1.04 : isSelected ? 1 : 0.86) * fxScale
                 // Without wrapping round (Settings → Workspaces), the row ends at the first and last
                 // workspace: the repeats past either end (the other end's cards) fade away
                 readonly property int offset: {
@@ -481,12 +629,12 @@ PanelWindow {
                     if (d > n / 2) d -= n;
                     return d;
                 }
-                readonly property bool pastEnd: !Config.s.wrapWorkspaces
+                readonly property bool pastEnd: !ov.isGrid && !Config.s.wrapWorkspaces
                     && (ov.selected + offset < 0 || ov.selected + offset >= ov.spaces.length)
                 readonly property Item previewItem: preview
-                opacity: pastEnd ? 0 : isSelected ? 1 : 0.6 * (1 - ov.zoomP)
-                Behavior on scale { enabled: !ov.handover; NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
-                Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: Config.ms(220) } }
+                opacity: (pastEnd ? 0 : isSelected ? 1 : 0.6 * (1 - ov.zoomP)) * fxOpacity
+                Behavior on scale { enabled: !ov.handover && ov.moveAnim !== "instant"; NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
+                Behavior on opacity { enabled: !ov.handover && !ov.zooming && ov.moveAnim !== "instant"; NumberAnimation { duration: Config.ms(220) } }
 
                 // Shadow under the lifted card
                 RectangularShadow {
@@ -509,7 +657,7 @@ PanelWindow {
                     border.color: card.lifted ? ov.bar.textColor : ov.bar.accent
                     Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: Config.ms(150) } }
                     opacity: card.isSelected ? 1 - ov.zoomP : 0
-                    Behavior on opacity { enabled: !ov.handover && !ov.zooming; NumberAnimation { duration: Config.ms(180) } }
+                    Behavior on opacity { enabled: !ov.handover && !ov.zooming && ov.moveAnim !== "instant"; NumberAnimation { duration: Config.ms(180) } }
                     Gloss { radius: parent.radius; strength: 0.7 }   // glass: a sheen over the selected card
                 }
 
@@ -517,7 +665,7 @@ PanelWindow {
                 Item {
                     id: preview
                     width: ov.cardW
-                    height: list.cardH
+                    height: ov.cardH
                     layer.enabled: true
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: previewMask }
 
@@ -644,27 +792,70 @@ PanelWindow {
                 // Label
                 Text {
                     anchors { top: preview.bottom; topMargin: 14; horizontalCenter: parent.horizontalCenter }
+                    width: Math.min(implicitWidth, card.width + ov.gap)      // (small grid cards: shortened)
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
                     opacity: 1 - ov.zoomP
                     readonly property var first: card.wins.length ? Config.appEntry(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
-                    text: "Workspace " + card.modelData.name
-                        + (card.wins.length === 0 ? " · empty"
+                    // (its own name if it has one: Config.workspaceLabel, live if it's renamed)
+                    text: Config.workspaceLabel(card.modelData.id)
+                        + (card.wins.length === 0 ? " · Empty"
                            : " · " + (first ? first.name : card.wins[0].title)
-                             + (card.wins.length > 1 ? " +" + (card.wins.length - 1) : ""))
+                             + (card.wins.length === 2 ? " and 1 other"
+                                : card.wins.length > 2 ? " and " + (card.wins.length - 1) + " others" : ""))
                     color: ov.bar.textColor
                     font.family: ov.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
                 }
 
                 ClickArea {
                     anchors.fill: preview
-                    onClicked: { ov.index = card.index; list.currentIndex = card.index; ov.choose(); }
+                    onClicked: { ov.index = card.index; if (!ov.isGrid) list.currentIndex = card.index; ov.choose(); }
                 }
             }
+        }
+
+        // ---- Grid (Settings → Workspaces: Grid) ------------------------------
+        // Every workspace once, gridSize across; as many rows as fit show, the rest scroll
+        GridView {
+            id: grid
+            visible: ov.isGrid
+            readonly property int cols: Math.max(1, Math.min(ov.gridSize, ov.spaces.length))
+            readonly property int rows: Math.ceil(ov.spaces.length / cols)
+            readonly property int shownRows: Math.max(1, Math.min(rows, ov.gridSize, Math.floor((ov.height - 240) / cellHeight)))
+            cellWidth: ov.cardW + ov.gap
+            cellHeight: ov.cardH + 40 + ov.gap
+            width: cols * cellWidth
+            height: shownRows * cellHeight
+            // (each card sits at the left of its cell, the gap after it)
+            anchors { horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: ov.gap / 2; verticalCenter: parent.verticalCenter; verticalCenterOffset: -30 }
+            model: ov.isGrid ? ov.spaces : []
+            currentIndex: ov.index
+            interactive: rows > shownRows
+            clip: interactive
+            boundsBehavior: Flickable.StopAtBounds
+            highlightFollowsCurrentItem: false
+            SmoothWheel { flick: grid }
+            // Keep the chosen card in view, scrolling a row at a time
+            onCurrentIndexChanged: scrollTo(currentIndex)
+            function scrollTo(i) {
+                if (i < 0 || !ov.animate) return;
+                const top = Math.floor(i / cols) * cellHeight, bottom = top + cellHeight;
+                let y = contentY;
+                if (top < y) y = top;
+                else if (bottom > y + height) y = bottom - height;
+                if (Math.abs(y - contentY) < 1) return;
+                gridScroll.stop();
+                gridScroll.to = y;
+                gridScroll.start();
+            }
+            NumberAnimation { id: gridScroll; target: grid; property: "contentY"; duration: ov.moveAnimated ? Config.ms(260) : 0; easing.type: Easing.OutCubic }
+            delegate: cardDelegate
         }
 
         // ---- Workspace dots, like the bar's, with a gliding marker -----------
         Rectangle {
             id: dotsCap
-            anchors { horizontalCenter: parent.horizontalCenter; top: list.bottom; topMargin: 24 }
+            anchors { horizontalCenter: parent.horizontalCenter; top: ov.isGrid ? grid.bottom : list.bottom; topMargin: 24 }
             opacity: 1 - ov.zoomP
             width: dotsRow.width + 20
             height: 30

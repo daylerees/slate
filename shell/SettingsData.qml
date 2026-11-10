@@ -17,6 +17,7 @@ JsonAdapter {
     property string wallpaper: ""            // image shown on the desktop, lock screen and login screen
     property string wallpaperFolder: ""      // empty = ~/Pictures
     property bool wallpaperHideSmall: true   // Settings → Appearance: leave out images too small to be wallpapers
+    property bool wallpaperShowSlate: true   // …and show the wallpapers that come with Slate (shell/wallpapers) beside your folder's
     property string wallpaperMinSize: "1280x720"   // the smallest size shown (width x height)
     property string wallpaperChange: "off"   // Settings → Appearance → Change wallpaper: off, login, or every N minutes ("15", "60"…)
     // Slate's sounds (Settings → Sound), each at its own volume: % (0 = off). -1 = not set yet,
@@ -101,8 +102,9 @@ JsonAdapter {
     property string screenshotAfter: "edit"   // edit (swash, when installed) or save
     property bool clipboardHistory: true      // keep a history of what you copy (Super+V)
     property bool keepEmptyWorkspace: false   // Settings → Workspaces: always an empty workspace after the last one in use
-    property string windowMode: "tiling"       // tiling, or floating (every window floats, like a traditional desktop)
+    property string windowMode: "tiling"       // tiling (dwindle), master, scrolling, monocle, or floating (every window floats, like a traditional desktop)
     property string titleButtons: "right"     // floating windows' title bar buttons: left or right
+    property string titleBarStyle: "slate"    // floating windows' title bars: slate (Slate's own, on the window in front), or hyprbars (the optional plugin, on every floating window)
     property int windowGap: 6                 // px between tiled windows (edges get 2 more; 0 = none)
     property int soloWindowGap: 0             // px around a window alone on its workspace (0 = fills the screen)
     property string fontFamily: "Geist"       // interface font for the whole shell
@@ -122,6 +124,7 @@ JsonAdapter {
     property bool spaceSwitcherBadges: true   // its icon on the window in Super+Tab and Super+Down
     property bool spaceBarTint: true          // the focused window's icon on the bar sits on its colour
     property bool barShowWorkspaces: true     // workspace dots
+    property bool barShowWindowMode: true     // ...with the workspace's window mode before them (click to change it)
     property bool barShowTitle: true          // focused window's title
     property bool barShowTitleIcon: true      // …with its app's icon before it
     property bool barShowTray: true           // app tray icons
@@ -150,11 +153,13 @@ JsonAdapter {
 
     // Dock
     property real dockIconSize: 40
+    property string dockHoverEffect: "magnify"   // pointing at the dock: magnify, tilt (icons turn to face the pointer), both, fade, fademagnify, glow (a ring and glow in the icon's colour), glowmagnify, raise (just the icon under the pointer lifts) or none
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockAutoHide: true          // hide when the workspace has windows
     property bool dockShowLauncher: true      // the Apps button at the start of the dock
-    property real dockPreviewDelay: 0.6       // seconds paused on an app before its window previews show (0 = off)
+    property bool dockPreviews: true          // pausing on an app in the dock shows its windows
+    property real dockPreviewDelay: 0.2       // …after this many seconds (0 = at once)
     property bool dockBadges: true            // unread counts and progress on app icons
     property bool dockDivider: true           // a line between pinned apps and the others
     property bool dockShowMedia: true         // what's playing, after the Apps button, with its controls
@@ -188,6 +193,14 @@ JsonAdapter {
     property bool overviewAppIcons: false     // app icon on each window in Super+Down
     property bool overviewPreviews: true      // live pictures of the windows in Super+Down (off: their outlines and app icons)
     property real overviewCardWidth: 728
+    property int overviewGridSize: 3          // the overview's grid (Moving between workspaces: Grid): columns, and rows shown
+    // Their animations: moving through the cards (slide, hop, wheel, tilt, orbit, deck, fan or
+    // instant; the overview also grid) and going to the one picked (Super+Tab: crossfade, workspace or instant; Super+Down: zoom, fade, workspace
+    // or instant; "workspace" is the Workspace switching animation)
+    property string switcherMoveAnimation: "slide"
+    property string switcherPickAnimation: "crossfade"
+    property string overviewMoveAnimation: "slide"
+    property string overviewPickAnimation: "zoom"
 
     // Notifications
     property real notificationSeconds: 5

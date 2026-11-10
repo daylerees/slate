@@ -113,6 +113,49 @@ function slideAwayTo(dispatcher)
     restoreSlideAfter(400)
 end
 
+-- Slate's own title bars (TitleBar.qml): dragging one moves its window to each pointer position
+-- (x, y: Hyprland coordinates), with the move animation off meanwhile so the window keeps up
+-- with the pointer rather than trailing it; slateDragEnd() puts the animation back
+local dragging = false
+function slateDragMove(address, x, y)
+    if not dragging then
+        dragging = true
+        hl.animation({ leaf = "windowsMove", enabled = false })
+    end
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y, window = "address:" .. address }))
+end
+-- Slate's maximise and restore (its own title bars): a window's top left (x, y) and size, moving
+-- as windows usually do. flat: maximised, filling the screen with only Slate's bar above it, so
+-- no border, rounding or shadow (false puts them back)
+function slateFlat(address, flat)
+    local win = "address:" .. address
+    local v = flat and "0" or "unset"
+    hl.dispatch(hl.dsp.window.set_prop({ prop = "border_size", value = v, window = win }))
+    hl.dispatch(hl.dsp.window.set_prop({ prop = "rounding", value = v, window = win }))
+    hl.dispatch(hl.dsp.window.set_prop({ prop = "no_shadow", value = flat and "1" or "unset", window = win }))
+end
+function slatePlace(address, x, y, w, h, flat)
+    local win = "address:" .. address
+    slateFlat(address, flat)
+    hl.dispatch(hl.dsp.window.resize({ x = w, y = h, window = win }))
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y, window = win }))
+end
+
+-- Resizing from a title bar's corner: its top left (x, y) and size (w, h), at once
+function slateDragResize(address, x, y, w, h)
+    if not dragging then
+        dragging = true
+        hl.animation({ leaf = "windowsMove", enabled = false })
+    end
+    local win = "address:" .. address
+    hl.dispatch(hl.dsp.window.resize({ x = w, y = h, window = win }))
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y, window = win }))
+end
+function slateDragEnd()
+    dragging = false
+    hl.animation({ leaf = "windowsMove", enabled = true, speed = sp(3), spring = "easy", style = "slide" })
+end
+
 -- setAnimationSpeed(mode): "normal", "fast" or "off" (called by slateApply, slate.lua)
 function setAnimationSpeed(mode)
     if mode == "off" then

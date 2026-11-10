@@ -24,7 +24,7 @@ Singleton {
         { id: "input", label: "Keyboard & Mouse", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
         { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
         { id: "power", label: "Power", icon: 0xEA38, about: "Power mode, the lid and the power button" },
-        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling or floating, gaps, borders, focus and Super+Tab" },
+        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling, scrolling or floating, gaps, borders, focus and Super+Tab" },
         { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
         { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
         { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
@@ -79,6 +79,7 @@ Singleton {
         ["Screensaver", "screensaver", "screen saver idle clock slideshow away burn-in oled"],
         ["App Theming", "apptheming", "theme other apps colours colors dark light accent gtk qt kde terminal editor"],
         ["Theme other apps", "apptheming", "app theming colours colors match follow"],
+        ["Install apps to theme", "apptheming", "install download get website homepage app theming terminal editor"],
         ["Welcome", "about", "welcome introduction tour first start getting started setup onboarding"],
         ["Glass", "appearance", "glass glassy liquid frosted translucent transparent see-through blur acrylic"],
         ["Blur", "appearance", "glass blur strength frosted"],
@@ -148,12 +149,18 @@ Singleton {
         ["Screenshots", "screenshots", "screenshot print screen capture folder"],
         ["Animations", "appearance", "motion reduce motion speed fast off"],
         ["Focus follows the pointer", "windows", "focus follows mouse click to focus hover"],
+        ["Title bars", "windows", "floating window title bar titlebar slate bars hyprbars decoration"],
+        ["Hyprbars", "windows", "title bars plugin build rebuild retry remove reload hyprland update optional"],
+        ["Title bar buttons", "windows", "close maximise maximize buttons left right side floating"],
         ["Wallpaper", "appearance", "background picture image desktop"],
+        ["Slate's wallpapers", "appearance", "included bundled built in default backgrounds ember iris lagoon blossom fern cobalt ruby honey graphite mist gradient colourful colorful green blue red yellow black white grey gray plain logo mark"],
         ["Change wallpaper", "appearance", "automatically rotate shuffle slideshow timer login cycle background theme"],
         ["Menu Bar", "bar", "top bar panel status"],
         ["Clock format", "bar", "time 24 hour 12 hour seconds date"],
         ["Bar items", "bar", "tray battery wifi volume notifications power show hide"],
         ["Dock", "dock", "pinned apps magnification icon size auto-hide"],
+        ["Window previews", "dock", "live preview thumbnails windows hover rest pointer peek"],
+        ["Previews appear after", "dock", "window previews delay wait time instant immediately how long seconds hover"],
         ["Layout", "launcher", "launcher list grid icons view apps"],
         ["Columns", "launcher", "launcher grid icons across size"],
         ["Rows", "launcher", "launcher grid icons size"],
@@ -166,7 +173,7 @@ Singleton {
         ["Tint app icons", "appearance", "icon colour color accent theme tint monochrome themed icons"],
         ["Workspace indicators", "workspaces", "dots shape circles squares rounded workspace"],
         ["Displays", "displays", "monitors screens resolution refresh rate hz scale scaling rotate rotation arrange arrangement main primary external"],
-        ["Window mode (tiling or floating)", "windows", "floating stacking free move drag traditional desktop tile"],
+        ["Default window mode (tiling, side stack, scrolling, stacking, floating or solo)", "windows", "layout floating stacking free move drag traditional desktop tile dwindle master stack scrolling columns strip monocle one window full solo per workspace maximised maximized"],
         ["Keep an empty workspace", "workspaces", "spare new blank extra dynamic workspaces gnome"],
         ["Window spacing", "windows", "gaps gap padding space between margin"],
         ["Space around a lone window", "windows", "gaps padding margin lone single solo full screen rounded corners"],
@@ -180,7 +187,7 @@ Singleton {
         ["Notifications", "notifications", "pop-ups toasts position do not disturb history"],
         ["Lock screen", "lock", "password lock"],
         ["Idle and sleep", "lock", "screen off suspend sleep idle timeout"],
-        ["Login screen", "lock", "greeter greetd sign in"],
+        ["Login screen", "lock", "greeter greetd sign in install update switch back display manager"],
         ["Wi-Fi", "wifi", "wireless network internet"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
         ["Printers & Scanners", "printers", "print printer printing scanner scan scanning cups sane test page"],
@@ -238,7 +245,7 @@ Singleton {
     function search(text, limit) {
         const q = norm(text);
         if (q.length < 2) return [];
-        const hidden = l => !Config.titleBarsAvailable && (l === "Window mode" || l === "Title bar buttons" || l === "Window mode (tiling or floating)");
+        const hidden = l => Config.clickToFocus && l === "Focus follows the pointer";     // (Slate's title bars: always a click)
         return prepared.filter(p => !hidden(p.e.label)).map(p => {
             const n = p.n, more = p.more;
             let s = n.startsWith(q) ? 0 : p.nWords.some(w => w.startsWith(q)) ? 1 : n.includes(q) ? 2

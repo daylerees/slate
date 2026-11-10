@@ -8,6 +8,8 @@
 // For other questions:
 //   powerConfirm.confirmWith({ title: "Delete “Work”?", body: "…", button: "Delete",
 //                              code: 0xEB41, danger: true }, () => { … })
+// A question can also have a switch to go further (option: { label, detail }; its answer is
+// passed to onConfirm), and something to run if it's cancelled (onCancel).
 
 import QtQuick
 import Quickshell
@@ -30,41 +32,77 @@ PanelWindow {
 
     // ---- Actions -----------------------------------------------------------
     readonly property var actions: ({
-        logout:   { title: "Log out?",   body: "Your apps will close and you'll return to the login screen.", button: "Log out",   code: 0xEBA8, danger: false },
-        reboot:   { title: "Restart?",   body: "Your apps will close and the computer will restart.",          button: "Restart",   code: 0xEB13, danger: false },
-        shutdown: { title: "Shut down?", body: "Your apps will close and the computer will turn off.",         button: "Shut down", code: 0xEB0D, danger: true }
+        logout:   { title: "Log out?",   body: "Your apps will close and you'll be back at the login screen. See you soon.", button: "Log out",   code: 0xEBA8, danger: false },
+        reboot:   { title: "Restart?",   body: "Your apps will close and your computer will restart. Back in a moment.",          button: "Restart",   code: 0xEB13, danger: false },
+        shutdown: { title: "Shut down?", body: "Your apps will close and your computer will turn off. See you next time.",         button: "Shut down", code: 0xEB0D, danger: true }
     })
 
     property string action: ""                 // action being asked about ("custom": confirmWith)
     property bool shown: false
     property var custom: null                  // confirmWith: what to show, and what to run
     property var customAction: null
+    property var customCancel: null
+    property bool customOption: false          // the question's own switch (custom.option), off to start
     readonly property var info: action === "custom" && custom ? custom : (actions[action] ?? actions.shutdown)
 
     property int focusedButton: 1          // 0 = Cancel, 1 = the action, 2 = the reopen switch
     readonly property bool hasReopen: action === "reboot"
-    readonly property var focusOrder: hasReopen ? [2, 0, 1] : [0, 1]   // Tab order, top to bottom
+    // The switch row: Restart's "reopen my apps", or a question's own option
+    readonly property bool hasOption: hasReopen || (action === "custom" && !!custom && !!custom.option)
+    readonly property bool optionOn: hasReopen ? Config.s.reopenAppsAfterRestart : customOption
+    function flipOption() {
+        if (hasReopen) Config.s.reopenAppsAfterRestart = !Config.s.reopenAppsAfterRestart;
+        else customOption = !customOption;
+    }
+    readonly property var focusOrder: hasOption ? [2, 0, 1] : [0, 1]   // Tab order, top to bottom
     function ask(name) {
         if (!actions[name]) return;
         open(name);
     }
-    // Any other question: spec is { title, body, button, code, danger }; onConfirm runs on yes
-    function confirmWith(spec, onConfirm) {
+    // A question can also ask for a line of text (naming a workspace): spec.input is
+    // { text, placeholder, maxLength }; the field has the keyboard, Enter confirms, and onConfirm
+    // gets what was typed as its second argument. It opens without the attention sound: you
+    // asked for it, Slate isn't asking you.
+    readonly property bool hasInput: action === "custom" && !!custom && !!custom.input
+    property alias inputText: field.text
+    // Any other question: spec is { title, body, button, code, danger, option?, cancelLabel?, input? }; onConfirm runs on
+    // yes (given the option's answer), onCancel (if any) on no
+    // A question asked while another is showing waits its turn (it used to replace it, and the
+    // first was never answered)
+    property var waiting: []
+    onShownChanged: if (!shown && waiting.length > 0) nextQuestion.restart()
+    Timer {
+        id: nextQuestion
+        interval: root.fadeMs + 80           // once this one has faded out, so it's clearly a new one
+        onTriggered: {
+            if (root.shown) return;          // something else came up first: after that, then
+            if (root.waiting.length === 0) return;
+            const q = root.waiting[0];
+            root.waiting = root.waiting.slice(1);
+            root.confirmWith(q.spec, q.onConfirm, q.onCancel);
+        }
+    }
+    function confirmWith(spec, onConfirm, onCancel) {
+        if (shown) { waiting = waiting.concat([{ spec: spec, onConfirm: onConfirm, onCancel: onCancel }]); return; }
         custom = spec;
         customAction = onConfirm;
+        customCancel = onCancel || null;
+        customOption = false;
+        field.text = spec.input ? String(spec.input.text || "") : "";
         open("custom");
-        focusedButton = 0;                 // Cancel first: Enter alone doesn't delete things
+        focusedButton = spec.input ? 1 : 0;      // Cancel first: Enter alone doesn't delete things
+        if (spec.input) Qt.callLater(() => { field.forceActiveFocus(); field.selectAll(); });
     }
     function open(name) {
         screen = Config.focusedScreen;     // open on the focused screen
         action = name;
         focusedButton = 1;
         shown = true;
-        Config.attention();
+        if (!hasInput) Config.attention();
         Qt.callLater(() => keys.forceActiveFocus());
     }
     function press() {
-        if (focusedButton === 2) Config.s.reopenAppsAfterRestart = !Config.s.reopenAppsAfterRestart;
+        if (focusedButton === 2) flipOption();
         else if (focusedButton === 0) cancel();
         else confirm();
     }
@@ -72,14 +110,20 @@ PanelWindow {
         const i = focusOrder.indexOf(focusedButton);
         focusedButton = focusOrder[(i + d + focusOrder.length) % focusOrder.length];
     }
-    function cancel() { shown = false; customAction = null; }
+    function cancel() {
+        if (!shown) return;
+        shown = false;
+        const c = action === "custom" ? customCancel : null;
+        customAction = null; customCancel = null;
+        if (c) c();
+    }
     function confirm() {
         if (!shown) return;
         shown = false;
         if (action === "custom") {
-            const f = customAction;
-            customAction = null;
-            if (f) f();
+            const f = customAction, opt = customOption, typed = field.text;
+            customAction = null; customCancel = null;
+            if (f) f(opt, typed);
             return;
         }
         Config.sessionAction(action);
@@ -136,7 +180,7 @@ PanelWindow {
                 case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space: root.press(); break;
                 case Qt.Key_Left: root.focusedButton = 0; break;
                 case Qt.Key_Right: root.focusedButton = 1; break;
-                case Qt.Key_Up: if (root.hasReopen) root.focusedButton = 2; break;
+                case Qt.Key_Up: if (root.hasOption) root.focusedButton = 2; break;
                 case Qt.Key_Down: if (root.focusedButton === 2) root.focusedButton = 1; break;
                 case Qt.Key_Tab: root.step(1); break;
                 case Qt.Key_Backtab: root.step(-1); break;
@@ -186,19 +230,54 @@ PanelWindow {
                 }
                 Item { width: 1; height: 22 }
 
-                // Restart: reopen your apps afterwards
+                // A line of text to type (spec.input), like the Spaces panel's name field
+                Rectangle {
+                    visible: root.hasInput
+                    width: parent.width; height: 38; radius: 10
+                    color: root.buttonColor
+                    Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+                    border.width: field.activeFocus ? 1 : 0
+                    border.color: root.accent
+                    TextInput {
+                        id: field
+                        anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
+                        verticalAlignment: TextInput.AlignVCenter
+                        clip: true
+                        color: root.textColor
+                        selectionColor: root.accent; selectedTextColor: root.accentText
+                        font.family: root.fontFamily; font.pixelSize: 14
+                        maximumLength: root.hasInput && root.custom.input.maxLength ? root.custom.input.maxLength : 200
+                        selectByMouse: true
+                        onAccepted: root.confirm()
+                        Keys.onEscapePressed: root.cancel()
+                        // Tab: on to the buttons
+                        Keys.onTabPressed: { root.focusedButton = 0; keys.forceActiveFocus(); }
+                    }
+                    Text {
+                        anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
+                        verticalAlignment: Text.AlignVCenter
+                        visible: field.text === "" && root.hasInput
+                        text: root.hasInput ? root.custom.input.placeholder || "" : ""
+                        color: root.dimTextColor
+                        font.family: root.fontFamily; font.pixelSize: 14
+                        elide: Text.ElideRight
+                    }
+                }
+                Item { width: 1; height: 16; visible: root.hasInput }
+
+                // Restart: reopen your apps afterwards; or the question's own option
                 Rectangle {
                     id: reopen
-                    visible: root.hasReopen
+                    visible: root.hasOption
                     width: parent.width
                     height: reopenText.implicitHeight + 24
                     radius: 12
-                    readonly property bool on: Config.s.reopenAppsAfterRestart
+                    readonly property bool on: root.optionOn
                     color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Gloss { radius: parent.radius; opacity: reopenHover.hovered ? 1 : 0 }
                     HoverHandler { id: reopenHover; onHoveredChanged: if (hovered) root.focusedButton = 2 }
-                    ClickTap { onTapped: Config.s.reopenAppsAfterRestart = !reopen.on }
+                    ClickTap { onTapped: root.flipOption() }
                     // Keyboard focus ring, as on the buttons
                     Rectangle {
                         anchors { fill: parent; margins: -4 }
@@ -214,14 +293,16 @@ PanelWindow {
                         spacing: 2
                         Text {
                             width: parent.width
-                            text: "Reopen my apps afterwards"
+                            text: root.hasReopen ? "Reopen my apps afterwards" : root.custom && root.custom.option ? root.custom.option.label : ""
                             color: root.textColor
                             font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold
                         }
                         Text {
                             width: parent.width
                             wrapMode: Text.WordWrap
-                            text: "On the same workspaces, just where you left them"
+                            visible: text !== ""
+                            text: root.hasReopen ? "On the same workspaces, just where you left them"
+                                : root.custom && root.custom.option ? root.custom.option.detail || "" : ""
                             color: root.dimTextColor
                             font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
@@ -241,7 +322,7 @@ PanelWindow {
                         }
                     }
                 }
-                Item { width: 1; height: 16; visible: root.hasReopen }
+                Item { width: 1; height: 16; visible: root.hasOption }
 
                 // Buttons
                 Row {
@@ -249,7 +330,7 @@ PanelWindow {
                     spacing: 10
                     DialogButton {
                         width: (parent.width - parent.spacing) / 2
-                        label: "Cancel"
+                        label: (root.action === "custom" && root.custom && root.custom.cancelLabel) || "Cancel"
                         focused: root.focusedButton === 0
                         onClicked: root.cancel()
                     }

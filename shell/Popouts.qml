@@ -68,6 +68,20 @@ PanelWindow {
         if (current !== "") revealed = true;
     }
     function close() { current = ""; pending = ""; revealed = false; revealWaiting = false; }
+    // Name a workspace (the pencil on the window mode panel): the panel closes and Slate's
+    // confirmation window asks, with a field for the name
+    function renameWorkspace(ws) {
+        if (!(ws > 0) || !powerConfirm) return;
+        const name = Config.workspaceName(ws);
+        close();
+        powerConfirm.confirmWith({
+            title: name !== "" ? "Rename \u201c" + name + "\u201d" : "Name this workspace",
+            body: "Pick a short name for workspace " + ws + ". It stays for as long as the workspace is around, and "
+                + "is saved with a Space. Leave it empty to go back to the number.",
+            button: "Rename", code: 0xEA98, danger: false,
+            input: { text: name, placeholder: Config.workspaceNumber(ws), maxLength: Config.workspaceNameLimit }
+        }, (option, typed) => Config.setWorkspaceName(ws, typed));
+    }
     // Its first frame is drawn (still slid away): now slide it in
     Connections {
         target: panelArea.Window.window
@@ -244,6 +258,7 @@ PanelWindow {
                         : pop.displayed === "bluetooth" ? bluetoothPanel
                         : pop.displayed === "battery" ? batteryPanel
                         : pop.displayed === "gamemode" ? gameModePanel
+                        : pop.displayed === "windowmode" ? windowModePanel
                         : pop.displayed === "calendar" ? calendarPanel
                         : pop.displayed === "session" ? sessionPanel
                         : pop.displayed === "control" ? controlPanel
@@ -458,9 +473,28 @@ PanelWindow {
     // anchors itself, usually to the right
     component PanelTitle: Item {
         property alias text: titleLabel.text
+        // An icon straight after the title, to click (the pencil that renames a workspace);
+        // the title shortens before the two would overflow
+        property int editCode: 0
+        signal editClicked()
         width: parent ? parent.width : 0
         height: 26
-        Label { id: titleLabel; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 15 }
+        Label {
+            id: titleLabel
+            anchors.verticalCenter: parent.verticalCenter
+            font.pixelSize: 15
+            width: Math.min(implicitWidth, parent.width - (titleEdit.visible ? 30 : 0))
+            elide: Text.ElideRight
+        }
+        Item {
+            id: titleEdit
+            visible: parent.editCode !== 0
+            anchors { left: titleLabel.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+            width: 24; height: 24
+            Rectangle { anchors.fill: parent; radius: 6; color: titleEditArea.containsMouse ? pop.card : "transparent" }
+            Icon { anchors.centerIn: parent; code: parent.parent.editCode; font.pixelSize: 16; color: pop.accent }
+            ClickArea { id: titleEditArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: parent.parent.editClicked() }
+        }
     }
 
     // One of the next few days' weather: its name, its weather's icon, then the high and low.
@@ -886,7 +920,7 @@ PanelWindow {
                 width: parent.width
                 visible: !Config.s.clipboardHistory || clipView.entries.length === 0
                 text: !Config.s.clipboardHistory ? "Clipboard history is off, so nothing you copy is kept."
-                    : "Nothing copied yet."
+                    : "Nothing here yet. Things you copy will show up here."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
             Column {
@@ -1118,7 +1152,7 @@ PanelWindow {
                                                 if (!pop.powerConfirm) return;
                                                 pop.powerConfirm.confirmWith({
                                                     title: "Delete \u201c" + sp.name + "\u201d?",
-                                                    body: "The space is forgotten. Its apps and windows that are open now stay as they are.",
+                                                    body: "Slate will forget this space. Don't worry about anything that's open: its apps and windows stay just as they are.",
                                                     button: "Delete", code: 0xEB41, danger: true
                                                 }, () => Spaces.remove(sp.id));
                                             }
@@ -1192,7 +1226,7 @@ PanelWindow {
             Label {
                 visible: spacesView.mode === "new" && Spaces.live.length === 0
                 width: parent.width
-                text: "No workspace has apps open yet: open the apps you want, arranged how you like, then come back here."
+                text: "There's nothing to save just yet. Open the apps you'd like, arrange them how you like, then come back here."
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
             // Each workspace with apps, drawn small over the wallpaper; click to pick it.
@@ -1331,7 +1365,7 @@ PanelWindow {
                                 Label {
                                     width: parent.width
                                     readonly property int n: wsCard.modelData.windows.length
-                                    text: "Workspace " + wsCard.modelData.id + " · " + (n === 1 ? "1 app" : n + " apps")
+                                    text: Config.workspaceLabel(wsCard.modelData.id) + " · " + (n === 1 ? "1 app" : n + " apps")
                                     color: wsCard.on ? pop.text : pop.dim
                                     font.weight: Font.Normal; font.pixelSize: 12
                                 }
@@ -1702,7 +1736,7 @@ PanelWindow {
                 font.pixelSize: 12
                 font.weight: Font.Normal
                 text: !btView.adapter ? "No Bluetooth adapter found" : !btView.on ? "Bluetooth is off"
-                    : "No paired devices yet. Pair one in Bluetooth settings"
+                    : "No paired devices yet. You can pair one in Bluetooth settings"
             }
             Column {
                 visible: btView.on && btView.devices.length > 0
@@ -1757,6 +1791,76 @@ PanelWindow {
     }
 
     // ---- Game mode: costly effects off while you play (Config.gameMode) ------------------
+    // ---- Window mode (the button before the workspace dots) ------------------------------
+    // The window mode of the workspace you're on (this one only: the others keep theirs). The
+    // default for the rest is in Settings → Windows (its footer link)
+    Component {
+        id: windowModePanel
+        Column {
+            id: wmView
+            width: 300
+            spacing: 10
+            readonly property int ws: Config.focusedWorkspaceId
+            readonly property string own: Config.workspaceModes[String(ws)] || ""
+            readonly property var modes: Config.windowModes
+
+            // Its name (or "Workspace 3"), with a pencil to rename it: asked in Slate's
+            // confirmation window, which has a field for it. An empty name: the number again
+            PanelTitle {
+                text: Config.workspaceLabel(wmView.ws)
+                editCode: wmView.ws > 0 ? 0xEA98 : 0
+                onEditClicked: pop.renameWorkspace(wmView.ws)
+            }
+            Label {
+                width: parent.width
+                wrapMode: Text.Wrap
+                color: pop.dim; font.pixelSize: 12; font.weight: Font.Normal
+                text: (wmView.own ? "This workspace has a window mode of its own." : "This workspace follows the default.")
+                    + " A mode picked here is for this workspace only; the others keep theirs."
+            }
+            Column {
+                width: parent.width
+                spacing: 6
+                Repeater {
+                    model: wmView.modes
+                    delegate: RowButton {
+                        id: modeRow
+                        required property var modelData
+                        readonly property bool isDefault: modelData.value === Config.windowMode
+                        width: parent.width
+                        selected: Config.focusedMode === modelData.value
+                        // (the default's mode: back to following the default)
+                        onClicked: Config.setWorkspaceMode(wmView.ws, modelData.value)
+                        Icon {
+                            id: modeIcon
+                            code: modeRow.modelData.icon; font.pixelSize: 16
+                            color: modeRow.selected ? pop.accentText : pop.dim
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        }
+                        Label {
+                            anchors { left: modeIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            text: modeRow.modelData.label
+                            color: modeRow.selected ? pop.accentText : pop.text
+                            font.weight: Font.Normal
+                        }
+                        Label {
+                            visible: modeRow.isDefault
+                            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            text: "Default"
+                            color: modeRow.selected ? pop.accentText : pop.dim
+                            font.pixelSize: 12; font.weight: Font.Normal
+                        }
+                    }
+                }
+            }
+            Divider {}
+            LinkRow {
+                code: 0xEB20; text: "Window settings"
+                onClicked: pop.openSettingsPage("windows")
+            }
+        }
+    }
+
     Component {
         id: gameModePanel
         // Laid out like the other panels: the title with its switch, a line of status, a
@@ -2143,13 +2247,15 @@ PanelWindow {
             width: 220
             spacing: 6
             Repeater {
+                // (only what this computer can do: without systemd or elogind, nothing can
+                // suspend, restart or shut down for Slate. Config.system)
                 model: [
                     { id: "lock", label: "Lock", code: 0xEAE2, confirm: false },
                     { id: "lock_and_suspend", label: "Suspend", code: 0xF228, confirm: false },
                     { id: "logout", label: "Log out", code: 0xEBA8, confirm: true },
                     { id: "reboot", label: "Restart", code: 0xEB13, confirm: true },
                     { id: "shutdown", label: "Shut down", code: 0xEB0D, confirm: true }
-                ]
+                ].filter(a => a.id === "lock_and_suspend" ? Config.canSuspend : (a.id === "reboot" || a.id === "shutdown") ? Config.canPowerOff : true)
                 delegate: RowButton {
                     required property var modelData
                     width: sessionView.width
@@ -2159,7 +2265,7 @@ PanelWindow {
                         if (modelData.confirm && pop.powerConfirm) pop.powerConfirm.ask(modelData.id);
                         else if (modelData.id === "lock") pop.slate(["lock", "lock"]);
                         else if (modelData.id === "lock_and_suspend")   // lock first, then sleep
-                            Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Quickshell.shellPath("bin/slate")]);
+                            Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; \"$1\" suspend", Quickshell.shellPath("bin/slate"), Quickshell.shellPath("bin/slate-init")]);
                         else Config.sessionAction(modelData.id);
                     }
                     Icon {
@@ -2519,7 +2625,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     spacing: 8
                     Icon { anchors.horizontalCenter: parent.horizontalCenter; code: 0xEA35; font.pixelSize: 26; color: pop.dim }
-                    Label { anchors.horizontalCenter: parent.horizontalCenter; text: "No notifications"; color: pop.dim }
+                    Label { anchors.horizontalCenter: parent.horizontalCenter; text: "All caught up. Nothing new"; color: pop.dim }
                 }
             }
 

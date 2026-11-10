@@ -18,7 +18,7 @@ import re
 import slate
 
 PANELS = ["control", "spaces", "notifications", "session", "volume", "wifi", "clipboard", "screenshot",
-          "keyboard", "bluetooth", "battery", "gamemode", "calendar"]
+          "keyboard", "bluetooth", "battery", "gamemode", "calendar", "windowmode"]
 SHOW_ALL = {k: "true" for k in ("barShowSpaces", "barShowNotifications", "barShowPower", "barShowVolume", "barShowWifi",
                                 "barShowClipboard", "barShowScreenshot", "barShowKeyboard", "barShowBluetooth",
                                 "barShowBattery", "barShowGameMode")}
@@ -59,6 +59,15 @@ SCENES = {
                     "wait": lambda st: st["screensaver"]["open"], "settle": 1.5, "undo": [("screensaver", "stop")]},
     "welcome": {"do": [("welcome", "open")], "wait": lambda st: st["welcome"]["open"], "settle": 1.2,
                 "undo": [("welcome", "close")]},
+    # The cover Slate fades in from at login, with the logo (always dark, even in light mode)
+    "fade-in": {"do": [("test", "fadeIn")], "wait": lambda st: st["fadeIn"]["open"], "settle": 2.0,
+                "undo": [("test", "fadeInClose")]},
+    "fade-in-light": {"settings": {"themeMode": "light", "lightMode": "true"}, "do": [("test", "fadeIn")],
+                      "wait": lambda st: st["fadeIn"]["open"], "settle": 2.0, "undo": [("test", "fadeInClose")]},
+    # The overview's other layouts (Settings → Workspaces → Moving between workspaces)
+    **{f"overview-{m}": {"settings": {"overviewMoveAnimation": m}, "do": [("overview", "open")],
+                         "wait": lambda st: st["overview"]["open"], "settle": 1.2, "undo": [("overview", "close")]}
+       for m in ("wheel", "tilt", "orbit", "deck", "fan", "grid")},
     "dock-menu": {"do": [("dock", "menu", "foot")], "wait": lambda st: st["dock"]["menu"] == "foot",
                   "undo": [("dock", "closeMenu")]},
     "dock-downloads": {"do": [("dock", "downloads")], "wait": lambda st: st["dock"]["menu"] == "other",
@@ -98,6 +107,60 @@ SCENES["settings-changed-dot"] = {
     "do": [("settings", "page", "dock")],
     "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock",
     "settle": 1.2, "undo": [("settings", "close")],
+}
+
+# Choosing Hyprbars (Settings → Windows → Title bars): its risks, in Slate's confirmation window,
+# with nothing built (the session's stand-in for slate-build-hyprbars says so)
+SCENES["hyprbars-question"] = {
+    "do": [("test", "hyprbars", "choose")],
+    "wait": lambda st: st["asking"] == "Use Hyprbars?",
+    "settle": 1.2, "undo": [("power", "cancel")],
+}
+
+# The Welcome window's "Glass or flat?" page, and the whole window on glass (it follows the
+# theme in use, as it can be opened again from Settings)
+SCENES["welcome-look"] = {
+    "do": [("welcome", "page", "3")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3,
+    "settle": 1.2, "undo": [("welcome", "close")],
+}
+SCENES["welcome-glass"] = {
+    "settings": {"glass": "true"},
+    "do": [("welcome", "page", "5")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 5,
+    "settle": 5, "undo": [("welcome", "close")],       # (glass: its blur is made the first time)
+}
+
+# Without systemd or elogind (seatd alone): the Power page's lid and power button rows greyed,
+# with why, and the power menu without Suspend, Restart and Shut down
+SCENES["settings-power-no-login-service"] = {
+    "do": [("test", "system", "none"), ("settings", "page", "power")],
+    "wait": lambda st: st["system"]["logind"] == "none" and st["settings"]["open"] and st["settings"]["section"] == "power",
+    "settle": 1.2, "undo": [("settings", "close"), ("test", "system", "")],
+}
+SCENES["panel-session-no-login-service"] = {
+    "do": [("test", "system", "none"), ("bar", "panel", "session")],
+    "wait": lambda st: st["system"]["logind"] == "none" and st["popout"] == "session",
+    "settle": 1.2, "undo": [("popout", "close"), ("test", "system", "")],
+}
+
+# A workspace with a name of its own: the window mode panel's title (with its pencil), and the
+# question that renames it
+SCENES["panel-windowmode-named"] = {
+    "do": [("workspacename", "set", "1", "Coding"), ("bar", "panel", "windowmode")],
+    "wait": lambda st: st["popout"] == "windowmode" and st["workspaceNames"].get("1") == "Coding",
+    "settle": 1.2, "undo": [("popout", "close"), ("workspacename", "set", "1", "")],
+}
+SCENES["rename-workspace"] = {
+    "do": [("workspacename", "set", "1", "Coding"), ("test", "renameWorkspace")],
+    "wait": lambda st: st["asking"] == "Rename \u201cCoding\u201d",
+    "settle": 1.2, "undo": [("power", "cancel"), ("workspacename", "set", "1", "")],
+}
+
+# The secret workspace showing with nothing on it: the note in the middle saying so
+SCENES["secret-empty"] = {
+    "do": [("!hyprctl", "dispatch", "function() hl.dispatch(hl.dsp.workspace.toggle_special()) end")],
+    "wait": lambda st: len(st["secretEmpty"]) == 1,
+    "settle": 1.2,
+    "undo": [("!hyprctl", "dispatch", "function() hl.dispatch(hl.dsp.workspace.toggle_special()) end")],
 }
 
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)

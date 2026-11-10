@@ -34,6 +34,26 @@ docs and the site to match, in the same commit or one right after it:
 
 Only the text: screenshots and recordings are retaken only when asked.
 
+## Voice
+
+Everything Slate says to people (Settings, questions, notifications, empty screens, the
+Welcome window, the site) is warm and friendly: a calm, kind companion, not a manual and not a
+mascot.
+
+- Talk to the person: "you" and "your", contractions, plain everyday words. Slate speaks as
+  "Slate" (or "we" in the Welcome window and on the site), never "the system".
+- Warm, not chirpy: no exclamation marks, no emoji, no jokes, no "Oops". Slate is calm.
+- Reassure where there's something to worry about: say what stays safe ("your apps and windows
+  stay open", "you can change this at any time") and that a choice can be undone when it can.
+- When something goes wrong, say what happened and what to do next, kindly, without blame
+  ("Slate couldn't…", not "You failed to…" or "Error:").
+- Empty screens are a gentle nudge, not a dead end ("Nothing here yet. Things you copy will
+  show up here").
+- Stay accurate and brief: warmth never costs a fact, a warning or a shortcut, and a
+  description is still one or two short sentences. Buttons stay short verbs ("Restart",
+  "Remove"), and setting names stay plain nouns.
+- British spelling (colour, favourite, tidy).
+
 ## Sounds
 
 Slate's sounds are one family (soft, rounded, calm; nothing alarming) and each is tied to one
@@ -66,8 +86,12 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 - After a change, run at least `tests/run -q --tier static,unit` (or `--no-container` for a
   quick pass); after anything that changes what's on screen, `tests/run -q` (live and visual
   need `sudo modprobe vkms` once per boot: ask the user to run it if `tests/run` says so).
-- A visual difference you meant: `tests/run --update-baselines <scene>`, look at the new
-  image, and commit it with the change. One you didn't mean is a regression: fix it.
+- A visual difference you meant: look at the picture the failing run took
+  (`tests/out/visual/<scene>.actual.png`, with a `.diff.png` beside it), then
+  `tests/run --approve <scene>` makes it the approved one without running anything again (it
+  leaves alone pictures taken before the code last changed), and commit it with the change.
+  `tests/run --update-baselines <scene>` re-shoots instead, when there's no current picture.
+  One you didn't mean is a regression: fix it.
 - New features get tests: a script → a unit test; something on screen → a live test (and
   its state in the `test` IPC target in `shell.qml` if needed) and a scene in
   `tests/visual/scenes.py`. Anything that starts a side effect at login (sounds, prompts,

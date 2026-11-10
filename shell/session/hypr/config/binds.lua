@@ -67,10 +67,10 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + ALT + Space"]        = "Windows: Float or tile the window",
     ["SUPER + D"]                  = "Windows: Maximise",
     ["SUPER + F"]                  = "Windows: Full screen",
-    ["SUPER + J"]                  = "Windows: Split the other way",
+    ["SUPER + J"]                  = "Windows: Split the other way (Side Stack: make it the main window; Scrolling: change the column's width; Stacking: the next window)",
     ["SUPER + R"]                  = "Windows: Resize with the arrow keys",
-    ["SUPER + ALT + Left"]         = "Windows: Focus the window to the left",
-    ["SUPER + ALT + Right"]        = "Windows: Focus the window to the right",
+    ["SUPER + ALT + Left"]         = "Windows: Focus the window to the left (Stacking: the previous window)",
+    ["SUPER + ALT + Right"]        = "Windows: Focus the window to the right (Stacking: the next window)",
     ["SUPER + ALT + Up"]           = "Windows: Focus the window above",
     ["SUPER + ALT + Down"]         = "Windows: Focus the window below",
     ["SUPER + SHIFT + Left"]       = "Windows: Move the window left",
@@ -82,8 +82,8 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + W"]                  = "Workspaces: Move the window to a new workspace at the end",
     ["SUPER + CONTROL + Right"]    = "Workspaces: Move the window to the next workspace",
     ["SUPER + CONTROL + Left"]     = "Workspaces: Move the window to the previous workspace",
-    ["SUPER + Right"]              = "Workspaces: Next workspace",
-    ["SUPER + Left"]               = "Workspaces: Previous workspace",
+    ["SUPER + Right"]              = "Workspaces: Next workspace (in a switcher: the next window or workspace)",
+    ["SUPER + Left"]               = "Workspaces: Previous workspace (in a switcher: the previous one)",
     ["SUPER + Down"]               = "Workspaces: Workspace overview",
     ["SUPER + Up"]                 = "Workspaces: Show or hide the secret workspace",
     ["SUPER + S"]                  = "Workspaces: Show or hide the secret workspace",
@@ -97,9 +97,9 @@ local HYPRLAND_DESCRIPTIONS = {
     ["SUPER + C"]                  = "Windows: Close the window",
     ["SUPER + V"]                  = "Windows: Float or tile the window",
     ["SUPER + P"]                  = "Windows: Pseudo-tile the window",
-    ["SUPER + J"]                  = "Windows: Split the other way",
-    ["SUPER + Left"]               = "Windows: Focus the window to the left",
-    ["SUPER + Right"]              = "Windows: Focus the window to the right",
+    ["SUPER + J"]                  = "Windows: Split the other way (Side Stack: make it the main window; Scrolling: change the column's width; Stacking: the next window)",
+    ["SUPER + Left"]               = "Windows: Focus the window to the left (Stacking: the previous window)",
+    ["SUPER + Right"]              = "Windows: Focus the window to the right (Stacking: the next window)",
     ["SUPER + Up"]                 = "Windows: Focus the window above",
     ["SUPER + Down"]               = "Windows: Focus the window below",
     ["SUPER + M"]                  = "Slate: Log out (asks first)",
@@ -191,6 +191,9 @@ end
 -- Super+Return drive it instead of their usual actions
 local function overviewIsOpen() return slateOverlayOpen("slate-overview") end
 local function ov(cmd) hl.exec_cmd(slate("overview " .. cmd)) end
+-- The window switcher (Super+Tab) is open: Super+Left/Right move through it, not the workspaces
+local function switcherIsOpen() return slateOverlayOpen("slate-switcher") end
+local function sw(cmd) hl.exec_cmd(slate("switcher " .. cmd)) end
 
 -- AZERTY fix: the number-row keys emit symbols (& é " ' ...) without Shift, so
 -- binding to the digit characters fails. Bind by physical keycode instead.
@@ -217,6 +220,29 @@ local function otherWindowsOn(wsId, exceptAddr)
     end
     return n
 end
+-- The window mode (Settings → Windows): tiling, master, scrolling, monocle or floating. Slate
+-- sets it with Hyprland's layout (shell.qml), so a shortcut can do the matching job in each
+-- layout: Super+J splits the other way in tiling, and does the nearest thing in the others
+WINDOW_MODE = WINDOW_MODE or "tiling"
+-- (the focused workspace's mode: each can have its own, windowrules.lua)
+local function currentMode() return activeMode and activeMode() or WINDOW_MODE end
+function layoutAction()
+    local mode = currentMode()
+    if mode == "master" then hl.dispatch(hl.dsp.layout("swapwithmaster"))
+    elseif mode == "scrolling" then hl.dispatch(hl.dsp.layout("colresize +conf"))
+    elseif mode == "monocle" then hl.dispatch(hl.dsp.layout("cyclenext"))
+    else hl.dispatch(hl.dsp.layout("togglesplit")) end
+end
+-- Focus left or right; in monocle the other windows are hidden behind the one shown, so it
+-- goes to the previous or next one instead
+function focusSideways(dir)
+    if currentMode() == "monocle" then
+        hl.dispatch(hl.dsp.layout(dir == "left" and "cycleprev" or "cyclenext"))
+    else
+        hl.dispatch(hl.dsp.focus({ direction = dir }))
+    end
+end
+
 function closeWindowSmart()
     local win = hl.get_active_window()
     pendingClose = nil
@@ -238,17 +264,28 @@ end)
 
 -- (Slate's set)
 if SLATE_KEYS then
+-- Maximise: a floating window with Slate's own title bars is maximised by Slate, leaving room
+-- for its bar (titlebar maximise, TitleBar.qml); otherwise Hyprland's (which the bar can't sit on)
+function maximiseSmart()
+    local w = hl.get_active_window()
+    if SLATE_TITLEBARS and w and w.floating then
+        hl.exec_cmd(slate("titlebar maximise " .. w.address))
+    else
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = 1 }))
+    end
+end
+
 -- Window manipulation
 hl.bind(mainMod .. " + Escape",      hl.dsp.exec_cmd("hyprctl kill"))
 hl.bind(mainMod .. " + Q",           function() closeWindowSmart() end)
 hl.bind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + D",           hl.dsp.window.fullscreen({ mode = 1 }))
+hl.bind(mainMod .. " + D",           function() maximiseSmart() end)
 hl.bind(mainMod .. " + F",           hl.dsp.window.fullscreen())
-hl.bind(mainMod .. " + J",           hl.dsp.layout("togglesplit"))
+hl.bind(mainMod .. " + J",           function() layoutAction() end)
 
 -- Change focus
-hl.bind(mainMod .. " + ALT + Left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + ALT + Right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + ALT + Left",  function() focusSideways("left") end)
+hl.bind(mainMod .. " + ALT + Right", function() focusSideways("right") end)
 hl.bind(mainMod .. " + ALT + Up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + ALT + Down",  hl.dsp.focus({ direction = "down" }))
 hl.bind("ALT + Tab",           hl.dsp.window.cycle_next())
@@ -482,8 +519,12 @@ local function cycleWorkspace(step)
     else hl.dispatch(go) end
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's
 end
-hl.bind(mainMod .. " + Right", function() if overviewIsOpen() then ov("next") else cycleWorkspace(1) end end)
-hl.bind(mainMod .. " + Left",  function() if overviewIsOpen() then ov("prev") else cycleWorkspace(-1) end end)
+hl.bind(mainMod .. " + Right", function()
+    if switcherIsOpen() then sw("next") elseif overviewIsOpen() then ov("next") else cycleWorkspace(1) end
+end)
+hl.bind(mainMod .. " + Left", function()
+    if switcherIsOpen() then sw("prev") elseif overviewIsOpen() then ov("prev") else cycleWorkspace(-1) end
+end)
 
 -- Scroll through existing workspaces & monitors
 hl.bind(mainMod .. " + mouse_down",           hl.dsp.focus({ workspace = "m-1" }))
@@ -522,13 +563,15 @@ if HYPR_KEYS then
     hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
     hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(slate("launcher toggle")))
     hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-    hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
-    -- Focus; with Slate's extras, they drive the workspace overview while it's open
+    hl.bind(mainMod .. " + J", function() layoutAction() end)
+    -- Focus; with Slate's extras, they drive the window switcher or workspace overview while open
     hl.bind(mainMod .. " + Left", function()
-        if EXTRAS and overviewIsOpen() then ov("prev") else hl.dispatch(hl.dsp.focus({ direction = "left" })) end
+        if EXTRAS and switcherIsOpen() then sw("prev")
+        elseif EXTRAS and overviewIsOpen() then ov("prev") else focusSideways("left") end
     end)
     hl.bind(mainMod .. " + Right", function()
-        if EXTRAS and overviewIsOpen() then ov("next") else hl.dispatch(hl.dsp.focus({ direction = "right" })) end
+        if EXTRAS and switcherIsOpen() then sw("next")
+        elseif EXTRAS and overviewIsOpen() then ov("next") else focusSideways("right") end
     end)
     hl.bind(mainMod .. " + Up", function()
         if EXTRAS and overviewIsOpen() then ov("go") else hl.dispatch(hl.dsp.focus({ direction = "up" })) end
@@ -566,7 +609,7 @@ if EXTRAS then
     end)
     hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(launchPrefix .. TERMINAL .. " -e btop") end)
     hl.bind(mainMod .. " + Escape",     hl.dsp.exec_cmd("hyprctl kill"))
-    hl.bind(mainMod .. " + D",          hl.dsp.window.fullscreen({ mode = 1 }))
+    hl.bind(mainMod .. " + D",          function() maximiseSmart() end)
     hl.bind(mainMod .. " + F",          hl.dsp.window.fullscreen())
     hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(slate("settings toggle")))
     hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(slate("bar panel control")))

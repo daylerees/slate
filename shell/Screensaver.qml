@@ -208,7 +208,7 @@ Scope {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 text: noPlayer ? "Videos need Qt Multimedia (the qt6-multimedia package)"
-                    : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " yet. Add some, or get scenery videos in Settings → Screensaver"
+                    : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " just yet. Pop some in, or get scenery videos in Settings → Screensaver"
                 color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: 15
             }
             ClockFace { visible: Config.s.screensaverClock; anchors.centerIn: parent; anchors.verticalCenterOffset: -parent.height * 0.06 }

@@ -568,7 +568,8 @@ PanelWindow {
             const recent = all.filter(a => lastUsed[a.id]).sort((x, y) => lastUsed[y.id] - lastUsed[x.id]).slice(0, 4);
             return recent.concat(all.filter(a => !recent.includes(a)));
         }
-        return apps.concat(sessionActions)
+        return apps.concat(sessionActions.filter(a => a.action === "suspend" ? Config.canSuspend
+                : (a.action === "reboot" || a.action === "shutdown") ? Config.canPowerOff : true))
             .map(a => ({ a: a, s: score(a, q) }))
             .filter(x => x.s >= 0)
             .sort((x, y) => x.s - y.s || uses(y.a) - uses(x.a) || x.a.name.localeCompare(y.a.name))
@@ -611,7 +612,7 @@ PanelWindow {
         if (entry.app) countUse(entry.id);     // the Slate Settings app: counted like an app
         if (entry.action) {        // lock / suspend / log out / restart / shut down
             if (entry.action === "lock") Config.slateCall("lock", "lock");
-            else if (entry.action === "suspend") Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; systemctl suspend", Config.slateCommand]);
+            else if (entry.action === "suspend") Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; \"$1\" suspend", Config.slateCommand, Quickshell.shellPath("bin/slate-init")]);
             else Config.slateCall("power", "confirm", entry.action);   // asks first
             closeLauncher();
             return;
@@ -631,11 +632,10 @@ PanelWindow {
         closeLauncher();
     }
 
-    // ---- The secret (special) workspace, per monitor ("" = hidden), from Hyprland's events
-    property var specialOpen: ({})
+    // ---- The secret (special) workspace showing on the focused monitor ("" = hidden: Config.specialOpen)
     function specialShown() {
         const mon = Hyprland.focusedMonitor;
-        return mon ? (specialOpen[mon.name] || "") : "";
+        return mon ? (Config.specialOpen[mon.name] || "") : "";
     }
     Connections {
         target: Hyprland
@@ -650,26 +650,6 @@ PanelWindow {
                     Quickshell.execDetached(["hyprctl", "dispatch",
                         "function() hl.dispatch(hl.dsp.focus({ window = 'address:0x" + f[0] + "' })) end"]);
                 }
-                return;
-            }
-            if (event.name !== "activespecial") return;     // "special:name,monitor"
-            const i = event.data.lastIndexOf(",");
-            const o = Object.assign({}, root.specialOpen);
-            o[event.data.slice(i + 1)] = event.data.slice(0, i);
-            root.specialOpen = o;
-        }
-    }
-    Process {
-        // Already showing when Slate starts
-        running: true
-        command: ["hyprctl", "monitors", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const o = {};
-                    for (const m of JSON.parse(text)) o[m.name] = (m.specialWorkspace && m.specialWorkspace.name) || "";
-                    root.specialOpen = o;
-                } catch (e) {}
             }
         }
     }
@@ -1200,7 +1180,7 @@ PanelWindow {
         Text {
             anchors.centerIn: list
             visible: list.count === 0
-            text: "Nothing matches"
+            text: "Nothing matches that. Try another word"
             color: root.dimTextColor
             font.family: root.fontFamily
             font.pixelSize: 14

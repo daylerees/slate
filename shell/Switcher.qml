@@ -47,11 +47,24 @@ PanelWindow {
     property var windows: []          // snapshot taken when opened
     property int index: 0             // position on the (repeated) strip
     property bool animate: false
+    // Settings → Windows: how the selection moves (slide: the row slides under a fixed
+    // highlight; hop: the cards hop as they go; wheel: round the outside of a turning circle;
+    // tilt: the others turned away in 3D either side; orbit: round a 3D ring; deck: a pile dealt
+    // from; fan: a hand of cards; or instant) and how it goes to the window picked (crossfade, workspace: the
+    // workspace animation, or instant)
+    readonly property string moveAnim: ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"].includes(Config.s.switcherMoveAnimation) ? Config.s.switcherMoveAnimation : "slide"
+    readonly property string pickAnim: ["crossfade", "workspace", "instant"].includes(Config.s.switcherPickAnimation) ? Config.s.switcherPickAnimation : "crossfade"
+    readonly property bool moveAnimated: animate && moveAnim !== "instant"
+    // Going to a window with Instant: the switcher goes at once too
+    property bool quickClose: false
 
     // The windows are repeated round the loop as often as needed to fill the
     // screen, so the strip always feels endless (a single window isn't repeated)
     readonly property int reps: windows.length < 2 ? 1
-        : Math.max(1, Math.ceil((width - 80 + 2 * cardW) / (windows.length * cardW)))
+        : Math.max(1, Math.ceil((width - 80 + 2 * cardW) / (windows.length * cardW)),
+                   Math.ceil(({ tilt: 9, orbit: 10, deck: 6, fan: 12 })[moveAnim] / windows.length) || 1)     // (far enough round that the strip's ends are never seen)
+    // Hop and wheel need room above or below the cards
+    readonly property real extraH: ({ hop: 30, wheel: 80, orbit: 70, deck: 70, fan: 80 })[moveAnim] || 0
     readonly property var strip: {
         const out = [];
         for (let r = 0; r < reps; r++) for (const w of windows) out.push(w);
@@ -64,6 +77,7 @@ PanelWindow {
         if (windows.length === 0) return;
         // Jump straight to the starting window, then animate further moves
         animate = false;
+        quickClose = false;
         index = windows.length > 1 ? (step > 0 ? 1 : windows.length - 1) : 0;
         shown = true;
         syncStrip();
@@ -107,7 +121,10 @@ PanelWindow {
         id: focusTimer
         interval: 40
         onTriggered: {
-            Quickshell.execDetached(["hyprctl", "dispatch", `function() fadeTo(hl.dsp.focus({ window = "address:${sw.pendingAddress}" })) end`]);   // crossfade
+            // Crossfade (fadeTo), the workspace animation, or none (animations.lua)
+            const how = { crossfade: "fadeTo", workspace: "hl.dispatch", instant: "instantTo" }[sw.pickAnim];
+            Quickshell.execDetached(["hyprctl", "dispatch", `function() ${how}(hl.dsp.focus({ window = "address:${sw.pendingAddress}" })) end`]);
+            sw.quickClose = sw.pickAnim === "instant";
             sw.shown = false;
             sw.releasing = false;
         }
@@ -124,7 +141,7 @@ PanelWindow {
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: Config.ms(200); easing.type: Easing.InOutQuad } }
+    Behavior on fade { NumberAnimation { duration: sw.quickClose ? 0 : Config.ms(200); easing.type: Easing.InOutQuad } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
@@ -196,7 +213,7 @@ PanelWindow {
             width: wsDots.width; height: wsDots.height
             dot: wsPill.dot; step: wsPill.dot + wsPill.gap
             index: wsPill.activeIndex
-            animate: sw.animate
+            animate: sw.moveAnimated
             color: sw.bar.accent
         }
     }
@@ -205,7 +222,7 @@ PanelWindow {
         id: panel
         anchors.centerIn: parent
         width: Math.min(sw.width - 80, sw.strip.length * sw.cardW + 24)
-        height: sw.cardH + 24
+        height: sw.cardH + 24 + sw.extraH
         radius: 18
         color: sw.bar.barColor
         opacity: sw.fade
@@ -244,7 +261,8 @@ PanelWindow {
 
         // Selection stays fixed in the middle of the screen; the windows slide past it
         Rectangle {
-            anchors.centerIn: list
+            anchors.horizontalCenter: list.horizontalCenter
+            y: list.y + list.restY - height / 2
             width: sw.cardW; height: sw.cardH
             radius: 12
             color: sw.selectColor
@@ -263,14 +281,44 @@ PanelWindow {
             onWidthChanged: sw.syncStrip()
             onVisibleChanged: sw.syncStrip()
             readonly property real len: Math.max(1, sw.strip.length) * sw.cardW
-            path: Path {
-                startX: list.width / 2 - list.len / 2; startY: list.height / 2
-                PathLine { x: list.width / 2 + list.len / 2; y: list.height / 2 }
+            // Where a card rests: at the bottom for hop (it hops up into the room above), at the top
+            // for the wheel (the others drop away round it), otherwise in the middle
+            readonly property real restY: ["hop", "orbit", "deck"].includes(sw.moveAnim) ? height - sw.cardH / 2
+                : sw.moveAnim === "wheel" ? sw.cardH / 2 : sw.moveAnim === "fan" ? sw.cardH / 2 + 24 : height / 2
+            // Each card's distance along the strip from the middle ("side", in pixels) and the
+            // wheel's turn there ("turn", in degrees), for the cards to lean and tilt by
+            Path {
+                id: linePath
+                startX: list.width / 2 - list.len / 2; startY: list.restY
+                PathAttribute { name: "side"; value: -list.len / 2 }
+                PathAttribute { name: "turn"; value: 0 }
+                PathLine { x: list.width / 2 + list.len / 2; y: list.restY }
+                PathAttribute { name: "side"; value: list.len / 2 }
+                PathAttribute { name: "turn"; value: 0 }
             }
+            // The wheel: the strip bent round a circle below, the chosen card at the top
+            readonly property real wheelR: Math.max(len / (2 * Math.PI) * 1.02, sw.cardW * 2.4)
+            readonly property real sweep: len / wheelR * 180 / Math.PI
+            readonly property real a0: (-90 - sweep / 2) * Math.PI / 180
+            Path {
+                id: wheelPath
+                startX: list.width / 2 + list.wheelR * Math.cos(list.a0); startY: list.restY + list.wheelR + list.wheelR * Math.sin(list.a0)
+                PathAttribute { name: "side"; value: -list.len / 2 }
+                PathAttribute { name: "turn"; value: -list.sweep / 2 }
+                PathAngleArc {
+                    centerX: list.width / 2; centerY: list.restY + list.wheelR
+                    radiusX: list.wheelR; radiusY: list.wheelR
+                    startAngle: -90 - list.sweep / 2; sweepAngle: list.sweep
+                    moveToStart: false
+                }
+                PathAttribute { name: "side"; value: list.len / 2 }
+                PathAttribute { name: "turn"; value: list.sweep / 2 }
+            }
+            path: sw.moveAnim === "wheel" ? wheelPath : linePath
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: sw.animate ? Config.ms(220) : 0     // (Animations: Fast halves it, Off makes it instant)
+            highlightMoveDuration: sw.moveAnimated ? Config.ms(220) : 0     // (Animations: Fast halves it, Off makes it instant)
 
             delegate: Item {
                 id: card
@@ -281,6 +329,52 @@ PanelWindow {
                 readonly property string tilePath: Config.tilePath(key)
                 width: sw.cardW
                 height: sw.cardH
+                // Movement (sw.moveAnim): how far along it is from the middle, in cards
+                readonly property real side: PathView.side ?? 0
+                readonly property real t: side / sw.cardW
+                readonly property string fx: sw.moveAnim
+                // Hop: every card rises and falls once for each step the strip moves
+                readonly property real hop: fx === "hop" ? Math.sin(Math.PI * Math.abs(list.offset - Math.round(list.offset))) : 0
+                // Tilt: the others turned away, packed closer the further out they are, and
+                // fading out before the strip's ends
+                readonly property bool tilted: fx === "tilt"
+                readonly property real packed: Math.sign(t) * (Math.min(Math.abs(t), 1) * 0.7 + Math.max(Math.abs(t) - 1, 0) * 0.28) * sw.cardW
+                // Orbit: round a flat ring seen from above the front, the far side small, dim and higher
+                readonly property real th: t * 0.7
+                readonly property real orbitR: sw.cardW * 2.3
+                // Fan: turned about a point well below, like a hand of cards; the chosen one lifted
+                readonly property real fanPivot: height + height * 2.2
+                readonly property real fanStep: (sw.cardW * 0.45 / fanPivot) * 180 / Math.PI
+                rotation: fx === "wheel" ? (PathView.turn ?? 0) : 0
+                z: fx === "orbit" ? Math.cos(th) * 10 : (tilted || fx === "deck" || fx === "fan") ? -Math.abs(t) : 0
+                scale: fx === "orbit" ? 0.45 + 0.55 * (Math.cos(th) + 1) / 2 : fx === "deck" && t > 0 ? Math.max(0.5, 1 - 0.07 * t) : 1
+                opacity: tilted ? Math.max(0, Math.min(1, 3.2 - Math.abs(t)))
+                    // (orbit: the far side dim, and gone before the strip's ends meet behind)
+                    : fx === "orbit" ? (0.35 + 0.65 * (Math.cos(th) + 1) / 2) * Math.max(0, Math.min(1, (Math.PI - Math.abs(th)) * 1.5))
+                    // (deck: the cards dealt away fade as they go; the pile shows four deep)
+                    : fx === "deck" ? (t < 0 ? Math.max(0, 1 + t * 1.2) : Math.max(0, Math.min(1, 4.5 - t)))
+                    : fx === "fan" ? Math.max(0, Math.min(1, 5.5 - Math.abs(t))) : 1
+                transform: [
+                    Rotation {
+                        origin.x: card.width / 2; origin.y: card.height / 2
+                        axis { x: 0; y: 1; z: 0 }
+                        angle: card.tilted ? -Math.max(-1, Math.min(1, card.t)) * 55 : 0
+                    },
+                    Rotation {
+                        origin.x: card.width / 2; origin.y: card.fanPivot
+                        angle: card.fx === "fan" ? card.t * card.fanStep : 0
+                    },
+                    Translate {
+                        x: card.tilted ? card.packed - card.side
+                         : card.fx === "orbit" ? card.orbitR * Math.sin(card.th) - card.side
+                         : card.fx === "deck" ? (card.t > 0 ? card.t * 26 - card.side : card.side * 0.6)
+                         : card.fx === "fan" ? -card.side : 0
+                        y: -card.hop * 26
+                         - (card.fx === "orbit" ? (1 - Math.cos(card.th)) * 45 : 0)
+                         - (card.fx === "deck" ? (card.t > 0 ? card.t * 16 : card.t * 10) : 0)
+                         - (card.fx === "fan" ? 22 * Math.max(0, 1 - Math.abs(card.t)) : 0)
+                    }
+                ]
 
                 // Live preview of the window, scaled to fit, with rounded corners
                 Item {

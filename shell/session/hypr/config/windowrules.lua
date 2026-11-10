@@ -142,9 +142,13 @@ hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow 
 -- animate themselves, so Hyprland shouldn't add its own fade on top
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(bar|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out)$" },
+  match = { namespace = "^slate-(bar|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out|titlebar)$" },
   no_anim = true,
 })
+-- Slate's own title bars (TitleBar.qml) are a little see-through: what's behind them (windows
+-- included) is blurred, but only where they're drawn (their layer covers the whole screen,
+-- the rest of it clear)
+hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titlebar$" }, blur = true, ignore_alpha = 0.3 })
 
 -- Slate Settings (Super+Z): floats in the middle of the screen, at the size it asks for
 -- (880×620 times the interface size), kept within the screen by the floating-window limit above
@@ -152,27 +156,113 @@ hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center 
 -- Choosing your account picture (Settings → General): a dialog of Slate's own
 hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true })
 
--- Window mode (Settings → Windows). Floating: every new window opens floating and centred,
--- like a traditional desktop (move with Super+drag or the title bar). Slate switches it
--- with setWindowMode; windows it floats are tagged "slate-floated", so switching back to
--- tiling only re-tiles those (apps and dialogs that float anyway stay floating).
-FLOAT_ALL_RULE = hl.window_rule({ name = "float-all", match = { class = ".*" }, float = true, center = true, tag = "+slate-floated" })
-FLOAT_ALL_RULE:set_enabled(false)
-function setWindowMode(floating, convert)
-    FLOAT_ALL_RULE:set_enabled(floating)
-    -- Title bars (hyprbars.lua) only in floating mode
-    if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { enabled = floating } } }) end
-    if not convert then return end
-    if floating then
-        for _, w in ipairs(hl.get_windows({ floating = false })) do
+-- Window mode. Settings → Windows sets the default (WINDOW_MODE), and each workspace can have
+-- its own (WORKSPACE_MODES[id], from the menu bar's workspace indicator): tiling, master,
+-- scrolling, monocle or floating. Slate sets both, then calls applyWorkspaceModes().
+-- Floating: every new window opens floating and centred, like a traditional desktop (move with
+-- Super+drag or the title bar). Done with a float rule for each workspace (1–30, then one for
+-- the rest and one for the secret workspace), switched on where the mode is floating; windows
+-- it floats are tagged "slate-floated", so going back to tiling only re-tiles those (apps and
+-- dialogs that float anyway stay floating). The others are a layout, set per workspace.
+WINDOW_MODE = WINDOW_MODE or "tiling"
+WORKSPACE_MODES = WORKSPACE_MODES or {}
+local LAYOUTS = { tiling = "dwindle", master = "master", scrolling = "scrolling", monocle = "monocle", floating = "dwindle", solo = "dwindle" }
+local FLOAT_WS = {}
+local function floatRule(name, ws)
+    local r = hl.window_rule({ name = name, match = { class = ".*", workspace = ws }, float = true, center = true, tag = "+slate-floated" })
+    r:set_enabled(false)
+    return r
+end
+for i = 1, 30 do FLOAT_WS[i] = floatRule("float-ws-" .. i, tostring(i)) end
+local FLOAT_REST = floatRule("float-ws-rest", "r[31-99999]")
+local FLOAT_SPECIAL = floatRule("float-ws-special", "s[true]")
+-- hyprbars' title bars only on floating windows (it's on for all of them otherwise). Only when
+-- the plugin's loaded (hyprbars.lua, before this): without it Hyprland doesn't know the rule,
+-- and reports a config error
+if HYPRBARS_LOADED then
+    pcall(hl.window_rule, { name = "hyprbars-tiled", match = { float = false }, ["hyprbars:no_bar"] = true })
+end
+
+-- The mode a workspace (by id) is in
+function modeOf(id)
+    return (id and WORKSPACE_MODES[id]) or WINDOW_MODE
+end
+-- The focused workspace's mode (Super+J, focusing left/right in binds.lua)
+function activeMode()
+    local ws = hl.get_active_workspace()
+    return modeOf(ws and ws.id)
+end
+
+local layoutsSet = {}         -- workspaces given a layout of their own (to put back to the default)
+function applyWorkspaceModes()
+    local anyFloating = WINDOW_MODE == "floating"
+    for i = 1, 30 do
+        local floating = modeOf(i) == "floating"
+        FLOAT_WS[i]:set_enabled(floating)
+        anyFloating = anyFloating or floating
+    end
+    FLOAT_REST:set_enabled(WINDOW_MODE == "floating")
+    FLOAT_SPECIAL:set_enabled(WINDOW_MODE == "floating")
+    for id, mode in pairs(WORKSPACE_MODES) do
+        if id > 30 and mode == "floating" then anyFloating = true end
+    end
+    -- Each workspace's layout: its own where it has one, else back to the default
+    local default = LAYOUTS[WINDOW_MODE] or "dwindle"
+    local now = {}
+    for id, mode in pairs(WORKSPACE_MODES) do
+        hl.workspace_rule({ workspace = tostring(id), layout = LAYOUTS[mode] or default })
+        now[id] = true
+    end
+    for id in pairs(layoutsSet) do
+        if not now[id] then hl.workspace_rule({ workspace = tostring(id), layout = default }) end
+    end
+    layoutsSet = now
+    -- Title bars (hyprbars.lua) while any workspace floats, and not when Slate draws its own
+    -- (SLATE_TITLEBARS, set by Slate before it calls this)
+    if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { enabled = anyFloating and not SLATE_TITLEBARS } } }) end
+end
+
+-- A floating window that's a dialog (a file picker, a save box, an app's settings): it stays
+-- floating with its app when its workspace goes back to tiling or to Solo. Hyprland doesn't say which windows are dialogs, so: a smaller
+-- window of an app that has a bigger one open, the desktop's file picker (a portal of its own),
+-- or a title like a dialog's
+local DIALOG_TITLE = { "^open", "^save", "^choose", "^select", "^print", "^export", "^import", "^rename",
+                       "^upload", "^attach", "^insert", "^properties", "^preferences" }
+local function isDialog(w, all)
+    if not w.floating then return false end
+    local class = string.lower(w.class or "")
+    if class:find("portal") or class:find("kdialog") or class:find("zenity") or class:find("filechooser") then return true end
+    local title = string.lower(w.title or "")
+    for _, p in ipairs(DIALOG_TITLE) do if title:find(p) then return true end end
+    local area = (w.size and w.size.x and w.size.x * w.size.y) or (w.size and w.size[1] and w.size[1] * w.size[2]) or 0
+    for _, o in ipairs(all) do
+        if o.address ~= w.address and o.pid == w.pid and o.mapped then
+            local oa = (o.size and o.size.x and o.size.x * o.size.y) or (o.size and o.size[1] and o.size[1] * o.size[2]) or 0
+            if oa > area then return true end
+        end
+    end
+    return false
+end
+
+-- Float (or re-tile) the windows already open on the workspaces where `which(id)` is true, to
+-- match their mode: after the mode's changed
+local function convertWindows(which)
+    for _, w in ipairs(hl.get_windows({})) do
+        local id = w.workspace and w.workspace.id
+        if id and which(id) and w.mapped and (w.fullscreen or 0) == 0 then
             local target = "address:" .. w.address
-            if w.mapped and (w.fullscreen or 0) == 0 then
+            local floating = modeOf(id) == "floating"
+            if floating and not w.floating then
                 hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
                 hl.dispatch(hl.dsp.window.float({ action = "enable", window = target }))
             end
         end
-    else
-        for _, w in ipairs(hl.get_windows({ tag = "slate-floated" })) do
+    end
+    -- Back to tiling: only the windows Slate floated (dialogs stay floating with their apps)
+    local all = hl.get_windows({})
+    for _, w in ipairs(hl.get_windows({ tag = "slate-floated" })) do
+        local id = w.workspace and w.workspace.id
+        if id and which(id) and modeOf(id) ~= "floating" and not isDialog(w, all) then
             local target = "address:" .. w.address
             if w.floating and w.class ~= "slate-settings" then
                 hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
@@ -180,4 +270,91 @@ function setWindowMode(floating, convert)
             hl.dispatch(hl.dsp.window.tag({ tag = "-slate-floated", window = target }))
         end
     end
+end
+
+-- Solo: one window per workspace, filling it (a lone tile does: workspaces.lua). A window that
+-- lands on a Solo workspace already holding one (opened there, or moved there) goes on to a new
+-- workspace of its own (newWorkspace, workspaces.lua), which is Solo too. Dialogs and other
+-- floating windows stay with their app; only tiled windows count
+local function soloTarget(id, movingAddr)
+    local target = newWorkspace(movingAddr)
+    -- (when only this workspace was Solo, rather than the default: the new one is too)
+    if WORKSPACE_MODES[id] == "solo" and WINDOW_MODE ~= "solo" then
+        WORKSPACE_MODES[target] = "solo"
+        if SLATE then hl.exec_cmd(SLATE .. " ipc call workspacemode set " .. target .. " solo") end
+    end
+    return target
+end
+local function soloSpill(win)
+    if not win or not win.workspace or win.floating then return end
+    local id = win.workspace.id
+    if not id or id <= 0 or modeOf(id) ~= "solo" then return end
+    for _, w in ipairs(hl.get_workspace_windows(id) or {}) do
+        if w.address ~= win.address and w.mapped and not w.floating then
+            hl.dispatch(hl.dsp.window.move({ workspace = soloTarget(id, win.address), window = "address:" .. win.address }))
+            return
+        end
+    end
+end
+hl.on("window.open", soloSpill)
+-- A window opening on a floating workspace is marked as one Slate floated, so going back to
+-- tiling re-tiles it. (The float rules above ask for the tag too, but it doesn't reach the
+-- windows they float: those stayed floating when their workspace went back to tiling.)
+hl.on("window.open", function(win)
+    local id = win and win.workspace and win.workspace.id
+    if id and win.address and modeOf(id) == "floating" then
+        hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = "address:" .. win.address }))
+    end
+end)
+hl.on("window.move_to_workspace", function(win) soloSpill(win) end)
+-- A workspace becoming Solo: every window on it fills a workspace of its own. Floating ones are
+-- tiled (a lone tile fills its workspace), then the first stays and each of the others goes to a
+-- new workspace. (Dialogs, and Slate's own Settings window, stay as they are.) The new workspaces are worked out
+-- here, one after another, rather than asking newWorkspace each time: the moves only land once
+-- this has run, so it would give the same one each time
+local function soloSpread(which)
+    local nextWs = nil                    -- (one count for the whole change: several workspaces may spread)
+    local all = hl.get_windows({})
+    for _, ws in ipairs(hl.get_workspaces()) do
+        if ws.id and ws.id > 0 and which(ws.id) and modeOf(ws.id) == "solo" then
+            local wins = {}
+            for _, w in ipairs(hl.get_workspace_windows(ws.id) or {}) do
+                if w.mapped and not w.pinned and w.class ~= "slate-settings" and not isDialog(w, all) then table.insert(wins, w) end
+            end
+            for i, w in ipairs(wins) do
+                local target = "address:" .. w.address
+                if w.floating then
+                    hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
+                    hl.dispatch(hl.dsp.window.tag({ tag = "-slate-floated", window = target }))
+                end
+                if i > 1 then
+                    nextWs = nextWs and nextWs + 1 or newWorkspace(nil)
+                    -- (only this workspace was Solo, not the default: its new ones are too)
+                    if WORKSPACE_MODES[ws.id] == "solo" and WINDOW_MODE ~= "solo" then
+                        WORKSPACE_MODES[nextWs] = "solo"
+                        if SLATE then hl.exec_cmd(SLATE .. " ipc call workspacemode set " .. nextWs .. " solo") end
+                    end
+                    hl.dispatch(hl.dsp.window.move({ workspace = nextWs, window = target, follow = false }))
+                end
+            end
+        end
+    end
+end
+
+-- The default changed (Settings → Windows): the workspaces without a mode of their own follow it
+function setWindowMode(_, convert)
+    applyWorkspaceModes()
+    if convert then
+        local follows = function(id) return WORKSPACE_MODES[id] == nil end
+        convertWindows(follows)
+        soloSpread(follows)
+    end
+end
+-- One workspace's mode changed (the menu bar): its windows follow it
+function setWorkspaceMode(id, mode)
+    WORKSPACE_MODES[id] = (mode ~= "" and mode) or nil
+    applyWorkspaceModes()
+    local this = function(wid) return wid == id end
+    convertWindows(this)
+    soloSpread(this)
 end

@@ -187,7 +187,7 @@ FloatingWindow {
         Text {
             visible: files.status === FolderListModel.Ready && files.count === 0
             anchors.centerIn: parent
-            text: "No pictures or folders here"
+            text: "No pictures or folders here. Try another place on the left"
             color: pk.dim; font.family: pk.font; font.pixelSize: 13
         }
         GridView {

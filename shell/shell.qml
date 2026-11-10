@@ -34,6 +34,34 @@ ShellRoot {
         model: Config.welcoming ? Quickshell.screens : []
         FadeIn { required property var modelData; screen: modelData }
     }
+    // Slate's own title bar on the focused floating window (Settings → Windows → Title bars)
+    // Each workspace's window mode (the menu bar's workspace indicator; Spaces saves and restores it)
+    IpcHandler {
+        target: "workspacemode"
+        function set(id: int, mode: string): void { Config.setWorkspaceMode(id, mode); }
+        function get(id: int): string { return Config.workspaceModes[String(id)] || ""; }
+        // Change the default mode (as Settings → Windows does): tidy moves every workspace to it,
+        // otherwise the ones in use keep the mode they have, as their own
+        function setDefault(mode: string, tidy: bool): void { Config.setDefaultMode(mode, tidy); }
+        // The workspaces a change of default to this mode would rearrange (with windows, in another)
+        function notIn(mode: string): string { return Config.workspacesNotIn(mode).join(","); }
+    }
+    // Each workspace's own name (the pencil on the window mode panel; Spaces saves and restores it)
+    IpcHandler {
+        target: "workspacename"
+        function set(id: int, name: string): void { Config.setWorkspaceName(id, name); }
+        function get(id: int): string { return Config.workspaceName(id); }
+        function label(id: int): string { return Config.workspaceLabel(id); }
+    }
+    IpcHandler {
+        target: "titlebar"
+        // Maximise or restore a window, leaving room for its bar (Super+D, binds.lua)
+        function maximise(address: string): void { Config.titleBarMaximise(address); }
+    }
+    Variants {
+        model: Config.anyFloating && Config.slateTitleBars ? Quickshell.screens : []
+        TitleBar { required property var modelData; screen: modelData }
+    }
     // Only one of the launcher, window switcher and workspace overview shows at a
     // time: opening one closes the others
     Launcher {
@@ -84,6 +112,29 @@ ShellRoot {
     IpcHandler {
         target: "test"
         enabled: Config.testMode
+        // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
+        // reload, remove. And answering the question that's showing in the confirmation window
+        function hyprbars(what: string): void {
+            if (what === "choose") Config.hyprbarsChoose();
+            else if (what === "rebuild") Config.hyprbarsRebuild();
+            else if (what === "reload") Config.hyprbarsReload();
+            else if (what === "remove") Config.hyprbarsRemove();
+            else if (what === "unset") Config.titleBarStyleUnset = true;      // as if the settings were from before the choice
+            else Config.hyprbarsCheck();
+        }
+        // As if this computer had no systemd or elogind (what bin/slate-init info would say), or
+        // had them again ("")
+        function system(logind: string): void {
+            const have = logind !== "none";
+            Config.system = { init: have ? "systemd" : "openrc", logind: logind || "systemd", suspend: have ? "yes" : "no",
+                              power: have ? "yes" : "no", inhibit: have ? "yes" : "no", timedate: have ? "yes" : "no" };
+        }
+        function answer(yes: bool): void { if (yes) powerConfirm.confirm(); else powerConfirm.cancel(); }
+        // Type into the question's text field (naming a workspace), and what's in it now
+        function type(text: string): void { powerConfirm.inputText = text; }
+        function typed(): string { return powerConfirm.inputText; }
+        // As the pencil on the window mode panel's title does, for the workspace you're on
+        function renameWorkspace(): void { popouts.renameWorkspace(Config.focusedWorkspaceId); }
         // Magnify the dock as if the pointer were over slot i (-1: as if it had left): the
         // test session has no pointer device to hover with
         // Drag an app on the dock as the pointer would: picked up (if it isn't already), held
@@ -99,6 +150,18 @@ ShellRoot {
             win.dragScreen = win.toScreen(strip.mapToItem(win.contentItem, pt.x, pt.y));
             win.dragTo(pt);
         }
+        // The login fade's cover (FadeIn.qml), which tests never see otherwise: shown and held,
+        // faded away as at login, or taken away at once
+        function fadeIn(): void { Config.welcomeFading = false; Config.welcoming = true; }
+        function fadeInEnd(): void { Config.welcomeFading = true; }
+        function fadeInClose(): void { Config.welcoming = false; Config.welcomeFading = false; }
+        // Settings asking something (as its Reset does, with a switch): it should ask in Slate's
+        // confirmation window (power: custom), not a card of its own
+        function settingsAsk(): void {
+            const w = settingsLoader.item;
+            if (w) w.ask = { title: "Test question?", body: "From the tests", button: "Yes",
+                             option: { label: "Also this", detail: "A switch" }, run: v => {}, cancel: () => {} };
+        }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
@@ -111,18 +174,22 @@ ShellRoot {
                 screens: Quickshell.screens.map(s => ({ name: s.name, width: s.width, height: s.height })),
                 popout: popouts.current,
                 settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
+                            ownCard: !!settings && settings.confirming,
                             scroll: settings ? settings.scrolledTo : 0 },
                 launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
                 switcher: { open: winSwitcher.shown },
-                overview: { open: wsOverview.shown },
+                overview: { open: wsOverview.shown, selected: wsOverview.selected, grid: wsOverview.isGrid,
+                            columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing },
                 screensaver: { open: screensaver.shown },
-                power: { open: powerConfirm.shown, action: powerConfirm.action },
+                power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
-                welcome: { open: welcome.shown },
-                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd },
+                welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages },
+                fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
+                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd,
+                                 latest: notifs.history.length > 0 ? notifs.history[0].summary : "" },
                 dock: {
                     pinned: win.pinned,
                     dragging: win.dragKey, dropIndex: win.dropIndex, dragAway: win.dragAway, gapAt: win.gapAt,
@@ -130,10 +197,23 @@ ShellRoot {
                         ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
                         : { kind: x.kind }),
                     menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : "other") : "",
-                    preview: previewPop.visible, media: win.mediaShown, trash: win.trashCount
+                    preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
+                    hoverEffect: win.hoverEffect,
+                    fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
+                    glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
+                    lift: win.slots.map(x => Math.round(win.liftAt(x.at))),
+                    tilt: win.slots.map(x => Math.round(win.tiltAt(x.at))), scale: win.slots.map(x => Math.round(win.scaleAt(x.at) * 100) / 100)
                 },
                 tray: SystemTray.items.values.map(i => i.id),
                 gameMode: Config.gameMode,
+                titleBar: Config.titleBarOn, titleBarAway: Config.titleBarAway,
+                titleBars: Config.slateTitleBars ? "slate" : "hyprbars", titleBarStyle: Config.s.titleBarStyle,
+                hyprbars: Config.hyprbarsState, hyprbarsFallback: Config.hyprbarsFallback,
+                system: Config.system,
+                workspaceNames: Config.workspaceNames,
+                // (the screens where the note saying the secret workspace is empty shows)
+                secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
+                asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
@@ -158,6 +238,7 @@ ShellRoot {
         active: true
         SettingsWindow {
             bar: topBar; notifs: notifs
+            confirmer: powerConfirm       // (asks in the same window as shutting down: app installs)
             onClosed: settingsRebuild.restart()
         }
     }
@@ -181,6 +262,11 @@ ShellRoot {
         FadeOut { required property var modelData; screen: modelData }
     }
     OSD { bar: topBar; popouts: popouts }
+    // The secret workspace showing with nothing on it: a note saying so, on that screen
+    Variants {
+        model: Quickshell.screens
+        SecretEmpty { required property var modelData; screen: modelData; bar: topBar }
+    }
     LockScreen { id: lockScreen }
     Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { lock: lockScreen }
@@ -226,9 +312,11 @@ ShellRoot {
         // ...with square corners only while it fills the screen (rule in windowrules.lua)
         const solos = `hl.workspace_rule({ workspace = "w[tv1]", gaps_out = ${solo}, gaps_in = 0 }); `
             + `if SOLO_SQUARE_RULE then SOLO_SQUARE_RULE:set_enabled(${solo === 0}) end; `;
-        // Window mode: the float-all rule on or off (windowrules.lua); converting open
+        // Window mode: Hyprland's layout, and the float-all rule on or off (windowrules.lua); converting open
         // windows happens only when the setting changes (below)
-        const mode = `if setWindowMode then setWindowMode(${Config.floatingWindows}, false) end; `
+        const mode = `hl.config({ general = { layout = "${Config.hyprLayout}" } }); WINDOW_MODE = "${Config.windowMode}"; `
+            + `SLATE_TITLEBARS = ${Config.slateTitleBars}; WORKSPACE_MODES = ${Config.workspaceModesLua}; `
+            + `if setWindowMode then setWindowMode(${Config.windowMode === "floating"}, false) end; `
             + `if setSpareWorkspace then setSpareWorkspace(${Config.s.keepEmptyWorkspace}) end; `;
         // Floating windows' title bars (hyprbars, when built): Slate's bar colour, text, font and button colours
         const bars = `if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { bar_color = "${rgba(Config.tint("#0f1216"), 1)}", `
@@ -264,7 +352,7 @@ ShellRoot {
         onTriggered: {
             if (barButtonsFile.text() === root.barButtonsLua) return;
             barButtonsFile.setText(root.barButtonsLua);
-            if (Config.floatingWindows) barButtonsReload.restart();
+            if (Config.anyFloating && !Config.slateTitleBars) barButtonsReload.restart();
             else root.barButtonsStale = true;
         }
     }
@@ -272,7 +360,7 @@ ShellRoot {
     property bool barButtonsStale: false
     Connections {
         target: Config
-        function onFloatingWindowsChanged() { if (Config.floatingWindows && root.barButtonsStale) barButtonsReload.restart(); }
+        function onAnyFloatingChanged() { if (Config.anyFloating && !Config.slateTitleBars && root.barButtonsStale) barButtonsReload.restart(); }
     }
     Timer { id: barButtonsReload; interval: 300; onTriggered: { root.barButtonsStale = false; Config.reloadHyprland(); } }
     // Switching window mode also floats (or re-tiles) the windows already open. Only when
@@ -281,14 +369,14 @@ ShellRoot {
         target: Config.s
         function onWindowModeChanged() {
             Quickshell.execDetached(["hyprctl", "dispatch",
-                `function() if setWindowMode then setWindowMode(${Config.floatingWindows}, true) end end`]);
+                `function() WINDOW_MODE = "${Config.windowMode}"; WORKSPACE_MODES = ${Config.workspaceModesLua}; if setWindowMode then setWindowMode(${Config.windowMode === "floating"}, true) end end`]);
         }
     }
     Timer { id: borderPush; interval: 300; running: true; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.borderCmd]) }
     Connections {
         target: Config
-        // Hyprland reloaded: borders go back (and see whether title bars can be used: hyprbars
-        // may have been rebuilt), and check the config for errors
+        // Hyprland reloaded: borders go back (and see whether Hyprbars is loaded now: it may
+        // have been rebuilt), and check the config for errors
         function onHyprConfigReloaded() {
             borderPush.restart();
             Config.checkTitleBars();
@@ -337,7 +425,53 @@ ShellRoot {
         themeProc.command = ["python3", Quickshell.shellPath("scripts/apply-theme.py"), root.themeJson];
         themeProc.running = true;
     }
-    Process { id: themeProc }
+    Process {
+        id: themeProc
+        // What it says about themes an app's update had undone (Spotify's by Spicetify, Discord's
+        // by Vencord): "restored <id> <name>" where it put one back, "lost <id> <name>" where
+        // it couldn't. Passed on as a notification
+        stdout: StdioCollector {
+            onStreamFinished: {
+                for (const line of text.split("\n")) {
+                    const m = line.match(/^(restored|lost) (\S+) (.+)$/);
+                    if (m) root.themeNotice(m[1], m[2], m[3]);
+                }
+            }
+        }
+    }
+    function themeNotice(kind, id, name) {
+        const base = ["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:apptheming"];
+        if (kind === "restored") {
+            if (id === "spotify") {
+                spotifyNote.command = base.concat(["--action=restart=Restart Spotify", name + "'s theme is back",
+                    name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it."]);
+                spotifyNote.running = false; spotifyNote.running = true;
+            } else Quickshell.execDetached(base.concat([name + "'s theme is back",
+                name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it."]));
+        } else Quickshell.execDetached(base.concat([name + " lost its theme",
+            id === "discord" ? name + " was updated, which removed Vencord. Once you've installed Vencord again, Slate's theme will come back with it."
+                             : name + " was updated, and Slate couldn't patch the new version just yet. Refresh in Settings → App Theming is worth a try a little later."]));
+    }
+    Process {
+        id: spotifyNote
+        stdout: StdioCollector {
+            onStreamFinished: if (text.trim() === "restart")
+                Quickshell.execDetached(["sh", "-c", 'exec "$(command -v spicetify || echo "$HOME/.spicetify/spicetify")" restart'])
+        }
+    }
+    // An update of Spotify or Discord takes Slate's theme out of it (it's patched in). Looked
+    // for every few minutes while either is themed; applying the themes again puts it back
+    Timer {
+        interval: 300000
+        repeat: true
+        running: !Config.testMode && (Config.s.themedApps || []).some(a => a === "spotify" || a === "discord")
+        onTriggered: if (!themeProc.running && !themeStale.running) themeStale.running = true
+    }
+    Process {
+        id: themeStale
+        command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--stale", root.themeJson]
+        stdout: StdioCollector { onStreamFinished: if (text.trim() !== "") root.applyThemes() }
+    }
     // Settings → App Theming → Refresh: write every switched-on app's theme again now
     Binding { target: Config; property: "themesBusy"; value: themeProc.running }
     Connections { target: Config; function onRefreshThemes() { themeApply.stop(); root.applyThemes(); } }
@@ -410,7 +544,7 @@ ShellRoot {
         brokenFiles = [...new Set(links.map(m => m[1]))];
         Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical", "--hint=string:x-slate-page:about",
             "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
-            "Slate couldn't reload", body + " Still running the previous version; it reloads when you save the fix."]);
+            "Slate couldn't reload", body + " Nothing's lost: the previous version is still running, and Slate will reload as soon as you save the fix."]);
     }
     // After a failed reload Quickshell stops reloading when files change, until it's restarted.
     // So watch the files the error names, and reload as soon as one is saved
@@ -428,7 +562,7 @@ ShellRoot {
         id: reloadNotice
         interval: 600          // once the new Slate (and its notification server) is up
         onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:about",
-            "Slate reloaded", "Slate restarted on its updated files and settings."])
+            "Slate reloaded", "All fresh: Slate is running on its updated files and settings."])
     }
     // (hyprErrors runs again whenever Hyprland reloads: see onHyprConfigReloaded above)
     Process {
@@ -442,7 +576,7 @@ ShellRoot {
                 // No news when Slate reloaded it itself (to apply a setting); errors always show
                 if (errs.length === 0 && Config.ownHyprReload()) return;
                 if (errs.length === 0)
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland read its config again."]);
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland has read its config again, and all is well."]);
                 else
                     Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings have errors",
                         errs.join("\n").split("\n").slice(0, 6).join("\n")]);
@@ -451,6 +585,8 @@ ShellRoot {
     }
     // The welcome: the first time Slate starts, and from Settings → About
     Welcome { id: welcome; bar: topBar }
+    // Hyprbars (the optional title-bar plugin): notices when it needs rebuilding, and asks
+    HyprbarsWatch { confirm: powerConfirm; welcome: welcome }
     // New releases: checked daily, a notification when one's out (Settings → Updates)
     // Nothing reads this, but keep it: it's what creates the Updates singleton at start (its
     // daily check and the "updates" IPC), as singletons are only made when first used
@@ -508,7 +644,50 @@ ShellRoot {
         // with room left at the ends for the dock's padding and the magnified icons
         readonly property real base: Math.max(16, Math.min(Config.s.dockIconSize,
             (stripLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, count)))
-        readonly property real maxScale: Config.s.dockMagnification  // size of the icon under the pointer
+        // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
+        // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
+        // magnify ("glowmagnify"), or none
+        readonly property string hoverEffect: ["magnify", "tilt", "both", "fade", "fademagnify", "glow", "glowmagnify", "raise", "none"].includes(Config.s.dockHoverEffect) ? Config.s.dockHoverEffect : "magnify"
+        // Raise: just the icon under the pointer lifts a little (none of the others), sliding up
+        // and back down (each cell's lift animates in this mode). Nothing grows, so the slots
+        // are where they rest
+        readonly property int raisedIndex: {
+            if (hoverEffect !== "raise" || hover < 0.5) return -1;
+            for (let i = 0; i < count; i++) {
+                const start = slotStart(i), end = start + slotWidth(i) * base;
+                if (pointerX >= start - spacing / 2 && pointerX < end + spacing / 2) return isDivider(i) ? -1 : i;
+            }
+            return -1;
+        }
+        readonly property bool magnifies: ["magnify", "both", "fademagnify", "glowmagnify"].includes(hoverEffect)
+        readonly property bool glows: hoverEffect === "glow" || hoverEffect === "glowmagnify"
+        // (Raise: the comment above; the lift is liftAt's)
+        // Glow: a ring and a glow round the icon under the pointer (DockGlow.qml), its near
+        // neighbours a little, in the icon's colour (the accent for the Apps button, Downloads
+        // and the Waste Basket, and icons whose colour isn't known yet)
+        function glowAt(i) {
+            if (!glows || i < 0 || isDivider(i)) return 0;
+            const t = Math.abs(pointerX - (slotStart(i) + slotWidth(i) * base / 2)) / (base * Math.max(1, spread) * 0.6);
+            const near = t >= 1 ? 0 : (Math.cos(Math.PI * t) + 1) / 2;
+            return near * near * hover;
+        }
+        function glowColour(tilePath) {
+            const name = String(tilePath || "").split("/").pop().replace(/\.png$/, "");
+            const hex = name ? Config.iconColours[name] : "";
+            if (!hex) { if (name) Config.askIconColour(name); return Config.accent; }
+            return Qt.lighter(hex, Config.s.lightMode ? 1.0 : 1.15);
+        }
+        readonly property bool tilts: hoverEffect === "tilt" || hoverEffect === "both"
+        readonly property bool fades: hoverEffect === "fade" || hoverEffect === "fademagnify"
+        // Fade: with the pointer on the dock, the icons away from it fade (to a third), the ones
+        // near it clear, over the same spread as magnifying; all clear once it leaves
+        function fadeAt(i) {
+            if (!fades || i < 0 || isDivider(i)) return 1;
+            const t = Math.abs(pointerX - (slotStart(i) + slotWidth(i) * base / 2)) / (base * spread);
+            const near = t >= 1 ? 0 : (Math.cos(Math.PI * t) + 1) / 2;
+            return 1 - (1 - (0.35 + 0.65 * near)) * hover;
+        }
+        readonly property real maxScale: magnifies ? Config.s.dockMagnification : 1  // size of the icon under the pointer
         readonly property real spread: Config.s.dockSpread           // how many icons either side grow
         readonly property real spacing: 8
         readonly property real padding: 8        // inside the dock background
@@ -871,6 +1050,47 @@ ShellRoot {
             const f = t >= 1 ? 0 : (Math.cos(Math.PI * t) + 1) / 2;
             return 1 + (maxScale - 1) * f * hover;
         }
+        // Tilt: with the pointer on the dock, the icons turn in 3D towards it, the ones near it
+        // straightening up to face you (fully under it, over the same spread as magnifying); all
+        // upright once it leaves. With tilt alone, the one under the pointer lifts a little
+        // instead of growing
+        function tiltOffset(i) {
+            const w = slotWidth(i);
+            const centre = slotStart(i) + w * base / 2;
+            return (pointerX - centre) / (base * spread);
+        }
+        readonly property real tiltMax: 40           // degrees, for the icons away from the pointer
+        // Towards a point (rest-layout x), straightening up close to it
+        function tiltTowards(i, x) {
+            const d = (x - (slotStart(i) + slotWidth(i) * base / 2)) / (base * spread);
+            const near = Math.abs(d) >= 1 ? 0 : (Math.cos(Math.PI * d) + 1) / 2;
+            return tiltMax * Math.sign(d) * (1 - near);
+        }
+        // Dividers keep still whatever the effect (no lift, tilt, fade or glow)
+        function isDivider(i) { const sl = slotAt(i); return !!sl && sl.kind === "divider"; }
+        function tiltAt(i) {
+            if (!tilts || i < 0 || isDivider(i)) return 0;
+            return tiltTowards(i, pointerX) * hover;        // (upright while the pointer's away)
+        }
+        // The tilt as a 3D turn with real perspective: turned about the icon's middle, seen from
+        // close by (a couple of icons away), so the edge turned away is clearly shorter and the
+        // near one taller. (Qt's own Rotation looks from much further, so small icons barely change)
+        function tiltMatrix(w, h, deg) {
+            const a = deg * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+            // (about the middle of the icon's tile, which sits at the bottom of its slot)
+            const d = Math.max(1, base * 2.2), ox = w / 2, oy = h - Math.min(w, h) / 2, k = sn / d;
+            return Qt.matrix4x4(c + ox * k, 0, 0, ox * (1 - k * ox) - c * ox,
+                                oy * k,     1, 0, oy * (1 - k * ox) - oy,
+                                0,          0, 1, 0,
+                                k,          0, 0, 1 - k * ox);
+        }
+        function liftAt(i) {
+            if (i < 0 || isDivider(i)) return 0;
+            if (hoverEffect === "raise") return i === raisedIndex ? base * 0.28 : 0;
+            if (hoverEffect !== "tilt") return 0;
+            const t = Math.abs(tiltOffset(i));
+            return t >= 1 ? 0 : base * 0.16 * (Math.cos(Math.PI * t) + 1) / 2 * hover;
+        }
         function cellX(i) {
             let x = 0;
             for (let j = 0; j < i; j++) x += base * slotWidth(j) * scaleAt(j) + spacing;
@@ -1080,14 +1300,14 @@ ShellRoot {
         }
 
         // ---- Window previews (Settings → Dock → Window previews) -----------------------
-        // Pause on an app with windows open (for Settings' number of seconds; 0: never) and a
+        // Pause on an app with windows open (for Settings' number of seconds; 0: at once) and a
         // panel shows a card for each: a live picture of it, or in game mode (no live pictures)
         // its title and the app's icon; click one to go to it. It stays while the pointer moves
         // onto it
-        readonly property string previewMode: Config.s.dockPreviewDelay <= 0 ? "off" : Config.gameMode ? "titles" : "live"
+        readonly property string previewMode: !Config.s.dockPreviews ? "off" : Config.gameMode ? "titles" : "live"
         property var previewApp: null            // the app being previewed ({ key, entry, windows })
         property bool previewHeld: false         // the pointer's on the panel
-        Timer { id: previewDwell; interval: Math.max(100, Config.s.dockPreviewDelay * 1000); onTriggered: win.showPreview() }
+        Timer { id: previewDwell; interval: Math.max(1, Config.s.dockPreviewDelay * 1000); onTriggered: win.showPreview() }
         Timer { id: previewLeave; interval: 300; onTriggered: if (!win.previewHeld && !win.pointedApp) win.previewApp = null }
         // The app under the pointer, while it has windows (null otherwise)
         readonly property var pointedApp: {
@@ -1209,14 +1429,25 @@ ShellRoot {
             screen: win.screen
             property real atX: 0          // by the icon, just off the dock (screen coordinates)
             property real atY: 0
-            readonly property var wins: win.previewApp ? win.previewApp.windows : []
-            visible: !!win.previewApp && wins.length > 0 && win.dragKey === ""
+            // Open for this app; fading in and out (the last app's windows stay on it while it fades)
+            readonly property bool wanted: !!win.previewApp && win.previewApp.windows.length > 0 && win.dragKey === ""
+            property var shownApp: null
+            onWantedChanged: if (wanted) shownApp = win.previewApp
+            Connections { target: win; function onPreviewAppChanged() { if (previewPop.wanted) previewPop.shownApp = win.previewApp; } }
+            readonly property var wins: shownApp ? shownApp.windows : []
+            property real fade: wanted ? 1 : 0
+            Behavior on fade { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+            onFadeChanged: if (fade === 0 && !wanted) shownApp = null
+            visible: wanted || fade > 0
             anchors { top: true; bottom: true; left: true; right: true }
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
             WlrLayershell.namespace: "slate-dock-previews"
             WlrLayershell.layer: WlrLayer.Overlay
-            mask: Region { item: previewBox }           // only the panel takes the pointer
+            // Only the panel takes the pointer, and nothing once it's going
+            mask: wanted ? boxRegion : noRegion
+            Region { id: boxRegion; item: previewBox }
+            Region { id: noRegion }
 
             // A card's size: live pictures are wider than title-only cards
             readonly property real cardW: win.previewMode === "live" ? 220 : 200
@@ -1233,6 +1464,14 @@ ShellRoot {
                     win.edge === "bottom" ? previewPop.atY - height : win.edge === "top" ? previewPop.atY : previewPop.atY - height / 2))
                 radius: 12
                 color: win.bgColor
+                opacity: previewPop.fade
+                // Grows out of the icon as it fades in, and back into it as it fades out
+                transform: Scale {
+                    origin.x: Math.max(0, Math.min(previewBox.width, previewPop.atX - previewBox.x))
+                    origin.y: Math.max(0, Math.min(previewBox.height, previewPop.atY - previewBox.y))
+                    xScale: 0.82 + 0.18 * previewPop.fade
+                    yScale: xScale
+                }
                 Gloss { radius: parent.radius }   // glass: a sheen
                 HoverHandler {
                     onHoveredChanged: { win.previewHeld = hovered; if (!hovered) previewLeave.restart(); }
@@ -1247,6 +1486,8 @@ ShellRoot {
                     interactive: contentWidth > width
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
+                    // More windows than fit: the wheel or a swipe scrolls sideways
+                    SmoothWheel { flick: previewScroll; horizontal: true }
                     Row {
                         id: previewRow
                         spacing: 8
@@ -1267,7 +1508,7 @@ ShellRoot {
                                     width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
                                     height: width / ratio
                                     captureSource: previewPop.visible ? liveCard.modelData : null
-                                    live: previewPop.visible
+                                    live: previewPop.wanted          // (still while it fades out)
                                     // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                                     layer.enabled: true
                                     layer.effect: PreviewShape { radius: 6; gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
@@ -1283,6 +1524,28 @@ ShellRoot {
                                 HoverHandler { id: liveHover }
                                 ClickTap { onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
                             }
+                        }
+                    }
+                }
+                // While there are more windows than fit: a soft shadow at the side that has more,
+                // fading in as it's scrolled (as Settings' long pages and menus do)
+                Repeater {
+                    model: win.previewMode === "live" ? [0, 1] : []
+                    Rectangle {
+                        required property int modelData
+                        readonly property bool atRight: modelData === 1
+                        readonly property real more: atRight ? previewScroll.contentWidth - previewScroll.width - previewScroll.contentX
+                                                           : previewScroll.contentX
+                        width: 22
+                        anchors { top: parent.top; bottom: parent.bottom }
+                        x: atRight ? parent.width - width : 0
+                        topLeftRadius: atRight ? 0 : previewBox.radius; bottomLeftRadius: atRight ? 0 : previewBox.radius
+                        topRightRadius: atRight ? previewBox.radius : 0; bottomRightRadius: atRight ? previewBox.radius : 0
+                        opacity: Math.max(0, Math.min(1, more / 24))
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0; color: atRight ? "transparent" : Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
+                            GradientStop { position: 1; color: atRight ? Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
                         }
                     }
                 }
@@ -1437,7 +1700,7 @@ ShellRoot {
                     const n = win.trashCount;
                     powerConfirm.confirmWith({
                         title: "Empty the waste basket?",
-                        body: (n === 1 ? "The item in it is" : "The " + n + " items in it are") + " deleted for good. This can't be undone.",
+                        body: (n === 1 ? "The item in it will be" : "The " + n + " items in it will be") + " deleted for good. Just so you know, this can't be undone.",
                         button: "Empty", code: 0xEB41, danger: true
                     }, () => win.emptyTrash());
                     break;
@@ -1498,7 +1761,7 @@ ShellRoot {
                         visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length === 0
                         width: menuCol.width; height: 40
                         horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                        text: "Nothing downloaded yet"
+                        text: "No downloads just yet"
                         color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
                         font.family: Config.s.fontFamily; font.pixelSize: 13
                     }
@@ -1884,16 +2147,26 @@ ShellRoot {
 
                     // Launcher button (Settings → Dock → Apps button)
                     Item {
+                        id: launcherCell
+                        opacity: win.fadeAt(win.launcherIndex)
                         visible: win.launcherIndex >= 0
                         readonly property real s: win.scaleAt(win.launcherIndex)
                         width: win.base * s
                         height: row.height
+                        transform: [
+                            Matrix4x4 { matrix: win.tiltMatrix(launcherCell.width, launcherCell.height, win.tiltAt(win.launcherIndex)) },
+                            Translate { y: -win.liftAt(win.launcherIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
+                        ]
                         DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
                             id: launchTile
                             transform: Matrix4x4 { matrix: win.upright(launchTile.width, launchTile.height) }
+                            DockGlow {
+                                strength: win.glowAt(win.launcherIndex)
+                                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
                             // The same shape as the app icons (a tile when they're shown as they come)
                             IconPlate {
                                 anchors.fill: parent
@@ -1927,12 +2200,17 @@ ShellRoot {
                     // pointer Previous / Play-Pause / Next across it on a dark wash
                     Item {
                         id: mediaCell
+                        opacity: win.fadeAt(win.mediaIndex)
                         visible: win.mediaShown
                         readonly property real s: win.scaleAt(win.mediaIndex)
                         readonly property bool pointed: win.hoveredIndex === win.mediaIndex && win.hover > 0.5 && !appMenu.visible
                         readonly property string under: pointed ? win.mediaControlAt() : ""
                         width: win.base * win.mediaWide * s
                         height: row.height
+                        transform: [
+                            Matrix4x4 { matrix: win.tiltMatrix(mediaCell.width, mediaCell.height, win.tiltAt(win.mediaIndex)) },
+                            Translate { y: -win.liftAt(win.mediaIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
+                        ]
 
                         // Along a bottom or top dock: a rectangle, the album art at its start and the
                         // controls beside it (the one under the pointer brighter)
@@ -2162,6 +2440,7 @@ ShellRoot {
                             // The app in this slot ({ key, entry, windows, pinned }; none for a divider)
                             readonly property var app: isApp ? modelData.item : ({ key: "", entry: null, windows: [], pinned: false })
                             readonly property real s: win.scaleAt(modelData.at)
+                            opacity: win.fadeAt(modelData.at)
                             readonly property var badge: win.badgeFor(isApp ? app : null)
                             readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
                             property int version: 0
@@ -2177,7 +2456,13 @@ ShellRoot {
                             // gap opens, closes or moves past it, at once as the gap grows and shrinks
                             property real past: win.gapAt >= 0 && cell.modelData.at >= win.gapAt ? 1 : 0
                             Behavior on past { enabled: !win.settling; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
-                            transform: Translate { x: cell.past * (win.gapWidth + win.spacing) }
+                            transform: [
+                                Matrix4x4 { matrix: win.tiltMatrix(cell.width, cell.height, win.tiltAt(cell.modelData.at)) },
+                                Translate {
+                                    x: cell.past * (win.gapWidth + win.spacing); y: -win.liftAt(cell.modelData.at)
+                                    Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+                                }
+                            ]
 
                             // A divider: a faint line across the dock, between the pinned apps and
                             // the others (and before Downloads and the Waste Basket)
@@ -2194,6 +2479,20 @@ ShellRoot {
                                 visible: cell.isApp && !Config.s.iconFill && Config.s.iconShape !== "original" && Config.glass
                                 tileWidth: cell.width; lift: cell.bounce * win.base * 0.4
                                 dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
+                            // Glow (Settings → Dock → Hover effect), behind the icon and moving with its bounce.
+                            // Kept out of the icon's Image: inside it, the icon wasn't drawn until the dock
+                            // next repainted (only its tile showed)
+                            Item {
+                                visible: cell.isApp
+                                anchors.bottom: parent.bottom
+                                width: parent.width; height: width
+                                transform: Translate { y: -cell.bounce * win.base * 0.4 }
+                                DockGlow {
+                                    strength: win.glowAt(cell.modelData.at)
+                                    colour: win.glowColour(cell.tilePath)
+                                    radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                                }
                             }
                             Image {
                                 visible: cell.isApp
@@ -2289,16 +2588,26 @@ ShellRoot {
                     }
                     // Downloads: a stack, the folder-and-arrow on a tile like the launcher button's
                     Item {
+                        id: downloadsCell
+                        opacity: win.fadeAt(win.downloadsIndex)
                         visible: win.downloadsShown
                         readonly property real s: win.scaleAt(win.downloadsIndex)
                         width: win.base * s
                         height: row.height
+                        transform: [
+                            Matrix4x4 { matrix: win.tiltMatrix(downloadsCell.width, downloadsCell.height, win.tiltAt(win.downloadsIndex)) },
+                            Translate { y: -win.liftAt(win.downloadsIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
+                        ]
                         DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: downloadsTile
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
                             transform: Matrix4x4 { matrix: win.upright(downloadsTile.width, downloadsTile.height) }
+                            DockGlow {
+                                strength: win.glowAt(win.downloadsIndex)
+                                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
                             IconPlate {
                                 anchors.fill: parent
                                 drawSize: win.base * win.maxScale
@@ -2320,16 +2629,26 @@ ShellRoot {
                     // The waste basket: the bin on a tile like the launcher button's (and Downloads'),
                     // outlined while empty and filled once something's in it
                     Item {
+                        id: trashCell
+                        opacity: win.fadeAt(win.trashIndex)
                         visible: win.trashShown
                         readonly property real s: win.scaleAt(win.trashIndex)
                         width: win.base * s
                         height: row.height
+                        transform: [
+                            Matrix4x4 { matrix: win.tiltMatrix(trashCell.width, trashCell.height, win.tiltAt(win.trashIndex)) },
+                            Translate { y: -win.liftAt(win.trashIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
+                        ]
                         DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: trashTile
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
                             transform: Matrix4x4 { matrix: win.upright(trashTile.width, trashTile.height) }
+                            DockGlow {
+                                strength: win.glowAt(win.trashIndex)
+                                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
                             IconPlate {
                                 anchors.fill: parent
                                 drawSize: win.base * win.maxScale      // drawn once, magnified size

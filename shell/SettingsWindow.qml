@@ -17,6 +17,9 @@ FloatingWindow {
     id: win
     required property var bar
     property var notifs: null
+    // Slate's confirmation window (PowerConfirm: confirmWith), for questions asked as the rest
+    // of Slate asks them (installing an app)
+    property var confirmer: null
 
     title: "Slate Settings"
     // 880×620, or less on a small screen (Hyprland centres it at the size it asks for)
@@ -256,11 +259,11 @@ FloatingWindow {
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
-            "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowTitle", "barShowTitleIcon",
+            "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
             "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
             "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
@@ -275,8 +278,10 @@ FloatingWindow {
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
-        windows: ["windowMode", "focusFollowsMouse", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons"],
-        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons"],
+        windows: ["windowMode", "focusFollowsMouse", "titleBarStyle", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons",
+                  "switcherMoveAnimation", "switcherPickAnimation"],
+        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons",
+                     "overviewMoveAnimation", "overviewPickAnimation", "overviewGridSize"],
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
@@ -298,6 +303,7 @@ FloatingWindow {
     property bool pageResetChanged: false
     property var pageResetRun: null
     // Any other question for the confirmation card: { title, body, button, run, cancel (optional),
+    // cancelLabel (optional: the other button's label, when it's a choice rather than backing out),
     // destructive (optional: a red button Enter doesn't press), option (optional: { label, detail },
     // a switch on the card, off to start; run gets whether it's on) }.
     // Esc, Cancel, clicking outside or changing page all count as cancelling. The card keeps
@@ -305,13 +311,55 @@ FloatingWindow {
     property var ask: null
     property var lastAsk: null
     property bool askOption: false
-    onAskChanged: if (ask) { lastAsk = ask; askOption = false; }
+    onAskChanged: {
+        if (!ask) return;
+        // Asked in Slate's confirmation window, like the rest of Slate; this window's own card
+        // only when that isn't there
+        if (confirmer) { const q = ask; ask = null; askInConfirmer(q); return; }
+        lastAsk = ask; askOption = false;
+    }
+    // A question { title, body, button, destructive?, code?, option?, run(optionOn), cancel? }
+    function askInConfirmer(q) {
+        confirmer.confirmWith({ title: q.title, body: q.body, button: q.button,
+                                code: q.code || (q.destructive ? 0xEB41 : 0xEB13), danger: !!q.destructive, option: q.option || null,
+                                cancelLabel: q.cancelLabel || "" },
+                              v => { if (q.run) q.run(v); }, q.cancel || null);
+    }
+    // Settings → Lock & Idle → Slate login screen. It's optional (nothing installs it unless you
+    // ask), so installing says plainly what can go wrong and what keeping it working takes
+    readonly property var loginScreenInstallQuestion: ({
+        title: "Install Slate's login screen?",
+        body: "This replaces your computer's login screen, which lives outside Slate, so it needs your password. "
+            + "If it breaks, it can stop you logging in: Slate tests every copy before installing it and keeps a basic "
+            + "fallback, and you can always press Ctrl+Alt+F3, log in as text and run "
+            + "sudo ~/.config/slate/bin/slate-greeter-install --revert. "
+            + "Changes to Slate and updates to Hyprland, Quickshell or greetd can need it updated; Slate asks when, "
+            + "and each update needs your password.",
+        button: "Install", code: 0xEAE2
+    })
+    readonly property var loginScreenUpdateQuestion: ({
+        title: "Update the login screen?",
+        body: "Slate will copy its latest login screen into place, which needs your password. It's tested first, "
+            + "so if anything's wrong, nothing changes. You'll see it at your next logout or restart.",
+        button: "Update", code: 0xEAE2
+    })
+    // Restore defaults (the title button): asks first
+    function askRestoreDefaults() {
+        if (!confirmer) { confirmReset = true; return; }
+        confirmer.confirmWith({
+            title: "Restore " + pageTitle + " defaults?",
+            body: changedHere + (changedHere === 1 ? " setting on this page goes" : " settings on this page go")
+                + " back to how Slate starts out. Your other pages are left just as they are."
+                + (resetRestarts ? " Slate restarts to apply them; your apps and windows stay open." : ""),
+            button: "Restore defaults", code: 0xEB13, danger: false
+        }, () => { restoreDefaults(); countChanged(); });
+    }
     // A follow-up question (asking again, more seriously): shown once the card has faded out, so
     // it's clearly a new one, with its own attention sound
     property var nextAsk: null
     function askAfter(q) { nextAsk = q; nextAskTimer.restart(); }
     Timer { id: nextAskTimer; interval: 260; onTriggered: { win.ask = win.nextAsk; win.nextAsk = null; } }
-    readonly property bool confirming: confirmReset || ask !== null
+    readonly property bool confirming: !confirmer && (confirmReset || ask !== null)
     onConfirmingChanged: if (confirming) Config.attention()
     function closeConfirm() { confirmReset = false; ask = null; }
     function cancelConfirm() { const c = ask && ask.cancel; closeConfirm(); if (c) c(); }
@@ -339,14 +387,8 @@ FloatingWindow {
         "toneFromWallpaper", "toneBoldness", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "folderColour"]
     readonly property var themePresets: [
         { name: "Slate Default", settings: presetKeys.reduce((o, k) => { const d = Config.defaultOf(k); if (d !== undefined) o[k] = d; return o; }, {}) },
-        { name: "Liquid Glass", settings: {
-            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
-            toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" } },
-        { name: "Metro Flat", settings: {
-            themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.4, accent: "#8fb3e8",
-            toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" } }
+        { name: "Liquid Glass", settings: Config.lookPresets["Liquid Glass"] },
+        { name: "Metro Flat", settings: Config.lookPresets["Metro Flat"] }
     ]
     function presetActive(p) {
         for (const k in p.settings) {
@@ -570,7 +612,7 @@ FloatingWindow {
                         opacity: win.changedHere > 0 || win.pageResetChanged ? 1 : 0.45
                         icon: 0xEB77
                         label: "Restore defaults"
-                        onClicked: if (win.changedHere > 0 || win.pageResetChanged) win.confirmReset = true
+                        onClicked: if (win.changedHere > 0 || win.pageResetChanged) win.askRestoreDefaults()
                     }
                 }
             }
@@ -760,7 +802,7 @@ FloatingWindow {
                     width: parent.width
                     text: confirmLayer.q ? confirmLayer.q.body
                         : win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
-                          + " back to how Slate starts out. Other pages aren't touched."
+                          + " back to how Slate starts out. Your other pages are left just as they are."
                           + (win.resetRestarts ? " Slate restarts to apply them; your apps and windows stay open." : "")
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                     wrapMode: Text.Wrap
@@ -843,7 +885,7 @@ FloatingWindow {
             let widest = 0;
             for (const o of (owner.options || [])) {
                 rowMetrics.text = String(o.label);
-                widest = Math.max(widest, rowMetrics.advanceWidth + (o.folder ? 28 : 0));
+                widest = Math.max(widest, rowMetrics.advanceWidth + (o.folder || o.icon ? 28 : 0));
             }
             // + the row's padding, the tick and the list's own margins (and room for a scrollbar)
             menuW = Math.min(width - 16, Math.max(200, b.width, widest + 12 + 34 + 12 + 8));
@@ -945,7 +987,16 @@ FloatingWindow {
                         colour: parent.modelData.folder || "transparent"
                     }
                     Text {
-                        anchors { left: rowFolder.visible ? rowFolder.right : parent.left; leftMargin: rowFolder.visible ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        id: rowIcon
+                        visible: !rowFolder.visible && !!parent.modelData.icon
+                        anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
+                        text: visible ? win.glyph(parent.modelData.icon) : ""
+                        color: parent.current ? win.accent : win.dim
+                        font.family: win.bar.iconFont; font.pixelSize: 17
+                    }
+                    Text {
+                        readonly property Item lead: rowFolder.visible ? rowFolder : rowIcon.visible ? rowIcon : null
+                        anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
                         color: parent.current ? win.accent : win.text
                         font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
@@ -1095,6 +1146,10 @@ FloatingWindow {
         property string label
         property string detail: ""
         default property alias control: controlSlot.data
+        // Optional buttons under the description (below: [Button {…}, …]); takes no room when empty
+        property alias below: belowSlot.data
+        // ...and something on the right edge, level with them (belowRight: [Item {…}])
+        property alias belowRight: belowRightSlot.data
         // The Slate setting this row changes (its name in SettingsData), for the mark that shows
         // it's been changed from its default; defaultText says what that default is, when the
         // row can't work it out (a switch: On/Off; a slider: its value, as the slider shows it)
@@ -1125,10 +1180,22 @@ FloatingWindow {
             Text {
                 id: labelText
                 // (room left after the name for the changed-from-default dot)
-                width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 18 : 0))
+                width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 20 : 0))
                 text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
             }
             Text { width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
+            Row {
+                id: belowSlot
+                spacing: 8
+                topPadding: visibleChildren.length > 0 ? 8 : 0
+            }
+        }
+        Item {
+            id: belowRightSlot
+            anchors { right: parent.right; rightMargin: 16 }
+            y: labels.y + belowSlot.y + belowSlot.topPadding
+            height: Math.max(0, belowSlot.height - belowSlot.topPadding)
+            width: 0          // (what's in it is anchored to its right, the row's right edge)
         }
         // Changed from its default: a small dot after the name. Pointed at, it says what the
         // default is; clicked, it puts it back. (The row comes above its neighbours meanwhile, so
@@ -1139,17 +1206,18 @@ FloatingWindow {
             visible: settingRow.changed
             x: labels.x + labelText.width + 8
             y: labels.y + labelText.height / 2 - height / 2
-            width: 6; height: 6; radius: 3
+            width: 8; height: 8; radius: 4
             color: win.accent
             scale: dotHover.hovered ? 1.4 : 1
             Behavior on scale { NumberAnimation { duration: Config.ms(100) } }
-            HoverHandler { id: dotHover; margin: 6; cursorShape: Qt.PointingHandCursor }
-            ClickTap { margin: 6; onTapped: Config.resetKeys([settingRow.settingKey]) }
+            // Easier to point at than it looks: it reacts 10 px all round
+            HoverHandler { id: dotHover; margin: 10; cursorShape: Qt.PointingHandCursor }
+            ClickTap { margin: 10; onTapped: Config.resetKeys([settingRow.settingKey]) }
         }
         Rectangle {
             visible: changedDot.visible && dotHover.hovered
             z: 2
-            x: changedDot.x + 14
+            x: changedDot.x + 18
             y: changedDot.y + changedDot.height / 2 - height / 2
             width: tipText.implicitWidth + 14; height: tipText.implicitHeight + 8
             radius: 6
@@ -1554,6 +1622,7 @@ FloatingWindow {
             readonly property bool open: dropLayer.owner === dropdown
             // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
             readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
+                + (ddIcon.visible ? ddIcon.width + 8 : 0)
             width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: 8
             color: open || ddHover.hovered ? win.fieldHover() : win.control
             Gloss { radius: parent.radius }   // glass: a sheen
@@ -1566,9 +1635,18 @@ FloatingWindow {
                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                 colour: dropdown.current && dropdown.current.folder ? dropdown.current.folder : "transparent"
             }
+            // ...or an icon (icon: a glyph code)
+            Text {
+                id: ddIcon
+                visible: !ddFolder.visible && !!dropdown.current && !!dropdown.current.icon
+                anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
+                text: visible ? win.glyph(dropdown.current.icon) : ""
+                color: win.text; font.family: win.bar.iconFont; font.pixelSize: 16
+            }
             Text {
                 id: ddText
-                anchors { left: ddFolder.visible ? ddFolder.right : parent.left; leftMargin: ddFolder.visible ? 8 : 12; verticalCenter: parent.verticalCenter }
+                readonly property Item lead: ddFolder.visible ? ddFolder : ddIcon.visible ? ddIcon : null
+                anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 8 : 12; verticalCenter: parent.verticalCenter }
                 width: Math.min(implicitWidth, ddButton.width - x - 32)
                 text: dropdown.current ? dropdown.current.label : dropdown.noneLabel !== "" ? dropdown.noneLabel : String(dropdown.value)
                 color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
@@ -1994,12 +2072,12 @@ FloatingWindow {
                                 loc.status = loc.results.length ? "" : "No places found";
                             }
                         }
-                        onExited: code => { if (code !== 0 && !geo.running && !geoSoon.running) loc.status = "Couldn't search (offline?)"; }
+                        onExited: code => { if (code !== 0 && !geo.running && !geoSoon.running) loc.status = "Slate couldn't search just now. Are you online?"; }
                     }
                     SettingRow {
                         label: "Location"
                         detail: Config.s.locationName !== "" ? "Weather and night light's sunset/sunrise use " + Config.s.locationName
-                            : "Not set: weather is hidden. Search for your town or city"
+                            : "Not set yet, so the weather is hidden. Search for your town or city to see it"
                         FieldFrame {
                             id: placeField
                             field: placeInput
@@ -2112,7 +2190,7 @@ FloatingWindow {
             Group {
                 ToggleSetting {
                     label: "Night light"
-                    detail: "Warmer screen colours, easier on the eyes at night. Also in the control centre"
+                    detail: "Warmer screen colours that are kinder to your eyes at night. Also in the control centre"
                     key: "nightLight"
                 }
                 Separator {}
@@ -2178,13 +2256,13 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Auto-hide"
-                    detail: "Slide the bar away when a single window fills the screen; it comes back on workspace switches and at the top edge"
+                    detail: "Slides the bar out of your way when a single window fills the screen; it comes back when you switch workspace or reach for the top edge"
                     key: "barAutoHide"
                 }
                 Separator {}
                 ToggleSetting {
                     label: "Hover descriptions"
-                    detail: "Show what you're pointing at on the bar in place of the window title"
+                    detail: "Tells you what you're pointing at on the bar, in place of the window title"
                     key: "barHoverDescriptions"
                 }
             }
@@ -2206,6 +2284,13 @@ FloatingWindow {
                     label: "Workspaces"
                     detail: "A dot for each workspace; the highlighted one is where you are"
                     key: "barShowWorkspaces"
+                }
+                Separator { visible: Config.s.barShowWorkspaces }
+                ToggleSetting {
+                    visible: Config.s.barShowWorkspaces
+                    label: "Workspace window mode"
+                    detail: "Before the dots: the window mode of the workspace you're on (tiling, floating…). Click it to give that workspace a mode of its own"
+                    key: "barShowWindowMode"
                 }
                 Separator {}
                 ToggleSetting {
@@ -2264,7 +2349,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Game mode"
-                    detail: "A button to turn off glass, blur, see-through windows, shadows, animations, live window previews, notification pop-ups and ignoring the touchpad while you type, for smoother games, and back on after"
+                    detail: "One button to turn off glass, blur, see-through windows, shadows, animations, live window previews, notification pop-ups and ignoring the touchpad while you type, so your games run smoother, and to bring them all back afterwards"
                     key: "barShowGameMode"
                 }
                 Separator {}
@@ -2393,11 +2478,18 @@ FloatingWindow {
                     key: "dockAutoHide"
                 }
                 Separator {}
-                SettingRow {
+                ToggleSetting {
                     label: "Window previews"
+                    detail: "Rest the pointer on an app with windows open to see them; click one to go to it (titles only, in game mode)"
+                    key: "dockPreviews"
+                }
+                Separator { visible: Config.s.dockPreviews }
+                SettingRow {
+                    visible: Config.s.dockPreviews
+                    label: "Previews appear after"
                     settingKey: "dockPreviewDelay"
-                    detail: "How long to pause on an app with windows open before they show; click one to go to it (titles only, in game mode)"
-                    ValueSlider { from: 0; to: 3; stepSize: 0.1; decimals: 1; suffix: " s"; zeroText: "Off"; value: Config.s.dockPreviewDelay; onMoved: v => Config.s.dockPreviewDelay = v }
+                    detail: "How long to rest on an app before its windows show. Instant shows them as soon as the pointer arrives"
+                    ValueSlider { from: 0; to: 3; stepSize: 0.1; decimals: 1; suffix: " s"; zeroText: "Instant"; value: Config.s.dockPreviewDelay; onMoved: v => Config.s.dockPreviewDelay = v }
                 }
                 Separator {}
                 ToggleSetting {
@@ -2452,17 +2544,42 @@ FloatingWindow {
                     ValueSlider { from: 28; to: 64; stepSize: 1; suffix: " px"; value: Config.s.dockIconSize; onMoved: v => Config.s.dockIconSize = v }
                 }
                 Separator {}
+                DropdownSetting {
+                    label: "Hover effect"
+                    settingKey: "dockHoverEffect"
+                    detail: ({
+                        tilt: "With the pointer on the dock, the icons turn in 3D towards it, and the ones near it straighten up to face you (the one under it lifts a little)",
+                        both: "With the pointer on the dock, the icons turn in 3D towards it, and the ones near it straighten up and grow",
+                        fade: "The icons away from the pointer fade, so the ones near it stand out; all clear again when it leaves",
+                        fademagnify: "The icons near the pointer grow, and the ones away from it fade",
+                        glow: "The icon under the pointer gets a ring and a soft glow round it, in its own colour",
+                        glowmagnify: "The icons near the pointer grow, and the one under it gets a ring and a soft glow in its own colour",
+                        raise: "The icon under the pointer lifts up a little; the others stay where they are",
+                        none: "The icons stay as they are"
+                    })[Config.s.dockHoverEffect] ?? "The icons near the pointer grow, the one under it most"
+                    options: [{ value: "magnify", label: "Magnify" }, { value: "tilt", label: "Tilt" },
+                              { value: "both", label: "Magnify and tilt" }, { value: "fade", label: "Fade" },
+                              { value: "fademagnify", label: "Fade and magnify" }, { value: "glow", label: "Glow" },
+                              { value: "glowmagnify", label: "Glow and magnify" }, { value: "raise", label: "Raise" },
+                              { value: "none", label: "None" }]
+                    value: ["tilt", "both", "fade", "fademagnify", "glow", "glowmagnify", "raise", "none"].includes(Config.s.dockHoverEffect) ? Config.s.dockHoverEffect : "magnify"
+                    onPicked: v => Config.s.dockHoverEffect = v
+                }
+                // Under the effect they belong to: magnifying's size, and how far either reaches
+                Separator { visible: !["tilt", "fade", "glow", "raise", "none"].includes(Config.s.dockHoverEffect) }
                 SettingRow {
+                    visible: !["tilt", "fade", "glow", "raise", "none"].includes(Config.s.dockHoverEffect)
                     label: "Magnification"
                     settingKey: "dockMagnification"
                     detail: "How large the icon under the pointer grows"
                     ValueSlider { from: 1; to: 2.5; stepSize: 0.05; decimals: 2; suffix: "×"; value: Config.s.dockMagnification; onMoved: v => Config.s.dockMagnification = v }
                 }
-                Separator {}
+                Separator { visible: Config.s.dockHoverEffect !== "none" && Config.s.dockHoverEffect !== "raise" }
                 SettingRow {
+                    visible: Config.s.dockHoverEffect !== "none" && Config.s.dockHoverEffect !== "raise"
                     label: "Magnification spread"
                     settingKey: "dockSpread"
-                    detail: "How many neighbouring icons rise in the arc"
+                    detail: "How many neighbouring icons rise in the arc (or turn, with tilt, or stay clear, with fade)"
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
                 }
             }
@@ -2569,11 +2686,11 @@ FloatingWindow {
                                 if (line.startsWith("progress ")) { vidRow.progress = Number(line.slice(9)) || 0; return; }
                                 const m = line.match(/^(\d+)\/(\d+) (.*)$/);
                                 if (m) vidRow.status = "Downloading " + m[1] + " of " + m[2] + ": " + m[3] + "…";
-                                else if (line.startsWith("done ")) vidRow.status = line.slice(5) === "0" ? "Couldn't download any videos (offline?)"
+                                else if (line.startsWith("done ")) vidRow.status = line.slice(5) === "0" ? "Slate couldn't download any videos. Are you online?"
                                     : "Got " + line.slice(5) + " scenery videos, in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~");
                             }
                         }
-                        onExited: code => { if (code !== 0 && !vidRow.status.startsWith("Got")) vidRow.status = "Couldn't download the videos"; }
+                        onExited: code => { if (code !== 0 && !vidRow.status.startsWith("Got")) vidRow.status = "Slate couldn't download the videos this time"; }
                     }
                     // How far the download's got: a thin bar along the bottom of the row while it runs
                     Rectangle {
@@ -2635,7 +2752,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Lock on wake"
-                    detail: "Waking it shows the lock screen, so you need your password to get back in"
+                    detail: "Waking it shows the lock screen, so you'll need your password to get back in"
                     key: "screensaverLock"
                 }
                 Separator {}
@@ -2750,7 +2867,7 @@ FloatingWindow {
             Group {
                 ToggleSetting {
                     label: "Forgiving search"
-                    detail: "Initials and small slips find apps too: gc for GNOME Calculator, fierfox for Firefox"
+                    detail: "Initials and little typos still find your apps: gc for GNOME Calculator, fierfox for Firefox"
                     key: "launcherFuzzy"
                 }
                 Separator {}
@@ -3400,10 +3517,15 @@ FloatingWindow {
                     visible: powerPane.hasLid
                     label: "Closing the lid"
                     settingKey: "lidAction"
-                    detail: Config.s.lidAction === "" ? "Left to the system (usually suspends)"
+                    detail: !Config.canInhibit ? Config.noLogindNote
+                        : Config.s.lidAction === "" ? "Left to the system (usually suspends)"
                         : "With another screen connected, only the laptop's own screen turns off"
+                    // (holding the system's own handling back needs systemd or elogind: Config.system)
+                    enabled: Config.canInhibit
+                    opacity: enabled ? 1 : 0.5
                     options: [{ value: "", label: "System default" }, { value: "suspend", label: "Suspend" }, { value: "lock", label: "Lock the screen" },
                               { value: "screenoff", label: "Turn the screen off" }, { value: "nothing", label: "Do nothing" }]
+                        .filter(o => o.value !== "suspend" || Config.canSuspend)
                     value: Config.s.lidAction
                     onPicked: v => Config.s.lidAction = v
                 }
@@ -3411,9 +3533,13 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Power button"
                     settingKey: "powerKeyAction"
-                    detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
+                    enabled: Config.canInhibit
+                    opacity: enabled ? 1 : 0.5
+                    detail: !Config.canInhibit ? Config.noLogindNote
+                        : Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
                     options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                               { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]
+                        .filter(o => (o.value !== "suspend" || Config.canSuspend) && (o.value !== "poweroff" || Config.canPowerOff))
                     value: Config.s.powerKeyAction
                     onPicked: v => Config.s.powerKeyAction = v
                 }
@@ -3442,7 +3568,7 @@ FloatingWindow {
             Group {
                 ToggleSetting {
                     label: "Reopen apps after restarting"
-                    detail: "Your apps open again on the same workspaces, where you left them. Also on the restart dialog"
+                    detail: "Your apps open again on the same workspaces, right where you left them. Also on the restart dialog"
                     key: "reopenAppsAfterRestart"
                 }
             }
@@ -3665,8 +3791,8 @@ FloatingWindow {
             Group {
                 SettingRow {
                     visible: (Config.s.startupApps || []).length === 0
-                    label: "Nothing opens at login yet"
-                    detail: "Add apps below and they'll open each time you log in"
+                    label: "Nothing opens at login just yet"
+                    detail: "Add your favourites below, and they'll be ready and waiting each time you log in"
                 }
                 Repeater {
                     model: Config.s.startupApps || []
@@ -3680,7 +3806,18 @@ FloatingWindow {
                             readonly property var entry: DesktopEntries.byId(startRow.modelData)
                             label: entry ? entry.name : startRow.modelData
                             detail: entry ? (entry.genericName || entry.comment || "") : "Not installed"
-                            onRemoved: { const l = (Config.s.startupApps || []).slice(); l.splice(startRow.index, 1); Config.s.startupApps = l; }
+                            // Asks first, in Slate's confirmation window (by its id, not its
+                            // place: the list may have changed by the time it's answered)
+                            onRemoved: {
+                                const id = startRow.modelData, name = entry ? entry.name : id;
+                                win.ask = {
+                                    title: "Remove " + name + " from startup?",
+                                    body: name + " won't open by itself when you log in any more. The app itself stays installed, "
+                                        + "and you're welcome to add it back here at any time.",
+                                    button: "Remove", destructive: true,
+                                    run: () => Config.s.startupApps = (Config.s.startupApps || []).filter(a => a !== id)
+                                };
+                            }
                         }
                     }
                 }
@@ -3699,7 +3836,8 @@ FloatingWindow {
         }
     }
 
-    // ---- Date & Time (timedatectl; changing them may ask for your password) -----------------
+    // ---- Date & Time (bin/slate-init timedate: timedatectl with systemd, the same D-Bus service
+    // without it where something provides it; changing them may ask for your password) --------
     Component {
         id: timePage
         Column {
@@ -3709,6 +3847,7 @@ FloatingWindow {
             property string zone: ""
             property bool ntp: false
             property bool canNtp: true
+            property bool canSet: true            // something here can change the zone
             property var zones: []
             property date now: new Date()
             // The clock on this page; only ticks while Settings is showing (and catches up at once)
@@ -3718,7 +3857,7 @@ FloatingWindow {
             Process {
                 id: stateProc
                 running: true
-                command: ["timedatectl", "show", "-p", "Timezone", "-p", "NTP", "-p", "CanNTP"]
+                command: [Quickshell.shellPath("bin/slate-init"), "timedate", "show"]
                 stdout: StdioCollector {
                     onStreamFinished: {
                         for (const line of text.split("\n")) {
@@ -3726,13 +3865,14 @@ FloatingWindow {
                             if (k === "Timezone") dateTimePane.zone = v;
                             else if (k === "NTP") dateTimePane.ntp = v === "yes";
                             else if (k === "CanNTP") dateTimePane.canNtp = v === "yes";
+                            else if (k === "CanSet") dateTimePane.canSet = v === "yes";
                         }
                     }
                 }
             }
             Process {
                 running: true
-                command: ["timedatectl", "list-timezones"]
+                command: [Quickshell.shellPath("bin/slate-init"), "timedate", "zones"]
                 stdout: StdioCollector { onStreamFinished: dateTimePane.zones = text.trim().split("\n").filter(z => z !== "").map(z => ({ value: z, label: z.replace(/_/g, " ") })) }
             }
             GroupLabel { text: "Clock" }
@@ -3745,20 +3885,25 @@ FloatingWindow {
                 // Every zone in one dropdown, opening at the current one, with a search box to filter it
                 DropdownSetting {
                     label: "Time zone"
-                    detail: "Where you are, for the clock; type to search"
+                    // Without systemd, changing it needs a service that provides the same thing
+                    // (openrc-settingsd does). Without one it's shown, greyed, with why
+                    enabled: dateTimePane.canSet
+                    opacity: enabled ? 1 : 0.5
+                    detail: dateTimePane.canSet ? "Where you are, for the clock; type to search"
+                        : "Slate can't change this here, as this computer has no time service to ask (openrc-settingsd provides one). Your clock follows the system's own setting"
                     searchable: true
                     options: dateTimePane.zones
                     value: dateTimePane.zone
-                    onPicked: v => { if (v !== dateTimePane.zone) { Quickshell.execDetached(["timedatectl", "set-timezone", v]); reread.restart(); } }
+                    onPicked: v => { if (v !== dateTimePane.zone) { Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "timedate", "set-zone", v]); reread.restart(); } }
                 }
                 Separator { visible: dateTimePane.canNtp }
                 SettingRow {
                     visible: dateTimePane.canNtp
                     label: "Set the time automatically"
-                    detail: "Keeps the clock right using a time server on the internet"
+                    detail: "Keeps your clock right, using a time server on the internet"
                     Toggle {
                         checked: dateTimePane.ntp
-                        onToggled: v => { dateTimePane.ntp = v; Quickshell.execDetached(["timedatectl", "set-ntp", v ? "true" : "false"]); reread.restart(); }
+                        onToggled: v => { dateTimePane.ntp = v; Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "timedate", "set-ntp", v ? "true" : "false"]); reread.restart(); }
                     }
                 }
             }
@@ -3829,99 +3974,121 @@ FloatingWindow {
             PageTitle { text: "Windows" }
             GroupLabel { text: "Layout & borders" }
             Group {
-                // Floating mode and its title bars need hyprbars (Config.titleBarsAvailable)
-                SettingRow {
-                    visible: Config.titleBarsAvailable
-                    label: "Window mode"
+                // Hyprland's layouts, and floating
+                // The default: a workspace can have its own from the menu bar's workspace indicator
+                DropdownSetting {
+                    label: "Default window mode"
                     settingKey: "windowMode"
-                    detail: Config.s.windowMode === "floating"
-                        ? "Windows open floating and centred, like a traditional desktop. Move them by their title bar or with Super+drag; Super+Alt+Space tiles one"
-                        : "Windows tile side by side. Super+drag moves one, Super+Alt+Space floats it"
-                    // Two-way switch: Tiling | Floating, each with a small picture of the layout
-                    Rectangle {
-                        readonly property var modes: ["tiling", "floating"]
-                        width: 200; height: 34; radius: 9
-                        color: win.well
-                        Rectangle {
-                            width: 100 - 6; height: parent.height - 6; radius: 7
-                            y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.windowMode)) * 100
-                            color: win.accent
-                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
-                            Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+                    detail: ({
+                        floating: "Windows open floating and centred, like a traditional desktop. Move them by their title bar or with Super+drag; Super+Alt+Space tiles one",
+                        master: "One main window on the left, the rest stacked beside it. Super+J makes the focused window the main one; Super+Alt+Space floats one",
+                        scrolling: "Windows sit in columns on a strip that scrolls sideways as you move between them. Super+J changes a column's width; Super+Alt+Space floats one",
+                        monocle: "One window at a time, filling the screen; the others wait behind it. Super+J or Super+Alt+Left/Right switch between them",
+                        solo: "Every window fills a workspace of its own: a new one opens on the next free workspace. Move between them as between workspaces"
+                    })[Config.windowMode] ?? "Windows tile side by side. Super+J splits the other way, Super+drag moves one, Super+Alt+Space floats it"
+                    // (and that it's only the default)
+                    + ". For new workspaces: each can have its own, from the button beside the workspace dots on the menu bar"
+                    options: Config.windowModes
+                    value: Config.windowMode
+                    // With windows open in another mode (the old default, or a workspace's own):
+                    // shift every workspace to the new one, or leave those in use as they are?
+                    // (asked in Slate's confirmation window; closing it leaves them)
+                    onPicked: v => {
+                        if (v === Config.windowMode) return;
+                        const n = Config.workspacesNotIn(v).length;
+                        if (n === 0) { Config.setDefaultMode(v, true); return; }
+                        const to = Config.windowModes.find(m => m.value === v);
+                        win.ask = {
+                            title: "Tidy up open windows?",
+                            body: "New workspaces will use " + to.label + ". " + (n === 1 ? "One workspace has" : n + " workspaces have")
+                                + " windows open in another mode: tidy up, moving every workspace to " + to.label
+                                + " now, or leave " + (n === 1 ? "it as it is" : "them as they are") + "? Left alone, "
+                                + (n === 1 ? "it keeps its" : "each keeps its") + " current mode until you change it from the menu bar.",
+                            button: "Tidy up", cancelLabel: "Leave " + (n === 1 ? "it" : "them"), code: to.icon,
+                            run: () => Config.setDefaultMode(v, true),
+                            cancel: () => Config.setDefaultMode(v, false)
+                        };
+                    }
+                }
+                // Floating windows' title bars: Slate's own (the default: nothing to build), or
+                // Hyprbars, the optional plugin (Config.hyprbars…, HyprbarsWatch.qml). Always shown:
+                // any workspace can be floating (the menu bar's workspace indicator), whatever the default
+                Separator {}
+                DropdownSetting {
+                    label: "Title bars"
+                    settingKey: "titleBarStyle"
+                    detail: Config.slateTitleBars
+                        ? "Slate Bars: Slate draws a title bar on the floating window in front, with nothing to install or rebuild. It fades out while a window moves, resizes or maximises. Drag it to move the window; double-click to maximise"
+                        : "From the Hyprbars plugin, on every floating window and moving with it. It has to be rebuilt after every Hyprland update; until then Slate Bars are used"
+                    options: [{ value: "slate", label: "Slate Bars" },
+                              { value: "hyprbars", label: Config.hyprbarsState === "stale" ? "Hyprbars (needs rebuilding)" : "Hyprbars (optional)" }]
+                    value: Config.slateTitleBars ? "slate" : "hyprbars"
+                    // Hyprbars has risks, and may need building: Slate asks first, and switches once
+                    // it's loaded. While it's being built or waiting for a reload, it can't be picked
+                    onPicked: v => {
+                        if (v === "slate") { Config.s.titleBarStyle = "slate"; return; }
+                        if (Config.hyprbarsState === "building") return;
+                        Config.hyprbarsChoose();
+                    }
+                }
+                Separator {}
+                SettingRow {
+                    id: hyprbarsRow
+                    readonly property string state: Config.hyprbarsState
+                    readonly property string forNew: Config.hyprbars.installed || "the new Hyprland"
+                    label: "Hyprbars"
+                    detail: state === "building" ? "Being built for Hyprland " + (Config.hyprbars.stateFor || forNew) + "…"
+                        : state === "loaded" ? (
+                            !Config.hyprlandUpdated ? (Config.slateTitleBars ? "Built and loaded. Choose it above to use it" : "In use")
+                            : Config.hyprbars.next === "yes" ? "Hyprland was updated: rebuilt for it, and ready after your next restart"
+                            : Config.hyprbars.state === "failed" ? "Hyprland was updated, and Hyprbars couldn't be rebuilt for it: " + (Config.hyprbars.error || "the build failed")
+                            : "Hyprland was updated. Rebuild now, and it's ready after your next restart")
+                        : state === "ready" ? "Built. Reload Hyprland to load it; your windows stay open"
+                        : state === "stale" ? "Needs rebuilding: it was built for another version of Hyprland, so it can't load. Slate Bars are used until it's rebuilt"
+                        : state === "failed" ? "Couldn't be built: " + (Config.hyprbars.error || "the build failed")
+                        : state === "removed" ? "Removed. Fully gone after your next restart"
+                        : state === "system" ? "The one from your system's package doesn't match this Hyprland. Update that package, or build Slate's own"
+                        : "Optional title bars from a Hyprland plugin, on every floating window. Slate builds it on this computer, and it needs rebuilding after every Hyprland update"
+                    Row {
+                        spacing: 8
+                        Button {
+                            visible: hyprbarsRow.state === "ready"
+                            label: "Reload"; icon: 0xEB13
+                            onClicked: Config.hyprbarsReload()
                         }
-                        Row {
-                            anchors.fill: parent
-                            Repeater {
-                                model: [{ mode: "tiling", label: "Tiling" }, { mode: "floating", label: "Floating" }]
-                                delegate: Item {
-                                    id: modeOpt
-                                    required property var modelData
-                                    readonly property bool on: Config.s.windowMode === modelData.mode
-                                    readonly property color ink: on ? win.accentText : win.dim
-                                    width: 100; height: 34
-                                    Rectangle {
-                                        anchors { fill: parent; margins: 3 }
-                                        radius: 7
-                                        color: win.accent
-                                        opacity: !modeOpt.on && modeHover.hovered ? Config.hoverStrength : 0
-                                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
-                                    }
-                                    HoverHandler { id: modeHover }
-                                    Row {
-                                        anchors.centerIn: parent
-                                        spacing: 7
-                                        // The picture: two windows side by side, or two overlapping
-                                        Item {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: 16; height: 12
-                                            Rectangle {
-                                                visible: modeOpt.modelData.mode === "tiling"
-                                                width: 7; height: 12; radius: 2
-                                                color: modeOpt.ink
-                                            }
-                                            Rectangle {
-                                                visible: modeOpt.modelData.mode === "tiling"
-                                                x: 9; width: 7; height: 12; radius: 2
-                                                color: modeOpt.ink
-                                            }
-                                            Rectangle {
-                                                visible: modeOpt.modelData.mode === "floating"
-                                                width: 11; height: 8; radius: 2
-                                                color: "transparent"
-                                                border.width: 1.5; border.color: modeOpt.ink
-                                            }
-                                            Rectangle {
-                                                visible: modeOpt.modelData.mode === "floating"
-                                                x: 5; y: 4; width: 11; height: 8; radius: 2
-                                                color: modeOpt.ink
-                                            }
-                                        }
-                                        Text { anchors.verticalCenter: parent.verticalCenter; text: modeOpt.modelData.label; color: modeOpt.ink; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
-                                    }
-                                    ClickTap { onTapped: Config.s.windowMode = modeOpt.modelData.mode }
-                                }
-                            }
+                        Button {
+                            visible: hyprbarsRow.state === "stale" || hyprbarsRow.state === "failed" || hyprbarsRow.state === "system"
+                                || (hyprbarsRow.state === "loaded" && Config.hyprlandUpdated && Config.hyprbars.next !== "yes")
+                            label: hyprbarsRow.state === "failed" ? "Retry" : hyprbarsRow.state === "system" ? "Build" : "Rebuild"
+                            onClicked: Config.hyprbarsRebuild()
+                        }
+                        Button {
+                            visible: hyprbarsRow.state === "none" || hyprbarsRow.state === "removed"
+                            label: "Build"
+                            onClicked: Config.hyprbarsChoose()
+                        }
+                        Button {
+                            visible: Config.hyprbars.any === "yes" && hyprbarsRow.state !== "building"
+                            label: "Remove"
+                            onClicked: Config.hyprbarsRemove()
                         }
                     }
                 }
-                Separator { visible: Config.titleBarsAvailable }
+                // (always too: for whichever workspaces float)
+                Separator {}
                 DropdownSetting {
-                    visible: Config.titleBarsAvailable
-                    // Title bars are only there in floating mode
-                    opacity: Config.floatingWindows ? 1 : 0.4
-                    enabled: Config.floatingWindows
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Title bar buttons"
                     settingKey: "titleButtons"
-                    detail: Config.floatingWindows ? "Which side of a floating window's title bar the close and maximise buttons sit on"
-                        : "For the title bars windows have in floating mode: choose Floating above to use it"
+                    detail: "Which side of a floating window's title bar the close and maximise buttons sit on"
                     options: [{ value: "left", label: "Left" }, { value: "right", label: "Right" }]
                     value: Config.s.titleButtons
                     onPicked: v => Config.s.titleButtons = v
                 }
-                Separator { visible: Config.titleBarsAvailable }
+                // (hidden with Slate's title bars, which always use a click: Config.clickToFocus)
+                Separator { visible: !Config.clickToFocus }
                 SettingRow {
                     id: focusRow
+                    visible: !Config.clickToFocus
                     label: "Focus follows the pointer"
                     settingKey: "focusFollowsMouse"
                     detail: "Windows take the keyboard as the pointer moves over them. Off: click a window to use it (scrolling still reaches the one under the pointer)"
@@ -3981,6 +4148,37 @@ FloatingWindow {
                         if (v !== "icons") Config.s.switcherAppIcons = v === "both";
                     }
                 }
+                Separator {}
+                DropdownSetting {
+                    label: "Moving between windows"
+                    settingKey: "switcherMoveAnimation"
+                    detail: ({
+                        hop: "The windows hop along to the next one",
+                        wheel: "The windows sit round the outside of a wheel that turns to bring the next one to the top",
+                        tilt: "The chosen window faces you and the others are turned away in 3D on either side",
+                        orbit: "The windows ride round a ring in 3D, the chosen one at the front and the rest smaller towards the back",
+                        deck: "The windows sit in a pile with the chosen one on top; moving on deals it away and the next one rises",
+                        fan: "The windows spread like a hand of cards, the chosen one lifted out of it",
+                        instant: "The selection jumps straight to the next window"
+                    })[Config.s.switcherMoveAnimation] ?? "The row of windows slides along, keeping the chosen one in the middle"
+                    options: [{ value: "slide", label: "Slide" }, { value: "hop", label: "Hop" }, { value: "wheel", label: "Wheel" },
+                              { value: "tilt", label: "Tilt" }, { value: "orbit", label: "Orbit" }, { value: "deck", label: "Deck" },
+                              { value: "fan", label: "Fan" }, { value: "instant", label: "Instant" }]
+                    value: ["hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"].includes(Config.s.switcherMoveAnimation) ? Config.s.switcherMoveAnimation : "slide"
+                    onPicked: v => Config.s.switcherMoveAnimation = v
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Going to the window"
+                    settingKey: "switcherPickAnimation"
+                    detail: ({
+                        workspace: "A window on another workspace is switched to with your workspace animation (Workspaces → Workspace switching)",
+                        instant: "Straight to the window, and the switcher goes at once"
+                    })[Config.s.switcherPickAnimation] ?? "A window on another workspace fades in over the one you're on"
+                    options: [{ value: "crossfade", label: "Crossfade" }, { value: "workspace", label: "Workspace animation" }, { value: "instant", label: "Instant" }]
+                    value: Config.s.switcherPickAnimation
+                    onPicked: v => Config.s.switcherPickAnimation = v
+                }
 
             }
         }
@@ -4018,7 +4216,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Keep an empty workspace"
-                    detail: "Always have an empty workspace after the last one in use, ready for a new window"
+                    detail: "Keeps an empty workspace after the last one in use, ready and waiting for a new window"
                     key: "keepEmptyWorkspace"
                 }
             }
@@ -4082,12 +4280,6 @@ FloatingWindow {
             }
             GroupLabel { text: "Workspace overview (Super+Down)" }
             Group {
-                SettingRow {
-                    label: "Card size"
-                    settingKey: "overviewCardWidth"
-                    ValueSlider { from: 480; to: 1000; stepSize: 8; suffix: " px"; value: Config.s.overviewCardWidth; onMoved: v => Config.s.overviewCardWidth = v }
-                }
-                Separator {}
                 // What each window on the cards shows (overviewPreviews and overviewAppIcons): its
                 // live picture, its outline with its app icon (nothing captured), or the picture
                 // with the icon on it
@@ -4102,6 +4294,60 @@ FloatingWindow {
                         Config.s.overviewPreviews = v !== "icons";
                         if (v !== "icons") Config.s.overviewAppIcons = v === "both";
                     }
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Moving between workspaces"
+                    settingKey: "overviewMoveAnimation"
+                    detail: ({
+                        hop: "The cards hop along to the next one",
+                        wheel: "The cards sit round the outside of a wheel that turns to bring the next one to the top",
+                        tilt: "The chosen card faces you and the others are turned away in 3D on either side",
+                        orbit: "The cards ride round a ring in 3D, the chosen one at the front and the rest smaller towards the back",
+                        deck: "The cards sit in a pile with the chosen one on top; moving on deals it away and the next one rises",
+                        fan: "The cards spread like a hand of cards, the chosen one lifted out of it",
+                        grid: "Every workspace in a grid; the arrow keys move round it, and more rows than fit scroll",
+                        instant: "The selection jumps straight to the next workspace"
+                    })[Config.s.overviewMoveAnimation] ?? "The row of cards slides along, keeping the chosen one in the middle"
+                    options: [{ value: "slide", label: "Slide" }, { value: "hop", label: "Hop" }, { value: "wheel", label: "Wheel" },
+                              { value: "tilt", label: "Tilt" }, { value: "orbit", label: "Orbit" }, { value: "deck", label: "Deck" },
+                              { value: "fan", label: "Fan" }, { value: "grid", label: "Grid" }, { value: "instant", label: "Instant" }]
+                    value: ["hop", "wheel", "tilt", "orbit", "deck", "fan", "grid", "instant"].includes(Config.s.overviewMoveAnimation) ? Config.s.overviewMoveAnimation : "slide"
+                    onPicked: v => Config.s.overviewMoveAnimation = v
+                }
+                Separator {}
+                // Under the movement it goes with: the cards' size, or for the grid how many go across
+                SettingRow {
+                    visible: Config.s.overviewMoveAnimation !== "grid"
+                    label: "Card size"
+                    settingKey: "overviewCardWidth"
+                    ValueSlider { from: 480; to: 1000; stepSize: 8; suffix: " px"; value: Config.s.overviewCardWidth; onMoved: v => Config.s.overviewCardWidth = v }
+                }
+                SettingRow {
+                    visible: Config.s.overviewMoveAnimation === "grid"
+                    label: "Grid size"
+                    settingKey: "overviewGridSize"
+                    detail: "How many workspaces go across, and down before it scrolls (fewer down on a small screen)"
+                    ValueSlider {
+                        from: 2; to: 9; stepSize: 1
+                        value: Config.s.overviewGridSize
+                        // (shown as 3 × 3 and so on)
+                        suffix: " × " + Math.round(value)
+                        onMoved: v => Config.s.overviewGridSize = Math.round(v)
+                    }
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Going to the workspace"
+                    settingKey: "overviewPickAnimation"
+                    detail: ({
+                        fade: "The overview fades away to show the workspace",
+                        workspace: "The overview goes quickly and the workspace switches with your workspace animation (Workspace switching, above)",
+                        instant: "Straight to the workspace, and the overview goes at once"
+                    })[Config.s.overviewPickAnimation] ?? "The chosen card grows until it fills the screen and becomes the workspace"
+                    options: [{ value: "zoom", label: "Zoom" }, { value: "fade", label: "Fade" }, { value: "workspace", label: "Workspace animation" }, { value: "instant", label: "Instant" }]
+                    value: Config.s.overviewPickAnimation
+                    onPicked: v => Config.s.overviewPickAnimation = v
                 }
             }
             GroupLabel { text: "Spaces" }
@@ -4124,7 +4370,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Do not disturb"
-                    detail: "Silence pop-ups (critical ones still show); everything still goes to history"
+                    detail: "Quietens pop-ups so you can focus (critical ones still show). Nothing's lost: everything still goes to history"
                     Toggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
                 }
                 Separator {}
@@ -4189,6 +4435,70 @@ FloatingWindow {
         }
     }
 
+    // A wallpaper in Settings → Appearance: its thumbnail and name; click to use it. For the
+    // images in your folder and the ones that come with Slate
+    component WallTile: Item {
+        id: tile
+        property real tileW: 200
+        property bool small: false           // too small to be a wallpaper: hidden
+        property string title: ""            // under it, in place of the file's name
+        signal picked()
+        required property string filePath
+        required property string fileName
+        readonly property bool current: Config.wallpaper === filePath
+        visible: !tile.small
+        width: tile.tileW
+        height: width * 10 / 16 + 26
+        Rectangle {
+            id: thumbFrame
+            width: parent.width; height: parent.width * 10 / 16
+            radius: 10
+            color: win.card
+            border.width: parent.current ? 3 : wallHover.hovered ? 1 : 0
+            border.color: parent.current ? win.accent : Config.tint("#4a5360")
+            Item {
+                anchors { fill: parent; margins: parent.parent.current ? 3 : 0 }
+                layer.enabled: true
+                layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask }
+                Image {
+                    anchors.fill: parent
+                    source: "file://" + filePath
+                    sourceSize.width: 360
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: true
+                    opacity: status === Image.Ready ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                }
+                Item {
+                    id: thumbMask
+                    anchors.fill: parent
+                    visible: false
+                    layer.enabled: true
+                    Rectangle { anchors.fill: parent; radius: 8 }
+                }
+            }
+            // Tick on the wallpaper in use
+            Rectangle {
+                visible: parent.parent.current
+                anchors { right: parent.right; top: parent.top; margins: 8 }
+                width: 24; height: 24; radius: 12
+                color: win.accent
+                Text { anchors.centerIn: parent; text: win.glyph(0xEA5E); color: win.accentText; font.family: win.bar.iconFont; font.pixelSize: 15 }
+            }
+        }
+        Text {
+            anchors { top: thumbFrame.bottom; topMargin: 6; left: parent.left; right: parent.right }
+            text: tile.title || fileName
+            color: parent.current ? win.text : win.dim
+            font.family: win.font; font.pixelSize: 11
+            elide: Text.ElideMiddle
+            horizontalAlignment: Text.AlignHCenter
+        }
+        HoverHandler { id: wallHover }
+        ClickTap { onTapped: tile.picked() }
+    }
+
     Component {
         id: appearancePage
         Column {
@@ -4219,9 +4529,9 @@ FloatingWindow {
                         if (!p || win.presetActive(p)) return;
                         win.ask = {
                             title: "Apply " + p.name + "?",
-                            body: "This changes your appearance settings: the theme, colours, glass and folder colours. "
+                            body: "This gives you a fresh look: it changes the theme, colours, glass and folder colours. "
                                 + "Your wallpaper stays as it is, and so does everything else.",
-                            button: "Apply",
+                            button: "Apply", code: 0xEB01,
                             run: () => win.applyPreset(p)
                         };
                     }
@@ -4566,7 +4876,7 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Blur quality"
                     settingKey: "blurPasses"
-                    detail: "Smoother blur takes more passes, and more work"
+                    detail: "Smoother blur takes more passes, and asks a little more of your computer"
                     options: [{ value: 0, label: "Hyprland's own" }, { value: 1, label: "Low (1 pass)" }, { value: 2, label: "Medium (2 passes)" },
                               { value: 3, label: "High (3 passes)" }, { value: 4, label: "Highest (4 passes)" }]
                     value: Config.s.blurPasses
@@ -4727,8 +5037,8 @@ FloatingWindow {
                             win.ask = {
                                 title: "Restart Slate?",
                                 body: "Interface size changes to " + Math.round(Config.s.uiScale * 100) + "% when Slate restarts. "
-                                    + "Your apps and windows stay open; the bar, dock and Settings disappear for a moment, "
-                                    + "and Settings opens again here.",
+                                    + "Your apps and windows stay open. The bar, dock and Settings step away for a moment, "
+                                    + "then Settings opens again right here.",
                                 button: "Restart",
                                 run: () => Config.uiScaleEdited(),
                                 cancel: () => Config.s.uiScale = Config.uiScale
@@ -4767,7 +5077,7 @@ FloatingWindow {
                         spacing: 8
                         Button { icon: 0xFAF7; label: "Open"; onClicked: Quickshell.execDetached(["xdg-open", appearancePane.folder]) }
                         Button { icon: 0xEAAD; label: "Change…"; onClicked: appearancePane.choosingFolder ? appearancePane.choosingFolder = false : appearancePane.chooseFolder() }
-                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: if (appearancePane.shown.length > 0) appearancePane.setWallpaper(appearancePane.shown[Math.floor(Math.random() * appearancePane.shown.length)]) }
+                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: { const all = appearancePane.shown.concat(appearancePane.slateShown); if (all.length > 0) appearancePane.setWallpaper(all[Math.floor(Math.random() * all.length)]); } }
                     }
                 }
                 // Folder browser: go into a folder, then use it
@@ -4863,7 +5173,7 @@ FloatingWindow {
                     settingKey: "wallpaperChange"
                     detail: (Config.s.wallpaperChange === "off"
                             ? "Keep the one you pick"
-                            : "Switch to another image from this folder, in a shuffled order")
+                            : "Switch to another image from this folder" + (Config.s.wallpaperShowSlate ? " or Slate's own" : "") + ", in a shuffled order")
                         + (Config.s.wallpaperChange !== "off" && !Config.s.accentFromWallpaper && !Config.s.toneFromWallpaper
                             ? ". Turn on the accent or tint from the wallpaper (above) for the theme to change with it" : "")
                     options: [
@@ -4877,6 +5187,12 @@ FloatingWindow {
                     ]
                     value: Config.s.wallpaperChange
                     onPicked: v => Config.s.wallpaperChange = v
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Slate's wallpapers"
+                    detail: "Show the wallpapers that come with Slate below your own, and include them in Random and when the wallpaper changes by itself"
+                    key: "wallpaperShowSlate"
                 }
                 Separator {}
                 ToggleSetting {
@@ -4943,7 +5259,7 @@ FloatingWindow {
             }
             Text {
                 visible: wallFiles.count === 0
-                text: "No images in this folder"
+                text: "No pictures in this folder yet. Pop some in, or choose another folder above"
                 color: win.dim; font.family: win.font; font.pixelSize: 13
                 leftPadding: 4
             }
@@ -4956,61 +5272,43 @@ FloatingWindow {
                 readonly property real tileW: (width - spacing * (columns - 1)) / columns
                 Repeater {
                     model: wallFiles
-                    delegate: Item {
-                        required property string filePath
-                        required property string fileName
-                        readonly property bool current: Config.wallpaper === filePath
-                        visible: !appearancePane.tooSmall(fileName)
-                        width: wallGrid.tileW
-                        height: width * 10 / 16 + 26
-                        Rectangle {
-                            id: thumbFrame
-                            width: parent.width; height: parent.width * 10 / 16
-                            radius: 10
-                            color: win.card
-                            border.width: parent.current ? 3 : wallHover.hovered ? 1 : 0
-                            border.color: parent.current ? win.accent : Config.tint("#4a5360")
-                            Item {
-                                anchors { fill: parent; margins: parent.parent.current ? 3 : 0 }
-                                layer.enabled: true
-                                layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask }
-                                Image {
-                                    anchors.fill: parent
-                                    source: "file://" + filePath
-                                    sourceSize.width: 360
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    cache: true
-                                    opacity: status === Image.Ready ? 1 : 0
-                                    Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
-                                }
-                                Item {
-                                    id: thumbMask
-                                    anchors.fill: parent
-                                    visible: false
-                                    layer.enabled: true
-                                    Rectangle { anchors.fill: parent; radius: 8 }
-                                }
-                            }
-                            // Tick on the wallpaper in use
-                            Rectangle {
-                                visible: parent.parent.current
-                                anchors { right: parent.right; top: parent.top; margins: 8 }
-                                width: 24; height: 24; radius: 12
-                                color: win.accent
-                                Text { anchors.centerIn: parent; text: win.glyph(0xEA5E); color: win.accentText; font.family: win.bar.iconFont; font.pixelSize: 15 }
-                            }
-                        }
-                        Text {
-                            anchors { top: thumbFrame.bottom; topMargin: 6; left: parent.left; right: parent.right }
-                            text: fileName
-                            color: parent.current ? win.text : win.dim
-                            font.family: win.font; font.pixelSize: 11
-                            elide: Text.ElideMiddle
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        HoverHandler { id: wallHover }
-                        ClickTap { onTapped: appearancePane.setWallpaper(filePath) }
+                    delegate: WallTile {
+                        tileW: wallGrid.tileW
+                        small: appearancePane.tooSmall(fileName)
+                        onPicked: appearancePane.setWallpaper(filePath)
+                    }
+                }
+            }
+            // The wallpapers that come with Slate (shell/wallpapers, made by tools/make-wallpapers.py),
+            // below your own: Settings → Appearance → Slate's wallpapers switches them off
+            FolderListModel {
+                id: slateFiles
+                folder: Config.s.wallpaperShowSlate ? "file://" + Quickshell.shellPath("wallpapers") : ""
+                nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp"]
+                showDirs: false
+                sortField: FolderListModel.Name
+            }
+            readonly property var slateShown: {
+                const out = [];
+                if (Config.s.wallpaperShowSlate) for (let i = 0; i < slateFiles.count; i++) out.push(slateFiles.get(i, "filePath"));
+                return out;
+            }
+            GroupLabel { visible: appearancePane.slateShown.length > 0; text: "From Slate" }
+            Grid {
+                id: slateGrid
+                visible: appearancePane.slateShown.length > 0
+                width: parent.width
+                columns: 3
+                spacing: 12
+                readonly property real tileW: (width - spacing * (columns - 1)) / columns
+                Repeater {
+                    model: Config.s.wallpaperShowSlate ? slateFiles : null
+                    delegate: WallTile {
+                        tileW: slateGrid.tileW
+                        // "slate-ember.png" → "Ember"; "slate-ember-plain.png" (without Slate's
+                        // mark) → "Ember (plain)"
+                        title: fileName.replace(/^slate-/, "").replace(/\.[^.]*$/, "").replace(/-plain$/, " (plain)").replace(/^./, c => c.toUpperCase())
+                        onPicked: appearancePane.setWallpaper(filePath)
                     }
                 }
             }
@@ -5022,26 +5320,13 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "App Theming" }
-            GroupLabel { text: "Apps" }
+            IntroText { text: "Apps you switch on follow Slate's colours, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back." }
+            GroupLabel { text: "Refresh" }
             Group {
-                id: appTheming
-                // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail, installed}]
-                property var apps: []
-                Process {
-                    running: true
-                    command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
-                    stdout: StdioCollector { onStreamFinished: { try { appTheming.apps = JSON.parse(text); } catch (e) {} } }
-                }
-                function isOn(id) { return (Config.s.themedApps || []).indexOf(id) >= 0; }
-                function setOn(id, on) {
-                    const list = (Config.s.themedApps || []).filter(x => x !== id);
-                    if (on) list.push(id);
-                    Config.s.themedApps = list;
-                }
                 SettingRow {
                     id: themeRefresh
-                    label: "Theme other apps"
-                    detail: "Apps you switch on follow Slate's colours, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back. Refresh writes their themes again (after an app update or reset overwrote one)"
+                    label: "Refresh themes"
+                    detail: "Puts the themes of the apps you've switched on back in place, if an app update or reset has overwritten one"
                     property bool asked: false       // Refresh was clicked (shows Done when it finishes)
                     property bool done: false
                     Connections {
@@ -5057,23 +5342,147 @@ FloatingWindow {
                         onClicked: { if (Config.themesBusy) return; themeRefresh.done = false; themeRefresh.asked = true; Config.refreshThemes(); }
                     }
                 }
+            }
+            GroupLabel { text: "Apps" }
+            Group {
+                id: appTheming
+                // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail,
+                // installed, about, url, packages}] (scripts/slate_apps.py)
+                property var apps: []
+                Process {
+                    id: appsQuery
+                    running: true
+                    command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
+                    stdout: StdioCollector { onStreamFinished: { try { appTheming.apps = JSON.parse(text); } catch (e) {} } }
+                }
+                // Installing one (its Install button, after asking): from the distro's own repositories,
+                // with your password (bin/slate-system --install); a notification says how it went
+                property string installing: ""          // the app's id, while it installs
+                function install(app) {
+                    const go = () => {
+                        appTheming.installing = app.id;
+                        installer.app = app;
+                        installer.command = [Quickshell.shellPath("bin/slate-system"), "--install"].concat(app.packages.split(" "));
+                        installer.running = true;
+                    };
+                    const q = {
+                        title: "Install " + app.label + "?",
+                        body: app.about + ". Slate installs " + app.packages.split(" ").join(", ")
+                            + " from your distribution's software, which asks for your password. Once it's in, you can switch on its theme right here.",
+                        button: "Install"
+                    };
+                    // (in Slate's confirmation window, like shutting down or emptying the waste basket)
+                    win.ask = Object.assign({ run: go, code: 0xEA96 }, q);
+                }
+                Process {
+                    id: installer
+                    property var app: null
+                    stderr: StdioCollector { id: installErr }
+                    onExited: code => {
+                        const a = installer.app;
+                        appTheming.installing = "";
+                        appsQuery.running = false; appsQuery.running = true;         // installed now?
+                        if (!a) return;
+                        // 126/127: the password prompt was closed or failed, so it didn't start
+                        if (code === 126 || code === 127) return;
+                        const icon = Quickshell.shellPath("assets/icon/icon-64.png");
+                        const err = (installErr.text || "").trim().split("\n").filter(l => l.trim() !== "").pop() || "";
+                        Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + icon, "--hint=string:x-slate-page:apptheming",
+                            code === 0 ? a.label + " is installed" : "Slate couldn't install " + a.label,
+                            code === 0 ? "Switch on its theme in Settings → App Theming." : (err || "The package manager stopped with an error.")]);
+                    }
+                }
+                function isOn(id) { return (Config.s.themedApps || []).indexOf(id) >= 0; }
+                function setOn(id, on) {
+                    const list = (Config.s.themedApps || []).filter(x => x !== id);
+                    if (on) list.push(id);
+                    Config.s.themedApps = list;
+                }
                 Repeater {
                     model: appTheming.apps
                     delegate: Column {
                         id: appRow
                         required property var modelData
+                        required property int index
                         width: parent ? parent.width : 0
-                        Separator {}
+                        Separator { visible: appRow.index > 0 }
                         SettingRow {
-                            label: appRow.modelData.label
-                            detail: appRow.modelData.installed || appTheming.isOn(appRow.modelData.id)
-                                ? appRow.modelData.detail : "Not installed"
-                            opacity: appRow.modelData.installed || appTheming.isOn(appRow.modelData.id) ? 1 : 0.5
-                            Toggle {
-                                visible: appRow.modelData.installed || checked
-                                checked: appTheming.isOn(appRow.modelData.id)
-                                onToggled: v => appTheming.setOn(appRow.modelData.id, v)
+                            id: appSetting
+                            readonly property var app: appRow.modelData
+                            readonly property bool usable: app.installed || appTheming.isOn(app.id)
+                            // Its app, to open (the first of its desktop entries that's installed)
+                            readonly property var entry: {
+                                DesktopEntries.applications.values;         // (again as apps come and go)
+                                for (const id of (app.desktop || [])) { const e = DesktopEntries.byId(id); if (e) return e; }
+                                return null;
                             }
+                            label: app.label
+                            // What it is, then what Slate does to it
+                            detail: (app.about ? app.about + ". " : "") + app.detail
+                            // Under the description: its website, and Install when it isn't installed
+                            below: [
+                                Button {
+                                    visible: !!appSetting.app.url
+                                    icon: 0xEA99; label: "Website"
+                                    onClicked: Qt.openUrlExternally(appSetting.app.url)
+                                },
+                                // Installed: open it (as the launcher does)
+                                Button {
+                                    visible: appSetting.app.installed && !!appSetting.entry
+                                    primary: true
+                                    icon: 0xEFE6          // app window
+                                    label: "Open"
+                                    onClicked: if (appSetting.entry) appSetting.entry.execute()
+                                },
+                                // Not installed: install it from the distro's software, where it's there
+                                Button {
+                                    readonly property var app: appSetting.app
+                                    visible: !app.installed && !appTheming.isOn(app.id) && app.packages !== ""
+                                    primary: true
+                                    icon: 0xEA96
+                                    label: appTheming.installing === app.id ? "Installing…" : "Install"
+                                    opacity: appTheming.installing !== "" && appTheming.installing !== app.id ? 0.5 : 1
+                                    onClicked: if (appTheming.installing === "") appTheming.install(app)
+                                }
+                            ]
+                            // The switch, kept where it sat above the chip (the chip's room left under it)
+                            Column {
+                                spacing: 8
+                                Toggle {
+                                    visible: appSetting.usable
+                                    checked: appTheming.isOn(appSetting.app.id)
+                                    onToggled: v => appTheming.setOn(appSetting.app.id, v)
+                                }
+                                Item { visible: appSetting.usable; width: 1; height: 24 }
+                            }
+                            // On the right, level with the buttons: whether it's installed
+                            belowRight: [
+                                Rectangle {
+                                    readonly property bool on: appSetting.app.installed
+                                    // Installed: Slate's pastel green when colourful (as Power's), else the accent
+                                    readonly property color tone: Config.colourful ? Config.tint("#a6d3a0") : win.accent
+                                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                                    width: chipRow.implicitWidth + 18; height: 24; radius: 12
+                                    color: on ? Qt.rgba(tone.r, tone.g, tone.b, 0.16) : win.control
+                                    Row {
+                                        id: chipRow
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        Text {
+                                            visible: parent.parent.on
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: win.glyph(0xEA5E)          // tick
+                                            color: parent.parent.tone; font.family: win.bar.iconFont; font.pixelSize: 13
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: parent.parent.on ? "Installed" : "Not installed"
+                                            color: parent.parent.on ? parent.parent.tone : win.dim
+                                            font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -5244,7 +5653,10 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Lock before sleep"
-                    detail: "Lock the screen whenever the computer suspends or hibernates"
+                    // (Slate hears that the computer's about to sleep from systemd or elogind)
+                    enabled: Config.hasLogind
+                    opacity: enabled ? 1 : 0.5
+                    detail: Config.hasLogind ? "Lock the screen whenever the computer suspends or hibernates" : Config.noLogindNote
                     key: "lockBeforeSleep"
                 }
             }
@@ -5252,30 +5664,99 @@ FloatingWindow {
             Group {
                 SettingRow {
                     id: greeterRow
-                    property string state: ""          // not-installed, outdated, current
+                    // From slate-greeter-sync --status: state (not-installed, outdated, current),
+                    // greetd (yes/no), dm (the display manager in use), used (yes/no), backup (yes/no)
+                    property var info: ({})
                     property string status: ""
-                    readonly property bool installed: state === "outdated" || state === "current"
+                    readonly property string state: info.state || ""
+                    // Installed and switched on: greetd starts it (not switched back since)
+                    readonly property bool used: (state === "outdated" || state === "current") && info.used === "yes"
+                    readonly property string dm: info.dm || "none"
+                    readonly property string enable: info.enable || ""
                     label: "Slate login screen"
                     detail: status !== "" ? status
-                        : state === "current" ? "Set up; follows your wallpaper and theme automatically"
+                        : state === "" ? ""
+                        : !used && info.greetd !== "yes" ? "Optional. Replaces your computer's login screen with one that matches Slate. "
+                            + "It runs on greetd, which isn't installed: install greetd with your package manager first"
+                        : !used ? "Optional. Replaces your computer's login screen with one that matches Slate; "
+                            + "until then, your computer keeps its own"
+                        // (the command is the one for this computer's init system: bin/slate-init)
+                        : dm === "none" ? "Installed, but greetd isn't switched on. "
+                            + (enable !== "" ? "To switch it on, in a terminal:  " + enable : "Switch the greetd service on with your init system")
+                        : dm !== "greetd" && dm !== "unknown" ? "Installed, but your computer starts " + dm + " instead. "
+                            + ((info.switch || "") !== "" ? "To switch, in a terminal:  " + info.switch
+                               : "Switch " + dm + " off and greetd on with your init system")
                         : state === "outdated" ? "Its design has changed since it was installed. Update asks for your password"
-                        : state === "not-installed" ? "Not set up yet. In a terminal run:  sudo ~/.config/slate/bin/slate-greeter-install"
-                        : ""
+                        : "Installed; follows your wallpaper and theme automatically"
+                    function refresh() { status = ""; greeterCheck.running = true; }
                     Process {
                         id: greeterCheck
                         running: true
-                        command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--check"]
-                        stdout: StdioCollector { onStreamFinished: greeterRow.state = text.trim() }
+                        command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--status"]
+                        stdout: StdioCollector {
+                            onStreamFinished: {
+                                const o = {};
+                                for (const line of text.split("\n")) { const i = line.indexOf("="); if (i > 0) o[line.slice(0, i)] = line.slice(i + 1).trim(); }
+                                greeterRow.info = o;
+                            }
+                        }
                     }
+                    // Install, update or switch back, asking for your password (pkexec). Says what
+                    // went wrong when it fails; cancelling the password prompt changes nothing
                     Process {
-                        id: greeterUpdate
-                        command: ["pkexec", Quickshell.shellPath("bin/slate-greeter-install"), "--code-only"]
-                        onExited: code => { greeterRow.status = code === 0 ? "Updated; shows at your next logout or restart" : "Not updated"; greeterCheck.running = true; }
+                        id: greeterRun
+                        property string done: ""
+                        property string failed: ""
+                        stderr: StdioCollector { id: greeterErr }
+                        onExited: code => {
+                            const why = greeterErr.text.trim().split("\n").filter(l => l !== "")[0] || "";
+                            greeterRow.status = code === 0 ? done
+                                : code === 126 || code === 127 ? ""                   // password prompt cancelled
+                                : failed + (why !== "" ? ": " + why : "");
+                            greeterCheck.running = true;
+                        }
+                    }
+                    function run(args, doing, done, failed) {
+                        status = doing;
+                        greeterRun.done = done; greeterRun.failed = failed;
+                        greeterRun.command = ["pkexec", Quickshell.shellPath("bin/slate-greeter-install")].concat(args);
+                        greeterRun.running = true;
                     }
                     Row {
                         spacing: 8
                         Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "preview", "login"]); } }
-                        Button { visible: greeterRow.state === "outdated"; label: "Update"; onClicked: { greeterRow.status = "Updating…"; greeterUpdate.running = true; } }
+                        Button {
+                            visible: greeterRow.state !== "" && !greeterRow.used
+                            enabled: greeterRow.info.greetd === "yes" && !greeterRun.running
+                            opacity: enabled ? 1 : 0.4
+                            label: "Install"
+                            onClicked: win.ask = Object.assign({
+                                run: () => greeterRow.run([], "Installing…",
+                                    "Installed; shows at your next logout or restart", "Not installed")
+                            }, win.loginScreenInstallQuestion)
+                        }
+                        Button {
+                            visible: greeterRow.used && greeterRow.state === "outdated"
+                            enabled: !greeterRun.running
+                            label: "Update"
+                            onClicked: win.ask = Object.assign({
+                                run: () => greeterRow.run(["--code-only"], "Updating…",
+                                    "Updated; shows at your next logout or restart", "Not updated")
+                            }, win.loginScreenUpdateQuestion)
+                        }
+                        Button {
+                            visible: greeterRow.used && greeterRow.info.backup === "yes"
+                            enabled: !greeterRun.running
+                            label: "Switch back"
+                            onClicked: win.ask = {
+                                title: "Switch back to your old login screen?",
+                                body: "greetd goes back to the login screen it had before Slate's, from your next logout or restart. "
+                                    + "You're welcome to install Slate's again at any time.",
+                                button: "Switch back", code: 0xEAE2,
+                                run: () => greeterRow.run(["--revert"], "Switching back…",
+                                    "Switched back; your old login screen shows at your next logout or restart", "Not switched back")
+                            }
+                        }
                     }
                 }
             }
@@ -5300,6 +5781,9 @@ FloatingWindow {
                 Separator {}
                 ChoiceSetting {
                     label: "Suspend after"
+                    enabled: Config.canSuspend
+                    opacity: enabled ? 1 : 0.5
+                    detail: Config.canSuspend ? "" : Config.noLogindNote
                     settingKey: "idleSuspendMinutes"
                     options: lockCol.minutes
                     value: Config.s.idleSuspendMinutes
@@ -5308,7 +5792,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Wait while media plays"
-                    detail: "Don't count as away while a video or app is keeping the screen awake"
+                    detail: "You're not counted as away while a video or app is keeping the screen awake"
                     key: "idleRespectInhibitors"
                 }
             }
@@ -5427,7 +5911,7 @@ FloatingWindow {
                 Text {
                     visible: bluetoothPane.devices.length === 0
                     x: 16; height: 48; verticalAlignment: Text.AlignVCenter
-                    text: "No devices yet"
+                    text: "No devices just yet"
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
                 Repeater {
@@ -5569,9 +6053,12 @@ FloatingWindow {
                     label: printersPane.state.service === "missing" ? "Printing isn't installed" : "Printing is off"
                     detail: printersPane.state.service === "missing"
                         ? "Install CUPS (the cups package) to print"
+                        : (printersPane.state.hint || "") !== ""
+                            ? "The printing service (CUPS) isn't running. To switch it on, in a terminal:  " + printersPane.state.hint
                         : "The printing service (CUPS) isn't running. Turning it on asks for your password"
                     Button {
-                        visible: printersPane.state.service === "off"
+                        // (without systemd Slate shows the command instead: scripts/printers.py)
+                        visible: printersPane.state.service === "off" && (printersPane.state.hint || "") === ""
                         label: "Turn on"; primary: true
                         onClicked: printersPane.act(["service-on"], "Turning printing on…")
                     }
@@ -5591,7 +6078,7 @@ FloatingWindow {
                 Text {
                     visible: printersPane.state.printers.length === 0
                     x: 16; height: 48; verticalAlignment: Text.AlignVCenter
-                    text: "No printers yet: find one below"
+                    text: "No printers just yet. Let's find one below"
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
                 Repeater {
@@ -5650,8 +6137,8 @@ FloatingWindow {
                                 destructive: true
                                 onClicked: win.ask = {
                                     title: "Remove " + (printerRow.printer.info || printerRow.printer.name) + "?",
-                                    body: "It goes from this computer's printers, with any jobs still waiting. You can add it again later. This asks for your password.",
-                                    button: "Remove",
+                                    body: "It'll be taken off this computer's printers, along with any jobs still waiting. You can always add it again later. This asks for your password.",
+                                    button: "Remove", destructive: true,
                                     run: () => printersPane.act(["remove", printerRow.printer.name], "Removing…")
                                 }
                             }
@@ -5733,7 +6220,7 @@ FloatingWindow {
                 SettingRow {
                     visible: !printersPane.scan.sane
                     label: "Scanning isn't installed"
-                    detail: "Install SANE (sane-utils or sane-backends, with sane-airscan for network scanners) to scan"
+                    detail: "To scan, you'll need SANE installed (sane-utils or sane-backends, with sane-airscan for network scanners)"
                 }
                 Text {
                     visible: printersPane.scan.sane && printersPane.scan.scanners.length === 0
@@ -5834,7 +6321,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Check for updates"
-                    detail: "Once a day, with a notification when there's a new version"
+                    detail: "Once a day, and Slate lets you know when there's a new version"
                     key: "updateCheck"
                 }
             }
@@ -6001,7 +6488,7 @@ FloatingWindow {
                         try {
                             const d = JSON.parse(text);
                             if (Array.isArray(d)) { camPane.cams = d; camPane.error = ""; } else camPane.error = d.error || "";
-                        } catch (e) { camPane.error = "Couldn't read the webcams"; }
+                        } catch (e) { camPane.error = "Slate couldn't read the webcams"; }
                         camPane.looked = true;
                     }
                 }
@@ -6233,7 +6720,7 @@ FloatingWindow {
                     Process {
                         id: resyncRun
                         command: [Quickshell.shellPath("bin/slate-greeter-sync")]
-                        onExited: code => resyncRow.status = code === 0 ? "Resynced just now" : "Couldn't resync; is the login screen set up?"
+                        onExited: code => resyncRow.status = code === 0 ? "Resynced just now" : "Slate couldn't resync. Is the login screen set up?"
                     }
                     Button {
                         enabled: resyncRow.installed
@@ -6257,8 +6744,8 @@ FloatingWindow {
                         const name = ({ normal: "Normal", detailed: "Detailed", everything: "Everything" })[v];
                         win.ask = {
                             title: "Restart Slate?",
-                            body: "Log detail changes to " + name + " when Slate restarts. Your apps and windows stay open; "
-                                + "the bar, dock and Settings disappear for a moment, and Settings opens again here.",
+                            body: "Log detail changes to " + name + " when Slate restarts. Your apps and windows stay open. "
+                                + "The bar, dock and Settings step away for a moment, then Settings opens again right here.",
                             button: "Restart",
                             run: () => { Config.s.logLevel = v; Config.logLevelEdited(); }
                         };
@@ -6280,7 +6767,7 @@ FloatingWindow {
                         stdout: StdioCollector { onStreamFinished: exportRow.saved = text.trim() }
                         onExited: code => exportRow.status = code === 0 && exportRow.saved !== ""
                             ? "Saved to " + exportRow.saved.replace(Quickshell.env("HOME"), "~") + ". Look it over before sharing it"
-                            : "Couldn't save the logs"
+                            : "Slate couldn't save the logs"
                     }
                     Row {
                         spacing: 8
@@ -6481,7 +6968,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Welcome"
-                    detail: "The introduction from Slate's first start, with its recommended choices"
+                    detail: "The friendly introduction from Slate's first start, with its recommended choices"
                     Button {
                         label: "Show the welcome"
                         onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "welcome", "open"]); }

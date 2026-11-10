@@ -107,7 +107,7 @@ Singleton {
         command: ["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:updates",
             "--action=default=Open", "--action=open=See what's new", "--wait",
             "Slate " + root.announcing + " is available",
-            (root.installed ? "You have " + root.installed.replace(/-.*/, "") + ". " : "") + "See what's new and update in Settings → Updates."]
+            (root.installed ? "You have " + root.installed.replace(/-.*/, "") + ". " : "") + "Take a look at what's new, and update whenever you're ready, in Settings → Updates."]
         stdout: StdioCollector {
             onStreamFinished: if (text.trim() !== "") Config.slateCall("settings", "page", "updates")
         }

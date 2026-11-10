@@ -86,6 +86,19 @@ class Overlays(LiveCase):
                 self.wait(lambda st: not st["power"]["open"])
                 self.assertTrue(self.s.alive(), "the session ended")
 
+    def test_settings_asks_in_slates_window(self):
+        """A question from Settings opens in Slate's own confirmation window (with its switch),
+        not a card inside Settings, and cancelling closes it."""
+        self.ipc("settings", "open")
+        self.wait(lambda st: st["settings"]["open"], "Settings")
+        self.ipc("test", "settingsAsk")
+        st = self.wait(lambda st: st["power"]["open"], "the confirmation window")
+        self.assertEqual(st["power"]["action"], "custom")
+        self.assertTrue(st["power"]["option"], "the question's switch is missing")
+        self.assertFalse(st["settings"]["ownCard"], "Settings showed its own card as well")
+        self.ipc("power", "cancel")
+        self.wait(lambda st: not st["power"]["open"], "the confirmation window to close")
+
     def test_polkit_preview(self):
         self.ipc("polkit", "preview")
         self.wait(lambda st: st["polkit"]["open"], "the password prompt")
@@ -97,3 +110,56 @@ class Overlays(LiveCase):
         before = self.s.state()["notifications"]["history"]
         self.s.run(["notify-send", "-a", "Tests", "Hello", "From the test suite"])
         self.wait(lambda st: st["notifications"]["history"] == before + 1, "the notification")
+
+    def test_fade_in(self):
+        """The login cover (with the logo) shows, then fades away by itself as at login."""
+        self.ipc("test", "fadeIn")
+        self.wait(lambda st: st["fadeIn"]["open"] and not st["fadeIn"]["fading"], "the login cover")
+        self.ipc("test", "fadeInEnd")
+        self.wait(lambda st: not st["fadeIn"]["open"], "the login cover to fade away", timeout=8)
+
+    def test_welcome_glass_or_flat(self):
+        """The Welcome window's "Glass or flat?" page: each sets the look alone (glass and its
+        settings), leaving the theme and accent chosen on the page before."""
+        for key in ("glass", "glassOpacity", "accentBoldness", "themeMode", "lightMode", "accentFromWallpaper", "accent"):
+            self.keep_setting(key)
+        self.config("themeMode", "light")
+        self.config("accentFromWallpaper", "false")
+        self.config("accent", "#e8a6b5")
+        self.ipc("welcome", "page", "3")
+        st = self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3, "the Glass or flat page")
+        self.assertEqual(st["welcome"]["pages"], 7)
+        self.ipc("welcome", "look", "Liquid Glass")
+        self.s.settle(0.6)
+        self.assertEqual(self.setting("glass"), "true")
+        self.assertEqual(self.setting("glassOpacity"), "0.7")
+        self.ipc("welcome", "look", "Metro Flat")
+        self.s.settle(0.6)
+        self.assertEqual(self.setting("glass"), "false")
+        self.assertEqual(self.setting("accentBoldness"), "0.4")
+        # what was chosen before stays
+        self.assertEqual((self.setting("themeMode"), self.setting("accentFromWallpaper"), self.setting("accent")),
+                         ("light", "false", "#e8a6b5"))
+        self.ipc("welcome", "close")
+        self.wait(lambda st: not st["welcome"]["open"], "the welcome to close")
+
+    def test_without_a_login_service(self):
+        """A computer with neither systemd nor elogind (seatd alone, say): nothing can suspend,
+        restart or shut down for Slate, so those aren't offered (bin/slate-init, Config.system)."""
+        self.addCleanup(lambda: self.ipc("test", "system", ""))
+        self.ipc("test", "system", "")
+        self.wait(lambda st: st["system"]["suspend"] == "yes", "a computer with a login service")
+        self.ipc("launcher", "open")
+        self.wait(lambda st: st["launcher"]["open"], "the launcher")
+        self.ipc("launcher", "search", "suspend")
+        st = self.wait(lambda st: st["launcher"]["query"] == "suspend", "the search")
+        self.assertIn("Suspend", st["launcher"]["results"])
+        self.ipc("test", "system", "none")
+        self.wait(lambda st: st["system"]["logind"] == "none" and "Suspend" not in st["launcher"]["results"], "Suspend to go from the results")
+        self.ipc("launcher", "search", "restart")
+        st = self.wait(lambda st: st["launcher"]["query"] == "restart", "the search")
+        self.assertNotIn("Restart", st["launcher"]["results"])
+        self.ipc("launcher", "search", "lock")
+        st = self.wait(lambda st: st["launcher"]["query"] == "lock", "the search")
+        self.assertIn("Lock", st["launcher"]["results"], "locking needs no login service")
+        self.ipc("launcher", "close")

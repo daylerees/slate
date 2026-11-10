@@ -57,7 +57,7 @@ Scope {
             else root.checkLockout(true);     // wrong password, or locked out?
             root.forget();
         }
-        onError: err => { pending = ""; root.fail("Couldn't check the password"); root.forget(); }
+        onError: err => { pending = ""; root.fail("Slate couldn't check your password. Please try again"); root.forget(); }
     }
     function check(password) {
         if (lockedOut) return;            // trying while locked out only extends it
@@ -83,7 +83,7 @@ Scope {
             lockedUntil = 0; message = ""; messageIsError = false;
         } else if (lockedUntil > 0) {
             const s = Math.ceil((lockedUntil - now) / 1000);
-            message = "Too many attempts · try again in " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+            message = "Too many tries · you can try again in " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
             messageIsError = true;
         }
     }
@@ -113,7 +113,7 @@ Scope {
                     if (root.afterFailure) root.failed(root.message);
                 } else if (root.afterFailure) {
                     const left = root.failDeny - live;
-                    root.fail(left > 0 && left < root.failDeny ? "Wrong password · " + left + (left === 1 ? " try" : " tries") + " left" : "Wrong password");
+                    root.fail(left > 0 && left < root.failDeny ? "That password didn't match · " + left + (left === 1 ? " try" : " tries") + " left" : "That password didn't match");
                 }
                 root.afterFailure = false;
             }
@@ -127,7 +127,7 @@ Scope {
         busy = false;
         lockedUntil = 0;
         if (previewing) {
-            message = "Password accepted"; messageIsError = false;
+            message = "Welcome back"; messageIsError = false;
             previewCloseTimer.restart();
         } else {
             root.unlock();
@@ -142,7 +142,7 @@ Scope {
             return;
         }
         if (action === "logout" || action === "reboot" || action === "poweroff") Config.sessionAction(action);
-        else Quickshell.execDetached(["systemctl", action]);
+        else Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), action]);     // systemctl, or loginctl without systemd
     }
 
     function startFresh() {
@@ -275,9 +275,10 @@ Scope {
         id: logind
         running: true
         // setpriv --pdeathsig: these exit if Slate itself goes away (restart, reload),
-        // so no stray watcher is left holding up sleep
+        // so no stray watcher is left holding up sleep. slate-init inhibit: systemd-inhibit, or
+        // elogind's without systemd (the login1 signals below are the same from either)
         command: ["setpriv", "--pdeathsig", "TERM"].concat(Config.s.lockBeforeSleep
-            ? ["systemd-inhibit", "--what=sleep", "--mode=delay", "--who=Slate", "--why=Lock the screen before sleep",
+            ? [Quickshell.shellPath("bin/slate-init"), "inhibit", "--what=sleep", "--mode=delay", "--who=Slate", "--why=Lock the screen before sleep",
                "setpriv", "--pdeathsig", "TERM"]
             : []).concat(["gdbus", "monitor", "--system", "--dest", "org.freedesktop.login1"])
         stdout: SplitParser {
@@ -303,7 +304,7 @@ Scope {
     // Slate's own idle suspend: lock first, then suspend once the lock is up
     property bool suspendPending: false
     function suspendIfSecure() {
-        if (suspendPending && sessionLock.secure) { suspendPending = false; Quickshell.execDetached(["systemctl", "suspend"]); }
+        if (suspendPending && sessionLock.secure) { suspendPending = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "suspend"]); }
     }
     // Start watching again a moment later; this runs after waking up
     Timer { id: rewatch; interval: 3000; onTriggered: logind.running = true }
@@ -326,13 +327,13 @@ Scope {
         onIsIdleChanged: Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.dpms({ action = "${isIdle ? "off" : "on"}" })`])
     }
     IdleMonitor {
-        enabled: Config.s.idleSuspendMinutes > 0
+        enabled: Config.s.idleSuspendMinutes > 0 && Config.canSuspend
         timeout: Config.s.idleSuspendMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: {
             if (!isIdle) return;
             if (Config.s.lockBeforeSleep) { root.suspendPending = true; root.lockNow(false); root.suspendIfSecure(); }
-            else Quickshell.execDetached(["systemctl", "suspend"]);
+            else Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "suspend"]);
         }
     }
 

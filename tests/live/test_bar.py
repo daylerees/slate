@@ -6,7 +6,7 @@ PANELS = {
     "control": None, "spaces": "barShowSpaces", "notifications": "barShowNotifications", "session": "barShowPower",
     "volume": "barShowVolume", "wifi": "barShowWifi", "clipboard": "barShowClipboard",
     "screenshot": "barShowScreenshot", "keyboard": "barShowKeyboard", "bluetooth": "barShowBluetooth",
-    "battery": "barShowBattery", "gamemode": "barShowGameMode", "calendar": None,
+    "battery": "barShowBattery", "gamemode": "barShowGameMode", "calendar": None, "windowmode": "barShowWindowMode",
 }
 
 
@@ -38,3 +38,19 @@ class Bar(LiveCase):
                 self.wait(lambda st: st["barEdge"] == edge)
                 self.assertIn("namespace: slate-bar", self.s.hyprctl("layers"))
         self.config("barPosition", old)
+
+    def test_window_mode_panel(self):
+        """The window mode panel (before the workspace dots): a mode for this workspace only;
+        picking the default's mode puts it back to following the default."""
+        self.keep_setting("windowMode")
+        self.config("windowMode", "tiling")
+        ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
+        self.addCleanup(lambda: self.ipc("workspacemode", "set", str(ws), ""))
+        self.ipc("bar", "panel", "windowmode")
+        self.wait(lambda st: st["popout"] == "windowmode", "the window mode panel")
+        # (what its rows and tiles do)
+        self.ipc("workspacemode", "set", str(ws), "scrolling")
+        self.assertEqual(self.ipc("workspacemode", "get", str(ws)), "scrolling")
+        self.ipc("workspacemode", "set", str(ws), "tiling")        # the default's mode: follows it again
+        self.assertEqual(self.ipc("workspacemode", "get", str(ws)), "")
+        self.ipc("popout", "close")

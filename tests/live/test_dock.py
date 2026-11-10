@@ -78,6 +78,132 @@ class Dock(LiveCase):
         self.wait(lambda st: st["dock"]["menu"] == "other", "the Downloads grid")
         self.ipc("dock", "closeMenu")
 
+    def test_preview_delay_and_switch(self):
+        """Settings → Dock: Window previews (a switch), and how long to rest on an app before
+        they show, down to Instant. (0 used to mean off: now it's at once, and the switch is off.)"""
+        for key in ("dockPreviews", "dockPreviewDelay", "dockHoverEffect"):
+            self.keep_setting(key)
+        self.config("dockHoverEffect", "magnify")
+        self.addCleanup(lambda: (self.ipc("test", "dockHover", "-1"), self.ipc("dock", "closePreview")))
+        if not any(c["class"] == "foot" for c in self.s.hyprctl("clients", json_out=True)):
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        st = self.wait(lambda st: any(x["kind"] == "app" and x["key"] == "foot" and x["windows"] > 0 for x in st["dock"]["slots"]),
+                       "a foot window on the dock")
+        foot = next(i for i, x in enumerate(st["dock"]["slots"]) if x["kind"] == "app" and x["key"] == "foot")
+
+        def rest():
+            self.ipc("test", "dockHover", "-1")
+            self.ipc("dock", "closePreview")
+            self.wait(lambda st: not st["dock"]["preview"], "no preview")
+            self.s.settle(0.5)
+            self.ipc("test", "dockHover", str(foot))
+
+        # a long wait: nothing yet after a second
+        self.config("dockPreviews", "true")
+        self.config("dockPreviewDelay", "3")
+        rest()
+        self.s.settle(1.2)
+        self.assertFalse(self.s.state()["dock"]["preview"], "the preview came before its 3 seconds")
+        # Instant: there as the pointer arrives
+        self.config("dockPreviewDelay", "0")
+        rest()
+        self.s.wait(lambda st: st["dock"]["preview"], timeout=1.5, what="the preview at once")
+        # switched off: never, however short the wait
+        self.config("dockPreviews", "false")
+        rest()
+        self.s.settle(1.2)
+        self.assertFalse(self.s.state()["dock"]["preview"], "a preview with previews switched off")
+
+    def test_preview_fades_away(self):
+        """An app's window preview opens, and once closed it fades and its window goes (it used
+        to vanish at once, with no fade)."""
+        if not any(c["class"] == "foot" for c in self.s.hyprctl("clients", json_out=True)):
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.wait(lambda st: any(x["kind"] == "app" and x["key"] == "foot" and x["windows"] > 0 for x in st["dock"]["slots"]),
+                  "a foot window on the dock")
+        self.ipc("dock", "preview", "foot")
+        st = self.wait(lambda st: st["dock"]["preview"], "foot's preview")
+        self.assertTrue(st["dock"]["previewOnScreen"])
+        self.ipc("dock", "closePreview")
+        self.wait(lambda st: not st["dock"]["preview"], "the preview to close")
+        self.wait(lambda st: not st["dock"]["previewOnScreen"], "the preview to fade away", timeout=3)
+
+    def test_hover_effects(self):
+        """Settings → Dock → Hover effect: magnify grows the icon under the pointer; tilt turns
+        the icons towards the pointer while it's on the dock (upright otherwise), the one under it
+        straight and not grown; fade fades the far icons while the pointer's on the dock."""
+        self.keep_setting("dockHoverEffect")
+        self.addCleanup(lambda: self.ipc("test", "dockHover", "-1"))
+        slots = self.s.state()["dock"]["slots"]
+        apps = [i for i, x in enumerate(slots) if x["kind"] == "app"]
+        parts = [i for i, x in enumerate(slots) if x["kind"] != "divider"]
+        self.assertTrue(apps and len(parts) >= 2, "needs an app and something else on the dock")
+        first = apps[0]
+        last = max(parts, key=lambda i: abs(i - first))        # the part furthest from it
+
+        self.config("dockHoverEffect", "tilt")
+        self.ipc("test", "dockHover", "-1")
+        # pointer away: upright
+        st = self.wait(lambda st: st["dock"]["hoverEffect"] == "tilt" and all(a == 0 for a in st["dock"]["tilt"]),
+                       "the icons upright with the pointer away")
+        self.ipc("test", "dockHover", str(first))
+        st = self.wait(lambda st: abs(st["dock"]["tilt"][first]) <= 1, "the icon under the pointer to straighten")
+        self.assertEqual(st["dock"]["scale"][first], 1, "tilt alone shouldn't grow it")
+        self.assertNotEqual(st["dock"]["tilt"][last], 0, "the far icons should still lean")
+
+        self.config("dockHoverEffect", "magnify")
+        st = self.wait(lambda st: st["dock"]["scale"][first] > 1.2, "the icon under the pointer to grow")
+        self.assertTrue(all(a == 0 for a in st["dock"]["tilt"]), "magnify alone shouldn't tilt")
+
+        # Fade: the far icons fade while the pointer's on the dock, the one under it clear
+        self.config("dockHoverEffect", "fade")
+        st = self.wait(lambda st: st["dock"]["fade"][last] < 0.6, "the far icons to fade")
+        self.assertEqual(st["dock"]["fade"][first], 1)
+        self.assertEqual(st["dock"]["scale"][first], 1, "fade alone shouldn't grow it")
+        self.config("dockHoverEffect", "fademagnify")
+        st = self.wait(lambda st: st["dock"]["scale"][first] > 1.2, "fade and magnify to grow it")
+        self.assertLess(st["dock"]["fade"][last], 0.6)
+        self.ipc("test", "dockHover", "-1")
+        self.wait(lambda st: all(f == 1 for f in st["dock"]["fade"]), "all clear once the pointer leaves")
+        self.ipc("test", "dockHover", str(first))
+
+        # Glow: round the icon under the pointer, not the far ones; with magnify it grows too
+        self.config("dockHoverEffect", "glow")
+        st = self.wait(lambda st: st["dock"]["glow"][first] > 0.9, "the icon under the pointer to glow")
+        self.assertEqual(st["dock"]["glow"][last], 0)
+        self.assertEqual(st["dock"]["scale"][first], 1, "glow alone shouldn't grow it")
+        self.config("dockHoverEffect", "glowmagnify")
+        st = self.wait(lambda st: st["dock"]["scale"][first] > 1.2, "glow and magnify to grow it")
+        self.assertGreater(st["dock"]["glow"][first], 0.9)
+        self.ipc("test", "dockHover", "-1")
+        self.wait(lambda st: all(g == 0 for g in st["dock"]["glow"]), "no glow once the pointer leaves")
+        self.ipc("test", "dockHover", str(first))
+
+        # Raise: only the icon under the pointer lifts, nothing grows
+        self.config("dockHoverEffect", "raise")
+        st = self.wait(lambda st: st["dock"]["lift"][first] > 0, "the icon under the pointer to lift")
+        self.assertTrue(all(l == 0 for i, l in enumerate(st["dock"]["lift"]) if i != first), "others lifted too")
+        self.assertTrue(all(sc == 1 for sc in st["dock"]["scale"]), "raise shouldn't grow anything")
+
+        # Dividers keep still in every effect, even with the pointer on one
+        dividers = [i for i, x in enumerate(slots) if x["kind"] == "divider"]
+        if dividers:
+            for effect in ("raise", "tilt", "fade", "glow"):
+                with self.subTest(dividers=effect):
+                    self.config("dockHoverEffect", effect)
+                    self.ipc("test", "dockHover", str(dividers[0]))
+                    self.s.settle(0.5)
+                    d = self.s.state()["dock"]
+                    for i in dividers:
+                        self.assertEqual((d["lift"][i], d["tilt"][i], d["fade"][i], d["glow"][i]), (0, 0, 1, 0),
+                                         f"divider {i} moved with {effect}")
+            self.ipc("test", "dockHover", str(first))
+
+        self.config("dockHoverEffect", "none")
+        st = self.wait(lambda st: st["dock"]["scale"][first] == 1, "nothing to grow")
+        self.assertTrue(all(a == 0 for a in st["dock"]["tilt"]))
+        self.assertTrue(all(f == 1 for f in st["dock"]["fade"]))
+
     def test_positions(self):
         old = self.keep_setting("dockPosition")
         for edge in ("left", "right", "bottom"):

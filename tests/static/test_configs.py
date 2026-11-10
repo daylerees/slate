@@ -51,3 +51,25 @@ class Greeter(Case):
         need("qs")
         self.ok([slate.path("shell", "bin", "slate-greeter-check"), "--source", slate.SHELL],
                 "the login screen", logname="slate-greeter-check.txt", timeout=180)
+
+
+class SwitcherKeys(Case):
+    """Keys while a switcher is open (the test session can't press keys, so these read the code)."""
+
+    def test_super_arrows_move_the_window_switcher(self):
+        """Super+Left/Right move through the open window switcher rather than switching workspace,
+        in Slate's shortcuts and in Hyprland + Slate Extras."""
+        src = slate.read("shell", "session", "hypr", "config", "binds.lua")
+        # Slate's set, then (inside "if HYPR_KEYS") Hyprland's with Slate's extras
+        slate_set, hypr_set = src.split("if HYPR_KEYS then", 1)
+        for name, part, guard in (("Slate's", slate_set, "if switcherIsOpen()"), ("Extras", hypr_set, "if EXTRAS and switcherIsOpen()")):
+            for cmd in ('sw("next")', 'sw("prev")'):
+                with self.subTest(set=name, cmd=cmd):
+                    self.assertIn(f"{guard} then {cmd}", part)
+
+    def test_up_goes_to_the_workspace(self):
+        """In the overview, Up goes to the chosen workspace (on the grid it moves up a row)."""
+        src = slate.read("shell", "WorkspaceOverview.qml")
+        line = next(l for l in src.splitlines() if "case Qt.Key_Up:" in l)
+        self.assertIn("ov.choose()", line)
+        self.assertIn("ov.moveRow(-1)", line)

@@ -191,6 +191,41 @@ class Names(Case):
         self.assertFalse(hits, "another shell is named at " + ", ".join(hits[:5]))
 
 
+class WorkspaceLabels(Case):
+    """A workspace can have a name of its own, so nothing builds "Workspace 3" by hand: every
+    place that shows one asks Config.workspaceLabel (or the name would be missing there)."""
+
+    def test_none_built_by_hand(self):
+        found = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).splitlines(), 1):
+                if re.search(r'"Workspace "\s*\+', line.split("//")[0]) and "function workspaceNumber" not in line:
+                    found.append(f"{f}:{n}")
+        self.assertEqual(found, [])
+
+
+class Wallpapers(Case):
+    """Slate's own wallpapers (shell/wallpapers) are made by tools/make-wallpapers.py, never
+    drawn by hand: two files per look in the tool (with Slate's mark, and plain), each a 4K PNG
+    small enough to ship. PNG, not
+    JPEG: JPEG rounds colour in blocks, which shows as bands across colour this smooth."""
+
+    def test_made_by_the_tool(self):
+        import re
+        from PIL import Image
+        looks = re.findall(r'^    "(\w+)":\s+\("#', slate.read("tools", "make-wallpapers.py"), re.M)
+        self.assertGreaterEqual(len(looks), 4, "couldn't read the looks from the tool")
+        folder = slate.path("shell", "wallpapers")
+        files = [f"slate-{n}{plain}.png" for n in looks for plain in ("", "-plain")]
+        self.assertEqual(sorted(os.listdir(folder)), sorted(files))
+        for n in (f[len("slate-"):-len(".png")] for f in files):
+            with self.subTest(n):
+                p = os.path.join(folder, f"slate-{n}.png")
+                with Image.open(p) as im:
+                    self.assertEqual((im.format, im.size, im.mode), ("PNG", (3840, 2160), "RGB"))
+                self.assertLess(os.path.getsize(p), 4_000_000, "too big to ship")
+
+
 class Shaders(Case):
     def test_built_from_source(self):
         """Every shaders/*.frag has its .qsb, built after the source last changed."""

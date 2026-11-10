@@ -1,6 +1,8 @@
 // The welcome: shown the first time Slate starts (and from Settings → About), it introduces
 // Slate and walks through a few big choices, each with a recommendation: tiling or floating
-// windows, colours (from the wallpaper), where the bar and dock go, and the shortcuts.
+// windows, colours (from the wallpaper), glass or flat, where the bar and dock go, and the
+// shortcuts. It's drawn in the theme in use (light or dark, the tint, glass), as it can be
+// opened again at any time.
 // Everything it sets is in Settings too. Skip (or Escape) at any point.
 //
 //   slate ipc call welcome open
@@ -18,7 +20,7 @@ PanelWindow {
     // ---- Showing ---------------------------------------------------------------
     property bool shown: false
     property int page: 0
-    readonly property int pages: 6
+    readonly property int pages: 7
     function open() {
         screen = Config.focusedScreen;
         page = 0;
@@ -39,13 +41,16 @@ PanelWindow {
         target: "welcome"
         function open(): void { w.open(); }
         function close(): void { w.shown = false; }
+        // Straight to a page (0: the welcome … 6: the keys to know), and its "Glass or flat?" choice
+        function page(n: int): void { if (!w.shown) w.open(); w.page = Math.max(0, Math.min(w.pages - 1, n)); }
+        function look(name: string): void { Config.applyLook(name); }
     }
 
     property real fade: shown ? 1 : 0
     Behavior on fade { NumberAnimation { duration: Config.ms(260); easing.type: Easing.OutCubic } }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
-    color: Qt.rgba(0.02, 0.03, 0.04, 0.82 * fade)        // the desktop well dimmed behind it
+    color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-welcome"
     WlrLayershell.layer: WlrLayer.Overlay
@@ -79,6 +84,13 @@ PanelWindow {
         panel.forceActiveFocus();
     }
 
+    // The desktop dimmed behind it (as behind Slate's confirmation window; on glass, only the
+    // panel itself is frosted)
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: (Config.glass ? 0.45 : 0.6) * w.fade
+    }
     Rectangle {
         id: panel
         anchors.centerIn: parent
@@ -89,7 +101,8 @@ PanelWindow {
         height: 600
         radius: 18
         color: w.bg
-        border.width: 1; border.color: w.line
+        border.width: Config.glass ? 0 : 1; border.color: w.line     // (glass has its own bright rim)
+        Gloss { radius: parent.radius; strength: 0.6 }                // glass: a sheen, as on Slate's panels
         opacity: w.fade
         scale: fit * (0.96 + 0.04 * w.fade)
         layer.enabled: !Config.glass     // only for the shadow, which glass goes without
@@ -139,7 +152,7 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         lineHeight: 1.25
-                        text: "A calm, aesthetically pleasing desktop for Linux: a bar, a dock, a launcher, switchers, panels and notifications that all fit together.\n\nLet's make a few choices to get you started. Each has a recommendation, and you can change any of them later in Settings (Super+Z)."
+                        text: "It's lovely to have you here. Slate is a calm, good-looking desktop for Linux: a bar, a dock, a launcher, switchers, panels and notifications that all feel like one thing.\n\nLet's set a few things up together. Each choice comes with our recommendation, and nothing here is final: you can change any of it later in Settings (Super+Z)."
                         color: w.dim; font.family: w.font; font.pixelSize: 14
                     }
                 }
@@ -154,10 +167,10 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "How should windows behave?"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "How would you like your windows?"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
-                        text: "Slate can arrange your windows for you, or leave them where you put them."
+                        text: "Slate can arrange them for you, or leave them wherever you put them. Go with whichever feels like home."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     Row {
@@ -165,14 +178,16 @@ PanelWindow {
                         spacing: 16
                         Repeater {
                             model: [
-                                { key: "tiling", title: "Tiling", rec: true, detail: "Windows sit side by side and share the screen, never overlapping. Quick to use from the keyboard." },
-                                { key: "floating", title: "Floating", rec: false, detail: "Windows open where you put them and can overlap, with title bars, like a traditional desktop." }
+                                { key: "tiling", title: "Tiling", rec: true, detail: "Windows sit side by side and share the screen, never overlapping. A joy to use from the keyboard." },
+                                { key: "floating", title: "Floating", rec: false, detail: "Windows open where you put them and can overlap, with title bars, just like the desktops you may already know." }
                             ]
                             delegate: Rectangle {
                                 id: modeCard
                                 required property var modelData
-                                readonly property bool usable: modelData.key === "tiling" || Config.titleBarsAvailable
-                                readonly property bool on: Config.s.windowMode === modelData.key
+                                readonly property bool usable: true
+                                // Tiling stands for every tiled layout (master, scrolling and monocle,
+                                // from Settings → Windows)
+                                readonly property bool on: modelData.key === "floating" ? Config.windowMode === "floating" : Config.windowMode !== "floating"
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: 14
                                 color: modeHover.hovered && usable ? Config.hoverOn(w.card) : w.card
@@ -219,13 +234,13 @@ PanelWindow {
                                     }
                                     Text {
                                         width: parent.width; wrapMode: Text.Wrap
-                                        text: modeCard.usable ? modeCard.modelData.detail
-                                            : "Needs the title bar plugin (hyprbars), which isn't built yet: run slate build-hyprbars, then come back"
+                                        text: modeCard.modelData.detail
                                         color: w.dim; font.family: w.font; font.pixelSize: 12; lineHeight: 1.2
                                     }
                                 }
                                 HoverHandler { id: modeHover }
-                                ClickTap { onTapped: if (modeCard.usable) Config.s.windowMode = modeCard.modelData.key }
+                                // (Tiling on a tiled layout already keeps it)
+                                ClickTap { onTapped: if (modeCard.usable && !modeCard.on) Config.s.windowMode = modeCard.modelData.key }
                             }
                         }
                     }
@@ -244,7 +259,7 @@ PanelWindow {
                     Text { text: "Colours"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 12
-                        text: "Slate can take its colours from your wallpaper, so everything matches it, and change with it."
+                        text: "Slate can borrow its colours from your wallpaper, so everything matches, and change along with it."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     // Theme
@@ -281,8 +296,8 @@ PanelWindow {
                         width: parent.width
                         spacing: 12
                         Repeater {
-                            model: [{ wall: true, title: "From your wallpaper", rec: true, detail: "A bright colour picked from the wallpaper, changing with it" },
-                                    { wall: false, title: "Choose one", rec: false, detail: "Pick a colour that stays the same" }]
+                            model: [{ wall: true, title: "From your wallpaper", rec: true, detail: "A bright colour picked from your wallpaper, changing whenever it does" },
+                                    { wall: false, title: "Choose one", rec: false, detail: "Pick a favourite, and it stays put" }]
                             delegate: Rectangle {
                                 id: accOpt
                                 required property var modelData
@@ -358,12 +373,12 @@ PanelWindow {
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
-                                text: "Every app Slate can theme that you have installed (GTK and Qt apps, terminals, editors and more) follows these colours."
+                                text: "Every app Slate can theme that you have installed (GTK and Qt apps, terminals, editors and more) follows these colours too, so your whole desktop matches."
                                 color: w.dim; font.family: w.font; font.pixelSize: 12
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
-                                text: "\u26A0 This changes those apps' own settings (their colour or theme files). Each one is backed up first, and switching an app off in Settings \u2192 App theming puts its original back."
+                                text: "\u26A0 This changes those apps' own settings (their colour or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
                                 color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: 12
                             }
                         }
@@ -392,7 +407,9 @@ PanelWindow {
                 }
             }
 
-            // ---- 3. Bar and dock ------------------------------------------
+            // ---- 3. Glass or flat -------------------------------------------
+            // Two of Settings → Appearance's presets, for the look alone (the theme and accent
+            // chosen on the page before stay): Config.lookPresets
             Item {
                 anchors.fill: parent
                 opacity: w.page === 3 ? 1 : 0
@@ -401,10 +418,115 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
+                    Text { text: "Glass or flat?"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text {
+                        width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
+                        text: "Two looks to start from. Try them both: this window changes with your choice, and you can fine-tune every detail later in Settings \u2192 Appearance."
+                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                    }
+                    Row {
+                        width: parent.width
+                        spacing: 16
+                        Repeater {
+                            model: [
+                                { name: "Metro Flat", glass: false, rec: true, detail: "Solid, flat panels with crisp edges. Clean and quiet, and a little lighter on your computer." },
+                                { name: "Liquid Glass", glass: true, rec: false, detail: "See-through panels with your desktop softly blurred behind them, and a glossy sheen. Best with a colourful wallpaper." }
+                            ]
+                            delegate: Rectangle {
+                                id: lookCard
+                                required property var modelData
+                                readonly property bool on: Config.s.glass === modelData.glass
+                                width: (parent.width - 16) / 2; height: 290
+                                radius: 14
+                                color: lookHover.hovered ? Config.hoverOn(w.card) : w.card
+                                Gloss { radius: parent.radius; opacity: lookHover.hovered ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                                border.width: on ? 2 : 1
+                                border.color: on ? w.accent : w.line
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                // A small screen showing the idea: a bar and a panel over a wallpaper,
+                                // solid for flat, see-through with a sheen for glass
+                                Rectangle {
+                                    id: lookArt
+                                    anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
+                                    height: 130; radius: 9
+                                    clip: true
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0; color: Qt.darker(w.accent, 1.5) }
+                                        GradientStop { position: 1; color: Qt.lighter(w.accent, 1.25) }
+                                    }
+                                    readonly property color surface: lookCard.modelData.glass
+                                        ? Qt.rgba(w.bg.r, w.bg.g, w.bg.b, 0.42) : Qt.rgba(w.bg.r, w.bg.g, w.bg.b, 1)
+                                    Rectangle {
+                                        x: 8; y: 8; width: parent.width - 16; height: 14; radius: 7
+                                        color: lookArt.surface
+                                        border.width: lookCard.modelData.glass ? 1 : 0; border.color: Qt.rgba(1, 1, 1, 0.35)
+                                    }
+                                    Rectangle {
+                                        x: parent.width * 0.52; y: 30; width: parent.width * 0.48 - 8; height: parent.height - 40; radius: 8
+                                        color: lookArt.surface
+                                        border.width: lookCard.modelData.glass ? 1 : 0; border.color: Qt.rgba(1, 1, 1, 0.35)
+                                        // (the sheen)
+                                        Rectangle {
+                                            visible: lookCard.modelData.glass
+                                            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
+                                            height: parent.height * 0.45; radius: 7
+                                            gradient: Gradient {
+                                                GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.28) }
+                                                GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
+                                            }
+                                        }
+                                        Column {
+                                            anchors { fill: parent; margins: 9 }
+                                            spacing: 6
+                                            Repeater {
+                                                model: 3
+                                                Rectangle { required property int index; width: parent.width * (index === 0 ? 0.7 : index === 1 ? 0.9 : 0.5); height: 5; radius: 2.5; color: index === 0 ? w.accent : w.dim; opacity: 0.85 }
+                                            }
+                                        }
+                                    }
+                                }
+                                Column {
+                                    anchors { top: lookArt.bottom; left: parent.left; right: parent.right; margins: 16; topMargin: 14 }
+                                    spacing: 6
+                                    Row {
+                                        spacing: 8
+                                        Text { text: lookCard.modelData.name; color: w.text; font.family: w.font; font.pixelSize: 16; font.weight: Font.DemiBold }
+                                        Rectangle {
+                                            visible: lookCard.modelData.rec
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: lookRec.implicitWidth + 14; height: 20; radius: 10
+                                            color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
+                                            Text { id: lookRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                        }
+                                    }
+                                    Text {
+                                        width: parent.width; wrapMode: Text.Wrap
+                                        text: lookCard.modelData.detail
+                                        color: w.dim; font.family: w.font; font.pixelSize: 12; lineHeight: 1.2
+                                    }
+                                }
+                                HoverHandler { id: lookHover }
+                                ClickTap { onTapped: if (!lookCard.on) Config.applyLook(lookCard.modelData.name) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- 4. Bar and dock ------------------------------------------
+            Item {
+                anchors.fill: parent
+                opacity: w.page === 4 ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                Column {
+                    width: parent.width
+                    spacing: 6
                     Text { text: "The menu bar and dock"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 18
-                        text: "Put them on any edge of the screen. Most people like the bar along the top and the dock at the bottom."
+                        text: "Put them on whichever edge you like. Most people enjoy the bar along the top and the dock at the bottom."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     Row {
@@ -451,7 +573,7 @@ PanelWindow {
                             anchors { left: parent.left; right: hideSwitch.left; leftMargin: 14; rightMargin: 12; verticalCenter: parent.verticalCenter }
                             spacing: 3
                             Text { text: "Hide the dock when windows are open"; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
-                            Text { width: parent.width; elide: Text.ElideRight; text: "Push the pointer to its edge to bring it back. Gives your windows more room"; color: w.dim; font.family: w.font; font.pixelSize: 12 }
+                            Text { width: parent.width; elide: Text.ElideRight; text: "Gives your windows more room. Push the pointer to its edge whenever you want it back"; color: w.dim; font.family: w.font; font.pixelSize: 12 }
                         }
                         Rectangle {
                             id: hideSwitch
@@ -475,7 +597,7 @@ PanelWindow {
             // ---- 4. Shortcuts ---------------------------------------------
             Item {
                 anchors.fill: parent
-                opacity: w.page === 4 ? 1 : 0
+                opacity: w.page === 5 ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 Column {
@@ -484,7 +606,7 @@ PanelWindow {
                     Text { text: "Keyboard shortcuts"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
-                        text: "Coming from Hyprland? You can keep the keys you know."
+                        text: "Most of Slate's shortcuts use Super: the key with your operating system's logo on it. That's the Windows key on most keyboards, or Command (\u2318) on a Mac one.\n\nComing from Hyprland? You're welcome to keep the keys you already know."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     Repeater {
@@ -538,7 +660,7 @@ PanelWindow {
             Item {
                 id: donePage
                 anchors.fill: parent
-                opacity: w.page === 5 ? 1 : 0
+                opacity: w.page === 6 ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 readonly property var tips: Config.s.keyset === "slate" ? [
@@ -577,7 +699,7 @@ PanelWindow {
                     Item { width: 1; height: 6 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "A few keys to get around. Settings has the full list (Super+Z → Shortcuts)."
+                        text: "Here are a few keys to help you find your way. Super is the key with the Windows logo (Command on a Mac keyboard).\nSettings has the full list whenever you need it (Super+Z → Shortcuts)."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     Item { width: 1; height: 22 }
@@ -643,7 +765,7 @@ PanelWindow {
                         Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: w.line }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Thank you for using Slate"
+                            text: "Thank you for trying Slate"
                             color: w.text; font.family: w.font; font.pixelSize: 15; font.weight: Font.Medium
                         }
                         Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: w.line }
@@ -651,7 +773,7 @@ PanelWindow {
                     Item { width: 1; height: 6 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "We hope you enjoy it."
+                        text: "We hope it feels like home."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                 }
@@ -740,6 +862,7 @@ PanelWindow {
             radius: 16
             color: Config.tint("#0f1216")
             border.width: 1; border.color: w.line
+            Gloss { radius: parent.radius; strength: 0.6 }
             scale: w.askMode !== "" ? 1 : 0.96
             Behavior on scale { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
             MouseArea { anchors.fill: parent }    // clicks on the card don't close it

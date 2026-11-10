@@ -152,7 +152,7 @@ PanelWindow {
     }
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
-        const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn,
+        const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn, windowmode: wsMode,
                           volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap })[name];
         if (button) openPopout(name, button);
     }
@@ -163,14 +163,14 @@ PanelWindow {
     readonly property var indicatorIds: Config.trayIndicatorIds
     Process {
         id: indicatorQuery
-        command: ["busctl", "--user", "--json=short", "get-property", "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher",
-                  "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems"]
+        // (gdbus, from glib, rather than busctl, which only systemd has. It answers
+        // (<['name/path', …]>,))
+        command: ["gdbus", "call", "--session", "--dest", "org.kde.StatusNotifierWatcher", "--object-path", "/StatusNotifierWatcher",
+                  "--method", "org.freedesktop.DBus.Properties.Get", "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems"]
         stdout: StdioCollector {
             onStreamFinished: {
-                try {
-                    Config.trayIndicatorIds = JSON.parse(text).data.filter(x => x.includes("/org/ayatana/NotificationItem/"))
-                        .map(x => x.split("/").pop());
-                } catch (e) {}
+                Config.trayIndicatorIds = (text.match(/'[^']*'/g) || []).map(x => x.slice(1, -1))
+                    .filter(x => x.includes("/org/ayatana/NotificationItem/")).map(x => x.split("/").pop());
             }
         }
     }
@@ -233,7 +233,7 @@ PanelWindow {
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
-        // keyboard, bluetooth, battery, gamemode, calendar
+        // keyboard, bluetooth, battery, gamemode, calendar, windowmode
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
     }
 
@@ -384,8 +384,12 @@ PanelWindow {
                 onClicked: bar.openPopout("control", flameBtn)
                 onRightClicked: bar.openSlateMenu(flameBtn)
                 // Turns white (the text colour) while the control centre is open
+                // (the Slate mark, Apps, Spaces and the window mode icon are all drawn 13 px tall,
+                // from their top drawn pixel to their bottom one, so they line up)
                 SlateMark {
                     anchors.centerIn: parent
+                    size: 19.5              // (its drawn part, accent line to slab, 13 px tall)
+                    flat: true              // (straight on here; tilted elsewhere)
                     accent: bar.accent
                     body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.tint("#566173")
                     Behavior on body { ColorAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
@@ -398,15 +402,17 @@ PanelWindow {
                 hoverText: "Apps"
                 hoverCode: 0xEC42
                 onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"])
+                // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
+                // little thinner: optically matched to the line icons round it)
                 Column {
                     anchors.centerIn: parent
-                    spacing: 3
+                    spacing: 3.5
                     Repeater {
                         model: 3
                         // Colourful look: each bar its own pastel
                         Rectangle {
                             required property int index
-                            width: 14; height: 2.4; radius: height / 2
+                            width: 13; height: 2; radius: height / 2
                             color: Config.partColour(Config.appsPastels, index, bar.textColor)
                         }
                     }
@@ -424,16 +430,19 @@ PanelWindow {
                 onClicked: bar.openPopout("spaces", spacesBtn)
                 property int beat: 0
                 Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
+                // (in a 16 px slot, as every icon on the bar, but drawn 13 px: solid squares carry
+                // more weight than the line icons round them, so they're drawn a little smaller
+                // to look the same size)
                 Grid {
                     anchors.centerIn: parent
                     columns: 2
-                    spacing: 2.4
+                    spacing: 2
                     Repeater {
                         model: 4
                         Rectangle {
                             required property int index
                             readonly property bool busy: Spaces.restoring !== ""
-                            width: 5.8; height: 5.8; radius: 1.6
+                            width: 5.5; height: 5.5; radius: 1.5
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
                             // (Colourful look: each square its own pastel)
@@ -455,8 +464,43 @@ PanelWindow {
                 readonly property real dotGap: 5
                 readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
                 readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
-                length: (bar.vert ? wsRow.height : wsRow.width) + 16
+                length: bar.vert ? wsLine.height : wsLine.width
+                // (each part has its own hover fill, as the status icons do)
+                hoverTint: false
 
+                BarLine {
+                  id: wsLine
+                  anchors.centerIn: parent
+                  spacing: 0
+                  // The workspace's window mode (its icon): click for a menu to give it another,
+                  // or put it back to the default (Settings → Windows). A segment, like the
+                  // status icons, with a line between it and the dots
+                  Segment {
+                    id: wsMode
+                    visible: Config.s.barShowWindowMode
+                    first: true; last: false
+                    readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
+                    readonly property bool own: !!Config.workspaceModes[String(Config.focusedWorkspaceId)]
+                    iconCode: mode.icon
+                    // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
+                    // each mode's icon fills a different share of its height)
+                    iconSize: 13 / (mode.ink || 0.75)
+                    // Closer in than a status icon: its glyph is drawn larger to match its
+                    // neighbours' height, so it carries blank space of its own at the sides
+                    pad: 12
+                    // In the accent, its own mode or the default alike (the panel and the
+                    // description say which)
+                    tint: bar.accent
+                    hoverText: Config.workspaceLabel(Config.focusedWorkspaceId) + " · " + mode.label
+                        + (own ? "" : " (the default)") + " · click to change"
+                    onClicked: bar.openPopout("windowmode", wsMode)
+                  }
+                  Separator { visible: wsMode.visible }
+                  // The dots (each with its own hover highlight, behind it)
+                  Item {
+                    id: wsDots
+                    width: bar.vert ? bar.capsuleHeight : wsRow.width + 16
+                    height: bar.vert ? wsRow.height + 16 : bar.capsuleHeight
                 BarLine {
                     id: wsRow
                     anchors.centerIn: parent
@@ -473,12 +517,23 @@ PanelWindow {
                             // app, and ran for every dot on every window change)
                             readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
                             readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? Config.appEntry(modelData.toplevels.values[0].wayland.appId) : null
-                            readonly property string hoverText: "Workspace " + modelData.id + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
+                            readonly property string hoverText: Config.workspaceLabel(modelData.id) + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
                             readonly property int hoverCode: 0
                             readonly property string hoverTile: firstApp ? firstApp.id : ""
                             readonly property url hoverImage: ""
                             HoverHandler { id: wsDotHover; onHoveredChanged: bar.setHover(wsDot, hovered) }
                             width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
+                            // Hover: the status icons' highlight, in the dot's shape, behind it
+                            Rectangle {
+                                z: -1
+                                anchors.centerIn: parent
+                                readonly property real size: wsCap.dot + 10
+                                width: size; height: size
+                                radius: Config.dotRadius(size)
+                                color: bar.hoverFill
+                                opacity: wsDotHover.hovered ? bar.hoverStrength : 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                            }
                             // Inactive workspaces are dimmed a little; the accent marker shows the active
                             // one. Brighter under the pointer
                             color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
@@ -488,9 +543,11 @@ PanelWindow {
                         }
                     }
                 }
+                  }
+                }
                 // The accent marker, gliding between dots
                 WorkspaceMarker {
-                    x: wsRow.x; y: wsRow.y
+                    x: wsLine.x + wsDots.x + wsRow.x; y: wsLine.y + wsDots.y + wsRow.y
                     width: wsRow.width; height: wsRow.height
                     dot: wsCap.dot; step: wsCap.dot + wsCap.dotGap
                     index: wsCap.activeIndex
@@ -1089,6 +1146,7 @@ PanelWindow {
         visible: group ? group.shown[slot] : true
         opacity: group && slot < group.shown.length - 1 ? group.openness : 1
         property int iconCode: 0
+        property real iconSize: 16
         property string label: ""
         property color tint: bar.textColor
         // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
@@ -1100,8 +1158,10 @@ PanelWindow {
         property url hoverImage
         signal clicked()
         signal wheel(real delta)
-        // Icon and value across a top/bottom bar; just the icon, stacked, on a side bar
-        width: bar.vert ? bar.capsuleHeight : segRow.width + 20
+        // Icon and value across a top/bottom bar; just the icon, stacked, on a side bar. pad: the
+        // space beside the icon, both sides together
+        property real pad: 20
+        width: bar.vert ? bar.capsuleHeight : segRow.width + pad
         height: bar.vert ? segRow.height + 14 : bar.capsuleHeight
 
         // Hover fill: solid at the group's rounded ends, fading out at the
@@ -1134,7 +1194,7 @@ PanelWindow {
                 text: bar.glyph(seg.iconCode)
                 color: seg.pastel !== "" && Qt.colorEqual(seg.tint, bar.textColor) ? Config.statusColour(seg.pastel, seg.tint) : seg.tint
                 font.family: bar.iconFont
-                font.pixelSize: 16
+                font.pixelSize: seg.iconSize
             }
             Text {
                 visible: seg.label !== "" && !bar.vert

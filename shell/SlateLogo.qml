@@ -9,8 +9,10 @@ Row {
     id: logo
     property real size: 72
     property color accent: Config.accent
-    property color textColor: Config.tint("#eef1f5")
+    property bool dark: false              // true: dark-theme colours whatever the theme (on a dark cover)
+    property color textColor: shade("#eef1f5")
     property bool showText: true           // false: just the mark
+    function shade(hex) { return dark ? Qt.lighter(hex, 1.0) : Config.tint(hex); }
     spacing: size * 0.22
 
     Item {
@@ -18,9 +20,9 @@ Row {
         width: logo.size; height: logo.size
         anchors.verticalCenter: parent.verticalCenter
         // Colours of the slab
-        readonly property color face: Config.tint("#5d6879")
-        readonly property color faceLow: Config.tint("#384150")
-        readonly property color side: Config.tint("#242a34")
+        readonly property color face: logo.shade("#5d6879")
+        readonly property color faceLow: logo.shade("#384150")
+        readonly property color side: logo.shade("#242a34")
 
         Shape {
             // Drawn on a 64×64 grid
@@ -66,7 +68,7 @@ Row {
             // A faint grain line across the face, like split stone
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: Qt.rgba(1, 1, 1, Config.s.lightMode ? 0.28 : 0.14)
+                strokeColor: Qt.rgba(1, 1, 1, Config.s.lightMode && !logo.dark ? 0.28 : 0.14)
                 strokeWidth: 1.1
                 capStyle: ShapePath.RoundCap
                 startX: 14.5; startY: 42.4
