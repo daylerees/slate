@@ -29,7 +29,9 @@ class SwitcherAnimations(LiveCase):
                         break
                     self.s.settle(0.2)
         self.go_to_workspace(1)
-        self.s.settle(0.5)
+        # Slate hears about a new workspace a moment after Hyprland makes it; the overview shows
+        # the workspaces Slate knows of as it opens, so wait until it knows both
+        self.s.settle(1.5)
 
     def test_overview_every_move_and_pick(self):
         self.keep_setting("overviewMoveAnimation")
