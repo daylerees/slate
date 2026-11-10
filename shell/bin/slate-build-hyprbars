@@ -1,45 +1,249 @@
 #!/usr/bin/env bash
-# Build hyprbars (title bars for Settings → Windows → Window mode → Floating) for the
-# Hyprland you're running, into ~/.local/share/slate/plugins. No root needed. The Slate
-# session loads it from there (session/hypr/config/hyprbars.lua).
+# Hyprbars: optional title bars for floating windows, from a Hyprland plugin (Settings →
+# Windows → Title bars; Slate's own title bars are the default and need none of this).
+# Builds it for the Hyprland that's installed, into ~/.local/share/slate/plugins. No root.
 #
-#   slate build-hyprbars        (or bin/slate-build-hyprbars)
+#   slate build-hyprbars            build it (or bin/slate-build-hyprbars)
+#   slate build-hyprbars --status   what Slate needs to know, one key=value a line (below)
+#   slate build-hyprbars --adopt    note which Hyprland a build from before builds were named
+#                                   is for (when it's the one loaded now)
+#   slate build-hyprbars --remove   delete Slate's builds (the one Hyprland has loaded goes
+#                                   once Hyprland has started again)
 #
-# Hyprland plugins only work with the exact Hyprland they were built for: run this again
-# after Hyprland updates (until then floating windows just have no title bars).
+# A Hyprland plugin only loads in the exact Hyprland it was built for, so each build is named
+# for its Hyprland (hyprbars-<version>-<commit>.so, with a .json record beside it) and the
+# Slate session loads only the one that matches (session/hypr/config/hyprbars.lua). After a
+# Hyprland update, build again: a build for the new Hyprland sits beside the running one's
+# until Hyprland restarts.
 # Needs git, make, g++ and Hyprland's headers (which come with its package on Arch; the
-# Hyprland "-devel"/"-dev" package elsewhere).
+# Hyprland "-devel"/"-dev" package elsewhere), and a connection the first time.
+#
+# --status prints: running, runningCommit (the Hyprland that's running), installed,
+# installedCommit (the one on disk, which a build is made for), loaded (yes/no: hyprbars is in
+# the running Hyprland), build (yes/no: one of Slate's builds fits the running Hyprland), next
+# (yes/no: one fits the installed Hyprland), any (yes/no: Slate has a build at all), system
+# (yes/no: a distro package of hyprbars is there), removed (yes/no), state (building, built,
+# failed or nothing: the last build), stateFor (its Hyprland), error (why it failed).
 set -euo pipefail
 
-REPO="https://github.com/hyprwm/hyprland-plugins"
+REPO="${SLATE_HYPRBARS_REPO:-https://github.com/hyprwm/hyprland-plugins}"
 OUT="${XDG_DATA_HOME:-$HOME/.local/share}/slate/plugins"
 WORK="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprland-plugins"
+LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprbars-build.log"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/slate/hyprbars-build.json"
+LOCK="${XDG_RUNTIME_DIR:-/tmp}/slate-hyprbars-build.lock"
+LEGACY="$OUT/hyprbars.so"                   # a build from before builds were named
+# Distro packages of hyprbars (the override is only for testing)
+SYSTEM="${SLATE_HYPRBARS_SYSTEM:-/usr/lib/hyprland-plugins/hyprbars.so:/usr/lib/hyprland/plugins/hyprbars.so:/usr/local/lib/hyprland/plugins/hyprbars.so}"
+WAIT="${SLATE_HYPRBARS_WAIT:-60}"           # seconds to wait for a connection
 
+json_get() { python3 -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get(sys.argv[2], "") or "")
+except Exception: print("")' "$1" "$2"; }
+
+# The Hyprland that's running: version and commit
+running() {
+    hyprctl version -j 2>/dev/null | python3 -c 'import json,sys
+try: d = json.load(sys.stdin); print(d.get("version", "") or d.get("tag", "").lstrip("v"), d.get("commit", ""))
+except Exception: print("")' 2>/dev/null || true
+}
+# The Hyprland that's installed (its headers): version and commit
+installed() {
+    local ver dir commit=""
+    ver=$(pkg-config --modversion hyprland 2>/dev/null) || { echo ""; return; }
+    for dir in $(pkg-config --cflags-only-I hyprland 2>/dev/null); do
+        dir=${dir#-I}
+        [ -f "$dir/version.h" ] || continue
+        commit=$(sed -n 's/^#define[[:space:]]*GIT_COMMIT_HASH[[:space:]]*"\([0-9a-f]\{7,\}\)".*/\1/p' "$dir/version.h" | head -1)
+        break
+    done
+    echo "$ver $commit"
+}
+# A build's file name for a Hyprland
+name_for() { echo "hyprbars-$1${2:+-${2:0:12}}.so"; }
+# Slate's build for a Hyprland, if there is one: named for it (with or without the commit),
+# or the old one when its record says so
+build_for() {   # build_for <version> <commit>
+    [ -n "$1" ] || return 1
+    local f
+    for f in "$OUT/$(name_for "$1" "$2")" "$OUT/$(name_for "$1" "")"; do
+        [ -f "$f" ] && { echo "$f"; return 0; }
+    done
+    if [ -f "$LEGACY" ] && [ -f "${LEGACY%.so}.json" ]; then
+        local v c
+        v=$(json_get "${LEGACY%.so}.json" version); c=$(json_get "${LEGACY%.so}.json" commit)
+        if [ -n "$c" ] && [ -n "$2" ]; then [ "$c" = "$2" ] && { echo "$LEGACY"; return 0; }
+        elif [ "$v" = "$1" ]; then echo "$LEGACY"; return 0; fi
+    fi
+    return 1
+}
+is_loaded() { hyprctl plugin list -j 2>/dev/null | grep -q '"name": *"hyprbars"'; }
+# The file the running Hyprland loaded it from (hyprbars.lua notes it)
+loaded_path() {
+    local note="${XDG_RUNTIME_DIR:-/nonexistent}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-none}/slate-hyprbars"
+    if [ -f "$note" ]; then cat "$note"; elif is_loaded && [ -f "$LEGACY" ]; then echo "$LEGACY"; fi
+}
+# One of Slate's own builds is there. A link (NixOS: to the plugin Nix built) is someone
+# else's, kept in step by them: it's loaded as it is, like a distro's package, and never
+# counted, adopted, pruned or removed
+any_build() {
+    local f
+    for f in "$OUT"/hyprbars*.so; do [ -f "$f" ] && [ ! -L "$f" ] && return 0; done
+    return 1
+}
+linked() { [ -L "$LEGACY" ] && [ -e "$LEGACY" ]; }
+building() {    # a build is running: its lock is held
+    [ -e "$LOCK" ] || return 1
+    ! flock -n "$LOCK" true 2>/dev/null
+}
+write_state() {   # write_state <state> <for> <error>
+    mkdir -p "$(dirname "$STATE")"
+    python3 -c 'import json,sys; json.dump({"state": sys.argv[1], "for": sys.argv[2], "error": sys.argv[3]}, open(sys.argv[4], "w"))' \
+        "$1" "$2" "$3" "$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
+}
+# Removed, and Hyprland has started again since: the build it still had loaded can go too
+tidy_removed() {
+    [ -f "$OUT/removed" ] || return 0
+    is_loaded && return 0
+    local f
+    for f in "$OUT"/hyprbars*.so; do [ -L "$f" ] || rm -f "$f" "${f%.so}.json"; done
+    rm -f "$OUT/removed"
+}
+
+case "${1:-}" in
+--status)
+    tidy_removed
+    read -r rv rc <<<"$(running)" || true
+    read -r iv ic <<<"$(installed)" || true
+    echo "running=${rv:-}"; echo "runningCommit=${rc:-}"
+    echo "installed=${iv:-}"; echo "installedCommit=${ic:-}"
+    if is_loaded; then echo "loaded=yes"; else echo "loaded=no"; fi
+    removed=no; [ -f "$OUT/removed" ] && removed=yes
+    # A build with no record (from before builds were named) counts while it's the one loaded
+    if [ "$removed" = no ] && { build_for "${rv:-}" "${rc:-}" >/dev/null || { [ -f "$LEGACY" ] && [ ! -f "${LEGACY%.so}.json" ] && is_loaded; }; }; then
+        echo "build=yes"; else echo "build=no"; fi
+    if [ "$removed" = no ] && build_for "${iv:-}" "${ic:-}" >/dev/null; then echo "next=yes"; else echo "next=no"; fi
+    if [ "$removed" = no ] && any_build; then echo "any=yes"; else echo "any=no"; fi
+    sys=no; IFS=: read -ra paths <<<"$SYSTEM"; for p in "${paths[@]}"; do [ -f "$p" ] && sys=yes; done
+    linked && sys=yes
+    echo "system=$sys"; echo "removed=$removed"
+    st=$(json_get "$STATE" state); err=$(json_get "$STATE" error)
+    if [ "$st" = building ] && ! building; then st=failed; err="The build was interrupted"; fi
+    echo "state=$st"; echo "stateFor=$(json_get "$STATE" for)"; echo "error=$err"
+    exit 0 ;;
+--adopt)
+    # The old hyprbars.so, loaded now, with no record: it's for the running Hyprland
+    [ -f "$LEGACY" ] && [ ! -L "$LEGACY" ] && [ ! -f "${LEGACY%.so}.json" ] && is_loaded || exit 0
+    [ "$(loaded_path)" = "$LEGACY" ] || exit 0
+    read -r rv rc <<<"$(running)" || true
+    [ -n "${rv:-}" ] || exit 0
+    python3 -c 'import json,sys; json.dump({"version": sys.argv[1], "commit": sys.argv[2], "built": "", "patched": True}, open(sys.argv[3], "w"))' \
+        "$rv" "${rc:-}" "${LEGACY%.so}.json.tmp" && mv -f "${LEGACY%.so}.json.tmp" "${LEGACY%.so}.json"
+    exit 0 ;;
+--remove)
+    # Hyprland keeps asking for the build it has loaded for as long as it runs (see
+    # hyprbars.lua), so that file stays, marked as removed, until Hyprland has started again
+    mkdir -p "$OUT"
+    # A build that's running stops first
+    if building; then
+        pid=$(cat "$LOCK" 2>/dev/null || true)
+        case "$pid" in ''|*[!0-9]*) ;; *) pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; sleep 0.5 ;; esac
+    fi
+    keep=""; is_loaded && keep=$(loaded_path)
+    for f in "$OUT"/hyprbars*.so; do
+        [ -e "$f" ] && [ ! -L "$f" ] || continue
+        [ "$f" = "$keep" ] && continue
+        rm -f "$f" "${f%.so}.json"
+    done
+    rm -f "$STATE"
+    if [ -n "$keep" ] && [ -f "$keep" ]; then : > "$OUT/removed"; else rm -f "$OUT/removed"; fi
+    echo "Hyprbars removed."
+    exit 0 ;;
+"") ;;
+*) sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0" >&2; exit 2 ;;
+esac
+
+# ---- Build -----------------------------------------------------------------------------
+exec 9>"$LOCK"
+flock -n 9 || { echo "slate-build-hyprbars: already building" >&2; exit 3; }
+echo $$ >&9                                 # (for --remove, to stop it)
+
+read -r ver commit <<<"$(installed)" || true
+ver=${ver:-}; commit=${commit:-}
+why=""                                      # what to say if the step under way fails
+fail() { write_state failed "$ver" "$1"; echo "slate-build-hyprbars: $1" >&2; exit 1; }
+trap 'code=$?; [ "$code" -eq 0 ] || [ "$(json_get "$STATE" state)" != building ] || write_state failed "$ver" "${why:-The build failed}"' EXIT
+
+write_state building "$ver" ""
+mkdir -p "$(dirname "$LOG")"; : > "$LOG"
 for c in git make g++ pkg-config; do
-    command -v "$c" >/dev/null || { echo "slate-build-hyprbars: needs $c" >&2; exit 1; }
+    command -v "$c" >/dev/null || fail "Needs $c, which isn't installed"
 done
-pkg-config --exists hyprland || { echo "slate-build-hyprbars: Hyprland's headers aren't installed (pkg-config hyprland)" >&2; exit 1; }
+[ -n "$ver" ] || fail "Hyprland's headers aren't installed (the Hyprland -devel or -dev package)"
 
-# The plugins' release for this Hyprland (vMAJOR.MINOR.0), else their latest code
-ver=$(pkg-config --modversion hyprland)
+# The plugins' source, kept between builds. Fetch what's new, waiting a while for a
+# connection (at login the network often isn't up yet)
 tag="v$(echo "$ver" | cut -d. -f1-2).0"
-rm -rf "$WORK"
-git clone -q "$REPO" "$WORK"
-if git -C "$WORK" rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-    git -C "$WORK" checkout -q "$tag"
-else
-    echo "No hyprland-plugins release $tag yet; building their latest code" >&2
+fetch() {
+    if [ -d "$WORK/.git" ]; then git -C "$WORK" fetch -q --tags origin >>"$LOG" 2>&1
+    else rm -rf "$WORK"; git clone -q "$REPO" "$WORK" >>"$LOG" 2>&1; fi
+}
+online=0; waited=0
+while :; do
+    fetch && { online=1; break; }
+    [ "$waited" -ge "$WAIT" ] && break
+    sleep 5; waited=$((waited + 5))
+done
+has_tag() { git -C "$WORK" rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1; }
+if [ "$online" -eq 0 ] && ! { [ -d "$WORK/.git" ] && has_tag; }; then
+    fail "No internet connection"
 fi
-
+# The plugins' release for this Hyprland (vMAJOR.MINOR.0), else their latest code
+why="Couldn't get hyprbars' code ready"
+git -C "$WORK" reset -q --hard >>"$LOG" 2>&1
+git -C "$WORK" clean -qfdx >>"$LOG" 2>&1
+if has_tag; then
+    git -C "$WORK" checkout -q "$tag" >>"$LOG" 2>&1
+else
+    echo "No hyprland-plugins release $tag yet; building their latest code" | tee -a "$LOG" >&2
+    git -C "$WORK" checkout -q --detach origin/HEAD >>"$LOG" 2>&1
+fi
 # Slate's tweak: buttons in a dull colour until hovered (idle_button_color). If it no
 # longer applies to this release, build without it (the buttons then keep their colours)
 PATCH="$(dirname "$(readlink -f "$0")")/../data/hyprbars-idle-button-color.patch"
-if [ -f "$PATCH" ] && ! git -C "$WORK" apply "$PATCH"; then
-    echo "Slate's hyprbars patch doesn't apply to this release; building without it" >&2
+patched=true
+if [ ! -f "$PATCH" ] || ! git -C "$WORK" apply "$PATCH" >>"$LOG" 2>&1; then
+    patched=false
+    echo "Slate's hyprbars patch doesn't apply to this release; building without it" | tee -a "$LOG" >&2
 fi
+why="Hyprbars doesn't compile for Hyprland $ver (see ~/.cache/slate/hyprbars-build.log)"
+make -C "$WORK/hyprbars" all >>"$LOG" 2>&1 || { tail -n 15 "$LOG" >&2; exit 1; }
 
-make -C "$WORK/hyprbars" all
+why="Couldn't put the build in place"
 mkdir -p "$OUT"
-install -m 755 "$WORK/hyprbars/hyprbars.so" "$OUT/hyprbars.so"
-echo "hyprbars for Hyprland $ver -> $OUT/hyprbars.so"
-echo "It loads with the Slate session (or now: hyprctl reload)."
+name=$(name_for "$ver" "$commit")
+install -m 755 "$WORK/hyprbars/hyprbars.so" "$OUT/$name.tmp"
+python3 -c 'import json,sys,time; json.dump({"version": sys.argv[1], "commit": sys.argv[2], "built": time.strftime("%Y-%m-%d %H:%M"), "patched": sys.argv[3] == "true"}, open(sys.argv[4], "w"))' \
+    "$ver" "$commit" "$patched" "$OUT/${name%.so}.json"
+mv -f "$OUT/$name.tmp" "$OUT/$name"
+rm -f "$OUT/removed"
+
+# Keep this build, the running Hyprland's and whatever Hyprland has loaded; older ones go
+read -r rv rc <<<"$(running)" || true
+keep_running=$(build_for "${rv:-}" "${rc:-}" || true)
+keep_loaded=$(loaded_path || true)
+for f in "$OUT"/hyprbars*.so; do
+    [ -e "$f" ] && [ ! -L "$f" ] || continue
+    case "$f" in "$OUT/$name"|"$keep_running"|"$keep_loaded") continue ;; esac
+    # (the old unnamed build: only once its record says it's for another Hyprland)
+    [ "$f" = "$LEGACY" ] && [ ! -f "${LEGACY%.so}.json" ] && continue
+    rm -f "$f" "${f%.so}.json"
+done
+
+write_state built "$ver" ""
+echo "hyprbars for Hyprland $ver -> $OUT/$name"
+if [ "${rv:-}" = "$ver" ] && { [ -z "${rc:-}" ] || [ -z "$commit" ] || [ "$rc" = "$commit" ]; }; then
+    echo "It loads with the Slate session (or now: hyprctl reload)."
+else
+    echo "It's for the Hyprland that's installed, not the one running: ready after your next restart."
+fi

@@ -1,17 +1,29 @@
--- Title bars for floating windows (Settings → Windows → Window mode → Floating), from the
--- hyprbars plugin. Slate builds it with `slate build-hyprbars` (into
--- ~/.local/share/slate/plugins); a distro package of it works too. Without it, floating
--- windows simply have no title bars. Shown only in floating mode (setWindowMode in
--- windowrules.lua); Slate keeps the bar colour, title colour, font and size in step with its theme.
+-- Hyprbars: optional title bars for floating windows (Settings → Windows → Title bars), from a
+-- Hyprland plugin. Slate's own title bars are the default and need none of this. Slate builds
+-- hyprbars with `slate build-hyprbars` (into ~/.local/share/slate/plugins); a distro package
+-- of it works too. Shown only on floating workspaces with Hyprbars chosen (windowrules.lua);
+-- Slate keeps the bar colour, title colour, font and size in step with its theme.
 
 local dataHome = os.getenv("XDG_DATA_HOME") or (os.getenv("HOME") .. "/.local/share")
-local candidates = {
-    dataHome .. "/slate/plugins/hyprbars.so",
+local plugins = dataHome .. "/slate/plugins/"
+local system = {
     "/usr/lib/hyprland-plugins/hyprbars.so",
     "/usr/lib/hyprland/plugins/hyprbars.so",
     "/usr/local/lib/hyprland/plugins/hyprbars.so",
 }
 
+local function exists(path)
+    local f = io.open(path, "r")
+    if f then f:close() end
+    return f ~= nil
+end
+local function read(path)
+    local f = io.open(path, "r")
+    if not f then return nil end
+    local text = f:read("*a")
+    f:close()
+    return text
+end
 local function loaded()
     for _, p in ipairs(hl.get_loaded_plugins() or {}) do
         if p.name == "hyprbars" then return true end
@@ -19,20 +31,76 @@ local function loaded()
     return false
 end
 
+-- The Hyprland that's running: its version, and its commit (the start of its instance
+-- signature), which is what a plugin has to match
+local version = tostring(hl.version() or "")
+local signature = os.getenv("HYPRLAND_INSTANCE_SIGNATURE") or ""
+local commit = signature:match("^(%x+)_") or ""
+-- Where the file this Hyprland loaded hyprbars from is noted
+local runtime = os.getenv("XDG_RUNTIME_DIR")
+local note = runtime and signature ~= "" and (runtime .. "/hypr/" .. signature .. "/slate-hyprbars") or nil
+
+-- A plugin only loads in the exact Hyprland it was built for (asking for another's makes
+-- Hyprland show error notices at login), so only a build made for this one is asked for:
+--  - Slate's builds are named for their Hyprland: hyprbars-<version>-<commit>.so
+--  - a build from before they were named (hyprbars.so): when its record (hyprbars.json, which
+--    Slate writes once it's seen it loaded) says it's for this Hyprland; with no record yet,
+--    as before
+--  - a distro's package, which its package manager keeps in step
+-- Nothing after "Remove Hyprbars" (the `removed` mark), until it's built again.
+local function choose()
+    if not exists(plugins .. "removed") then
+        local named = {
+            plugins .. "hyprbars-" .. version .. "-" .. commit:sub(1, 12) .. ".so",
+            plugins .. "hyprbars-" .. version .. ".so",
+        }
+        for _, path in ipairs(named) do
+            if version ~= "" and exists(path) then return path end
+        end
+        local old = plugins .. "hyprbars.so"
+        if exists(old) then
+            local record = read(plugins .. "hyprbars.json")
+            if not record then return old end
+            local forCommit = record:match('"commit"%s*:%s*"(%x*)"') or ""
+            local forVersion = record:match('"version"%s*:%s*"([^"]*)"') or ""
+            if forCommit ~= "" and commit ~= "" then
+                if forCommit == commit then return old end
+            elseif forVersion == version then
+                return old
+            end
+            print("[slate] hyprbars was built for Hyprland " .. forVersion .. ", this is " .. version .. "; not loading it (Slate Bars are used)")
+        end
+    end
+    for _, path in ipairs(system) do
+        if exists(path) then return path end
+    end
+    return nil
+end
+
 -- Ask for the plugin on every config pass, even when it's already loaded. Hyprland treats
 -- the loads a config asks for as the list it should have: skipping the call once hyprbars
 -- is in makes Hyprland unload it and reload the config, which loads it again and reloads,
--- forever (a stack overflow that crashes Hyprland).
-for _, path in ipairs(candidates) do
-    local f = io.open(path, "r")
-    if f then
-        f:close()
-        -- A plugin built for another Hyprland version won't load: carry on without it
-        local ok, err = pcall(hl.plugin.load, path)
-        if not ok then
-            print("[slate] hyprbars at " .. path .. " didn't load (rebuild it: slate build-hyprbars): " .. tostring(err))
-        end
-        break
+-- forever (a stack overflow that crashes Hyprland). So once it's loaded, the same file is
+-- asked for again on every pass for as long as this Hyprland runs, whatever has been built
+-- or removed since; the file is noted for that.
+local path = nil
+if loaded() then
+    path = note and read(note) or nil
+    if path then path = path:gsub("%s+$", "") end
+    if not path or path == "" or not exists(path) then
+        -- (loaded before the file was noted: the old build first, as it was chosen then)
+        path = exists(plugins .. "hyprbars.so") and (plugins .. "hyprbars.so") or choose()
+    end
+else
+    path = choose()
+end
+if path then
+    local ok, err = pcall(hl.plugin.load, path)
+    if not ok then
+        print("[slate] hyprbars at " .. path .. " didn't load (rebuild it: slate build-hyprbars): " .. tostring(err))
+    elseif note and loaded() then
+        local f = io.open(note, "w")
+        if f then f:write(path); f:close() end
     end
 end
 HYPRBARS_LOADED = loaded()
@@ -93,7 +161,9 @@ if HYPRBARS_LOADED then
                     bar_text_align = "center",
                     bar_buttons_alignment = "right",   -- Settings → Windows → Title bar buttons
                     bar_part_of_window = true,         -- one shape with the window (shadow, corners)
-                    bar_precedence_over_border = true,
+                    -- The window's edge comes first: its top edge and top corners resize like the
+                    -- others (Hyprland's grab area reaches over the bar's top); lower on the bar moves it
+                    bar_precedence_over_border = false,
                     bar_blur = false,
                     bar_color = "rgb(0f1216)",         -- Slate sets these from its theme
                     col = { text = "rgb(eef1f5)" },

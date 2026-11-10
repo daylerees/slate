@@ -1,6 +1,17 @@
 # Plan: Slate's title bars by default, Hyprbars as an option
 
-Status: **planned** (2026-11-10; rewritten the same day around Slate's own title bars).
+Status: **built** (2026-11-10), not yet released. Where the build differs from the plan below:
+- The running Hyprland's commit comes from `HYPRLAND_INSTANCE_SIGNATURE` (it starts with the
+  commit), read in `hyprbars.lua`; `slate-session` isn't changed.
+- Hyprbars isn't a greyed-out option while it's out of date: picking it asks (with the risks)
+  and rebuilds, and the setting only changes once it has loaded.
+- The menu bar's window mode panel no longer has a title bar choice (Settings → Windows only).
+- Slate's notes are one file, `~/.local/state/slate/hyprbars-notes.json` (fallback, chosen,
+  notNow, offered); the watching and asking live in `shell/HyprbarsWatch.qml`.
+- A link at `~/.local/share/slate/plugins/hyprbars.so` (NixOS) counts as a distro package.
+- `slate update` does nothing extra: Slate's own check at its next start covers it.
+- Slate's own title bars are named **Slate Bars** in the interface, docs and site ("Slate's"
+  below).
 
 ## Context
 
