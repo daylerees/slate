@@ -142,7 +142,7 @@ hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow 
 -- animate themselves, so Hyprland shouldn't add its own fade on top
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(launcher|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out)$" },
+  match = { namespace = "^slate-(bar|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out)$" },
   no_anim = true,
 })
 

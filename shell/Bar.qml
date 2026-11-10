@@ -62,7 +62,7 @@ PanelWindow {
     // Each screen has a bar; the primary one answers `slate ipc call bar …` and passes it
     // to the bar on the focused screen
     property bool primary: true
-    Component.onCompleted: Config.bars = Config.bars.concat([bar])
+    Component.onCompleted: { Config.bars = Config.bars.concat([bar]); settledSide = side; }
     Component.onDestruction: Config.bars = Config.bars.filter(b => b !== bar)
     // A panel is open from this bar (the panels go to whichever screen opened them)
     // (from the start of opening, so the bar is done changing before the panel slides)
@@ -83,7 +83,28 @@ PanelWindow {
     // Which screen edge (Settings → Menu Bar → Position). Laid out for the top; at the bottom
     // the curves and corners flip, and on a side the groups stack top to bottom, the status
     // icons drop their text, the clock stacks and the window title is turned to run along it.
-    readonly property string side: Config.barEdge
+    // The edge it's on: the setting's, once it's slid out of sight at the old one (then it slides
+    // in at the new), rather than Hyprland sliding the window across the screen
+    // (bound to start with, so it starts on the right edge; on a change, put straight back,
+    // before anything's drawn, until it's slid out: settledSide is where it was)
+    property string side: Config.barEdge
+    property string settledSide: ""
+    property bool movingOut: false
+    Connections {
+        target: Config
+        function onBarEdgeChanged() {
+            if (bar.settledSide === "" || Config.barEdge === bar.settledSide) return;
+            bar.side = bar.settledSide;
+            bar.movingOut = true;
+            barMove.restart();
+        }
+    }
+    Timer {
+        id: barMove
+        interval: Config.ms(300) + 20
+        // (in at the new edge, and shown there a moment even with auto-hide)
+        onTriggered: { bar.side = Config.barEdge; bar.settledSide = bar.side; bar.movingOut = false; holdTimer.restart(); }
+    }
     readonly property bool vert: side === "left" || side === "right"
     readonly property bool atBottom: side === "bottom"
     readonly property bool atRight: side === "right"
@@ -120,9 +141,10 @@ PanelWindow {
     // Reserved space follows the bar: while auto-hiding, windows get the whole screen, and when
     // the bar slides in they're pushed aside to make room (and grow back when it leaves)
     property real zoneReveal: reveal
-    property real reveal: !autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible ? 1 : 0
+    property real reveal: !movingOut && (!autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible) ? 1 : 0
     Behavior on zoneReveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
-    Behavior on reveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
+    // (quicker out when it's moving to another edge)
+    Behavior on reveal { NumberAnimation { duration: Config.ms(bar.movingOut ? 300 : bar.slideMs); easing.type: Easing.InOutCubic } }
 
     function setFilled(value) {
         if (value && !filled) holdTimer.restart();

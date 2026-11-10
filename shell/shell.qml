@@ -519,7 +519,27 @@ ShellRoot {
         // screen; for other edges that strip is turned (stripMatrix) and each icon, label and
         // symbol is turned back (upright()), so all the layout and magnification maths stays
         // the same.
-        readonly property string edge: Config.dockEdge
+        // The edge it's on: the setting's, once it's slid out of sight at the old one (then it
+        // slides in at the new), rather than Hyprland sliding the window across the screen
+        // (bound to start with, so it starts on the right edge; on a change, put straight back,
+        // before anything's drawn, until it's slid out: settledEdge is where it was)
+        property string edge: Config.dockEdge
+        property string settledEdge: ""
+        property bool movingOut: false
+        Component.onCompleted: settledEdge = edge
+        Connections {
+            target: Config
+            function onDockEdgeChanged() {
+                if (win.settledEdge === "" || Config.dockEdge === win.settledEdge) return;
+                win.edge = win.settledEdge;
+                win.movingOut = true;
+                dockMove.restart();
+            }
+        }
+        Timer {
+            id: dockMove; interval: Config.ms(260) + 20
+            onTriggered: { win.edge = Config.dockEdge; win.settledEdge = win.edge; win.movingOut = false; }
+        }
         readonly property bool vertical: edge === "left" || edge === "right"
         readonly property real thickness: Math.ceil(base * maxScale + padding * 2 + bottomGap + 40)
         anchors { top: edge !== "bottom"; bottom: edge !== "top"; left: edge !== "right"; right: edge !== "left" }
@@ -870,8 +890,15 @@ ShellRoot {
         }
         // (and once at start, so the windows already open have their details)
         Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
-        property bool shown: !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag
+        property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag)
         Timer { id: holdTimer; interval: win.hideDelay }
+        // Moved to another edge: it shows there for a moment (even with auto-hide), so you see
+        // where it went. Meanwhile it's kept out of sight until its window has moved: drawn for
+        // its new edge while still at the old one, it flickered there
+        Timer { id: movedHold; interval: 1500 }
+        property bool relocating: false
+        Timer { id: relocated; interval: 120; onTriggered: win.relocating = false }
+        onEdgeChanged: { relocating = true; relocated.restart(); movedHold.restart(); }
         readonly property real dockHeight: base + padding * 2
         property real offset: shown ? 0 : dockHeight + bottomGap + 4
         Behavior on offset { NumberAnimation { duration: Config.ms(260); easing.type: Easing.OutCubic } }
@@ -1560,6 +1587,9 @@ ShellRoot {
         // ---- The strip: dock, pointer area and label, turned to face the dock's edge ----
         Item {
             id: strip
+            // (hidden while the dock moves to another edge, then faded in there: see relocating)
+            opacity: win.relocating ? 0 : 1
+            Behavior on opacity { enabled: !win.relocating; NumberAnimation { duration: Config.ms(160) } }
             width: win.stripLength
             height: win.thickness
             transform: Matrix4x4 { matrix: win.stripMatrix }
