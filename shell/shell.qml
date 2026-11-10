@@ -89,6 +89,8 @@ ShellRoot {
         // Drag an app on the dock as the pointer would: picked up (if it isn't already), held
         // over slot i (as the slots are now), `up` pixels up from the dock's middle; then let go
         function dockDrag(key: string, i: int, up: real): void {
+            // (the last drop still gliding into place: landed at once, so this is a new drag)
+            if (win.landing) { land.stop(); dragPop.landed(); }
             if (win.dragKey === "") win.startDrag(key);
             const x = (strip.width - win.restWidth) / 2 + win.slotStart(Math.max(0, i)) + (i < 0 ? -win.base * 2 : win.base * 0.25);
             win.testHover = true;
@@ -1127,6 +1129,13 @@ ShellRoot {
             readonly property real liftSize: win.base * win.maxScale
             // Let go over the gap: glide to (x, y) (screen coordinates, its centre) at size s, then
             // take its place
+            // Landed: it takes its place, and the floater goes back to following the pointer
+            function landed() {
+                win.finishDrag();
+                floater.width = Qt.binding(() => dragPop.liftSize);
+                floater.x = Qt.binding(() => win.dragScreen.x - floater.width / 2);
+                floater.y = Qt.binding(() => win.dragScreen.y - floater.height / 2);
+            }
             function landAt(x, y, s) {
                 win.landing = true;
                 landX.to = x - s / 2; landY.to = y - s / 2; landW.to = s;
@@ -1191,13 +1200,7 @@ ShellRoot {
                 NumberAnimation { id: landX; target: floater; property: "x"; duration: Config.ms(180); easing.type: Easing.OutCubic }
                 NumberAnimation { id: landY; target: floater; property: "y"; duration: Config.ms(180); easing.type: Easing.OutCubic }
                 NumberAnimation { id: landW; target: floater; property: "width"; duration: Config.ms(180); easing.type: Easing.OutCubic }
-                onFinished: {
-                    win.finishDrag();
-                    // (back to following the pointer, for the next drag)
-                    floater.width = Qt.binding(() => dragPop.liftSize);
-                    floater.x = Qt.binding(() => win.dragScreen.x - floater.width / 2);
-                    floater.y = Qt.binding(() => win.dragScreen.y - floater.height / 2);
-                }
+                onFinished: dragPop.landed()
             }
         }
 
