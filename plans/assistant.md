@@ -1,7 +1,7 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
 Status: **planned** (2026-11-10), nothing built. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
-accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt. Researched against Slate at `06cb8c1`, Hyprland
+accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided. Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
 specification of 2026-07-28. Each claim about another program says whether it was **checked**
 (read in its documentation or its `--help`, sources at the end), or is an **assumption** to
@@ -286,7 +286,10 @@ knows the agent and says so.
 
 **Limits on asking.** One question at a time per server (PowerConfirm queues the rest of
 Slate's own). A "no" to a tool refuses that tool for the rest of the run without asking again,
-and tells the model not to retry. At most five questions a run. A question nobody answers is
+and tells the model not to retry. At most five questions a run. An agent using the server
+directly has no run to count within, so there the limits roll: at most five questions in any
+ten minutes, and a "no" refuses that tool for ten minutes; a question refused by a limit
+answers "Slate has asked enough for now" and is logged. A question nobody answers is
 withdrawn after 45 seconds and counts as "no answer" (Codex gives a tool 60 seconds by default,
 checked; Claude Code's limit wasn't checked), which needs one small addition to
 `PowerConfirm.qml`: a question can carry an id and be withdrawn, whether it's showing or
@@ -366,7 +369,8 @@ window with one line and a button ("The assistant isn't switched on yet. **Open 
 asks first, through `win.confirmer` (PowerConfirm, with the attention sound), Cancel focused:
 
 - Title: **Switch on the assistant?**
-- Body, in Slate's voice, short enough to be read rather than skipped, something like:
+- Body, in Slate's voice, short enough to be read rather than skipped (approved 2026-11-10;
+  it can be polished on screen, the four points stay):
   "Before you do, here's what it means.
   **What leaves your computer.** What you type, and what Slate tells the assistant about your
   desktop (your settings, your open windows and their titles), goes to the service behind the
@@ -733,7 +737,7 @@ on the server's refuse list.
 - **Sounds.** Nothing new. The bar button and every row click (`GlyphButton`, `ClickArea`,
   `ClickTap`); questions play attention through `confirmWith` as they do now; an answer that
   arrives while the window is away is a notification and sounds like one. A "listening /
-  answered" pair is an open question below.
+  answered" pair was decided against for now (Decisions, below).
 - **Animations.** All through `Config.ms`; the working spinner is a spinner (the allowed
   exception); the bar button's pulse is gated on `Config.animate`.
 - **Other distros.** Python's standard library, `hyprctl`, Slate's own IPC: nothing new to
@@ -794,7 +798,8 @@ on the server's refuse list.
   - the gate: switched off → refused; switched on but the risks not accepted, or accepted at
     an older version → refused, with where to go; locked → refused; an always-ask tool calls `assistant
     confirm` and acts only on `yes`; `no`, no answer in time, and a cancelled request each do
-    nothing; a second ask after a "no" isn't made; the sixth question isn't asked; game mode
+    nothing; a second ask after a "no" isn't made; the sixth question isn't asked; without a run id the same two limits roll over ten minutes
+    (a clock the test moves) and clear afterwards; game mode
     without a run id declines without asking; "Ask before changing anything" asks for changes;
   - hostile input: a window title with newlines, control characters and 5,000 characters comes
     back as one cut, clean JSON value; an address like `0x1; rm` and a workspace of `1)` never
@@ -915,51 +920,34 @@ Used as "Ask ⟨name⟩", on the bar button's hover text, the Settings page and 
 
 **Chosen: Chalk.** It's the one that could only belong to something called Slate, and it sets
 the right expectation: quick marks, easily wiped. The agent is told it's Chalk in the briefing
-(part 4, "Setting the scene"). Still to decide: whether the Settings page is "Chalk" or stays
-"Assistant" (suggested: **Assistant**, a plain noun people will search for, with "Chalk" in
-its first line and its search words).
+(part 4, "Setting the scene"). The Settings page stays **Assistant**, a plain noun people will
+search for, with "Chalk" in its first line and its search words.
 
-## Open questions
+## Decisions
 
-- **Off or on to start with?** Suggested: **off**. It sends things to someone else's service;
-  switching it on should be a choice made beside the privacy note. It costs people who only
-  want the MCP server one visit to Settings.
-- **Should changing a setting ask by default?** Suggested: **no**. Settings can be put back,
-  every change is logged with its old value, and asking each time would make "turn on glass"
-  slower than doing it by hand. The switch is there for people who want it.
-- **Closing a window: always ask?** Suggested: **yes**, because of unsaved work, even though
-  most apps ask themselves. It can move to "Changes" later if it proves tiresome.
-- **Does the run carry on when the window closes?** Suggested: **yes**, with the bar button
-  showing it and a notification at the end. The alternative (closing stops it) is simpler and
-  stricter, but the window often has to give way to what the assistant just opened.
-- **May the agent use the web or its own tools in the prompt window?** **Settled (2026-11-10):
-  no.** Slate's MCP tools only, and no screenshots or any other way of looking at the screen
-  ("No spying", part 3), wherever the agent lets Slate switch its own tools off. It can still
-  answer from what it knows. Agents that can't be confined, and a command of your own, are
-  offered as "Keeps its own tools" once you've accepted what that means.
-- **Safeguards: guarantees or best efforts?** **Settled (2026-11-10): best efforts and
-  recommendations**, said as such, with the risks shown when the feature is switched on and
-  accepted by you before it comes on (part 3, "Switching it on"). Still open: the exact words
-  of the risks text (yours to approve before it ships), and whether accepting should need more
-  than one press (suggested: **no**: Cancel focused first is enough, and a tick-box reads like
-  a licence).
-- **Window titles shared by default?** Suggested: **yes**: without them "move the invoice
-  window" can't work. Notifications: **off**.
-- **New sounds** (a soft "listening" as the window opens, "answered" when it's done)?
-  Suggested: **not now**. The window opening is a press (click) and an answer isn't one of the
-  moments in the sounds table; if it's wanted later it's a generator in `tools/make-sounds.py`,
-  an `assistantVolume` setting and your ear.
-- **The shortcut.** Suggested: **Super+K** (free in all three sets). Super+G, I, N, O, U and Y
-  are free too, if the name suggests a better letter.
-- **Where the bar button sits.** Suggested: with Apps and Spaces at the start of the bar. The
-  alternative is among the status icons at the end.
-- **Markdown in answers?** Suggested: **plain text** first, for the image-loading reason; a
-  safe subset (bold, lists, code) can follow.
-- **Which agents in the first version?** Suggested: **Claude Code and a custom command**: the
-  only one that could be checked on a real install here. Codex next, once there's a machine
-  with it.
-- **A step for people with no agent at all?** Suggested: only the kind empty state and "Get
-  it" links for now; the API adapter is the real answer and is its own piece of work.
+All settled with Dayle on 2026-11-10. Nothing is left open here; what remains is the list of
+things to check while building, below. Each can be reopened once the feature can be tried.
+
+| Question | Decided | Why |
+|---|---|---|
+| Off or on to start with? | **Off** | It sends things to someone else's service, and it only comes on once the risks are accepted |
+| Safeguards: guarantees or best efforts? | **Best efforts and recommendations**, said as such | Slate can't promise what someone else's agent will do (part 3, "Switching it on") |
+| The risks text | **Approved as drafted** in part 3 | It can still be polished on screen when the dialog exists; the four points stay |
+| How the risks are accepted | **One press on Switch on, Cancel focused** | A tick-box reads like a licence |
+| May the agent use the web or its own tools in the prompt window? | **No**: Slate's tools only, no screenshots or other ways of looking, wherever the agent lets Slate switch its own tools off | "No spying", part 3. Agents that can't be confined are offered as "Keeps its own tools" after their own question |
+| Which agents in the first version? | **Claude Code and a command of your own** | The only one checked on a real install; Codex next, on a machine that has it |
+| People with no agent at all | **A kind empty state and "Get it" links** | The API adapter is the real answer and is its own piece of work |
+| Should changing a setting ask by default? | **No** | Settings can be put back and every change is logged with its old value. "Ask before changing anything" is there for people who want it |
+| Closing a window | **Always asks** | Unsaved work, even though most apps ask themselves |
+| Limits on questions when an agent uses the server directly | **A rolling window**: five questions in any ten minutes, and a "no" refuses that tool for ten minutes | There's no "run" to count within; this clears by itself (part 3, "Limits on asking") |
+| Does the run carry on when the window closes? | **Yes**, with the bar button showing it and a notification at the end | The window often has to give way to what Chalk just opened |
+| What it can see by default | **Window titles on, notifications off** | Without titles "move the invoice window" can't work |
+| The name | **Chalk** | "Names", above |
+| The Settings page's name | **Assistant** | A plain noun people will search for; "Chalk" is in its first line and search words, and the window and bar button say "Ask Chalk" |
+| The shortcut | **Super+K** | Free in all three key sets |
+| Where the bar button sits | **With Apps and Spaces**, at the start of the bar | It opens something you act with; it isn't a status |
+| Markdown in answers? | **Plain text** | Rich text would load an image a misled model linked to; a safe subset can follow |
+| New sounds? | **Not now** | Opening is a press (click), questions play attention, an answer out of sight is a notification |
 
 ## What was checked, and what wasn't
 
