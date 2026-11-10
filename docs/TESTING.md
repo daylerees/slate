@@ -27,7 +27,7 @@ tests/run --no-container            # static + unit straight on this machine (fa
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
-tests/run --deps latest             # today's Arch packages instead of the pinned snapshot
+tests/run --deps latest             # today's Arch packages instead of the pinned snapshot (once a day)
 tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, or these)
 ```
 
@@ -69,7 +69,10 @@ centre's uptime).
 The image is built from a dated snapshot of the Arch archive (`tests/container/deps.lock`), so
 a run today and a run next month test Slate, not the packages. `--deps latest` builds from
 today's packages instead and labels its summary `[latest deps]`: it's how a coming
-Hyprland/Quickshell/Qt change that breaks Slate shows up before users get it. To move the
+Hyprland/Quickshell/Qt change that breaks Slate shows up before users get it. Locally it runs
+once a day: run it again the same day (same tiers, no `--filter`) and it shows that day's
+result from `tests/out/latest-<tier>.txt` and exits with its code; `--fresh` runs it again.
+CI always runs it. To move the
 pinned date forward, change `deps.lock`, run everything, and re-approve screenshots that
 changed only because of the new packages.
 

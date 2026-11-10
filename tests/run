@@ -8,6 +8,8 @@
 #   tests/run --no-container       static + unit straight on this machine (fast)
 #   tests/run --filter dock        only tests whose name contains "dock"
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
+#                                  (once a day: run again the same day, it shows that result)
+#   tests/run --deps latest --fresh   run it again anyway
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
@@ -17,8 +19,8 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-OUT="$ROOT/tests/out"
-tier=all; deps=pinned; container=1; update=""; updating=0
+OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
+tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0
 pass=()
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -27,8 +29,9 @@ while [ $# -gt 0 ]; do
         --deps) deps=$2; shift ;;
         --deps=*) deps=${1#*=} ;;
         --no-container) container=0 ;;
-        --filter) pass+=(--filter "$2"); shift ;;
-        --filter=*) pass+=(--filter "${1#*=}") ;;
+        --filter) pass+=(--filter "$2"); filtered=1; shift ;;
+        --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
+        --fresh) fresh=1 ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
         --update-baselines)
             updating=1
@@ -54,6 +57,18 @@ if [ "$container" = 0 ]; then
         echo "tests/run: the live and visual tiers only run in the container (leave out --no-container)" >&2; exit 2 ;;
     esac
     exec python3 "$ROOT/tests/lib/runner.py" --tier "$tier" "${pass[@]+"${pass[@]}"}"
+fi
+
+# Latest packages: once a day locally (a day's packages don't change, and it takes a while).
+# The day's result is kept per tier; a filtered run, a baseline update or CI always runs
+cache=""
+if [ "$deps" = latest ] && [ "$filtered" = 0 ] && [ "$updating" = 0 ] && [ -z "${CI:-}" ]; then
+    cache="$OUT/latest-${tier//,/-}.txt"
+    if [ "$fresh" = 0 ] && [ -f "$cache" ] && [ "$(head -1 "$cache" | cut -d' ' -f1)" = "$(date +%F)" ]; then
+        echo "tests/run: already ran with today's packages (tests/run --deps latest --fresh to run again):" >&2
+        tail -n +2 "$cache"
+        exit "$(head -1 "$cache" | cut -d' ' -f2)"
+    fi
 fi
 
 command -v docker >/dev/null || { echo "tests/run: Docker isn't installed (or use --no-container for static + unit)" >&2; exit 2; }
@@ -104,12 +119,17 @@ if [ "$updating" = 1 ]; then
     rm -f "$OUT/visual/updated.txt"
 fi
 status=0
+[ -n "$cache" ] && exec 3>&1 && exec > >(tee "$cache.part" >&3)
 docker run --rm --init --hostname slate-test \
     -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
     -e SLATE_UPDATE_BASELINES="${SLATE_UPDATE_BASELINES:-}" \
     -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -w /slate \
     "${run_args[@]+"${run_args[@]}"}" \
     "$image" python3 /slate/tests/lib/runner.py --tier "$tier" --label "$label" "${pass[@]+"${pass[@]}"}" || status=$?
+if [ -n "$cache" ]; then
+    exec >&3 3>&-; wait $! 2>/dev/null || true
+    { echo "$(date +%F) $status"; cat "$cache.part"; } > "$cache"; rm -f "$cache.part"
+fi
 if [ "$updating" = 1 ]; then
     if [ -s "$OUT/visual/updated.txt" ]; then
         echo "Approved screenshots updated (review them with git diff before committing):"

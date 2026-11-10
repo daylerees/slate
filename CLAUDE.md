@@ -91,7 +91,8 @@ Releases are tagged with [Semantic Versioning](https://semver.org/): annotated t
 While Slate is below 1.0.0, breaking changes bump MINOR instead of MAJOR.
 
 Before tagging, run `tests/run -q` (pinned packages) and stop if it fails. Then run
-`tests/run -q --deps latest`; don't block on it, but list what fails in the release notes'
+`tests/run -q --deps latest` (once a day: a second run that day shows the first's result;
+`--fresh` only if something changed that needs it); don't block on it, but list what fails in the release notes'
 Other section as a heads-up (it may break with the next Hyprland/Quickshell update).
 
 When asked to tag or release, do both: create and push the annotated tag, then a GitHub
