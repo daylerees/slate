@@ -36,6 +36,8 @@
     <a class="button primary" href="#install"><i class="ti">&#xEA96;</i> Install Slate</a>
     <a class="button" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> View on GitHub</a>
   </div>
+  <p class="preview-tag"><i class="ti">&#xEAC5;</i> An early preview: you may meet a bug or two.
+    <a href="https://github.com/daylerees/slate/issues">Let me know</a> if you do.</p>
 
 </section>
 
@@ -55,8 +57,11 @@
     </div>
     <!-- Apps: three soft rounded bars -->
     <div class="cap btn apps"><span class="burger"><i></i><i></i><i></i></span></div>
-    <!-- Workspaces: occupied, active (accent), occupied, empty -->
-    <div class="cap ws"><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></div>
+    <!-- Spaces: four small squares -->
+    <div class="cap btn spaces"><span class="quad"><i></i><i></i><i></i><i></i></span></div>
+    <!-- Workspaces: this workspace's window mode (tiling), a line, then the dots: occupied,
+         active (accent), occupied, empty -->
+    <div class="cap ws"><i class="ti mode">&#xEF94;</i><b></b><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></div>
     <!-- The focused window: its app tile, then its title -->
     <div class="cap app"><span class="tile"><i class="ti">&#xEBEF;</i></span></div>
     <div class="title">Terminal</div>
@@ -155,7 +160,7 @@
     <article>
       <i class="ti icon">&#xEAE2;</i>
       <h3>Lock and login screens</h3>
-      <p>A matching lock screen and greetd login screen with your wallpaper and picture.
+      <p>A matching lock screen, and an optional greetd login screen, with your wallpaper and picture.
         Lock, turn the screen off or suspend when you're away, and lock before sleep.</p>
     </article>
     <article>
@@ -181,9 +186,9 @@
     <article>
       <i class="ti icon">&#xEF06;</i>
       <h3>Tiling or traditional windows</h3>
-      <p>Windows tile themselves by default. Prefer the classic way? Switch to floating
-        windows with title bars you can drag, plus close and maximise buttons (and
-        double-click to maximise), in Settings → Windows.</p>
+      <p>Windows tile themselves by default, or pick side stack, scrolling or
+        stacking. Prefer the classic way? Switch to floating windows with title bars you can
+        drag, plus close and maximise buttons (and double-click to maximise), in Settings → Windows.</p>
     </article>
     <article>
       <i class="ti icon">&#xEDBA;</i>
@@ -234,10 +239,10 @@
     <div class="copy">
       <span class="kicker">Floating windows</span>
       <h3>Or the way you're used to</h3>
-      <p>Prefer windows you arrange yourself? Switch Settings → Windows to floating, and every
-        window gets a title bar: drag it around, resize it from its corner, and maximise or
-        close it with a click, much like on Windows. It's optional, and uses the hyprbars
-        plugin, which Slate builds for you.</p>
+      <p>Prefer windows you arrange yourself? Switch Settings → Windows to floating, and the
+        window in front gets a title bar: drag it around, resize it from its corner, and maximise or
+        close it with a click, much like on Windows. Slate draws the title bars itself, so
+        there's nothing extra to install.</p>
     </div>
     <figure class="tilt"><video data-src="shots/floating.mp4?v=1" data-small="shots/floating-small.mp4?v=1" poster="shots/floating-poster.webp" width="1440" height="900"
       muted loop playsinline preload="none" aria-label="Two floating windows with title bars: one is dragged across the screen, resized from its corner and dragged back, then the other is maximised and restored"></video></figure>
@@ -328,7 +333,7 @@
     <div class="copy">
       <span class="kicker">Lock and login</span>
       <h3>A calm way in</h3>
-      <p>The lock screen and the greetd login screen match, with your wallpaper and
+      <p>The lock screen and the optional greetd login screen match, with your wallpaper and
         picture. Lock, dim or suspend when you step away.</p>
     </div>
     <figure class="tilt"><video data-src="shots/login.mp4?v=1" data-small="shots/login-small.mp4?v=1" poster="shots/login-poster.webp" width="1440" height="900"
@@ -341,8 +346,8 @@
   <h2>Dayle's current desktop</h2>
   <p class="sub">Slate as it looks on my own laptop right now, day to day: the Liquid Glass
     preset, colours from the wallpaper, and Settings open on All Settings.</p>
-  <figure><img class="shot-frame" src="shots/daylesdesktop.webp?v=2" width="1440" height="900" loading="lazy"
-    alt="Slate on Dayle's laptop: the menu bar and dock in red-tinted glass over a painted autumn forest under a full moon, with Slate Settings open on All Settings"></figure>
+  <figure><img class="shot-frame" src="shots/daylesdesktop.webp?v=3" width="1440" height="900" loading="lazy"
+    alt="Slate on Dayle's laptop: the menu bar and dock in violet-tinted glass over Slate's own Iris wallpaper, glows of violet, blue and pink, with Slate Settings open on All Settings"></figure>
 </section>
 
 <section class="more">
@@ -354,6 +359,9 @@
 
 <section id="install" class="install">
   <h2>Install</h2>
+  <p class="note"><i class="ti">&#xEAC5;</i> <span><strong>Slate is an early preview.</strong> I use it every day,
+    but it's young and moving quickly, so you may run into bugs. If you do, please tell me
+    about them in a <a href="https://github.com/daylerees/slate/issues">GitHub issue</a>: it really helps, and thank you for trying it.</span></p>
   <p>Clone the repository and run the installer as your normal user. It installs what's
     needed for your distro, asks for your password for the system steps, and adds
     <strong>Slate</strong> to your login screen.</p>
@@ -362,7 +370,7 @@ cd slate
 ./install.sh</code></pre>
   <p>Then log out, pick <strong>Slate</strong> on the login screen and log in.</p>
   <ul class="facts">
-    <li><i class="ti">&#xEA5E;</i> Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS</li>
+    <li><i class="ti">&#xEA5E;</i> Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS; and, new, without systemd on Artix, Void and Gentoo (with elogind)</li>
     <li><i class="ti">&#xEA5E;</i> Needs Hyprland 0.57 or newer and Quickshell 0.3 or newer</li>
     <li><i class="ti">&#xEA5E;</i> Your current desktop and Hyprland config stay as they are</li>
   </ul>

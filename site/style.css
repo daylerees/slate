@@ -142,6 +142,12 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .bar-demo .btn { width: 35px; }
 .bar-demo .burger { display: grid; gap: 3px; }
 .bar-demo .burger i { display: block; width: 14px; height: 2.4px; border-radius: 1.2px; }
+/* Spaces: four 5.5px squares, 2px apart */
+.bar-demo .quad { display: grid; grid-template-columns: 5.5px 5.5px; gap: 2px; }
+.bar-demo .quad i { display: block; width: 5.5px; height: 5.5px; border-radius: 1.5px; }
+/* The workspace's window mode (in the accent) and a line, before the dots */
+.bar-demo .ws .mode { font-size: 17px; margin: 0 -1px 0 -2px; }
+.bar-demo .ws b { width: 1px; height: 13.5px; margin: 0 2px; }
 /* Workspace dots: 14px rounded squares, 5px apart; the active one in the accent */
 .bar-demo .ws { gap: 5px; padding: 0 8px; }
 .bar-demo .ws span { width: 14px; height: 14px; border-radius: 3.9px; }
@@ -246,6 +252,9 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
 }
 .bar-demo .burger i { background: var(--d-ink); }
+.bar-demo .quad i { background: var(--d-ink); }
+.bar-demo .ws .mode { color: var(--d-accent); }
+.bar-demo .ws b { background: var(--d-sep); }
 .bar-demo .ws span { background: var(--d-empty); }
 .bar-demo .ws span.occ { background: var(--d-occ); }
 .bar-demo .ws span.on {
@@ -410,6 +419,20 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 
 .install p { color: var(--dim); max-width: 720px; }
 .install strong { color: var(--text); }
+/* An early preview: said plainly where people install (and, shortly, under the hero's buttons) */
+.install .note {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 0 0 22px; padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #e6cf8e 12%, transparent);
+  color: #e6cf8e; font-size: 14.5px; line-height: 1.5;
+}
+.install .note .ti { font-size: 18px; vertical-align: 0; margin-top: 1px; }
+.install .note strong { color: inherit; }
+.install .note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.preview-tag { margin: 18px 0 0; color: #e6cf8e; font-size: 14px; }
+.preview-tag .ti { font-size: 15px; vertical-align: -2px; }
+.preview-tag a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 pre {
   background: var(--surface);
   border: 1px solid var(--line);

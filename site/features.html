@@ -49,11 +49,12 @@
       <h3>Its own session</h3>
       <ul>
         <li>Installs as a <strong>Slate</strong> entry on any login screen; your existing desktop stays as it is</li>
+        <li>Runs with systemd, and without it where elogind is: Artix, Void and Gentoo. There, Slate shows you the command to switch a service on rather than doing it, and starts sound for the session itself</li>
         <li>Runs Hyprland with Slate's own config, separate from <code>~/.config/hypr</code></li>
         <li>Starts on a plain dark background that matches the login screen, without Hyprland's or your distro's default wallpaper flashing up first</li>
         <li>Your own tweaks go in <code>~/.config/slate/hypr/</code> and are never overwritten</li>
         <li>Slate restarts itself on its own code changes; <em>Restart the shell</em> in Settings → About</li>
-        <li>A welcome on first start: tiling or floating, colours from the wallpaper, theming your other apps, where the bar and dock go, and the shortcuts, each with a recommendation</li>
+        <li>A welcome on first start: tiling or floating, colours from the wallpaper, glass or flat, theming your other apps, where the bar and dock go, and the shortcuts (with what the Super key is), each with a recommendation. It follows your theme, glass included, whenever you open it again</li>
       </ul>
     </article>
     <article>
@@ -85,6 +86,7 @@
         <li>Apps button, with right-click shortcuts to Settings pages</li>
         <li>Spaces button: save and bring back sets of workspaces (see Windows)</li>
         <li>Workspaces as dots, with a springy indicator</li>
+        <li>Before the dots, the workspace's window mode: click it for a panel to give that workspace a mode of its own (tiling, side stack, scrolling, stacking, floating or solo) or put it back to the default, and to name it</li>
         <li>The focused window's icon and title (the icon can be turned off)</li>
       </ul>
     </article>
@@ -143,9 +145,9 @@
       <ul>
         <li>Pinned and running apps, with a dot under running ones</li>
         <li>Badges: an app's unread count on its icon (what it publishes itself, or its notifications since you last went to it), and a progress bar while it downloads or copies; they stay when Slate restarts</li>
-        <li>Magnifies under the pointer: icon size, magnification and spread are adjustable</li>
+        <li>A hover effect: icons magnify under the pointer, or tilt (with the pointer on the dock, the icons turn in 3D towards it, and the ones near it straighten up to face you), both, fade (the icons away from the pointer fade), fade and magnify, glow (a ring and a soft glow round the icon under the pointer, in its own colour), glow and magnify, raise (just the icon under the pointer lifts up a little), or none; icon size, magnification and spread are adjustable</li>
         <li>Icons bounce while their app opens</li>
-        <li>Window previews: pause on an app (for as long as you set) to see its windows live, just above the magnified icons, and click one to go to it</li>
+        <li>Window previews: rest on an app to see its windows live, just above the magnified icons, and click one to go to it. A switch turns them off, and a slider sets how long to rest first, from Instant up to 3 seconds</li>
         <li>Bottom, top, left or right (moving it slides it off and back in at its new edge, showing for a moment even when it auto-hides); auto-hides when a tiled window needs the room, and stays open over an empty workspace or one with only floating windows</li>
         <li>Its corners follow your icon shape</li>
       </ul>
@@ -213,7 +215,14 @@
       <h3>Tiling or traditional</h3>
       <ul>
         <li>Windows tile themselves by default</li>
+        <li>Each workspace can have its own window mode, from the menu bar; Settings → Windows sets the default for the rest, and spaces remember each workspace's mode</li>
+        <li>Name a workspace ("Coding", "Music") with the pencil on that panel: the name takes the place of "Workspace 3" in the workspace switcher, the bar's hover text and the Spaces panel, stays for as long as the workspace is around, and is saved and restored with a Space</li>
+        <li>Changing the default with windows open asks first: tidy up, moving every workspace (those with a mode of their own too) to the new mode, or leave them as they are and use it only for new workspaces</li>
+        <li>Or pick another of Hyprland's layouts from Settings → Windows: side stack (one main window, the rest stacked beside it), scrolling (columns on a strip that scrolls sideways) stacking (one window at a time, filling the screen) or solo (every window fills a workspace of its own; a new one opens on the next free workspace)</li>
         <li>Or floating windows with title bars: drag to move, close and maximise buttons, double-click to maximise and click again to restore</li>
+        <li>Slate Bars, Slate's own title bars, by default, with nothing to install or rebuild: a bar on the floating window in front that wraps round its rounded corners; dragging it moves the window by a handle in its middle, and its top corners resize it; maximising keeps the bar; windows take focus when clicked</li>
+        <li>Optional: Hyprbars, a Hyprland plugin with a title bar on every floating window. Choose it in Settings → Windows and Slate explains what's involved, builds it in the background and switches once it's ready</li>
+        <li>After a Hyprland update, when Hyprbars can't load until it's rebuilt: no error messages, Slate Bars take over, and Slate asks whether to rebuild, offers a reload when it's done, then asks whether to switch back. Rebuild, Retry, Reload and Remove are in Settings → Windows</li>
         <li>Float or tile any window with a key</li>
         <li>Maximise, full screen, split the other way, resize with the arrow keys</li>
         <li>Move and resize with Super and the mouse</li>
@@ -235,6 +244,7 @@
       <ul>
         <li>Super+Tab: every window in a circular strip, showing live previews, app icons (each window's outline with its icon, nothing captured) or both</li>
         <li>Alt+Tab for the next window</li>
+        <li>Choose how it moves: the strip slides along, hops along, turns like a wheel with the windows round its edge, tilts the others away in 3D, rides round a 3D ring (orbit), deals from a pile (deck), spreads like a hand of cards (fan), or jumps straight there; and how it goes to the window you pick: a crossfade, your workspace animation, or instantly</li>
       </ul>
     </article>
     <article>
@@ -260,7 +270,8 @@
       <ul>
         <li>Super+Down: every workspace as a large card, its windows showing live previews, app icons (each window's outline with its icon, nothing captured) or both</li>
         <li>Jump to one, or hold Shift to lift a card and move it along</li>
-        <li>Card size is adjustable</li>
+        <li>Card size is adjustable (or, as a grid, how many go across)</li>
+        <li>Choose how it moves: the row slides along, hops along, turns like a wheel, tilts the others away in 3D, rides round a 3D ring, deals from a pile, spreads like a hand of cards, or jumps straight there, or lay every workspace out in a grid (2 × 2 up to 9 × 9, scrolling when there are more, with the arrow keys moving round it); and how it goes to the workspace you pick: zooming into its card, fading away, your workspace animation, or instantly</li>
       </ul>
     </article>
     <article>
@@ -270,7 +281,7 @@
         <li>Go to, or move a window to, workspace 1–9 (per monitor too)</li>
         <li>Move a window to a new workspace after the last one in use</li>
         <li>Always keep an empty workspace, last in the row (optional)</li>
-        <li>A secret workspace, to show or hide over the others</li>
+        <li>A secret workspace, to show or hide over the others; a note in the middle says when it's empty</li>
         <li>Follows apps you're sent to: a link opened from another app takes you to the browser</li>
       </ul>
     </article>
@@ -308,6 +319,7 @@
       <h3>Wallpaper</h3>
       <ul>
         <li>Pick from a folder of your own, shown as thumbnails in Settings</li>
+        <li>Ten wallpapers of Slate's own, in 4K, soft glows of colour over a deep base, each with Slate's mark in the middle (see-through, in the wallpaper's colours) or plain: Ember, Iris, Lagoon and Blossom in mixed colours, then Fern (green), Cobalt (blue), Ruby (red), Honey (yellow), Graphite (black and grey) and Mist (white and grey). They're listed below your own pictures (a switch hides them)</li>
         <li>Crossfades when it changes</li>
         <li>Changes by itself on a timer or at each login, in a shuffled order (optional)</li>
         <li>Leaves out small pictures (icons, avatars), with a minimum size</li>
@@ -382,11 +394,14 @@
   <p class="fp-intro">Opt-in, app by app, in Settings → App theming. Each app you switch on
     follows Slate's colours, light or dark, and the accent, with text colours kept readable against
     the background (in light mode too). Slate backs up a config before it first
-    changes it, and switching an app off puts it back the way it was, keeping your own edits.</p>
+    changes it, and switching an app off puts it back the way it was, keeping your own edits.
+    Flatpak builds are themed too, in their own folders. Each app says what it is and links to its website, and one that isn't installed can be
+    installed from there, from your distribution's own software (it asks first, then for your
+    password, and a notification says when it's done).</p>
   <div class="fp-grid">
     <article>
       <h3>Desktop apps</h3>
-      <ul><li>GTK apps (GNOME and others)</li><li>Qt apps (qt6ct)</li><li>KDE apps</li><li>GNOME Text Editor</li><li>Firefox (toolbars, tabs and menus)</li><li>Discord (Vencord, Vesktop, Equicord)</li><li>Spotify (Spicetify)</li><li>Obsidian (a CSS snippet in each vault)</li></ul>
+      <ul><li>GTK apps (GNOME and others)</li><li>Qt apps (qt6ct)</li><li>KDE apps</li><li>GNOME Text Editor</li><li>Firefox (toolbars, tabs and menus)</li><li>Discord (Vencord, Vesktop, Equicord)</li><li>Spotify (Spicetify)</li><li>Obsidian (a CSS snippet in each vault)</li><li>Spotify and Discord updates remove their themes (Spicetify's and Vencord's patches): Slate notices within a few minutes, puts them back and tells you to restart the app; where it can't, it says so once</li></ul>
     </article>
     <article>
       <h3>Terminals</h3>
@@ -446,7 +461,7 @@
     </article>
     <article>
       <h3>Sound effects</h3>
-      <ul><li>Each with its own volume slider, from off up</li><li>A tick when you change the volume</li><li>A soft chime with notifications</li><li>A gentle, questioning sound for confirmations, password prompts and urgent notifications</li><li>A barely-there tap on buttons and menus</li><li>A soft swish switching workspaces and windows, drifting the way you go</li><li>A gentle welcome when you log in, as Slate fades in from the dark, and a closing sound as it fades to black when you log out, restart or shut down</li></ul>
+      <ul><li>Each with its own volume slider, from off up</li><li>A tick when you change the volume</li><li>A soft chime with notifications</li><li>A gentle, questioning sound for confirmations, password prompts and urgent notifications</li><li>A barely-there tap on buttons and menus</li><li>A soft swish switching workspaces and windows, drifting the way you go</li><li>A gentle welcome when you log in, as Slate fades in from the dark behind its logo, and a closing sound as it fades to black when you log out, restart or shut down</li></ul>
     </article>
   </div>
 </section>
@@ -498,7 +513,7 @@
     </article>
     <article>
       <h3>Login screen</h3>
-      <ul><li>A matching greetd login screen, with your wallpaper and picture</li><li>Follows your wallpaper, theme and picture automatically; a new design asks for your password once, with an urgent notification that stays until you answer it (only for changes to the login screen itself; "Later" waits a week)</li><li>Resync from Settings → Debug, if you changed something outside Slate</li><li>Safe updates: each one is test-loaded before it's installed, and if the login screen ever fails at boot, the last version that worked takes over, then a basic emergency login</li></ul>
+      <ul><li>A matching greetd login screen, with your wallpaper and picture</li><li>Optional: nothing changes your login screen until you choose Install in Settings → Lock &amp; Idle, which first says what's involved (it replaces the system's login screen and needs updating with your password when Slate, Hyprland, Quickshell or greetd change)</li><li>Switch back to your old login screen from the same place</li><li>Follows your wallpaper, theme and picture automatically; a new design asks for your password once, with an urgent notification that stays until you answer it (only for changes to the login screen itself; "Later" waits a week)</li><li>Resync from Settings → Debug, if you changed something outside Slate</li><li>Safe updates: each one is test-loaded before it's installed, and if the login screen ever fails at boot, the last version that worked takes over, then a basic emergency login</li></ul>
     </article>
   </div>
 </section>
@@ -512,7 +527,7 @@
     </article>
     <article>
       <h3>Startup apps</h3>
-      <ul><li>Apps to open at each login</li><li>After a restart that reopens your apps, each opens on a workspace of its own, so they don't crowd the reopened ones</li></ul>
+      <ul><li>Apps to open at each login</li><li>Removing one asks first</li><li>After a restart that reopens your apps, each opens on a workspace of its own, so they don't crowd the reopened ones</li></ul>
     </article>
     <article>
       <h3>Date, time and location</h3>
@@ -633,9 +648,9 @@
         <dt>Super Alt Space</dt><dd>Float or tile the window</dd>
         <dt>Super D</dt><dd>Maximise</dd>
         <dt>Super F</dt><dd>Full screen</dd>
-        <dt>Super J</dt><dd>Split the other way</dd>
+        <dt>Super J</dt><dd>Split the other way (Side Stack: make the window the main one; Scrolling: change the column's width; Stacking: the next window)</dd>
         <dt>Super R</dt><dd>Resize with the arrow keys</dd>
-        <dt>Super Alt arrows</dt><dd>Focus the window in that direction</dd>
+        <dt>Super Alt arrows</dt><dd>Focus the window in that direction (Stacking: left and right go to the previous or next window)</dd>
         <dt>Super Shift arrows</dt><dd>Move the window in that direction</dd>
         <dt>Super drag</dt><dd>Move a window</dd>
         <dt>Super right-drag</dt><dd>Resize a window</dd>
@@ -644,7 +659,7 @@
     <article>
       <h3>Workspaces and monitors</h3>
       <dl>
-        <dt>Super ← / →</dt><dd>Previous / next workspace</dd>
+        <dt>Super ← / →</dt><dd>Previous / next workspace (with the window switcher or overview open: moves through it)</dd>
         <dt>Super ↓</dt><dd>Workspace overview</dd>
         <dt>Super ↑ or S</dt><dd>Show or hide the secret workspace</dd>
         <dt>Super Shift S</dt><dd>Move the window to the secret workspace</dd>
@@ -674,7 +689,7 @@
     </article>
     <article>
       <h3>Installs on</h3>
-      <ul><li>Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS, with one installer</li><li>Open source under the MIT licence</li></ul>
+      <ul><li>Arch, Debian and Ubuntu, Fedora, openSUSE and NixOS, with one installer; and, new, without systemd on Artix, Void and Gentoo</li><li>An early preview: you may run into bugs. Please report them in a <a href="https://github.com/daylerees/slate/issues">GitHub issue</a></li><li>Open source under the MIT licence</li></ul>
     </article>
   </div>
 </section>
