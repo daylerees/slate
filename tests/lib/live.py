@@ -24,6 +24,19 @@ class LiveCase(slate.Case):
             path = self.log(self.id().split(".", 2)[-1] + ".log-errors.txt", "\n".join(errors))
             raise AssertionError(f"Slate logged {len(errors)} error(s): {errors[0][:200]}  [{path}]")
 
+    def close_windows(self):
+        """Close every app window and go back to workspace 1. The session is shared, so windows
+        other tests opened are still about; tests that count windows or workspaces start here."""
+        for _ in range(4):
+            clients = [c for c in self.s.hyprctl("clients", json_out=True) if c.get("mapped")]
+            if not clients:
+                break
+            for c in clients:
+                self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "address:%s" })) end' % c["address"])
+            self.s.settle(0.7)
+        self.s.hyprctl("dispatch", "function() hl.dispatch(hl.dsp.focus({ workspace = 1 })) end")
+        self.s.settle(0.4)
+
     def ipc(self, *a, **kw):
         return self.s.ipc(*a, **kw)
 

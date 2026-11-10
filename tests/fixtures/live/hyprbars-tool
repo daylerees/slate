@@ -1,0 +1,22 @@
+#!/bin/sh
+# A stand-in for bin/slate-build-hyprbars in the live tests (SLATE_HYPRBARS_TOOL): reports
+# what a test wrote, and notes how it was called. In $XDG_STATE_HOME/slate-test-hyprbars:
+#   status        what --status prints (nothing built, when the file isn't there)
+#   build-result  what status becomes when a build is run
+#   calls         one line per call: its arguments ("build" for none)
+d="${XDG_STATE_HOME:-$HOME/.local/state}/slate-test-hyprbars"
+mkdir -p "$d"
+echo "${*:-build}" >> "$d/calls"
+case "${1:-}" in
+--status)
+    if [ -f "$d/status" ]; then cat "$d/status"; else
+        printf '%s\n' running=0.57.2 runningCommit=aaaa installed=0.57.2 installedCommit=aaaa loaded=no \
+            build=no next=no any=no system=no removed=no state= stateFor= error=
+    fi ;;
+--remove)
+    printf '%s\n' running=0.57.2 runningCommit=aaaa installed=0.57.2 installedCommit=aaaa loaded=no \
+        build=no next=no any=no system=no removed=no state= stateFor= error= > "$d/status" ;;
+--adopt) ;;
+"") [ -f "$d/build-result" ] && cp "$d/build-result" "$d/status" ;;
+esac
+exit 0

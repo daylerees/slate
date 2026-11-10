@@ -149,6 +149,9 @@ class Session:
             "LIBSEAT_BACKEND": "noop", "AQ_DRM_DEVICES": os.environ["SLATE_TEST_CARD"],
             "HYPRLAND_NO_CRASHREPORTER": "1", "XDG_SESSION_TYPE": "wayland",
             "SLATE_TEST": "1",
+            # A stand-in for bin/slate-build-hyprbars (tests/live/test_hyprbars.py says what it
+            # reports): nothing is ever built, and nothing looks at the real plugin folder
+            "SLATE_HYPRBARS_TOOL": os.path.join(slate.FIXTURES, "live", "hyprbars-tool"),
         })
 
     def start(self):

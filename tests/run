@@ -10,6 +10,8 @@
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
 #                                  (once a day: run again the same day, it shows that result)
 #   tests/run --deps latest --fresh   run it again anyway
+#   tests/run --approve [scene…]   approve the changed screenshots the last run took (all, or
+#                                  these), once you've looked at them: nothing is run again
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
@@ -33,6 +35,7 @@ while [ $# -gt 0 ]; do
         --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
         --fresh) fresh=1 ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
+        --approve) shift; exec python3 "$ROOT/tests/visual/approve.py" "$@" ;;
         --update-baselines)
             updating=1
             while [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; do update="$update $2"; shift; done ;;

@@ -28,6 +28,7 @@ tests/run --filter dock             # only tests (or scenes) whose name has "doc
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
 tests/run --deps latest             # today's Arch packages instead of the pinned snapshot (once a day)
+tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these)
 tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, or these)
 ```
 
@@ -55,9 +56,17 @@ changes in red; `.actual.png` beside it). If the change is meant (you changed ho
 looks), approve it:
 
 ```sh
-tests/run --update-baselines panel-control settings-dock    # or no names: every scene
-git diff --stat tests/visual/baselines                      # then look at the images before committing
+# look at tests/out/visual/<scene>.actual.png first, then:
+tests/run --approve panel-control settings-dock             # or no names: every changed scene
+git diff --stat tests/visual/baselines
 ```
+
+`--approve` runs nothing: it makes the pictures the failing run took the approved ones, so
+what you looked at is exactly what's approved. It leaves alone (and names) any picture taken
+before Slate's code or the scenes last changed, since it may no longer be what Slate draws:
+run the visual tests again for those. `tests/run --update-baselines [scene…]` re-shoots
+instead (a few minutes), for when there's no current picture to approve; look at the new
+images before committing.
 
 Approved screenshots are only ever made in the container: the software renderer there gives
 the same pixels every time, where a real GPU wouldn't. Small anti-aliasing shifts are allowed
@@ -97,7 +106,8 @@ as its own check.
   `shell.qml`); `self.config(key, value)` changes a setting, `self.keep_setting(key)` puts it
   back after. Each test starts with everything closed.
 - **visual**: add a scene to `tests/visual/scenes.py`, then
-  `tests/run --update-baselines <scene>` and check the new image.
+  `tests/run --tier visual --filter <scene>` (it fails: no approved picture yet), check
+  `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`.
 
 A bug found by a test but not fixed yet: mark the test `@unittest.expectedFailure` (unit), or
 add the log line to `KNOWN_ISSUES` in `tests/lib/session.py` (live), with a comment. Take it
