@@ -29,11 +29,42 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.26.0">v0.26.0</a><a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.26.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.26.0 <time datetime="2026-11-10">10 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Settings → Webcam.</strong> Your camera's picture settings: brightness, contrast, colour, sharpness, gain, white balance and exposure (automatic or manual), anti-flicker for your mains (50 or 60 Hz) and backlight compensation. Webcams forget these when they're unplugged or restarted, so Slate puts yours back at login. A preview turns the camera on only when you ask, and the page shows which apps are using the camera.</li>
+        <li><strong>Drag apps on the dock.</strong> The icon comes away with the pointer at its magnified size, and the others make room around a placeholder that shows where it'll land. Drop a running app among your pinned ones to pin it, or pull a pinned app well up off the dock to unpin it (a warning appears first; it stays on the dock while it's running). Window previews and menus stay out of the way while you drag.</li>
+        <li><strong>See which settings you've changed.</strong> A small dot after a setting's name means it isn't at its default; point at the dot to see what the default is.</li>
+        <li><strong>Move Settings by its frame.</strong> Drag the Slate mark at the top of the sidebar, or the empty space in the page header.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Moving the dock or bar to another edge</strong> slides it out and back in at the new edge, instead of zooming across the screen and flickering where it was. It shows there for a moment even with auto-hide, so you see where it went.</li>
+        <li><strong>Menu points on glass.</strong> The little point on dock and tray menus showed as a whole diamond with glass on.</li>
+        <li><strong>Window previews sit above magnified icons</strong>, rather than behind them.</li>
+        <li><strong>Settings comes back on the page it was on</strong> after Slate reloads, instead of All Settings.</li>
+        <li>In dark mode without glass, the Apps, media, Downloads and Waste Basket tiles on the dock are a shade lighter, so they stand out from the dock.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Settings → Webcam uses <code>v4l2-ctl</code> (the <code>v4l-utils</code> package). Install it to use the page (or run <code>./install.sh</code>); without it, the page says what's missing.</li>
+        <li>Heads-up: with today's Arch packages, one test screenshot (an emoji in the emoji picker) draws slightly differently, likely a newer emoji font. Nothing else changed.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.25.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.25.0 <time datetime="2026-11-09">9 November 2026</time></h2>
   <div class="cl-grid">
