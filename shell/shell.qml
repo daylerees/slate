@@ -18,6 +18,7 @@
 import QtQuick
 import Qt.labs.folderlistmodel
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -85,6 +86,18 @@ ShellRoot {
         enabled: Config.testMode
         // Magnify the dock as if the pointer were over slot i (-1: as if it had left): the
         // test session has no pointer device to hover with
+        // Drag an app on the dock as the pointer would: picked up (if it isn't already), held
+        // over slot i (as the slots are now), `up` pixels up from the dock's middle; then let go
+        function dockDrag(key: string, i: int, up: real): void {
+            if (win.dragKey === "") win.startDrag(key);
+            const x = (strip.width - win.restWidth) / 2 + win.slotStart(Math.max(0, i)) + (i < 0 ? -win.base * 2 : win.base * 0.25);
+            win.testHover = true;
+            win.setPointer(x);
+            const pt = Qt.point(x, bg.y + bg.height / 2 - up);
+            win.dragScreen = win.toScreen(strip.mapToItem(win.contentItem, pt.x, pt.y));
+            win.dragTo(pt);
+        }
+        function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
             if (i >= 0) win.setPointer((strip.width - win.restWidth) / 2 + win.slotStart(i) + win.slotWidth(i) * win.base / 2);
@@ -109,6 +122,8 @@ ShellRoot {
                 welcome: { open: welcome.shown },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd },
                 dock: {
+                    pinned: win.pinned,
+                    dragging: win.dragKey, dropIndex: win.dropIndex, dragAway: win.dragAway, gapAt: win.gapAt,
                     slots: win.slots.map(x => x.kind === "app"
                         ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
                         : { kind: x.kind }),
@@ -541,7 +556,11 @@ ShellRoot {
             onTriggered: { win.edge = Config.dockEdge; win.settledEdge = win.edge; win.movingOut = false; }
         }
         readonly property bool vertical: edge === "left" || edge === "right"
-        readonly property real thickness: Math.ceil(base * maxScale + padding * 2 + bottomGap + 40)
+        // How far the dock reaches out from its edge: magnified icons and room for their labels
+        readonly property real reach: Math.ceil(base * maxScale + padding * 2 + bottomGap + 40)
+        // The window is taller still, so an app dragged up far enough to unpin it stays over it (the
+        // dock only gets the pointer while it's over its window). Only a drag takes the pointer there
+        readonly property real thickness: reach + Math.ceil(Math.max(120, base * 2.5)) + 40
         anchors { top: edge !== "bottom"; bottom: edge !== "top"; left: edge !== "right"; right: edge !== "left" }
         implicitHeight: vertical ? 0 : thickness
         implicitWidth: vertical ? thickness : 0
@@ -623,13 +642,15 @@ ShellRoot {
             if (mediaShown) add({ kind: "media" });
             const dividers = Config.s.dockDivider;
             // after the Apps button and what's playing (while either is there)
-            if (dividers && s.length > 0 && items.length > 0) add({ kind: "divider" });
-            items.forEach((it, i) => {
+            if (dividers && s.length > 0 && items.some(it => it.key !== dragKey)) add({ kind: "divider" });
+            // (the app being dragged is held by the pointer, not in the dock, until it's let go)
+            const shown = items.filter(it => it.key !== dragKey);
+            shown.forEach((it, i) => {
                 // between the pinned apps and the others (when there are both)
-                if (dividers && i > 0 && !it.pinned && items[i - 1].pinned) add({ kind: "divider" });
+                if (dividers && i > 0 && !it.pinned && shown[i - 1].pinned) add({ kind: "divider" });
                 add({ kind: "app", item: it });
             });
-            if (dividers && items.length > 0 && (downloadsShown || trashShown)) add({ kind: "divider" });
+            if (dividers && items.some(it => it.key !== dragKey) && (downloadsShown || trashShown)) add({ kind: "divider" });
             if (downloadsShown) add({ kind: "downloads" });
             if (trashShown) add({ kind: "trash" });
             return s;
@@ -937,31 +958,111 @@ ShellRoot {
         // A full-screen invisible layer while open: clicking anywhere outside the menu
         // (or pressing Escape) closes it
         // ---- Dragging --------------------------------------------------------------
-        // A pinned app dragged along the dock moves among the pinned ones (saved when it's let
-        // go); dragged up off the dock, it's let go of to unpin it. Files dragged in from a
-        // file manager: onto the Waste Basket to bin them, onto an app to open them in it
-        property string dragCandidate: ""        // the pinned app pressed on (dragging once it moves)
-        property string dragKey: ""              // the pinned app being dragged
-        property bool dragAway: false            // pulled off the dock: letting go unpins it
+        // An app picked up from the dock leaves its place and follows the pointer (dragPop, a
+        // layer of its own). Over the pinned apps, they part to show where it'll go (a gap with
+        // a faint tile in it); let go there and it glides in, pinned at that place: a running
+        // app that wasn't pinned is pinned by it. Pulled well up off the dock, a pinned app is
+        // let go of to unpin it (it stays with the running apps while it's open). Anywhere else,
+        // a running app goes back where it was. Files dragged in from a file manager: onto the
+        // Waste Basket to bin them, onto an app to open them in it
+        property string dragCandidate: ""        // the app pressed on (dragging once it moves)
+        property string dragKey: ""              // the app being dragged (not in the slots meanwhile)
+        property bool dragPinned: false          // it was pinned when picked up
+        property bool dragAway: false            // pulled well off the dock: letting go unpins it
+        readonly property bool dragRunning: dragKey !== "" && (items.find(o => o.key === dragKey)?.windows.length ?? 0) > 0
+        property int dropIndex: -1               // where it'd go among the pinned apps (-1: nowhere)
+        property point dragScreen: Qt.point(0, 0)   // the pointer, in screen coordinates
+        property bool landing: false             // let go: gliding into its place
+        property bool settling: false            // the gap appearing or closing at once, not animated
         property bool fileDrag: false            // files being dragged over the dock
+        // How far up off the dock (the pointer, past its top) before letting go unpins
+        readonly property real removeDistance: Math.max(120, base * 2.5)
+        // The pinned apps' slots as they are now (the dragged one isn't among them)
+        readonly property var pinnedSlots: slots.filter(o => o.kind === "app" && o.item.pinned)
+        // The slot the gap opens before (every slot from it on moves along), or -1
+        readonly property int gapAt: {
+            if (dragKey === "" || dropIndex < 0) return -1;
+            if (pinnedSlots.length === 0) {
+                // None pinned: where the apps begin (with none running either, the dividers go too:
+                // just after the Apps button)
+                const first = slots.find(o => o.kind === "app" || o.kind === "divider");
+                if (first) return first.at;
+                const apps = slots.find(o => o.kind === "launcher");
+                return apps ? apps.at + 1 : 0;
+            }
+            return dropIndex < pinnedSlots.length ? pinnedSlots[dropIndex].at : pinnedSlots[pinnedSlots.length - 1].at + 1;
+        }
+        // The gap grows with the pointer as the icons do (where it sits at rest: between the
+        // slots either side of it); opening, closing and moving it slide (gapOpen, each cell's own)
+        readonly property real gapScale: {
+            if (gapAt < 0) return 1;
+            const t = Math.abs(pointerX - (slotStart(gapAt) - spacing / 2)) / (base * spread);
+            const f = t >= 1 ? 0 : (Math.cos(Math.PI * t) + 1) / 2;
+            return 1 + (maxScale - 1) * f * hover;
+        }
+        readonly property real gapWidth: base * gapScale
+        property real gapOpen: gapAt >= 0 ? 1 : 0
+        Behavior on gapOpen { enabled: !win.settling; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+        // Where the gap's tile is, as a slot index that slides between whole ones when it moves
+        property real gapPos: 0
+        onGapAtChanged: if (gapAt >= 0) gapPos = gapAt
+        Behavior on gapPos { enabled: !win.settling && win.gapOpen > 0.01; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+        // A window point (the dock's own window) as a point on the screen
+        function toScreen(pt) {
+            const sw = screen ? screen.width : 0, sh = screen ? screen.height : 0;
+            return Qt.point(pt.x + (edge === "right" ? sw - width : 0), pt.y + (edge === "bottom" ? sh - height : 0));
+        }
+        function startDrag(key) {
+            const it = items.find(o => o.key === key);
+            if (!it) return;
+            settling = true;                     // the gap opens where it was, at once
+            dragPinned = it.pinned;
+            dragKey = key;
+            previewApp = null;
+            appMenu.closeMenu();                 // nothing else open over the dock while dragging
+            Qt.callLater(() => { settling = false; });
+        }
         function dragTo(stripPoint) {
-            dragAway = stripPoint.y < bg.y - base;
-            if (dragAway) return;
-            const sl = slotAt(hoveredIndex);
-            if (!sl || sl.kind !== "app" || !sl.item.pinned || sl.item.key === dragKey) return;
-            // Into the place of the pinned app under the pointer
-            const list = pinned.filter(k => k !== dragKey);
-            const at = list.indexOf(sl.item.key);
-            const from = pinned.indexOf(dragKey), to = pinned.indexOf(sl.item.key);
-            list.splice(to > from ? at + 1 : at, 0, dragKey);
-            pinned = list;
+            dragAway = dragPinned && stripPoint.y < bg.y - removeDistance;
+            const offDock = stripPoint.y < bg.y - base * maxScale;
+            if (dragAway || (!dragPinned && offDock)) { dropIndex = -1; return; }
+            // Which pinned apps it's past (at rest, so the place doesn't jitter as icons part)
+            const x = stripPoint.x - (strip.width - restWidth) / 2;
+            const ps = pinnedSlots;
+            let i = 0;
+            while (i < ps.length && x > slotStart(ps[i].at) + base / 2) i++;
+            // Where the pinned apps end and the running ones begin (with none pinned: where the
+            // apps begin)
+            const firstApp = slots.find(o => o.kind === "app");
+            const pinnedEnd = ps.length ? slotStart(ps[ps.length - 1].at) + base
+                : firstApp ? slotStart(firstApp.at) : restWidth;
+            // A pinned app stays among the pinned ones (pulled off the dock to unpin); a running one
+            // only goes in among them, else back where it was
+            // (a running app off either end of the dock isn't over it at all)
+            const beside = x < -base || x > restWidth + base;
+            dropIndex = dragPinned || (x < pinnedEnd + base * 0.5 && !beside) ? i : -1;
         }
         function endDrag() {
-            if (dragKey !== "") {
-                if (dragAway) setPinned(dragKey, false);
-                else savePinned();
+            if (dragKey === "") { dragCandidate = ""; return; }
+            if (dragAway) finishDrag();         // unpinned: back among the running apps if it's open
+            else if (dropIndex >= 0) {
+                // Glide into the gap, at its size, then take its place
+                const c = dragGap.mapToItem(win.contentItem, dragGap.width / 2, dragGap.height / 2);
+                const t = toScreen(c);
+                dragPop.landAt(t.x, t.y, dragGap.width);
+            } else finishDrag();                // back where it was
+        }
+        function finishDrag() {
+            settling = true;
+            if (dragAway) setPinned(dragKey, false);
+            else if (dropIndex >= 0) {
+                const list = pinned.filter(k => k !== dragKey);
+                list.splice(dropIndex, 0, dragKey);
+                pinned = list;
+                savePinned();
             }
-            dragKey = ""; dragCandidate = ""; dragAway = false;
+            dragKey = ""; dragCandidate = ""; dragAway = false; dropIndex = -1; landing = false;
+            Qt.callLater(() => { settling = false; });
         }
         // Files let go of over slot i
         function dropFiles(i, urls) {
@@ -1001,6 +1102,7 @@ ShellRoot {
         // or above the dock when icons don't grow that far
         function previewEdge() { return Math.min(bg.y - 16, row.y + row.height - base * maxScale - 12); }
         function showPreview() {
+            if (dragKey !== "" || mouse.pressed) return;     // not while an app's being dragged
             const sl = slots.find(o => o.kind === "app" && pointedApp && o.item.key === pointedApp.key);
             if (!sl) return;
             previewApp = sl.item;
@@ -1012,12 +1114,100 @@ ShellRoot {
         Connections { target: appMenu; function onVisibleChanged() { if (appMenu.visible) win.previewApp = null; } }
 
         PanelWindow {
+            id: dragPop
+            screen: win.screen
+            visible: win.dragKey !== ""
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            WlrLayershell.namespace: "slate-dock-drag"
+            WlrLayershell.layer: WlrLayer.Overlay
+            mask: Region {}                             // the pointer goes straight through it
+            // Held at its magnified size; lands at the gap's
+            readonly property real liftSize: win.base * win.maxScale
+            // Let go over the gap: glide to (x, y) (screen coordinates, its centre) at size s, then
+            // take its place
+            function landAt(x, y, s) {
+                win.landing = true;
+                landX.to = x - s / 2; landY.to = y - s / 2; landW.to = s;
+                land.restart();
+            }
+            Item {
+                id: floater
+                width: dragPop.liftSize; height: width
+                x: win.dragScreen.x - width / 2
+                y: win.dragScreen.y - height / 2
+                // Pulled far enough off the dock to unpin: fading, as it's about to go
+                opacity: win.dragAway ? 0.45 : 1
+                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                Image {
+                    anchors.fill: parent
+                    source: win.dragKey ? "file://" + Config.tilePath(win.dragKey) + "?v=" + Config.tileVersion : ""
+                    sourceSize: Qt.size(192, 192)
+                    smooth: true; mipmap: true
+                    layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
+                    IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale }
+                    IconGloss {}
+                }
+            }
+            // Pulled far enough to unpin it: says so, above it, as a warning (the theme's soft red)
+            Rectangle {
+                id: removeTip
+                readonly property color warn: Config.tint("#f28b8b")
+                visible: win.dragAway
+                anchors { horizontalCenter: floater.horizontalCenter; bottom: floater.top; bottomMargin: 8 }
+                width: removeRow.implicitWidth + 20
+                height: removeRow.implicitHeight + 10
+                radius: 7
+                // The warning red over the dock's own colour (solid without glass)
+                color: Qt.tint(win.bgColor, Qt.rgba(warn.r, warn.g, warn.b, Config.glass ? 0.32 : 0.22))
+                border.width: 1
+                border.color: Qt.rgba(warn.r, warn.g, warn.b, 0.7)
+                Gloss { radius: parent.radius }
+                Row {
+                    id: removeRow
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        // (it stays in the dock, with the running apps, while it's open: just unpinned)
+                        text: String.fromCodePoint(win.dragRunning ? 0xED5F : 0xEB41)     // pinned-off / trash
+                        color: removeTip.warn
+                        font.family: "slate-tabler-icons"
+                        font.pixelSize: 15
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: win.dragRunning ? "Unpin" : "Remove from Dock"
+                        color: removeTip.warn
+                        font.family: Config.s.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                    }
+                }
+            }
+            ParallelAnimation {
+                id: land
+                NumberAnimation { id: landX; target: floater; property: "x"; duration: Config.ms(180); easing.type: Easing.OutCubic }
+                NumberAnimation { id: landY; target: floater; property: "y"; duration: Config.ms(180); easing.type: Easing.OutCubic }
+                NumberAnimation { id: landW; target: floater; property: "width"; duration: Config.ms(180); easing.type: Easing.OutCubic }
+                onFinished: {
+                    win.finishDrag();
+                    // (back to following the pointer, for the next drag)
+                    floater.width = Qt.binding(() => dragPop.liftSize);
+                    floater.x = Qt.binding(() => win.dragScreen.x - floater.width / 2);
+                    floater.y = Qt.binding(() => win.dragScreen.y - floater.height / 2);
+                }
+            }
+        }
+
+        PanelWindow {
             id: previewPop
             screen: win.screen
             property real atX: 0          // by the icon, just off the dock (screen coordinates)
             property real atY: 0
             readonly property var wins: win.previewApp ? win.previewApp.windows : []
-            visible: !!win.previewApp && wins.length > 0
+            visible: !!win.previewApp && wins.length > 0 && win.dragKey === ""
             anchors { top: true; bottom: true; left: true; right: true }
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
@@ -1458,19 +1648,22 @@ ShellRoot {
                 pressedAt = Qt.point(m.x, m.y);
                 dragged = false;
                 const sl = win.slotAt(win.hoveredIndex);
-                win.dragCandidate = m.button === Qt.LeftButton && sl && sl.kind === "app" && sl.item.pinned ? sl.item.key : "";
+                win.dragCandidate = m.button === Qt.LeftButton && sl && sl.kind === "app" ? sl.item.key : "";
             }
             onPositionChanged: m => {
                 win.setPointer(stripX(m));
-                if (!pressed || win.dragCandidate === "") return;
+                if (!pressed || win.dragCandidate === "" || win.landing) return;
                 if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > 8) {
                     dragged = true;
-                    win.dragKey = win.dragCandidate;
-                    win.previewApp = null;
+                    win.startDrag(win.dragCandidate);
                 }
-                if (dragged) win.dragTo(strip.mapFromItem(mouse, m.x, m.y));
+                if (dragged) {
+                    win.dragScreen = win.toScreen(mouse.mapToItem(win.contentItem, m.x, m.y));
+                    win.dragTo(strip.mapFromItem(mouse, m.x, m.y));
+                }
             }
             onReleased: win.endDrag()
+            onCanceled: win.endDrag()           // (a drag cut short ends as if let go, never stuck)
             onExited: holdTimer.restart()
             onClicked: m => {
                 if (dragged) return;            // a drag, not a click
@@ -1546,6 +1739,7 @@ ShellRoot {
         }
 
         function clickItem(i, right) {
+            if (dragKey !== "") return;                     // (a right-click mid-drag opens no menu)
             if (i < 0) return;
             if (i === launcherIndex) {
                 // The launcher button: opens the launcher; right-click for shortcuts to Settings pages
@@ -1599,8 +1793,9 @@ ShellRoot {
             Item {
                 id: hitArea
                 x: (strip.width - width) / 2
-                width: Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
-                height: !win.shown ? 2 : (win.hover > 0 ? strip.height : win.dockHeight + win.bottomGap)
+                // (while dragging: the whole window, so the app can be carried anywhere above the dock)
+                width: win.dragKey !== "" ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
+                height: !win.shown ? 2 : win.dragKey !== "" ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight + win.bottomGap)
                 y: strip.height - height
             }
 
@@ -1624,6 +1819,57 @@ ShellRoot {
                     bottomRightRadius: 0
                     color: win.bgColor
                     Gloss { radius: parent.radius }   // glass: a sheen
+                }
+
+                // Where a dragged app will go: a faint tile in the gap the others make for it
+                Rectangle {
+                    id: dragGap
+                    visible: win.dragKey !== "" && win.gapOpen > 0.02
+                    opacity: win.gapOpen
+                    width: win.gapWidth; height: width
+                    // (between the slots either side, as gapPos slides from one to the next)
+                    x: {
+                        const a = Math.floor(win.gapPos), b = Math.ceil(win.gapPos), f = win.gapPos - a;
+                        return row.x + win.cellX(a) * (1 - f) + win.cellX(b) * f;
+                    }
+                    y: row.y + row.height - height
+                    radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                    // Without glass: the theme's own shades (Config.tint: light or dark, and the
+                    // wallpaper's tint), a slot a shade off the dock with an edge past the tiles'.
+                    // With glass: frosted, like the tiles
+                    color: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.07) : Config.tint("#181c22")
+                    // The edge: solid on glass, dashed when flat (edgeColor, drawn below)
+                    readonly property color edgeColor: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.3) : Config.tint("#3d4553")
+                    border.width: Config.glass ? 1.5 : 0
+                    border.color: edgeColor
+                    Shape {
+                        visible: !Config.glass
+                        anchors.fill: parent
+                        preferredRendererType: Shape.CurveRenderer
+                        ShapePath {
+                            strokeColor: dragGap.edgeColor
+                            strokeWidth: 1.5
+                            strokeStyle: ShapePath.DashLine
+                            dashPattern: [3, 2.5]
+                            fillColor: "transparent"
+                            PathRectangle {
+                                x: 0.75; y: 0.75
+                                width: dragGap.width - 1.5; height: dragGap.height - 1.5
+                                radius: Math.max(0, dragGap.radius - 0.75)
+                            }
+                        }
+                    }
+                    // A faint "drop here", in the edge's colour
+                    Text {
+                        id: dropGlyph
+                        anchors.centerIn: parent
+                        text: String.fromCodePoint(0xEB88)      // drag-drop-2
+                        color: dragGap.edgeColor
+                        font.family: "slate-tabler-icons"
+                        font.pixelSize: Math.round(dragGap.width * 0.45)
+                        // Upright for the dock's edge, as its icons are
+                        transform: Matrix4x4 { matrix: win.upright(dropGlyph.width, dropGlyph.height) }
+                    }
                 }
 
                 Row {
@@ -1924,6 +2170,11 @@ ShellRoot {
                             Component.onCompleted: if (windowCount > 0) win.endLaunch(cell.app.key)
                             width: win.base * win.slotWidth(modelData.at) * s
                             height: row.height
+                            // Moved along to open the gap for an app being dragged in: sliding when the
+                            // gap opens, closes or moves past it, at once as the gap grows and shrinks
+                            property real past: win.gapAt >= 0 && cell.modelData.at >= win.gapAt ? 1 : 0
+                            Behavior on past { enabled: !win.settling; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+                            transform: Translate { x: cell.past * (win.gapWidth + win.spacing) }
 
                             // A divider: a faint line across the dock, between the pinned apps and
                             // the others (and before Downloads and the Waste Basket)
@@ -2027,6 +2278,12 @@ ShellRoot {
 
                         }
                     }
+                    // Room for the gap (the apps after it have moved along into this)
+                    Item {
+                        width: win.gapOpen * win.gapWidth
+                        height: 1
+                        visible: win.dragKey !== ""
+                    }
                     // Downloads: a stack, the folder-and-arrow on a tile like the launcher button's
                     Item {
                         visible: win.downloadsShown
@@ -2095,8 +2352,7 @@ ShellRoot {
                 // App name above the icon under the pointer
                 Rectangle {
                     id: label
-                    readonly property string text: win.dragAway ? "Remove from Dock"
-                        : win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
+                    readonly property string text: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                         : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                         : win.trashShown && win.hoveredIndex === win.trashIndex
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
@@ -2106,7 +2362,8 @@ ShellRoot {
                             ? (win.slotAt(win.hoveredIndex).item.entry?.name ?? win.slotAt(win.hoveredIndex).item.key) : "")
                     readonly property real iconSize: win.hoveredIndex >= 0 ? win.base * win.scaleAt(win.hoveredIndex) : 0
                     readonly property real slotLength: win.hoveredIndex >= 0 ? iconSize * win.slotWidth(win.hoveredIndex) : 0
-                    visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible
+                    // (not while dragging: the dragged app says so itself, dragPop)
+                    visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible && win.dragKey === ""
                     width: labelText.implicitWidth + 16
                     height: labelText.implicitHeight + 8
                     radius: 6

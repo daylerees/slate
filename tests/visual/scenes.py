@@ -82,6 +82,16 @@ for _p in settings_pages():
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
+# An app held up off the dock while it's dragged: the gap it'd go into, with its placeholder
+# (dashed on a plain dock, frosted on glass). Put back where it was after.
+_DRAG = {
+    "do": [("test", "dockDrag", "foot", 1, 40)],
+    "wait": lambda st: st["dock"]["dragging"] == "foot", "settle": 1.5,
+    "undo": [("test", "dockDrag", "foot", 1, 0), ("test", "dockDrop")],
+}
+SCENES["dock-drag"] = dict(_DRAG)
+SCENES["dock-drag-glass"] = dict(_DRAG, settings={"glass": "true"}, settle=5)
+
 # A changed setting: the dot after its label, saying it isn't the default
 SCENES["settings-changed-dot"] = {
     "settings": {"dockPreviewDelay": "1.2"},
@@ -129,3 +139,4 @@ SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
 
 # The launcher's scrollbar: its length follows how many apps have loaded so far
 SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]
+

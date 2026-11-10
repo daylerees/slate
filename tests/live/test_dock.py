@@ -132,3 +132,79 @@ class Badges(LiveCase):
         self.go("workspace = 9")
         self.s.settle(0.5)
         self.assertEqual(self.foot_badge(self.s.state()), 0, "the one that came while you were there counts as seen")
+
+
+class Dragging(LiveCase):
+    """Dragging apps on the dock: a running app pinned by dropping it among the pinned ones,
+    moved along them, and unpinned by pulling it well up off the dock (it stays, running)."""
+    KEY = "slate-test-app"
+
+    def setUp(self):
+        super().setUp()
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id %s")' % self.KEY)
+        self.wait(lambda st: self.slot(st) is not None, "the app on the dock", timeout=10)
+
+    def tearDown(self):
+        # (unpinned again, and closed)
+        st = self.s.state()
+        if self.KEY in st["dock"]["pinned"]:
+            self.ipc("test", "dockDrag", self.KEY, 0, 400)
+            self.ipc("test", "dockDrop")
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c["class"] == self.KEY:
+                self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.close({ window = [=[address:%s]=] }))" % c["address"])
+        super().tearDown()
+
+    def slot(self, st):
+        return next((x for x in st["dock"]["slots"] if x["kind"] == "app" and x["key"] == self.KEY), None)
+
+    def at(self, st, key):
+        return next(x["at"] if "at" in x else i for i, x in enumerate(st["dock"]["slots"]) if x.get("key") == key)
+
+    def test_pin_move_unpin(self):
+        st = self.s.state()
+        self.assertFalse(self.slot(st)["pinned"])
+        foot = self.at(st, "foot")
+        # Held over foot (before its middle): it'd go first, and the dock makes room
+        self.ipc("test", "dockDrag", self.KEY, foot, 0)
+        st = self.wait(lambda st: st["dock"]["dragging"] == self.KEY and st["dock"]["dropIndex"] == 0, "a place among the pinned apps")
+        self.assertIsNone(self.slot(st), "the app being dragged leaves its slot")
+        self.ipc("test", "dockDrop")
+        self.wait(lambda st: st["dock"]["pinned"][:2] == [self.KEY, "foot"] and st["dock"]["dragging"] == "", "it pinned, first")
+        # Moved past foot
+        st = self.s.state()
+        self.ipc("test", "dockDrag", self.KEY, self.at(st, "foot") + 1, 0)
+        self.ipc("test", "dockDrop")
+        self.wait(lambda st: st["dock"]["pinned"][:2] == ["foot", self.KEY], "it moved after foot")
+        # Pulled well up off the dock: unpinned, but still on the dock as it's running
+        self.ipc("test", "dockDrag", self.KEY, 0, 400)
+        self.wait(lambda st: st["dock"]["dragAway"], "far enough to unpin")
+        self.ipc("test", "dockDrop")
+        st = self.wait(lambda st: self.KEY not in st["dock"]["pinned"] and st["dock"]["dragging"] == "", "it unpinned")
+        self.assertIsNotNone(self.slot(st), "a running app stays on the dock")
+        self.assertFalse(self.slot(st)["pinned"])
+
+    def test_running_app_beside_the_dock_goes_back(self):
+        self.ipc("test", "dockDrag", self.KEY, -1, 0)
+        st = self.wait(lambda st: st["dock"]["dragging"] == self.KEY)
+        self.assertEqual(st["dock"]["dropIndex"], -1, "not over the pinned apps")
+        self.ipc("test", "dockDrop")
+        st = self.wait(lambda st: st["dock"]["dragging"] == "" and self.slot(st) is not None, "it back in its place")
+        self.assertFalse(self.slot(st)["pinned"])
+
+
+class DraggingTheOnlyPin(LiveCase):
+    def test_gap_where_it_was(self):
+        """The only pinned app picked up (nothing running, so the dividers go): its gap opens where
+        it was, after the Apps button, not past the trash (as it did)."""
+        st = self.s.state()
+        launcher = next(i for i, x in enumerate(st["dock"]["slots"]) if x["kind"] == "launcher")
+        self.ipc("test", "dockDrag", "foot", launcher + 1, 0)
+        try:
+            st = self.wait(lambda st: st["dock"]["dragging"] == "foot")
+            self.assertEqual(st["dock"]["dropIndex"], 0)
+            self.assertEqual(st["dock"]["gapAt"], launcher + 1)
+        finally:
+            self.ipc("test", "dockDrag", "foot", launcher + 1, 0)
+            self.ipc("test", "dockDrop")
+            self.wait(lambda st: st["dock"]["dragging"] == "" and st["dock"]["pinned"] == ["foot"], "foot back")
