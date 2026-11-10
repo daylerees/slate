@@ -1,7 +1,8 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
 Status: **planned** (2026-11-10), nothing built. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
-accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided. Researched against Slate at `06cb8c1`, Hyprland
+accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
+([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
 specification of 2026-07-28. Each claim about another program says whether it was **checked**
 (read in its documentation or its `--help`, sources at the end), or is an **assumption** to
@@ -659,10 +660,33 @@ a bar panel, so the panel layout rule doesn't apply; nothing here needs a `Popou
 - **Summoning.** A `GlyphButton` on the menu bar beside Apps and Spaces (`barShowAssistant`,
   shown only while the assistant is switched on), and **Super+K**: checked free in all three
   key sets in `binds.lua` (Slate's, Hyprland's, and Hyprland's with extras), bound as
-  `hl.dsp.exec_cmd(slate("assistant toggle"))` with the description "Slate: Ask the
-  assistant" in `SHORTCUT_DESCRIPTIONS`. IPC target `assistant`: `toggle`, `open`, `close`,
+  `hl.dsp.exec_cmd(slate("assistant toggle"))` with the description "Slate: Ask Chalk" in
+  `SHORTCUT_DESCRIPTIONS`. IPC target `assistant`: `toggle`, `open`, `close`,
   `ask <text>` (open and send, which is also the door for voice later), `stop`, and the
   server's `status`, `confirm`, `answer`, `did`.
+- **The Copilot key, and other assistant keys.** If the keyboard has one, it summons Chalk
+  too, in all three key sets, with nothing to set up. Two binds beside Super+K, both to
+  `assistant toggle`:
+  - `XF86Assistant`, for keyboards and laptops whose key reports itself as an assistant key
+    (**checked** here, xkeyboard-config 2.49 and libxkbcommon 1.13: the kernel's
+    `KEY_ASSISTANT` maps to the `XF86Assistant` keysym);
+  - `SUPER + SHIFT + code:201`, for the Copilot key on recent Windows laptops, which doesn't
+    send a key of its own: it presses Left Super, Left Shift and F23 together (**from memory,
+    not checked** against a real one; keycode 201 is F23, **checked**). Bound by keycode, as
+    the digit keys already are, so it works whatever the installed keyboard tables call it:
+    xkeyboard-config 2.49 names Shift+Super+F23 `XF86Assistant` (**checked**), older ones on
+    slower-moving distros still call F23 "touchpad off" (**assumption**).
+
+  Neither is bound to anything in Slate today (**checked**: no `XF86Assistant` or F23 in
+  `binds.lua`). Both get the description "Slate: Ask Chalk" and appear in Settings →
+  Shortcuts as "Copilot key" and "Assistant key", so they can be turned to something else by
+  anyone who'd rather. With the assistant switched off, the key does what Super+K does: opens
+  the window with the "not switched on yet" line, never a dead key. Not bound:
+  `KEY_VOICECOMMAND` ("listening voice command"), which is kept for voice. **To check on real
+  hardware** (none here has the key): that Hyprland matches the Copilot chord with a keycode
+  bind while the key's own Super and Shift are held; that releasing it doesn't leave Super
+  stuck or open anything bound to Super alone; whether some laptops send something else
+  again (a vendor's own key code), which `wev` on that machine would show.
 - **Asking.** One line to type in ("What would you like to do?"), Enter sends. Under it, once
   there's something to show:
   - the **answer**, as it arrives. **Plain text**, not Markdown: Qt's rich text would load any
@@ -828,7 +852,8 @@ on the server's refuse list.
 - **Live, `tests/live/test_assistant.py`**: turning the switch on shows the risks question and
   nothing is on until it's answered; Cancel leaves it off; Switch on records the version; a
   higher version asks again; choosing an agent with its own tools asks, once;
-  `assistant toggle/open/close`; opening closes the
+  `assistant toggle/open/close`; Super+K, `XF86Assistant` and the Copilot chord are each
+  bound to it in all three key sets (`hyprctl binds -j`); opening closes the
   launcher and the reverse; switched off shows the "not switched on" state and hides the bar
   button; `assistant confirm` shows the question in PowerConfirm (`state().asking`), `test
   answer` resolves it and `assistant answer` reports it; a withdrawn question goes away; the
@@ -896,7 +921,9 @@ Each step leaves something that works and can be committed alone.
    visual tests, baselines, the full run. `feat(assistant): ask your own agent to do things
    on your desktop`. Site and docs for the whole feature.
 6. **Codex**, on a machine that has it; then the Connect fallback if it's needed.
-7. Later, each its own decision: Antigravity; a local model; the API adapter; undo for a
+7. Later, each its own decision: Markdown in answers
+   ([assistant-markdown-support.md](assistant-markdown-support.md)); a sound for Chalk
+   answering ([assistant-sounds.md](assistant-sounds.md)); Antigravity; a local model; the API adapter; undo for a
    setting change from the action list; voice; Wi-Fi, Bluetooth, the dock and the waste
    basket; a name and icon of the assistant's own in the Welcome window. **Not on this list:**
    "look at my screen". A screenshot returned to the agent is ruled out by "No spying", not
@@ -945,9 +972,10 @@ things to check while building, below. Each can be reopened once the feature can
 | The name | **Chalk** | "Names", above |
 | The Settings page's name | **Assistant** | A plain noun people will search for; "Chalk" is in its first line and search words, and the window and bar button say "Ask Chalk" |
 | The shortcut | **Super+K** | Free in all three key sets |
+| A Copilot or assistant key, where the keyboard has one | **Summons Chalk too** | It's what the key is for, and it costs two binds (part 5) |
 | Where the bar button sits | **With Apps and Spaces**, at the start of the bar | It opens something you act with; it isn't a status |
-| Markdown in answers? | **Plain text** | Rich text would load an image a misled model linked to; a safe subset can follow |
-| New sounds? | **Not now** | Opening is a press (click), questions play attention, an answer out of sight is a notification |
+| Markdown in answers? | **Plain text** | Rich text would load an image a misled model linked to. A safe subset is planned for later: [assistant-markdown-support.md](assistant-markdown-support.md) |
+| New sounds? | **Not now** | Opening is a press (click), questions play attention, an answer out of sight is a notification. A sound for Chalk answering is planned for later: [assistant-sounds.md](assistant-sounds.md) |
 
 ## What was checked, and what wasn't
 
@@ -974,6 +1002,8 @@ Not checked, to settle while building:
   tools.
 - Ollama and local models: everything (third-party pages only).
 - How the `hl.dsp.window.*` dispatchers take a window by address.
+- The Copilot key on real hardware: what it sends, that the keycode bind catches it, and that
+  nothing is left held afterwards.
 - Whether the hot corner settings can hold a command; which numeric settings Slate clamps.
 - How many settings `settings-index.py` can link to a key.
 - Whether the `mcp` Python SDK is packaged on the target distros (assumed not worth relying on).
