@@ -1091,17 +1091,78 @@ FloatingWindow {
     }
     // One setting: label + description on the left, a control on the right
     component SettingRow: Item {
+        id: settingRow
         property string label
         property string detail: ""
         default property alias control: controlSlot.data
+        // The Slate setting this row changes (its name in SettingsData), for the mark that shows
+        // it's been changed from its default; defaultText says what that default is, when the
+        // row can't work it out (a switch: On/Off; a slider: its value, as the slider shows it)
+        property string settingKey: ""
+        property string defaultText: ""
+        readonly property bool changed: settingKey !== "" && Config.defaultOf(settingKey) !== undefined
+            && !Config.sameValue(Config.s[settingKey], Config.defaultOf(settingKey))
+        readonly property string defaultShown: {
+            if (defaultText !== "") return defaultText;
+            const d = settingKey !== "" ? Config.defaultOf(settingKey) : undefined;
+            if (typeof d === "boolean") return d ? "On" : "Off";
+            if (typeof d === "number") {
+                const sl = controlSlot.children.length ? controlSlot.children[0] : null;
+                if (sl && sl.suffix !== undefined) {
+                    if (sl.zeroText && d <= sl.from) return sl.zeroText;
+                    return d.toFixed(sl.decimals || 0) + sl.suffix;
+                }
+                return String(d);
+            }
+            return d === undefined || d === "" ? "none" : String(d);
+        }
         width: parent ? parent.width : 0
         height: Math.max(56, labels.implicitHeight + 24, controlSlot.height + 24)
         Column {
             id: labels
             anchors { left: parent.left; leftMargin: 16; right: controlSlot.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
             spacing: 2
-            Text { width: parent.width; text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+            Text {
+                id: labelText
+                // (room left after the name for the changed-from-default dot)
+                width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 18 : 0))
+                text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
+            }
             Text { width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
+        }
+        // Changed from its default: a small dot after the name. Pointed at, it says what the
+        // default is; clicked, it puts it back. (The row comes above its neighbours meanwhile, so
+        // the bubble isn't drawn under them)
+        z: dotHover.hovered ? 5 : 0
+        Rectangle {
+            id: changedDot
+            visible: settingRow.changed
+            x: labels.x + labelText.width + 8
+            y: labels.y + labelText.height / 2 - height / 2
+            width: 6; height: 6; radius: 3
+            color: win.accent
+            scale: dotHover.hovered ? 1.4 : 1
+            Behavior on scale { NumberAnimation { duration: Config.ms(100) } }
+            HoverHandler { id: dotHover; margin: 6; cursorShape: Qt.PointingHandCursor }
+            ClickTap { margin: 6; onTapped: Config.resetKeys([settingRow.settingKey]) }
+        }
+        Rectangle {
+            visible: changedDot.visible && dotHover.hovered
+            z: 2
+            x: changedDot.x + 14
+            y: changedDot.y + changedDot.height / 2 - height / 2
+            width: tipText.implicitWidth + 14; height: tipText.implicitHeight + 8
+            radius: 6
+            // The theme's own shades (Config.tint: light or dark, and the wallpaper's tint)
+            color: Config.tint("#262c35")
+            border.width: 1; border.color: Config.tint("#3d4553")
+            Text {
+                id: tipText
+                anchors.centerIn: parent
+                text: "Default: " + settingRow.defaultShown + "  ·  click to use it"
+                color: win.text
+                font.family: win.font; font.pixelSize: 11
+            }
         }
         Item {
             id: controlSlot
@@ -1114,6 +1175,7 @@ FloatingWindow {
     component ToggleSetting: SettingRow {
         id: toggleRow
         property string key
+        settingKey: key
         Toggle { checked: Config.s[toggleRow.key]; onToggled: v => Config.s[toggleRow.key] = v }
     }
     component Toggle: Rectangle {
@@ -1340,6 +1402,8 @@ FloatingWindow {
         }
 
         SettingRow {
+            settingKey: fontSetting.key
+            defaultText: fontSetting.defaultFont || "the system font"
             label: fontSetting.label
             detail: fontSetting.detail
             Row {
@@ -1420,11 +1484,18 @@ FloatingWindow {
         property var value
         property bool open: false
         signal picked(var value)
+        property string settingKey: ""          // (as SettingRow's: the changed-from-default mark)
         width: parent ? parent.width : 0
         readonly property var current: options.find(o => o.value === value) ?? null
         SettingRow {
             label: choiceSetting.label
             detail: choiceSetting.detail
+            settingKey: choiceSetting.settingKey
+            defaultText: {
+                const d = choiceSetting.settingKey !== "" ? Config.defaultOf(choiceSetting.settingKey) : undefined;
+                const o = d === undefined ? null : choiceSetting.options.find(x => x.value === d);
+                return o ? o.label : "";
+            }
             Button {
                 label: (choiceSetting.current ? choiceSetting.current.label : String(choiceSetting.value)) + (choiceSetting.open ? "  ▴" : "  ▾")
                 primary: choiceSetting.open
@@ -1461,6 +1532,7 @@ FloatingWindow {
         property var options: []
         property var value
         signal picked(var value)
+        property string settingKey: ""          // (as SettingRow's: the changed-from-default mark)
         readonly property var current: options.find(o => o.value === value) ?? null
         // Shown when the value isn't one of the options (it isn't offered in the list itself)
         property string noneLabel: ""
@@ -1471,6 +1543,12 @@ FloatingWindow {
           id: ddRow
           label: dropdown.label
           detail: dropdown.detail
+          settingKey: dropdown.settingKey
+          defaultText: {
+              const d = dropdown.settingKey !== "" ? Config.defaultOf(dropdown.settingKey) : undefined;
+              const o = d === undefined ? null : dropdown.options.find(x => x.value === d);
+              return o ? o.label : "";
+          }
           Rectangle {
             id: ddButton
             readonly property bool open: dropLayer.owner === dropdown
@@ -1858,6 +1936,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Clipboard history"
+                    settingKey: "clipboardHistory"
                     detail: Config.s.clipboardHistory
                         ? "Keep the last 100 things you copy, text and images (Super+V, or the bar's clipboard). Passwords copied from password managers are never kept"
                         : "Off: nothing you copy is kept. Anything kept before stays until you clear it"
@@ -2039,12 +2118,14 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Warmth"
+                    settingKey: "nightLightTemperature"
                     detail: "Colour temperature: lower is warmer"
                     ValueSlider { from: 2500; to: 6000; stepSize: 100; suffix: " K"; value: Config.s.nightLightTemperature; onMoved: v => Config.s.nightLightTemperature = v }
                 }
                 Separator {}
                 DropdownSetting {
                     label: "Schedule"
+                    settingKey: "nightLightSchedule"
                     detail: {
                         if (Config.s.nightLightSchedule === "sun") {
                             if (Config.s.locationName === "") return "Set your location above first";
@@ -2062,6 +2143,7 @@ FloatingWindow {
                 ChoiceSetting {
                     visible: Config.s.nightLightSchedule === "custom"
                     label: "Turn on at"
+                    settingKey: "nightLightFrom"
                     value: Config.s.nightLightFrom
                     options: win.halfHours(16, 23.5)
                     onPicked: v => Config.s.nightLightFrom = v
@@ -2070,6 +2152,7 @@ FloatingWindow {
                 ChoiceSetting {
                     visible: Config.s.nightLightSchedule === "custom"
                     label: "Turn off at"
+                    settingKey: "nightLightTo"
                     value: Config.s.nightLightTo
                     options: win.halfHours(4, 10.5)
                     onPicked: v => Config.s.nightLightTo = v
@@ -2087,6 +2170,8 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Position"
+                    settingKey: "barPosition"
+                    defaultText: { const d = Config.defaultOf("barPosition"); return d.charAt(0).toUpperCase() + d.slice(1); }
                     detail: "Click an edge. The dock is at the " + Config.s.dockPosition + "; if you pick its edge, it moves to the opposite one. On the left or right, the status icons drop their text and the window title turns to run along the bar"
                     EdgePicker { accent: win.accent; bar: true; edge: Config.s.barPosition; onPicked: e => Config.moveBar(e) }
                 }
@@ -2132,6 +2217,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.barShowTitle
                     label: "App icon"
+                    settingKey: "barShowTitleIcon"
                     detail: "The focused app's icon before its title"
                     Toggle { checked: Config.s.barShowTitleIcon; onToggled: v => Config.s.barShowTitleIcon = v }
                 }
@@ -2147,6 +2233,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.barShowTray
                     label: "Tuck the tray away"
+                    settingKey: "barTrayCollapsed"
                     detail: "Show one button that opens to reveal the tray icons, and closes again after a few seconds"
                     Toggle { checked: Config.s.barTrayCollapsed; onToggled: v => Config.s.barTrayCollapsed = v }
                 }
@@ -2189,6 +2276,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Keyboard layout"
+                    settingKey: "barShowKeyboard"
                     detail: Config.kbLayoutList.length > 1 ? "The layout in use; click to switch, scroll to cycle"
                         : "Shows once you have more than one layout (Keyboard & Mouse settings)"
                     Toggle { checked: Config.s.barShowKeyboard; onToggled: v => Config.s.barShowKeyboard = v }
@@ -2264,6 +2352,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Time format"
+                    settingKey: "barClockFormat"
                     options: [{ value: "12h", label: "12-hour (6:30 PM)" }, { value: "24h", label: "24-hour (18:30)" }]
                     value: Config.s.barClockFormat
                     onPicked: v => Config.s.barClockFormat = v
@@ -2292,6 +2381,8 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Position"
+                    settingKey: "dockPosition"
+                    defaultText: { const d = Config.defaultOf("dockPosition"); return d.charAt(0).toUpperCase() + d.slice(1); }
                     detail: "Click an edge. The menu bar is at the " + Config.s.barPosition + "; if you pick its edge, it moves to the opposite one"
                     EdgePicker { accent: win.accent; bar: false; edge: Config.s.dockPosition; onPicked: e => Config.moveDock(e) }
                 }
@@ -2304,6 +2395,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Window previews"
+                    settingKey: "dockPreviewDelay"
                     detail: "How long to pause on an app with windows open before they show; click one to go to it (titles only, in game mode)"
                     ValueSlider { from: 0; to: 3; stepSize: 0.1; decimals: 1; suffix: " s"; zeroText: "Off"; value: Config.s.dockPreviewDelay; onMoved: v => Config.s.dockPreviewDelay = v }
                 }
@@ -2335,6 +2427,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.dockShowMedia
                     label: "Album art"
+                    settingKey: "dockMediaArt"
                     detail: "The track's artwork beside the controls; off, just the controls"
                     Toggle { checked: Config.s.dockMediaArt; onToggled: v => Config.s.dockMediaArt = v }
                 }
@@ -2355,17 +2448,20 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Icon size"
+                    settingKey: "dockIconSize"
                     ValueSlider { from: 28; to: 64; stepSize: 1; suffix: " px"; value: Config.s.dockIconSize; onMoved: v => Config.s.dockIconSize = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Magnification"
+                    settingKey: "dockMagnification"
                     detail: "How large the icon under the pointer grows"
                     ValueSlider { from: 1; to: 2.5; stepSize: 0.05; decimals: 2; suffix: "×"; value: Config.s.dockMagnification; onMoved: v => Config.s.dockMagnification = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Magnification spread"
+                    settingKey: "dockSpread"
                     detail: "How many neighbouring icons rise in the arc"
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
                 }
@@ -2428,6 +2524,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Start after"
+                    settingKey: "screensaverMinutes"
                     detail: Config.s.idleLockMinutes > 0 && Config.s.screensaverMinutes >= Config.s.idleLockMinutes
                         ? "The screen locks at " + Config.s.idleLockMinutes + " minutes (Lock & idle), so it won't show"
                         : "Of no input. Video and apps that keep the screen awake hold it off"
@@ -2439,6 +2536,7 @@ FloatingWindow {
                 DropdownSetting {
                     // The background; whether there's a clock on it is Show the clock, below
                     label: "Style"
+                    settingKey: "screensaverStyle"
                     options: [{ value: "drift", label: "Your wallpaper" },
                               { value: "slideshow", label: "Wallpaper slideshow" },
                               { value: "videos", label: "Videos" },
@@ -2510,6 +2608,7 @@ FloatingWindow {
                     visible: Config.s.screensaverStyle === "videos"
                     readonly property var names: ({ "2160p": "4K", "1440p": "1440p", "1080p": "1080p" })
                     label: "Scenery quality"
+                    settingKey: "screensaverVideoQuality"
                     detail: "For Get scenery videos: sharper is bigger (4K is about 1.1 GB in all, 1440p about 780 MB, 1080p about 410 MB). Choosing a higher one and getting them again replaces only the clips that get sharper"
                     options: [{ value: "auto", label: "Automatic (" + names[Config.screenSceneryQuality] + " for this screen)" },
                               { value: "2160p", label: "4K" }, { value: "1440p", label: "1440p" }, { value: "1080p", label: "1080p" }]
@@ -2519,6 +2618,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Show the clock"
+                    settingKey: "screensaverClock"
                     detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
                         : "The time and date in the middle"
                     Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
@@ -2527,6 +2627,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: Config.s.screensaverStyle === "slideshow"
                     label: "Change picture every"
+                    settingKey: "screensaverSlideSeconds"
                     options: [10, 20, 30, 60, 120, 300].map(s => ({ value: s, label: s < 60 ? s + " seconds" : (s / 60) + (s === 60 ? " minute" : " minutes") }))
                     value: Config.s.screensaverSlideSeconds
                     onPicked: v => Config.s.screensaverSlideSeconds = v
@@ -2558,6 +2659,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Layout"
+                    settingKey: "launcherLayout"
                     detail: Config.s.launcherLayout === "grid"
                         ? "Apps as a grid of icons, with the selected one's name along the bottom. Arrow keys move around it; Ctrl+Left/Right opens an app on a new workspace beside this one"
                         : "Apps in a list, with descriptions. Left/Right opens an app on a new workspace beside this one"
@@ -2606,6 +2708,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.launcherLayout === "grid"
                     label: "Columns"
+                    settingKey: "launcherColumns"
                     detail: "Apps across the grid; the icons get smaller the more there are"
                     ValueSlider { from: 3; to: 10; stepSize: 1; value: Config.s.launcherColumns; onMoved: v => Config.s.launcherColumns = Math.round(v) }
                 }
@@ -2613,12 +2716,14 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.launcherLayout === "grid"
                     label: "Rows"
+                    settingKey: "launcherRows"
                     detail: "Rows shown at once, which sets the launcher's height (scroll for more)"
                     ValueSlider { from: 2; to: 8; stepSize: 1; value: Config.s.launcherRows; onMoved: v => Config.s.launcherRows = Math.round(v) }
                 }
                 Separator {}
                 SettingRow {
                     label: "Show descriptions"
+                    settingKey: "launcherDescriptions"
                     detail: Config.s.launcherLayout === "grid" ? "What the selected app is, under its name at the bottom" : "A short line under each app's name"
                     Toggle { checked: Config.s.launcherDescriptions; onToggled: v => Config.s.launcherDescriptions = v }
                 }
@@ -2700,6 +2805,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: Config.s.launcherWeb
                     label: "Search engine"
+                    settingKey: "launcherSearchEngine"
                     options: [{ value: "duckduckgo", label: "DuckDuckGo" }, { value: "google", label: "Google" }, { value: "bing", label: "Bing" },
                               { value: "brave", label: "Brave Search" }, { value: "startpage", label: "Startpage" }, { value: "ecosia", label: "Ecosia" }]
                     value: Config.s.launcherSearchEngine
@@ -2918,6 +3024,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: disp.monitors.length > 1
                     label: "Main display"
+                    settingKey: "mainDisplay"
                     detail: "Where the main menu bar lives (every display has a bar; the launcher and other panels open on the display you're using)"
                     options: disp.monitors.filter(m => !m.disabled).map(m => ({ value: m.description || m.name, label: m.name + " · " + disp.displayName(m) }))
                     value: {
@@ -3029,6 +3136,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: inputPane.layouts.length > 1
                     label: "Switch layouts with"
+                    settingKey: "kbSwitch"
                     options: [{ value: "alt_shift", label: "Alt+Shift" }, { value: "ctrl_space", label: "Ctrl+Space" },
                               { value: "caps", label: "Caps Lock" }, { value: "none", label: "No shortcut" }]
                     value: inputPane.switchValue
@@ -3037,6 +3145,7 @@ FloatingWindow {
                 Separator { visible: inputPane.layouts.length > 1 }
                 DropdownSetting {
                     label: "Caps Lock key"
+                    settingKey: "capsLock"
                     detail: inputPane.switchValue === "caps" && inputPane.layouts.length > 1 ? "It switches layouts (above)" : "What the Caps Lock key does"
                     options: [{ value: "default", label: "Caps Lock" }, { value: "ctrl", label: "Another Ctrl" },
                               { value: "escape", label: "Escape" }, { value: "off", label: "Nothing" }]
@@ -3046,6 +3155,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Repeat delay"
+                    settingKey: "keyRepeatDelay"
                     detail: "How long a held key waits before it repeats"
                     ValueSlider {
                         from: 150; to: 1000; stepSize: 25; suffix: " ms"
@@ -3056,6 +3166,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Repeat speed"
+                    settingKey: "keyRepeatRate"
                     detail: "How fast a held key repeats"
                     ValueSlider {
                         from: 10; to: 80; stepSize: 1; suffix: " /s"
@@ -3069,6 +3180,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Pointer speed"
+                    settingKey: "mouseSpeed"
                     detail: inputPane.hasTouchpad ? "Mice and touchpads. Slower to faster; 0 is the device's own speed" : "Slower to faster; 0 is the mouse's own speed"
                     ValueSlider {
                         from: -100; to: 100; stepSize: 5
@@ -3079,6 +3191,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Acceleration"
+                    settingKey: "mouseAccel"
                     detail: "Quick movements carry the pointer further. Off: the same distance however fast you move"
                     Toggle {
                         checked: (Config.s.mouseAccel !== "" ? Config.s.mouseAccel : (inputPane.cur["input:accel_profile"] || "adaptive")) !== "flat"
@@ -3088,6 +3201,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Natural scrolling"
+                    settingKey: "mouseNaturalScroll"
                     detail: "Content moves the way the wheel turns, like a touch screen"
                     Toggle {
                         checked: Config.s.mouseNaturalScroll !== "" ? Config.s.mouseNaturalScroll === "on" : !!inputPane.cur["input:natural_scroll"]
@@ -3097,6 +3211,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Pointer size"
+                    settingKey: "cursorSize"
                     detail: "Apps opened from now on use it too"
                     options: [16, 20, 24, 32, 40, 48, 64].map(n => ({ value: n, label: n + " px" }))
                     value: Config.s.cursorSize > 0 ? Config.s.cursorSize : 20
@@ -3109,6 +3224,7 @@ FloatingWindow {
                 visible: inputPane.hasTouchpad
                 SettingRow {
                     label: "Scroll speed"
+                    settingKey: "touchpadScrollSpeed"
                     ValueSlider {
                         from: 10; to: 200; stepSize: 10; suffix: "%"
                         value: Math.round((Config.s.touchpadScrollSpeed > 0 ? Config.s.touchpadScrollSpeed : (inputPane.cur["input:touchpad:scroll_factor"] || 1)) * 100)
@@ -3118,6 +3234,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Natural scrolling"
+                    settingKey: "touchpadNaturalScroll"
                     detail: "Content follows your fingers, like a phone"
                     Toggle {
                         checked: Config.s.touchpadNaturalScroll !== "" ? Config.s.touchpadNaturalScroll === "on" : !!inputPane.cur["input:touchpad:natural_scroll"]
@@ -3127,6 +3244,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Tap to click"
+                    settingKey: "touchpadTapToClick"
                     Toggle {
                         checked: Config.s.touchpadTapToClick !== "" ? Config.s.touchpadTapToClick === "on" : inputPane.cur["input:touchpad:tap-to-click"] !== false
                         onToggled: v => Config.s.touchpadTapToClick = v ? "on" : "off"
@@ -3135,6 +3253,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Ignore while typing"
+                    settingKey: "touchpadIgnoreWhileTyping"
                     detail: "Stops a palm on the touchpad moving the pointer as you type"
                     Toggle {
                         checked: Config.s.touchpadIgnoreWhileTyping !== "" ? Config.s.touchpadIgnoreWhileTyping === "on" : inputPane.cur["input:touchpad:disable_while_typing"] !== false
@@ -3280,6 +3399,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: powerPane.hasLid
                     label: "Closing the lid"
+                    settingKey: "lidAction"
                     detail: Config.s.lidAction === "" ? "Left to the system (usually suspends)"
                         : "With another screen connected, only the laptop's own screen turns off"
                     options: [{ value: "", label: "System default" }, { value: "suspend", label: "Suspend" }, { value: "lock", label: "Lock the screen" },
@@ -3290,6 +3410,7 @@ FloatingWindow {
                 Separator { visible: powerPane.hasLid }
                 DropdownSetting {
                     label: "Power button"
+                    settingKey: "powerKeyAction"
                     detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
                     options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                               { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]
@@ -3301,6 +3422,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "On battery"
+                    settingKey: "profileOnBattery"
                     detail: "Switched to when you unplug; the control centre can still change it any time"
                     options: powerPane.profileOptions
                     value: Config.s.profileOnBattery
@@ -3309,6 +3431,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Plugged in"
+                    settingKey: "profileOnAC"
                     detail: "Switched to when you plug in"
                     options: powerPane.profileOptions
                     value: Config.s.profileOnAC
@@ -3385,6 +3508,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Shortcut set"
+                    settingKey: "keyset"
                     options: [{ value: "slate", label: "Slate" },
                               { value: "hyprland", label: "Hyprland Defaults" },
                               { value: "hyprland-extras", label: "Hyprland + Slate Extras" }]
@@ -3658,6 +3782,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "After taking one"
+                    settingKey: "screenshotAfter"
                     detail: screenshotsPane.hasSwash ? "Every screenshot is saved to the folder below and copied. Marking one up and saving updates that file"
                         : "Every screenshot is saved to the folder below and copied (swash, for marking up, isn't installed)"
                     options: [{ value: "edit", label: "Open it to mark up" }, { value: "save", label: "Just show a notification" }]
@@ -3667,6 +3792,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Save to"
+                    settingKey: "screenshotFolder"
                     detail: screenshotsPane.folder.replace(screenshotsPane.home, "~")
                     options: [{ value: "", label: "Pictures/Screenshots" }, { value: screenshotsPane.home + "/Pictures", label: "Pictures" },
                               { value: screenshotsPane.home + "/Desktop", label: "Desktop" }, { value: screenshotsPane.home + "/Downloads", label: "Downloads" }]
@@ -3676,6 +3802,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "File names"
+                    settingKey: "screenshotName"
                     options: [{ value: "default", label: "Screenshot " + Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd HH.mm.ss") },
                               { value: "compact", label: Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd_HH-mm-ss") },
                               { value: "gnome", label: "Screenshot from " + Qt.formatDateTime(screenshotsPane.example, "yyyy-MM-dd HH-mm-ss") }]
@@ -3706,6 +3833,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.titleBarsAvailable
                     label: "Window mode"
+                    settingKey: "windowMode"
                     detail: Config.s.windowMode === "floating"
                         ? "Windows open floating and centred, like a traditional desktop. Move them by their title bar or with Super+drag; Super+Alt+Space tiles one"
                         : "Windows tile side by side. Super+drag moves one, Super+Alt+Space floats it"
@@ -3784,6 +3912,7 @@ FloatingWindow {
                     enabled: Config.floatingWindows
                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Title bar buttons"
+                    settingKey: "titleButtons"
                     detail: Config.floatingWindows ? "Which side of a floating window's title bar the close and maximise buttons sit on"
                         : "For the title bars windows have in floating mode: choose Floating above to use it"
                     options: [{ value: "left", label: "Left" }, { value: "right", label: "Right" }]
@@ -3794,6 +3923,7 @@ FloatingWindow {
                 SettingRow {
                     id: focusRow
                     label: "Focus follows the pointer"
+                    settingKey: "focusFollowsMouse"
                     detail: "Windows take the keyboard as the pointer moves over them. Off: click a window to use it (scrolling still reaches the one under the pointer)"
                     property int current: 1
                     Process {
@@ -3809,24 +3939,28 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Window borders"
+                    settingKey: "windowBorderSize"
                     detail: "Around each window when a workspace has more than one (a lone window has none). 0 turns them off"
                     ValueSlider { from: 0; to: 12; stepSize: 1; suffix: " px"; value: Config.s.windowBorderSize; onMoved: v => Config.s.windowBorderSize = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Window spacing"
+                    settingKey: "windowGap"
                     detail: "The gap between windows on a workspace with more than one (the screen edges get a little more). 0 puts them edge to edge"
                     ValueSlider { from: 0; to: 32; stepSize: 2; suffix: " px"; value: Config.s.windowGap; onMoved: v => Config.s.windowGap = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Space around a lone window"
+                    settingKey: "soloWindowGap"
                     detail: "Padding around a window that's alone on its workspace, which then keeps its rounded corners. 0 lets it fill the screen up to the bar. Maximised and full-screen apps always fill it"
                     ValueSlider { from: 0; to: 32; stepSize: 2; suffix: " px"; value: Config.s.soloWindowGap; onMoved: v => Config.s.soloWindowGap = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Dim inactive windows"
+                    settingKey: "inactiveDim"
                     detail: "Darken the windows you're not using, so the focused one stands out (Settings itself never dims). 0 turns it off"
                     ValueSlider { from: 0; to: 80; stepSize: 5; suffix: "%"; value: Config.s.inactiveDim; onMoved: v => Config.s.inactiveDim = v }
                 }
@@ -3861,6 +3995,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Workspace switching"
+                    settingKey: "workspaceAnimation"
                     detail: Config.s.animations === "off" ? "Animations are off, so workspaces switch straight away"
                         : ({ slidefade: "The new workspace slides in over the old one, which fades away underneath",
                              slidefadevert: "The new workspace slides in from above or below over the old one, which fades away",
@@ -3891,6 +4026,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Workspace indicators"
+                    settingKey: "workspaceShape"
                     detail: "The shape of the workspace dots on the bar, the window switcher, the overview and the on-screen display"
                     // Two-way switch: Circles | Squares, each with a small preview
                     Rectangle {
@@ -3948,6 +4084,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Card size"
+                    settingKey: "overviewCardWidth"
                     ValueSlider { from: 480; to: 1000; stepSize: 8; suffix: " px"; value: Config.s.overviewCardWidth; onMoved: v => Config.s.overviewCardWidth = v }
                 }
                 Separator {}
@@ -4001,6 +4138,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Position"
+                    settingKey: "notificationPosition"
                     detail: "Where new notifications appear on screen"
                     // A small screen: click a spot to put notifications there
                     Rectangle {
@@ -4029,12 +4167,14 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Stay on screen for"
+                    settingKey: "notificationSeconds"
                     detail: "When the app doesn't choose its own time"
                     ValueSlider { from: 2; to: 15; stepSize: 1; suffix: " s"; value: Config.s.notificationSeconds; onMoved: v => Config.s.notificationSeconds = v }
                 }
                 Separator {}
                 SettingRow {
                     label: "Most at once"
+                    settingKey: "notificationMaxToasts"
                     ValueSlider { from: 1; to: 8; stepSize: 1; value: Config.s.notificationMaxToasts; onMoved: v => Config.s.notificationMaxToasts = v }
                 }
             }
@@ -4140,6 +4280,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Colour"
+                    settingKey: "colourStyle"
                     detail: Config.colourful ? "More variety of colour: soft pastels, like each Settings page in its own colour"
                         : "The accent colour and greys throughout"
                     options: [{ value: "monotone", label: "Monotone" }, { value: "colourful", label: "Colourful" }]
@@ -4149,6 +4290,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Accent colour from wallpaper"
+                    settingKey: "accentFromWallpaper"
                     detail: "Highlights (switches, sliders, selected items, the active workspace dot) use a bright colour picked from the wallpaper. Off: the colour chosen below"
                     Row {
                         spacing: 12
@@ -4169,6 +4311,7 @@ FloatingWindow {
                     enabled: applies
                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Accent boldness"
+                    settingKey: "accentBoldness"
                     detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
                     ValueSlider {
                         from: 0; to: 100; stepSize: 5; suffix: "%"
@@ -4184,6 +4327,7 @@ FloatingWindow {
                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     SettingRow {
                         label: "Accent colour"
+                        settingKey: "accent"
                         detail: "Used for highlights across the bar, dock, launcher and panels"
                         Row {
                             spacing: 8
@@ -4207,6 +4351,7 @@ FloatingWindow {
                     SettingRow {
                         id: customRow
                         label: "Custom colour"
+                        settingKey: "accent"
                         detail: "Slide to pick a shade, or type a hex code"
                         readonly property color current: Config.s.accent
                         Row {
@@ -4279,6 +4424,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Background tint from wallpaper"
+                    settingKey: "toneFromWallpaper"
                     detail: "The bar, panels and window backgrounds keep their brightness but take on the wallpaper's overall hue. Off: neutral slate"
                     Row {
                         spacing: 12
@@ -4297,6 +4443,7 @@ FloatingWindow {
                     enabled: Config.s.toneFromWallpaper
                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Tint boldness"
+                    settingKey: "toneBoldness"
                     detail: "How much of the wallpaper's colour the backgrounds take, in light and dark mode. 50% is the standard amount"
                     ValueSlider {
                         from: 0; to: 100; stepSize: 5; suffix: "%"
@@ -4346,6 +4493,7 @@ FloatingWindow {
                     DropdownSetting {
                         visible: folderSet.info.supported
                         label: "Folder colour"
+                        settingKey: "folderColour"
                         detail: Config.s.folderColour === "auto" ? "Folders in Nautilus, Dolphin and other file managers, in the Papirus colour closest to the wallpaper's"
                             : "Folders in Nautilus, Dolphin and other file managers"
                         options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
@@ -4367,6 +4515,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Opacity"
+                    settingKey: "glassOpacity"
                     detail: "How much of their colour the surfaces keep: lower is clearer glass"
                     ValueSlider { from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
                 }
@@ -4374,6 +4523,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Blur"
+                    settingKey: "glassBlur"
                     detail: Config.s.glassBlur > 0 ? "How strongly what's behind is blurred (Hyprland's blur, so see-through windows use it too)"
                         : "Hyprland's own blur (size " + Config.hyprBlur.size + "); drag to make it stronger or softer"
                     ValueSlider { from: 0; to: 20; stepSize: 1; value: Config.s.glassBlur; onMoved: v => Config.s.glassBlur = v }
@@ -4382,6 +4532,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Shine"
+                    settingKey: "glassShine"
                     detail: "A thin light rim around the glass, like the edge of a pane"
                     Toggle { checked: Config.s.glassShine; onToggled: v => Config.s.glassShine = v }
                 }
@@ -4389,6 +4540,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Gloss"
+                    settingKey: "glassGloss"
                     detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
                     ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
                 }
@@ -4396,6 +4548,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.glass
                     label: "Gloss colour"
+                    settingKey: "glassGlossTint"
                     detail: "How much colour the sheen takes from what it's on: the wallpaper's colour on glass, a selection's own. 0% for plain white"
                     ValueSlider { from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossTint * 100); onMoved: v => Config.s.glassGlossTint = v / 100 }
                 }
@@ -4404,6 +4557,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Fast blur"
+                    settingKey: "fastBlur"
                     detail: Config.s.fastBlur ? "See-through windows and glass blur just the wallpaper, not the windows under them: far less work, so everything stays smooth"
                         : "See-through windows and glass blur whatever's under them, windows included. Heavier: animations and the pointer can slow down"
                     Toggle { checked: Config.s.fastBlur; onToggled: v => Config.s.fastBlur = v }
@@ -4411,6 +4565,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Blur quality"
+                    settingKey: "blurPasses"
                     detail: "Smoother blur takes more passes, and more work"
                     options: [{ value: 0, label: "Hyprland's own" }, { value: 1, label: "Low (1 pass)" }, { value: 2, label: "Medium (2 passes)" },
                               { value: 3, label: "High (3 passes)" }, { value: 4, label: "Highest (4 passes)" }]
@@ -4499,6 +4654,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Fill the shape"
+                    settingKey: "iconFill"
                     detail: Config.s.iconShape === "original"
                         ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
                         : "Crop each icon's own border and shadow and grow it to fill the shape, on its main colour. Off: the whole icon, smaller, on a plain tile"
@@ -4512,6 +4668,7 @@ FloatingWindow {
                     enabled: applies
                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
                     label: "Tiles in the icon's colour"
+                    settingKey: "iconTileColour"
                     detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
                         : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
                     Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
@@ -4526,6 +4683,7 @@ FloatingWindow {
                 SettingRow {
                     visible: Config.s.tintIcons
                     label: "Tint strength"
+                    settingKey: "iconTintStrength"
                     detail: "A light wash of colour, up to icons drawn entirely in the accent"
                     ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Config.s.iconTintStrength; onMoved: v => Config.s.iconTintStrength = v }
                 }
@@ -4551,6 +4709,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Interface size"
+                    settingKey: "uiScale"
                     detail: "Scales Slate only (the bar, dock, panels, launcher, title bars and this window), on every display, on top of each display's Scale. "
                         + "Apps stay as they are: to make everything larger or smaller, apps included, change Scale in Displays instead. Changing it restarts Slate"
                     ValueSlider {
@@ -4582,6 +4741,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Animations"
+                    settingKey: "animations"
                     detail: "Windows opening, closing and moving, switching workspaces, and Slate's own: panels opening, the bar's groups sliding open, fades and highlights. Faster halves them; Off makes them instant"
                     options: [{ value: "normal", label: "Normal" }, { value: "fast", label: "Faster" }, { value: "off", label: "Off" }]
                     value: Config.s.animations !== "" ? Config.s.animations : "normal"
@@ -4700,6 +4860,7 @@ FloatingWindow {
                 Separator {}
                 DropdownSetting {
                     label: "Change wallpaper"
+                    settingKey: "wallpaperChange"
                     detail: (Config.s.wallpaperChange === "off"
                             ? "Keep the one you pick"
                             : "Switch to another image from this folder, in a shuffled order")
@@ -4727,6 +4888,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: Config.s.wallpaperHideSmall
                     label: "Smallest size"
+                    settingKey: "wallpaperMinSize"
                     detail: "Images narrower or shorter than this are hidden"
                     options: [{ value: "320x240", label: "320 × 240" }, { value: "640x480", label: "640 × 480" }, { value: "800x600", label: "800 × 600" }, { value: "1024x768", label: "1024 × 768" }, { value: "1280x720", label: "1280 × 720" }, { value: "1920x1080", label: "1920 × 1080" }, { value: "2560x1440", label: "2560 × 1440" }]
                     value: Config.s.wallpaperMinSize
@@ -5121,6 +5283,7 @@ FloatingWindow {
             Group {
                 ChoiceSetting {
                     label: "Lock after"
+                    settingKey: "idleLockMinutes"
                     options: lockCol.minutes
                     value: Config.s.idleLockMinutes
                     onPicked: v => Config.s.idleLockMinutes = v
@@ -5128,6 +5291,7 @@ FloatingWindow {
                 Separator {}
                 ChoiceSetting {
                     label: "Turn the screen off after"
+                    settingKey: "idleScreenOffMinutes"
                     detail: "Moving the mouse or pressing a key turns it back on"
                     options: lockCol.minutes
                     value: Config.s.idleScreenOffMinutes
@@ -5136,6 +5300,7 @@ FloatingWindow {
                 Separator {}
                 ChoiceSetting {
                     label: "Suspend after"
+                    settingKey: "idleSuspendMinutes"
                     options: lockCol.minutes
                     value: Config.s.idleSuspendMinutes
                     onPicked: v => Config.s.idleSuspendMinutes = v
@@ -5198,6 +5363,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Delay"
+                    settingKey: "hotCornerDelay"
                     detail: "How long to rest in the corner before it triggers"
                     ValueSlider { from: 0; to: 1500; stepSize: 50; suffix: " ms"; value: Config.s.hotCornerDelay; onMoved: v => Config.s.hotCornerDelay = v }
                 }
@@ -6081,6 +6247,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Log detail"
+                    settingKey: "logLevel"
                     detail: "How much Slate writes to its log. Turn it up while tracking down a problem, then back down. Changing it restarts Slate"
                     options: [{ value: "normal", label: "Normal" }, { value: "detailed", label: "Detailed" }, { value: "everything", label: "Everything" }]
                     value: Config.s.logLevel || "normal"

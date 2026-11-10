@@ -82,6 +82,14 @@ for _p in settings_pages():
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
+# A changed setting: the dot after its label, saying it isn't the default
+SCENES["settings-changed-dot"] = {
+    "settings": {"dockPreviewDelay": "1.2"},
+    "do": [("settings", "page", "dock")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock",
+    "settle": 1.2, "undo": [("settings", "close")],
+}
+
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)
 SCENES["notification-glass"] = {
     "settings": {"glass": "true", "notificationSeconds": "30"},
