@@ -10,6 +10,12 @@ only sign up once, when they start (Electron and Chromium ones), lose their icon
 they're reopened. Run apart (Slate starts it, detached, and it keeps going), the register
 outlives Slate's restarts, and Slate just reads it again.
 
+It always tells apps a tray is showing (IsStatusNotifierHostRegistered), and never that it's
+gone: Electron apps check once as they start, and with no tray yet they never show an icon.
+At login they could start in the moment before Slate's tray signed up (and while Slate
+restarts), and lost their icons until reopened. The register only runs with Slate, and keeps
+their icons until Slate's tray reads them, so the answer is always true in practice.
+
 One copy at a time (it holds org.slate.TrayWatcher too). If the register's name is taken (by
 an older Slate that's still its own register), it waits its turn and takes over when that
 lets go, at Slate's next restart. Items leave the list when their app goes. Needs PyGObject.
@@ -77,7 +83,7 @@ class Watcher:
         if prop == "RegisteredStatusNotifierItems":
             return GLib.Variant("as", self.items)
         if prop == "IsStatusNotifierHostRegistered":
-            return GLib.Variant("b", bool(self.hosts))
+            return GLib.Variant("b", True)          # always (see the top)
         if prop == "ProtocolVersion":
             return GLib.Variant("i", 0)
         return None
@@ -87,7 +93,7 @@ class Watcher:
 
     def changed(self):
         props = {"RegisteredStatusNotifierItems": GLib.Variant("as", self.items),
-                 "IsStatusNotifierHostRegistered": GLib.Variant("b", bool(self.hosts))}
+                 "IsStatusNotifierHostRegistered": GLib.Variant("b", True)}
         self.bus.emit_signal(None, PATH, "org.freedesktop.DBus.Properties", "PropertiesChanged",
                              GLib.Variant("(sa{sv}as)", (NAME, props, [])))
 
@@ -103,8 +109,8 @@ class Watcher:
             self.items.remove(item)
             self.emit("StatusNotifierItemUnregistered", GLib.Variant("(s)", (item,)))
         if name in self.hosts:
+            # Slate's tray going (a restart): not announced, as apps may drop their icons
             self.hosts.remove(name)
-            self.emit("StatusNotifierHostUnregistered", None)
         self.changed()
 
 

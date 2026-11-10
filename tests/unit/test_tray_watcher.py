@@ -109,9 +109,12 @@ class TrayWatcher(Case):
                           app2.get_unique_name() + "/StatusNotifierItem"])
         self.assertEqual(self.prop(c, "ProtocolVersion"), 0)
 
-    def test_hosts(self):
+    def test_host_always_reported(self):
+        """Apps are always told a tray is showing, even before Slate's signs up: Electron apps
+        (Mullvad) check once, as they start, and if there's no tray yet they never show an icon.
+        At login they started in the second before Slate's tray signed up, and lost theirs."""
         c = self.running_watcher()
-        self.assertFalse(self.prop(c, "IsStatusNotifierHostRegistered"))
+        self.assertTrue(self.prop(c, "IsStatusNotifierHostRegistered"), "an app starting before Slate's tray gets no icon")
         self.host()
         self.assertTrue(self.prop(c, "IsStatusNotifierHostRegistered"))
 
@@ -131,9 +134,19 @@ class TrayWatcher(Case):
         self.call(app, "RegisterStatusNotifierItem", "/item")
         host = self.host()
         self.assertTrue(self.prop(c, "IsStatusNotifierHostRegistered"))
+        # Apps listening for the tray going away (some give up their icon when it does)
+        gone = []
+        c.signal_subscribe(WATCHER[0], WATCHER[2], "StatusNotifierHostUnregistered", WATCHER[1], None,
+                           Gio.DBusSignalFlags.NONE, lambda *a: gone.append(a))
         host.close_sync(None)                     # Slate restarting
-        self.wait(lambda: not self.prop(c, "IsStatusNotifierHostRegistered"), "the host to go")
+        end = time.monotonic() + 1
+        while time.monotonic() < end:             # (let any signal arrive)
+            GLib.MainContext.default().iteration(False)
+            time.sleep(0.02)
         self.assertEqual(self.prop(c, "RegisteredStatusNotifierItems"), [app.get_unique_name() + "/item"])
+        # Still a tray as far as apps can tell: one starting while Slate restarts gets its icon
+        self.assertTrue(self.prop(c, "IsStatusNotifierHostRegistered"))
+        self.assertEqual(gone, [], "told apps the tray went away")
 
     def test_one_copy(self):
         c = self.running_watcher()
