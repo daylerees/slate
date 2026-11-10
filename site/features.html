@@ -71,7 +71,7 @@
     <article>
       <h3>Placement</h3>
       <ul>
-        <li>Top, bottom, left or right of the screen</li>
+        <li>Top, bottom, left or right of the screen (moving it slides it off and back in at its new edge)</li>
         <li>Auto-hide, revealed at the screen edge</li>
         <li>Flares into the screen with rounded corners</li>
         <li>Dimmed on monitors you aren't using</li>
@@ -145,8 +145,8 @@
         <li>Badges: an app's unread count on its icon (what it publishes itself, or its notifications since you last went to it), and a progress bar while it downloads or copies; they stay when Slate restarts</li>
         <li>Magnifies under the pointer: icon size, magnification and spread are adjustable</li>
         <li>Icons bounce while their app opens</li>
-        <li>Window previews: pause on an app (for as long as you set) to see its windows live, and click one to go to it</li>
-        <li>Bottom, top, left or right; auto-hides when a tiled window needs the room, and stays open over an empty workspace or one with only floating windows</li>
+        <li>Window previews: pause on an app (for as long as you set) to see its windows live, just above the magnified icons, and click one to go to it</li>
+        <li>Bottom, top, left or right (moving it slides it off and back in at its new edge, showing for a moment even when it auto-hides); auto-hides when a tiled window needs the room, and stays open over an empty workspace or one with only floating windows</li>
         <li>Its corners follow your icon shape</li>
       </ul>
     </article>
@@ -156,7 +156,8 @@
         <li>The app's open windows, to jump to</li>
         <li>The app's own actions (a new private window, and so on)</li>
         <li>New Window, Pin to Dock / Unpin from Dock</li>
-        <li>Drag pinned apps to rearrange them, or up off the dock to unpin; drop files on an app to open them in it, or on the Waste Basket to bin them</li>
+        <li>Drag apps: the icon comes with the pointer at its magnified size and the others part for it around a placeholder; drop a running app among the pinned ones to pin it, or pull a pinned one well up off the dock to unpin it (a warning says so first; it stays if it's running). No previews or menus while dragging</li>
+        <li>Drop files on an app to open them in it, or on the Waste Basket to bin them</li>
         <li>Close Window, or Close 2 Windows</li>
         <li>Force Quit, for an app that has stopped responding</li>
         <li>Centred on the icon, with a pointer to it</li>
@@ -549,6 +550,14 @@
         <li>Scanners found, and a button to scan with your scanning app</li>
       </ul>
     </article>
+    <article>
+      <h3>Webcam</h3>
+      <ul>
+        <li>A preview, only when you ask for it (the camera's light comes on only then), and which apps are using the camera</li>
+        <li>Brightness, contrast, colour, sharpness, gain and gamma; automatic or manual white balance and exposure; anti-flicker for your mains (50 or 60 Hz); backlight compensation</li>
+        <li>Kept: webcams forget their settings when unplugged or restarted, so Slate puts yours back at login</li>
+      </ul>
+    </article>
   </div>
 </section>
 
@@ -560,8 +569,9 @@
       <ul>
         <li>Opens on All Settings: a tile for every page, with a search across all settings; every other page has the same search at its top</li>
         <li>A Debug page (from All Settings): reload everything (Hyprland's config and Slate itself, your apps stay open), resync the login screen, set how much detail goes in Slate's log (asks before restarting Slate), export recent logs with system details to attach to a bug report (your location is left out), and factory reset Slate: it asks twice, can clear your own Hyprland tweaks and QML too, and keeps everything in a backup folder first</li>
-        <li>Pages: General, Appearance, Displays, Keyboard and Mouse, Sound, Power, Windows, Workspaces, Notifications, Wi-Fi, Bluetooth, Printers and Scanners, Menu Bar, Dock, Launcher, Spaces, Hot Corners, Lock and Idle, Shortcuts, Default Apps, Startup Apps, Date and Time, Screenshots, App Theming, Updates, Debug, About</li>
-        <li>Restore defaults on each page</li>
+        <li>Pages: General, Appearance, Displays, Keyboard and Mouse, Sound, Power, Windows, Workspaces, Notifications, Wi-Fi, Bluetooth, Printers and Scanners, Webcam, Menu Bar, Dock, Launcher, Spaces, Hot Corners, Lock and Idle, Shortcuts, Default Apps, Startup Apps, Date and Time, Screenshots, App Theming, Updates, Debug, About</li>
+        <li>Restore defaults on each page, and a small dot after any setting you've changed: point at it to see the default</li>
+        <li>Move it by dragging its sidebar top or page header</li>
         <li>Comes back on the same page, scrolled to the same place, if Slate reloads or restarts while it's open</li>
       </ul>
     </article>

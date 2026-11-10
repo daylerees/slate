@@ -46,6 +46,10 @@ SpaceBadge.qml          one space badge (icon on colour): window corners, switch
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
 IconGloss.qml           the glass sheen on an app icon's tile, the same everywhere icons show
+WebcamPreview.qml       Settings → Webcam's live picture (Qt Multimedia; loaded only when shown)
+MenuPointer.qml         the little point on a menu's edge (dock and tray menus), drawn only outside the menu
+scripts/webcam.py       Settings → Webcam: cameras, their picture settings (v4l2-ctl), kept per
+                        camera and put back at login; which apps use the camera
 scripts/tray-watcher.py the tray's register (org.kde.StatusNotifierWatcher), run apart from Slate
                         (started detached by the session and by Slate) so tray icons outlive
                         Slate's restarts; without it, Quickshell is the register itself
@@ -139,7 +143,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops); only with `SLATE_TEST=1`, for the test suite |
+| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 
@@ -228,6 +232,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
 | `accountsservice` | your account picture (Settings → General, the lock and login screens) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
+| `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
 | `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |
