@@ -97,6 +97,46 @@ def render(svg_text, w, h):
 
 
 # ---- Build ----------------------------------------------------------------------------
+# The diagonal double arrows' names, given to the window corner cursors instead: Qt can only ask
+# for the double arrows (its SizeFDiag/SizeBDiag), so Slate's own title bar corners showed a
+# different cursor from Hyprland's window corners (which use the corner ones). Moved in both the
+# hyprcursor overrides and the XCursor symlinks.
+REMAP = {"nwse-resize": "top_left_corner", "size_fdiag": "top_left_corner",
+         "nesw-resize": "top_right_corner", "size_bdiag": "top_right_corner"}
+
+
+def remap_aliases(out):
+    hc = os.path.join(out, "hyprcursors")
+    metas = {}
+    for fn in os.listdir(hc):
+        if fn.endswith(".hlc"):
+            with zipfile.ZipFile(os.path.join(hc, fn)) as z:
+                metas[fn[:-4]] = {n: z.read(n) for n in z.namelist()}
+    changed = set()
+    for alias, target in REMAP.items():
+        line = "define_override = %s" % alias
+        for name, files in metas.items():
+            meta = files["meta.hl"].decode()
+            has = any(l.strip() == line for l in meta.splitlines())
+            if has == (name == target):
+                continue
+            lines = [l for l in meta.splitlines() if l.strip() != line]
+            if name == target:
+                lines.append(line)
+            files["meta.hl"] = ("\n".join(lines).rstrip("\n") + "\n").encode()
+            changed.add(name)
+        # XCursor: the name links to the corner image
+        link = os.path.join(out, "cursors", alias)
+        if os.path.lexists(link):
+            os.remove(link)
+        os.symlink(target, link)
+    for name in changed:                     # (only the cursors whose names moved)
+        files = metas[name]
+        with zipfile.ZipFile(os.path.join(hc, name + ".hlc"), "w", zipfile.ZIP_DEFLATED) as z:
+            for n, d in files.items():
+                z.writestr(n, d)
+
+
 def main():
     if not os.path.isdir(os.path.join(SRC, "hyprcursors")):
         sys.exit("No Bibata-Modern-Ice at %s (needs its hyprcursors/ and cursors/)" % SRC)
@@ -134,6 +174,8 @@ def main():
             seen[nominal] = i + 1
             images.append((nominal, render(new[order[i % len(order)]], w, h), xh, yh, delay))
         write_xcursor(xc, images)
+
+    remap_aliases(OUT)
 
     # Theme files, renamed so it's never mistaken for (or replaced by) Bibata itself
     with open(os.path.join(OUT, "index.theme"), "w") as f:

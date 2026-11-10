@@ -10,6 +10,10 @@ the white pointer.
 - The loading spinner's four colours are four greys.
 - The coloured badges (copy, not-allowed, link, help, context menu…) are dark grey, with
   their white symbols; the crosshair's red dot is black.
+- The diagonal double-arrow names (`nwse-resize`, `size_fdiag`, `nesw-resize`, `size_bdiag`)
+  show the top-left and top-right corner cursors, so a diagonal resize asked for by name
+  (Slate's title bar corners, which can only ask for those) looks like Hyprland's window
+  corners.
 - Renamed to `Slate-Cursors`.
 
 Everything else is unchanged.
