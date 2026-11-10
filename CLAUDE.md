@@ -114,7 +114,16 @@ Releases are tagged with [Semantic Versioning](https://semver.org/): annotated t
 
 While Slate is below 1.0.0, breaking changes bump MINOR instead of MAJOR.
 
-Before tagging, run `tests/run -q` (pinned packages) and stop if it fails. Then run
+Before tagging, the tests have to pass in one full run. Do it efficiently:
+
+1. Run `tests/run -q` (pinned packages) once.
+2. Fix whatever fails, and confirm each fix by running just those tests
+   (`tests/run -q --tier live --filter <name>`, a minute or two), not the whole suite.
+3. When everything that failed passes on its own, run the full suite one final time.
+4. If that fails, go back to step 2. Tag only after a full run with no failures; a test that
+   fails now and then is a failure (find out why: it has been a real race more than once).
+
+Then run
 `tests/run -q --deps latest` (once a day: a second run that day shows the first's result;
 `--fresh` only if something changed that needs it); don't block on it, but list what fails in the release notes'
 Other section as a heads-up (it may break with the next Hyprland/Quickshell update).
