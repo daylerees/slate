@@ -9,6 +9,13 @@ Usage:  apply-theme.py '<json>'
    "surfaceHigh": "#262c35", "text": "#eef1f5", "dim": "#8b94a3", "error": "#f28b8b",
    "light": false, "codeFont": "...", "on": ["gtk", "kitty", ...]}
         apply-theme.py --apps     list the apps Slate can theme, and which are installed
+        apply-theme.py --stale '<json>'   the switched-on apps whose theming an update of the
+                                  app has undone (Spotify, Discord), one id a line. Quick, and
+                                  changes nothing: applying again is what puts it back
+
+A theme put back that way is reported as "restored <id> <name>" (or "lost <id> <name>" where
+it couldn't be) on a line of its own, for Slate to tell you. "lost" is said once for each
+version of the app.
 
 The colours come from Slate already worked out (the accent may come from the wallpaper);
 this script derives the in-between shades. Only apps switched on ("on") are themed, and
@@ -26,7 +33,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from slate_theme import CFG, HOME, Ctx, changed, edit, palette, set_ini_key, signal_all, write   # noqa: E402
+from slate_theme import CFG, HOME, STATE, Ctx, changed, edit, palette, set_ini_key, signal_all, write   # noqa: E402
 import slate_apps                                                                             # noqa: E402
 
 
@@ -119,6 +126,22 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--apps":
         print(json.dumps(slate_apps.detect()))
         return
+    if len(sys.argv) == 3 and sys.argv[1] == "--stale":
+        on = set(json.loads(sys.argv[2]).get("on") or [])
+        # (one that couldn't be put back isn't tried again every few minutes: it's left for the
+        # next time themes are applied anyway, or Refresh)
+        try:
+            with open(os.path.join(STATE, "slate", "theme-lost.json"), encoding="utf-8") as f:
+                on -= set(json.load(f))
+        except (OSError, ValueError):
+            pass
+        for a in slate_apps.APPS:
+            try:
+                if a["id"] in on and a["stale"] and a["installed"]() and a["stale"]():
+                    print(a["id"])
+            except Exception as e:
+                print("apply-theme: stale %s: %s" % (a["id"], e), file=sys.stderr)
+        return
     if len(sys.argv) != 2:
         sys.exit(__doc__)
     p = json.loads(sys.argv[1])
@@ -154,6 +177,27 @@ def main():
             signal_all("kitty", "USR1")      # kitty re-resolves "monospace" on reload
     for path in dict.fromkeys(changed):
         print("updated", path.replace(HOME, "~"))
+    report_notes()
+
+def report_notes():
+    """What happened to themes an app update had undone (slate_apps.NOTES). One that couldn't
+    be put back is said once, not at every apply: remembered until it's back."""
+    path = os.path.join(STATE, "slate", "theme-lost.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            told = set(json.load(f))
+    except (OSError, ValueError):
+        told = set()
+    lost = {id for kind, id, _ in slate_apps.NOTES if kind == "lost"}
+    for kind, id, name in dict.fromkeys(slate_apps.NOTES):
+        if kind == "restored" or id not in told:
+            print(kind, id, name)
+    # (still themed and no longer stale: forget it, so the next loss is said again)
+    keep = {id for id in told if any(a["id"] == id and a["stale"] and a["stale"]() for a in slate_apps.APPS)}
+    if (lost | keep) != told:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(sorted(lost | keep), f)
 
 if __name__ == "__main__":
     main()

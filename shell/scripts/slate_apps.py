@@ -7,20 +7,35 @@
 Only installed apps that aren't switched off are themed; switching one off reverses what
 Slate did to it (slate_theme.Ctx.undo)."""
 import colorsys
+import glob
 import json
 import os
 import re
 import shutil
 import time
 
-from slate_theme import (CFG, DATA, GEN, HOME, SHELL_DIR, bare, first_existing, have, mix,
+from slate_theme import (CFG, DATA, GEN, HOME, SHELL_DIR, STATE, bare, first_existing, have, mix,
                          read, run, run_out, signal_all, touched)
 
 APPS = []
 
 def app(id, label, detail, installed):
     def deco(fn):
-        APPS.append({"id": id, "label": label, "detail": detail, "installed": installed, "apply": fn, "reload": None})
+        APPS.append({"id": id, "label": label, "detail": detail, "installed": installed, "apply": fn, "reload": None,
+                     "stale": None})
+        return fn
+    return deco
+
+# Two apps are themed through a patch in the app's own files (Spotify by Spicetify, Discord by
+# Vencord), and an update of the app replaces those files: the patch, and Slate's theme with it,
+# is gone. Each has a quick check for that (`stale`: apply-theme.py --stale, which Slate runs
+# every few minutes while the app's themed), and its next apply puts the patch back, noting
+# here what happened, for Slate to tell you: ("restored" | "lost", app id, app name).
+NOTES = []
+
+def stale(id):
+    def deco(fn):
+        next(a for a in APPS if a["id"] == id)["stale"] = fn
         return fn
     return deco
 
@@ -35,6 +50,22 @@ def cfg(*p):
 
 def isdir(*p):
     return os.path.isdir(os.path.join(*p))
+
+# Flatpak builds keep their config and data in ~/.var/app/<id>/{config,data}, not ~/.config
+def flatpak(app_id, *p):
+    """That path inside the app's Flatpak folder, or None when it has none (not installed, or
+    never started)"""
+    root = os.path.join(HOME, ".var", "app", app_id)
+    return os.path.join(root, *p) if os.path.isdir(root) else None
+
+
+def config_dirs(native, folder, app_id):
+    """Where an app's config folder is: ~/.config/<folder> when it's installed natively
+    (native: true), and inside its Flatpak when that's there"""
+    out = [cfg(folder)] if native else []
+    fp = flatpak(app_id, "config", folder)
+    return out + ([fp] if fp else [])
+
 
 def starting(name):
     """Slate's starting config for an app (shell/data/<name>)"""
@@ -336,9 +367,7 @@ def foot(ctx):
     ctx.line(conf, "include=~/.config/foot/slate.ini", top=True)    # before any [section]
 
 
-@app("wezterm", "WezTerm", "A Slate colour scheme (pick \"Slate\" in your config); a starting config if you have none",
-     lambda: have("wezterm"))
-def wezterm(ctx):
+def wezterm_into(ctx, d, native):
     c = ctx.c
     q = lambda h: '"%s"' % h
     out = ["# " + GEN, "[colors]", "foreground = %s" % q(c["text"]), "background = %s" % q(c["bg"]),
@@ -347,11 +376,21 @@ def wezterm(ctx):
            "ansi = [%s]" % ", ".join(q(h) for h in c["ansi"]),
            "brights = [%s]" % ", ".join(q(h) for h in c["ansiBright"]),
            "", "[metadata]", 'name = "Slate"']
-    ctx.file(cfg("wezterm", "colors", "slate.toml"), "\n".join(out) + "\n")
-    if not first_existing(cfg("wezterm", "wezterm.lua"), os.path.join(HOME, ".wezterm.lua")):
-        ctx.start(cfg("wezterm", "wezterm.lua"), starting("wezterm.lua"))
+    ctx.file(os.path.join(d, "colors", "slate.toml"), "\n".join(out) + "\n")
+    if not first_existing(os.path.join(d, "wezterm.lua"), *([os.path.join(HOME, ".wezterm.lua")] if native else [])):
+        ctx.start(os.path.join(d, "wezterm.lua"), starting("wezterm.lua"))
 
 
+
+
+@app("wezterm", "WezTerm", "A Slate colour scheme (pick \"Slate\" in your config); a starting config if you have none",
+     lambda: have("wezterm") or flatpak("org.wezfurlong.wezterm") is not None)
+def wezterm(ctx):
+    if have("wezterm"):
+        wezterm_into(ctx, cfg("wezterm"), True)
+    fp = flatpak("org.wezfurlong.wezterm", "config", "wezterm")
+    if fp:
+        wezterm_into(ctx, fp, False)
 @app("btop", "btop", "The system monitor's colours", lambda: have("btop"))
 def btop(ctx):
     c = ctx.c
@@ -373,7 +412,7 @@ def btop_reload(ctx):
 
 # ==== Code editors ==========================================================================
 @app("texteditor", "GNOME Text Editor", "A Slate colour scheme, used unless you've picked another",
-     lambda: have("gnome-text-editor"))
+     lambda: have("gnome-text-editor") or flatpak("org.gnome.TextEditor") is not None)
 def text_editor(ctx):
     c, s = ctx.c, ctx.c["syn"]
     bg, fg, acc, dim = c["bg"], c["text"], c["accent"], c["dim"]
@@ -408,17 +447,39 @@ def text_editor(ctx):
     for name, f, b, extra in styles:
         attrs = ('' if f is None else ' foreground="%s"' % f) + ('' if b is None else ' background="%s"' % b) + extra
         rows.append('  <style name="%s"%s/>' % (name, attrs))
-    ctx.file(os.path.join(DATA, "gtksourceview-5", "styles", "slate.xml"),
-             '<?xml version="1.0" encoding="UTF-8"?>\n<!-- %s -->\n'
-             '<style-scheme id="slate" name="Slate" version="1.0">\n  <author>Slate</author>\n'
-             "  <description>Slate's colours, following its light or dark theme</description>\n"
-             % GEN + "\n".join(rows) + "\n</style-scheme>\n")
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<!-- %s -->\n'
+           '<style-scheme id="slate" name="Slate" version="1.0">\n  <author>Slate</author>\n'
+           "  <description>Slate's colours, following its light or dark theme</description>\n"
+           % GEN + "\n".join(rows) + "\n</style-scheme>\n")
+    if have("gnome-text-editor"):
+        ctx.file(os.path.join(DATA, "gtksourceview-5", "styles", "slate.xml"), xml)
+    # The Flatpak reads its style schemes from its own data folder (its settings are your desktop's)
+    fp = flatpak("org.gnome.TextEditor", "data")
+    if fp:
+        ctx.file(os.path.join(fp, "gtksourceview-5", "styles", "slate.xml"), xml)
     ctx.gsetting("org.gnome.TextEditor", "style-scheme", "slate",
                  only_if=("", "Adwaita", "Adwaita-dark", "classic", "classic-dark"))
 
 
 # -- VS Code, Code - OSS and VSCodium: a theme extension, selected in your settings --
 VSCODES = [("Code", ".vscode"), ("Code - OSS", ".vscode-oss"), ("VSCodium", ".vscode-oss"), ("Code - Insiders", ".vscode-insiders")]
+# Their Flatpaks: (app id, config folder, extensions folders it may use: in your home, or its own data)
+VSCODE_FLATPAKS = [("com.visualstudio.code", "Code", [".vscode/extensions", "data/vscode/extensions"]),
+                   ("com.vscodium.codium", "VSCodium", [".vscode-oss/extensions", "data/codium/extensions"])]
+
+
+def vscode_installs():
+    """[(its User settings folder, [extensions folders])] for each VS Code that's set up"""
+    out = [(cfg(name, "User"), [os.path.join(HOME, extdir, "extensions")])
+           for name, extdir in VSCODES if isdir(CFG, name, "User")]
+    for app_id, name, exts in VSCODE_FLATPAKS:
+        user = flatpak(app_id, "config", name, "User")
+        if user and os.path.isdir(user):
+            home_ext, own_ext = os.path.join(HOME, exts[0]), flatpak(app_id, exts[1])
+            # whichever it uses; its own when neither is there yet
+            found = [d for d in (home_ext, own_ext) if d and os.path.isdir(d)]
+            out.append((user, found or [own_ext]))
+    return out
 
 def vscode_theme(c):
     s, bg, fg, surf, acc = c["syn"], c["bg"], c["text"], c["surface"], c["accent"]
@@ -503,8 +564,8 @@ def vscode_theme(c):
     return {"name": "Slate", "type": "light" if c["light"] else "dark", "colors": colors,
             "tokenColors": tokens, "semanticHighlighting": True}
 
-@app("vscode", "VS Code", "VS Code, Code - OSS and VSCodium: a Slate theme, selected for you",
-     lambda: any(isdir(CFG, name, "User") for name, _ in VSCODES))
+@app("vscode", "VS Code", "VS Code, Code - OSS and VSCodium (Flatpaks too): a Slate theme, selected for you",
+     lambda: bool(vscode_installs()))
 def vscode(ctx):
     c = ctx.c
     ext_id, ver = "slate.slate-theme", "1.0.0"
@@ -513,21 +574,22 @@ def vscode(ctx):
            "publisher": "slate", "version": ver, "engines": {"vscode": "^1.60.0"}, "categories": ["Themes"],
            "contributes": {"themes": [{"label": "Slate", "uiTheme": "vs" if c["light"] else "vs-dark",
                                        "path": "./themes/slate.json"}]}}
-    for name, extdir in VSCODES:
-        user = cfg(name, "User")
-        if not os.path.isdir(user):
-            continue
-        exts = os.path.join(HOME, extdir, "extensions")
-        root = os.path.join(exts, folder)
-        ctx.file(os.path.join(root, "package.json"), json.dumps(pkg, indent=2) + "\n")
-        ctx.file(os.path.join(root, "themes", "slate.json"), json.dumps(vscode_theme(c), indent=2) + "\n")
-        # VS Code lists its extensions in extensions.json; add ours so it's picked up
-        reg = os.path.join(exts, "extensions.json")
-        if os.path.exists(reg):
-            ctx.jsonlist(reg, [], {"identifier": {"id": ext_id}, "version": ver,
-                                   "location": {"$mid": 1, "path": root, "scheme": "file"},
-                                   "relativeLocation": folder, "metadata": {"source": "vsix"}},
-                         match=lambda x: isinstance(x, dict) and x.get("identifier", {}).get("id") == ext_id)
+    done = set()
+    for user, ext_dirs in vscode_installs():
+        for exts in ext_dirs:
+            if exts in done:              # (Code - OSS and VSCodium share one)
+                continue
+            done.add(exts)
+            root = os.path.join(exts, folder)
+            ctx.file(os.path.join(root, "package.json"), json.dumps(pkg, indent=2) + "\n")
+            ctx.file(os.path.join(root, "themes", "slate.json"), json.dumps(vscode_theme(c), indent=2) + "\n")
+            # VS Code lists its extensions in extensions.json; add ours so it's picked up
+            reg = os.path.join(exts, "extensions.json")
+            if os.path.exists(reg):
+                ctx.jsonlist(reg, [], {"identifier": {"id": ext_id}, "version": ver,
+                                       "location": {"$mid": 1, "path": root, "scheme": "file"},
+                                       "relativeLocation": folder, "metadata": {"source": "vsix"}},
+                             match=lambda x: isinstance(x, dict) and x.get("identifier", {}).get("id") == ext_id)
         ctx.jsonc(os.path.join(user, "settings.json"), "workbench.colorTheme", "Slate")
 
 
@@ -575,14 +637,18 @@ def zed_theme(c):
     return {"$schema": "https://zed.dev/schema/themes/v0.2.0.json", "name": "Slate", "author": "Slate",
             "themes": [{"name": "Slate", "appearance": "light" if c["light"] else "dark", "style": st}]}
 
-@app("zed", "Zed", "A Slate theme, selected for you", lambda: have("zed") or have("zeditor") or isdir(CFG, "zed"))
+def zed_dirs():
+    return config_dirs(have("zed") or have("zeditor") or isdir(CFG, "zed"), "zed", "dev.zed.Zed")
+
+
+@app("zed", "Zed", "A Slate theme, selected for you (Flatpak too)", lambda: bool(zed_dirs()))
 def zed(ctx):
-    ctx.file(cfg("zed", "themes", "slate.json"), json.dumps(zed_theme(ctx.c), indent=2) + "\n")
-    ctx.jsonc(cfg("zed", "settings.json"), "theme", "Slate")
+    for d in zed_dirs():
+        ctx.file(os.path.join(d, "themes", "slate.json"), json.dumps(zed_theme(ctx.c), indent=2) + "\n")
+        ctx.jsonc(os.path.join(d, "settings.json"), "theme", "Slate")
 
 
-@app("helix", "Helix", "A Slate theme, selected for you", lambda: have("hx") or have("helix"))
-def helix(ctx):
+def helix_into(ctx, d):
     c, s = ctx.c, ctx.c["syn"]
     fg = lambda col, *mods: '{ fg = "%s"%s }' % (col, ", modifiers = [%s]" % ", ".join('"%s"' % m for m in mods) if mods else "")
     rows = [
@@ -623,13 +689,23 @@ def helix(ctx):
         ('"diagnostic.error"', '{ underline = { color = "%s", style = "curl" } }' % c["red"]),
         ('"diagnostic.warning"', '{ underline = { color = "%s", style = "curl" } }' % c["yellow"]),
     ]
-    ctx.file(cfg("helix", "themes", "slate.toml"), "# " + GEN + "\n" + "\n".join("%s = %s" % r for r in rows) + "\n")
-    conf = cfg("helix", "config.toml")
+    ctx.file(os.path.join(d, "themes", "slate.toml"), "# " + GEN + "\n" + "\n".join("%s = %s" % r for r in rows) + "\n")
+    conf = os.path.join(d, "config.toml")
     if re.search(r'^theme\s*=', read(conf) or "", flags=re.M):
         ctx.replace(conf, r'^theme\s*=.*$', 'theme = "slate"')
     else:
         ctx.line(conf, 'theme = "slate"', top=True)                 # top-level keys go first
 
+
+
+def helix_dirs():
+    return config_dirs(have("hx") or have("helix"), "helix", "com.helix_editor.Helix")
+
+
+@app("helix", "Helix", "A Slate theme, selected for you (Flatpak too)", lambda: bool(helix_dirs()))
+def helix(ctx):
+    for d in helix_dirs():
+        helix_into(ctx, d)
 @reloads("helix")
 def helix_reload(ctx):
     if touched("helix"):
@@ -687,8 +763,12 @@ def vim_colors(c):
     out.append("let g:terminal_ansi_colors = [%s]" % ", ".join("'%s'" % h for h in c["ansi"] + c["ansiBright"]))
     return "\n".join(out) + "\n"
 
+def nvim_dirs():
+    return config_dirs(have("nvim"), "nvim", "io.neovim.nvim")
+
+
 @app("vim", "Vim and Neovim", "A Slate colour scheme (%s), used unless you set your own" % VIM_NAME,
-     lambda: have("vim") or have("nvim"))
+     lambda: have("vim") or bool(nvim_dirs()))
 def vim(ctx):
     text = vim_colors(ctx.c)
     use = "colorscheme " + VIM_NAME
@@ -699,9 +779,9 @@ def vim(ctx):
             rc = os.path.join(HOME, ".vimrc")
             ctx.start(rc, starting("vimrc"))
         ctx.line(rc, use, present=r"^\s*colorscheme\s")
-    if have("nvim"):
-        ctx.file(cfg("nvim", "colors", VIM_NAME + ".vim"), text)
-        lua, vimrc = cfg("nvim", "init.lua"), cfg("nvim", "init.vim")
+    for d in nvim_dirs():
+        ctx.file(os.path.join(d, "colors", VIM_NAME + ".vim"), text)
+        lua, vimrc = os.path.join(d, "init.lua"), os.path.join(d, "init.vim")
         if os.path.exists(lua):
             # Leave configs that pick their own scheme (or use a plugin manager) alone
             if not re.search(r"colorscheme|lazy|packer|plug", read(lua) or ""):
@@ -828,8 +908,7 @@ def cava_reload(ctx):
         signal_all("cava", "USR2")           # cava reloads its colours on SIGUSR2
 
 
-@app("zathura", "zathura", "The document viewer's colours (and its recolour mode)", lambda: have("zathura"))
-def zathura(ctx):
+def zathura_into(ctx, d):
     c = ctx.c
     sets = [("default-bg", c["bg"]), ("default-fg", c["text"]), ("statusbar-bg", c["surface"]),
             ("statusbar-fg", c["text"]), ("inputbar-bg", c["bg"]), ("inputbar-fg", c["text"]),
@@ -841,10 +920,20 @@ def zathura(ctx):
             ("completion-highlight-bg", c["selection"]), ("completion-highlight-fg", c["text"]),
             ("index-bg", c["bg"]), ("index-fg", c["text"]), ("index-active-bg", c["selection"]),
             ("index-active-fg", c["text"]), ("recolor-lightcolor", c["bg"]), ("recolor-darkcolor", c["text"])]
-    ctx.file(cfg("zathura", "slate"), "# %s\n" % GEN + "\n".join('set %s "%s"' % kv for kv in sets) + "\n")
-    ctx.line(cfg("zathura", "zathurarc"), "include slate")
+    ctx.file(os.path.join(d, "slate"), "# %s\n" % GEN + "\n".join('set %s "%s"' % kv for kv in sets) + "\n")
+    ctx.line(os.path.join(d, "zathurarc"), "include slate")
 
 
+
+
+def zathura_dirs():
+    return config_dirs(have("zathura"), "zathura", "org.pwmt.zathura")
+
+
+@app("zathura", "zathura", "The document viewer's colours (and its recolour mode), Flatpak too", lambda: bool(zathura_dirs()))
+def zathura(ctx):
+    for d in zathura_dirs():
+        zathura_into(ctx, d)
 # ==== Chat, music and browser ===============================================================
 def discord_css(c):
     v = {
@@ -879,18 +968,90 @@ def discord_css(c):
 
 DISCORDS = ["vesktop", "Vencord", "equibop", "Equicord", "legcord"]
 
-@app("discord", "Discord (Vencord)", "Vesktop, Vencord and Equicord: a Slate theme, switched on for you",
-     lambda: any(isdir(CFG, d) for d in DISCORDS))
+
+def discord_roots():
+    """Each Vencord-style config folder: in ~/.config, and inside Flatpaks' own config folders
+    (~/.var/app/<app>/config: Discord's Flatpak keeps Vencord there, Vesktop's its own)"""
+    bases = [CFG] + sorted(glob.glob(os.path.join(HOME, ".var", "app", "*", "config")))
+    return [os.path.join(b, d) for b in bases for d in DISCORDS if os.path.isdir(os.path.join(b, d))]
+
+
+# Vencord in Discord itself (not Vesktop and the like, which have it built in): its installer
+# renames Discord's resources/app.asar to _app.asar and puts a tiny app.asar in its place that
+# loads Vencord. A Discord update brings a new app.asar and the patch is gone.
+DISCORD_INSTALLS = ["/opt/discord", "/opt/discord-ptb", "/opt/discord-canary", "/usr/share/discord", "/usr/lib/discord",
+                    "/usr/lib64/discord"]
+VENCORD_STUB = os.path.join(STATE, "slate", "vencord-app.asar")     # a copy of that tiny app.asar
+
+def discord_resources():
+    """Every Discord's resources folder: packages, and Flatpaks (yours and the system's).
+    Only your own Flatpaks when trying things against a scratch home (SLATE_THEME_TEST)"""
+    system = not os.environ.get("SLATE_THEME_TEST")
+    out = [os.path.join(d, "resources") for d in DISCORD_INSTALLS] if system else []
+    for base in [os.path.join(DATA, "flatpak")] + (["/var/lib/flatpak"] if system else []):
+        out += glob.glob(os.path.join(base, "app", "com.discordapp.Discord*", "current", "active", "files", "discord*", "resources"))
+    return [d for d in out if os.path.isfile(os.path.join(d, "app.asar"))]
+
+def vencord_gone():
+    """The Discords Vencord isn't in: a full-size app.asar, and no _app.asar beside it"""
+    def size(path):
+        try:
+            return os.path.getsize(path)
+        except OSError:
+            return 0
+    return [d for d in discord_resources()
+            if not os.path.exists(os.path.join(d, "_app.asar")) and size(os.path.join(d, "app.asar")) > 65536]
+
+def vencord_used():
+    """Vencord has been set up for Discord itself (it keeps its files in ~/.config/Vencord)"""
+    return os.path.isfile(cfg("Vencord", "dist", "patcher.js")) or os.path.isfile(VENCORD_STUB)
+
+def vencord_restore():
+    """Keep a copy of Vencord's app.asar while it's in place; put it back into a Discord that an
+    update has taken it out of. Only where Slate may write (your own Flatpak, say) and what
+    the copy loads is still there; otherwise it's noted as lost, for Slate to tell you."""
+    for d in discord_resources():
+        stub = os.path.join(d, "app.asar")
+        if os.path.exists(os.path.join(d, "_app.asar")) and os.path.getsize(stub) < 4096:
+            with open(stub, "rb") as f:
+                data = f.read()
+            if b"patcher.js" in data:
+                os.makedirs(os.path.dirname(VENCORD_STUB), exist_ok=True)
+                with open(VENCORD_STUB + ".tmp", "wb") as f:
+                    f.write(data)
+                os.replace(VENCORD_STUB + ".tmp", VENCORD_STUB)
+    if not vencord_used():
+        return
+    for d in vencord_gone():
+        ok = False
+        try:
+            with open(VENCORD_STUB, "rb") as f:
+                data = f.read()
+            loads = re.search(rb'require\("([^"]+)"\)', data)
+            if loads and os.path.isfile(loads.group(1).decode()) and os.access(d, os.W_OK):
+                with open(os.path.join(d, "app.asar.slate-tmp"), "wb") as f:
+                    f.write(data)
+                os.rename(os.path.join(d, "app.asar"), os.path.join(d, "_app.asar"))
+                os.replace(os.path.join(d, "app.asar.slate-tmp"), os.path.join(d, "app.asar"))
+                ok = True
+        except OSError:
+            pass
+        NOTES.append(("restored" if ok else "lost", "discord", "Discord"))
+
+@app("discord", "Discord (Vencord)", "Vesktop, Vencord and Equicord, Flatpak builds too: a Slate theme, switched on for you, with Vencord put back after Discord updates",
+     lambda: bool(discord_roots()))
 def discord(ctx):
     css = discord_css(ctx.c)
-    for d in DISCORDS:
-        root = cfg(d)
-        if not os.path.isdir(root):
-            continue
+    for root in discord_roots():
         ctx.file(os.path.join(root, "themes", "slate.theme.css"), css)
         settings = first_existing(os.path.join(root, "settings", "settings.json"), os.path.join(root, "settings.json"))
         if settings:
             ctx.jsonlist(settings, ["enabledThemes"], "slate.theme.css")
+    vencord_restore()
+
+@stale("discord")
+def discord_stale():
+    return vencord_used() and bool(vencord_gone())
 
 
 def spicetify():
@@ -903,7 +1064,7 @@ def spicetify():
     return own if os.access(own, os.X_OK) else None
 
 
-@app("spotify", "Spotify (Spicetify)", "A Slate theme for Spicetify, applied without restarting Spotify",
+@app("spotify", "Spotify (Spicetify)", "A Slate theme for Spicetify, applied without restarting Spotify, and put back after Spotify updates",
      lambda: spicetify() is not None)
 def spotify(ctx):
     c = ctx.c
@@ -924,9 +1085,33 @@ def spotify(ctx):
         ctx.command([sp, "config", "current_theme", "Slate", "color_scheme", "slate"],
                     [sp, "config", "current_theme", cur or "marketplace", "color_scheme", scheme or ""])
 
+def spotify_unpatched():
+    """Spotify's files are as Spotify ships them: Spicetify's patch isn't in (never applied, or
+    a Spotify update has replaced it). Spicetify unpacks Apps/xpui.spa into Apps/xpui."""
+    try:
+        with open(cfg("spicetify", "config-xpui.ini"), encoding="utf-8") as f:
+            m = re.search(r"^spotify_path\s*=\s*(\S.*)$", f.read(), re.M)
+    except OSError:
+        return False
+    if not m:
+        return False
+    apps = os.path.join(os.path.expanduser(os.path.expandvars(m.group(1).strip())), "Apps")
+    return os.path.isfile(os.path.join(apps, "xpui.spa")) and not os.path.isdir(os.path.join(apps, "xpui"))
+
+@stale("spotify")
+def spotify_stale():
+    return spicetify() is not None and spotify_unpatched()
+
 @reloads("spotify")
 def spotify_reload(ctx):
-    if touched("spicetify") and ctx.live:
+    if not ctx.live:
+        return
+    if spotify_unpatched():
+        # Spotify was updated: take Spicetify's copy of the new version and patch it again
+        # (-n: don't restart Spotify; it shows when Spotify next starts)
+        run([spicetify(), "-q", "-n", "backup", "apply"], timeout=300)
+        NOTES.append(("lost" if spotify_unpatched() else "restored", "spotify", "Spotify"))
+    elif touched("spicetify"):
         run([spicetify(), "apply", "-n", "-q"], timeout=120)     # -n: don't restart Spotify
 
 
@@ -1005,7 +1190,9 @@ def obsidian(ctx):
 
 def firefox_profiles():
     out = []
-    for base in (os.path.join(HOME, ".mozilla", "firefox"), cfg("mozilla", "firefox")):
+    for base in (os.path.join(HOME, ".mozilla", "firefox"), cfg("mozilla", "firefox"),
+                 os.path.join(HOME, ".var", "app", "org.mozilla.firefox", ".mozilla", "firefox"),
+                 os.path.join(HOME, ".var", "app", "org.mozilla.firefox", "config", "mozilla", "firefox")):
         ini = read(os.path.join(base, "profiles.ini")) or ""
         for m in re.finditer(r"^Path=(.+)$", ini, flags=re.M):
             p = m.group(1).strip()
@@ -1042,13 +1229,109 @@ def firefox(ctx):
         ctx.line(os.path.join(p, "user.js"), 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);')
 
 
+# ---- For Settings → App Theming: what each app is, its website, and its packages ------------
+# Packages by distro family (as install.sh and slate-system work it out), only where the
+# distro's own repositories have it; elsewhere Settings just links to the website. NixOS is
+# left to your configuration.
+INFO = {
+    "gtk": ("The toolkit behind GNOME's apps and many others", "https://www.gtk.org", {}),
+    "qt": ("Sets the look of Qt apps outside KDE", "https://github.com/trialuser02/qt6ct",
+           {"arch": "qt6ct", "debian": "qt6ct", "fedora": "qt6ct", "opensuse": "qt6ct"}),
+    "kde": ("Apps from the KDE community", "https://apps.kde.org", {}),
+    "kitty": ("A fast terminal that uses the graphics card", "https://sw.kovidgoyal.net/kitty/",
+              {"arch": "kitty", "debian": "kitty", "fedora": "kitty", "opensuse": "kitty"}),
+    "alacritty": ("A fast, minimal terminal", "https://alacritty.org",
+                  {"arch": "alacritty", "debian": "alacritty", "fedora": "alacritty", "opensuse": "alacritty"}),
+    "ghostty": ("A fast terminal with native tabs and splits", "https://ghostty.org", {"arch": "ghostty"}),
+    "foot": ("A light, fast terminal for Wayland", "https://codeberg.org/dnkl/foot",
+             {"arch": "foot", "debian": "foot", "fedora": "foot", "opensuse": "foot"}),
+    "wezterm": ("A terminal with tabs, splits and a Lua config", "https://wezterm.org", {"arch": "wezterm"}),
+    "btop": ("A system monitor for the terminal", "https://github.com/aristocratos/btop",
+             {"arch": "btop", "debian": "btop", "fedora": "btop", "opensuse": "btop"}),
+    "texteditor": ("GNOME's simple text editor", "https://apps.gnome.org/TextEditor/",
+                   {"arch": "gnome-text-editor", "debian": "gnome-text-editor", "fedora": "gnome-text-editor",
+                    "opensuse": "gnome-text-editor"}),
+    "vscode": ("Microsoft's code editor, and its open builds", "https://code.visualstudio.com", {"arch": "code"}),
+    "zed": ("A fast code editor built for collaboration", "https://zed.dev", {"arch": "zed"}),
+    "helix": ("A modal text editor for the terminal", "https://helix-editor.com",
+              {"arch": "helix", "fedora": "helix", "opensuse": "helix"}),
+    "vim": ("The classic terminal text editor (installs Neovim)", "https://neovim.io",
+            {"arch": "neovim", "debian": "neovim", "fedora": "neovim", "opensuse": "neovim"}),
+    "bat": ("cat with syntax highlighting", "https://github.com/sharkdp/bat",
+            {"arch": "bat", "debian": "bat", "fedora": "bat", "opensuse": "bat"}),
+    "fzf": ("A fuzzy finder for the terminal", "https://junegunn.github.io/fzf/",
+            {"arch": "fzf", "debian": "fzf", "fedora": "fzf", "opensuse": "fzf"}),
+    "yazi": ("A fast file manager for the terminal", "https://yazi-rs.github.io", {"arch": "yazi"}),
+    "cava": ("An audio visualiser for the terminal", "https://github.com/karlstav/cava",
+             {"arch": "cava", "debian": "cava", "fedora": "cava", "opensuse": "cava"}),
+    "zathura": ("A keyboard-driven document viewer", "https://pwmt.org/projects/zathura/",
+                {"arch": "zathura zathura-pdf-mupdf", "debian": "zathura", "fedora": "zathura zathura-pdf-mupdf",
+                 "opensuse": "zathura"}),
+    "discord": ("Discord with Vencord's themes and plugins", "https://vesktop.dev", {}),
+    "spotify": ("Themes and extensions for Spotify", "https://spicetify.app", {}),
+    "obsidian": ("Notes in plain Markdown files", "https://obsidian.md", {"arch": "obsidian"}),
+    "firefox": ("Mozilla's web browser", "https://www.mozilla.org/firefox/",
+                {"arch": "firefox", "debian": "firefox-esr", "fedora": "firefox", "opensuse": "MozillaFirefox"}),
+}
+
+
+# Each app's desktop entries (the first one found is what Settings' Open button starts), for
+# its native, Flatpak and other builds. Apps with none to open (GTK, KDE, bat, fzf) aren't here.
+DESKTOP = {
+    "qt": ["qt6ct"],
+    "kitty": ["kitty"],
+    "alacritty": ["Alacritty", "alacritty"],
+    "ghostty": ["com.mitchellh.ghostty"],
+    "foot": ["foot"],
+    "wezterm": ["org.wezfurlong.wezterm"],
+    "btop": ["btop"],
+    "texteditor": ["org.gnome.TextEditor"],
+    "vscode": ["code", "code-oss", "codium", "visual-studio-code", "com.visualstudio.code", "com.vscodium.codium"],
+    "zed": ["dev.zed.Zed", "zed"],
+    "helix": ["Helix", "helix", "com.helix_editor.Helix"],
+    "vim": ["nvim", "vim", "gvim", "io.neovim.nvim"],
+    "yazi": ["yazi"],
+    "zathura": ["org.pwmt.zathura"],
+    "discord": ["vesktop", "dev.vencord.Vesktop", "equibop", "discord", "com.discordapp.Discord"],
+    "spotify": ["spotify", "spotify-launcher", "com.spotify.Client"],
+    "obsidian": ["obsidian", "md.obsidian.Obsidian"],
+    "firefox": ["firefox", "org.mozilla.firefox", "firefox-esr"],
+}
+
+
+def family(os_release="/etc/os-release"):
+    """arch, debian, fedora, opensuse, nixos or "" (as install.sh and slate-system decide)"""
+    ids = []
+    try:
+        with open(os_release, encoding="utf-8") as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                if k in ("ID", "ID_LIKE"):
+                    ids += v.strip('"').split()
+    except OSError:
+        pass
+    groups = {"arch": ("arch", "cachyos", "endeavouros", "manjaro", "garuda"),
+              "debian": ("debian", "ubuntu", "linuxmint", "pop", "elementary", "zorin"),
+              "fedora": ("fedora", "rhel", "centos", "nobara", "ultramarine"),
+              "opensuse": ("suse", "sles"), "nixos": ("nixos",)}
+    for i in ids:
+        for fam, names in groups.items():
+            if i in names or (fam == "opensuse" and i.startswith("opensuse")):
+                return fam
+    return ""
+
+
 def detect():
-    """[{id, label, detail, installed}] for Settings"""
+    """[{id, label, detail, installed, about, url, packages, desktop}] for Settings; packages:
+    what installs it here ("" when this distro doesn't have it); desktop: its desktop entries"""
+    fam = family()
     out = []
     for a in APPS:
         try:
             inst = bool(a["installed"]())
         except Exception:
             inst = False
-        out.append({"id": a["id"], "label": a["label"], "detail": a["detail"], "installed": inst})
+        about, url, pkgs = INFO.get(a["id"], ("", "", {}))
+        out.append({"id": a["id"], "label": a["label"], "detail": a["detail"], "installed": inst,
+                    "about": about, "url": url, "packages": pkgs.get(fam, ""), "desktop": DESKTOP.get(a["id"], [])})
     return out

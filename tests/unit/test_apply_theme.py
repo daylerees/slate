@@ -300,7 +300,9 @@ class Apps(Case):
         self.assertEqual(ids[:4], ["gtk", "qt", "kde", "kitty"])
         for a in apps:
             with self.subTest(a.get("id")):
-                self.assertEqual(set(a), {"id", "label", "detail", "installed"})
+                # (about, url, packages and desktop: Settings → App Theming's description,
+                # website, Install and Open buttons)
+                self.assertEqual(set(a), {"id", "label", "detail", "installed", "about", "url", "packages", "desktop"})
                 self.assertRegex(a["id"], r"^[a-z]+$")
                 self.assertTrue(a["label"] and a["detail"])
                 self.assertIsInstance(a["installed"], bool)
@@ -321,3 +323,192 @@ class Apps(Case):
         with open(self.h(".mozilla", "firefox", "profiles.ini"), "w") as f:
             f.write("[Profile0]\nPath=abc.default\n")
         self.assertEqual(found(), ["bat", "firefox", "gtk", "kde", "kitty", "qt", "vscode"])
+
+
+class DiscordFlatpak(ApplyTheme):
+    """Discord from Flatpak keeps Vencord in ~/.var/app/com.discordapp.Discord/config/Vencord. Slate
+    only looked in ~/.config, so the theme went where Discord never reads it and wasn't switched on."""
+
+    def test_flatpak_vencord_themed_and_switched_on(self):
+        base = ".var/app/com.discordapp.Discord/config/Vencord"
+        self.put({base + "/settings/settings.json": json.dumps({"enabledThemes": [], "useQuickCss": True})})
+        self.apply(["discord"])
+        self.assertIn("--background-primary", self.text(base + "/themes/slate.theme.css"))
+        with open(self.h(base + "/settings/settings.json")) as f:
+            self.assertIn("slate.theme.css", json.load(f)["enabledThemes"])
+        # and switched off again, put back as it was
+        self.apply([])
+        with open(self.h(base + "/settings/settings.json")) as f:
+            self.assertEqual(json.load(f)["enabledThemes"], [])
+        self.assertFalse(os.path.exists(self.h(base + "/themes/slate.theme.css")))
+
+    def test_flatpak_vesktop_counts_as_installed(self):
+        self.put({".var/app/dev.vencord.Vesktop/config/vesktop/settings/settings.json": "{}"})
+        code, out = run([sys.executable, SCRIPT, "--apps"], env=self.env)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(next(a for a in json.loads(out) if a["id"] == "discord")["installed"])
+
+
+class OtherFlatpaks(ApplyTheme):
+    """Apps installed only as Flatpaks get their theme in the Flatpak's own folders
+    (~/.var/app/<id>/config or data), where they read it, not ~/.config."""
+
+    def fp(self, app_id, rel=""):
+        return os.path.join(".var/app", app_id, rel)
+
+    def test_editors_and_viewers(self):
+        cases = {
+            "zed": ("dev.zed.Zed", "config/zed/.keep", "config/zed/themes/slate.json"),
+            "helix": ("com.helix_editor.Helix", "config/helix/.keep", "config/helix/themes/slate.toml"),
+            "vim": ("io.neovim.nvim", "config/nvim/.keep", "config/nvim/colors/slate-desktop.vim"),
+            "zathura": ("org.pwmt.zathura", "config/zathura/.keep", "config/zathura/slate"),
+            "wezterm": ("org.wezfurlong.wezterm", "config/wezterm/.keep", "config/wezterm/colors/slate.toml"),
+            "texteditor": ("org.gnome.TextEditor", "data/.keep", "data/gtksourceview-5/styles/slate.xml"),
+        }
+        for app, (app_id, marker, theme) in cases.items():
+            with self.subTest(app):
+                self.put({self.fp(app_id, marker): ""})
+                self.apply([app])
+                self.assertTrue(os.path.exists(self.h(self.fp(app_id, theme))), f"no theme in {app_id}'s Flatpak")
+                # and gone again when switched off
+                self.apply([])
+                self.assertFalse(os.path.exists(self.h(self.fp(app_id, theme))))
+
+    def test_vscode_flatpak(self):
+        self.put({self.fp("com.visualstudio.code", "config/Code/User/settings.json"): "{}\n",
+                  self.fp("com.visualstudio.code", "data/vscode/extensions/.keep"): ""})
+        self.apply(["vscode"])
+        ext = self.fp("com.visualstudio.code", "data/vscode/extensions/slate.slate-theme-1.0.0/themes/slate.json")
+        self.assertTrue(os.path.exists(self.h(ext)))
+        self.assertIn('"workbench.colorTheme": "Slate"', self.text(self.fp("com.visualstudio.code", "config/Code/User/settings.json")))
+
+    def test_firefox_flatpak(self):
+        base = self.fp("org.mozilla.firefox", ".mozilla/firefox")
+        self.put({base + "/profiles.ini": "[Profile0]\nPath=abc.default\n", base + "/abc.default/prefs.js": "// prefs\n"})
+        self.apply(["firefox"])
+        self.assertTrue(os.path.exists(self.h(base + "/abc.default/chrome/userChrome.css")))
+
+
+class LostToAnUpdate(ApplyTheme):
+    """Spotify and Discord are themed through a patch in the app's own files (Spicetify,
+    Vencord), which an update of the app replaces: the theme went with it and nothing put it
+    back (seen with Spotify, 2026-11-10). `--stale` notices; applying again restores it and
+    says so, for Slate to pass on."""
+    SPOTIFY = ".local/share/spotify/Apps"
+    DISCORD = ".local/share/flatpak/app/com.discordapp.Discord/current/active/files/discord/resources"
+
+    def stale(self, on):
+        code, out = run([sys.executable, SCRIPT, "--stale", json.dumps(dict(COLOURS, on=on))], env=self.env)
+        self.assertEqual(code, 0, out)
+        return out.split()
+
+    # ---- Spotify (Spicetify) ----
+    def spicetify(self, works=True):
+        """A stand-in spicetify: `backup apply` unpacks Apps/xpui.spa into Apps/xpui, as the
+        real one does (or, with works=False, fails to)."""
+        apps = self.h(self.SPOTIFY)
+        self.put({".config/spicetify/config-xpui.ini": "[Setting]\nspotify_path = $HOME/.local/share/spotify/\ncurrent_theme = Slate\n"})
+        p = os.path.join(self.s.dir, "spicetify")
+        with open(p, "w") as f:
+            f.write("#!%s\nimport os, sys\nopen(%r, 'a').write(' '.join(sys.argv[1:]) + '\\n')\n"
+                    "if 'config' in sys.argv: print('Slate')\n"
+                    "if 'backup' in sys.argv and %r:\n    os.remove(%r); os.makedirs(%r)\n"
+                    % (sys.executable, os.path.join(self.h.dir, "spicetify-calls"), works,
+                       os.path.join(apps, "xpui.spa"), os.path.join(apps, "xpui")))
+        os.chmod(p, 0o755)
+
+    def spotify_updated(self):
+        import shutil
+        shutil.rmtree(self.h(self.SPOTIFY), ignore_errors=True)
+        self.put({self.SPOTIFY + "/xpui.spa": "the new version"})
+
+    def live(self, on):
+        """Applied as Slate does it (not SLATE_THEME_TEST): Spicetify is only run then. The
+        session's own commands are all stand-ins that do nothing."""
+        env = {k: v for k, v in self.env.items() if k != "SLATE_THEME_TEST"}
+        code, out = run([sys.executable, SCRIPT, json.dumps(dict(COLOURS, on=on))], env=env)
+        self.assertEqual(code, 0, out)
+        return out.splitlines()
+
+    def calls(self):
+        p = os.path.join(self.h.dir, "spicetify-calls")
+        if not os.path.exists(p):
+            return []
+        with open(p) as f:
+            return f.read().splitlines()
+
+    def test_spotify_stale_after_an_update(self):
+        self.spicetify()
+        self.put({self.SPOTIFY + "/xpui/index.html": "patched"})
+        self.assertEqual(self.stale(["spotify"]), [])
+        self.spotify_updated()
+        self.assertEqual(self.stale(["spotify"]), ["spotify"])
+        self.assertEqual(self.stale(["kitty"]), [], "only for apps that are themed")
+        self.assertEqual(self.calls(), [], "--stale must be quick: it ran spicetify")
+
+    def test_spotify_patched_again(self):
+        self.spicetify()
+        self.spotify_updated()
+        out = self.live(["spotify"])
+        self.assertIn("restored spotify Spotify", out)
+        self.assertIn("-q -n backup apply", self.calls())
+        self.assertTrue(os.path.isdir(self.h(self.SPOTIFY, "xpui")))
+        self.assertEqual(self.stale(["spotify"]), [])
+        # nothing more to say the next time
+        self.assertFalse([l for l in self.live(["spotify"]) if l.startswith(("restored", "lost"))])
+
+    def test_spotify_that_cannot_be_patched_is_said_once(self):
+        self.spicetify(works=False)
+        self.spotify_updated()
+        self.assertIn("lost spotify Spotify", self.live(["spotify"]))
+        self.assertFalse([l for l in self.live(["spotify"]) if l.startswith("lost")], "said again")
+        self.assertEqual(self.stale(["spotify"]), [], "it would be tried again every few minutes")
+        # once it works, it's put back, and a later loss is said again
+        self.spicetify()
+        self.assertIn("restored spotify Spotify", self.live(["spotify"]))
+        self.spicetify(works=False)
+        self.spotify_updated()
+        self.assertIn("lost spotify Spotify", self.live(["spotify"]))
+
+    # ---- Discord (Vencord) ----
+    def vencord(self):
+        """Discord from your own Flatpak with Vencord in it: a tiny app.asar that loads
+        Vencord, and Discord's own beside it as _app.asar."""
+        patcher = self.h(".config/Vencord/dist/patcher.js")
+        self.stub = '{"files":{"index.js":{"size":54}}}require("%s"){"name":"discord","main":"index.js"}' % patcher
+        self.put({".config/Vencord/dist/patcher.js": "// vencord", ".config/Vencord/settings/settings.json": "{}",
+                  self.DISCORD + "/app.asar": self.stub, self.DISCORD + "/_app.asar": "discord itself " * 8000})
+
+    def discord_updated(self):
+        os.remove(self.h(self.DISCORD, "_app.asar"))
+        self.put({self.DISCORD + "/app.asar": "the new discord " * 8000})
+
+    def test_vencord_put_back(self):
+        self.vencord()
+        self.assertFalse([l for l in self.apply(["discord"]).splitlines() if l.startswith(("restored", "lost"))])
+        self.assertEqual(self.stale(["discord"]), [])
+        self.discord_updated()
+        self.assertEqual(self.stale(["discord"]), ["discord"])
+        self.assertIn("restored discord Discord", self.apply(["discord"]).splitlines())
+        self.assertEqual(self.text(self.DISCORD + "/app.asar"), self.stub)
+        self.assertTrue(self.text(self.DISCORD + "/_app.asar").startswith("the new discord"))
+        self.assertEqual(self.stale(["discord"]), [])
+
+    def test_vencord_itself_gone(self):
+        """What the saved app.asar loads isn't there any more: putting it back would stop
+        Discord starting, so it's left alone and said once."""
+        self.vencord()
+        self.apply(["discord"])
+        self.discord_updated()
+        os.remove(self.h(".config/Vencord/dist/patcher.js"))
+        self.assertIn("lost discord Discord", self.apply(["discord"]).splitlines())
+        self.assertTrue(self.text(self.DISCORD + "/app.asar").startswith("the new discord"), "Discord was changed")
+        self.assertFalse(os.path.exists(self.h(self.DISCORD, "_app.asar")))
+        self.assertFalse([l for l in self.apply(["discord"]).splitlines() if l.startswith("lost")], "said again")
+
+    def test_discord_without_vencord_left_alone(self):
+        """Vesktop users (Vencord built in) with plain Discord installed too: never patched."""
+        self.put({".config/vesktop/settings/settings.json": "{}", self.DISCORD + "/app.asar": "plain discord " * 8000})
+        self.assertEqual(self.stale(["discord"]), [])
+        self.assertFalse([l for l in self.apply(["discord"]).splitlines() if l.startswith(("restored", "lost"))])
+        self.assertTrue(self.text(self.DISCORD + "/app.asar").startswith("plain discord"))
