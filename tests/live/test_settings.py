@@ -78,3 +78,14 @@ class Settings(LiveCase):
                 self.s.settle(0.1)
                 errors = self.s.new_log_errors()
                 self.assertFalse(errors, errors[0][:200] if errors else "")
+
+    def test_back_on_its_page_after_a_reload(self):
+        """Open when Slate reloads: Settings comes back on the page it was on (it used to read
+        its saved place before that had loaded, and came back on All Settings)."""
+        self.ipc("settings", "page", "dock")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock")
+        self.s.settle(1)                        # (its place is saved a moment after a change)
+        self.ipc("shell", "reload")
+        self.s.settle(4)
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock", "Settings back on Dock", timeout=10)
+        self.ipc("settings", "close")

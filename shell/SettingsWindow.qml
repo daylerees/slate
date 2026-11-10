@@ -126,7 +126,16 @@ FloatingWindow {
     // forgets them. When Slate starts again with them there, Settings reopens just as it was.
     readonly property string placeFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/settings-open-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
-    FileView { id: placeView; path: win.placeFile; blockLoading: true; printErrors: false }
+    // (restored once it has loaded: read straight away as Settings was made, it could still be
+    // loading, so Settings came back on All Settings)
+    FileView {
+        id: placeView
+        path: win.placeFile
+        blockLoading: true
+        printErrors: false
+        onLoaded: win.restoreFromFile()
+        onLoadFailed: win.placeReady = true     // nothing saved (Settings wasn't open)
+    }
     property real restoreY: -1           // scroll back to this once the page has loaded
     property bool placeReady: false      // not saving until any earlier place has been read
     function savePlace() {
@@ -144,7 +153,9 @@ FloatingWindow {
         restoreY = -1;
         Qt.callLater(() => Qt.callLater(() => { scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, y)); }));
     }
-    Component.onCompleted: {
+    Component.onCompleted: if (placeView.loaded) restoreFromFile()
+    function restoreFromFile() {
+        if (placeReady) return;                 // (once, at start)
         let p = null;
         try { p = JSON.parse(placeView.text() || "{}"); } catch (e) {}
         placeReady = true;
