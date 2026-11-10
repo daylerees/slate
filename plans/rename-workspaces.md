@@ -18,12 +18,17 @@ Only five places show a number as text. All of them build the string by hand
 | Window mode panel title | `Popouts.qml:1774` |
 | Window mode segment's hover text on the bar | `Bar.qml:494` |
 | Workspace dot's hover text on the bar | `Bar.qml:520` |
-| Card label in the workspace overview (strip and grid) | `WorkspaceOverview.qml:800` |
+| Label under each card in the workspace switcher, Super+Down ("Workspace 1 · kitty and 3 others"; strip and grid) | `WorkspaceOverview.qml:800` |
 | "New Space" picker cards in the Spaces panel | `Popouts.qml:1335` |
 
-The bar, the workspace switcher pill (`OSD.qml`) and the window switcher show workspaces as
-**dots**, with no number, so there's nothing to replace there today (see "Open questions").
-The shortcut descriptions in `binds.lua` ("Go to workspace 3") name the *key*, not the
+The workspace switcher is the one people will notice most: a named workspace reads
+"Coding · kitty and 3 others" there. Its label is built from a plain copy of the workspace
+(`{ id, name }`, line 178, because Hyprland deletes workspaces that go empty), so it switches
+to `Config.workspaceLabel(card.modelData.id)` and updates live if you rename while it's open.
+
+The rows of **dots** (the bar, under the window switcher, and the Super+Left/Right pill in
+`OSD.qml`) have no number or text, so there's nothing to replace there and they stay as they
+are. The shortcut descriptions in `binds.lua` ("Go to workspace 3") name the *key*, not the
 workspace, and stay as they are.
 
 ## Design
@@ -49,7 +54,7 @@ is what the Lua config and other tools match workspaces on, and it's lost the mo
 workspace empties, so it's the wrong place for this.
 
 **Limit: 20 characters.** That fits the 300-wide panel title at 15px with the pencil beside
-it, and the overview's card label with " · App name" after it. Every place it's shown still
+it, and the workspace switcher's label with " · kitty and 3 others" after it. Every place it's shown still
 elides, in case of wide characters.
 
 ### 2. When the name goes away
@@ -141,7 +146,7 @@ The question itself, in Slate's voice:
      dropped when the workspace closes and **kept across a Slate reload**.
    - static: a consistency check that no QML builds `"Workspace " +` by hand any more.
    - visual: a `panel-windowmode` scene with a named workspace, and a `rename-workspace`
-     dialog scene; re-approve `overview` if its label changes.
+     dialog scene; and a named workspace in the `overview` (workspace switcher) scene.
 8. Docs and site: `site/features.html` (window mode at 217, Spaces at 249, overview at 263),
    `README.md` (Spaces, overview), `docs/ARCHITECTURE.md` (the names file and IPC beside the
    window mode notes at 98-108, and the Spaces format at 223-247).
@@ -149,12 +154,9 @@ The question itself, in Slate's voice:
 
 ## Open questions
 
-- **The switchers.** The workspace switcher pill and the bar show dots, so a name has nowhere
-  to appear there today. Suggested: when the workspace you land on has a name, the pill shows
-  it as a small label under the dots; unnamed workspaces look exactly as they do now. The
-  alternative is to leave the pill alone and count the overview's labels as "the switcher".
 - **How a named workspace reads.** Just "Coding", or "3 · Coding"? Suggested: just the name,
-  as this plan assumes; the dot's position already says which number it is.
+  as this plan assumes ("Coding · kitty and 3 others" in the workspace switcher); the dot's
+  position already says which number it is.
 - **The attention sound.** Renaming is something you asked for, not Slate asking you. Suggested:
   a question with an `input` opens silently (the pencil's click is enough).
 - **Empty workspaces.** You can name the empty workspace you're standing on, but the name goes
