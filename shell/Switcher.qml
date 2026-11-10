@@ -127,6 +127,28 @@ PanelWindow {
             sw.quickClose = sw.pickAnim === "instant";
             sw.shown = false;
             sw.releasing = false;
+            arriveTries = 0;
+            arriveCheck.restart();
+        }
+    }
+    // In case the switch was lost (Hyprland hadn't yet seen the switcher let go of the keyboard,
+    // so it ignored the focus: seen now and then when the computer's busy): look a moment later,
+    // and ask again if the chosen window isn't the one in use. Plainly, without the animation,
+    // and only a few times.
+    property int arriveTries: 0
+    Timer { id: arriveCheck; interval: 250; onTriggered: { arrived.running = false; arrived.running = true; } }
+    Process {
+        id: arrived
+        command: ["hyprctl", "activewindow", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (sw.shown || sw.pendingAddress === "") return;       // (opened again since)
+                let now = "";
+                try { now = JSON.parse(text).address || ""; } catch (e) {}
+                if (now === sw.pendingAddress || ++sw.arriveTries > 3) return;
+                Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.focus({ window = "address:${sw.pendingAddress}" })) end`]);
+                arriveCheck.restart();
+            }
         }
     }
     function cancel() { shown = false; }
