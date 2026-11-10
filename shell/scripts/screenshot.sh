@@ -29,6 +29,22 @@ esac
 tmp=$(mktemp --suffix=.png) || exit 1
 trap 'rm -f "$tmp"' EXIT
 
+# One chooser at a time. Pressing Print again while the first is still waiting for you to
+# drag out an area used to start another on top, each dimming the screen a little more. The
+# second press now does nothing: the one that's open is the one to use. Held only while
+# choosing (the lock is let go before the picture is saved or opened), so the next screenshot
+# can start straight after.
+choosing="${XDG_RUNTIME_DIR:-/tmp}/slate-screenshot.lock"
+one_chooser() {
+    if command -v flock >/dev/null 2>&1; then
+        exec 9>"$choosing"
+        flock -n 9 || exit 0
+    elif pgrep -u "$(id -u)" -x slurp >/dev/null 2>&1; then
+        exit 0
+    fi
+}
+chosen() { exec 9>&- 2>/dev/null || true; }
+
 freeze_screen() {
     # Freeze the picture while choosing, so menus and video hold still
     freeze=""
@@ -38,9 +54,11 @@ unfreeze() { [ -n "$freeze" ] && kill "$freeze" 2>/dev/null; sleep 0.05; }
 
 case "${1:-region}" in
     region)
+        one_chooser
         freeze_screen
         geom=$(slurp -d -b '#00000066' -c '#ffffffcc' -w 2 2>/dev/null); ok=$?
         unfreeze
+        chosen
         [ $ok -eq 0 ] && [ -n "$geom" ] || exit 0
         grim -g "$geom" "$tmp" || exit 1 ;;
     window)
@@ -53,9 +71,11 @@ for c in json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=
         (x, y), (w, h) = c["at"], c["size"]
         print("%d,%d %dx%d" % (x, y, w, h))')
         [ -n "$boxes" ] || exit 0
+        one_chooser
         freeze_screen
         geom=$(printf '%s\n' "$boxes" | slurp -r -b '#00000066' -c '#ffffffcc' -B '#ffffff22' -w 2 2>/dev/null); ok=$?
         unfreeze
+        chosen
         [ $ok -eq 0 ] && [ -n "$geom" ] || exit 0
         grim -g "$geom" "$tmp" || exit 1 ;;
     screen)
