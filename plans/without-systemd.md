@@ -67,9 +67,16 @@ NetworkManager, BlueZ, accountsservice, greetd, CUPS itself.
 
 ## What a system needs
 
-- **Required:** elogind (and polkit built for it). It gives Slate seats for Hyprland, a
-  login session for polkit prompts, sleep signals, inhibitors and `loginctl` power
-  commands. This is one requirement that makes almost everything work unchanged.
+- **Required: a login service (logind).** On systemd distros that's systemd-logind, which
+  they already have: nothing changes there, and elogind is never installed (it conflicts
+  with systemd). Without systemd it's elogind (and polkit built for it). Either gives Slate
+  seats for Hyprland, a login session for polkit prompts, sleep signals, inhibitors and
+  `loginctl` power commands, which is why almost everything works unchanged.
+- **The current distros are untouched:** their package lists don't change (elogind is only
+  in `artix.txt`), and `slate-init` takes the systemd branch first, running the same
+  commands as today. It decides by what's running (`/run/systemd/system` exists → systemd;
+  else an `org.freedesktop.login1` owner on the system bus → elogind), never by which
+  commands happen to be installed: `loginctl` exists on both.
 - **seatd alone** (no elogind): Slate starts and the desktop works, but no suspend/restart
   from Slate without extra setup, no lock-before-sleep, and password prompts (polkit) may
   refuse. Supported as "runs, with these parts switched off and explained", not as a
