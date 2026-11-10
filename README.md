@@ -66,6 +66,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Login screen | optional greetd greeter in a minimal Hyprland, same design as the lock screen (Settings → Lock & Idle → Install) | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |
 | Hot corners | Per-corner actions, disarmed while locked | `HotCorners.qml` |
+| MCP server | `slate mcp`: add it to an AI agent you already use (Claude Code, Codex…) and it can answer questions about your desktop: your settings, open windows, workspaces, Spaces, apps and wallpapers. It only looks, in words: never the screen, files or the clipboard ([docs/ASSISTANT.md](docs/ASSISTANT.md)) | `scripts/slate-mcp.py`, `data/assistant-prompt.md` |
 | Screen corners | Rounded black screen corners | `ScreenCorners.qml`, `Bar.qml` |
 | Shared settings | `Config` singleton backed by `settings.json`; theme (accent, light/dark, wallpaper tint) | `Config.qml` |
 | Wallpaper | Drawn per screen on the background layer, cross-fades on change; picker in Settings (Super+Shift+W) | `Wallpaper.qml` |
@@ -81,6 +82,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the pieces fit, IPC, Hyprland integration, theming, settings
 - [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md) — lock screen, idle/sleep, login screen (greetd) and recovery
 - [docs/SESSION.md](docs/SESSION.md) — the "Slate" login session, its Hyprland config and personal overrides
+- [docs/ASSISTANT.md](docs/ASSISTANT.md) — Slate's MCP server: adding it to an AI agent, its tools, what leaves your computer
 - [docs/TESTING.md](docs/TESTING.md) — the test suite: what it checks, running it, approving new screenshots
 - [docs/REDISTRIBUTION.md](docs/REDISTRIBUTION.md) — packaging status and what's left
 
@@ -111,6 +113,9 @@ slate restart
 slate ipc call settings toggle
 slate ipc call lock preview lock      # or: preview login
 slate ipc call launcher search "2*pi"
+
+# Let an AI agent ask about your desktop (docs/ASSISTANT.md)
+claude mcp add slate -- ~/.config/slate/bin/slate mcp
 
 # Slate as its own login session
 sudo ~/.config/slate/bin/slate-session-install            # add "Slate" to the login screen

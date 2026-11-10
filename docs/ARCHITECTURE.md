@@ -70,6 +70,9 @@ wallpapers/             Slate's own wallpapers, 4K (made by tools/make-wallpaper
 sounds/                 volume tick; notification chime, attention, click, swish, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
+scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (ASSISTANT.md). Read-only tools
+                              over `config get`, `hyprctl -j` and spaces.py; standard library only.
+                              data/assistant-prompt.md is what it tells an agent about Slate
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
 bin/slate-init                the one place that knows the init system and login service: systemd, or

@@ -1,6 +1,8 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **planned** (2026-11-10), nothing built. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+Status: **step 1 of 5 built** (2026-11-10): the read-only server, `slate mcp`
+([docs/ASSISTANT.md](../docs/ASSISTANT.md)); "What building it settled", near the end, has what
+that answered. Steps 2 to 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
 accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
 ([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
@@ -212,9 +214,12 @@ and the rest still match by key and comment.
   - *2026-07-28 and later* has **no handshake**. Every request carries
     `_meta["io.modelcontextprotocol/protocolVersion"]` and `…/clientCapabilities`; a request
     without them is refused with `-32602`; a version the server doesn't speak gets `-32022`
-    with `data.supported`. The server **must** implement `server/discover` (supported versions,
-    capabilities, `serverInfo`, optional `instructions`). Every result carries
-    `resultType: "complete"`. The server never sends requests of its own.
+    with `data.supported` and `data.requested`. The server **must** implement
+    `server/discover` (`supportedVersions`, `capabilities`, optional `instructions`, `ttlMs` and
+    `cacheScope`, and the server's identity in `_meta["io.modelcontextprotocol/serverInfo"]`,
+    not a top-level `serverInfo`; the discover request needs `_meta` like any other). Every
+    result, `tools/list` and `tools/call` included, carries `resultType: "complete"`. The
+    server never sends requests of its own.
   - *2025-11-25 and earlier* open with `initialize` (reply with the version asked for if
     supported, otherwise the server's latest; capabilities `{"tools": {}}`; `serverInfo`;
     `instructions`), then `notifications/initialized`, and may `ping`.
@@ -1009,6 +1014,36 @@ Not checked, to settle while building:
 - Whether the `mcp` Python SDK is packaged on the target distros (assumed not worth relying on).
 - Whether any agent CLI is in any target distro's own repositories.
 - The Tabler codepoint for the bar button's icon (depends on the name).
+
+## What building it settled
+
+Step 1 (2026-11-10):
+
+- **Linking settings to their rows.** `settings-index.py` links 177 of its 234 rows to a key;
+  the 57 it can't are rows that aren't one setting (Displays, Sound's devices, buttons) or
+  set theirs through a function. Of the 202 keys, 21 need a name by hand (`NAMED` in the
+  server) and 9 are hidden (earlier versions' sound switches, `lightMode`, `welcomeShown`).
+  A looser "first mention" link was tried and dropped: it linked Theme to `locationName`.
+- **`qs ipc call`** exits 0 and prints "Target not found." or "undefined" for an unknown
+  target or key, and exits non-zero with no running Slate, which is how the server knows
+  Slate isn't there. About 25 ms a call.
+- **Window addresses in Lua** already work as `spaces.py` does it (`win_sel`, `dispatch`).
+- **`claude mcp add slate -- <command>`** is the form (checked against `claude mcp add --help`).
+- **Tried from Claude Code 2.1.319**, as part 4 will run it (`claude -p --strict-mcp-config
+  --mcp-config '{"mcpServers":{"slate":{"command":…,"args":["mcp"]}}}' --tools ""
+  --allowedTools "mcp__slate__*" --permission-mode dontAsk`): the `.mcp.json` shape is right
+  for the string, the `mcp__slate__*` wildcard lets Slate's tools through, `--tools ""` left
+  it with Slate's eight tools and nothing else, and a question needing three tool calls took
+  under five seconds from a cold start. Which protocol era it spoke wasn't looked at.
+- **Added beyond the plan, for Dayle to confirm:** the server never gives the location
+  (`locationName`, `latitude`, `longitude` answer with no value), and folders are shown
+  with `~` in place of the home folder. `shell/data/assistant-prompt.md` exists already, in
+  blocks marked `[shared]` and `[server]`, so Chalk's briefing (step 4) adds `[chalk]`
+  blocks to the same file.
+- **Left for step 2**, since they need IPC that step adds: volume, brightness and Do Not
+  Disturb in `status`; `media_info`; `notifications_list`; the gate (`assistant status`),
+  the "Window titles" switch and the activity log. Until then the server has no switch of
+  its own: it answers whoever the person added it to.
 
 ## Sources
 

@@ -8,6 +8,7 @@
 #   slate log              follow Slate's log
 #   slate logs             save recent logs and system details to a file, for bug reports
 #   slate dir              print where Slate is installed
+#   slate mcp              Slate's MCP server, for an agent to start (slate mcp --help: adding it to one)
 #   slate build-hyprbars   build Hyprbars, the optional title-bar plugin (again after Hyprland updates)
 # Slate's folder is the one this script lives in (bin/..), or $SLATE_DIR.
 SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
@@ -62,7 +63,8 @@ case "${1:-start}" in
     log) exec tail -f "$LOG" ;;
     logs) exec "$SLATE_DIR/bin/slate-logs" ;;
     dir) echo "$SLATE_DIR" ;;
+    mcp) shift; exec python3 "$SLATE_DIR/scripts/slate-mcp.py" "$@" ;;
     build-hyprbars) shift; exec "$SLATE_DIR/bin/slate-build-hyprbars" "$@" ;;
-    -h|--help|help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+    -h|--help|help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) echo "slate: unknown command '$1' (see slate --help)" >&2; exit 1 ;;
 esac
