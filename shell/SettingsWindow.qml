@@ -393,17 +393,23 @@ FloatingWindow {
                     id: sideCol
                     width: parent.width
                     spacing: 4                  // room between the pills for the page you're on and the one pointed at
-                    // Slate's mark (as on the About page) beside the title
-                    Row {
-                        leftPadding: 4; topPadding: 4; bottomPadding: 14
-                        spacing: 8
-                        SlateLogo { size: win.compact ? 30 : 40; showText: false; anchors.verticalCenter: parent.verticalCenter }
-                        Column {
-                            visible: !win.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: 18; font.weight: Font.Medium }
-                            Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
+                    // Slate's mark (as on the About page) beside the title; drag it to move the window
+                    Item {
+                        width: parent.width
+                        height: logoRow.implicitHeight
+                        Row {
+                            id: logoRow
+                            leftPadding: 4; topPadding: 4; bottomPadding: 14
+                            spacing: 8
+                            SlateLogo { size: win.compact ? 30 : 40; showText: false; anchors.verticalCenter: parent.verticalCenter }
+                            Column {
+                                visible: !win.compact
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: 18; font.weight: Font.Medium }
+                                Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
+                            }
                         }
+                        MouseArea { anchors.fill: parent; onPressed: win.startSystemMove() }
                     }
                     Repeater {
                         model: win.sidebarSections
@@ -452,6 +458,9 @@ FloatingWindow {
                 z: 2
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 height: titleRow.height + (pageSearch.visible ? pageSearch.height + 14 : 0)
+                // The header's empty space moves the window, as a title bar would (under its search,
+                // title and buttons, which take their own clicks)
+                MouseArea { anchors.fill: parent; z: -1; onPressed: win.startSystemMove() }
 
                 // ---- Search every setting (SettingsIndex), from any page -------------------
                 Rectangle {
