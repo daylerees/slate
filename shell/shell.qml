@@ -503,7 +503,9 @@ ShellRoot {
         readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
         readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
-        readonly property color tileColor: Config.frostedTile(Config.tint("#1d222a"))
+        // Slate's own tiles (Apps, media, Downloads, the Waste Basket). Dark without glass: a little
+        // lighter, as they were hard to tell from the dock
+        readonly property color tileColor: Config.frostedTile(Config.tint(!Config.glass && !Config.s.lightMode ? "#29303a" : "#1d222a"))
         readonly property color textColor: Config.tint("#eef1f5")
         readonly property color dotColor: Config.tint("#c5ccd6")
         readonly property color activeDotColor: Config.accent
