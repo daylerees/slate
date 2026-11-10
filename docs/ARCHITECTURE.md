@@ -24,7 +24,18 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
-├─ FadeIn.qml           fade in from the dark at login, with the welcome sound ("slate-fade-in")
+├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
+├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
+├─ SecretEmpty.qml      the note in the middle of the screen while the secret workspace shows with nothing on it
+├─ HyprbarsWatch.qml     Hyprbars, the optional title-bar plugin: notices when it needs rebuilding, falls back to Slate Bars, asks
+│                       on the topmost floating window (last in hyprctl clients, which runs bottom to top)
+│                       ("slate-titlebar"; drags with slateDragMove/slateDragEnd in animations.lua; a layer
+│                       can't be locked to a window, so a drag hides the bar, moves the pointer to the
+│                       window's middle (hl.dsp.cursor.move) and shows a move handle there instead; its top
+│                       corners resize the same way, from that corner of the window (slateDragResize). Its
+│                       maximise (button, double-click, Super+D for floating windows: ipc titlebar maximise)
+│                       fills the usable area less the bar's height, with no border, rounding or shadow
+│                       (slatePlace/slateFlat), so the bar stays as its only frame
 ├─ FadeOut.qml          fade to black on log out, restart, shut down, with the goodbye sound ("slate-fade-out")
 ├─ OSD.qml              volume/brightness indicators ("slate-osd")
 ├─ LockScreen.qml       session lock, PAM, idle, sleep hook
@@ -52,16 +63,28 @@ scripts/webcam.py       Settings → Webcam: cameras, their picture settings (v4
                         camera and put back at login; which apps use the camera
 scripts/tray-watcher.py the tray's register (org.kde.StatusNotifierWatcher), run apart from Slate
                         (started detached by the session and by Slate) so tray icons outlive
-                        Slate's restarts; without it, Quickshell is the register itself
+                        Slate's restarts; without it, Quickshell is the register itself. It
+                        always reports a tray as showing, so apps that check once as they
+                        start (Electron) still sign up while Slate is starting or restarting
+wallpapers/             Slate's own wallpapers, 4K (made by tools/make-wallpapers.py); listed in Settings → Appearance below your folder's
 sounds/                 volume tick; notification chime, attention, click, swish, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
+bin/slate-init                the one place that knows the init system and login service: systemd, or
+                              elogind with OpenRC, runit, dinit or s6. Power (suspend, restart, shut
+                              down), inhibitors, date and time, whether a service runs and the command
+                              that switches it on, the login manager. Nothing else calls systemctl,
+                              systemd-inhibit or timedatectl (a test checks). Config.system holds its
+                              `info`, so Settings and the panels leave out or explain what can't be done
+scripts/session-services.sh   at session start: Hyprland's environment to D-Bus (and systemd); without
+                              systemd, PipeWire, WirePlumber and pipewire-pulse too
 bin/slate-system              packages (packaging/<distro>.txt, copied in) and the login session
                               in step with this version: --check, --fix (pkexec), --prompt
                               (urgent notification 25 s after start; shell.qml)
 shaders/mono.frag(.qsb)       tray icons → single theme colour
+shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
                         everything it's installed with, greeter/emergency/ is its fallback
@@ -73,17 +96,42 @@ opening any of them closes bar panels (wired in `shell.qml`).
 ## Settings and theme
 
 - `Config.s.<name>` is a `JsonAdapter` over `settings.json`; the settings app writes it,
-  editing the file by hand also works (it's watched).
+  editing the file by hand also works (it's watched). It's read up front (blocking, in
+  Config's `Component.onCompleted`), so a reload starts in your theme, not the defaults.
 - `Config.accent` is the accent in use: chosen colour, or one picked from the wallpaper.
 - `Config.tint(hex)` maps every theme colour: light mode flips greys (dark ↔ light) and
   deepens colours; "background tint from wallpaper" shifts greys toward the wallpaper's
   hue. With both off it returns the colour unchanged (the default dark slate). **All
   theme colours in the QML go through `Config.tint()`** — keep it that way for new UI.
-- Window mode (Settings → Windows): `setWindowMode` in `windowrules.lua` turns a float-all
-  rule on or off and floats/re-tiles open windows (tagged `slate-floated`, so apps that float
-  anyway stay floating); in floating mode hyprbars draws title bars, coloured from Slate's
-  theme by `shell.qml`. Hyprland plugins are tied to one Hyprland build, so a stale one is
-  skipped (logged) until rebuilt.
+- Workspace names: a workspace can have a name of its own (the pencil on the window mode
+  panel), shown wherever Slate would say "Workspace 3": always through
+  `Config.workspaceLabel(id)`, never built by hand (a test checks). Kept by Slate, not as
+  Hyprland's workspace name, in `$XDG_RUNTIME_DIR/slate/workspace-names-<instance>.json`
+  (`ipc workspacename set|get|label`); dropped when Hyprland removes the workspace; saved and
+  restored by Spaces and the session as `name` on a workspace. The rename question is
+  `PowerConfirm.confirmWith` with `input: { text, placeholder, maxLength }`, which adds a
+  text field and passes what was typed as the second argument.
+- Window mode: Settings → Windows sets the default (`Config.windowMode`), and each workspace
+  can have its own from the menu bar (`Config.workspaceModes`, kept for the Hyprland session in
+  `$XDG_RUNTIME_DIR/slate/workspace-modes-<instance>.json`; `ipc workspacemode set|get`; Spaces
+  saves and restores it, and so does reopening apps after a restart). Tiling, master, scrolling
+  and monocle are Hyprland layouts: the default in `general:layout`, the rest per workspace
+  (`hl.workspace_rule` layout). Floating is a float rule per workspace (1–30, the rest, the
+  secret workspace) switched on where the mode is floating. Solo (one window per workspace)
+  uses dwindle, a lone tile filling the workspace; windowrules.lua moves a second tiled window
+  that opens on (or is moved to) a Solo workspace on to a new one (`soloSpill`/`soloSpread`). Slate pushes `WINDOW_MODE` and
+  `WORKSPACE_MODES` with the border settings, so they come back after a Hyprland reload;
+  `applyWorkspaceModes`/`setWorkspaceMode`/`setWindowMode` in `windowrules.lua` set the rules
+  and float or re-tile open windows (tagged `slate-floated`, so apps that float
+  anyway stay floating). Floating windows' title bars are Slate Bars, Slate's own (`TitleBar.qml`), unless
+  Hyprbars is chosen and loaded, when the plugin draws them, coloured from Slate's theme by
+  `shell.qml`. A Hyprland plugin is tied to one Hyprland build: `slate-build-hyprbars` names
+  each build for its Hyprland (`hyprbars-<version>-<commit>.so` plus a `.json` record),
+  `hyprbars.lua` asks Hyprland only for the one matching the running Hyprland (and keeps
+  asking for the file it loaded for as long as that Hyprland runs), and `HyprbarsWatch.qml`
+  reads `slate-build-hyprbars --status`, switches the setting to Slate Bars when Hyprbars is
+  wanted but can't load, and asks about rebuilding and switching back
+  (`~/.local/state/slate/hyprbars-notes.json` remembers what it has asked).
 - Folder colour (Settings → Appearance): `scripts/folder-colour.py` makes
   `~/.local/share/icons/Slate-Icons`, a theme that inherits the user's Papirus theme and only
   links the folder icons to another of Papirus's colours (no root needed, unlike
@@ -111,7 +159,10 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - Location for weather and night light's sunset/sunrise: `Config.s.latitude/longitude`
   (`Config.sunTimes()` computes the sun locally).
 - The wallpaper is `Config.s.wallpaper` (drawn by `Wallpaper.qml`);
-  `scripts/wallpaper-accent.py` (ImageMagick) returns the accent and tone.
+  `scripts/wallpaper-accent.py` (ImageMagick) returns the accent and tone. They're cached in
+  `~/.cache/slate/wallpaper-colours.json` (with the wallpaper they're for) and used at start-up
+  until the script answers; a cache that's damaged, for another wallpaper or not colours is
+  ignored and written again. The login screen doesn't use it.
 - Canvas-drawn shapes (corners, panel joins) repaint on colour change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a
   full restart after editing them.
@@ -241,7 +292,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `upower` | battery |
 | `polkit` | password prompts (`PolkitAgent.qml`), `pkexec` for login-screen updates |
 | `pam` | lock screen password check, `faillock` lockout |
-| `systemd`, `util-linux`, `dbus`, `glib2`, `procps-ng` | `systemctl`/`systemd-inhibit` (power, sleep), `setpriv`/`runuser`, `dbus-send`/`gdbus`/`gsettings`, `pgrep`/`pkill` |
+| `systemd` or `elogind`, `util-linux`, `dbus`, `glib2`, `procps-ng` | the login service: `systemctl`/`systemd-inhibit`, or `loginctl`/`elogind-inhibit` without systemd (power, sleep; through `bin/slate-init`), `setpriv`/`runuser`, `dbus-send`/`gdbus`/`gsettings`, `pgrep`/`pkill` |
 | `libnotify` | `notify-send` (login-screen update prompt, screenshot fallback) |
 | `fontconfig` | font lists in Settings, greeter font sync |
 | `curl` | weather |
@@ -261,12 +312,12 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `pciutils` | Debug → Export logs (graphics card details) |
 | a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |
 | `swash` | opens screenshots to annotate; without it they're saved to ~/Pictures/Screenshots and copied |
-| `uwsm` | session management; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
+| `uwsm` | session management, with systemd only; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
 | `brightnessctl` | screen and keyboard brightness keys |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
-| hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Title bars on floating windows in floating mode. Built per Hyprland version by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
+| hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers & Scanners: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers & Scanners: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
@@ -280,7 +331,17 @@ before a restart with "Reopen my apps" on, `spaces.py session-save` keeps the wi
 `scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming and the code font — fontconfig's "monospace",
 GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when the theme, accent, code font or the
 apps switched on in Settings → App Theming change). The apps live in `scripts/slate_apps.py`
-(one function each, all off until switched on); `scripts/slate_theme.py` makes every change through an
+(one function each, all off until switched on; `INFO` there gives Settings each one's description,
+website and packages per distro family, for its Install button, which runs
+`bin/slate-system --install` through pkexec). Apps with Flatpak builds (Discord's Vencord,
+Vesktop, VS Code, VSCodium, Zed, Helix, Neovim, WezTerm, zathura, GNOME Text Editor, Firefox,
+Obsidian) are themed in their Flatpak's own folders too (`~/.var/app/<id>/config` or `data`:
+`flatpak()` and `config_dirs()`). Spotify and Discord are themed through a patch in the app's own
+files (Spicetify, Vencord), which an update of the app removes: each has a `@stale` check
+(`apply-theme.py --stale`, run by `shell.qml` every five minutes while either is themed), and
+the next apply patches it again (`spicetify backup apply`; for Discord, the small `app.asar`
+Vencord's installer left, kept in `~/.local/state/slate/vencord-app.asar`) and prints
+`restored`/`lost` lines that `shell.qml` turns into a notification; `scripts/slate_theme.py` makes every change through an
 undo log (`~/.local/state/slate/app-theming.json`) so switching an app off puts its config back, and backs
 config files up once (`.bak-slate-theme`). Open apps reload live where they can: kitty SIGUSR1, Ghostty
 SIGUSR2, Helix SIGUSR1, btop SIGUSR2, cava SIGUSR2, alacritty by itself, GTK by switching the theme name

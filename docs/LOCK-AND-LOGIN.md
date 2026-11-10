@@ -45,6 +45,35 @@ the gloss sheen like the bar's containers and no outline.
 
 ## Login screen (greetd)
 
+Slate's login screen is **optional, and off unless you install it**. Installing Slate only
+adds "Slate" to whatever login screen you already have; Slate's own replaces that login
+screen, so it's something you choose:
+
+- **Install:** Settings → Lock & Idle → "Slate login screen" → **Install** (it asks for your
+  password), or `./install.sh --login-screen`, or `sudo ~/.config/slate/bin/slate-greeter-install`.
+  It needs greetd installed; if your computer starts another display manager (GDM, SDDM,
+  LightDM), Settings says so and gives the command to switch to greetd.
+- **Switch back:** the same row's **Switch back** button, or
+  `sudo ~/.config/slate/bin/slate-greeter-install --revert`. Either puts greetd's previous
+  config back (from `/etc/greetd/config.toml.before-slate`); Slate then stops offering updates.
+
+Before you install it, know what it involves:
+
+- **It can stop you logging in.** It runs before anyone logs in, as a system service, from a
+  root-owned copy outside Slate. If that copy breaks there's no desktop to fix it from. The
+  safety net below makes this unlikely (each copy is tested first, the last working one and a
+  basic emergency login are kept), but if all of that fails you need a text console:
+  Ctrl+Alt+F3, log in, run `sudo ~/.config/slate/bin/slate-greeter-install --revert`, then
+  `sudo systemctl restart greetd`.
+- **It needs updating, by you, with your password.** The installed copy doesn't change when
+  Slate does. When Slate's login screen code changes, Slate asks you to update it (see below);
+  until you do, you see the old version. Updates to Hyprland, Quickshell or greetd can also
+  break the installed copy without Slate changing at all: the fallbacks cover that at boot,
+  and updating it again (or switching back) fixes it.
+- **It depends on more of your system:** greetd being the display manager systemd starts, a
+  `greeter` user (`_greetd` on Debian), polkit for the password prompts, and Hyprland and
+  Quickshell working for that user as well as for you.
+
 ```
 greetd ──runs as "greeter"──▶ systemd-cat dbus-run-session start-hyprland -c /usr/local/share/slate-greeter/hyprland.lua
                                 └─ run-greeter.sh ─▶ qs -p /usr/local/share/slate-greeter   (greeter/shell.qml)
@@ -93,8 +122,10 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
      copy started.
 - The greeter can't read your home folder, hence the copies. Code is root-owned; the
   user-owned folder holds only data (images, fonts, setting values).
-- Settings → Lock & Idle → "Slate login screen" shows whether the installed code
-  matches yours (`slate-greeter-sync --check`) and offers Preview / Sync now.
+- Settings → Lock & Idle → "Slate login screen" shows whether it's installed and whether the
+  installed code matches yours (`slate-greeter-sync --status`), and offers Preview, then
+  Install (with a warning of the above first), Update or Switch back. The automatic update
+  prompt only runs while greetd uses Slate's login screen.
 - Default session: the last one chosen on the login screen, else the one you were
   using at the last sync (uwsm-managed or plain Hyprland).
 - greetd config backup: `/etc/greetd/config.toml.before-slate`.

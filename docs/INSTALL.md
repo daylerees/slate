@@ -20,7 +20,7 @@ Options: `./install.sh --help`.
 | Option | What it does |
 |---|---|
 | `--yes` | don't ask, answer yes to everything |
-| `--login-screen` | also switch your login screen to Slate's own (greetd) |
+| `--login-screen` | also switch your login screen to Slate's own (greetd). Optional; read the risks in [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) first |
 | `--no-deps` | skip installing packages (you installed them yourself) |
 | `--link` | link `~/.config/slate` to this folder instead of copying (for working on Slate) |
 | `--uninstall` | remove Slate (see [Removing](#removing)) |
@@ -30,8 +30,11 @@ Options: `./install.sh --help`.
 - **Hyprland 0.57 or newer** — Slate's session uses Hyprland's Lua config (`hyprland.lua`),
   which older versions don't understand.
 - **Quickshell 0.3 or newer** — the toolkit Slate is written in.
-- A systemd-based distro with PipeWire, NetworkManager, polkit and the other packages in
-  `packaging/<distro>.txt` (the installer installs them).
+- **A login service:** systemd (which most distros use, and includes one), or, without
+  systemd, **elogind**. It's what lets Slate suspend, restart and shut down, lock before
+  sleep, and show password prompts. See [Without systemd](#without-systemd-artix-void-gentoo).
+- PipeWire, NetworkManager, polkit and the other packages in `packaging/<distro>.txt` (the
+  installer installs them).
 
 Your distro's notes are below. If its Hyprland or Quickshell is too old, the installer
 says so and points here.
@@ -46,6 +49,10 @@ says so and points here.
 | **Fedora 44** and newer | ✓ | COPRs `sdegler/hyprland` and `errornointernet/quickshell` (enabled for you) |
 | **openSUSE Tumbleweed** | ✓ | Hyprland official; Quickshell built from source |
 | **NixOS** (unstable) | ✓ | add `packaging/nixos.nix` to your config |
+| **Artix** (OpenRC, runit, dinit, s6) | ✓ new, not yet tried on a real install | `world` (Hyprland) and `galaxy` (Quickshell) repositories. [Without systemd](#without-systemd-artix-void-gentoo) |
+| **Void** (runit) | ✓ new, not yet tried on a real install | Hyprland from a third-party repository; Quickshell official. [Without systemd](#without-systemd-artix-void-gentoo) |
+| **Gentoo** (OpenRC or systemd) | ✓ new, not yet tried on a real install | you emerge them (hyproverlay, GURU). [Without systemd](#without-systemd-artix-void-gentoo) |
+| Alpine, Chimera, Devuan | ✗ | no Hyprland 0.57 yet (Alpine edge has 0.54; Chimera has none; Devuan follows Debian's) |
 | Debian 13 "trixie", Ubuntu 24.04 / 25.10, Fedora 43, openSUSE Leap | ✗ | Hyprland 0.57 isn't available (or Qt is too old for Quickshell) |
 
 ### Arch, CachyOS, EndeavourOS, Manjaro
@@ -88,6 +95,96 @@ and a file manager too if you don't have one (kitty and Nautilus, say). NixOS's 
 configuration rather than by `slate-session-install` and `slate-greeter-install`: add the
 session with `services.displayManager.sessionPackages`, and greetd with `services.greetd`.
 
+### Without systemd: Artix, Void, Gentoo
+
+Slate was written on systemd, and it now also runs without it. Hyprland and Quickshell
+themselves don't need systemd; Slate used a handful of systemd's tools, and those calls now
+go through one helper (`bin/slate-init`) that uses the right thing for your system. With
+systemd, nothing has changed.
+
+**Please know before you start:** this support is new, and it has been built and tested
+against stand-ins for these systems, not yet on real installs of them. The package names for
+Void and Gentoo are our best knowledge. If something doesn't work, we'd love to hear about it.
+
+**What you need**
+
+- **elogind, running.** This is the one firm requirement. It does for Slate what
+  systemd's login service does elsewhere: seats for Hyprland, suspend, restart and shut
+  down (`loginctl`), telling Slate the computer is about to sleep, holding the lid and power
+  button for Slate, and the login session that password prompts (polkit) need. Use the
+  polkit built for elogind.
+- **With seatd alone** (no elogind) Slate still starts and the desktop works, but it can't
+  suspend, restart or shut down for you, "Lock before sleep" and the lid and power button
+  settings are greyed out with a note saying why, and password prompts may be refused. It's
+  not a setup we can recommend.
+- **Hyprland 0.57+ and Quickshell 0.3+**, as everywhere.
+
+**What's different from a systemd system**
+
+- **Slate doesn't switch services on for you.** Each init system has its own way, so
+  where Slate would offer a "Turn on" button (printing), or the installer would enable
+  Bluetooth and NetworkManager, it shows you the command for your init system instead, for
+  example `sudo rc-update add bluetooth default && sudo rc-service bluetooth start`, or
+  `sudo ln -s /etc/sv/bluetoothd /var/service/`. `bin/slate-init service-hint bluetooth`
+  prints it at any time.
+- **Sound is started by the session.** systemd's user session normally starts PipeWire;
+  without it Slate's session starts PipeWire, WirePlumber and pipewire-pulse itself
+  (`scripts/session-services.sh`), unless they're already running. If you start them your own
+  way, Slate leaves them alone.
+- **The session starts Hyprland directly.** uwsm (which runs a session through systemd)
+  isn't used, and Slate starts a D-Bus session bus itself if nothing has.
+- **Date & Time:** changing the time zone or network time needs a service that offers what
+  systemd's does (`org.freedesktop.timedate1`; openrc-settingsd provides it). Without one,
+  the page shows your time zone but can't change it, and says so.
+- **Slate's login screen** (optional, as everywhere) works with greetd under any init
+  system; you enable the greetd service yourself, and Settings → Lock & Idle shows the
+  command. Its log goes to `/var/cache/slate-greeter/hyprland.log` rather than the journal.
+- **Hyprland updates:** the same as on any distro, but note that Hyprland needs a very
+  recent compiler to build (gcc 16 or clang 19), which is why some distros are behind.
+
+**Artix**
+
+Switch on the `world` and `galaxy` repositories in `/etc/pacman.conf` (Hyprland is in
+`world`, Quickshell in `galaxy`), then:
+
+```sh
+./install.sh
+```
+
+The installer uses `packaging/artix.txt` (Arch's list without systemd and uwsm, with
+elogind) and then adds each service's package for your init system
+(`networkmanager-openrc`, `bluez-runit`, `greetd-dinit`…), which is what lets your init
+system start it. It then tells you which services aren't running and how to switch them on.
+
+**Void**
+
+Hyprland isn't in Void's own repositories ("a conflict of packaging philosophy", in
+Hyprland's words), so you need a third-party repository that has Hyprland 0.57 or newer,
+such as [hyprland-void](https://github.com/Makrennel/hyprland-void). We haven't been able to
+confirm which version each currently carries: check before you rely on one, and remember that
+a third-party repository is run by its maintainer, not by Void or by Slate. Quickshell is in
+Void's own packages. Then:
+
+```sh
+./install.sh
+```
+
+It installs `packaging/void.txt` one package at a time, so a name Void spells differently is
+reported rather than stopping everything. Add yourself to the `_seatd` group if your
+Hyprland repository's notes say to.
+
+**Gentoo**
+
+Slate leaves `emerge` to you, since USE flags, overlays and build time are yours to choose.
+`./install.sh` shows the list (`packaging/gentoo.txt`) and stops; emerge them, then run
+`./install.sh --no-deps`. Hyprland 0.57+ is in the hyproverlay overlay and Quickshell in
+GURU. Without systemd, build with `USE="elogind -systemd"`, and add
+`app-admin/openrc-settingsd` if you'd like Settings to change the time zone. Gentoo on
+systemd needs none of this section.
+
+**Not yet:** Alpine and Chimera (no Hyprland 0.57 packaged; both also use musl, which Slate
+hasn't been tried on) and Devuan (its Hyprland is Debian's, which is older).
+
 ### Other distros
 
 Install Hyprland 0.57+, Quickshell 0.3+ (see its
@@ -101,10 +198,12 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
   saved to `~/Pictures/Screenshots` and copied to the clipboard.
 - **Geist** and **Geist Mono** (the interface and code fonts) are bundled with Slate, so
   nothing to install.
-- **hyprbars** (title bars in floating mode) is optional: without it Slate tiles windows,
-  and Settings doesn't offer floating mode. It's only packaged for NixOS
-  (`hyprlandPlugins.hyprbars`) and the AUR; Slate builds it from source, which needs Hyprland's headers
-  (part of the `hyprland` package on Arch; `hyprland-devel`/`hyprland-dev` elsewhere).
+- **Hyprbars** is optional and not installed with Slate: floating windows get Slate Bars,
+  Slate's own title bars, which need nothing. Hyprbars is a Hyprland plugin that puts a title bar on every
+  floating window; choose it in Settings → Windows → Title bars and Slate builds it from
+  source, which needs `git`, `make`, `g++`, a connection and Hyprland's headers (part of the
+  `hyprland` package on Arch; `hyprland-devel`/`hyprland-dev` elsewhere). See
+  [Title bars](#title-bars) below for what it involves.
 - **Papirus** (the icon theme behind Settings' coloured folder icons) is packaged everywhere
   and installed with Slate. The installer makes Papirus-Dark your icon theme unless you've
   picked your own; folder colours only work while a Papirus theme is in use.
@@ -128,11 +227,6 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    **Icons and cursor** — the Papirus icon theme (a package) becomes your icon theme,
    Papirus-Dark, unless you've chosen one of your own; Slate's cursors (bundled) are
    linked into `~/.local/share/icons` for the session to use.
-   **Title bars** — builds the [hyprbars](https://github.com/hyprwm/hyprland-plugins/tree/main/hyprbars)
-   Hyprland plugin for your Hyprland into `~/.local/share/slate/plugins` (no root), for
-   floating mode (Settings → Windows → Window mode). It's optional: without it (or without
-   Slate's patch to it) Slate tiles windows and Settings doesn't offer floating mode.
-   Rebuild it after Hyprland updates with `slate build-hyprbars`.
 4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is kept as
    `slate.previous` (one version back; your `settings.json`, `hypr/` and `user/` are
    carried over).
@@ -140,8 +234,46 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    `/usr/local/bin/slate-session` and `/usr/share/wayland-sessions/slate.desktop`. This
    works with GDM, SDDM, LightDM and greetd login screens.
 6. **Login screen (only with `--login-screen`)** — switches greetd to Slate's own login
-   screen, keeping your old greetd setup to go back to. See
-   [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md).
+   screen, keeping your old greetd setup to go back to. It's optional and not installed
+   otherwise; you can also install it later from Settings → Lock & Idle. A broken login
+   screen can stop you logging in, and it needs updating (with your password) when Slate,
+   Hyprland, Quickshell or greetd change: see
+   [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) before choosing it.
+
+## Title bars
+
+Floating windows (Settings → Windows → Default window mode, or one workspace from the menu
+bar) have title bars. There are two kinds:
+
+- **Slate Bars** (the default): Slate draws a title bar on the floating window in front. Nothing
+  to install, and nothing that breaks when Hyprland updates. The bar fades out while a window
+  moves, resizes or maximises and comes back once it's in place, and floating windows take
+  focus when clicked rather than as the pointer passes over them.
+- **Hyprbars** (optional): the
+  [hyprbars](https://github.com/hyprwm/hyprland-plugins/tree/main/hyprbars) Hyprland plugin,
+  with a bar on every floating window that moves as one with it. Choose it in Settings →
+  Windows → Title bars; Slate says what's involved, builds it into
+  `~/.local/share/slate/plugins` (no root), and switches once it's loaded.
+
+What choosing Hyprbars involves:
+
+- **It stops working after every Hyprland update**, because a plugin only loads in the exact
+  Hyprland it was built for. Slate never loads a build made for another Hyprland (so no error
+  messages at login); it switches to Slate Bars, shows that in Settings, and asks
+  whether to rebuild. When the build is done, a notification offers to reload Hyprland (your
+  windows stay open), and after that Slate asks whether to switch back to Hyprbars.
+- **If Hyprland was updated but you haven't restarted yet**, Hyprbars keeps working, and Slate
+  offers to rebuild it right away so it's ready after your next restart.
+- **Building needs** `git`, `make`, `g++`, Hyprland's headers and (the first time) an internet
+  connection. If a build fails, one notification says why, Slate Bars stay in use,
+  and Settings → Windows has Retry. The full log is `~/.cache/slate/hyprbars-build.log`.
+- **Remove** (Settings → Windows → Hyprbars) switches floating windows to Slate Bars
+  at once and deletes Slate's builds; the plugin is fully gone after your next restart.
+- By hand: `slate build-hyprbars` builds it, `slate build-hyprbars --status` says where it
+  stands.
+
+If you already had Hyprbars working before Slate Bars became the default, you
+keep it.
 
 ## First steps
 
@@ -227,7 +359,7 @@ cd slate && git pull
 ./install.sh --no-deps
 ```
 
-Your settings are kept. If you use Slate's login screen, Slate notices its code changed
+Your settings are kept. If you installed Slate's login screen, Slate notices its code changed
 and offers to update it (it asks for your password).
 
 ## Removing
@@ -243,6 +375,12 @@ Slate's state in `~/.local/state/slate` and `~/.cache/slate` can be deleted by h
 
 ## Troubleshooting
 
+- **Suspend, Restart or Shut down are missing, or settings are greyed out with "This needs
+  systemd or elogind"** — your computer has no login service running. Run
+  `~/.config/slate/bin/slate-init info`: `logind=none` means elogind isn't installed or
+  isn't started. See [Without systemd](#without-systemd-artix-void-gentoo).
+- **No sound, without systemd** — check PipeWire is installed; Slate's session starts it.
+  `pgrep -a pipewire` should show `pipewire`, `wireplumber` and `pipewire-pulse`.
 - **"Slate" isn't on the login screen** — run
   `sudo ~/.config/slate/bin/slate-session-install`. Some login screens only
   rescan sessions after a reboot.

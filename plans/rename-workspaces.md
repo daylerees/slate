@@ -1,6 +1,9 @@
 # Plan: rename workspaces
 
-Status: **proposed, not started** (written 2026-11-10).
+Status: **built** (2026-11-10), not yet released. The three open questions went the suggested
+way: a named workspace reads as just its name, the rename dialog opens without the attention
+sound, and an empty workspace can be named (the name goes when you leave it). The pencil has
+no hover text: Slate's panels have none anywhere.
 
 ## The idea
 

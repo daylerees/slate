@@ -37,6 +37,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/` | Slate itself: installed to `~/.config/slate` |
 | `shell/session/` | the "Slate" login session and its Hyprland config |
 | `shell/greeter/` | Slate's login screen (greetd) |
+| `shell/wallpapers/` | Slate's own wallpapers (made by `tools/make-wallpapers.py`) |
 | `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages and login session in step with Slate) |
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
@@ -62,7 +63,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
 | Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`; new packages and login session changes are installed with your password) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
 | Screensaver | Your wallpaper drifting, a wallpaper slideshow, videos (your own folder, or free scenery clips to download) or black, each with or without the clock; starts before the lock, optional lock on wake (Settings → Screensaver; `slate ipc call screensaver start`) | `Screensaver.qml` |
-| Login screen | greetd greeter in a minimal Hyprland, same design as the lock screen | `greeter/`, `LoginScreen.qml` |
+| Login screen | optional greetd greeter in a minimal Hyprland, same design as the lock screen (Settings → Lock & Idle → Install) | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |
 | Hot corners | Per-corner actions, disarmed while locked | `HotCorners.qml` |
 | Screen corners | Rounded black screen corners | `ScreenCorners.qml`, `Bar.qml` |
@@ -76,7 +77,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 
 ## Docs
 
-- [docs/INSTALL.md](docs/INSTALL.md) — installing on Arch, Debian/Ubuntu, Fedora, openSUSE, NixOS; updating; removing
+- [docs/INSTALL.md](docs/INSTALL.md) — installing on Arch, Debian/Ubuntu, Fedora, openSUSE, NixOS, and without systemd on Artix, Void and Gentoo; updating; removing
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the pieces fit, IPC, Hyprland integration, theming, settings
 - [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md) — lock screen, idle/sleep, login screen (greetd) and recovery
 - [docs/SESSION.md](docs/SESSION.md) — the "Slate" login session, its Hyprland config and personal overrides
@@ -128,8 +129,12 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
   closed; reopen it to see the new colours. GTK3 and Qt/KDE apps update straight away.
 - **The login screen updates separately.** It runs before you log in, from a system folder
   (`/usr/local/share/slate-greeter`), so it can't read your home folder:
-  - Wallpaper, accent, theme and picture changes are copied to it automatically (once it's
-    set up with `./install.sh --login-screen`).
+  - It's optional and isn't installed unless you ask: Settings → Lock & Idle → Install (or
+    `./install.sh --login-screen`). It replaces your system's login screen, so a broken one
+    can stop you logging in, and it needs updating with your password when Slate, Hyprland,
+    Quickshell or greetd change. [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md#login-screen-greetd)
+    has the details and how to switch back.
+  - Wallpaper, accent, theme and picture changes are copied to it automatically.
   - When the login screen's own code changes, Slate shows a **Login screen out of date**
     notification. **Update** asks for your password; until then you'll see the previous
     version at login. Settings → Lock & Idle has the same button.
@@ -138,12 +143,13 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
     over, and failing that a basic emergency login screen, so you're never left at a
     text console.
   - The lock screen is part of Slate itself, so it's always current.
-- **Floating mode's title bars need rebuilding after Hyprland updates.** Floating mode is
-  optional: Slate tiles windows by default, and this only matters if you've switched to
-  floating windows in Settings → Windows. The title bars come from the hyprbars plugin, which only works with the exact Hyprland it was built for. After a
-  Hyprland update, Slate goes back to tiling (and Settings hides the window mode) until
-  you run `slate build-hyprbars` (then log out and in, or `hyprctl reload`). Your choice
-  of floating is kept and comes back once it's built.
+- **Hyprbars needs rebuilding after Hyprland updates.** Floating windows use Slate Bars (Slate's own
+  title bars) by default, which need nothing. Hyprbars (Settings → Windows → Title bars) is the
+  optional alternative: a Hyprland plugin with a bar on every floating window, which only
+  works with the exact Hyprland it was built for. After a Hyprland update Slate switches to
+  Slate Bars and asks whether to rebuild Hyprbars; once that's done and Hyprland has
+  reloaded, it asks whether to switch back. See
+  [docs/INSTALL.md](docs/INSTALL.md#title-bars).
 - **Some changes need a fresh login.** The mouse cursor theme and other environment settings
   reach apps when they start; already-open apps keep the old ones, and Slate itself picks
   them up after logging out and in (`slate restart` reloads Slate's code, not its
