@@ -1,6 +1,7 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **planned** (2026-11-10), nothing built. Revised the same day: the "no spying" rule. Researched against Slate at `06cb8c1`, Hyprland
+Status: **planned** (2026-11-10), nothing built. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+accepted when the feature is switched on. Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
 specification of 2026-07-28. Each claim about another program says whether it was **checked**
 (read in its documentation or its `--help`, sources at the end), or is an **assumption** to
@@ -24,17 +25,25 @@ Three parts, each useful without the next:
    whether it's installed and signed in, what it may do without asking, what it may see, and a
    plain statement of where what you type goes.
 
-The rule the whole design hangs on: **Slate decides what's allowed, not the agent.** Every tool
-call passes through Slate's own gate (the MCP server and Slate together), whichever agent made
-it and however that agent was configured. Anything that can't be undone asks you first, in
-Slate's confirmation window, on your screen.
+The rule the whole design hangs on: **Slate decides what Slate's tools allow, not the agent.**
+Every tool call passes through Slate's own gate (the MCP server and Slate together), whichever
+agent made it and however that agent was configured. Anything that can't be undone asks you
+first, in Slate's confirmation window, on your screen. (The gate covers Slate's tools. An
+agent with a shell of its own can go round it, which is why the third rule below exists.)
 
-And the second rule, as firm as the first: **the assistant doesn't watch you.** Everything it
-knows about your desktop comes from Slate's MCP tools, which answer in words: a setting's
-value, a list of windows. It never takes a screenshot to look around, never records or reads
-the screen, and never goes looking through your files, clipboard, keystrokes, microphone or
-camera to work out what you're doing. If a tool doesn't tell it, it doesn't know, and it says
-so rather than finding another way. Part 3 ("No spying") says how that's kept.
+The second rule: **the assistant isn't there to watch you.** What it knows about your desktop
+should come from Slate's MCP tools, which answer in words: a setting's value, a list of
+windows. Slate gives it no screenshot to look around with, no reading of the screen, and no
+way into your files, clipboard, keystrokes, microphone or camera, and tells it not to go
+looking for one. Part 3 ("No spying") says how far Slate can hold it to that.
+
+And the third, which governs how the other two are described: **these are best efforts, and
+Slate says so.** Slate builds every safeguard it reasonably can and recommends the safest way
+to use the feature, but it can't promise what someone else's agent and someone else's model
+will do, and nothing in Settings, the docs or the site may read as a guarantee. So the feature
+is off until you switch it on, switching it on shows the risks in plain words, and it only
+comes on when you accept them: the choice, and the responsibility for it, are yours (part 3,
+"Switching it on").
 
 ## What exists today
 
@@ -236,13 +245,15 @@ and the rest still match by key and comment.
 **Where the gate is.** In the server and in Slate, never in the agent. An agent's own
 allow-lists and approval modes differ from one CLI to the next, can be switched off by a flag,
 and don't exist for the "custom command" agent. So the prompt window tells the agent to allow
-all of Slate's tools without asking, and Slate does the asking itself. This is also what makes
-the server safe when someone adds it to an agent directly.
+all of Slate's tools without asking, and Slate does the asking itself. This also means
+Slate's tools behave the same when someone adds the server to an agent directly, though an
+agent with a shell of its own isn't held by a gate it can walk round ("No spying", below).
 
 **Each tool call, in order:**
 
 1. `slate ipc call assistant status` (one new call; JSON: allowed, locked, game mode, the
-   settings below). Assistants not allowed (the master switch, off to start with) → every tool
+   settings below). Assistants not allowed (the master switch, off to start with, or the risks
+   not yet accepted: "Switching it on", below) → every tool
    answers "Assistants aren't switched on in Slate. It's in Settings → Assistant." Locked, or
    the login screen → refused. The lock and login screens never load any of this.
 2. Arguments checked (type, range, the refuse list, ids that exist).
@@ -288,30 +299,35 @@ goes to the provider you chose, so the personal parts are yours to switch:
 - **Notifications** (off): `notifications_list` isn't even listed while it's off.
 - The clipboard, files and the screen's picture are never offered.
 
-**No spying.** The second rule at the top, and how it's kept, strongest first:
+**No spying.** The second rule at the top, and what Slate does towards it, strongest first:
 
 1. **The server has no eyes.** No tool returns a picture, a recording, text read off the
    screen, a window's contents, a file, the clipboard or anything typed. Every result is text
    Slate wrote (`content` of type `text` only, never `image`, `audio` or a resource), and a
    test holds it to that. `screenshot` takes a picture for you and tells the agent nothing.
-2. **In the prompt window, Slate's server is all the agent has.** An agent is only offered
-   there when its adapter can switch off every tool of the agent's own (shell, files, web,
-   screen, computer use) and every other MCP server, so `grim`, `hyprctl`, `wl-paste` and the
-   rest are simply out of reach. Claude Code can (`--tools ""`, `--strict-mcp-config`, part 4).
-   An agent that can't be confined this way isn't offered in the prompt window, however good it
-   is: it can still be given Slate's server by hand (below).
+2. **In the prompt window, Slate confines the agent wherever the agent lets it.** Where a CLI
+   can switch off every tool of its own (shell, files, web, screen, computer use) and every
+   other MCP server, the adapter does, so `grim`, `hyprctl`, `wl-paste` and the rest are out of
+   reach. Claude Code can (`--tools ""`, `--strict-mcp-config`, part 4), which makes it the
+   **recommended** agent. One that can't be confined is still offered, marked "Keeps its own
+   tools", and choosing it shows what that means and asks you to accept it ("Switching it on",
+   below). Even a confined agent is confined by its vendor's flags, which Slate doesn't
+   control and which can change with an update.
 3. **It's told so.** The system prompt says it: learn about the desktop only through Slate's
    tools; never take or ask for a screenshot to see what's there; if the tools don't say, tell
    the person you can't see that. Words alone don't hold a model, which is why this is third.
 4. **What it did look at is on record.** Every Look call is in the activity log like any other,
-   so "what has it been reading?" has an answer in Settings → Assistant → Activity.
+   so "what has it been reading?" has an answer in Settings → Assistant → Activity. (Slate's
+   tools only: what an agent does with tools of its own never reaches Slate's log.)
 
-Where this stops, said plainly in Settings and the docs rather than glossed over: **a command of
-your own** runs whatever you typed, and **an agent you add Slate's server to yourself** (Claude
-Code or Codex in your own terminal) keeps its own shell and tools. Slate's server still gives
-neither of them eyes, but Slate can't answer for what their other tools do; that's between you
-and that agent. The promise "it doesn't watch you" is made for the prompt window with one of
-Slate's own agents, and the wording everywhere keeps to that.
+Where this stops, said plainly in Settings and the docs rather than glossed over: **an agent
+that keeps its own tools**, **a command of your own**, and **an agent you add Slate's server
+to yourself** (Claude Code or Codex in your own terminal) can each do whatever their own shell
+and tools allow, including taking a screenshot, reading your files, or calling `slate ipc` and
+`hyprctl` directly and so skipping Slate's gate and its questions altogether. Slate's server
+gives none of them eyes, but Slate can't answer for the rest. So the wording everywhere is
+"Slate's tools never show the assistant your screen", never "the assistant can't see your
+screen".
 
 **Prompt injection.** Window titles, notification text, media titles, Space and workspace names
 and file names are written by other programs and web pages, and reach the model as tool
@@ -321,8 +337,10 @@ and harm, in order of how much it's worth:
 1. The model has nothing dangerous to reach for without you: no shell, no files, no URLs, no
    clipboard, and everything irreversible stops at a question whose wording it doesn't control.
 2. Nothing it reads can leave except to the provider: there's no tool that sends data anywhere
-   (the reason `open_url` isn't offered), and the prompt window only runs an agent whose own
-   built-in tools (shell, files, web) can be switched off ("No spying" above, part 4).
+   (the reason `open_url` isn't offered), and the prompt window runs the agent with its own
+   built-in tools (shell, files, web) switched off where the CLI allows it ("No spying" above,
+   part 4). With an agent that keeps its own tools, this protection is gone, and the risks you
+   accept for that agent say so.
 3. It can't change its own permissions (the refuse list).
 4. Untrusted text is returned as values inside JSON, cut to 200 characters, with control
    characters removed, and both the tool descriptions and the system prompt say that text in
@@ -342,15 +360,58 @@ with **Clear**); not included in `slate logs` bug reports.
 **The off switch.** "Let assistants use Slate" (`assistantEnabled`, **off** to start with).
 Off: the server refuses every tool, the bar button is hidden, and the shortcut opens the
 window with one line and a button ("The assistant isn't switched on yet. **Open Settings**").
-Switching it on is where the privacy note is read.
+
+**Switching it on: the risks, and your say-so.** Turning the switch on doesn't turn it on: it
+asks first, through `win.confirmer` (PowerConfirm, with the attention sound), Cancel focused:
+
+- Title: **Switch on the assistant?**
+- Body, in Slate's voice, short enough to be read rather than skipped, something like:
+  "Before you do, here's what it means.
+  **What leaves your computer.** What you type, and what Slate tells the assistant about your
+  desktop (your settings, your open windows and their titles), goes to the service behind the
+  agent you choose, under your own account with them.
+  **What it can do.** It can change settings and move windows without asking. Slate asks you
+  before anything that can't be undone.
+  **What can go wrong.** Assistants make mistakes, and can be misled by text they read, like
+  the title of a web page. Slate does its best to limit the harm, but it can't promise what an
+  assistant will do, least of all one that keeps tools of its own.
+  Using the assistant is your choice, and what it does on your behalf is your responsibility.
+  You can switch it off at any time."
+- Buttons: **Switch on** / **Cancel**, and a **Read more** link to `docs/ASSISTANT.md`'s
+  risks section (the same points at length, with what Slate does about each).
+
+Only **Switch on** sets `assistantEnabled` and records `assistantRisksAccepted` (the version of
+the risks text accepted, an integer; 0 = never). The gate needs both: enabled, and the accepted
+version equal to the current one, so setting `assistantEnabled` some other way (`slate ipc call
+config set`) switches nothing on, and when a release changes what the risks are, the number
+goes up and Slate asks again, saying what's new. Restore defaults clears it. The prompt window,
+opened before acceptance, shows the "not switched on yet" line, never the dialog out of
+nowhere.
+
+Choosing an agent marked **Keeps its own tools**, or saving **a command of your own**, asks
+once more, per agent (`assistantAgentsAccepted`, a list of ids): "**Use Codex?** Slate can't
+switch off Codex's own tools, so it can do more than Slate's tools allow: run commands, read
+your files, see your screen. Slate's questions and limits only cover Slate's own tools. If you
+use it, that's yours to answer for." **Use it** / **Cancel**.
+
+**Assumption to check:** that `PowerConfirm.confirmWith` lays out a body this long with bold
+headings and a link; if not, it gains a "long" form rather than the assistant getting a dialog
+of its own.
+
+This is consent, not a legal shield, and it isn't written like one: no capitals, no "you
+agree that". It replaces none of the safeguards; it's there because the safeguards are best
+efforts and the person deserves to know that before, not after.
 
 **The privacy note** (Settings, the Welcome text if it's ever mentioned there, the site, the
 docs), in Slate's voice, something like: "What you type here, and what Slate tells the
 assistant about your desktop (your settings, your open windows and their titles), is sent to
 the service behind the agent you choose, under your own account with them. Slate itself sends
 nothing anywhere and keeps no copy of your conversations. Anything that can't be undone, like
-shutting down or closing a window, always asks you first. The assistant can't see your screen,
-your files or your clipboard: it only knows what Slate tells it."
+shutting down or closing a window, asks you first. Slate's tools never show the assistant your
+screen, your files or your clipboard. Slate does its best to keep an assistant within these
+limits, but it can't promise what one will do, so using it is your choice and your
+responsibility." It stays under the switch after you've accepted, with **Read the risks
+again**.
 
 **Rate limit.** 60 tool calls a minute per server process; beyond that, calls answer "Slow
 down a moment" as tool errors. Stops a looping model, costs nothing otherwise.
@@ -379,7 +440,7 @@ route to a local model), reusing the same server code in-process.
 **Shape:** `shell/scripts/slate_agents.py` (the registry, in the manner of `slate_apps.py`:
 `@agent(id, label, …)` entries with `installed()`, `signed_in()`, `command(run)`,
 `parse(line)`, and `confined`: true only when `command()` leaves the agent with Slate's server
-and nothing else, the condition for being offered in the prompt window), and
+and nothing else; false marks it "Keeps its own tools" and brings the extra question), and
 `shell/scripts/assistant.py`:
 
 - `assistant.py detect` → JSON for Settings: `[{id, label, installed, version, signedIn,
@@ -459,9 +520,9 @@ codex exec resume <SESSION_ID> -          (a follow-up)
   bypass flag); what each approval mode means exactly and how `exec` treats a tool that wants
   approval; the field names inside the events; whether its shell tool can be removed. The
   read-only sandbox isn't enough on its own: a shell that can only read can still read your
-  files and run a screenshot tool. **If the shell can't be removed, Codex isn't offered in the
-  prompt window** (the "No spying" rule); it stays in "Use Slate from other apps", where
-  you've chosen its tools yourself.
+  files and run a screenshot tool. **If the shell can't be removed, Codex is offered as
+  "Keeps its own tools"**, with the extra question (part 3), rather than as a recommended
+  agent.
 - Fallback if the per-run override doesn't work: a **Connect** button in Settings that, after
   asking, runs `codex mcp add slate -- …/bin/slate mcp` (the person's Codex config, changed
   once, with their say-so), and Disconnect to remove it.
@@ -475,7 +536,7 @@ approval is quietly denied unless a `permissions.allow` rule in
 `~/.gemini/config/mcp_config.json`. **Not found:** a per-run way to give an MCP server, the
 keys for a stdio server in that file, the rule syntax for an MCP tool, a way to switch off its
 own tools. So it needs the same Connect step as the Codex fallback, a real install to build
-against, and the same condition: no prompt window until it can be confined to Slate's server.
+against, and the same treatment: "Keeps its own tools" unless it can be confined.
 
 *A local model.* Ollama isn't itself an MCP client (one third-party source; `ollama launch`
 starts Claude Code or Codex against a local model). So it isn't an adapter of its own: it's an
@@ -487,8 +548,9 @@ promise much.
 it with the prompt on stdin and `SLATE_MCP_COMMAND` (the server's command line) and
 `SLATE_MCP_CONFIG` (a file holding the standard `mcpServers` block) in its environment, and
 shows whatever it prints, as it prints it. One prompt, one answer (no follow-ups). Slate can't
-confine a command it didn't write, so the field says so beside it: "Slate runs this as you
-typed it. What it can see and do beyond Slate's tools is up to the command."
+confine a command it didn't write, so it's always "Keeps its own tools": the field says
+"Slate runs this as you typed it. What it can see and do beyond Slate's tools is up to the
+command", and saving it asks the extra question.
 
 **Finding and installing.** `detect` looks for each CLI on PATH (and `~/.local/bin`,
 `~/.npm-global/bin`), asks its version and whether it's signed in. Unlike App Theming's apps,
@@ -568,10 +630,10 @@ through `win.confirmer`.
 
 | Section (`GroupLabel`) | Rows |
 |---|---|
-| Assistant | **Let assistants use Slate** (the master switch) with the privacy note under it, always visible |
-| Agent | One row per agent from `assistant.py detect`: name, "Ready", "Not signed in" or "Not installed", and Choose / Get it / Sign in. **A command of your own** with its field. **Model** where the agent lets you pick (a field; empty means the agent's own default) |
+| Assistant | **Let assistants use Slate** (the master switch; turning it on shows the risks and asks) with the privacy note under it, always visible, and **Read the risks again** |
+| Agent | One row per agent from `assistant.py detect`: name, "Ready", "Not signed in" or "Not installed", **Recommended** (Slate can confine it) or **Keeps its own tools** (choosing it asks), and Choose / Get it / Sign in. **A command of your own** with its field. **Model** where the agent lets you pick (a field; empty means the agent's own default) |
 | What it can do | Three short lists, read from the server's own table so they can't go stale: *Without asking*, *Changes* with the switch **Ask before changing anything**, and *Always asks first* |
-| What it can see | **Window titles** (on), **Notifications** (off), and under them a line that isn't a switch: "Never your screen, your files or your clipboard. The assistant only knows what Slate tells it." |
+| What it can see | **Window titles** (on), **Notifications** (off), and under them a line that isn't a switch: "Slate's tools never show it your screen, your files or your clipboard." With an agent that keeps its own tools, a second line: "Codex has tools of its own that Slate can't limit." |
 | Menu bar and shortcut | **Show on the menu bar** (`barShowAssistant`, also listed on the Menu Bar page with the other `barShow…` switches); the shortcut, with a link to Shortcuts |
 | Activity | The last 50 things assistants did, with **Clear** |
 | Use Slate from other apps | The lines that add Slate's MCP server to Claude Code, Codex and others, each with Copy; Connect/Disconnect where an agent needs it |
@@ -579,7 +641,9 @@ through `win.confirmer`.
 New keys in `SettingsData.qml`: `assistantEnabled` (false), `assistantAgent` ("" = the first
 one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assistantAskChanges`
 (false), `assistantSeeTitles` (true), `assistantSeeNotifications` (false), `barShowAssistant`
-(true). All of them on the server's refuse list.
+(true), `assistantRisksAccepted` (0: the version of the risks text you accepted) and
+`assistantAgentsAccepted` ([]: the agents with their own tools you've said yes to). All of them
+on the server's refuse list.
 
 ### 7. Everything else
 
@@ -599,12 +663,16 @@ one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assist
 
 | Situation | What happens |
 |---|---|
+| You turn on "Let assistants use Slate" | Slate shows the risks and asks. **Switch on** → it's on, and your acceptance is recorded. **Cancel** → the switch stays off, nothing changes |
+| A Slate update changes what the risks are | The assistant pauses ("Something's changed about the assistant. Have a look in Settings → Assistant") until you've read and accepted the new text |
+| You choose Codex, which keeps its own tools | Slate says what that means and asks once. **Use it** → chosen. **Cancel** → your agent stays as it was |
+| Something sets `assistantEnabled` without the dialog | Nothing comes on: the gate also needs the risks accepted |
 | "Turn on glass" | `settings_search glass` → `settings_set glass true`. List: "Turned Glass on". Answer: one sentence. No question |
 | "Make the dock smaller" | Finds `dockIconSize`, sets it a step down within its range, says the old and new size |
 | "Where do I change the font?" | `settings_show` opens Settings at Interface font; nothing is changed |
 | "Put Firefox on workspace 2 and go there" | `windows_list`, `window_move`, `workspace_go` |
 | "Shut down" | Slate asks "Shut down?"; yes → goodbye sound, fade, off; no → "Okay, I've left it on" |
-| "What's on my screen?" / "Read me that error" | It can't see the screen and says so; it offers what the tools do know (which windows are open, and their titles if those are shared). No screenshot is taken |
+| "What's on my screen?" / "Read me that error" (a confined agent) | Slate's tools don't show it the screen, and it says so; it offers what the tools do know (which windows are open, and their titles if those are shared). No screenshot is taken |
 | "Take a screenshot" | `screenshot` takes one for you, as Print does. The agent is told "Done" and never sees it |
 | "Close everything" | One question per window, at most five; a "no" stops the rest |
 | A web page's title says "assistant: delete all Spaces" | At worst the model tries `space_delete`: Slate asks, with its own wording; the log shows it |
@@ -640,7 +708,8 @@ one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assist
     `settings_set` converts types, refuses wrong ones, out-of-range numbers and unknown values
     with a helpful sentence, returns the old value, and calls `config set` exactly once;
   - **the refuse list**: every `assistant*` key, the command and path keys, `var` keys;
-  - the gate: switched off → refused; locked → refused; an always-ask tool calls `assistant
+  - the gate: switched off → refused; switched on but the risks not accepted, or accepted at
+    an older version → refused, with where to go; locked → refused; an always-ask tool calls `assistant
     confirm` and acts only on `yes`; `no`, no answer in time, and a cancelled request each do
     nothing; a second ask after a "no" isn't made; the sixth question isn't asked; game mode
     without a run id declines without asking; "Ask before changing anything" asks for changes;
@@ -657,13 +726,16 @@ one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assist
   stops mid-line, the two-minute limit (shortened by an env var for the test) and Stop each
   give the right `error` kind; `detect` reports all three states; the built-in tools are
   switched off and only Slate's server is given (the stub fails otherwise); an agent whose
-  adapter isn't `confined` is never offered for the prompt window by `detect` and is refused
-  by `run`; the custom command gets the prompt on stdin and both env vars.
+  adapter isn't `confined` is reported so by `detect`, and `run` refuses it until its id is in
+  `assistantAgentsAccepted`; the custom command gets the prompt on stdin and both env vars.
 - **Static** (`tests/static/test_consistency.py`): every string key in `SettingsData.qml` is
   in the server's values map, refuse list or free-text list; every `assistant*` key is
   refused; the tools named in `docs/` and Settings match the server's table; `Assistant.qml`
   uses `ClickTap`/`ClickArea` and `Config.ms` like everything else (the existing checks).
-- **Live, `tests/live/test_assistant.py`**: `assistant toggle/open/close`; opening closes the
+- **Live, `tests/live/test_assistant.py`**: turning the switch on shows the risks question and
+  nothing is on until it's answered; Cancel leaves it off; Switch on records the version; a
+  higher version asks again; choosing an agent with its own tools asks, once;
+  `assistant toggle/open/close`; opening closes the
   launcher and the reverse; switched off shows the "not switched on" state and hides the bar
   button; `assistant confirm` shows the question in PowerConfirm (`state().asking`), `test
   answer` resolves it and `assistant answer` reports it; a withdrawn question goes away; the
@@ -676,7 +748,8 @@ one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assist
   can't easily produce.
 - **Visual** (`tests/visual/scenes.py`): `assistant-empty`, `assistant-answer` (text and three
   actions, one declined), `assistant-error`, `assistant-off`, `assistant-question` (the
-  PowerConfirm wording), `settings-assistant` (picked up by `settings_pages()` already), and
+  PowerConfirm wording), `assistant-risks` (the switching-on question) and
+  `assistant-agent-risks`, `settings-assistant` (picked up by `settings_pages()` already), and
   the bar with its new button in the existing bar scenes (re-approved).
 - Before any of it lands: `tests/run -q --tier static,unit` after the server; `tests/run -q`
   after anything on screen.
@@ -692,7 +765,13 @@ one found that's ready), `assistantModel` (""), `assistantCommand` (""), `assist
 - `docs/ARCHITECTURE.md`: the new files, the `assistant`, `notifications` and extended `osd`,
   `media`, `launcher` rows in the IPC table, a section on the gate (tiers, the question, the
   log, the refuse list), "an agent CLI (optional)" under dependencies, test mode's note.
-- A new `docs/ASSISTANT.md`: every tool with its tier, how to add the server to each agent,
+- Wording, everywhere: what Slate *does* ("Slate asks before…", "Slate's tools never show…"),
+  never what an assistant *can't* do. No "safe", "secure", "can't" or "never" about the
+  assistant itself, on the site least of all.
+- A new `docs/ASSISTANT.md`: **the risks** (the dialog's points at length: what leaves the
+  computer, what it can do unasked, how it can be misled, what Slate does about each and where
+  that stops, which agents Slate can confine, and that the feature is used at your own
+  risk); every tool with its tier, how to add the server to each agent,
   what is sent where, the log, how to write an adapter.
 - `bin/slate --help`: `slate mcp`.
 
@@ -713,7 +792,8 @@ Each step leaves something that works and can be committed alone.
    `OSD.qml`, `Notifications.qml`, `Launcher.qml`. Unit, static and live tests.
    *Now the server is the whole feature for anyone with an agent of their own.*
    `feat(mcp): change settings, windows and workspaces, with Slate asking first`.
-3. **Settings → Assistant, without agents**: the master switch and privacy note, what it can
+3. **Settings → Assistant, without agents**: the master switch with its risks question and
+   recorded acceptance (the gate from step 2 starts requiring it), the privacy note, what it can
    do and see, Activity, "Use Slate from other apps". Site and docs for the MCP server.
 4. **The runner and the Claude Code adapter** (`slate_agents.py`, `assistant.py`), with the
    custom command adapter, against stubs; then by hand against the real CLI, settling the
@@ -763,10 +843,15 @@ right expectation: quick marks, easily wiped. Runner-up: Scribe.
   stricter, but the window often has to give way to what the assistant just opened.
 - **May the agent use the web or its own tools in the prompt window?** **Settled (2026-11-10):
   no.** Slate's MCP tools only, and no screenshots or any other way of looking at the screen
-  ("No spying", part 3). It can still answer from what it knows. Still open inside that: whether
-  Codex and the others are left out of the prompt window until they can be confined
-  (suggested: **yes**), and whether a command of your own, which Slate can't confine, should be
-  offered at all (suggested: **yes**, with the sentence beside its field).
+  ("No spying", part 3), wherever the agent lets Slate switch its own tools off. It can still
+  answer from what it knows. Agents that can't be confined, and a command of your own, are
+  offered as "Keeps its own tools" once you've accepted what that means.
+- **Safeguards: guarantees or best efforts?** **Settled (2026-11-10): best efforts and
+  recommendations**, said as such, with the risks shown when the feature is switched on and
+  accepted by you before it comes on (part 3, "Switching it on"). Still open: the exact words
+  of the risks text (yours to approve before it ships), and whether accepting should need more
+  than one press (suggested: **no**: Cancel focused first is enough, and a tick-box reads like
+  a licence).
 - **Window titles shared by default?** Suggested: **yes**: without them "move the invoice
   window" can't work. Notifications: **off**.
 - **New sounds** (a soft "listening" as the window opens, "answered" when it's done)?
