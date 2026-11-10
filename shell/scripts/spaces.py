@@ -53,6 +53,55 @@ LOCK = os.path.join(RUNTIME, "spaces.lock")
 # Hyprland session is ignored. Windows that have closed are dropped on each write.
 OWNERS = os.path.join(RUNTIME, "space-windows.json")
 
+# Each workspace's window mode, when it has its own (the menu bar's workspace indicator): kept by
+# Slate for this Hyprland session ({"3": "floating"}), and set again through Slate when a
+# workspace comes back
+MODES = os.path.join(RUNTIME, "workspace-modes-%s.json" % (os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or "none"))
+SLATE = os.environ.get("SLATE_COMMAND") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bin", "slate")
+
+
+def workspace_modes():
+    try:
+        with open(MODES, encoding="utf-8") as fh:
+            m = json.load(fh)
+        return {str(k): v for k, v in m.items() if isinstance(v, str)} if isinstance(m, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+# Each workspace's own name (the pencil on the window mode panel), kept by Slate the same way:
+# saved with a Space and the session, and given to the workspace its windows come back on
+NAMES = os.path.join(RUNTIME, "workspace-names-%s.json" % (os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or "none"))
+
+
+def workspace_names():
+    try:
+        with open(NAMES, encoding="utf-8") as fh:
+            m = json.load(fh)
+        return {str(k): v for k, v in m.items() if isinstance(v, str) and v.strip()} if isinstance(m, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def set_workspace_name(ws, name):
+    """Name a workspace (through Slate, which keeps the names)."""
+    try:
+        subprocess.run([SLATE, "ipc", "call", "workspacename", "set", str(ws), name],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def set_workspace_mode(ws, mode):
+    """Give a workspace its mode (through Slate, which tells Hyprland), before its apps open."""
+    try:
+        subprocess.run([SLATE, "ipc", "call", "workspacemode", "set", str(ws), mode],
+                       capture_output=True, timeout=5)
+        time.sleep(0.4)            # (its rules in place before the windows open)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate")
 SESSION = os.path.join(STATE, "session.json")
 SESSION_MAX_AGE = 24 * 3600     # a session kept longer ago than this isn't reopened
@@ -243,6 +292,8 @@ def snapshot():
     # see windowrules.lua)
     opt = hypr("getoption", "decoration:rounding")
     rounding = opt.get("int", 0) if isinstance(opt, dict) else 0
+    modes = workspace_modes()
+    names = workspace_names()
     out = []
     for wid in sorted(workspaces):
         ws = workspaces[wid]
@@ -271,8 +322,10 @@ def snapshot():
                 "rounding": 0 if c.get("fullscreen") == 1 or (not c.get("floating") and tiled == 1) else rounding,
             }))
         if items:
-            out.append({"id": wid, "monitor": mon["name"], "aspect": round(area["w"] / area["h"], 4),
-                        "width": area["w"], "windows": items})
+            out.append(dict({"id": wid, "monitor": mon["name"], "aspect": round(area["w"] / area["h"], 4),
+                             "width": area["w"], "windows": items},
+                            **({"mode": modes[str(wid)]} if modes.get(str(wid)) else {}),
+                            **({"name": names[str(wid)]} if names.get(str(wid)) else {})))
     return out
 
 
@@ -303,9 +356,11 @@ def save(name, colour, icon, ids):
     space = {"id": old["id"] if old else uuid.uuid4().hex[:12], "name": name.strip(), "colour": colour,
              "icon": icon,
              "saved": int(time.time()),
-             "workspaces": [{"monitor": w["monitor"], "aspect": w["aspect"],
-                             "windows": [{k: v for k, v in win.items() if k not in ("address", "rounding")}
-                                         for win in w["windows"]]}
+             "workspaces": [dict({"monitor": w["monitor"], "aspect": w["aspect"],
+                                  "windows": [{k: v for k, v in win.items() if k not in ("address", "rounding")}
+                                              for win in w["windows"]]},
+                                 **({"mode": w["mode"]} if w.get("mode") else {}),
+                                 **({"name": w["name"]} if w.get("name") else {}))
                             for w in workspaces]}
     if old:
         data["spaces"][data["spaces"].index(old)] = space
@@ -526,6 +581,12 @@ class Restorer:
                      % (x - c["at"][0], y - c["at"][1], win_sel(addr)))
 
     def restore_workspace(self, saved, ws):
+        # Its window mode first, if it had its own (so its windows open floating or tiled to match)
+        if saved.get("mode"):
+            set_workspace_mode(ws, saved["mode"])
+        # …and its name, if it had one: it follows the windows to the workspace they open on
+        if saved.get("name"):
+            set_workspace_name(ws, saved["name"])
         monitors = {m["name"]: m for m in hypr("monitors")}
         if saved.get("monitor") in monitors and len(monitors) > 1:
             dispatch("hl.dsp.focus({ monitor = " + lstr(saved["monitor"]) + " })")

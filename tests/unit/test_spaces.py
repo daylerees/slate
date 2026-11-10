@@ -290,7 +290,8 @@ print("ok")
 '''
 
 
-class Restore(SpacesBase):
+class FakeHyprland:
+    """For tests that restore: a hyprctl that keeps windows and workspaces, and notes what it's asked."""
     def fake_hyprland(self):
         state = os.path.join(self.h.dir, "hypr-state.json")
         self.fake_log = os.path.join(self.h.dir, "hyprctl.log")
@@ -317,6 +318,8 @@ class Restore(SpacesBase):
             calls = [json.loads(l) for l in f]
         return [c[1] for c in calls if c[0] == "dispatch"]
 
+
+class Restore(FakeHyprland, SpacesBase):
     def test_restore(self):
         """Two tiles side by side, then a floating terminal app: started on the first free
         workspace, split at the saved place, and the floating one moved where it was."""
@@ -376,3 +379,89 @@ class Restore(SpacesBase):
         out = self.spaces("restore", "Nope", code=1)
         self.assertIn("no space called Nope", out)
         self.assertEqual(self.dispatches() if os.path.exists(self.fake_log) else [], [])
+
+
+class WorkspaceModes(FakeHyprland, SpacesBase):
+    """A workspace with a window mode of its own (the menu bar's workspace indicator) keeps it
+    in a space, and gets it back, through Slate, before its apps reopen."""
+
+    def setUp(self):
+        super().setUp()
+        self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "test"
+        self.write(os.path.join(self.h.runtime, "slate", "workspace-modes-test.json"), {"1": "floating"})
+
+    def test_saved_with_the_space(self):
+        self.hyprland()
+        self.spaces("save", "Work", "#3366ff", "edba", "1,3")
+        ws = self.read(self.store)["spaces"][0]["workspaces"]
+        self.assertEqual(ws[0].get("mode"), "floating")
+        self.assertNotIn("mode", ws[1], "a workspace following the default saves no mode")
+
+    def test_in_the_snapshot_and_session(self):
+        self.hyprland()
+        got = json.loads(self.spaces("snapshot"))
+        self.assertEqual([w.get("mode") for w in got], ["floating", None, None])
+        self.spaces("session-save")
+        self.assertEqual([w.get("mode") for w in self.read(self.session)["workspaces"]], ["floating", None, None])
+
+    def test_set_again_on_restore(self):
+        self.fake_hyprland()
+        self.s.add("slate")
+        self.s.env["SLATE_COMMAND"] = os.path.join(self.s.dir, "slate")
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778, "mode": "scrolling",
+                                                                        "windows": [EDITOR]}]}]})
+        self.spaces("restore", "work")
+        self.assertIn(["ipc", "call", "workspacemode", "set", "2", "scrolling"], self.s.calls("slate"))
+
+
+class WorkspaceNames(FakeHyprland, SpacesBase):
+    """A workspace you've named (the pencil on the window mode panel) keeps its name in a space
+    and in the session, and gets it back, through Slate, on the workspace its apps reopen on."""
+
+    def setUp(self):
+        super().setUp()
+        self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "test"
+        self.write(os.path.join(self.h.runtime, "slate", "workspace-names-test.json"), {"3": "Coding", "9": "Gone", "1": "  "})
+
+    def test_saved_with_the_space(self):
+        self.hyprland()
+        self.spaces("save", "Work", "#3366ff", "edba", "1,3")
+        space = self.read(self.store)["spaces"][0]
+        self.assertEqual(space["name"], "Work", "the space's own name is another thing")
+        ws = space["workspaces"]
+        self.assertNotIn("name", ws[0], "an unnamed workspace saves no name")
+        self.assertEqual(ws[1].get("name"), "Coding")
+
+    def test_in_the_snapshot_and_session(self):
+        self.hyprland()
+        got = json.loads(self.spaces("snapshot"))
+        self.assertEqual([w.get("name") for w in got], [None, None, "Coding"])
+        self.spaces("session-save")
+        self.assertEqual([w.get("name") for w in self.read(self.session)["workspaces"]], [None, None, "Coding"])
+
+    def test_set_again_on_restore(self):
+        """On the workspace the space opens on (a new one), not the number it was saved from."""
+        self.fake_hyprland()
+        self.s.add("slate")
+        self.s.env["SLATE_COMMAND"] = os.path.join(self.s.dir, "slate")
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778, "name": "Coding",
+                                                                        "windows": [EDITOR]}]}]})
+        self.spaces("restore", "work")
+        self.assertIn(["ipc", "call", "workspacename", "set", "2", "Coding"], self.s.calls("slate"))
+
+    def test_spaces_from_before_names(self):
+        """Older spaces have no name on their workspaces: they restore, numbered, as before."""
+        self.fake_hyprland()
+        self.s.add("slate")
+        self.s.env["SLATE_COMMAND"] = os.path.join(self.s.dir, "slate")
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778, "windows": [EDITOR]}]}]})
+        self.spaces("restore", "work")
+        self.assertFalse([c for c in self.s.calls("slate") if "workspacename" in c])
+
+    def test_no_names_file(self):
+        os.remove(os.path.join(self.h.runtime, "slate", "workspace-names-test.json"))
+        self.hyprland()
+        self.assertEqual([w.get("name") for w in json.loads(self.spaces("snapshot"))], [None, None, None])
