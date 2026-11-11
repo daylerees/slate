@@ -138,7 +138,7 @@ PanelWindow {
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? root.accent
-            : btnHover.hovered ? root.controlLit : root.control
+            : btnHover.hovered ? (destructive ? Config.hoverDanger : root.controlLit) : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
         Row {

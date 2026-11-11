@@ -66,6 +66,9 @@ Singleton {
     // a click turns off again (the control centre's tiles, a connected Bluetooth device), to
     // say so. A choice that stays chosen when clicked doesn't change
     readonly property color accentLit: Qt.tint(accent, Qt.rgba(1, 1, 1, 0.22))
+    // The muted hover of something destructive (Remove, Clear, Delete, Force Quit…): the same,
+    // in the red such things are written in, so pointing at one says what it will do
+    readonly property color hoverDanger: { const d = tint("#f28b8b"); return Qt.rgba(d.r, d.g, d.b, hoverStrength); }
     // (Under the pointer, something that has a fill of its own takes the muted hover in its
     // place, not laid over it: hovering looks the same on a card, a button or a bare row, with
     // glass or without)

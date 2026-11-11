@@ -1986,7 +1986,8 @@ ShellRoot {
                                 anchors.fill: parent
                                 radius: 7
                                 // Under the pointer: the muted hover, flat (the accent is for what stays selected)
-                                color: rowHover.hovered ? Config.hover : "transparent"
+                                // (red for what's destructive: Force Quit, Empty Waste Basket)
+                                color: rowHover.hovered ? (menuRow.modelData.danger ? Config.hoverDanger : Config.hover) : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active

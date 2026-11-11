@@ -494,7 +494,8 @@ PanelWindow {
                 visible: root.mode === "clipboard" && root.clips.length > 0
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                 width: clearLabel.implicitWidth + 24; height: 28; radius: 8
-                color: clearHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
+                // (destructive: written in red, and red under the pointer)
+                color: clearHover.hovered ? Config.hoverDanger : root.fieldColor
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverHandler { id: clearHover }
                 ClickTap { onTapped: root.clearClips() }
@@ -502,7 +503,7 @@ PanelWindow {
                     id: clearLabel
                     anchors.centerIn: parent
                     text: "Clear all"
-                    color: root.textColor
+                    color: Config.tint("#f28b8b")
                     font.family: root.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.Medium

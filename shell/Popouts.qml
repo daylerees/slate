@@ -558,10 +558,11 @@ PanelWindow {
         id: rb
         property bool selected: false
         property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
+        property bool danger: false        // destructive: the muted hover in red
         signal clicked()
         height: 36
         radius: 8
-        color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? Config.hover : "transparent"
+        color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? (danger ? Config.hoverDanger : Config.hover) : "transparent"
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: rbHover }
         ClickTap { onTapped: rb.clicked() }
@@ -1118,7 +1119,7 @@ PanelWindow {
             LinkRow {
                 visible: Config.s.clipboardHistory && clipView.entries.length > 0
                 code: 0xEB41; text: "Clear history"
-                iconColor: pop.danger; textColor: pop.danger
+                iconColor: pop.danger; textColor: pop.danger; danger: true
                 onClicked: { clipView.entries = []; Quickshell.execDetached(["python3", clipView.script, "clear"]); }
             }
             LinkRow {
@@ -1283,7 +1284,7 @@ PanelWindow {
                                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                         visible: !spApps.visible
                                         width: 28; height: 28; radius: 7
-                                        color: spDelHover.hovered ? Config.hover : "transparent"
+                                        color: spDelHover.hovered ? Config.hoverDanger : "transparent"
                                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                         HoverHandler { id: spDelHover }
                                         // A MouseArea, so the click stops here rather than also opening the space
@@ -2484,6 +2485,7 @@ PanelWindow {
                     required property var modelData
                     width: sessionView.width
                     height: 40
+                    danger: modelData.id === "shutdown"
                     onClicked: {
                         pop.close();
                         if (modelData.confirm && pop.powerConfirm) pop.powerConfirm.ask(modelData.id);

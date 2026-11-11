@@ -47,3 +47,4 @@ things off as they're done.
 - Position pickers (menu bar, dock): hovering and clicking an edge, including just beside it; needs a pointer in the test session.
 - The hand pointer over everything clickable (Config.handCursor) is kept (2026-11-11): tests for it; the lock and login screens don't have it.
 - All Settings: the search box stays put while the tiles or results scroll under it (needs a window short enough to scroll).
+- Destructive controls hover red (Config.hoverDanger): Settings buttons, list rows' Remove, the arranging panel, dock menu rows, panels' Clear history / delete space / Shut down, the clipboard picker's Clear all. Settings separators are a faint text-colour line with glass.

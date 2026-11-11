@@ -1459,7 +1459,7 @@ FloatingWindow {
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? win.accent
-            : btnHover.hovered ? win.controlHover(win.controlHoverSolid) : win.control
+            : btnHover.hovered ? (destructive ? Config.hoverDanger : win.controlHover(win.controlHoverSolid)) : win.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
         Row {
@@ -1723,7 +1723,12 @@ FloatingWindow {
           }
         }
     }
-    component Separator: Rectangle { width: parent ? parent.width - 32 : 0; x: 16; height: 1; color: win.divider }
+    // (with glass the cards are see-through, and the solid divider grey all but vanished on them:
+    // a faint line of the text colour there, still quiet)
+    component Separator: Rectangle {
+        width: parent ? parent.width - 32 : 0; x: 16; height: 1
+        color: Config.glass ? Qt.rgba(win.text.r, win.text.g, win.text.b, 0.11) : win.divider
+    }
     // A choice from a long list (keyboard layouts, time zones, apps): a button that opens a
     // search box and list under the row. options: [{ value, label, detail? }]
     component SearchPicker: Column {
@@ -1821,6 +1826,7 @@ FloatingWindow {
             visible: listItemRow.removable
             icon: 0xEB41
             label: "Remove"
+            destructive: true
             compactLabel: true
             onClicked: listItemRow.removed()
         }
@@ -4440,6 +4446,7 @@ FloatingWindow {
                         Button {
                             visible: Config.hyprbars.any === "yes" && hyprbarsRow.state !== "building"
                             label: "Remove"
+                            destructive: true
                             onClicked: Config.hyprbarsRemove()
                         }
                     }
