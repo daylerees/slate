@@ -83,9 +83,16 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 `tests/run` (docs/TESTING.md) runs every test in a container, so nothing touches the desktop.
 `tests/run -q` prints only failures and a summary line.
 
-- After a change, run at least `tests/run -q --tier static,unit` (or `--no-container` for a
-  quick pass); after anything that changes what's on screen, `tests/run -q` (live and visual
-  need `sudo modprobe vkms` once per boot: ask the user to run it if `tests/run` says so).
+- **While features are being shaped, don't run the tests.** Lint the QML you touched
+  (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple"`), install, reload and
+  check the log; Dayle tries things himself as they change. The commit hook's quick unit run
+  (a few seconds) is all that runs per commit. Run a test mid-way only when it's the quickest
+  way to pin down a bug, or when asked.
+- **Testing happens in one test/fix cycle before a release** (see Releases). Until then, note
+  what each change will need in `plans/release-testing.md` as you make it: new tests to
+  write, tests to update, screenshots to re-approve, things only checked by eye or not at all.
+  The rules below say what's owed; the cycle is when it's written, run and fixed (live and
+  visual need `sudo modprobe vkms` once per boot: ask the user to run it if `tests/run` says so).
 - A visual difference you meant: look at the picture the failing run took
   (`tests/out/visual/<scene>.actual.png`, with a `.diff.png` beside it), then
   `tests/run --approve <scene>` makes it the approved one without running anything again (it
@@ -114,7 +121,9 @@ Releases are tagged with [Semantic Versioning](https://semver.org/): annotated t
 
 While Slate is below 1.0.0, breaking changes bump MINOR instead of MAJOR.
 
-Before tagging, the tests have to pass in one full run. Do it efficiently:
+Before tagging comes the test/fix cycle: first write and update everything listed in
+`plans/release-testing.md` (and empty it as you go), then the tests have to pass in one full
+run. Do it efficiently:
 
 1. Run `tests/run -q` (pinned packages) once.
 2. Fix whatever fails, and confirm each fix by running just those tests
