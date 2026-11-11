@@ -1488,20 +1488,14 @@ FloatingWindow {
         HoverHandler { id: btnHover }
         ClickTap { onTapped: btn.clicked() }
     }
-    // A font choice: shows the current font, and opens a searchable list of
-    // installed fonts (each shown in its own typeface). key = Config.s property.
-    component FontSetting: Column {
+    // A font choice: a dropdown of the installed fonts with a search box, as Settings' other
+    // long lists are (the time zone, keyboard layouts). key = Config.s property; monoOnly:
+    // only monospaced ones
+    component FontSetting: DropdownSetting {
         id: fontSetting
-        property string label
-        property string detail
         property string key
         property string defaultFont
         property bool monoOnly: false
-        property bool open: false
-        readonly property string value: Config.s[key]
-        function choose(f) { Config.s[key] = f; }
-        width: parent ? parent.width : 0
-
         // Monospaced fonts, from fontconfig, plus anything named like one
         property var monoFonts: []
         Process {
@@ -1514,98 +1508,12 @@ FloatingWindow {
         readonly property var all: Qt.fontFamilies().filter(f => f && !f.startsWith(".")
             && !/icon|emoji|symbol|tabler|awesome|powerline|signwriting|\.pcf$/i.test(f)
             && (!monoOnly || monoFonts.includes(f) || /mono|code|console|courier|terminal|fixed/i.test(f)))
-        readonly property var shown: {
-            const q = fontSearch.text.trim().toLowerCase();
-            return q ? all.filter(f => f.toLowerCase().includes(q)) : all;
-        }
-        onOpenChanged: if (open) {
-            fontSearch.text = "";
-            fontSearch.forceActiveFocus();
-            revealTimer.restart();
-        }
-        // Once the list has been laid out, scroll the page so it's all on screen
-        Timer {
-            id: revealTimer; interval: 30
-            onTriggered: { fontList.positionViewAtIndex(Math.max(0, fontSetting.shown.indexOf(fontSetting.value)), ListView.Center); fontSetting.revealList(); }
-        }
-        function revealList() {
-            const bottom = fontSetting.mapToItem(scroller.contentItem, 0, fontSetting.height).y;
-            const top = fontSetting.mapToItem(scroller.contentItem, 0, 0).y;
-            if (bottom > scroller.contentY + scroller.height)
-                scroller.contentY = Math.min(top, bottom - scroller.height);
-        }
-
-        SettingRow {
-            settingKey: fontSetting.key
-            defaultText: fontSetting.defaultFont || "the system font"
-            label: fontSetting.label
-            detail: fontSetting.detail
-            Row {
-                spacing: 8
-                Button { visible: fontSetting.value !== fontSetting.defaultFont; label: "Default"; onClicked: fontSetting.choose(fontSetting.defaultFont) }
-                Button {
-                    label: fontSetting.value + (fontSetting.open ? "  ▴" : "  ▾")
-                    primary: fontSetting.open
-                    onClicked: fontSetting.open = !fontSetting.open
-                }
-            }
-        }
-        Item {
-            visible: fontSetting.open
-            width: parent.width
-            height: fontSetting.open ? 300 : 0
-            FieldFrame {
-                id: fontSearchBox
-                field: fontSearch
-                anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 16; rightMargin: 16 }
-                height: 34
-                TextInput {
-                    id: fontSearch
-                    anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                    verticalAlignment: TextInput.AlignVCenter
-                    color: win.text; selectionColor: win.accent
-                    font.family: win.font; font.pixelSize: 13
-                    Keys.onEscapePressed: fontSetting.open = false
-                    Keys.onReturnPressed: if (fontSetting.shown.length) { fontSetting.choose(fontSetting.shown[0]); fontSetting.open = false; }
-                }
-                Text {
-                    visible: fontSearch.text === ""
-                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                    text: "Search " + fontSetting.all.length + " fonts"
-                    color: win.dim; font.family: win.font; font.pixelSize: 13
-                }
-            }
-            ListView {
-                id: fontList
-                anchors { left: parent.left; right: parent.right; top: fontSearchBox.bottom; bottom: parent.bottom; margins: 8; leftMargin: 12; rightMargin: 12 }
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                model: fontSetting.shown
-                SmoothWheel { flick: fontList; notch: 108 }
-                delegate: Rectangle {
-                    required property string modelData
-                    readonly property bool current: fontSetting.value === modelData
-                    width: ListView.view.width; height: 36; radius: Config.corner(8)
-                    color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
-                    Text {
-                        anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: parent.modelData
-                        color: parent.current ? win.accentText : win.text
-                        font.family: parent.modelData; font.pixelSize: 14
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        id: sample
-                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: fontSetting.monoOnly ? "{ x => 0 }" : "Aa 123"
-                        color: parent.current ? win.accentText : win.dim
-                        font.family: parent.modelData; font.pixelSize: 13
-                    }
-                    HoverHandler { id: fontHover }
-                    ClickTap { onTapped: fontSetting.choose(parent.modelData) }
-                }
-            }
-        }
+            .sort((x, y) => x.localeCompare(y))
+        settingKey: key
+        searchable: true
+        options: all.map(f => ({ value: f, label: f }))
+        value: Config.s[key]
+        onPicked: v => Config.s[fontSetting.key] = v
     }
     // A setting with a few named options: shows the current one; click to pick.
     // options: [{ value, label }]
