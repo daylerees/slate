@@ -482,6 +482,13 @@ PanelWindow {
                 color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
                 Behavior on color { ColorAnimation { duration: Config.ms(320) } }
                 clip: mutedStripes.visible || busyStripes.visible
+                // Both sets of stripes are the same size, in the same places, and drift as one, so
+                // going between them only the colour changes
+                property real drift: 0
+                NumberAnimation on drift {
+                    running: sl.busy && (mutedStripes.visible || busyStripes.visible) && Config.animate && !Config.gameMode
+                    from: 0; to: 9; duration: 700; loops: Animation.Infinite
+                }
                 // In use (sound playing through it, or something listening to it): stripes of a
                 // darker accent drifting along it, fading in as it starts and out as it stops.
                 // They hold still with animations off and in game mode
@@ -491,16 +498,11 @@ PanelWindow {
                     opacity: sl.busy && !sl.muted ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
                     visible: opacity > 0
-                    property real drift: 0
-                    NumberAnimation on drift {
-                        running: busyStripes.visible && Config.animate && !Config.gameMode
-                        from: 0; to: 9; duration: 700; loops: Animation.Infinite
-                    }
                     Repeater {
                         model: busyStripes.visible ? Math.ceil(slFill.width / 9) + 3 : 0
                         Rectangle {
                             required property int index
-                            x: -14 + index * 9 + busyStripes.drift; y: (slFill.height - height) / 2
+                            x: -14 + index * 9 + slFill.drift; y: (slFill.height - height) / 2
                             width: 3; height: slFill.height * 3
                             rotation: 40
                             antialiasing: true
@@ -517,18 +519,13 @@ PanelWindow {
                     opacity: sl.muted ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
                     visible: opacity > 0
-                    property real drift: 0
-                    NumberAnimation on drift {
-                        running: mutedStripes.visible && sl.busy && Config.animate && !Config.gameMode
-                        from: 0; to: 7; duration: 700 * 7 / 9; loops: Animation.Infinite
-                    }
                     Repeater {
-                        model: mutedStripes.visible ? Math.ceil(slFill.width / 7) + 3 : 0
+                        model: mutedStripes.visible ? Math.ceil(slFill.width / 9) + 3 : 0
                         Rectangle {
                             required property int index
                             // (leaning: taller than the bar and turned, cut off by the bar's own edges)
-                            x: -11 + index * 7 + mutedStripes.drift; y: (slFill.height - height) / 2
-                            width: 2.5; height: slFill.height * 3
+                            x: -14 + index * 9 + slFill.drift; y: (slFill.height - height) / 2
+                            width: 3; height: slFill.height * 3
                             rotation: 40
                             antialiasing: true
                             color: pop.danger          // (the red of the muted speaker beside it)
