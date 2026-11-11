@@ -375,20 +375,14 @@ PanelWindow {
     }
     property alias menu: barMenu
 
-    // ---- What's under the pointer, shown in the title area ------------------
-    property Item hoverItem: null      // bar item under the pointer (has hoverText etc.)
-    property Item shownItem: null      // what the title area shows (null = focused window)
-    Timer { id: hoverClear; interval: 140; onTriggered: bar.hoverItem = null }
-    function setHover(item, on) {
-        if (!Config.s.barHoverDescriptions) { hoverItem = null; return; }
-        if (on) { hoverClear.stop(); hoverItem = item; }
-        else if (hoverItem === item) hoverClear.restart();
-    }
-    onHoverItemChanged: titleSwap.restart()
+    // ---- The active window's icon and title, cross-faded as the window changes -------------
+    // (Each thing on the bar still says what it is in words, its hoverText: the bar once showed
+    // that in the title area under the pointer, and the More panel and containers' buttons
+    // still read it)
     SequentialAnimation {
         id: titleSwap
         NumberAnimation { target: bar; property: "titleFade"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
-        ScriptAction { script: { bar.shownItem = bar.hoverItem; bar.shownTop = ToplevelManager.activeToplevel; } }
+        ScriptAction { script: bar.shownTop = ToplevelManager.activeToplevel }
         NumberAnimation { target: bar; property: "titleFade"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
     }
     // The window whose icon and title the bar shows: the focused one, taken up at the middle of
@@ -1101,8 +1095,7 @@ PanelWindow {
             Segment {
                 id: winIcon
                 hover: false
-                readonly property var desc: bar.shownItem
-                wanted: Config.s.barShowTitleIcon && (Config.barArranging || (!desc && !!appTile.focusedTop))
+                wanted: Config.s.barShowTitleIcon && (Config.barArranging || !!appTile.focusedTop)
                 length: bar.capsuleHeight + 4
                 Item {
                     id: appTile
@@ -1113,13 +1106,11 @@ PanelWindow {
                     readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
                     readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
                     // (while the bar's being arranged: Slate Settings' own icon, as a stand-in)
-                    readonly property string key: Config.barArranging ? "slate-settings" : winIcon.desc ? (winIcon.desc.hoverTile || "") : winKey
+                    readonly property string key: Config.barArranging ? "slate-settings" : winKey
                     readonly property string path: Config.tilePath(key)
-                    readonly property bool showGlyph: !!winIcon.desc && key === "" && winIcon.desc.hoverCode !== 0
-                    readonly property bool showImage: !!winIcon.desc && key === "" && !showGlyph && String(winIcon.desc.hoverImage) !== ""
                     // The focused window came from a space: its tile takes the space's colour
                     // (the whole button, for icon styles with no tile behind the icon)
-                    readonly property var space: winIcon.desc || Config.barArranging || !Config.s.spaceBarTint ? null
+                    readonly property var space: Config.barArranging || !Config.s.spaceBarTint ? null
                         : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
                     Rectangle {
                         anchors { fill: parent; margins: 2 }
@@ -1154,30 +1145,6 @@ PanelWindow {
                         command: Config.tileCommand(appTile.key, appTile.path)
                         onExited: appTile.version++
                     }
-                    Text {
-                        anchors.centerIn: parent
-                        visible: appTile.showGlyph
-                        text: appTile.showGlyph ? bar.glyph(winIcon.desc.hoverCode) : ""
-                        color: bar.textColor
-                        font.family: bar.iconFont
-                        font.pixelSize: 16
-                    }
-                    Image {
-                        id: hoverImg
-                        anchors.centerIn: parent
-                        width: 16; height: 16
-                        source: appTile.showImage ? winIcon.desc.hoverImage : ""
-                        sourceSize: Qt.size(32, 32)
-                        visible: appTile.showImage && Config.colourful     // Colourful: its own colours
-                    }
-                    ShaderEffect {
-                        anchors.fill: hoverImg
-                        visible: appTile.showImage && !Config.colourful
-                        property variant source: hoverImg
-                        property real threshold: 0.45
-                        property color tint: bar.textColor
-                        fragmentShader: Qt.resolvedUrl("shaders/mono.frag.qsb")
-                    }
                 }
             }
             Segment {
@@ -1185,7 +1152,6 @@ PanelWindow {
                 hover: false
                 stretchy: true              // (it takes the room the rest of the line doesn't need)
                 pad: 18
-                readonly property var desc: bar.shownItem
                 wanted: Config.s.barShowTitle && (Config.barShowAll || (titleText.text !== "" && !bar.slimTitle))
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
@@ -1212,8 +1178,7 @@ PanelWindow {
                         // cutting it off wherever the mask isn't fully clear)
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                         // (while the bar's being arranged it just says what it is, to leave room)
-                        text: Config.barArranging ? "Window" : winTitle.desc ? winTitle.desc.hoverText
-                            : bar.shownTop ? bar.shownTop.title : ""
+                        text: Config.barArranging ? "Window" : bar.shownTop ? bar.shownTop.title : ""
                         color: bar.textColor
                         font.family: bar.fontFamily
                         font.pixelSize: bar.fontSize
@@ -1407,16 +1372,10 @@ PanelWindow {
                             required property var modelData
                             readonly property int winCount: modelData.toplevels?.values?.length ?? 0
                             readonly property bool occupied: winCount > 0
-                            // Its first window's app, for the hover description's icon: only looked up
-                            // while this dot is being described (the lookup can scan every installed
-                            // app, and ran for every dot on every window change)
-                            readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
-                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? Config.appEntry(modelData.toplevels.values[0].wayland.appId) : null
                             readonly property string hoverText: Config.workspaceLabel(modelData.id) + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
                             readonly property int hoverCode: 0
-                            readonly property string hoverTile: firstApp ? firstApp.id : ""
                             readonly property url hoverImage: ""
-                            HoverHandler { id: wsDotHover; onHoveredChanged: bar.setHover(wsDot, hovered) }
+                            HoverHandler { id: wsDotHover }
                             width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
                             // Hover: the status icons' highlight, in the dot's shape, behind it
                             Rectangle {
@@ -1493,7 +1452,7 @@ PanelWindow {
                                 atStart: trayItem.index === 0
                                 atEnd: !trayCapsule.collapsible && trayItem.index === SystemTray.items.values.length - 1
                             }
-                            HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
+                            HoverHandler { id: trayHover }
                             // Icon drawn in high-contrast black and white (light parts white,
                             // dark/coloured parts black) to match the rest of the bar; in the
                             // Colourful look, in its own colours, unless Settings → Menu Bar →
@@ -1545,7 +1504,7 @@ PanelWindow {
                         readonly property string hoverTile: ""
                         readonly property url hoverImage: ""
                         TrayFill { lit: toggleHover.hovered; atStart: SystemTray.items.values.length === 0 || !trayCapsule.showIcons; atEnd: true }
-                        HoverHandler { id: toggleHover; onHoveredChanged: bar.setHover(trayToggle, hovered) }
+                        HoverHandler { id: toggleHover }
                         Text {
                             anchors.centerIn: parent
                             // Points the way the icons open (away from the rest of the bar), turning
@@ -1805,7 +1764,7 @@ PanelWindow {
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         Gloss { radius: cap.radius; }          // glass: a sheen
-        HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
+        HoverHandler { id: capHover }
         ClickTap { onTapped: cap.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
@@ -1932,7 +1891,7 @@ PanelWindow {
                 font.weight: Font.Medium
             }
         }
-        HoverHandler { id: segHover; onHoveredChanged: if (seg.hoverText !== "") bar.setHover(seg, hovered) }
+        HoverHandler { id: segHover }
         ClickTap { onTapped: seg.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
         WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }

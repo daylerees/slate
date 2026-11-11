@@ -131,7 +131,6 @@ JsonAdapter {
     property real barItemOpacity: 0.8         // with glass: the containers on the bar, what's in them too, 0 gone … 1 solid
     property real barItemHoverOpacity: 0.8    // ...and while the pointer's over one
     property bool barAutoHide: false          // hide when one window fills the screen
-    property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
     property bool barShowControl: true        // the control centre's button (Slate's mark)
     property bool barShowClock: true          // the clock

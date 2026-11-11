@@ -272,7 +272,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners", "roundedElements",
             "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
-        bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
@@ -2279,12 +2279,6 @@ FloatingWindow {
                     label: "Auto-hide"
                     detail: "Slides the bar out of your way when a single window fills the screen; it comes back when you switch workspace or reach for the top edge"
                     key: "barAutoHide"
-                }
-                Separator {}
-                ToggleSetting {
-                    label: "Hover descriptions"
-                    detail: "Tells you what you're pointing at on the bar, in place of the window title"
-                    key: "barHoverDescriptions"
                 }
                 Separator {}
                 ToggleSetting {
