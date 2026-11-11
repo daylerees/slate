@@ -204,6 +204,68 @@ class BarLayout(LiveCase):
         self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel, straight from the menu")
         self.do("done")
 
+    # ---- nothing left blank ---------------------------------------------------------------------
+    def blanks(self, name):
+        """The things showing on the bar that have nothing drawn where they are."""
+        path = self.strip(name)
+        img = Image.open(path).convert("RGB")
+        out = []
+        for thing, t in self.bar()["line"].items():
+            if not t["visible"] or t["w"] < 4:
+                continue
+            box = img.crop((t["x"] + 2, t["y"] + 2, t["x"] + t["w"] - 2, t["y"] + t["h"] - 2))
+            if len(box.getcolors(100000) or [0] * 99) <= 3:
+                out.append(thing)
+        return out
+
+    def test_taking_each_thing_off_leaves_nothing_blank(self):
+        """Dragged off the bar, a thing goes and the rest close up; Defaults brings it back,
+        drawn. (One left an empty place between two dividers, which Defaults didn't mend.)"""
+        self.do("start")
+        for item in ("control", "apps", "spaces", "windowmode", "workspaces", "tray", "notifications", "clipboard", "screenshot",
+                     "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery", "clock", "power"):
+            with self.subTest(item):
+                self.do("shown", item, "true")
+                self.s.settle(0.4)
+                self.do("shown", item, "false")
+                self.s.settle(0.5)
+                self.assertEqual(self.blanks("bar-off-" + item), [], f"with {item} off the bar")
+                self.assertFalse(self.bar()["line"][item]["visible"], f"{item} still has a place on the bar")
+                self.do("reset")
+                self.s.settle(0.8)
+                self.assertEqual(self.blanks("bar-back-" + item), [], f"after Defaults, having taken {item} off")
+        self.do("done")
+
+    def test_dragging_each_thing_off_leaves_nothing_blank(self):
+        """The same with a real drag: picked up where it is and let go well below the bar."""
+        self.do("start")
+        self.s.settle(0.6)
+        for item in ("control", "apps", "spaces", "windowmode", "workspaces", "notifications", "volume", "wifi", "clock", "power"):
+            with self.subTest(item):
+                t = self.bar()["line"][item]
+                self.assertTrue(t["visible"], f"{item} isn't on the bar to drag")
+                x, y = t["x"] + t["w"] // 2, t["y"] + t["h"] // 2
+                self.do("drag", x, y, f"{x + 30},{y + 200}")
+                self.s.settle(0.8)
+                self.assertFalse(self.bar()["line"][item]["visible"], f"{item} is still on the bar")
+                self.assertEqual(self.blanks("bar-dragged-" + item), [], f"with {item} dragged off")
+                self.do("reset")
+                self.s.settle(0.8)
+                self.assertTrue(self.bar()["line"][item]["visible"], f"{item} didn't come back")
+                self.assertEqual(self.blanks("bar-undragged-" + item), [], f"after Defaults, having dragged {item} off")
+        self.do("done")
+
+    def test_dragging_a_thing_into_another_container(self):
+        self.do("start")
+        self.s.settle(0.6)
+        line = self.bar()["line"]
+        a, b = line["wifi"], line["clock"]
+        self.do("drag", a["x"] + a["w"] // 2, a["y"] + a["h"] // 2, f"{b['x'] + b['w'] // 2},{b['y'] + b['h'] // 2}")
+        self.s.settle(0.8)
+        self.assertIn("wifi", self.layout()[self.where("clock")]["items"])
+        self.assertEqual(self.blanks("bar-dragged-into"), [])
+        self.do("done")
+
     # ---- defaults ---------------------------------------------------------------------------------
     def test_defaults_put_everything_back_and_draw_it(self):
         """Restoring the defaults left gaps where some icons should be: they had their room on

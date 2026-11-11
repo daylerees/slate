@@ -334,8 +334,10 @@ Singleton {
     // on the bar (what each thing shows, like its text, is left as it is)
     readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
         && barItems.every(i => sameValue(s[i.key], defaultOf(i.key))) && sameValue(s.barShowTitle, defaultOf("barShowTitle"))
+    signal barRedraw()          // (the bar lays its line again, drawing everything afresh)
     function barReset() {
         barSelected = -1;
+        barRedraw();
         for (const i of barItems) s[i.key] = defaultOf(i.key);
         s.barShowTitle = defaultOf("barShowTitle");
         s.barStatusCollapsed = defaultOf("barStatusCollapsed");

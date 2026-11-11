@@ -76,6 +76,15 @@ PanelWindow {
     // Is this the very first or very last thing on the bar ("start" / "end"; "" if neither)?
     // Its panel then sits flush against that end of the screen, as the control centre's and
     // the power menu's always have: now whichever buttons are there, wherever they've been put
+    // (tests) A drag on the bar while it's being arranged, in the bar window's own coordinates:
+    // press at one place, move to the next in steps, let go
+    function testDrag(x0, y0, x1, y1) {
+        const at = (x, y) => arranger.mapFromItem(null, x, y);
+        let p = at(x0, y0);
+        arranger.press(p.x, p.y);
+        for (let i = 1; i <= 6; i++) { p = at(x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6); arranger.move(p.x, p.y); }
+        arranger.release();
+    }
     // (tests) Each thing on the line: where it is in the bar's window and whether it shows
     function lineState() {
         const out = {};
@@ -550,6 +559,7 @@ PanelWindow {
             // another container before it has been drawn once keeps its room there and is never
             // drawn again
             function arrange() { placing.restart(); }
+            property bool afresh: false
             Timer { id: placing; interval: 34; onTriggered: left.place() }
             Timer { id: showing; interval: 34; onTriggered: { for (const name in left.things) left.things[name].held = false; } }
             function place() {
@@ -561,7 +571,11 @@ PanelWindow {
                 // moved in the same instant, it was never drawn either
                 const old = made;
                 bar.titleCarried = false;
-                for (const name in things) { const t = things[name]; t.name = name; t.carried = false; t.held = !t.visible || t.opacity < 1; }
+                // (so does one that was being carried, which is back on the line from here. And
+                // all of them when the bar goes into or out of being arranged, or back to Slate's
+                // own: should one ever have been left undrawn, that draws it again)
+                for (const name in things) { const t = things[name]; t.name = name; t.held = afresh || t.carried || !t.visible || t.opacity < 1; t.carried = false; }
+                afresh = false;
                 showing.restart();
                 titleSlotTop.parent = null;
                 // (each with its place in the arrangement, which is what a change is made by)
@@ -591,7 +605,7 @@ PanelWindow {
                 for (const m of old) m.destroy();
             }
             Component.onCompleted: place()
-            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.arrange(); } }
+            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.afresh = true; left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
             // Title area: the focused window's tile and title, or, while the pointer is
@@ -900,11 +914,17 @@ PanelWindow {
                 const end = line.length > 0 ? line[line.length - 1] : null;
                 return { join: false, to: Config.barLayout.length, slot: -1, at: end ? end.a1 + bar.gap / 2 : 0 };
             }
-            onPressed: m => {
+            // (press, move and let go as functions of their own, so a test can drag without a pointer)
+            onPressed: m => press(m.x, m.y)
+            onPositionChanged: m => move(m.x, m.y)
+            onReleased: release()
+            function press(x, y) {
+                const m = Qt.point(x, y);
                 const a = along(mapToItem(left, m.x, m.y));
                 held = pick(a); from = a; at = a; moved = false; target = null;
             }
-            onPositionChanged: m => {
+            function move(x, y) {
+                const m = Qt.point(x, y);
                 if (!held) return;
                 at = along(mapToItem(left, m.x, m.y));
                 if (!moved && Math.abs(at - from) > 5) {
@@ -924,7 +944,7 @@ PanelWindow {
                 Config.barLeaving = leaving;
                 target = leaving ? null : aim(at, held.kind === "item");
             }
-            onReleased: {
+            function release() {
                 const h = held, t = target, dragged = moved, off = leaving;
                 drop();
                 // (it stays off the line until the line's laid again with it in its new place; if
