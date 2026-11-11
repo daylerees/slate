@@ -1489,8 +1489,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     // Turned to run along a side bar, like the window title
                     rotation: bar.textRotation
-                    // (while the bar's being arranged, a short stand-in: more room to work in)
-                    text: Config.barArranging ? "00:00" : (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                    text: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (Config.s.barClockSeconds ? "HH:mm:ss" : "HH:mm")
                             : (Config.s.barClockSeconds ? "h:mm:ss AP" : "h:mm AP"))
