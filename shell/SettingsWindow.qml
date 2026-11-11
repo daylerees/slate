@@ -3610,7 +3610,6 @@ FloatingWindow {
             Rectangle {
                 width: parent.width; height: 40; radius: Config.corner(10)
                 color: win.card
-                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: findKeys.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: keysGlass
