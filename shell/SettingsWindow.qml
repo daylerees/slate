@@ -646,10 +646,11 @@ FloatingWindow {
                     id: titleRow
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: 66
-                    // Back to All Settings, from a page opened there
+                    // Back to All Settings, from any other page (All Settings itself has nowhere to go
+                    // back to)
                     IconButton {
                         id: backBtn
-                        visible: win.onMorePage
+                        visible: win.section !== "overview"
                         anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                         icon: 0xEA19
                         onClicked: win.section = "overview"
