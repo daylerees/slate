@@ -86,6 +86,7 @@ Shadow.qml                    the shadow under anything raised (panels, menus, t
                               shaders/shadow.frag with the surface's own shape cut out of it, so glass
                               can have shadows too. Off in game mode
 ChalkFace.qml                 Chalk's icon in two colours (the Colourful look): put inside a Text drawing it
+BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions. plans/draggable-menubar.md, plans/menubar-length.md
 Assistant.qml                 Chalk's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
                               for a prompt, shows the answer (plain text) and what was done, as
                               Slate's server reports it (`assistant did`)
@@ -191,6 +192,17 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - Canvas-drawn shapes (corners, panel joins) repaint on colour change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a
   full restart after editing them.
+- **The menu bar is one arranged line** (`Bar.qml`): every item is a `Segment`, written once in
+  a hidden holder and handed to a `Container` made from `Config.barLayout` (containers,
+  `"space"`s). Moving one between containers and showing it in the same instant leaves it
+  undrawn, so the line is re-laid a frame after a change and a thing that wasn't showing
+  stays unseen through the move (`place()`); `tests/live/test_bar_layout.py` checks nothing
+  on the bar is blank.
+- **When the bar's contents don't fit** (`Bar.qml` `fit()`): it tries giving things up in
+  order (the title, text, the clock's date and seconds, tucking "When needed" containers,
+  then things leaving for More in `Config.barOverflowOrder`), laying the line out afresh at
+  each step in one go so none of it is drawn, and keeps the fewest that fit; something comes
+  back only with a margin to spare. `bar.gives` says what's been given up.
 - **Reload notices** (`shell.qml`): Quickshell's own reload popup is hidden; Slate sends a
   notification instead, for a reload that worked and one that failed (the error's last
   "caused by" link leads: what, which file and line, and what used it). After a failed

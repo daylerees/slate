@@ -1,8 +1,9 @@
 # When the menu bar's contents don't fit
 
-A plan, not yet built. Started 2026-11-11 from a conversation with Dayle, after the bar
-became arrangeable (`plans/draggable-menubar.md`). The eight open questions were answered
-the same day; his decisions are under "Decided" and worked into the rest.
+**Built, 2026-11-11** (stages 1 to 5, on branch `menu-bar-layout`, `bec7f33` to the docs
+commit), from a conversation with Dayle the same day, after the bar became arrangeable
+(`plans/draggable-menubar.md`). His answers to the eight questions are under "Decided".
+"As built" at the end says where it differs from what's written here, and what's left.
 
 ## The problem
 
@@ -267,3 +268,39 @@ when Slate is ready for a release (Dayle, 2026-11-11).
   modes, the overflow order and Stay), rather than a narrow one for this. `barLayout`,
   `barOverflow` and `barStay` are lists, which `settings_set` refuses, so until then an
   agent can't change them.
+
+## As built
+
+All five stages are in. Live tests: `tests/live/test_bar_length.py` (20), driven by
+squeezing the line (`test arrange squeeze <px>`), since a screen can't change size
+mid-session. No full run and no screenshots re-approved (those wait for a release).
+
+Where it differs from the plan above:
+
+- **Measuring is by trying, not by sums.** `fit()` applies each step in turn and lays the
+  line out afresh (`forceLayout`) in the same go, reading what it comes to, instead of
+  asking each thing what it would need. Nothing is drawn on the way, so there's no flicker,
+  and there are no per-thing length sums to keep right.
+- **The window's title goes when it has less than 44 px** (`titleLeast`), not only at nothing.
+- **A lone small thing rarely waits in More by itself**: More's own button takes about the
+  room it would, so the last two tend to leave and return together.
+- **"Try it shorter" is four choices** (full, three quarters, half, a third), not a free length.
+- **The order list is chips in a flow**, not rows, to fit the panel; dragged with the same
+  gap-and-carry as the bar. Things past "Always stay:" stay; a thing's options also have
+  "Always keep on the bar".
+- **The tray in More** is a row for each of its icons. **Workspaces** in More opens the
+  overview. **The window's icon** goes with its title's row.
+- A container holding More never tucks away by itself.
+
+Left for later, or to look at:
+
+- Seen only in the test container: a real small screen, a side bar, a second monitor, real
+  blur, and every drag with a pointer.
+- "Might refine more when we see it" (the More panel's list).
+- Step 4 drops one thing's text at a time, longest first, by its current width; it doesn't
+  yet close an open "Always" container straight away when room runs short.
+- With glass switched on in the same instant as arranging starts (the visual test harness
+  does this; people don't), three things came up undrawn. Not reproduced with a pause
+  between. Worth a visual scene with a settle once the screenshots are redone.
+- The assistant's tool (see "Later, not here").
+
