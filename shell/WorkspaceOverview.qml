@@ -859,7 +859,7 @@ PanelWindow {
             opacity: 1 - ov.zoomP
             width: dotsRow.width + 20
             height: 30
-            radius: ov.bar.capsuleRadius
+            radius: Config.dotHolderRadius(height)
             color: ov.bar.capsuleColor
             Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's capsules
 

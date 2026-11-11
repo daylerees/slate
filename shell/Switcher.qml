@@ -208,7 +208,7 @@ PanelWindow {
     Rectangle {
         id: wsPill
         anchors { top: panel.bottom; topMargin: 14; horizontalCenter: panel.horizontalCenter }
-        width: wsDots.width + 28; height: 34; radius: 17
+        width: wsDots.width + 28; height: 34; radius: Config.dotHolderRadius(height)
         color: sw.bar.barColor
         opacity: sw.fade
         Gloss { radius: parent.radius }   // glass: a sheen, like the bar's workspace container

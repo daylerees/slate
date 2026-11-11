@@ -193,7 +193,9 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 16 + (1 - osd.fade) * 12
         width: osd.mode === "workspace" ? ws.width + 40 : 300
-        height: 52; radius: 26
+        height: 52
+        // (the workspace dots': a pill round circles, a rounded rectangle round squares)
+        radius: osd.mode === "workspace" ? Config.dotHolderRadius(height) : 26
         color: osd.bar.barColor
         opacity: osd.fade
         Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)

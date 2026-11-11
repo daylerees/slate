@@ -463,6 +463,10 @@ Singleton {
 
     // ---- Workspace indicators: circles, or rounded squares (Settings → Appearance)
     function dotRadius(size) { return s.workspaceShape === "square" ? size * 0.28 : size / 2; }
+    // ...and of what holds them, where that floats by itself (the indicator shown as you
+    // switch, under the window switcher, in the overview): a pill round circles, a rounded
+    // rectangle round squares
+    function dotHolderRadius(height) { return s.workspaceShape === "square" ? Math.min(12, height * 0.3) : height / 2; }
 
     // ---- Account picture ------------------------------------------------------------
     // AccountsService's picture for this user (shared with GNOME, KDE and the login
