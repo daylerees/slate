@@ -2473,23 +2473,18 @@ FloatingWindow {
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
                 }
             }
-            GroupLabel { text: "Glass" }
+            // (only with glass on: Appearance → Glass)
+            GroupLabel { visible: Config.s.glass; text: "Glass" }
             Group {
+                visible: Config.s.glass
                 SettingRow {
-                    visible: !Config.s.glass
-                    label: "Glass is off"
-                    detail: "With Glass on (Appearance), you can choose here how see-through the dock and its tiles are"
-                }
-                SettingRow {
-                    visible: Config.s.glass
                     label: "Background opacity"
                     settingKey: "dockOpacity"
                     detail: "How much of its colour the dock keeps, next to the rest of Slate's glass: lower is clearer"
                     ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.dockOpacity * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
                 }
-                Separator { visible: Config.s.glass }
+                Separator {}
                 SettingRow {
-                    visible: Config.s.glass
                     label: "Tile opacity"
                     settingKey: "dockTileOpacity"
                     detail: "The tiles behind the dock's icons and its buttons: lower lets the dock show through them"
