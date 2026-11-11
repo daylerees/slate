@@ -742,7 +742,10 @@ FloatingWindow {
                                     elide: Text.ElideRight
                                 }
                             }
-                            HoverHandler { id: pageHitHover; onHoveredChanged: if (hovered) pageSearch.pick = pageHit.index }
+                            // (pointing at a row doesn't choose it: the chosen row, the one Enter opens, wears
+                            // the active colour, and the row under the pointer only the muted hover. The same
+                            // in every search list here: this one, All Settings', dropdowns and places)
+                            HoverHandler { id: pageHitHover }
                             ClickTap { onTapped: pageSearch.open(pageHit.modelData) }
                         }
                     }
@@ -1071,7 +1074,7 @@ FloatingWindow {
                         color: win.accent
                         font.family: win.bar.iconFont; font.pixelSize: 16
                     }
-                    HoverHandler { id: rowHover; onHoveredChanged: if (hovered && dropLayer.searching) dropLayer.pick = parent.index }
+                    HoverHandler { id: rowHover }
                     // A MouseArea (not a TapHandler): the menu's own MouseArea underneath would otherwise
                     // take the click first and the pick would never happen
                     ClickArea {
@@ -1962,7 +1965,7 @@ FloatingWindow {
                                             elide: Text.ElideRight
                                         }
                                     }
-                                    HoverHandler { id: hitHover; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
+                                    HoverHandler { id: hitHover }
                                     ClickTap { onTapped: ovPage.open(hitRow.modelData) }
                                 }
                             }
@@ -2273,7 +2276,7 @@ FloatingWindow {
                                                     elide: Text.ElideRight
                                                 }
                                             }
-                                            HoverHandler { id: placeHover; onHoveredChanged: if (hovered) loc.pick = placeRow.index }
+                                            HoverHandler { id: placeHover }
                                             ClickArea { anchors.fill: parent; onClicked: loc.choose(placeRow.modelData) }
                                         }
                                     }
