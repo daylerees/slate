@@ -1196,8 +1196,8 @@ Singleton {
         gamemode: "#e8a6b4"
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }
-    // The bar's Apps button (its three bars) and Spaces button (its four squares), each part
-    // its own pastel
+    // The bar's Apps button (its three bars) and Spaces button (its four squares): one pastel
+    // each on the bar, the first of its list (the rest are for where the parts are coloured apart)
     readonly property var appsPastels: ["#e8a6c8", "#e8c48f", "#8fc7e8"]
     readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
     // Chalk's icon, wherever it's drawn (ChalkFace.qml): its speech bubble (the Assistant

@@ -335,7 +335,6 @@ PanelWindow {
                 text: barChip.icon ? root.glyph(barChip.icon) : ""
                 color: barChip.iconColour
                 font.family: root.bar.iconFont; font.pixelSize: 16
-                ChalkFace {}
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -1060,7 +1059,6 @@ PanelWindow {
                             text: parent.modelData.code ? root.glyph(parent.modelData.code) : ""
                             color: root.iconColour(parent.modelData.item)
                             font.family: root.bar.iconFont; font.pixelSize: 16
-                            ChalkFace {}
                         }
                         // (its text, as on the bar)
                         Text {

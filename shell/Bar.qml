@@ -1270,7 +1270,7 @@ PanelWindow {
                         Rectangle {
                             required property int index
                             width: 13; height: 2; radius: height / 2
-                            color: Config.partColour(Config.appsPastels, index, bar.textColor)
+                            color: Config.partColour(Config.appsPastels, 0, bar.textColor)      // (one pastel for the whole icon)
                         }
                     }
                 }
@@ -1303,7 +1303,7 @@ PanelWindow {
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
                             // (Colourful look: each square its own pastel)
-                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, index, bar.textColor)
+                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, 0, bar.textColor)
                             opacity: !busy || lit ? 1 : 0.35
                             Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
                             Behavior on color { ColorAnimation { duration: Config.ms(200) } }
@@ -1321,8 +1321,8 @@ PanelWindow {
                 hoverCode: 0xF38A
                 hoverText: Config.assistantWorking ? "Chalk is working…" : "Ask Chalk"
                 onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
-                // Two colours in the Colourful look, as Apps and Spaces have: the speech bubble in
-                // one and the face in it in another (ChalkFace.qml). One colour otherwise.
+                // One pastel in the Colourful look, as Apps and Spaces have (the Assistant page's
+                // colour); the text colour otherwise.
                 // While Chalk is thinking, Slate's loading spinner takes its place, turning (the
                 // spinner Settings and the login screen use; still, with animations off or in
                 // game mode)
@@ -1335,7 +1335,6 @@ PanelWindow {
                     color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
                     font.family: bar.iconFont
                     font.pixelSize: 17
-                    ChalkFace {}
                 }
                 Text {
                     anchors.centerIn: parent

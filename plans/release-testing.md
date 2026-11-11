@@ -40,3 +40,4 @@ things off as they're done.
 - A notification from an app that sends no name shows its launcher's name (ZapZap did this).
 - A notification whose picture can't be loaded falls back to the app's tile or the bell (it left a blank).
 - Notification fallbacks: no app name (launcher's name, then one from its id, then "An app"), no title or body ("New notification"), no icon (tile, then bell).
+- The bar's Apps, Spaces and Chalk icons are one pastel each in Colourful (screenshots of the bar will differ).
