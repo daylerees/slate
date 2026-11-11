@@ -463,7 +463,6 @@ PanelWindow {
         signal toggled()
         width: 40; height: 22; radius: 11
         color: checked ? pop.accent : pop.card
-        Gloss { radius: parent.radius }   // glass: a sheen
         Rectangle {
             width: 16; height: 16; radius: 8
             anchors.verticalCenter: parent.verticalCenter
