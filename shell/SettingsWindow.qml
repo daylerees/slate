@@ -2367,7 +2367,8 @@ FloatingWindow {
                 SettingRow {
                     label: "Panel opacity"
                     settingKey: "barPanelOpacity"
-                    detail: "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
+                    detail: Config.s.barPanelBlur ? "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
+                        : "How solid the panels that open from the bar are. With their blur off they stay mostly solid, so they can be read: 0% is as clear as they go"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
                 }
             }

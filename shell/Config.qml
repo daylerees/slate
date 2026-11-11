@@ -1231,7 +1231,12 @@ Singleton {
     // The bar's panels (Popouts.qml): the bar's own colour, at an opacity of their own (Settings
     // → Menu Bar → Glass → Panel opacity), with a blur rule and a shadow kept under it, as the
     // bar's are
-    readonly property real panelGlassOpacity: Math.max(s.barPanelBlur ? 0.01 : 0, Math.min(1, s.barPanelOpacity))
+    // With their blur off the slider covers only the solid end: its 0% is 80% opacity, its 100%
+    // solid. Clearer than that with nothing blurred behind, a panel couldn't be read
+    readonly property real panelGlassOpacity: {
+        const o = Math.max(0, Math.min(1, s.barPanelOpacity));
+        return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
+    }
     readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
     readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
         : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
