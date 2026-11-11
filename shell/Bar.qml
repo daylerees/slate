@@ -1230,13 +1230,12 @@ PanelWindow {
                             readonly property int hoverCode: 0
                             readonly property string hoverTile: ""
                             readonly property url hoverImage: modelData.icon
-                            // Hover highlight
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: 6
-                                color: bar.hoverFill
-                                opacity: trayHover.hovered ? bar.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                            required property int index
+                            // Hover highlight: the whole of its part of the container, as the status icons'
+                            TrayFill {
+                                lit: trayHover.hovered
+                                atStart: trayItem.index === 0
+                                atEnd: !trayCapsule.collapsible && trayItem.index === SystemTray.items.values.length - 1
                             }
                             HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
                             // Icon drawn in high-contrast black and white (light parts white,
@@ -1287,13 +1286,7 @@ PanelWindow {
                         readonly property int hoverCode: 0
                         readonly property string hoverTile: ""
                         readonly property url hoverImage: ""
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 6
-                            color: bar.hoverFill
-                            opacity: toggleHover.hovered ? bar.hoverStrength : 0
-                            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-                        }
+                        TrayFill { lit: toggleHover.hovered; atStart: SystemTray.items.values.length === 0 || !trayCapsule.showIcons; atEnd: true }
                         HoverHandler { id: toggleHover; onHoveredChanged: bar.setHover(trayToggle, hovered) }
                         Text {
                             anchors.centerIn: parent
@@ -1750,6 +1743,39 @@ PanelWindow {
             }
             if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: seq.length });
         }
+    }
+
+    // The highlight under the pointer for one of the tray's icons (or its open/close button):
+    // the full height of the container over that icon's share of it, as a status icon's is.
+    // Rounded where it's at the container's own end, fading out where it meets its neighbour
+    component TrayFill: Rectangle {
+        id: tf
+        property bool lit: false
+        property bool atStart: false        // the first thing in the tray (5 px in from its edge)
+        property bool atEnd: false
+        readonly property bool endFirst: atStart && trayCapsule.first
+        readonly property bool endLast: atEnd && trayCapsule.last
+        readonly property real before: atStart ? 5 : 1      // (to the tray's edge, or half the gap between icons)
+        readonly property real after: atEnd ? 5 : 1
+        readonly property real across: bar.capsuleHeight
+        x: bar.vert ? (parent.width - across) / 2 : -before
+        y: bar.vert ? -before : (parent.height - across) / 2
+        width: bar.vert ? across : parent.width + before + after
+        height: bar.vert ? parent.height + before + after : across
+        readonly property real fade: Math.min(0.45, 10 / Math.max(1, bar.vert ? height : width))
+        gradient: Gradient {
+            orientation: bar.vert ? Gradient.Vertical : Gradient.Horizontal
+            GradientStop { position: 0.0; color: tf.endFirst ? bar.hoverFill : "transparent" }
+            GradientStop { position: tf.fade; color: bar.hoverFill }
+            GradientStop { position: 1 - tf.fade; color: bar.hoverFill }
+            GradientStop { position: 1.0; color: tf.endLast ? bar.hoverFill : "transparent" }
+        }
+        topLeftRadius: endFirst ? bar.capsuleRadius : 0
+        bottomLeftRadius: (bar.vert ? endLast : endFirst) ? bar.capsuleRadius : 0
+        topRightRadius: (bar.vert ? endFirst : endLast) ? bar.capsuleRadius : 0
+        bottomRightRadius: endLast ? bar.capsuleRadius : 0
+        opacity: lit ? bar.hoverStrength : 0
+        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
     }
 
     // A dashed outline round its parent (a Rectangle: it takes its rounding), for the things
