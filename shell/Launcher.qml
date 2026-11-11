@@ -889,7 +889,7 @@ PanelWindow {
                 height: root.gridMode ? gridBox : list.cellHeight
                 radius: root.gridMode ? gridBox * 0.22 : 10
                 color: root.accent
-                Gloss { radius: parent.radius }   // glass: a sheen on the selection
+                // (flat, with glass too: no sheen on the selection)
                 x: (list.currentItem ? list.currentItem.x : 0) + (root.gridMode ? (list.cellWidth - gridBox) / 2 : 0)
                 y: (list.currentItem ? list.currentItem.y : 0) + (root.gridMode ? (list.cellHeight - gridBox) / 2 : 0)
                 // Smoothed: a new target (the next key press) carries on at the current speed,

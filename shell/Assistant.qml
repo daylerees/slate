@@ -412,7 +412,6 @@ PanelWindow {
                         radius: 14
                         bottomLeftRadius: 3
                         color: root.replyColor
-                        Gloss { radius: parent.radius; bottomLeftRadius: parent.bottomLeftRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
                         Column {
                             id: hello
                             anchors { left: parent.left; top: parent.top; leftMargin: 14; topMargin: 9 }
@@ -453,7 +452,6 @@ PanelWindow {
                                 radius: 14
                                 bottomRightRadius: 3        // (the corner nearest your side squared off, as chat bubbles are)
                                 color: root.accent
-                                Gloss { radius: parent.radius; bottomRightRadius: parent.bottomRightRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
                                 HoverHandler { id: youHover }
                                 CopyChip {
                                     shownFor: youHover.hovered
@@ -494,7 +492,6 @@ PanelWindow {
                                 color: root.replyColor
                                 border.width: wrong ? 1 : 0
                                 border.color: Qt.rgba(root.danger.r, root.danger.g, root.danger.b, 0.55)
-                                Gloss { radius: parent.radius; bottomLeftRadius: parent.bottomLeftRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
                                 HoverHandler { id: replyHover }
                                 CopyChip {
                                     visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
