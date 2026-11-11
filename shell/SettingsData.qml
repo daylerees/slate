@@ -120,6 +120,8 @@ JsonAdapter {
     property var barLayout: []
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)
     property real barOpacity: 1.0             // with glass: the bar's background, as a share of the opacity it would have
+    property real barItemOpacity: 1.0         // the containers on the bar: a share of their fill's own opacity (0: none, 2: twice as solid)
+    property real barItemHoverOpacity: 1.0    // ...and of the highlight under the pointer
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)

@@ -270,7 +270,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
-        bar: ["barPosition", "barLayout", "barBlur", "barOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barLayout", "barBlur", "barOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity"],
@@ -2349,6 +2349,22 @@ FloatingWindow {
                     settingKey: "barOpacity"
                     detail: "With Glass on: how much of its colour the bar's background keeps. Lower is clearer"
                     ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.barOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                }
+            }
+            GroupLabel { text: "Containers" }
+            Group {
+                SettingRow {
+                    label: "Container opacity"
+                    settingKey: "barItemOpacity"
+                    detail: "How solid the containers on the bar are. 100% is Slate's own; at 0% only what's in them shows"
+                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.s.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Hover opacity"
+                    settingKey: "barItemHoverOpacity"
+                    detail: "How strong the highlight is on what the pointer's over. 100% is Slate's own"
+                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.s.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
                 }
             }
         }
