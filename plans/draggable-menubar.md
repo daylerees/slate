@@ -266,6 +266,19 @@ pointer to try them with: every drag below is for Dayle to try by hand.**
   A container from the pool is empty (`{ items: [], keep: true }`): it shows only while
   arranging, and goes if it's still empty when the page closes or its last thing leaves.
 
+**Changed the same day (asked): arranging has a panel of its own, `shell/BarEditor.qml`.**
+Settings → Menu Bar now only has an **Edit layout** button (`Config.barArranging = true`);
+the page being open no longer means anything. The panel (`slate-bar-editor`, in both blur
+lists) sits just off the bar on the main bar's screen, with **Done** (changes are saved as
+they're made; Done just ends arranging), the pool (chips drawn as on the bar, with full
+names; `BarChip` / `PoolChip` and the carrying now live there, not in Settings), and the
+options of what's picked. Picking is now a container (`Config.barSelected`) **or one thing
+in it** (`Config.barSelectedItem`, `Config.barPick()`): a click on a thing picks the thing,
+a click on the gripper the container, and the bar lights whichever it is. Options: "Show its
+text" where a thing has text (`Config.barTextKeys`), Date and Seconds for the clock, App icon
+for the active window, the collapse button's icon and end, a container's collapse switch and
+Split up, and Take off the bar / Take away.
+
 **Things learnt that the next person needs:**
 
 - **Write every item in `parked`, never on the line.** An item taken off a showing line and

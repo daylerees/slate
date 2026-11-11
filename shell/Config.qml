@@ -197,16 +197,27 @@ Singleton {
         return { items: all, tuck: has, tuckIcon: String((saved && saved.tuckIcon) || ""), tuckFrom: has ? (first ? "start" : "end") : "" };
     }
 
-    // ---- Arranging it (Settings → Menu Bar: while that page is open, the bar is being arranged) ----
-    property bool barArranging: false          // set by the Settings window
-    property int barSelected: -1               // the container picked there, by its place in the arrangement
+    // ---- Arranging it (Settings → Menu Bar → Edit layout; BarEditor.qml, the panel by the bar) ----
+    property bool barArranging: false          // on from that button until the panel's Done
+    property int barSelected: -1               // what's picked on the bar, by its place in the arrangement...
+    property string barSelectedItem: ""        // ...and, when it's one thing in a container, its name ("tuck": the collapse button)
+    onBarSelectedChanged: if (barSelected < 0) barSelectedItem = ""
+    // Pick something (a container, a flexible space or the title: item ""); again lets go of it
+    function barPick(at, item) {
+        if (barSelected === at && barSelectedItem === (item || "")) { barSelected = -1; return; }
+        barSelectedItem = item || "";
+        barSelected = at;
+    }
+    // The setting that says whether an item's text shows beside its icon ("" if it has none)
+    readonly property var barTextKeys: ({ clipboard: "barValueClipboard", gamemode: "barValueGameMode", wifi: "barValueWifi",
+        keyboard: "barValueKeyboard", bluetooth: "barValueBluetooth", volume: "barValueVolume", battery: "barValueBattery" })
     onBarArrangingChanged: {
         if (barArranging) return;
         barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false;
         // (a container put on the bar and never given anything goes)
         if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
     }
-    // Something carried from the pool on the Settings page towards the bar: what it is
+    // Something carried from the pool in the panel (BarEditor.qml) towards the bar: what it is
     // ({ kind: "item" | "title" | "space" | "box" | "tuck", id }), where the pointer is on the
     // desktop, and, from the bar under it, where it would land ({ join, to, slot, bar })
     property var barCarry: null
@@ -333,6 +344,7 @@ Singleton {
         const e = list[at];
         if (e === "space") { list.splice(at, 1); barSave(list); }
         else if (e === "title") s.barShowTitle = false;
+        else if (e && e.items.length === 0) { list.splice(at, 1); barSave(list); }      // (an empty one, fresh from the pool)
         else if (e) for (const id of e.items) barSetShown(id, false);
         barSelected = -1;
     }
@@ -637,7 +649,7 @@ Singleton {
             // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
             // blur size if one's picked
             + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
-            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
+            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|bar-editor|dock|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
             + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"})`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`

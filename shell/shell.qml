@@ -292,6 +292,7 @@ ShellRoot {
         FadeOut { required property var modelData; screen: modelData }
     }
     OSD { bar: topBar; popouts: popouts }
+    BarEditor { bar: topBar }       // the panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout)
     // The secret workspace showing with nothing on it: a note saying so, on that screen
     Variants {
         model: Quickshell.screens

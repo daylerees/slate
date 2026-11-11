@@ -441,9 +441,10 @@ PanelWindow {
                     visible: Config.barArranging
                     anchors.fill: parent
                     radius: bar.capsuleRadius
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    readonly property bool picked: Config.barSelected === sp.index
+                    color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
+                    border.width: picked ? 2 : 1
+                    border.color: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
                     Text {
                         anchors.centerIn: parent
                         text: bar.glyph(bar.vert ? 0xEB5B : 0xEB59)
@@ -518,9 +519,10 @@ PanelWindow {
                     width: !Config.barArranging ? 0 : bar.vert ? bar.capsuleHeight : Math.max(titleArea.width + 8, standIn.implicitWidth + 20)
                     height: !Config.barArranging ? 0 : bar.vert ? Math.max(titleArea.height + 8, 60) : bar.capsuleHeight
                     radius: bar.capsuleRadius
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    readonly property bool picked: Config.barSelected === bar.titleIndex
+                    color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
+                    border.width: picked ? 2 : 1
+                    border.color: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
                     Text {
                         id: standIn
                         visible: !bar.vert && titleArea.width < 2
@@ -678,13 +680,13 @@ PanelWindow {
         }
 
         // ---- Arranging: dragging things about on the bar itself --------------------------
-        // While Settings → Menu Bar is open (Config.barArranging), one area lies over the whole
+        // While the bar's being arranged (Config.barArranging: Settings → Menu Bar → Edit layout), one area lies over the whole
         // line, so nothing under it does its usual thing: a press picks something up. An item
         // inside a container is picked up by itself; a container by its gripper, and a
         // flexible space or the title anywhere, as a whole. Dropped on a container (not at its
         // very ends) an item joins it there; dropped anywhere else, whatever it is goes into the
         // gap, an item in a container of its own. A press without a drag picks the container,
-        // for its options on the page. It works by where things are along the line, and tells
+        // for its options in the panel. It works by where things are along the line, and tells
         // Config what moved (barMoveItem, barMoveEntry), which redraws the line. Silent while
         // dragging, a click on the drop, as everywhere.
         MouseArea {
@@ -770,8 +772,8 @@ PanelWindow {
                 const h = held, t = target, dragged = moved, off = leaving;
                 held = null; target = null; moved = false; leaving = false; Config.barLeaving = false;
                 if (!h) { Config.barSelected = -1; return; }
-                if (!dragged) {              // a press, not a drag: pick this container (or let go of it)
-                    Config.barSelected = Config.barSelected !== h.index ? h.index : -1;
+                if (!dragged) {              // a press, not a drag: pick it (or let go of it), for its options in the panel
+                    Config.barPick(h.index, h.kind === "item" ? h.name : "");
                     Config.click();
                     return;
                 }
@@ -790,7 +792,7 @@ PanelWindow {
             }
             onCanceled: { held = null; target = null; moved = false; leaving = false; Config.barLeaving = false; }
 
-            // Something carried here from the pool on the Settings page (Config.barCarry): the
+            // Something carried here from the pool in the panel beside the bar (BarEditor.qml; Config.barCarry): the
             // page says where the pointer is on the desktop; when that's on or near this bar,
             // this bar says where it would land (and shows the line there). The page drops it
             property bool leaving: false
@@ -1447,6 +1449,14 @@ PanelWindow {
             opacity: seg.hover && segHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
+        // Picked, while the bar's being arranged: lit in the accent colour, with an outline
+        Rectangle {
+            visible: Config.barArranging && !!seg.shell && Config.barSelected === seg.shell.index && Config.barSelectedItem === seg.name && seg.name !== ""
+            anchors { fill: parent; margins: 2 }
+            radius: Math.max(0, bar.capsuleRadius - 2)
+            color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18)
+            border.width: 2; border.color: bar.accent
+        }
         // What's put inside it, in place of the icon and value
         Item { id: custom; anchors.fill: parent }
         Row {
@@ -1487,7 +1497,7 @@ PanelWindow {
         readonly property bool isBox: true
         property int index: -1                  // its place in the arrangement
         property var cells: []                  // its things, in order
-        // Being arranged (Settings → Menu Bar is open): outlined, brighter when it's the one
+        // Being arranged (Config.barArranging): outlined, brighter when it's the one
         // picked, with a gripper at its start to move it whole by. Only then: the ordinary bar
         // has neither
         readonly property real grip: Config.barArranging ? 14 : 0
@@ -1498,15 +1508,17 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: "transparent"
-            border.width: 1
-            border.color: Config.barSelected === box.index ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+            border.width: box.picked ? 2 : 1
+            border.color: box.picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
         }
+        // (picked as a whole, by its gripper: one of its things picked lights that instead)
+        readonly property bool picked: Config.barSelected === box.index && Config.barSelectedItem === ""
         Text {
             visible: Config.barArranging
             x: bar.vert ? (parent.width - width) / 2 : (box.grip - width) / 2 + 1
             y: bar.vert ? (box.grip - height) / 2 + 1 : (parent.height - height) / 2
             text: bar.glyph(bar.vert ? 0xEC00 : 0xEC01)
-            color: Config.barSelected === box.index ? bar.accent : bar.dimTextColor
+            color: box.picked ? bar.accent : bar.dimTextColor
             font.family: bar.iconFont; font.pixelSize: 13
         }
         property bool tuck: false

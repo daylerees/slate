@@ -1,0 +1,466 @@
+// Arranging the menu bar (Settings → Menu Bar → Edit layout): a panel that sits just off the
+// bar for as long as the bar is being arranged (Config.barArranging). The dragging itself
+// happens on the bar (Bar.qml); here are the things that go with it:
+//   - Done, which ends it (every change is saved as it's made);
+//   - the pool: what isn't on the bar, drawn as it would be there, and the three things there
+//     are always more of (a container, a flexible space, a collapse button). A chip is clicked,
+//     or dragged onto the bar, which is another window: this one works out where the pointer
+//     is on the desktop (where this window is, from one look at Hyprland's pointer position as
+//     the chip is pressed, then the pointer's place in the window) and tells the bar
+//     (Config.barCarry, barCarryAt), which shows where it would land;
+//   - the options of whatever is picked on the bar (Config.barSelected, barSelectedItem):
+//     a container, one thing in it, its collapse button, a flexible space, the active window.
+
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import Quickshell.Wayland
+
+PanelWindow {
+    id: root
+    required property var bar
+
+    readonly property bool shown: Config.barArranging
+    property real fade: shown ? 1 : 0
+    Behavior on fade { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+
+    // ---- Look: the bar's own colours, as Settings uses them ----------------------
+    readonly property color text: bar.textColor
+    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color accent: bar.accent
+    readonly property color accentText: Config.tint("#12151a")
+    readonly property color danger: bar.errorColor
+    readonly property color control: Config.raised(Config.tint("#2a313c"))
+    readonly property color controlLit: Config.glass ? Config.hoverOn(control) : Config.tint("#343c49")
+    readonly property color divider: Config.tint("#262c35")
+    function glyph(code) { return String.fromCodePoint(code); }
+
+    // ---- Where: just off the bar, on its screen ------------------------------------
+    screen: bar.screen
+    readonly property string side: bar.side
+    readonly property bool vert: side === "left" || side === "right"
+    readonly property int pad: 30                      // room round the panel for its shadow
+    readonly property real off: bar.barHeight + 10 - pad
+    visible: shown || fade > 0
+    anchors { top: side !== "bottom"; bottom: side === "bottom"; left: side === "left"; right: side === "right" }
+    margins.top: side === "top" ? off : vert ? 40 : 0
+    margins.bottom: side === "bottom" ? off : 0
+    margins.left: side === "left" ? off : 0
+    margins.right: side === "right" ? off : 0
+    implicitWidth: panel.width + pad * 2
+    implicitHeight: panel.height + pad * 2
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "slate-bar-editor"
+    WlrLayershell.layer: WlrLayer.Overlay
+    mask: Region { item: panel }
+
+    // ---- What's picked on the bar ---------------------------------------------------
+    readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
+    readonly property string pickedItem: Config.barSelectedItem
+    readonly property string kind: !picked ? "none" : picked === "space" ? "space" : picked === "title" ? "title"
+        : pickedItem === "tuck" ? "tuck" : pickedItem !== "" ? "item" : "box"
+    readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
+    readonly property bool pickedTuck: !!picked && typeof picked !== "string" && !!picked.tuck
+    function nameOf(id) { const it = Config.barItem(id); return it ? it.label : id; }
+    readonly property string textKey: kind === "item" ? (Config.barTextKeys[pickedItem] || "") : ""
+
+    // ---- The pool, and carrying a chip to the bar ------------------------------------
+    readonly property var pool: Config.barItems.filter(i => !Config.s[i.key])
+    property point origin: Qt.point(0, 0)      // this window's corner on the desktop
+    property bool placed: false                // ...once it's known
+    property point pointer: Qt.point(0, 0)     // the pointer, in this window
+    property var carrying: null                // the chip being dragged
+    Process {
+        id: whereAmI
+        command: ["hyprctl", "-j", "cursorpos"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const p = JSON.parse(text);
+                    root.origin = Qt.point(p.x - root.pointer.x, p.y - root.pointer.y);
+                    root.placed = true;
+                } catch (e) {}
+            }
+        }
+    }
+    function pressed(x, y) { pointer = Qt.point(x, y); placed = false; whereAmI.running = true; }
+    function carryTo(chip, x, y) {
+        pointer = Qt.point(x, y);
+        if (!carrying) { carrying = chip; Config.barCarryAt = Qt.point(-100000, -100000); Config.barCarry = chip.carry; }
+        if (placed) Config.barCarryAt = Qt.point(origin.x + x, origin.y + y);
+    }
+    function dropped() {
+        carrying = null;
+        if (Config.barDrop()) Config.click();
+    }
+    function letGo() { carrying = null; Config.barCarry = null; Config.barCarryTarget = null; }
+    onShownChanged: if (!shown) letGo()
+
+    // ---- Building blocks --------------------------------------------------------------
+    component Heading: Text {
+        color: root.dim
+        font.family: root.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+    }
+    component Line: Rectangle { width: parent ? parent.width : 0; height: 1; color: root.divider }
+    component PanelButton: Rectangle {
+        id: btn
+        property string label
+        property int icon: 0
+        property bool primary: false
+        property bool destructive: false
+        signal clicked()
+        width: btnRow.implicitWidth + (label === "" ? 18 : 26); height: 30; radius: 8
+        color: primary ? (btnHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
+            : btnHover.hovered ? root.controlLit : root.control
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+        readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
+        Gloss { radius: parent.radius }   // glass: a sheen
+        Row {
+            id: btnRow
+            anchors.centerIn: parent
+            spacing: 6
+            Text {
+                visible: btn.icon !== 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: btn.icon ? root.glyph(btn.icon) : ""
+                color: btn.fg
+                font.family: root.bar.iconFont; font.pixelSize: 15
+            }
+            Text {
+                visible: btn.label !== ""
+                anchors.verticalCenter: parent.verticalCenter
+                text: btn.label
+                color: btn.fg
+                font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            }
+        }
+        HoverHandler { id: btnHover }
+        ClickTap { onTapped: btn.clicked() }
+    }
+    // A switch with its name before it
+    component Switch: Row {
+        id: sw
+        property string label
+        property bool checked: false
+        signal toggled(bool value)
+        spacing: 8
+        height: 30
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: sw.label
+            color: root.text
+            font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+        }
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 42; height: 24; radius: 12
+            color: sw.checked ? (swHover.hovered ? Qt.lighter(root.accent, 1.08) : root.accent)
+                : (swHover.hovered ? root.controlLit : root.control)
+            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+            Gloss { radius: parent.radius }   // glass: a sheen
+            Rectangle {
+                width: 18; height: 18; radius: 9
+                anchors.verticalCenter: parent.verticalCenter
+                x: sw.checked ? parent.width - width - 3 : 3
+                color: sw.checked ? root.accentText : root.text
+                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
+            }
+            HoverHandler { id: swHover }
+            ClickTap { onTapped: sw.toggled(!sw.checked) }
+        }
+    }
+    // Something from the bar, drawn as it is there, with its name beside it: the bar's own
+    // container shape, sizes, font and colours (the icon in its Colourful colour, as on the
+    // bar). `item`: its name in the arrangement, "" for what isn't an item
+    component BarChip: Rectangle {
+        id: barChip
+        property string item: ""
+        property int icon: 0
+        property string label: ""
+        property bool lit: false             // hovered
+        readonly property color iconColour: item === "power" ? root.bar.errorColor
+            : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
+            : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
+            : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
+            : Config.statusColour(item, root.text)
+        width: chipRow.implicitWidth + 24; height: root.bar.capsuleHeight
+        radius: root.bar.capsuleRadius
+        color: root.bar.capsuleColor
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: root.bar.hoverFill
+            opacity: barChip.lit ? root.bar.hoverStrength : 0
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        }
+        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+        Row {
+            id: chipRow
+            anchors.centerIn: parent
+            spacing: 7
+            Image {
+                visible: barChip.item === "control"
+                anchors.verticalCenter: parent.verticalCenter
+                width: 16; height: 16
+                sourceSize: Qt.size(32, 32)
+                source: visible ? "file://" + Quickshell.shellPath("assets/icon/icon-64.png") : ""
+            }
+            Text {
+                visible: barChip.item !== "control"
+                anchors.verticalCenter: parent.verticalCenter
+                text: barChip.icon ? root.glyph(barChip.icon) : ""
+                color: barChip.iconColour
+                font.family: root.bar.iconFont; font.pixelSize: 16
+                ChalkFace {}
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: barChip.label
+                color: root.text
+                font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
+            }
+        }
+    }
+    // A chip in the pool: clicked, or dragged onto the bar. Silent while dragged, a click when
+    // it lands, as everywhere
+    component PoolChip: BarChip {
+        id: chip
+        property var carry: null             // what the bar is told is coming: { kind, id }
+        signal clicked()
+        item: carry && carry.kind === "item" ? carry.id : ""
+        lit: chipHover.hovered
+        HoverHandler { id: chipHover }
+        MouseArea {
+            anchors.fill: parent
+            preventStealing: true
+            property point from
+            property bool dragged: false
+            onPressed: m => {
+                from = Qt.point(m.x, m.y); dragged = false;
+                const p = mapToItem(null, m.x, m.y);
+                root.pressed(p.x, p.y);
+            }
+            onPositionChanged: m => {
+                if (!dragged && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 6) dragged = true;
+                if (!dragged) return;
+                const p = mapToItem(null, m.x, m.y);
+                root.carryTo(chip, p.x, p.y);
+            }
+            onReleased: {
+                const was = dragged;
+                dragged = false;
+                if (!was) { Config.click(); chip.clicked(); }
+                else root.dropped();
+            }
+            onCanceled: { dragged = false; root.letGo(); }
+        }
+    }
+
+    // ---- The panel ----------------------------------------------------------------------
+    Rectangle {
+        id: panel
+        x: root.pad; y: root.pad
+        width: root.vert ? 380 : Math.min(860, (root.screen ? root.screen.width : 900) - 2 * root.pad - 16)
+        height: body.implicitHeight + 24
+        radius: 16
+        color: root.bar.barColor
+        opacity: root.fade
+        border.width: Config.glassShine ? 1 : 0
+        border.color: Config.glassEdge
+        Shadow { blur: 22; dropY: 4 }      // raised: Slate's shadow, with glass too
+        Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
+        MouseArea { anchors.fill: parent }       // (a click on the panel itself does nothing)
+
+        Column {
+            id: body
+            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 12; leftMargin: 14; rightMargin: 14 }
+            spacing: 10
+
+            // Title and Done
+            Item {
+                width: parent.width; height: 36
+                Column {
+                    anchors { left: parent.left; right: done.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                    spacing: 1
+                    Text {
+                        text: "Arranging the menu bar"
+                        color: root.text
+                        font.family: root.bar.fontFamily; font.pixelSize: 15
+                    }
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: "Drag things along the bar, into and out of containers, or to and from here. Click one for its options"
+                        color: root.dim
+                        font.family: root.bar.fontFamily; font.pixelSize: 11
+                    }
+                }
+                PanelButton {
+                    id: done
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    primary: true
+                    icon: 0xEA5E; label: "Done"
+                    onClicked: Config.barArranging = false
+                }
+            }
+            Line {}
+
+            // The pool
+            Heading {
+                text: Config.barLeaving ? "Let go to take it off the bar. It waits here, and keeps its place"
+                    : root.pool.length === 0 && Config.s.barShowTitle ? "Everything's on the bar. Drag something off it and it waits here"
+                    : "Not on the bar"
+                color: Config.barLeaving ? root.accent : root.dim
+            }
+            Flow {
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: root.pool
+                    PoolChip {
+                        required property var modelData
+                        icon: modelData.icon; label: modelData.label
+                        carry: ({ kind: "item", id: modelData.id })
+                        onClicked: Config.barSetShown(modelData.id, true)
+                    }
+                }
+                PoolChip {
+                    visible: !Config.s.barShowTitle
+                    icon: 0xEFE6; label: "Active window"
+                    carry: ({ kind: "title", id: "title" })
+                    onClicked: Config.barSetShown("title", true)
+                }
+                // (always more of these)
+                PoolChip {
+                    icon: 0xEAD5; label: "Container"
+                    carry: ({ kind: "box", id: "" })
+                    onClicked: Config.barAddBox(Config.barLayout.length)
+                }
+                PoolChip {
+                    icon: 0xEB59; label: "Flexible space"
+                    carry: ({ kind: "space", id: "" })
+                    onClicked: Config.barAddSpace(Config.barLayout.length)
+                }
+                PoolChip {
+                    icon: 0xEC38; label: "Collapse button"
+                    carry: ({ kind: "tuck", id: "" })
+                    // (clicked: into the container that's picked, or the one the picked thing is in)
+                    onClicked: if (root.picked && typeof root.picked !== "string") Config.barSetTuck(Config.barSelected, true)
+                }
+            }
+            Line {}
+
+            // What's picked, and its options
+            Heading {
+                width: parent.width
+                elide: Text.ElideRight
+                text: root.kind === "none" ? "Nothing picked. Click something on the bar to see its options"
+                    : root.kind === "space" ? "A flexible space: it takes up the spare room, pushing what's either side of it apart"
+                    : root.kind === "title" ? "The active window: its icon and title"
+                    : root.kind === "tuck" ? "A collapse button: this container's things tuck away behind it, and slide out when it's clicked"
+                    : root.kind === "item" ? root.nameOf(root.pickedItem)
+                    : "A container: " + (root.pickedThings.length > 0 ? root.pickedThings.map(root.nameOf).join(", ") : "nothing in it yet. Drag things into it")
+            }
+            Flow {
+                width: parent.width
+                spacing: 14
+                visible: root.kind !== "none"
+
+                // One thing
+                Switch {
+                    visible: root.textKey !== ""
+                    label: "Show its text"
+                    checked: root.textKey !== "" && !!Config.s[root.textKey]
+                    onToggled: v => Config.s[root.textKey] = v
+                }
+                Switch {
+                    visible: root.kind === "item" && root.pickedItem === "clock"
+                    label: "Date"
+                    checked: Config.s.barClockDate
+                    onToggled: v => Config.s.barClockDate = v
+                }
+                Switch {
+                    visible: root.kind === "item" && root.pickedItem === "clock"
+                    label: "Seconds"
+                    checked: Config.s.barClockSeconds
+                    onToggled: v => Config.s.barClockSeconds = v
+                }
+                Switch {
+                    visible: root.kind === "title"
+                    label: "App icon"
+                    checked: Config.s.barShowTitleIcon
+                    onToggled: v => Config.s.barShowTitleIcon = v
+                }
+
+                // The collapse button: its icon, and which end it sits at
+                Row {
+                    visible: root.kind === "tuck"
+                    spacing: 6
+                    Repeater {
+                        model: [0xEC38, 0xEA95, 0xEA94, 0xEA60, 0xEA61, 0xEC42, 0xEB0B, 0xEA9A]
+                        PanelButton {
+                            required property int modelData
+                            icon: modelData
+                            primary: root.pickedTuck && (parseInt(root.picked.tuckIcon, 16) || 0xEC38) === modelData
+                            onClicked: Config.barSetTuck(Config.barSelected, undefined, modelData === 0xEC38 ? "" : modelData.toString(16))
+                        }
+                    }
+                }
+                Row {
+                    visible: root.kind === "tuck"
+                    spacing: 6
+                    PanelButton {
+                        label: "At the start"
+                        primary: root.pickedTuck && root.picked.tuckFrom === "start"
+                        onClicked: Config.barSetTuck(Config.barSelected, undefined, undefined, "start")
+                    }
+                    PanelButton {
+                        label: "At the end"
+                        primary: root.pickedTuck && root.picked.tuckFrom !== "start"
+                        onClicked: Config.barSetTuck(Config.barSelected, undefined, undefined, "end")
+                    }
+                }
+
+                // A container
+                Switch {
+                    visible: root.kind === "box" && root.pickedThings.length > 0
+                    label: "Collapse button"
+                    checked: root.pickedTuck
+                    onToggled: v => Config.barSetTuck(Config.barSelected, v)
+                }
+                PanelButton {
+                    visible: root.kind === "box" && root.pickedThings.length > 1
+                    label: "Split up"
+                    onClicked: Config.barSplit(Config.barSelected)
+                }
+
+                // Off the bar
+                PanelButton {
+                    visible: root.kind !== "none"
+                    destructive: true
+                    label: root.kind === "space" || root.kind === "tuck" ? "Take away" : "Take off the bar"
+                    onClicked: {
+                        if (root.kind === "tuck") Config.barSetTuck(Config.barSelected, false);
+                        else if (root.kind === "item") Config.barSetShown(root.pickedItem, false);
+                        else Config.barRemoveEntry(Config.barSelected);
+                        Config.barSelected = -1;
+                    }
+                }
+            }
+        }
+    }
+
+    // What's being carried, under the pointer (as far as this window goes: past its edge, the
+    // line on the bar shows where it will land)
+    BarChip {
+        z: 10
+        visible: !!root.carrying
+        x: root.pointer.x - width / 2; y: root.pointer.y - height / 2
+        opacity: 0.9
+        item: root.carrying ? root.carrying.item : ""
+        icon: root.carrying ? root.carrying.icon : 0
+        label: root.carrying ? root.carrying.label : ""
+        Rectangle { anchors.fill: parent; radius: parent.radius; color: "transparent"; border.width: 1; border.color: root.accent }
+    }
+}
