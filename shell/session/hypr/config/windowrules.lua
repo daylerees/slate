@@ -134,6 +134,10 @@ hl.window_rule({ name = "no-border-maximized", match = { float = false, workspac
 -- their curves. Maximised windows always fill the screen.
 SOLO_SQUARE_RULE = hl.window_rule({ name = "square-single", match = { float = false, workspace = "w[tv1]" }, rounding = 0 })
 hl.window_rule({ name = "square-maximized", match = { float = false, workspace = "f[1]" }, rounding = 0 })
+-- ...and every window is square for the length of a workspace switch that slides
+-- (squareWhileSliding, animations.lua, switches this on and off again)
+SLIDE_SQUARE_RULE = hl.window_rule({ name = "square-sliding", match = { class = ".*" }, rounding = 0 })
+SLIDE_SQUARE_RULE:set_enabled(false)
 -- No drop shadow on tiled windows: against the accent border it reads as a second,
 -- dark outline. Floating windows keep theirs.
 hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow = true })

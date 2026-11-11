@@ -522,6 +522,7 @@ local function cycleWorkspace(step)
     -- windows slide away rather than fading where they are
     local target = step > 0 and (nextId or minId) or (prevId or maxId)
     local go = hl.dsp.focus({ workspace = step > 0 and "m+1" or "m-1" })
+    if target ~= current.id and squareWhileSliding then squareWhileSliding() end
     if target ~= current.id and (windows[target] or 0) == 0 and slideAwayTo then slideAwayTo(go)
     else hl.dispatch(go) end
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's

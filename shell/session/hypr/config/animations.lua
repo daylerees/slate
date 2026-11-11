@@ -8,11 +8,16 @@ hl.curve("easeOutQuint",   { type = "bezier", points = { {0.23, 1},    {0.32, 1}
 hl.curve("easeInOutCubic", { type = "bezier", points = { {0.65, 0.05}, {0.36, 1}    } })
 -- Starts slowly then speeds up: an outgoing workspace stays visible while the new one covers it
 hl.curve("lingerFade",     { type = "bezier", points = { {0.55, 0},    {0.9, 0.4}   } })
+-- Stays as it is until near the end, then goes quickly: an outgoing workspace is solid under the
+-- incoming one until that has all but arrived, so the desktop never shows in the strip the new
+-- one hasn't reached yet
+hl.curve("holdFade",       { type = "bezier", points = { {0.92, 0},    {0.98, 0.1}  } })
 hl.curve("easy",           { type = "spring", mass = 1, stiffness = 500, dampening = 35 })
 
 -- Animation speed (Settings → Appearance → Animations): "normal", "fast" (about 40%
 -- quicker) or "off". Every speed below goes through sp() so the setting scales them all.
 local ANIM_SCALE = 1
+local ANIM_OFF = false
 local function sp(x) return x * ANIM_SCALE end
 
 -- The fixed animations (windows, workspaces, the special workspace), at the current speed
@@ -26,8 +31,7 @@ local function defineLeaves()
 
     -- Workspaces: the parent of workspacesIn/Out, which draw the switch itself (slideWorkspaces
     -- below: by default the incoming one slides and fades in over the outgoing one, which
-    -- stays put and fades out underneath, gone by 0.3 s so it never shows through the gaps
-    -- and translucent borders between the new workspace's windows)
+    -- stays put, solid, until the new one has all but covered it, then fades away under it)
     hl.animation({ leaf = "workspaces",          enabled = true, speed = sp(5), bezier = "quick", style = "slide" })
     -- Special workspace (scratchpad): slides down from above and fades in over what's
     -- underneath; closing reverses it
@@ -61,7 +65,7 @@ local function slideWorkspaces()
         set("workspacesOut", 3.5, "lingerFade", "fade")
     else
         set("workspacesIn",  5, "easeOutQuint", a == "slidefadevert" and "slidefadevert 100%" or "slidefade 100%")
-        set("workspacesOut", 3, "lingerFade", "fade")
+        set("workspacesOut", 5, "holdFade", "fade")
     end
 end
 function setWorkspaceAnimation(style)
@@ -98,6 +102,18 @@ function instantTo(dispatcher)
     hl.animation({ leaf = "workspacesOut",   enabled = false })
     hl.dispatch(dispatcher)
     restoreSlideAfter(300)
+end
+
+-- squareWhileSliding(): windows lose their rounded corners for as long as a workspace switch
+-- that slides takes, and get them back after, so nothing shows past a moving window's corners
+-- (windowrules.lua has the rule; a crossfade and a straight switch move nothing, so they keep them)
+local roundTimer = nil
+function squareWhileSliding()
+    if not SLIDE_SQUARE_RULE or ANIM_OFF or WORKSPACE_ANIM == "crossfade" or WORKSPACE_ANIM == "none" then return end
+    SLIDE_SQUARE_RULE:set_enabled(true)
+    if roundTimer then roundTimer:set_enabled(false) end
+    roundTimer = hl.timer(function() roundTimer = nil; SLIDE_SQUARE_RULE:set_enabled(false) end,
+                          { timeout = math.floor(sp(5) * 100 + 40), type = "oneshot" })
 end
 
 -- slideAwayTo(dispatcher): to an empty workspace, the windows slide away in the direction of
@@ -158,6 +174,7 @@ end
 
 -- setAnimationSpeed(mode): "normal", "fast" or "off" (called by slateApply, slate.lua)
 function setAnimationSpeed(mode)
+    ANIM_OFF = mode == "off"
     if mode == "off" then
         hl.config({ animations = { enabled = false } })
         return

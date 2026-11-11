@@ -1,0 +1,84 @@
+"""Switching workspace with the slide (Super+Left/Right): the desktop never shows between the
+workspace leaving and the one arriving, and windows are square while they move."""
+import os
+import tempfile
+
+from PIL import Image
+
+from test_switcher_animations import SwitcherAnimations
+
+
+class WorkspaceSwitch(SwitcherAnimations):
+    # (only this file's tests: the ones it borrows its helpers from run in their own)
+    test_overview_every_move_and_pick = None
+    test_window_switcher_every_move_and_pick = None
+    test_overview_grid_arrows = None
+
+    def animations(self):
+        out, leaf = {}, None
+        for line in self.s.hyprctl("animations").splitlines():
+            line = line.strip()
+            if line.startswith("name:"):
+                leaf = line.split(":", 1)[1].strip()
+                out[leaf] = {}
+            elif leaf and ":" in line:
+                k, v = line.split(":", 1)
+                out[leaf][k.strip()] = v.strip()
+        return out
+
+    def test_old_workspace_lasts_as_long_as_the_new_one_takes(self):
+        a = self.animations()
+        self.assertEqual(a["workspacesOut"]["bezier"], "holdFade")
+        self.assertEqual(a["workspacesOut"]["speed"], a["workspacesIn"]["speed"],
+                         "the old workspace is gone before the new one has arrived: the desktop shows in between")
+
+    def test_no_desktop_between_the_workspaces_mid_slide(self):
+        self.windows_on_two_workspaces()
+        self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); setWorkspaceAnimation("slidefade")'))
+        # The switch as it is, ten times slower, so a picture can be taken partway through
+        a = self.animations()
+        slow = lambda leaf: ('hl.animation({ leaf = "%s", enabled = true, speed = %s, bezier = "%s", style = "%s" })'
+                             % (leaf, float(a[leaf]["speed"]) * 10, a[leaf]["bezier"], a[leaf]["style"]))
+        self.s.hyprctl("eval", "hl.config({ animations = { enabled = true } }); " + slow("workspacesIn") + "; " + slow("workspacesOut"))
+        self.s.settle(0.3)
+        before = os.path.join(tempfile.mkdtemp(), "before.png")
+        self.s.screenshot(before)
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.focus({ workspace = "m+1" })) end')
+        shots = []
+        for i in range(3):                       # (about half way, and on towards the end)
+            self.s.settle(1.0)
+            shots.append(self.s.screenshot(os.path.join(os.path.dirname(before), f"mid{i}.png")))
+        self.s.settle(3.0)
+        # The window fills the screen under the bar on both workspaces, so across the middle
+        # there's only ever a window, the terminal's grey (dimmer or not): never the wallpaper,
+        # which is coloured. (It showed in the strip the arriving workspace hadn't reached yet)
+        w, h = Image.open(before).size
+        for shot in shots:
+            im = Image.open(shot).convert("RGB")
+            row = [im.getpixel((x, h // 2)) for x in range(w)]
+            coloured = sum(1 for p in row if max(p) - min(p) > 14)
+            self.assertEqual(coloured, 0, f"the wallpaper shows across {coloured} px during the switch ({shot})")
+
+    def test_windows_are_square_while_a_switch_slides(self):
+        self.windows_on_two_workspaces()
+        self.addCleanup(lambda: self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(true)"))
+        self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(false)")     # (a lone window is square anyway)
+        self.s.settle(0.4)
+        rounding = lambda: self.s.hyprctl("getprop", "active", "rounding").strip()
+        usual = rounding()
+        self.assertNotEqual(usual, "0")
+        self.s.hyprctl("eval", "squareWhileSliding()")
+        self.s.settle(0.15)
+        self.assertEqual(rounding(), "0", "windows kept their rounded corners during the switch")
+        self.s.settle(0.9)
+        self.assertEqual(rounding(), usual, "windows didn't get their corners back")
+
+    def test_windows_keep_their_corners_when_nothing_slides(self):
+        self.windows_on_two_workspaces()
+        self.addCleanup(lambda: self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(true); setWorkspaceAnimation("slidefade")'))
+        self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(false); setWorkspaceAnimation("crossfade")')
+        self.s.settle(0.4)
+        usual = self.s.hyprctl("getprop", "active", "rounding").strip()
+        self.s.hyprctl("eval", "squareWhileSliding()")
+        self.s.settle(0.15)
+        self.assertEqual(self.s.hyprctl("getprop", "active", "rounding").strip(), usual)
