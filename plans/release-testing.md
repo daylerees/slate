@@ -64,3 +64,4 @@ things off as they're done.
 - Settings → Workspaces no longer has the "On the menu bar" switch (the dots are added and removed in Edit layout): any test that uses it.
 - Settings → Network (was Wi-Fi; the page id is still "wifi"): the page's scene, a test with a wired device and with details from netinfo.sh; the settings-index count.
 - Hover descriptions are gone from the bar (and barHoverDescriptions): remove tests for them. The per-item description strings (hoverText, hoverCode, hoverTile, hoverImage in Bar.qml) are left in place, mostly unused now: tidy away what nothing reads.
+- Settings → Spaces no longer has the "Spaces button" switch (Edit layout does it): any test that uses it.

@@ -294,7 +294,7 @@ FloatingWindow {
                   "switcherMoveAnimation", "switcherPickAnimation"],
         workspaces: ["workspaceAnimation", "workspaceSwitchName", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons",
                      "overviewMoveAnimation", "overviewPickAnimation", "overviewGridSize"],
-        spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
+        spaces: ["spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
@@ -2503,12 +2503,6 @@ FloatingWindow {
             IntroText { text: "Save the apps on some workspaces, and where their windows sit, as a space; then bring them all back on new workspaces in one click from the Spaces button on the menu bar." }
             GroupLabel { text: "Menu Bar" }
             Group {
-                ToggleSetting {
-                    label: "Spaces button"
-                    detail: "Between Apps and the workspaces: your spaces, and New Space"
-                    key: "barShowSpaces"
-                }
-                Separator {}
                 ToggleSetting {
                     label: "Colour the window's icon"
                     detail: "When the focused window came from a space, its icon on the menu bar sits on the space's colour"
