@@ -799,11 +799,13 @@ PanelWindow {
                     .sort((a, b) => (b.connected - a.connected) || (b.signalStrength - a.signalStrength));
             }
             property string askingFor: ""      // network waiting for a password
+            // On a cable, connected: the panel says so first, and its details are the cable's
+            readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
             // Scan while the panel is open
             Binding { target: wifiView.dev; property: "scannerEnabled"; value: true; when: wifiView.dev !== null && pop.shown }
 
             PanelTitle {
-                text: "Wi-Fi"
+                text: wifiView.dev ? "Wi-Fi" : "Network"
                 Switch {
                     visible: !!wifiView.dev
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
@@ -813,13 +815,34 @@ PanelWindow {
             }
             // (a computer with no Wi-Fi: say so. The bar's Wi-Fi button isn't shown there, but
             // the panel can still be asked for)
+            // Wired: its own line, above whatever Wi-Fi there is
+            Item {
+                visible: wifiView.onWire
+                width: parent.width; height: 36
+                Icon {
+                    id: wireIcon
+                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    code: 0xF09F; font.pixelSize: 16
+                    color: Config.statusColour("wifi", pop.text)
+                }
+                Label {
+                    anchors { left: wireIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Wired"
+                }
+                Label {
+                    anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    text: "Connected"
+                    color: pop.dim; font.pixelSize: 12
+                }
+            }
+            Divider { visible: wifiView.onWire && !!wifiView.dev }
             Label {
-                visible: !wifiView.dev
+                visible: !wifiView.dev && !wifiView.onWire
                 width: parent.width
                 wrapMode: Text.Wrap
                 font.weight: Font.Normal
                 color: pop.dim
-                text: "This computer has no Wi-Fi. A wired connection needs no setting up here."
+                text: "This computer has no Wi-Fi, and no cable is connected. Plug one in and it connects by itself."
             }
 
             // ---- Connection details (scripts/netinfo.sh), refreshed while the panel is open
@@ -947,13 +970,15 @@ PanelWindow {
             }
 
             // ---- Connection: signal, then details as small tiles (click to copy) ----
-            readonly property bool showInfo: Networking.wifiEnabled && wifiView.connected !== null && wifiView.info.ip !== undefined
+            // (the cable's while on one: netinfo.sh reports it then, with wired=…)
+            readonly property bool wiredInfo: wifiView.info.wired !== undefined
+            readonly property bool showInfo: wifiView.info.ip !== undefined && (wiredInfo || (Networking.wifiEnabled && wifiView.connected !== null))
             Divider { visible: wifiView.showInfo }
             Heading { visible: wifiView.showInfo; text: "Connection" }
             // Signal strength, as a meter like the battery panel's
             Column {
                 id: signalInfo
-                visible: wifiView.showInfo
+                visible: wifiView.showInfo && !wifiView.wiredInfo
                 width: parent.width
                 spacing: 5
                 // Glides between readings (the bar and the number together)

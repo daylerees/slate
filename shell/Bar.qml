@@ -1667,16 +1667,19 @@ PanelWindow {
                     // Wi-Fi: just before the battery
                     Segment {
                         id: wifiSeg
-                        // (only on a computer with Wi-Fi, as Bluetooth is)
-                        wanted: Config.s.barShowWifi && !!wifi
+                        // The network: Wi-Fi, or the cable while one's plugged in and connected (its
+                        // own icon, and "Wired"). Only on a computer with either
+                        wanted: Config.s.barShowWifi && (!!wifi || !!wired)
+                        readonly property var wired: Networking.devices.values.find(d => d.type === DeviceType.Wired) ?? null
+                        readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
                         pastel: "wifi"            // its colour when the look is Colourful
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
-                        iconCode: !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
+                        iconCode: onWire ? 0xF09F : !wifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
                         sample: "Wi-Fi"; textOn: Config.s.barValueWifi
-                        label: Config.s.barValueWifi ? (net ? net.name : "Offline") : ""
-                        hoverText: net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
+                        label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
+                        hoverText: onWire ? "Wired connection" : !wifi ? "No cable connected" : net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
