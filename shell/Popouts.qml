@@ -545,6 +545,7 @@ PanelWindow {
         MouseArea {
             preventStealing: true      // keep the drag once started, even if the pointer drifts off
             anchors.fill: parent
+            cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
             function set(mx) { sl.moved(Math.max(0, Math.min(1, mx / width))); }
             onPressed: m => set(m.x)
             onPositionChanged: m => { if (pressed) set(m.x); }
@@ -1667,6 +1668,7 @@ PanelWindow {
                     }
                     MouseArea {
                         anchors.fill: parent
+                        cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
                         function set(mx) {
                             const h = Math.max(0, Math.min(0.999, mx / width));
                             spacesView.colour = Qt.hsla(h, 0.65, 0.78, 1);

@@ -1399,6 +1399,7 @@ FloatingWindow {
                 preventStealing: true
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
                 function set(mx) {
                     const raw = valueSlider.from + Math.max(0, Math.min(1, mx / width)) * (valueSlider.to - valueSlider.from);
                     valueSlider.moved(Math.round(raw / valueSlider.stepSize) * valueSlider.stepSize);
@@ -5037,6 +5038,7 @@ FloatingWindow {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
+                                    cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
                                     function set(mx) {
                                         const h = Math.max(0, Math.min(0.999, mx / width));
                                         const c = Qt.hsla(h, 0.65, 0.74, 1);
