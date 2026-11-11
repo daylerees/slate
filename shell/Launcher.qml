@@ -754,16 +754,7 @@ PanelWindow {
         // Glass: a thin light rim
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        // Soft drop shadow so it stands out over windows
-        layer.enabled: !Config.glass     // only for the shadow, which glass goes without
-        layer.effect: MultiEffect {
-            shadowEnabled: !Config.glass
-            shadowColor: "#000000"
-            shadowOpacity: 0.45
-            shadowBlur: 1.0
-            shadowVerticalOffset: 8
-            blurMax: 48
-        }
+        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
 
         // Swallow clicks so they don't close the launcher

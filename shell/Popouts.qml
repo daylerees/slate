@@ -178,23 +178,21 @@ PanelWindow {
         y: panelArea.y + body.y
         width: panelArea.width
         height: panelArea.height
-        color: pop.bg
         topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
         bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
         // Never quite 0 while shown: at 0 Qt drops it from the scene and rebuilds it on the
         // first frame of the slide, which held the slide up
         opacity: pop.active ? Math.max(0.01, pop.fade) : 0      // prepared with the panel (see pending)
-        // No shadow with glass: it would show through the panel (and get blurred behind it)
-        visible: width > 0 && height > 0 && !Config.glass
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: "black"
-            shadowOpacity: Config.s.lightMode ? 0.22 : 0.5
-            shadowBlur: 0.9
-            blurMax: 24
-            shadowHorizontalOffset: pop.sideways ? (pop.side === "left" ? 4 : -4) : 0
-            shadowVerticalOffset: pop.sideways ? 4 : (pop.fromBottom ? -4 : 4)
+        // (the shape itself isn't drawn: only Slate's shadow round it, which has the panel's
+        // shape cut out, so with glass nothing shows through the panel)
+        color: "transparent"
+        visible: width > 0 && height > 0
+        Shadow {
+            z: 0
+            topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
+            bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
+            dropX: pop.sideways ? (pop.side === "left" ? 3 : -3) : 0
+            dropY: pop.sideways ? 3 : (pop.fromBottom ? -3 : 3)
         }
     }
 
@@ -1171,7 +1169,7 @@ PanelWindow {
                     // Fades with the distance from the edge, gone just as you reach it
                     opacity: Math.max(0, Math.min(1, (spListFlick.contentY - spListFlick.originY) / 24))
                     gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
+                        GradientStop { position: 0; color: Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
                         GradientStop { position: 1; color: "transparent" }
                     }
                 }
@@ -1181,7 +1179,7 @@ PanelWindow {
                     opacity: Math.max(0, Math.min(1, (spListFlick.originY + spListFlick.contentHeight - spListFlick.height - spListFlick.contentY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0; color: "transparent" }
-                        GradientStop { position: 1; color: Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
+                        GradientStop { position: 1; color: Config.shade(Config.s.lightMode ? 0.14 : 0.38) }
                     }
                 }
                 ThinScrollbar {
@@ -1330,7 +1328,7 @@ PanelWindow {
                                                 layer.enabled: wsLive.hasContent
                                                 layer.effect: MultiEffect {
                                                     shadowEnabled: true
-                                                    shadowColor: "black"
+                                                    shadowColor: Config.shadowColour
                                                     shadowOpacity: 0.55
                                                     shadowBlur: 0.6
                                                     shadowVerticalOffset: 1

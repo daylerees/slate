@@ -42,6 +42,7 @@ PanelWindow {
         y: dm.atY + height + 8 > dm.height ? Math.max(8, dm.atY - height) : dm.atY
         radius: 12
         color: dm.bgColor
+        Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
         Column {

@@ -53,18 +53,9 @@ Rectangle {
     // get barely showed on a card), a touch stronger than on the bar's capsules
     Gloss { radius: parent.radius; band: true; strength: 1.15 }
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-    // Pop-ups float a little: a light drop shadow, drawn as a rounded shape behind the card.
-    // (A blur effect on the card took a frame or two to blur, showing a hard square-looking
-    // shadow first, as the pop-up faded in.)
-    RectangularShadow {
-        visible: !card.inPanel && !Config.glass
-        z: -1
-        anchors.fill: parent
-        radius: card.radius
-        blur: 14
-        offset.y: 4
-        color: Qt.rgba(0, 0, 0, 0.38)
-    }
+    // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
+    // of it, so nothing shows through), kept within the room their window leaves round them
+    Shadow { visible: !card.inPanel && !Config.gameMode; blur: 14; dropY: 3 }
 
     // A thick band across the top that wraps round the corners and tapers down the sides:
     // the space between the card's outline and its rounded content area, set `band` lower.

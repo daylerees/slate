@@ -252,15 +252,7 @@ PanelWindow {
         // Glass: a thin light rim
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        layer.enabled: !Config.glass     // only for the shadow, which glass goes without
-        layer.effect: MultiEffect {
-            shadowEnabled: !Config.glass
-            shadowColor: "#000000"
-            shadowOpacity: 0.45
-            shadowBlur: 1.0
-            shadowVerticalOffset: 8
-            blurMax: 48
-        }
+        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent }
 
         // Keyboard, for when the keys reach us directly
@@ -519,8 +511,8 @@ PanelWindow {
                 bottomRightRadius: modelData === 1 ? panel.radius : 0
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
-                    GradientStop { position: 0.0; color: modelData === 0 ? Qt.rgba(0, 0, 0, 0.6) : "transparent" }
-                    GradientStop { position: 1.0; color: modelData === 0 ? "transparent" : Qt.rgba(0, 0, 0, 0.6) }
+                    GradientStop { position: 0.0; color: modelData === 0 ? Config.shade(0.6) : "transparent" }
+                    GradientStop { position: 1.0; color: modelData === 0 ? "transparent" : Config.shade(0.6) }
                 }
             }
         }

@@ -105,8 +105,7 @@ PanelWindow {
         Gloss { radius: parent.radius; strength: 0.6 }                // glass: a sheen, as on Slate's panels
         opacity: w.fade
         scale: fit * (0.96 + 0.04 * w.fade)
-        layer.enabled: !Config.glass     // only for the shadow, which glass goes without
-        layer.effect: MultiEffect { shadowEnabled: !Config.glass; shadowColor: "black"; shadowOpacity: 0.5; shadowBlur: 1; shadowVerticalOffset: 10; blurMax: 48 }
+        Shadow { blur: 30; dropY: 6 }      // raised: Slate's shadow, with glass too
 
         focus: w.shown
         Keys.onEscapePressed: w.finish()

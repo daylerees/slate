@@ -1498,6 +1498,7 @@ ShellRoot {
                 radius: 12
                 color: win.bgColor
                 opacity: previewPop.fade
+                Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
                 // Grows out of the icon as it fades in, and back into it as it fades out
                 transform: Scale {
                     origin.x: Math.max(0, Math.min(previewBox.width, previewPop.atX - previewBox.x))
@@ -1577,8 +1578,8 @@ ShellRoot {
                         opacity: Math.max(0, Math.min(1, more / 24))
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
-                            GradientStop { position: 0; color: atRight ? "transparent" : Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) }
-                            GradientStop { position: 1; color: atRight ? Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+                            GradientStop { position: 0; color: atRight ? "transparent" : Config.shade(Config.s.lightMode ? 0.14 : 0.38) }
+                            GradientStop { position: 1; color: atRight ? Config.shade(Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
                         }
                     }
                 }
@@ -1771,6 +1772,7 @@ ShellRoot {
                     win.edge === "bottom" ? appMenu.menuY - height : win.edge === "top" ? appMenu.menuY : appMenu.menuY - height / 2))
                 radius: 12
                 color: win.bgColor
+                Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
                 // Pointer: a small triangle on the side facing the dock, at the icon (it slides along

@@ -84,6 +84,7 @@ PanelWindow {
             edge === "top" ? tm.anchorY + 14 : edge === "bottom" ? tm.anchorY - height - 14 : tm.anchorY - height / 2))
         radius: 12
         color: tm.bgColor
+        Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
         // Pointer to the icon, on the side facing the bar (as on the dock's menus)

@@ -125,6 +125,28 @@ Singleton {
         return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
     }
 
+    // ---- Shadows (Shadow.qml, and Hyprland's under floating windows) ------------------------
+    // One colour for every shadow: still dark, with a light tint of the theme. The hue is the
+    // wallpaper's when Tint from wallpaper is on, Slate's own blue-grey otherwise; never
+    // flipped in light mode (a shadow is dark on any background)
+    readonly property color shadowColour: {
+        const toned = s.toneFromWallpaper && wallpaperTone !== "";
+        const t = Qt.lighter(toned ? wallpaperTone : "#0f1216", 1.0);
+        const hue = t.hslHue >= 0 ? t.hslHue : 0.6;
+        const sat = toned ? Math.min(0.5, Math.max(0.2, t.hslSaturation * 0.6)) : 0.25;
+        return Qt.hsla(hue, sat, 0.06, 1);
+    }
+    // How dark at its darkest: softer in light mode, and on glass always below the point where
+    // Hyprland blurs behind Slate's surfaces (glassCut), or the shadow would be blurred glass too
+    readonly property real shadowStrength: Math.min(s.lightMode ? 0.26 : 0.5, glass ? glassCut - 0.04 : 1)
+    // The same colour at a given strength, for the shades at the ends of scrolling lists
+    // (more that way) and anything else that's a shadow drawn by hand
+    function shade(alpha) { return Qt.rgba(shadowColour.r, shadowColour.g, shadowColour.b, alpha); }
+    readonly property string shadowHex: {
+        const h = v => Math.round(v * 255).toString(16).padStart(2, "0");
+        return h(shadowColour.r) + h(shadowColour.g) + h(shadowColour.b);
+    }
+
     // ---- Assistants (Settings → Assistant, docs/ASSISTANT.md) -------------------------------
     // On only when switched on *and* the risks, as they're written now, were accepted there:
     // setting assistantEnabled some other way switches nothing on. The number goes up when a
@@ -381,6 +403,8 @@ Singleton {
             + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
             + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
             + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"})`
+            // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
+            + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
             + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`

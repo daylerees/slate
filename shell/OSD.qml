@@ -197,11 +197,7 @@ PanelWindow {
         color: osd.bar.barColor
         opacity: osd.fade
         Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: !Config.glass; shadowColor: "#000000"; shadowOpacity: 0.4
-            shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 32
-        }
+        Shadow { blur: 16; dropY: 3 }      // raised: Slate's shadow, with glass too
 
         Text {
             id: osdIcon

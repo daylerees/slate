@@ -129,6 +129,7 @@ PanelWindow {
         color: root.cardColor
         opacity: root.fade
         scale: 0.94 + 0.06 * root.fade
+        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
 
         transform: Translate { id: shakeX }
         SequentialAnimation {

@@ -1139,13 +1139,13 @@ FloatingWindow {
         bottomLeftRadius: atBottom ? cornerRadius : 0; bottomRightRadius: atBottom ? cornerRadius : 0
         opacity: Math.max(0, Math.min(1, distance / 24))
         gradient: Gradient {
-            GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.12 : 0.32) }
-            GradientStop { position: 1; color: scrollShade.atBottom ? Qt.rgba(0, 0, 0, Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+            GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
+            GradientStop { position: 1; color: scrollShade.atBottom ? Config.shade(Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
         }
     }
     // The shadow under a pop-up (dropdown menus, the place search's results): use it as
     // layer.effect: PopupShadow {}
-    component PopupShadow: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+    component PopupShadow: MultiEffect { shadowEnabled: true; shadowColor: Config.shadowColour; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
     // The box round a text field: the control colour with a sheen, an I-beam pointer, and a faint
     // accent outline under the pointer (solid while typing). field: the TextInput inside it
     component FieldFrame: Rectangle {

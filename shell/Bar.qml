@@ -130,7 +130,10 @@ PanelWindow {
 
     // ---- Auto-hide state ---------------------------------------------------
     property bool filled: false          // one window fills the workspace (from Hyprland)
-    readonly property bool hovered: hover.hovered
+    // The pointer is on the bar: on an empty part of it (hitArea, which also catches the thin
+    // strip while the bar's hidden) or on anything in it. (hitArea alone went false over the
+    // bar's own buttons, which take the hover themselves, and the bar's shadow vanished there)
+    readonly property bool hovered: hover.hovered || overItems.hovered
     Timer { id: holdTimer; interval: bar.holdMs }        // shown after fill / workspace switch
     Timer { id: hoverTimer; interval: 700 }              // lingers a moment after the pointer leaves
     onHoveredChanged: if (!hovered) hoverTimer.restart()
@@ -282,29 +285,32 @@ PanelWindow {
         // Against the screen edge (the window's extra room, for the shadow, is on the inside)
         x: bar.vert && bar.atRight ? bar.shadowPad : 0
         y: !bar.vert && bar.atBottom ? bar.shadowPad : 0
+        HoverHandler { id: overItems }
         // Hides by sliding off its screen edge
         transform: Translate {
             x: bar.vert ? (bar.atRight ? 1 : -1) * bar.thickness * (1 - bar.reveal) : 0
             y: bar.vert ? 0 : (bar.atBottom ? 1 : -1) * bar.thickness * (1 - bar.reveal)
         }
 
-        // The bar's shape (band and curved corners), casting a drop shadow on hover or while
-        // a panel is open
+        // The bar's shape (band and curved corners), casting a shadow on hover or while a panel
+        // is open: Slate's own (Shadow.qml), following the band and its flared corners, with
+        // the bar's shape cut out of it so nothing shows through with glass. The shape is the
+        // whole strip (band and the corners' depth) less the desktop's rounded rectangle
         Item {
             anchors.fill: parent
-            // On the whole time a panel from this bar is shown (from before it slides), so the
-            // shadow's blur is set up once, not as it slides (that held the slide up)
-            // Never with glass, which has no shadow: switching the layer on (on hover) changed how
-            // the see-through bar was drawn, and it lit up
-            layer.enabled: !Config.glass && (bar.shadow > 0.01 || (!!bar.popouts && bar.popouts.active && bar.popouts.screen === bar.screen))
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: "black"
-                shadowOpacity: (Config.s.lightMode ? 0.22 : 0.5) * bar.shadow   // (the layer's off with glass)
-                shadowBlur: 0.9
-                blurMax: 24
-                shadowHorizontalOffset: bar.vert ? (bar.atRight ? -4 : 4) : 0
-                shadowVerticalOffset: bar.vert ? 0 : (bar.atBottom ? -4 : 4)
+            Shadow {
+                readonly property real far: 8000
+                readonly property real r: Config.s.roundedScreenCorners ? bar.cornerRadius : 0
+                visible: !Config.gameMode && opacity > 0.01
+                opacity: bar.shadow
+                radius: 0
+                blur: 15
+                dropX: bar.vert ? (bar.atRight ? -3 : 3) : 0
+                dropY: bar.vert ? 0 : (bar.atBottom ? -3 : 3)
+                holeRadius: r
+                hole: bar.vert
+                    ? (bar.atRight ? Qt.rect(-far, 0, far + bar.cornerRadius, height) : Qt.rect(bar.barHeight, 0, far, height))
+                    : (bar.atBottom ? Qt.rect(0, -far, width, far + bar.cornerRadius) : Qt.rect(0, bar.barHeight, width, far))
             }
             Rectangle {
                 id: bg

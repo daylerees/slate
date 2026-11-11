@@ -80,6 +80,12 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               in an empty folder with Slate's server as its tools, and turns what
                               it prints into start/text/done/error lines. scripts/slate_agents.py
                               has the agents (Claude Code, a command of your own)
+Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,
+                              Chalk, the bar): one look, dark with a light tint of the theme
+                              (Config.shadowColour, also sent to Hyprland for floating windows), drawn by
+                              shaders/shadow.frag with the surface's own shape cut out of it, so glass
+                              can have shadows too. Off in game mode
+ChalkFace.qml                 Chalk's icon in two colours (the Colourful look): put inside a Text drawing it
 Assistant.qml                 Chalk's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
                               for a prompt, shows the answer (plain text) and what was done, as
                               Slate's server reports it (`assistant did`)
@@ -101,6 +107,7 @@ bin/slate-system              packages (packaging/<distro>.txt, copied in) and t
                               (urgent notification 25 s after start; shell.qml)
 shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
+shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
                         everything it's installed with, greeter/emergency/ is its fallback

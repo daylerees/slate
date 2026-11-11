@@ -274,13 +274,13 @@ Scope {
         anchors { top: atTop; bottom: !atTop; left: side === "left"; right: side === "right" }
         // Clear of the bar, and of the dock when it's on the same edge
         margins {
-            top: (Config.barEdge === "top" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "top" && side === "center" ? 84 : 8)
-            bottom: (Config.barEdge === "bottom" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "bottom" && side === "center" ? 84 : 12)
+            top: (Config.barEdge === "top" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "top" && side === "center" ? 84 : 8) - toastWin.shadowPad
+            bottom: (Config.barEdge === "bottom" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "bottom" && side === "center" ? 84 : 12) - toastWin.shadowPad
             left: (Config.barEdge === "left" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "left" ? 84 : 12) - toastWin.shadowPad
             right: (Config.barEdge === "right" ? notifs.bar.barHeight : 0) + (Config.dockEdge === "right" ? 84 : 12) - toastWin.shadowPad
         }
-        // Room either side for the cards' shadows
-        readonly property real shadowPad: 12
+        // Room all round for the cards' shadows (the margins above are less by as much)
+        readonly property real shadowPad: 18
         implicitWidth: notifs.toastWidth + shadowPad * 2
         // Room for a column of pop-ups, but never taller than the screen
         implicitHeight: toastWin.screen ? Math.min(700, toastWin.screen.height - 120) : 700
@@ -294,7 +294,7 @@ Scope {
             id: toastList
             width: parent.width
             height: contentHeight
-            y: toastWin.atTop ? 0 : parent.height - height
+            y: toastWin.atTop ? toastWin.shadowPad : parent.height - height - toastWin.shadowPad
             // Newest nearest the screen edge
             verticalLayoutDirection: toastWin.atTop ? ListView.TopToBottom : ListView.BottomToTop
             interactive: false

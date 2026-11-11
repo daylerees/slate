@@ -642,7 +642,7 @@ PanelWindow {
                     radius: 12
                     blur: 36
                     offset.y: 18
-                    color: Qt.rgba(0, 0, 0, 0.7)
+                    color: Qt.rgba(Config.shadowColour.r, Config.shadowColour.g, Config.shadowColour.b, 0.7)
                     opacity: card.lifted ? 1 : 0
                     Behavior on opacity { enabled: !ov.handover; NumberAnimation { duration: Config.ms(180) } }
                 }
@@ -765,7 +765,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 width: Math.round(Math.max(16, Math.min(44, parent.width * 0.28, parent.height * 0.4))); height: width
                                 layer.enabled: visible
-                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 1 }
+                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: Config.shadowColour; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 1 }
                                 AppTile {
                                     anchors.fill: parent
                                     readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? Config.appEntry(parent.parent.modelData.wayland.appId) : null
