@@ -246,6 +246,7 @@ Singleton {
             ? `if not SLATE_ARRANGING then SLATE_ARRANGING = true; hl.define_submap("slate-arranging", function() `
               + `hl.bind("Escape", hl.dsp.exec_cmd("${slateCommand} ipc call bar edit done")) end) end; hl.dispatch(hl.dsp.submap("slate-arranging"))`
             : `hl.dispatch(hl.dsp.submap("reset"))`]);
+        barPrioritising = false;
         if (barArranging) return;
         barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null; barPreview = 0;
         // (a container put on the bar and never given anything goes)
@@ -461,6 +462,8 @@ Singleton {
     // Trying the bar shorter while it's arranged (the panel's "Try it shorter"): the share of its
     // length taken off, 0 for none. While it's tried, the bar slims, tucks and overflows as it
     // would; otherwise, arranged, everything's there to be picked up
+    // (menu item priority has its window up, in place of the arranging panel: BarEditor.qml)
+    property bool barPrioritising: false
     property real barPreview: 0
     readonly property bool barShowAll: barArranging && barPreview <= 0
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)

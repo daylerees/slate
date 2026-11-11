@@ -313,3 +313,13 @@ Left for later, or to look at:
   between. Worth a visual scene with a settle once the screenshots are redone.
 - The assistant's tool (see "Later, not here").
 
+### Menu item priority (after the first try)
+
+The order things leave in is called **menu item priority** from here on. The ordered list left
+the arranging panel for a window of its own: **Set priority** in the panel hides it and opens
+"Menu item priority" in its place (Back, or Escape, returns). On one side, what the bar does
+when it's short of room, both ladders in plain words, and "Try it shorter"; on the other, a
+list that scrolls, one row a thing with a gripper, dragged into order. It's shown highest
+priority first (the last to leave), the saved order backwards. What always stays isn't
+listed, as it never leaves; that's still set per thing ("Always keep on the bar"). Things
+that aren't on the bar keep their place in the list, marked "Not on the bar".

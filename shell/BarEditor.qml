@@ -24,6 +24,11 @@ PanelWindow {
     readonly property bool shown: Config.barArranging
     property real fade: shown ? 1 : 0
     Behavior on fade { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+    // Menu item priority (Set priority): this panel gives way to a window of its own, and comes
+    // back after
+    readonly property bool prioritising: shown && Config.barPrioritising
+    property real turn: prioritising ? 1 : 0
+    Behavior on turn { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
     // ---- Look: the bar's own colours, as Settings uses them ----------------------
     readonly property color text: bar.textColor
@@ -51,8 +56,8 @@ PanelWindow {
     margins.bottom: side === "bottom" ? off : 0
     margins.left: side === "left" ? off : 0
     margins.right: side === "right" ? off : 0
-    implicitWidth: panel.width + pad * 2
-    implicitHeight: panel.height + pad * 2
+    implicitWidth: Math.max(panel.width, prio.width) + pad * 2
+    implicitHeight: Math.max(panel.visible ? panel.height : 0, prio.visible ? prio.height : 0) + pad * 2
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-bar-editor"
@@ -62,7 +67,7 @@ PanelWindow {
     // keeps a pressed pointer with the surface it was pressed on while something has the
     // keyboard, and with no window focused nothing did, so the drag ended at the bar's edge
     WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    mask: Region { item: panel }
+    mask: Region { item: root.prioritising ? prio : panel }
 
     // ---- What's picked on the bar ---------------------------------------------------
     readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
@@ -115,6 +120,7 @@ PanelWindow {
     }
     function letGo() { carrying = null; Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
     onShownChanged: if (!shown) letGo()
+    onPrioritisingChanged: { prioList.held = ""; prioList.moving = null; }
 
     // ---- Building blocks --------------------------------------------------------------
     component Heading: Text {
@@ -198,6 +204,35 @@ PanelWindow {
             ClickTap { onTapped: sw.toggled(!sw.checked) }
         }
     }
+    // A paragraph of explanation
+    component Para: Text {
+        width: parent ? parent.width : 0
+        wrapMode: Text.WordWrap
+        lineHeight: 1.2
+        color: root.text
+        font.family: root.bar.fontFamily; font.pixelSize: 12
+    }
+    // The bar tried shorter, to see what slims down and what leaves
+    component Shorter: Flow {
+        spacing: 6
+        Text {
+            height: 32
+            verticalAlignment: Text.AlignVCenter
+            rightPadding: 4
+            text: "Try it shorter"
+            color: root.text
+            font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+        }
+        Repeater {
+            model: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
+            PanelButton {
+                required property var modelData
+                label: modelData.label
+                primary: Math.abs(Config.barPreview - modelData.value) < 0.01
+                onClicked: Config.barPreview = modelData.value
+            }
+        }
+    }
     // The workspace dots as a picture of themselves: four, the first the one you're on, the
     // next with windows on it (for the pool's chip and what's carried, in place of an icon)
     component WorkspaceDots: Row {
@@ -270,6 +305,7 @@ PanelWindow {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: barChip.label !== ""
                 text: barChip.label
                 color: root.text
                 font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
@@ -320,14 +356,15 @@ PanelWindow {
         height: body.implicitHeight + 24
         radius: 16
         color: root.bar.barColor
-        opacity: root.fade
+        opacity: root.fade * (1 - root.turn)
+        visible: opacity > 0
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
         Shadow { blur: 22; dropY: 4 }      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         MouseArea { anchors.fill: parent }       // (a click on the panel itself does nothing)
         // (Escape ends the arranging, as Done does)
-        focus: root.shown
+        focus: root.shown && !root.prioritising
         Keys.onEscapePressed: Config.barArranging = false
 
         Column {
@@ -411,127 +448,23 @@ PanelWindow {
             }
             Line {}
 
-            // If it doesn't fit (plans/menubar-length.md): the order things leave a bar that's short
-            // of room, first to go first, dragged to change it; past the marker, the ones that
-            // always stay. And a way to see it happen: the bar tried shorter
-            Heading { text: "If it doesn't fit, these leave the bar for More, first to last. Drag to change the order" }
+            // If it doesn't fit (plans/menubar-length.md): menu item priority, which has a window
+            // of its own (below), and a way to see it happen: the bar tried shorter
             Item {
-                id: orderArea
-                width: parent.width
-                height: orderFlow.height
-                // The list as it's shown: the order (without what stays), the marker, what stays.
-                // While one's being dragged, a copy with it moved to where it would land
-                readonly property var saved: Config.barOverflowOrder.filter(id => !Config.barStays(id)).concat(["|"]).concat(Config.barOverflowOrder.filter(id => Config.barStays(id)))
-                property var moving: null           // the copy, while dragging
-                property string held: ""            // the one being dragged
-                readonly property var shown: moving || saved
-                Flow {
-                    id: orderFlow
-                    width: parent.width
-                    spacing: 6
-                    Repeater {
-                        model: orderArea.shown
-                        delegate: Item {
-                            required property string modelData
-                            readonly property string entry: modelData
-                            readonly property bool marker: modelData === "|"
-                            readonly property var it: marker ? null : Config.barItem(modelData)
-                            width: marker ? stayLabel.implicitWidth + 8 : orderChip.width
-                            height: root.bar.capsuleHeight
-                            BarChip {
-                                id: orderChip
-                                visible: !parent.marker
-                                item: parent.marker ? "" : parent.modelData
-                                icon: parent.it ? parent.it.icon : 0
-                                label: parent.it ? parent.it.label : ""
-                                grip: true
-                                // (the one being dragged: its place, held open)
-                                opacity: orderArea.held === parent.modelData ? 0.3 : 1
-                            }
-                            Text {
-                                id: stayLabel
-                                visible: parent.marker
-                                anchors.centerIn: parent
-                                text: "Always stay:"
-                                color: root.dim
-                                font.family: root.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
-                            }
-                        }
-                    }
+                width: parent.width; height: 32
+                Heading {
+                    anchors { left: parent.left; right: priorityButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                    elide: Text.ElideRight
+                    text: "When the bar runs short of room, things slim down, then leave for More, lowest priority first"
                 }
-                MouseArea {
-                    anchors.fill: parent
-                    preventStealing: true
-                    property point from
-                    property string grabbed: ""
-                    function entryAt(x, y) { const c = orderFlow.childAt(x, y); return c && c.entry !== undefined ? c : null; }
-                    onPressed: m => {
-                        const c = entryAt(m.x, m.y);
-                        grabbed = c && !c.marker ? c.entry : "";
-                        from = Qt.point(m.x, m.y);
-                        const p = mapToItem(null, m.x, m.y);
-                        root.pressed(p.x, p.y);
-                    }
-                    onPositionChanged: m => {
-                        if (grabbed === "") return;
-                        if (orderArea.held === "" && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 6) {
-                            orderArea.held = grabbed;
-                            orderArea.moving = orderArea.saved.slice();
-                            const it = Config.barItem(grabbed);
-                            Config.barFloatAt = Qt.point(-100000, -100000);
-                            Config.barFloat = { kind: "item", label: "", icons: [{ code: it ? it.icon : 0, item: grabbed, text: it ? it.label : "" }] };
-                        }
-                        if (orderArea.held === "") return;
-                        const p = mapToItem(null, m.x, m.y);
-                        root.pointer = Qt.point(p.x, p.y);
-                        if (root.placed) Config.barFloatAt = Qt.point(root.origin.x + p.x, root.origin.y + p.y);
-                        // Before the first thing on its row whose middle the pointer hasn't passed;
-                        // after the last on the row otherwise
-                        let before = "", after = "";
-                        for (const c of orderFlow.children) {
-                            if (c.entry === undefined || c.entry === orderArea.held) continue;
-                            if (m.y < c.y - 3 || m.y > c.y + c.height + 3) continue;
-                            if (m.x < c.x + c.width / 2) { before = c.entry; break; }
-                            after = c.entry;
-                        }
-                        if (before === "" && after === "") return;
-                        const list = orderArea.moving.filter(id => id !== orderArea.held);
-                        const at = before !== "" ? list.indexOf(before) : list.indexOf(after) + 1;
-                        list.splice(at, 0, orderArea.held);
-                        if (list.join() !== orderArea.moving.join()) orderArea.moving = list;
-                    }
-                    onReleased: {
-                        const list = orderArea.moving;
-                        if (orderArea.held !== "" && list) {
-                            const cut = list.indexOf("|");
-                            Config.barSetOverflow(list.slice(0, cut), list.slice(cut + 1));
-                            Config.click();
-                        }
-                        orderArea.held = ""; orderArea.moving = null; grabbed = "";
-                        Config.barFloat = null;
-                    }
-                    onCanceled: { orderArea.held = ""; orderArea.moving = null; grabbed = ""; Config.barFloat = null; }
+                PanelButton {
+                    id: priorityButton
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    label: "Set priority"
+                    onClicked: Config.barPrioritising = true
                 }
             }
-            Row {
-                spacing: 6
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    rightPadding: 4
-                    text: "Try it shorter"
-                    color: root.text
-                    font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                }
-                Repeater {
-                    model: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
-                    PanelButton {
-                        required property var modelData
-                        label: modelData.label
-                        primary: Math.abs(Config.barPreview - modelData.value) < 0.01
-                        onClicked: Config.barPreview = modelData.value
-                    }
-                }
-            }
+            Shorter { width: parent.width }
             Line {}
 
             // What's picked, and its options
@@ -667,6 +600,265 @@ PanelWindow {
                         else Config.barRemoveEntry(Config.barSelected);
                         Config.barSelected = -1;
                     }
+                }
+            }
+        }
+    }
+
+    // ---- Menu item priority -------------------------------------------------------------
+    // What the bar does when it's short of room (plans/menubar-length.md), explained, beside the
+    // one part of it that's yours to set: the order things leave for More. Shown highest
+    // priority first (the last to leave), so it's Config.barOverflowOrder backwards, without
+    // what always stays, which never leaves and so has no place in it
+    readonly property var priority: Config.barOverflowOrder.filter(id => !Config.barStays(id)).reverse()
+    readonly property var priorityState: ({ open: prioritising, list: priority })
+    function priorityMove(id, slot) {          // (tests: as a row dragged to a place and let go)
+        if (priority.indexOf(id) < 0) return;
+        prioList.held = id; prioList.moving = priority.slice();
+        prioList.moveTo(slot);
+        prioList.drop();
+    }
+    Rectangle {
+        id: prio
+        x: root.pad; y: root.pad
+        width: panel.width
+        height: prioBody.y + prioBody.height + 14
+        radius: 16
+        color: root.bar.barColor
+        opacity: root.fade * root.turn
+        visible: opacity > 0
+        border.width: Config.glassShine ? 1 : 0
+        border.color: Config.glassEdge
+        Shadow { blur: 22; dropY: 4 }
+        Gloss { radius: parent.radius; strength: 0.6 }
+        MouseArea { anchors.fill: parent }
+        // (Escape goes back to the arranging)
+        focus: root.prioritising
+        Keys.onEscapePressed: Config.barPrioritising = false
+
+        Item {
+            id: prioTop
+            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 12; leftMargin: 14; rightMargin: 14 }
+            height: 36
+            Column {
+                anchors { left: parent.left; right: prioBack.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                spacing: 1
+                Text {
+                    text: "Menu item priority"
+                    color: root.text
+                    font.family: root.bar.fontFamily; font.pixelSize: 15
+                }
+                Text {
+                    width: parent.width
+                    elide: Text.ElideRight
+                    text: "What stays on the bar longest when there isn't room for everything"
+                    color: root.dim
+                    font.family: root.bar.fontFamily; font.pixelSize: 11
+                }
+            }
+            PanelButton {
+                id: prioBack
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                primary: true
+                icon: 0xEA60
+                label: "Back"
+                onClicked: Config.barPrioritising = false
+            }
+        }
+        Rectangle {
+            id: prioLine
+            anchors { top: prioTop.bottom; topMargin: 10; left: prioTop.left; right: prioTop.right }
+            height: 1; color: root.divider
+        }
+
+        // The explanation on one side, the list on the other (one above the other by a bar
+        // that's down a side of the screen, where the window's narrow)
+        Item {
+            id: prioBody
+            anchors { top: prioLine.bottom; topMargin: 12; left: prioTop.left; right: prioTop.right }
+            readonly property real room: Math.max(260, (root.screen ? root.screen.height : 800) - root.bar.barHeight - 190)
+            height: root.vert ? prioWhy.height + 14 + Math.max(200, Math.min(320, room - prioWhy.height - 14))
+                : Math.min(room, Math.max(prioWhy.height, 340))
+            clip: true
+
+            Column {
+                id: prioWhy
+                width: root.vert ? parent.width : Math.round(parent.width * 0.42)
+                spacing: 6
+                Heading { text: "When the bar runs short of room" }
+                Para { text: "Slate makes room in two steps, and puts everything back as soon as there's space again." }
+                Item { width: 1; height: 4 }
+                Heading { text: "First, things slim down" }
+                Para { text: "The window's title shortens, text beside icons goes (the longest first), the clock drops its date and seconds, and containers set to collapse When needed tuck behind their button. Nothing leaves the bar." }
+                Item { width: 1; height: 4 }
+                Heading { text: "Then, things leave for More" }
+                Para { text: "If that isn't enough, things move behind More one at a time, lowest priority first. They're still there when you open it." }
+                Item { width: 1; height: 4 }
+                Heading { text: "Your priority" }
+                Para { text: "The list is that order. What's at the top stays on the bar longest, and what's at the bottom leaves first. Drag to change it." }
+                Para {
+                    readonly property var names: Config.barStay.map(root.nameOf)
+                    color: root.dim
+                    text: (names.length === 0 ? "Nothing's set to always stay just now."
+                           : names.length === 1 ? names[0] + " always stays, so it isn't listed."
+                           : names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " always stay, so they aren't listed.")
+                        + " To change that, go back, click something on the bar and use Always keep on the bar."
+                }
+                Item { width: 1; height: 4 }
+                Shorter { width: parent.width }
+            }
+
+            Item {
+                id: prioList
+                x: root.vert ? 0 : prioWhy.width + 20
+                y: root.vert ? prioWhy.height + 14 : 0
+                width: parent.width - x
+                height: parent.height - y
+                readonly property int rowHeight: 38
+                readonly property int step: rowHeight + 4
+                // The list as it's shown: while a row's dragged, a copy with it where it would land
+                property var moving: null
+                property string held: ""
+                property real heldY: 0             // the dragged row's place, in the list
+                property real grabOff: 0           // ...and where on it the pointer has it
+                property real viewY: 0             // the pointer, in what's showing of the list
+                readonly property var shown: moving || root.priority
+                readonly property string lit: held === "" && prioArea.containsMouse ? prioArea.idAt(prioArea.mouseY) : ""
+                function moveTo(slot) {
+                    const list = moving.filter(id => id !== held);
+                    list.splice(Math.max(0, Math.min(list.length, slot)), 0, held);
+                    if (list.join() !== moving.join()) moving = list;
+                }
+                function track() {
+                    heldY = Math.max(0, Math.min(prioFlick.contentHeight - rowHeight, viewY + prioFlick.contentY - grabOff));
+                    moveTo(Math.round(heldY / step));
+                }
+                function drop() {
+                    if (held !== "" && moving && moving.join() !== root.priority.join()) {
+                        Config.barSetOverflow(moving.slice().reverse(), Config.barStay);
+                        Config.click();
+                    }
+                    held = ""; moving = null;
+                }
+                // (held by the top or bottom of the list: it scrolls under the row)
+                Timer {
+                    running: prioList.held !== ""
+                    interval: 16; repeat: true
+                    onTriggered: {
+                        const edge = 34, far = Math.max(0, prioFlick.contentHeight - prioFlick.height);
+                        const by = prioList.viewY < edge ? -(edge - prioList.viewY) : prioList.viewY > prioFlick.height - edge ? prioList.viewY - (prioFlick.height - edge) : 0;
+                        if (by === 0 || far <= 0) return;
+                        prioFlick.contentY = Math.max(0, Math.min(far, prioFlick.contentY + Math.max(-14, Math.min(14, by * 0.4))));
+                        prioList.track();
+                    }
+                }
+
+                Heading { id: prioFirst; text: "Highest priority: stays longest" }
+                Heading { id: prioLast; anchors.bottom: parent.bottom; text: "Lowest priority: leaves first" }
+                Flickable {
+                    id: prioFlick
+                    anchors { top: prioFirst.bottom; topMargin: 8; bottom: prioLast.top; bottomMargin: 8; left: parent.left; right: parent.right
+                              rightMargin: contentHeight <= height ? 0 : 18 }
+                    contentWidth: width
+                    contentHeight: Math.max(0, prioList.shown.length * prioList.step - 4)
+                    interactive: false             // (the wheel and the scrollbar move it: a drag moves a row)
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    SmoothWheel { flick: prioFlick }
+
+                    Repeater {
+                        model: root.priority
+                        delegate: Rectangle {
+                            id: prioRow
+                            required property string modelData
+                            readonly property var it: Config.barItem(modelData)
+                            readonly property bool isHeld: prioList.held === modelData
+                            readonly property bool lit: isHeld || prioList.lit === modelData
+                            width: prioFlick.width; height: prioList.rowHeight
+                            radius: 8
+                            y: isHeld ? prioList.heldY : prioList.shown.indexOf(modelData) * prioList.step
+                            z: isHeld ? 2 : 0
+                            // (the others step out of the way of the one being dragged)
+                            Behavior on y {
+                                enabled: prioList.held !== "" && !prioRow.isHeld
+                                NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic }
+                            }
+                            color: isHeld ? root.bar.capsuleSolid : root.control
+                            border.width: isHeld ? 1 : 0
+                            border.color: root.accent
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: root.controlLit
+                                opacity: prioRow.lit && !prioRow.isHeld ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
+                            }
+                            Shadow { visible: prioRow.isHeld; blur: 14; dropY: 3 }
+                            Row {
+                                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                                spacing: 10
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.glyph(0xEC01)
+                                    color: prioRow.lit ? root.text : root.dim
+                                    font.family: root.bar.iconFont; font.pixelSize: 14
+                                }
+                                BarChip {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    item: prioRow.modelData
+                                    icon: prioRow.it ? prioRow.it.icon : 0
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: prioRow.it ? prioRow.it.label : prioRow.modelData
+                                    color: root.text
+                                    font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                }
+                            }
+                            Text {
+                                anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                visible: !Config.barShown(prioRow.modelData)
+                                text: "Not on the bar"
+                                color: root.dim
+                                font.family: root.bar.fontFamily; font.pixelSize: 11
+                            }
+                        }
+                    }
+                    MouseArea {
+                        id: prioArea
+                        width: prioFlick.width; height: prioFlick.contentHeight
+                        z: 3
+                        hoverEnabled: true
+                        preventStealing: true
+                        property real fromY: 0
+                        property string grabbed: ""
+                        function idAt(y) {
+                            const i = Math.floor(y / prioList.step), list = prioList.shown;
+                            return i >= 0 && i < list.length && y - i * prioList.step < prioList.rowHeight ? list[i] : "";
+                        }
+                        onPressed: m => {
+                            grabbed = idAt(m.y); fromY = m.y;
+                            prioList.grabOff = m.y - prioList.shown.indexOf(grabbed) * prioList.step;
+                        }
+                        onPositionChanged: m => {
+                            if (!pressed || grabbed === "") return;
+                            if (prioList.held === "" && Math.abs(m.y - fromY) > 4) {
+                                prioList.moving = root.priority.slice();
+                                prioList.heldY = prioList.shown.indexOf(grabbed) * prioList.step;
+                                prioList.held = grabbed;
+                            }
+                            if (prioList.held === "") return;
+                            prioList.viewY = m.y - prioFlick.contentY;
+                            prioList.track();
+                        }
+                        onReleased: { prioList.drop(); grabbed = ""; }
+                        onCanceled: { prioList.held = ""; prioList.moving = null; grabbed = ""; }
+                    }
+                }
+                ThinScrollbar {
+                    flick: prioFlick
+                    color: root.text
+                    anchors { top: prioFlick.top; bottom: prioFlick.bottom; left: prioFlick.right; leftMargin: 8 }
                 }
             }
         }

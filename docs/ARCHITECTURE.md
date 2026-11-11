@@ -203,6 +203,9 @@ opening any of them closes bar panels (wired in `shell.qml`).
   then things leaving for More in `Config.barOverflowOrder`), laying the line out afresh at
   each step in one go so none of it is drawn, and keeps the fewest that fit; something comes
   back only with a margin to spare. `bar.gives` says what's been given up.
+  That last order is **menu item priority**: `BarEditor.qml`'s second window (Set priority,
+  `Config.barPrioritising`) lists it backwards, highest priority first, without what always
+  stays (`Config.barStay`), and saves a dragged row with `Config.barSetOverflow`.
 - **Reload notices** (`shell.qml`): Quickshell's own reload popup is hidden; Slate sends a
   notification instead, for a reload that worked and one that failed (the error's last
   "caused by" link leads: what, which file and line, and what used it). After a failed

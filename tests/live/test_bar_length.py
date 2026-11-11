@@ -272,6 +272,64 @@ class BarLength(LiveCase):
         self.s.settle(0.6)
         self.assertEqual(self.bar()["gives"], [], "the bar stayed shortened after arranging ended")
 
+    # ---- menu item priority: its window, and its list ------------------------------------------
+    def priority_window(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
+        self.ipc("test", "arrange", "priority", "open", "", "")
+        self.s.wait(lambda st: st["bar"]["priority"]["open"], what="menu item priority")
+
+    def test_priority_lists_what_can_leave_highest_first(self):
+        self.priority_window()
+        st = self.bar()
+        shown = st["priority"]["list"]
+        # (the order things leave in, backwards: the top of the list is the last to go)
+        self.assertEqual(shown, [i for i in reversed(st["order"]) if i not in st["stay"]])
+        for never in ("power", "clock", "control", "more"):
+            self.assertNotIn(never, shown, "something that never leaves the bar is in the list")
+
+    def test_priority_row_moved_changes_what_leaves_first(self):
+        self.priority_window()
+        shown = self.bar()["priority"]["list"]
+        last = shown[-1]
+        self.assertEqual(self.bar()["order"][0], last)
+        # (the lowest dragged to the top: now it's the last of them to leave)
+        self.ipc("test", "arrange", "priority", "move", last, "0")
+        self.s.settle(0.5)
+        st = self.bar()
+        self.assertEqual(st["priority"]["list"], [last] + shown[:-1])
+        self.assertEqual(st["order"][0], shown[-2])
+        self.assertEqual(sorted(st["stay"]), ["clock", "control", "power"], "what stays changed with the order")
+        self.assertEqual(len(st["order"]), len(set(st["order"])))
+
+    def test_priority_leaves_out_what_is_set_to_stay(self):
+        self.priority_window()
+        self.ipc("test", "arrange", "stay", "volume", "true", "")
+        self.s.settle(0.4)
+        self.assertNotIn("volume", self.bar()["priority"]["list"])
+        self.ipc("test", "arrange", "stay", "volume", "false", "")
+        self.s.settle(0.4)
+        self.assertIn("volume", self.bar()["priority"]["list"])
+
+    def test_escape_goes_back_from_priority_then_ends_the_arranging(self):
+        self.priority_window()
+        self.ipc("bar", "edit", "done")
+        self.s.wait(lambda st: not st["bar"]["priority"]["open"], what="menu item priority to close")
+        self.assertTrue(self.bar()["editor"], "going back from priority ended the arranging")
+        self.ipc("bar", "edit", "done")
+        self.s.wait(lambda st: not st["bar"]["editor"], what="the arranging to end")
+
+    def test_priority_closes_with_the_arranging(self):
+        self.priority_window()
+        self.ipc("test", "arrange", "done", "", "", "")
+        self.s.wait(lambda st: not st["bar"]["editor"], what="the arranging to end")
+        self.assertFalse(self.bar()["priority"]["open"])
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
+        self.assertFalse(self.bar()["priority"]["open"], "priority came back by itself")
+
     def test_defaults_put_the_order_back(self):
         self.ipc("test", "arrange", "overflow", "volume,apps", "clock", "")
         self.s.settle(0.4)
