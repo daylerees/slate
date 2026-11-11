@@ -2391,13 +2391,10 @@ PanelWindow {
                         delegate: RowButton {
                             required property var modelData
                             width: 34; height: 34
-                            // Over the wallpaper, so they need to stand out from whatever it is: the
-                            // solid card colour, mostly opaque (not the glass card colour, which is
-                            // already see-through white), a faint light edge and the sheen
+                            // Flat and solid, with glass too: the card's own solid colour, no edge and
+                            // nothing showing through; under the pointer, the muted hover over it
                             readonly property color base: Config.tint("#1d222a")
-                            color: controlButtonHover.hovered ? Config.hoverOn(base) : Qt.rgba(base.r, base.g, base.b, 0.82)
-                            border.width: 1
-                            border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, controlButtonHover.hovered ? 0.22 : 0.14)
+                            color: controlButtonHover.hovered ? Qt.tint(base, Config.hover) : base
                             HoverHandler { id: controlButtonHover }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); pop.slate(["settings", "open"]); }
