@@ -150,6 +150,8 @@ Singleton {
         ["Slate's wallpapers", "appearance", "included bundled built in default backgrounds ember iris lagoon blossom fern cobalt ruby honey graphite mist gradient colourful colorful green blue red yellow black white grey gray plain logo mark"],
         ["Change wallpaper", "appearance", "automatically rotate shuffle slideshow timer login cycle background theme"],
         ["Menu Bar", "bar", "top bar panel status"],
+        ["Panel blur", "bar", "menu bar panels popouts glass blur frosted clear see through"],
+        ["Panel opacity", "bar", "menu bar panels popouts glass transparency transparent see-through opacity background"],
         ["Contents opacity", "bar", "menu bar contents container items groups containers capsules pills transparency transparent see-through opacity"],
         ["Hover opacity", "bar", "menu bar items groups containers hover pointer over transparency transparent see-through opacity"],
         ["Blur", "bar", "menu bar glass blur frosted frosting clear see through"],

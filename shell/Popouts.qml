@@ -161,7 +161,10 @@ PanelWindow {
     }
 
     // ---- Look --------------------------------------------------------------
-    readonly property color bg: bar.barColor
+    // The bar's own colour, so a panel is of a piece with the bar it comes out of, at an opacity
+    // and with a blur of its own (Settings → Menu Bar → Glass → Panel opacity, Panel blur)
+    readonly property color bg: !Config.glass ? bar.barColor
+        : (c => Qt.rgba(c.r, c.g, c.b, Config.panelGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
     readonly property color card: bar.capsuleColor
     readonly property color text: bar.textColor
     readonly property color dim: Config.tint("#8b94a3")
@@ -198,6 +201,8 @@ PanelWindow {
             bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
             dropX: pop.sideways ? (pop.side === "left" ? 3 : -3) : 0
             dropY: pop.sideways ? 3 : (pop.fromBottom ? -3 : 3)
+            // (fainter than where the blur behind the panel starts, as the bar's own is under its)
+            strength: Config.panelShadowShare
             // None where the panel leaves the bar: the curved joins beside it there would lie
             // on it, and on glass showed darker than the panel
             fadeEdge: pop.side

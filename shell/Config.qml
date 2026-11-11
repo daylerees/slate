@@ -717,9 +717,11 @@ Singleton {
     // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
     // for a moment
     readonly property string glassRules: ""
-        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
         + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
+        // (the panels that come out of the bar: an opacity and a blur of their own too)
+        + glassRule("SLATE_GLASS_PANEL", "^slate-popout$", panelGlassCut, s.barPanelBlur)
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
@@ -1226,6 +1228,13 @@ Singleton {
     // a few wide steps (each remakes Hyprland's rule, which blinks the blur: least seen on a
     // bar that's mostly colour, and never at the clear end)
     readonly property real barGlassCut: barGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(barGlassOpacity * 0.85 * 10) / 10)
+    // The bar's panels (Popouts.qml): the bar's own colour, at an opacity of their own (Settings
+    // → Menu Bar → Glass → Panel opacity), with a blur rule and a shadow kept under it, as the
+    // bar's are
+    readonly property real panelGlassOpacity: Math.max(s.barPanelBlur ? 0.01 : 0, Math.min(1, s.barPanelOpacity))
+    readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
+    readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
+        : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
     // ...and the bar's shadow, as a share of Slate's usual: always under that threshold
     readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1
         : Math.min(1, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
@@ -1233,7 +1242,7 @@ Singleton {
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)
     function glassRule(v, match, cut, wanted) {
-        const c = cut.toFixed(3), made = `"${c} 3"`;
+        const c = cut.toFixed(3), made = `"${c} 4"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;

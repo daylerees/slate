@@ -271,7 +271,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
-        bar: ["barPosition", "barLayout", "barBlur", "barOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barLayout", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
@@ -2342,6 +2342,19 @@ FloatingWindow {
                     settingKey: "barOpacity"
                     detail: "How solid the bar's background is: 100% can't be seen through, lower is clearer"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.barOpacity < 0 ? Config.barGlassOpacity : Config.s.barOpacity) * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Panel blur"
+                    detail: "What's behind the panels that open from the bar is blurred. Off, you see straight through them"
+                    key: "barPanelBlur"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Panel opacity"
+                    settingKey: "barPanelOpacity"
+                    detail: "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
