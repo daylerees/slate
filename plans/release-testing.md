@@ -41,3 +41,4 @@ things off as they're done.
 - A notification whose picture can't be loaded falls back to the app's tile or the bell (it left a blank).
 - Notification fallbacks: no app name (launcher's name, then one from its id, then "An app"), no title or body ("New notification"), no icon (tile, then bell).
 - The bar's Apps, Spaces and Chalk icons are one pastel each in Colourful (screenshots of the bar will differ).
+- The bar's default arrangement changed (Apps with Chalk in one container; Spaces, window mode and workspaces in another): `test_bar_layout.py`, `test_bar_length.py` and every bar screenshot assume the old one.

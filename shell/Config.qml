@@ -133,12 +133,13 @@ Singleton {
     }
 
     // ---- The menu bar's arrangement (Bar.qml draws it; Settings → Menu Bar changes it) -------
-    // Slate's own: the buttons, the active window, a flexible space, then the tray, the status
-    // icons, the clock and the power button. The bar as it has always been
+    // Slate's own: the control centre; Apps with Chalk; Spaces with the window mode and the
+    // workspace dots; the active window; a flexible space; then the tray, the status icons,
+    // More, the clock and the power button
     readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
     readonly property var barLayoutDefault: [
-        barBox(["control"]), barBox(["apps"]), barBox(["spaces"]), barBox(["chalk"]),
-        barBox(["windowmode", "workspaces"]),
+        barBox(["control"]), barBox(["apps", "chalk"]),
+        barBox(["spaces", "windowmode", "workspaces"]),
         barBox(["windowicon", "windowtitle"]), "space",
         barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["more"]), barBox(["clock"]), barBox(["power"])
     ]
@@ -370,7 +371,9 @@ Singleton {
     }
     // Slate's own arrangement again: its order and containers, and everything it starts with
     // on the bar (what each thing shows, like its text, is left as it is)
-    readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
+    // (an arrangement that's been changed and put back by hand is the default again too)
+    readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0 || JSON.stringify(barLayout) === JSON.stringify(barLayoutDefault))
+        && !s.barStatusCollapsed
         && barItems.every(i => i.key === "" || sameValue(s[i.key], defaultOf(i.key)))
         && (!s.barOverflow || s.barOverflow.length === 0) && sameValue(s.barStay, defaultOf("barStay"))
     signal barRedraw()          // (the bar lays its line again, drawing everything afresh)
