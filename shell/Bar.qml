@@ -570,6 +570,8 @@ PanelWindow {
             Item {
                 id: titleSlotTop
                 visible: Config.s.barShowTitle
+                opacity: titleArea.fade
+                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                 width: childrenRect.width; height: childrenRect.height
                 // While arranging: outlined, and with no window to name, a stand-in to pick up
                 Rectangle {
@@ -600,6 +602,12 @@ PanelWindow {
                 parent: titleSlotTop
                 visible: Config.s.barShowTitle
                 spacing: bar.gap
+                // The icon and the title fade as one, like a container (Settings → Menu Bar → Glass:
+                // Container opacity, and Hover opacity with the pointer over either)
+                HoverHandler { id: titleHover }
+                // (on the slot it sits in: its own opacity is the cross-fade to a hover description)
+                readonly property bool lifted: titleHover.hovered && Config.barItemHoverSet
+                readonly property real fade: Config.barArranging || !(lifted || Config.barItemSet) ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
                 horizontalItemAlignment: Grid.AlignHCenter
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
@@ -618,6 +626,8 @@ PanelWindow {
                 Item { id: tileSlotStart; visible: appTile.parent === tileSlotStart && appTile.wanted; width: appTile.width; height: appTile.height }
                 Capsule {
                     id: appTile
+                    over: titleHover.hovered
+                    fades: false
                     // Before the title, except on a left bar, where the title reads upwards and
                     // starts at the bottom: the icon goes there
                     parent: bar.vert && !bar.atRight ? tileSlotEnd : tileSlotStart
@@ -1434,10 +1444,14 @@ PanelWindow {
         // the pointer over it: drawn solid, and the whole container at that opacity, its fill
         // and everything in it (icons, text, the highlight, the lines between things), faded as
         // one. Not while the bar's being arranged: everything's there to be picked up
-        readonly property bool lifted: capHover.hovered && Config.barItemHoverSet
+        // (`over`: the pointer's on it, or on what it goes with; `fades` false: what it's part of
+        // does the fading. Both for the active window's icon, which goes with its title)
+        property bool over: capHover.hovered
+        property bool fades: true
+        readonly property bool lifted: over && Config.barItemHoverSet
         readonly property bool own: !Config.barArranging && (lifted || Config.barItemSet)
         color: own ? bar.capsuleSolid : bar.capsuleColor
-        opacity: !own ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
+        opacity: !own || !fades ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
         // (each part fades by itself rather than the container as one picture: drawn that way,
         // through a layer, a container showed nothing at all)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
