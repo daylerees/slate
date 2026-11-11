@@ -39,3 +39,4 @@ things off as they're done.
   charging to full. Not yet reachable from the assistant (no tool or setting for it).
 - A notification from an app that sends no name shows its launcher's name (ZapZap did this).
 - A notification whose picture can't be loaded falls back to the app's tile or the bell (it left a blank).
+- Notification fallbacks: no app name (launcher's name, then one from its id, then "An app"), no title or body ("New notification"), no icon (tile, then bell).

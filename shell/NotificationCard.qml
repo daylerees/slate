@@ -24,13 +24,21 @@ Rectangle {
     readonly property string tilePath: entry && entry.entryId ? Config.tilePath(entry.entryId) : ""
     readonly property var actions: notif ? notif.actions.filter(a => a.identifier !== "default" && a.text) : []
     readonly property color accent: bar.accent
-    // (an app that sent no name of its own goes by its launcher's)
+    // What a card falls back on when an app leaves something out, so there's never a gap:
+    //  - no name: its launcher's name; failing that a name made from its id or its icon's
+    //    ("com.rtosta.zapzap" → "Zapzap"); failing that "An app"
+    //  - no title and nothing said: "New notification"
+    //  - no picture, or one that can't be drawn: the app's own tile; failing that the bell (below)
     readonly property string appName: {
         if (!entry) return "";
         if (entry.appName) return entry.appName;
         const e = entry.entryId ? DesktopEntries.byId(entry.entryId) : null;
-        return e && e.name ? e.name : "";
+        if (e && e.name) return e.name;
+        const id = String(entry.entryId || entry.appIcon || "");
+        const last = id.indexOf("/") >= 0 ? "" : id.split(".").pop().replace(/[-_]+/g, " ").trim();
+        return last !== "" ? last.charAt(0).toUpperCase() + last.slice(1) : "An app";
     }
+    readonly property string title: !entry ? "" : entry.summary ? entry.summary : entry.body ? "" : "New notification"
     // A picture from a file (screenshots, album art…) gets a large preview under the text, with
     // the app's icon beside it; other images (chat avatars) stay as the icon
     readonly property string image: entry && entry.image ? entry.image : ""
@@ -260,7 +268,7 @@ Rectangle {
             }
             Text {
                 width: parent.width
-                text: card.entry ? card.entry.summary : ""
+                text: card.title
                 visible: text !== ""
                 color: card.textColor
                 font.family: card.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
