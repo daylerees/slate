@@ -1606,6 +1606,26 @@ Singleton {
         onExited: code => { if (code === 0) colourCache.setText(pending); }
     }
 
+    // The theme's colours, kept in a small file for the "Reloading Slate" cover (reloading/
+    // shell.qml): it runs by itself while Slate restarts, with no Config to ask, and should
+    // still be in the colours in use (light or dark, the wallpaper's tint, the accent).
+    // Written a moment after any of them changes. Not on the login screen
+    readonly property string coverColours: JSON.stringify({
+        background: "" + tint("#0f1216"), text: "" + tint("#eef1f5"), dim: "" + tint("#8b94a3"), accent: "" + accent }) + "\n"
+    onCoverColoursChanged: coverLater.restart()
+    Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
+    FileView {
+        id: coverFile
+        path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/cover.json"
+        blockLoading: true
+        printErrors: false
+    }
+    Process {
+        id: coverDir
+        command: ["mkdir", "-p", coverFile.path.replace(/\/[^/]*$/, "")]
+        onExited: code => { if (code === 0) coverFile.setText(root.coverColours); }
+    }
+
     FileView {
         id: file
         path: Qt.resolvedUrl("settings.json").toString().replace("file://", "")

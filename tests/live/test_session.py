@@ -116,3 +116,15 @@ class Session(LiveCase):
         taking the cover down."""
         self.assertTrue(os.path.exists(os.path.join(self.s.h.runtime, "slate-ready")))
 
+    def test_the_cover_has_the_themes_colours(self):
+        """Slate notes the theme's colours for the reloading cover, which runs without it."""
+        path = os.path.join(self.s.h.cache, "slate", "cover.json")
+        for _ in range(40):
+            if os.path.exists(path):
+                break
+            self.s.settle(0.2)
+        with open(path, encoding="utf-8") as f:
+            c = json.load(f)
+        for key in ("background", "text", "dim", "accent"):
+            self.assertRegex(c[key], r"^#[0-9a-f]{6}$", f"{key} isn't a colour")
+
