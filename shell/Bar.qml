@@ -1447,10 +1447,23 @@ PanelWindow {
                     anchors.centerIn: parent
                     // Turned to run along a side bar, like the window title
                     rotation: bar.textRotation
-                    text: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                    // What it says now, and what's drawn: taken up at the middle of a cross-fade as the
+                    // minute (or the format) changes. Counting seconds, it just changes
+                    readonly property string now: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (Config.s.barClockSeconds ? "HH:mm:ss" : "HH:mm")
                             : (Config.s.barClockSeconds ? "h:mm:ss AP" : "h:mm AP"))
+                    property string drawn: ""
+                    Component.onCompleted: drawn = now
+                    text: Config.s.barClockSeconds ? now : drawn
+                    onNowChanged: if (Config.s.barClockSeconds) drawn = now; else if (!clockSwap.running) clockSwap.start()
+                    SequentialAnimation {
+                        id: clockSwap
+                        NumberAnimation { target: clock; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
+                        ScriptAction { script: clock.drawn = clock.now }
+                        NumberAnimation { target: clock; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
+                        onFinished: if (clock.drawn !== clock.now) start()
+                    }
                     color: bar.textColor
                     font.family: bar.fontFamily
                     font.pixelSize: bar.fontSize
@@ -1563,6 +1576,19 @@ PanelWindow {
         property bool textOn: true
         readonly property string exampleLabel: label !== "" ? label : sample
         readonly property string shownLabel: !Config.barArranging ? label : textOn ? exampleLabel : ""
+        // What's drawn: the same, taken up at the middle of a cross-fade, so a change of text
+        // (the volume, a network's name) fades from the old to the new. Changes that come
+        // while one's under way are picked up by it, or by another straight after
+        property string drawnLabel: ""
+        Component.onCompleted: drawnLabel = shownLabel
+        onShownLabelChanged: if (!labelSwap.running) labelSwap.start()
+        SequentialAnimation {
+            id: labelSwap
+            NumberAnimation { target: segLabel; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
+            ScriptAction { script: seg.drawnLabel = seg.shownLabel }
+            NumberAnimation { target: segLabel; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
+            onFinished: if (seg.drawnLabel !== seg.shownLabel) start()
+        }
         property color tint: bar.textColor
         // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
         // warning colour (tint other than the text colour)
@@ -1615,7 +1641,7 @@ PanelWindow {
             visible: seg.plain
             anchors.centerIn: parent
             // No gap when there's no label, so a lone icon sits in the middle
-            spacing: seg.shownLabel !== "" && !bar.vert ? 6 : 0
+            spacing: seg.drawnLabel !== "" && !bar.vert ? 6 : 0
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.glyph(seg.iconCode)
@@ -1624,9 +1650,10 @@ PanelWindow {
                 font.pixelSize: seg.iconSize
             }
             Text {
-                visible: seg.shownLabel !== "" && !bar.vert
+                id: segLabel
+                visible: seg.drawnLabel !== "" && !bar.vert
                 anchors.verticalCenter: parent.verticalCenter
-                text: seg.shownLabel
+                text: seg.drawnLabel
                 color: seg.tint
                 font.family: bar.fontFamily
                 font.pixelSize: bar.fontSize
