@@ -508,12 +508,18 @@ PanelWindow {
                         }
                     }
                 }
+                // (the muted stripes drift too while it's in use: sound is playing, unheard)
+                property real mutedDrift: 0
+                NumberAnimation on mutedDrift {
+                    running: sl.muted && sl.busy && Config.animate && !Config.gameMode
+                    from: 0; to: 7; duration: 700 * 7 / 9; loops: Animation.Infinite
+                }
                 Repeater {
-                    model: sl.muted ? Math.ceil(slFill.width / 7) + 2 : 0
+                    model: sl.muted ? Math.ceil(slFill.width / 7) + 3 : 0
                     Rectangle {
                         required property int index
                         // (leaning: taller than the bar and turned, cut off by the bar's own edges)
-                        x: -4 + index * 7; y: (slFill.height - height) / 2
+                        x: -11 + index * 7 + slFill.mutedDrift; y: (slFill.height - height) / 2
                         width: 2.5; height: slFill.height * 3
                         rotation: 40
                         antialiasing: true
