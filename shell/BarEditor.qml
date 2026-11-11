@@ -19,6 +19,7 @@ import Quickshell.Wayland
 PanelWindow {
     id: root
     required property var bar
+    property var confirmer: null           // PowerConfirm: asks before putting the defaults back
 
     readonly property bool shown: Config.barArranging
     property real fade: shown ? 1 : 0
@@ -293,7 +294,7 @@ PanelWindow {
             Item {
                 width: parent.width; height: 36
                 Column {
-                    anchors { left: parent.left; right: done.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; right: defaults.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     spacing: 1
                     Text {
                         text: "Arranging the menu bar"
@@ -306,6 +307,20 @@ PanelWindow {
                         text: "Drag things along the bar, into and out of containers, or to and from here. Click one for its options"
                         color: root.dim
                         font.family: root.bar.fontFamily; font.pixelSize: 11
+                    }
+                }
+                PanelButton {
+                    id: defaults
+                    anchors { right: done.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                    visible: !Config.barIsDefault
+                    label: "Defaults"
+                    onClicked: {
+                        if (!root.confirmer) { Config.barReset(); return; }
+                        root.confirmer.confirmWith({
+                            title: "Put the menu bar back as it started?",
+                            body: "Everything goes back to where Slate first had it, and what you took off the bar returns. Your other menu bar settings stay as they are.",
+                            button: "Restore defaults"
+                        }, () => Config.barReset());
                     }
                 }
                 PanelButton {

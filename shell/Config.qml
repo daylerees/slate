@@ -326,6 +326,17 @@ Singleton {
         barSelected = -1;
         barSave(list);
     }
+    // Slate's own arrangement again: its order and containers, and everything it starts with
+    // on the bar (what each thing shows, like its text, is left as it is)
+    readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
+        && barItems.every(i => sameValue(s[i.key], defaultOf(i.key))) && sameValue(s.barShowTitle, defaultOf("barShowTitle"))
+    function barReset() {
+        barSelected = -1;
+        for (const i of barItems) s[i.key] = defaultOf(i.key);
+        s.barShowTitle = defaultOf("barShowTitle");
+        s.barStatusCollapsed = defaultOf("barStatusCollapsed");
+        s.barLayout = [];
+    }
     // An empty container, to drag things into (it goes again if it's left empty)
     function barAddBox(to) {
         const list = barCopy();
