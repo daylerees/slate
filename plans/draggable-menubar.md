@@ -6,7 +6,8 @@ the screen yet. **Picking this up in a new session? Read "Where it stands" and "
 
 | | |
 |---|---|
-| Branch | `menu-bar-layout`, cut from `master` at `4b824e5`. **Not pushed.** Kept apart so the whole thing can be dropped or reverted ("do this work in a fresh changeset so we can undo it") |
+| Branch | `menu-bar-layout`, cut from `master` at `4b824e5`. Kept apart so the whole thing can be dropped or reverted ("do this work in a fresh changeset so we can undo it"). **Pushed to `origin/menu-bar-layout`** on 2026-11-11 as a backup only: nothing depends on it |
+| Clean up | When this is merged to `master` (or dropped), delete the branch in both places: `git branch -d menu-bar-layout` and `git push origin --delete menu-bar-layout`. Then take this row and the Branch row out |
 | Installed | `~/.config/slate` runs this branch's head. To go back to master's bar: check out `master`, copy `shell/Bar.qml`, `Config.qml`, `SettingsData.qml`, `SettingsWindow.qml`, `shell.qml`, `scripts/slate-mcp.py` over, `slate restart --full` |
 | Tests owed | Only static + unit have been run on this branch (pass), plus the bar's live tests after stage 2 (45/45). **No full run yet.** Dayle: "we'll run a full changeset when done with all new work" |
 | Screenshots owed | On `master` too: the shadows, Chalk, dock and Wi-Fi commits (`93ddd8e`, `38714f8`, `fdb8b23`, `0bd332c`) went in without re-approving screenshots, and shadows shift nearly every scene. Re-approve from **one whole visual run**, never a filtered one (a scene shot alone renders the bar's text slightly differently) |
@@ -322,7 +323,8 @@ thing showing on the line.
 (`site/features.html`, README, `docs/ARCHITECTURE.md`), the assistant (`barLayout` is a list,
 so `settings_set` refuses it; decide whether a tool should move bar items, per the "new
 features reach the assistant" rule), the one full test run, and re-approving screenshots
-from a whole visual run. Only then merge to `master`.
+from a whole visual run. Only then merge to `master`, and delete the `menu-bar-layout`
+branch here and on `origin` (it was pushed as a backup; see the table at the top).
 
 ## Things to settle while building
 
