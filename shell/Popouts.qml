@@ -171,6 +171,7 @@ PanelWindow {
     readonly property color accent: bar.accent
     readonly property color accentText: Config.tint("#12151a")
     readonly property color danger: bar.errorColor
+    readonly property color warn: Config.tint("#f2cf8b")       // getting full or busy: before the red
     // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
     // without seconds: they're big and don't tick every second
     readonly property string timeFormat: Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"
@@ -2188,6 +2189,32 @@ PanelWindow {
                 }
             }
 
+            // The battery's health (how much of what it was made to hold it still holds), and
+            // where charging stops if the laptop's set to stop short of full. Each only where
+            // the battery says: not all do
+            readonly property var cell: UPower.devices.values.find(d => d.isLaptopBattery) ?? null
+            readonly property real health: cell && cell.healthSupported && cell.healthPercentage > 0 ? cell.healthPercentage : -1
+            readonly property string cellName: cell && cell.nativePath ? String(cell.nativePath).split("/").pop() : ""
+            FileView {
+                id: limitFile
+                path: bat.cellName !== "" ? "/sys/class/power_supply/" + bat.cellName + "/charge_control_end_threshold" : ""
+                printErrors: false
+                onLoaded: { const n = parseInt(text()); bat.limit = n > 0 && n < 100 ? n : -1; }
+                onLoadFailed: bat.limit = -1
+            }
+            property int limit: -1
+            Repeater {
+                model: [{ label: "Battery health", value: bat.health >= 0 ? Math.round(bat.health) + "%" : "" },
+                        { label: "Charges up to", value: bat.limit > 0 ? bat.limit + "%" : "" }]
+                delegate: Item {
+                    required property var modelData
+                    visible: modelData.value !== ""
+                    width: bat.width; height: factLabel.height
+                    Label { id: factLabel; text: parent.modelData.label; font.pixelSize: 12 }
+                    Label { anchors.right: parent.right; text: parent.modelData.value; color: pop.dim; font.pixelSize: 12 }
+                }
+            }
+
             Divider {}
             Heading { text: "Power mode" }
             Row {
@@ -2250,7 +2277,7 @@ PanelWindow {
                 }
             }
             function sample() {
-                statFile.reload(); memFile.reload();
+                statFile.reload(); memFile.reload(); if (bat.cellName !== "") limitFile.reload();
                 const c = (statFile.text().split("\n")[0] || "").trim().split(/\s+/).slice(1).map(Number);
                 if (c.length >= 4) {
                     const idle = c[3] + (c[4] || 0), total = c.reduce((a, b) => a + b, 0);
@@ -2311,8 +2338,8 @@ PanelWindow {
                         Rectangle {
                             width: Math.max(height, parent.width * Math.min(1, meter.frac))
                             height: parent.height; radius: 3
-                            // Red when above 80%
-                            color: meter.frac > 0.8 ? pop.danger : pop.accent
+                            // Yellow above 70%, red above 90%
+                            color: meter.frac > 0.9 ? pop.danger : meter.frac > 0.7 ? pop.warn : pop.accent
                             Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                         }
                     }

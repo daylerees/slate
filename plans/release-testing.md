@@ -33,3 +33,5 @@ things off as they're done.
 - The squared corners during a switch from the real Super+Left/Right keys (the function is
   tested, the key isn't).
 - An assistant tool for arranging the bar (items, containers, collapse, priority) and its tests.
+- Power panel: battery health and the charging limit show only where reported; the resource
+  bars go yellow above 70% and red above 90%.
