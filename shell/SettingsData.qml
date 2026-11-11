@@ -57,7 +57,7 @@ JsonAdapter {
     property bool tintIcons: false            // tint app icons with the accent colour
     property int iconTintStrength: 60         // %, how strongly
     property bool gameMode: false             // game mode (the bar's game mode panel): costly effects off, see Config.gameMode
-    property bool iconTileColour: false       // the tile behind an icon in a deep shade of the icon's own colour (icons not filling their shape)
+    property bool iconTileColour: true        // the tile behind an icon in a deep shade of the icon's own colour (icons not filling their shape)
     property string folderColour: "default"    // file manager folders: default, auto (from the wallpaper) or a Papirus colour
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
     property int windowBorderSize: 3          // px, around windows on workspaces with more than one (0 = none)

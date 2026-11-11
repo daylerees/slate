@@ -54,3 +54,4 @@ things off as they're done.
 - Hardware fallbacks: no battery (the bar's item is a bolt, the panel starts at Power mode), no Wi-Fi adapter (item hidden, panel says so), no audio (item hidden, panel says so). The test container has none of the three, so every bar screenshot there changes, and tests that expect "Offline" or "0%" on the bar need updating.
 - The bar's network item on a cable (wired icon, "Wired"; panel's wired line and details; netinfo.sh's wired output): needs a stand-in for a wired device.
 - Gloss slider is 0–100% over the setting's 0–2 (default 1.0, shown 50%): the default-hint test, and docs/ASSISTANT if it quotes the range.
+- iconTileColour defaults to on: app icon tiles in every screenshot change.
