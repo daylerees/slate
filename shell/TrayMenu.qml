@@ -174,6 +174,7 @@ PanelWindow {
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 text: String.fromCodePoint(0xEA5E)
                                 color: parent.lit ? parent.ink : Config.accent
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }
                             // Slate's own entries: an icon from the icon font
@@ -185,6 +186,7 @@ PanelWindow {
                                 horizontalAlignment: Text.AlignHCenter
                                 text: visible ? String.fromCodePoint(entryRow.e.glyph) : ""
                                 color: parent.lit ? parent.ink : tm.dimColor
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 font.family: tm.bar.iconFont; font.pixelSize: 15
                             }
                             Image {
@@ -204,6 +206,7 @@ PanelWindow {
                                 // Strip the underscore mnemonics some apps put in (e.g. "_Quit")
                                 text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
                                 color: parent.lit ? parent.ink : tm.textColor
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4
                                 font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                                 elide: Text.ElideRight
@@ -214,6 +217,7 @@ PanelWindow {
                                 anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                                 text: String.fromCodePoint(0xEA61)
                                 color: parent.lit ? parent.ink : tm.dimColor
+                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }
                             HoverHandler { id: entryHover }

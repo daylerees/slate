@@ -1962,12 +1962,14 @@ ShellRoot {
                                     visible: !!menuRow.modelData.active
                                     width: 5; height: 5; radius: 2.5
                                     color: rowHover.hovered ? Config.tint("#12151a") : win.activeDotColor
+                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 }
                                 Text {
                                     anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                     text: menuRow.modelData.label || ""
                                     color: rowHover.hovered ? Config.tint("#12151a") : menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
+                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                     font.family: win.fontFamily
                                     font.pixelSize: win.fontSize
                                     font.weight: win.fontWeight

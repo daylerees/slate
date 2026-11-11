@@ -618,6 +618,7 @@ PanelWindow {
                             id: devIcon
                             code: parent.shortName.toLowerCase().includes("head") ? 0xEABD : 0xEA8B
                             color: parent.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             font.pixelSize: 16
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         }
@@ -625,6 +626,7 @@ PanelWindow {
                             anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             text: parent.shortName
                             color: parent.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }
                     }
                 }
@@ -725,6 +727,7 @@ PanelWindow {
                             readonly property real s: netRow.modelData.signalStrength
                             code: s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4
                             color: parent.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             font.pixelSize: 16
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         }
@@ -732,6 +735,7 @@ PanelWindow {
                             anchors { left: signalIcon.right; leftMargin: 10; right: netStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                             text: netRow.modelData.name
                             color: parent.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }
                         Row {
                             id: netStatus
@@ -1683,6 +1687,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 text: layoutBtn.modelData.code
                                 color: layoutBtn.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                                 font.family: bar.fontFamily; font.pixelSize: 11; font.weight: Font.Bold
                             }
                         }
@@ -1690,6 +1695,7 @@ PanelWindow {
                             anchors { left: codeCap.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             text: layoutBtn.modelData.name
                             color: layoutBtn.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }
                     }
                 }
@@ -1764,6 +1770,7 @@ PanelWindow {
                             id: devIcon
                             code: btView.iconFor(devRow.d)
                             color: devRow.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             font.pixelSize: 17
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         }
@@ -1774,11 +1781,13 @@ PanelWindow {
                                 width: parent.width
                                 text: devRow.d.name || devRow.d.deviceName || devRow.d.address
                                 color: devRow.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             }
                             Label {
                                 width: parent.width
                                 font.pixelSize: 11; font.weight: Font.Normal
                                 color: devRow.selected ? pop.accentText : pop.dim
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                                 opacity: devRow.selected ? 0.8 : 1
                                 text: devRow.busy ? (devRow.d.connected ? "Disconnecting…" : "Connecting…")
                                     : devRow.d.connected ? "Connected" + (devRow.d.batteryAvailable ? " · " + Math.round(devRow.d.battery * 100) + "% battery" : "")
@@ -1842,12 +1851,14 @@ PanelWindow {
                             id: modeIcon
                             code: modeRow.modelData.icon; font.pixelSize: 16
                             color: modeRow.selected ? pop.accentText : pop.dim
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         }
                         Label {
                             anchors { left: modeIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             text: modeRow.modelData.label
                             color: modeRow.selected ? pop.accentText : pop.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             font.weight: Font.Normal
                         }
                         Label {
@@ -1855,6 +1866,7 @@ PanelWindow {
                             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             text: "Default"
                             color: modeRow.selected ? pop.accentText : pop.dim
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             font.pixelSize: 12; font.weight: Font.Normal
                         }
                     }
@@ -2002,12 +2014,14 @@ PanelWindow {
                                 code: profileButton.modelData.code
                                 font.pixelSize: 18
                                 color: profileButton.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             }
                             Label {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: profileButton.modelData.label
                                 font.pixelSize: 12
                                 color: profileButton.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             }
                         }
                     }
@@ -2579,6 +2593,7 @@ PanelWindow {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     code: controlTile.modelData.code
                                     color: controlTile.selected ? pop.accentText : pop.text
+                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                                 }
                                 Label {
                                     width: parent.width
@@ -2586,6 +2601,7 @@ PanelWindow {
                                     text: controlTile.modelData.label
                                     font.pixelSize: 11
                                     color: controlTile.selected ? pop.accentText : pop.text
+                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                                 }
                             }
                         }

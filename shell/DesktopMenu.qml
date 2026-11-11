@@ -75,12 +75,14 @@ PanelWindow {
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             text: row.modelData.icon ? String.fromCodePoint(row.modelData.icon) : ""
                             color: itemHover.hovered ? dm.onAccent : dm.dimColor
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                             font.family: tabler.name; font.pixelSize: 16
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: 36; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             text: row.modelData.label || ""
                             color: itemHover.hovered ? dm.onAccent : dm.textColor
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                             font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
