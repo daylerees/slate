@@ -69,7 +69,10 @@ PanelWindow {
     readonly property string kind: !picked ? "none" : picked === "space" ? "space"
         : pickedItem !== "" ? "item" : "box"
     readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
-    readonly property bool pickedTuck: !!picked && typeof picked !== "string" && !!picked.tuck
+    // (how the picked container collapses: "never", "always" or "needed"; and whether it has a
+    // collapse button at all, to set up)
+    readonly property string pickedCollapse: !!picked && typeof picked !== "string" ? (picked.collapse || "needed") : ""
+    readonly property bool pickedTuck: pickedCollapse === "always" || pickedCollapse === "needed"
     function nameOf(id) { const it = Config.barItem(id); return it ? it.label : id; }
     readonly property string textKey: kind === "item" ? (Config.barTextKeys[pickedItem] || "") : ""
 
@@ -463,15 +466,31 @@ PanelWindow {
                 }
 
                 // A container
-                Switch {
-                    visible: root.kind === "box" && root.pickedThings.length > 0
-                    label: "Collapse button"
-                    checked: root.pickedTuck
-                    onToggled: v => Config.barSetTuck(Config.barSelected, v)
-                }
-                // ...its icon, and which end it sits at
+                // How it collapses: tucked behind a button always, only when the bar's short of
+                // room, or never (with one thing in it there's nothing to tuck)
                 Row {
-                    visible: root.kind === "box" && root.pickedTuck
+                    visible: root.kind === "box" && root.pickedThings.length > 1
+                    spacing: 6
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        rightPadding: 4
+                        text: "Collapse"
+                        color: root.text
+                        font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    }
+                    Repeater {
+                        model: [{ value: "never", label: "Never" }, { value: "needed", label: "When needed" }, { value: "always", label: "Always" }]
+                        PanelButton {
+                            required property var modelData
+                            label: modelData.label
+                            primary: root.pickedCollapse === modelData.value
+                            onClicked: Config.barSetCollapse(Config.barSelected, modelData.value)
+                        }
+                    }
+                }
+                // ...its button's icon, and which end it sits at
+                Row {
+                    visible: root.kind === "box" && root.pickedThings.length > 1 && root.pickedTuck
                     spacing: 6
                     Repeater {
                         model: [0xEC38, 0xEA95, 0xEA94, 0xEA60, 0xEA61, 0xEC42, 0xEB0B, 0xEA9A]
@@ -484,7 +503,7 @@ PanelWindow {
                     }
                 }
                 Row {
-                    visible: root.kind === "box" && root.pickedTuck
+                    visible: root.kind === "box" && root.pickedThings.length > 1 && root.pickedTuck
                     spacing: 6
                     PanelButton {
                         label: "At the start"

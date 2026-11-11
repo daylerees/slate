@@ -194,7 +194,7 @@ Singleton {
         }
         // (there's always one flexible space: without one nothing takes up the spare room)
         if (spaces === 0) out.splice(out.findIndex(e => typeof e !== "string" && e.items.indexOf("windowtitle") >= 0) + 1 || out.length, 0, "space");
-        for (const id of known) if (!seen[id]) out.push({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" });
+        for (const id of known) if (!seen[id]) out.push(barBox([id], null));
         return out;
     }
     // A container as the bar wants it, from its real items and how it was saved. Its collapse
@@ -202,10 +202,15 @@ Singleton {
     // which end the button sits at, the rest sliding out from it): `tuck` and `tuckFrom` say
     // the same for the bar. Saved the old way (tuck: true), the button goes at the end
     function barBox(items, saved) {
-        const has = !!saved && ((saved.items && saved.items.indexOf("tuck") >= 0) || !!saved.tuck);
-        const first = !!saved && saved.items && saved.items[0] === "tuck" || (!!saved && saved.tuckFrom === "start" && !(saved.items && saved.items.indexOf("tuck") >= 0));
+        // How it collapses (plans/menubar-length.md): "never", "always" (tucked behind its button
+        // until that's clicked) or "needed" (only when the bar's short of room), which is how
+        // a container starts. From before there were modes: one with a button is "always"
+        const legacy = !!saved && ((saved.items && saved.items.indexOf("tuck") >= 0) || !!saved.tuck);
+        const mode = saved && ["never", "always", "needed"].indexOf(saved.collapse) >= 0 ? saved.collapse : legacy ? "always" : "needed";
+        const first = !!saved && ((saved.items && saved.items[0] === "tuck") || saved.tuckFrom === "start");
+        const has = mode === "always";
         const all = !has ? items : first ? ["tuck"].concat(items) : items.concat(["tuck"]);
-        return { items: all, tuck: has, tuckIcon: String((saved && saved.tuckIcon) || ""), tuckFrom: has ? (first ? "start" : "end") : "" };
+        return { items: all, tuck: has, collapse: mode, tuckIcon: String((saved && saved.tuckIcon) || ""), tuckFrom: first ? "start" : "end" };
     }
 
     // ---- Arranging it (Settings → Menu Bar → Edit layout; BarEditor.qml, the panel by the bar) ----
@@ -268,13 +273,13 @@ Singleton {
     // button back among the items and drops containers left empty
     function barCopy() {
         return barLayout.map(e => typeof e === "string" ? e
-            : { items: e.items.filter(id => id !== "tuck"), tuck: !!e.tuck, tuckFrom: e.tuckFrom || "", tuckIcon: e.tuckIcon || "", keep: !!e.keep });
+            : { items: e.items.filter(id => id !== "tuck"), collapse: e.collapse || "needed", tuckFrom: e.tuckFrom || "end", tuckIcon: e.tuckIcon || "", keep: !!e.keep });
     }
     function barSave(list) {
         s.barLayout = list.filter(e => typeof e === "string" || (e.items && (e.items.length > 0 || e.keep)))
             .map(e => typeof e === "string" ? e
                 : e.items.length === 0 ? { items: [], keep: true }
-                : { items: !e.tuck ? e.items : e.tuckFrom === "start" ? ["tuck"].concat(e.items) : e.items.concat(["tuck"]), tuckIcon: e.tuckIcon || "" });
+                : { items: e.items, collapse: e.collapse || "needed", tuckFrom: e.tuckFrom === "start" ? "start" : "end", tuckIcon: e.tuckIcon || "" });
     }
     // The bar counts a container's things with its collapse button among them: the same place
     // among its real items
@@ -298,7 +303,7 @@ Singleton {
         const from = barWhere(list, id);
         if (!from) return;
         if (slot < 0) {
-            const marker = { items: [], tuck: false, tuckFrom: "", tuckIcon: "" };
+            const marker = { items: [], collapse: "needed", tuckFrom: "end", tuckIcon: "" };
             list.splice(Math.max(0, Math.min(list.length, to)), 0, marker);
             const now = barWhere(list, id);
             list[now.box].items.splice(now.slot, 1);
@@ -325,14 +330,14 @@ Singleton {
     function barMoveTuck(from, to, slot) {
         const list = barCopy();
         const src = list[from];
-        if (!src || typeof src === "string" || !src.tuck) return;
+        if (!src || typeof src === "string" || src.collapse !== "always") return;
         const dst = to >= 0 ? list[to] : null;
         if (dst && typeof dst === "string") return;
-        if (dst && dst !== src && dst.tuck) return;
+        if (dst && dst !== src && dst.collapse === "always") return;
         const icon = src.tuckIcon;
-        src.tuck = false;
+        src.collapse = "never";
         if (dst) {
-            dst.tuck = true;
+            dst.collapse = "always";
             dst.tuckFrom = slot <= barLayout[to].items.length / 2 ? "start" : "end";
             dst.tuckIcon = icon;
         }
@@ -388,7 +393,7 @@ Singleton {
         const list = barCopy();
         const e = list[at];
         if (!e || typeof e === "string" || e.items.length < 2) return;
-        list.splice(at, 1, ...e.items.map(id => ({ items: [id], tuck: false, tuckFrom: "", tuckIcon: "" })));
+        list.splice(at, 1, ...e.items.map(id => ({ items: [id], collapse: "needed", tuckFrom: "end", tuckIcon: "" })));
         barSelected = -1;
         barSave(list);
     }
@@ -399,11 +404,25 @@ Singleton {
         const list = barCopy();
         const e = list[at];
         if (!e || typeof e === "string") return;
-        if (tuck !== undefined) e.tuck = !!tuck;
+        if (tuck !== undefined) e.collapse = tuck ? "always" : "never";
         if (from !== undefined) e.tuckFrom = from === "start" ? "start" : "end";
         if (icon !== undefined) e.tuckIcon = String(icon || "");
         barSave(list);
     }
+    // How the container at `at` collapses: "never", "always" or "needed"
+    function barSetCollapse(at, mode) {
+        const list = barCopy();
+        const e = list[at];
+        if (!e || typeof e === "string" || ["never", "always", "needed"].indexOf(mode) < 0) return;
+        e.collapse = mode;
+        barSave(list);
+    }
+    // The order things leave a bar that's short of room, first to go first (Slate's own; the
+    // last three stay). plans/menubar-length.md
+    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
+        "chalk", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
+    readonly property var barStayDefault: ["power", "clock", "control"]
+    function barOverflowRank(id) { const i = barOverflowDefault.indexOf(id); return i < 0 ? 1000 : i; }
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
     function barShown(id) { const it = barItem(id); return !!it && !!s[it.key]; }
     // (Put back on the bar, a thing has its text on again: it comes as it first was, whatever

@@ -148,6 +148,7 @@ ShellRoot {
             }
             else if (what === "drag") { const p = c.split(","); topBar.testDrag(n(a), n(b), Number(p[0]), Number(p[1])); }
             else if (what === "squeeze") topBar.squeeze = Number(a);
+            else if (what === "collapse") Config.barSetCollapse(n(a), b);
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }

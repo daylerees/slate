@@ -401,19 +401,41 @@ PanelWindow {
             if (Config.s.barClockDate) plan.push("clock:date");
             if (Config.s.barClockSeconds) plan.push("clock:seconds");
         }
+        // ...then the containers set to collapse when needed tuck away, one at a time: the one
+        // holding what's minded least first (Config.barOverflowRank)
+        const boxes = [];
+        for (const c of left.children) {
+            if (!c.isBox || c.collapse !== "needed") continue;
+            const shown = c.cells.filter(x => x.wanted);
+            if (shown.length >= 2) boxes.push({ at: c.index, rank: Math.min(...shown.map(x => Config.barOverflowRank(x.name))) });
+        }
+        boxes.sort((a, b) => a.rank - b.rank || a.at - b.at);
+        for (const b of boxes) plan.push("tuck:" + b.at);
         return plan;
     }
     function slimApply(given) {
         slimTitle = given.indexOf("title") >= 0;
         slimClock = given.indexOf("clock:seconds") >= 0 ? 2 : given.indexOf("clock:date") >= 0 ? 1 : 0;
         for (const id in left.things) left.things[id].slimText = given.indexOf("text:" + id) >= 0;
+        for (const c of left.children) if (c.isBox) c.needTuck = given.indexOf("tuck:" + c.index) >= 0;
         // (laid out now, not when the next frame is drawn: its length is about to be read)
         for (const c of left.children) if (c.isBox) c.relayout();
         left.forceLayout();
     }
     // How much too long the line is as it stands (below 0: that much to spare), allowing the
     // title, where it shows, the least room worth having
-    function slimOver() { return lineFixed + (winTitle.visible ? titleLeast : 0) - lineLength; }
+    // (by the lengths things will have once settled: a container opening or closing is eased)
+    function slimOver() {
+        let sum = 0, n = 0;
+        for (const c of left.children) {
+            if (!c.visible) continue;
+            if (c.isSpace) { n++; continue; }
+            const len = c.isBox ? c.settledLength : (vert ? c.height : c.width);
+            if (c.isBox || len > 0) { n++; sum += len; }
+        }
+        const title = winTitle.wanted && winTitle.shell && !winTitle.shell.tuck;
+        return sum + gap * Math.max(0, n - 1) + (title ? titleLeast : 0) - lineLength;
+    }
     function fit() {
         if (fitting) return;
         fitting = true;
@@ -686,7 +708,7 @@ PanelWindow {
                     if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
                     else {
-                        const box = boxComp.createObject(left, { index: o.at, tuck: !!entry.tuck, tuckFrom: entry.tuckFrom || "" });
+                        const box = boxComp.createObject(left, { index: o.at, collapse: entry.collapse || "needed", tuckFrom: entry.tuckFrom || "end" });
                         if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
                         box.fill(entry.items.map(id => things[id]).filter(t => !!t));
                         fresh.push(box);
@@ -1782,8 +1804,14 @@ PanelWindow {
             color: box.picked ? bar.accent : bar.dimTextColor
             font.family: bar.iconFont; font.pixelSize: 13
         }
-        property bool tuck: false
-        property string tuckFrom: ""            // "start": the button first, the things after it; else last
+        // How it collapses (Config.barBox): "always" tucked behind its button until that's clicked;
+        // "needed", only when the bar's short of room and has asked it to (needTuck, from bar.fit),
+        // and only with two things or more to tuck; "never"
+        property string collapse: "needed"
+        property bool needTuck: false
+        readonly property bool always: collapse === "always"
+        readonly property bool tuck: always || (collapse === "needed" && needTuck && !Config.barArranging)
+        property string tuckFrom: "end"         // "start": the button first, the things after it; else last
         property int tuckIcon: 0xEC38
         hoverTint: false                        // (each thing has its own hover fill)
         property bool expanded: false
@@ -1794,7 +1822,11 @@ PanelWindow {
         Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
         readonly property bool showThings: !tuck || openness > 0
         // Along the container: its things, and the button at one end while it tucks
-        readonly property var order: !tuck ? cells : tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
+        // (the button's always among them, unseen unless it tucks: a container can start to at any time)
+        readonly property var order: tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
+        // As long as it will be once it's settled (opening and closing are eased): what the line
+        // is fitted by
+        readonly property real settledLength: (tuck ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + grip
         function shows(c) { return !c.carried && (c === toggle ? tuck : (c.wanted && showThings)); }
         property bool carried: false            // being dragged (arranging): off the line till it lands
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
@@ -1804,7 +1836,7 @@ PanelWindow {
         readonly property bool hollow: Config.barArranging && cells.length === 0
         visible: !carried && (cells.some(c => c.wanted && !c.carried) || hollow)
         function settle() { carried = false; toggle.carried = false; }
-        function relayout() { for (const c of cells) c.relayout(); row.forceLayout(); }
+        function relayout() { for (const c of cells) c.relayout(); toggle.relayout(); row.forceLayout(); }
         // Holding the window's title: how long it is without the title's own text (the things
         // beside it, the title's padding, a line between each two, the gripper), which is what
         // the line counts when it works out the title's room
@@ -1847,13 +1879,18 @@ PanelWindow {
         function fill(things) {
             cells = things;
             const seq = order;
+            // (a place to land before each thing, numbered as the arrangement's items are: the
+            // button is one of them only in a container that always tucks)
+            let n = 0;
             for (let i = 0; i < seq.length; i++) {
-                if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: i });
+                const counted = seq[i] !== toggle || box.always;
+                if (Config.barArranging && counted) slotComp.createObject(row, { to: box.index, slot: n });
                 if (i > 0) sepComp.createObject(row, { shell: box, cell: seq[i] });
                 seq[i].shell = box;
                 seq[i].parent = row;
+                if (counted) n++;
             }
-            if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: seq.length });
+            if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: n });
         }
     }
 
