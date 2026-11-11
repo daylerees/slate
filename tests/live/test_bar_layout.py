@@ -164,6 +164,27 @@ class BarLayout(LiveCase):
         self.s.wait(lambda st: not st["bar"]["editor"], what="the panel to go")
         self.assertEqual(self.bar()["picked"], -1)
 
+    def test_windows_are_out_of_sight_while_arranging(self):
+        """The wallpaper comes up over the windows, the bar above it; both go back after."""
+        def level(namespace):
+            for mon in self.s.hyprctl("layers", json_out=True).values():
+                for lvl, layers in mon["levels"].items():
+                    if any(l["namespace"] == namespace for l in layers):
+                        return int(lvl)
+            return -1
+        self.assertEqual((level("slate-wallpaper"), level("slate-bar")), (0, 2))
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.s.settle(1.5)
+        self.do("start")
+        self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
+        self.s.settle(0.8)
+        self.assertEqual((level("slate-wallpaper"), level("slate-bar")), (2, 3))
+        self.screenshot("bar-arranging-over-a-window")
+        self.do("done")
+        self.s.settle(0.8)
+        self.assertEqual((level("slate-wallpaper"), level("slate-bar")), (0, 2))
+        self.close_windows()
+
     def test_settings_steps_aside(self):
         self.ipc("settings", "open")
         self.s.wait(lambda st: st["settings"]["open"], what="Settings")
