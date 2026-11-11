@@ -349,6 +349,14 @@ taken to be), a side bar, a second screen, and the hover of a pool chip under it
 5. Merge to `master`, and delete the `menu-bar-layout` branch here and on `origin` (it was
    pushed as a backup; see the table at the top).
 
+## Later: one tool for the assistant
+
+Decided 2026-11-11 (with `plans/menubar-length.md`): the assistant gets **one tool for
+arranging the bar** that covers moving things, containers, collapse modes, and the overflow
+order and what stays, rather than a narrow tool for each. Until then `barLayout` (and the
+overflow lists, once they exist) are lists, which `settings_set` refuses, so an agent can't
+change them.
+
 ## Things to settle while building
 
 - Whether the window mode icon and the workspace dots are two items or one.
