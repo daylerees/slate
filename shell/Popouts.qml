@@ -2301,7 +2301,6 @@ PanelWindow {
                 id: profileCard
                 width: parent.width; height: 80; radius: 12
                 color: pop.card
-                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 // Wallpaper behind the card, fading into it from the left
                 Item {
                     anchors.fill: parent
@@ -2470,7 +2469,6 @@ PanelWindow {
                         readonly property bool roomy: controlView.player === null
                         width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: 12
                         color: pop.card
-                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         SystemClock { id: ccClock; precision: SystemClock.Minutes }
                         Column {
                             anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
