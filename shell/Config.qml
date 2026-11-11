@@ -898,7 +898,7 @@ Singleton {
     }
 
     // ---- Keyboard layouts (for the menu bar's switcher) ---------------------------------
-    // The layouts in use (set in Settings → Keyboard & Mouse, or Hyprland's own config), their
+    // The layouts in use (set in Settings → Input, or Hyprland's own config), their
     // names, and which one is active (Hyprland's activelayout event says when it changes)
     property var xkbNames: ({})
     property string hyprLayouts: ""

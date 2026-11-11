@@ -35,7 +35,7 @@ the gloss sheen like the bar's containers and no outline.
   (`secure`), or after 4 s (logind's limit is 5 s). Wrapped in
   `setpriv --pdeathsig` so it never outlives Slate.
 - **Idle** (`IdleMonitor`): lock / screen off (`hl.dsp.dpms`) / suspend after the
-  times in Settings → Lock & Idle; respects idle inhibitors (video) if enabled.
+  times in Settings → Security; respects idle inhibitors (video) if enabled.
   Slate's own idle suspend locks first and waits for `secure`.
 - **Crash safety:** if Slate dies while locked, Hyprland stays locked. Recover from a
   text console (Ctrl+Alt+F3): `slate restart` (or `~/.config/slate/bin/slate restart`) — `allow_session_lock_restore`
@@ -49,7 +49,7 @@ Slate's login screen is **optional, and off unless you install it**. Installing 
 adds "Slate" to whatever login screen you already have; Slate's own replaces that login
 screen, so it's something you choose:
 
-- **Install:** Settings → Lock & Idle → "Slate login screen" → **Install** (it asks for your
+- **Install:** Settings → Security → "Slate login screen" → **Install** (it asks for your
   password), or `./install.sh --login-screen`, or `sudo ~/.config/slate/bin/slate-greeter-install`.
   It needs greetd installed; if your computer starts another display manager (GDM, SDDM,
   LightDM), Settings says so and gives the command to switch to greetd.
@@ -122,7 +122,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
      copy started.
 - The greeter can't read your home folder, hence the copies. Code is root-owned; the
   user-owned folder holds only data (images, fonts, setting values).
-- Settings → Lock & Idle → "Slate login screen" shows whether it's installed and whether the
+- Settings → Security → "Slate login screen" shows whether it's installed and whether the
   installed code matches yours (`slate-greeter-sync --status`), and offers Preview, then
   Install (with a warning of the above first), Update or Switch back. The automatic update
   prompt only runs while greetd uses Slate's login screen.
@@ -133,7 +133,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 ### If the login screen doesn't come up
 
 The fallbacks above should cover this; if you see the emergency login screen, log in and
-update the login screen from Settings → Lock & Idle. If even that fails:
+update the login screen from Settings → Security. If even that fails:
 
 1. Ctrl+Alt+F3, log in on the text console.
 2. `sudo ~/.config/slate/bin/slate-greeter-install --revert` (restores the previous greeter).

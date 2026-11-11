@@ -137,7 +137,7 @@ Void and Gentoo are our best knowledge. If something doesn't work, we'd love to 
   systemd's does (`org.freedesktop.timedate1`; openrc-settingsd provides it). Without one,
   the page shows your time zone but can't change it, and says so.
 - **Slate's login screen** (optional, as everywhere) works with greetd under any init
-  system; you enable the greetd service yourself, and Settings → Lock & Idle shows the
+  system; you enable the greetd service yourself, and Settings → Security shows the
   command. Its log goes to `/var/cache/slate-greeter/hyprland.log` rather than the journal.
 - **Hyprland updates:** the same as on any distro, but note that Hyprland needs a very
   recent compiler to build (gcc 16 or clang 19), which is why some distros are behind.
@@ -235,7 +235,7 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    works with GDM, SDDM, LightDM and greetd login screens.
 6. **Login screen (only with `--login-screen`)** — switches greetd to Slate's own login
    screen, keeping your old greetd setup to go back to. It's optional and not installed
-   otherwise; you can also install it later from Settings → Lock & Idle. A broken login
+   otherwise; you can also install it later from Settings → Security. A broken login
    screen can stop you logging in, and it needs updating (with your password) when Slate,
    Hyprland, Quickshell or greetd change: see
    [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) before choosing it.
@@ -288,7 +288,7 @@ keep it.
 - **Monitors** (resolution, refresh rate, scale, rotation, arrangement and which is the
   main display) are in Settings → Displays; **how big Slate itself is** is Settings →
   Appearance → Interface size.
-- **Keyboard & Mouse** (layouts, Caps Lock, key repeat, pointer and touchpad), **Sound**,
+- **Input** (layouts, Caps Lock, key repeat, pointer and touchpad), **Sound**,
   **Power** (lid, power button, power mode on battery and plugged in), **Default Apps**,
   **Startup Apps**, **Region**, **Screenshots** and a searchable list of **Shortcuts**
   are all in Settings (Super+Z; All Settings, the first page, has a tile for every page). Settings only

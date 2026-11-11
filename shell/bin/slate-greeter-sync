@@ -32,7 +32,7 @@ code_files() {
 }
 # The ones shared with the rest of Slate, which change with nearly every Slate change, mostly in
 # ways the login screen doesn't notice: a change to only these doesn't ask for an update (it
-# comes along with the next one, or Settings → Lock & Idle → Update)
+# comes along with the next one, or Settings → Security → Update)
 SHARED="Config.qml SettingsData.qml"
 own_files() { code_files | while read -r name src; do case " $SHARED " in *" $name "*) ;; *) echo "$name $src" ;; esac; done; }
 

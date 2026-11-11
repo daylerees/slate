@@ -338,7 +338,7 @@ FloatingWindow {
                                 cancelLabel: q.cancelLabel || "" },
                               v => { if (q.run) q.run(v); }, q.cancel || null);
     }
-    // Settings → Lock & Idle → Slate login screen. It's optional (nothing installs it unless you
+    // Settings → Security → Slate login screen. It's optional (nothing installs it unless you
     // ask), so installing says plainly what can go wrong and what keeping it working takes
     readonly property var loginScreenInstallQuestion: ({
         title: "Install Slate's login screen?",
@@ -3058,7 +3058,7 @@ FloatingWindow {
         }
     }
 
-    // ---- Keyboard & Mouse ----------------------------------------------------
+    // ---- Input ----------------------------------------------------
     // Only what's changed here is set (Config.hyprSettings); the rest shows what Hyprland's
     // config (and your own hyprland.lua) has, read when the page opens
     Component {
@@ -3066,7 +3066,7 @@ FloatingWindow {
         Column {
             id: inputPane
             spacing: 4
-            PageTitle { text: "Keyboard & Mouse" }
+            PageTitle { text: "Input" }
             property var cur: ({})
             property var layoutOptions: []
             property bool hasTouchpad: false
@@ -6081,7 +6081,7 @@ FloatingWindow {
             id: lockCol
             spacing: 4
             readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60])
-            PageTitle { text: "Lock & Idle" }
+            PageTitle { text: "Security" }
             GroupLabel { text: "Locking" }
             Group {
                 SettingRow {
@@ -6426,7 +6426,7 @@ FloatingWindow {
         }
     }
 
-    // ---- Printers & Scanners: CUPS's printers and SANE's scanners (scripts/printers.py) -------
+    // ---- Printers: CUPS's printers and SANE's scanners (scripts/printers.py) -------
     Component {
         id: printersPage
         Column {
@@ -6491,7 +6491,7 @@ FloatingWindow {
                 return (p.default ? "Default · " : "") + s + jobs + (p.accepting ? "" : " · not taking jobs");
             }
 
-            PageTitle { text: "Printers & Scanners" }
+            PageTitle { text: "Printers" }
             IntroText { text: "The printers and scanners this computer can use. Most printers from the last ten years work straight away, over the network or USB, with no driver to install." }
 
             GroupLabel { visible: printersPane.state.service === "missing" || printersPane.state.service === "off"; text: "Printing service" }

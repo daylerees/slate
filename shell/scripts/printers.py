@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Printers and scanners for Settings → Printers & Scanners.
+"""Printers and scanners for Settings → Printers.
 
 Usage:
   printers.py list             the printing service and its printers, as JSON

@@ -63,7 +63,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |
 | Updates | Daily check for new releases with a notification; Settings → Updates shows what's new, updates in one click (keeping `settings.json`, `hypr/` and `user/`; new packages and login session changes are installed with your password) and can go back one version (`slate ipc call updates check`) | `Updates.qml`, `scripts/update.py`, `install.sh --update` |
 | Screensaver | Your wallpaper drifting, a wallpaper slideshow, videos (your own folder, or free scenery clips to download) or black, each with or without the clock; starts before the lock, optional lock on wake (Settings → Screensaver; `slate ipc call screensaver start`) | `Screensaver.qml` |
-| Login screen | optional greetd greeter in a minimal Hyprland, same design as the lock screen (Settings → Lock & Idle → Install) | `greeter/`, `LoginScreen.qml` |
+| Login screen | optional greetd greeter in a minimal Hyprland, same design as the lock screen (Settings → Security → Install) | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |
 | Hot corners | Per-corner actions, disarmed while locked | `HotCorners.qml` |
 | Chalk, the assistant | Super+K (or the bar button, or a Copilot/assistant key) opens a small prompt window: type what you want and an AI agent you already use (Claude Code, or a command of your own) does it through Slate's tools, with the answer and a list of what was done. Off until switched on in Settings → Assistant, which shows the risks first ([docs/ASSISTANT.md](docs/ASSISTANT.md)) | `Assistant.qml`, `AssistantGate.qml`, `scripts/assistant.py`, `scripts/slate_agents.py` |
@@ -136,7 +136,7 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
   closed; reopen it to see the new colours. GTK3 and Qt/KDE apps update straight away.
 - **The login screen updates separately.** It runs before you log in, from a system folder
   (`/usr/local/share/slate-greeter`), so it can't read your home folder:
-  - It's optional and isn't installed unless you ask: Settings → Lock & Idle → Install (or
+  - It's optional and isn't installed unless you ask: Settings → Security → Install (or
     `./install.sh --login-screen`). It replaces your system's login screen, so a broken one
     can stop you logging in, and it needs updating with your password when Slate, Hyprland,
     Quickshell or greetd change. [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md#login-screen-greetd)
@@ -144,7 +144,7 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
   - Wallpaper, accent, theme and picture changes are copied to it automatically.
   - When the login screen's own code changes, Slate shows a **Login screen out of date**
     notification. **Update** asks for your password; until then you'll see the previous
-    version at login. Settings → Lock & Idle has the same button.
+    version at login. Settings → Security has the same button.
   - Each update is test-loaded before it's installed; if it doesn't load, nothing changes.
     If the login screen still fails at boot, the last version you logged in with takes
     over, and failing that a basic emergency login screen, so you're never left at a

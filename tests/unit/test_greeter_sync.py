@@ -163,7 +163,7 @@ class Check(GreeterCase):
 
 
 class Status(Check):
-    """--status: what Settings → Lock & Idle needs to offer installing, updating or switching
+    """--status: what Settings → Security needs to offer installing, updating or switching
     back, one key=value a line. Only reads; never asks for a password."""
 
     def setUp(self):

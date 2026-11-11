@@ -1835,7 +1835,7 @@ PanelWindow {
     }
 
     // ---- Keyboard layout --------------------------------------------------
-    // The layouts from Settings → Keyboard & Mouse; click one to switch to it
+    // The layouts from Settings → Input; click one to switch to it
     Component {
         id: keyboardPanel
         Column {
