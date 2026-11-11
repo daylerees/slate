@@ -126,7 +126,9 @@ function slideAwayTo(dispatcher)
     hl.animation({ leaf = "workspacesOut", enabled = true, speed = sp(5), bezier = "easeOutQuint",
                    style = a == "slidefadevert" and "slidefadevert 100%" or "slidefade 100%" })
     hl.dispatch(dispatcher)
-    restoreSlideAfter(400)
+    -- (not before the slide's over: the usual animation holds a workspace that's leaving solid
+    -- where it was, so put back partway through, the windows sliding away showed again in place)
+    restoreSlideAfter(math.floor(sp(5) * 100 + 80))
 end
 
 -- Slate's own title bars (TitleBar.qml): dragging one moves its window to each pointer position

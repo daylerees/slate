@@ -82,3 +82,16 @@ class WorkspaceSwitch(SwitcherAnimations):
         self.s.hyprctl("eval", "squareWhileSliding()")
         self.s.settle(0.15)
         self.assertEqual(self.s.hyprctl("getprop", "active", "rounding").strip(), usual)
+
+    def test_slide_to_an_empty_workspace_isnt_cut_short(self):
+        # To an empty workspace the windows slide away. The usual animation (which holds the
+        # workspace that's leaving where it was) came back before the slide was over, and the
+        # windows showed again in place: an echo of them
+        self.windows_on_two_workspaces()
+        self.addCleanup(lambda: self.go_to_workspace(1))
+        self.s.hyprctl("dispatch", "function() slideAwayTo(hl.dsp.focus({ workspace = 9 })) end")
+        self.s.settle(0.43)
+        self.assertTrue(self.animations()["workspacesOut"]["style"].startswith("slidefade"),
+                        "the slide away was replaced while the windows were still leaving")
+        self.s.settle(0.5)
+        self.assertEqual(self.animations()["workspacesOut"]["style"], "fade", "the usual animation never came back")
