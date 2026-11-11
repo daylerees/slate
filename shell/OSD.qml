@@ -244,7 +244,10 @@ PanelWindow {
             readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
             readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
             readonly property real step: dot + gap
-            width: Math.max(dot, spaces.length * step - gap)
+            readonly property real dotsWidth: Math.max(dot, spaces.length * step - gap)
+            // The dots, then the name of the workspace you're on (its own, or "Workspace 3")
+            readonly property string name: Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
+            width: dotsWidth + (name !== "" ? 16 + wsName.implicitWidth : 0)
             height: dot
 
             // The accent marker glides to the active dot (WorkspaceMarker)
@@ -273,9 +276,18 @@ PanelWindow {
                     }
                 }
             }
+            Text {
+                id: wsName
+                visible: ws.name !== ""
+                x: ws.dotsWidth + 16
+                anchors.verticalCenter: parent.verticalCenter
+                text: ws.name
+                color: osd.bar.textColor
+                font.family: osd.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+            }
             WorkspaceMarker {
                 id: wsMarker
-                anchors.fill: parent
+                width: ws.dotsWidth; height: parent.height
                 dot: ws.dot; step: ws.step
                 animate: false            // moves are started above
                 color: osd.bar.accent
