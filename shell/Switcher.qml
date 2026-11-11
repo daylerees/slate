@@ -279,7 +279,7 @@ PanelWindow {
             y: list.y + list.restY - height / 2
             width: sw.cardW; height: sw.cardH
             radius: 12
-            color: sw.selectColor
+            color: Config.accent           // the active colour
             Gloss { radius: parent.radius }   // glass: a sheen
         }
 
@@ -484,7 +484,9 @@ PanelWindow {
                     anchors { top: previewBox.bottom; topMargin: 10; left: parent.left; right: parent.right; leftMargin: 12; rightMargin: 12 }
                     horizontalAlignment: Text.AlignHCenter
                     text: card.modelData.title || (card.entry ? card.entry.name : card.key)
-                    color: sw.bar.textColor
+                    // (dark on the selected card, which sits on the active colour)
+                    color: Math.abs(card.t) < 0.5 ? Config.tint("#12151a") : sw.bar.textColor
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     font.family: sw.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                     elide: Text.ElideRight
                 }

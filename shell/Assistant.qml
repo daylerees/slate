@@ -350,7 +350,7 @@ PanelWindow {
                     id: closeBtn
                     anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
                     width: 34; height: 34; radius: 17      // (Settings' close button)
-                    color: closeHover.hovered ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4) : "transparent"
+                    color: closeHover.hovered ? Config.hover : "transparent"
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
@@ -782,8 +782,7 @@ PanelWindow {
         readonly property color control: Config.raised(Config.tint("#2a313c"))
         readonly property color fg: primary ? root.accentText : root.textColor
         width: pillRow.implicitWidth + 28; height: 32; radius: 8
-        color: primary ? (pillHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
-            : pillHover.hovered ? (Config.glass ? Config.hoverOn(control) : Config.tint("#323a46")) : control
+        color: primary ? root.accent : pillHover.hovered ? Config.hover : control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Row {
             id: pillRow

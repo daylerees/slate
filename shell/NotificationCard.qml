@@ -287,14 +287,14 @@ Rectangle {
                         height: 28
                         width: actText.implicitWidth + 20
                         radius: 8
-                        // Accent-tinted; solid accent on hover
-                        color: actHover.hovered ? card.accent : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.16)
+                        // Accent-tinted; the muted hover under the pointer
+                        color: actHover.hovered ? Config.hover : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.12)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Text {
                             id: actText
                             anchors.centerIn: parent
                             text: modelData.text
-                            color: actHover.hovered ? Config.tint("#12151a") : card.accent
+                            color: card.accent
                             font.family: card.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
                         HoverHandler { id: actHover }

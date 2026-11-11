@@ -190,7 +190,6 @@ PanelWindow {
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: 14
                                 color: modeHover.hovered && usable ? Config.hoverOn(w.card) : w.card
-                                Gloss { radius: parent.radius; opacity: (modeHover.hovered && usable) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 opacity: usable ? 1 : 0.5
@@ -274,7 +273,6 @@ PanelWindow {
                                 readonly property bool on: (Config.s.themeMode || (Config.s.lightMode ? "light" : "dark")) === modelData.mode
                                 width: themeRow.implicitWidth + 28; height: 38; radius: 10
                                 color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
-                                Gloss { radius: parent.radius; opacity: (on || themeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Row {
                                     id: themeRow
@@ -303,7 +301,6 @@ PanelWindow {
                                 readonly property bool on: Config.s.accentFromWallpaper === modelData.wall
                                 width: (parent.width - 12) / 2; height: 112; radius: 12
                                 color: accHover.hovered ? Config.hoverOn(w.card) : w.card
-                                Gloss { radius: parent.radius; opacity: (accHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Column {
@@ -438,7 +435,6 @@ PanelWindow {
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: 14
                                 color: lookHover.hovered ? Config.hoverOn(w.card) : w.card
-                                Gloss { radius: parent.radius; opacity: lookHover.hovered ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -620,7 +616,6 @@ PanelWindow {
                             readonly property bool on: Config.s.keyset === modelData.key
                             width: parent.width; height: 70; radius: 12
                             color: keyHover.hovered ? Config.hoverOn(w.card) : w.card
-                            Gloss { radius: parent.radius; opacity: (keyHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                             border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Column {
@@ -828,7 +823,7 @@ PanelWindow {
                 }
                 Rectangle {
                     width: nextText.implicitWidth + 36; height: 38; radius: 10
-                    color: nextHover.hovered ? Qt.lighter(w.accent, 1.08) : w.accent
+                    color: w.accent
                     Text {
                         id: nextText
                         anchors.centerIn: parent
@@ -895,7 +890,7 @@ PanelWindow {
                     }
                     Rectangle {
                         width: askYes.implicitWidth + 28; height: 32; radius: 8
-                        color: askYesHover.hovered ? Qt.lighter(w.accent, 1.08) : w.accent
+                        color: w.accent
                         Text { id: askYes; anchors.centerIn: parent; text: w.askText.button; color: w.accentText; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                         HoverHandler { id: askYesHover }
                         ClickTap { onTapped: w.answer(true) }

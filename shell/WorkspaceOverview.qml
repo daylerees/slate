@@ -651,8 +651,9 @@ PanelWindow {
                 Rectangle {
                     anchors { fill: preview; margins: -5 }
                     radius: 17
-                    color: "transparent"
-                    // Blue when selected; bright white while lifted (holding Shift)
+                    // The active colour, filled (the card itself sits on it, so it shows as its edge);
+                    // bright white while lifted (holding Shift)
+                    color: border.color
                     border.width: card.lifted ? 4 : 3
                     border.color: card.lifted ? ov.bar.textColor : ov.bar.accent
                     Behavior on border.color { enabled: !ov.handover; ColorAnimation { duration: Config.ms(150) } }

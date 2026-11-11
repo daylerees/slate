@@ -295,7 +295,6 @@ PanelWindow {
                     readonly property bool on: root.optionOn
                     color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                    Gloss { radius: parent.radius; opacity: reopenHover.hovered ? 1 : 0 }
                     HoverHandler { id: reopenHover; onHoveredChanged: if (hovered) root.focusedButton = 2 }
                     ClickTap { onTapped: root.flipOption() }
                     // Keyboard focus ring, as on the buttons
@@ -375,7 +374,7 @@ PanelWindow {
         height: 40
         radius: 10
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
-        color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
+        color: primary ? base : (hh.hovered ? Config.hover : base)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button

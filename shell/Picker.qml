@@ -317,8 +317,7 @@ PanelWindow {
                 width: list.width
                 height: list.currentItem ? list.currentItem.height : root.rowHeight
                 radius: 10
-                color: root.selectColor
-                Gloss { radius: parent.radius }   // glass: a sheen on the selection
+                color: Config.accent           // the active colour, flat
                 y: list.currentItem ? list.currentItem.y : 0
                 Behavior on y { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
                 Behavior on height { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
@@ -367,7 +366,8 @@ PanelWindow {
                         width: parent.width
                         visible: !clipRow.image
                         text: clipRow.image ? "" : root.preview(clipRow.modelData.text).slice(0, 300)
-                        color: root.textColor
+                        color: clipRow.ListView.isCurrentItem ? Config.tint("#12151a") : root.textColor
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
                         font.pixelSize: 14
                         font.weight: Font.Medium
@@ -377,7 +377,8 @@ PanelWindow {
                     Text {
                         width: parent.width
                         text: root.clipDetail(clipRow.modelData)
-                        color: root.dimTextColor
+                        color: clipRow.ListView.isCurrentItem ? Qt.rgba(0.07, 0.08, 0.1, 0.72) : root.dimTextColor
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
                         font.pixelSize: 12
                         elide: Text.ElideRight
@@ -417,8 +418,7 @@ PanelWindow {
             highlight: Rectangle {
                 width: grid.cellWidth; height: grid.cellHeight
                 radius: 10
-                color: root.selectColor
-                Gloss { radius: parent.radius }   // glass: a sheen on the selection
+                color: Config.accent           // the active colour, flat
                 x: grid.currentItem ? grid.currentItem.x : 0
                 y: grid.currentItem ? grid.currentItem.y : 0
                 Behavior on x { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }

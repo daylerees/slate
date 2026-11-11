@@ -1575,7 +1575,7 @@ PanelWindow {
                 }
                 Rectangle {
                     width: spSave.implicitWidth + 28; height: 32; radius: 8
-                    color: spacesView.canSave ? (spSaveHover.hovered ? Qt.lighter(pop.accent, 1.08) : pop.accent) : pop.card
+                    color: spacesView.canSave ? pop.accent : pop.card
                     Label { id: spSave; anchors.centerIn: parent; text: spacesView.sameName ? "Replace" : "Save"; color: spacesView.canSave ? pop.accentText : pop.dim }
                     HoverHandler { id: spSaveHover }
                     ClickTap { onTapped: spacesView.save() }
@@ -2552,7 +2552,7 @@ PanelWindow {
                             radius: 12
                             selected: modelData.on
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                            color: selected ? (tileHover.hovered ? Qt.lighter(pop.accent, 1.12) : pop.accent)
+                            color: selected ? pop.accent
                                 : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
                             HoverHandler { id: tileHover }
                             onClicked: {

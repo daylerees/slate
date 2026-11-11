@@ -33,8 +33,8 @@ PanelWindow {
     readonly property color danger: bar.errorColor
     readonly property color control: Config.raised(Config.tint("#2a313c"))
     // (under the pointer: a button, and a switch's track, as in Settings)
-    readonly property color controlLit: Config.glass ? Config.hoverOn(control) : Config.tint("#323a46")
-    readonly property color knobLit: Config.glass ? Config.hoverOn(control) : Config.tint("#38414e")
+    readonly property color controlLit: Config.hover
+    readonly property color knobLit: Config.hover
     readonly property color divider: Config.tint("#262c35")
     function glyph(code) { return String.fromCodePoint(code); }
 
@@ -127,7 +127,7 @@ PanelWindow {
         property bool destructive: false
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
-        color: primary ? (btnHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
+        color: primary ? root.accent
             : btnHover.hovered ? root.controlLit : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
@@ -170,7 +170,7 @@ PanelWindow {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 42; height: 24; radius: 12
-            color: sw.checked ? (swHover.hovered ? Qt.lighter(root.accent, 1.08) : root.accent)
+            color: sw.checked ? root.accent
                 : (swHover.hovered ? root.knobLit : root.control)
             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
             // Hover: a soft accent ring around the switch

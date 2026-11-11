@@ -58,7 +58,10 @@ Singleton {
     // things with no background of their own; hoverOn(base) is it laid over a solid colour
     readonly property real hoverStrength: 0.22
     readonly property color hover: Qt.rgba(accent.r, accent.g, accent.b, hoverStrength)
-    function hoverOn(base) { return Qt.tint(base, hover); }
+    // (Under the pointer, something that has a fill of its own takes the muted hover in its
+    // place, not laid over it: hovering looks the same on a card, a button or a bare row, with
+    // glass or without)
+    function hoverOn(base) { return hover; }
     property string wallpaper: s.wallpaper
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper

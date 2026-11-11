@@ -214,7 +214,6 @@ PanelWindow {
                             readonly property bool current: root.selected === modelData
                             width: chipText.implicitWidth + 24; height: 30; radius: 15
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
-                            Gloss { radius: parent.radius; opacity: (current || chipHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             HoverHandler { id: chipHover }
                             ClickTap {
@@ -316,7 +315,7 @@ PanelWindow {
         height: 40
         radius: 10
         readonly property color base: primary ? root.accent : root.fieldColor
-        color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
+        color: primary ? base : (hh.hovered ? Config.hover : base)
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }

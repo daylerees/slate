@@ -130,8 +130,8 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool on: pk.folder === modelData.path
                     width: parent.width; height: 36; radius: 9
-                    color: on ? Config.raised(Config.tint("#1d222a")) : placeHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (on || placeHover.hovered) ? 1 : 0 }
+                    color: on ? pk.accent : placeHover.hovered ? Config.hover : "transparent"     // the active colour; the muted hover
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Row {
                         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         spacing: 10
@@ -139,13 +139,16 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: pk.glyph(({ Pictures: 0xEB0A, Camera: 0xEA54, Screenshots: 0xF201, Wallpapers: 0xEB0A, Downloads: 0xEA96,
                                               Desktop: 0xEA89, Documents: 0xEAA2, Home: 0xEAC1 })[parent.parent.modelData.label] || 0xEAAD)
-                            color: parent.parent.on ? pk.accent : pk.dim
+                            color: parent.parent.on ? Config.tint("#12151a") : pk.dim
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             font.family: pk.iconFont; font.pixelSize: 16
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.parent.modelData.label
-                            color: pk.text; font.family: pk.font; font.pixelSize: 13; font.weight: Font.Medium
+                            color: parent.parent.on ? Config.tint("#12151a") : pk.text
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                            font.family: pk.font; font.pixelSize: 13; font.weight: Font.Medium
                         }
                     }
                     HoverHandler { id: placeHover }
@@ -346,7 +349,7 @@ FloatingWindow {
             Rectangle {
                 width: useText.implicitWidth + 28; height: 34; radius: 9
                 opacity: pk.chosen ? 1 : 0.45
-                color: useHover.hovered && pk.chosen ? Qt.lighter(pk.accent, 1.08) : pk.accent
+                color: pk.accent
                 Text { id: useText; anchors.centerIn: parent; text: "Use picture"; color: pk.accentText; font.family: pk.font; font.pixelSize: 12; font.weight: Font.DemiBold }
                 HoverHandler { id: useHover }
                 ClickTap { onTapped: pk.use() }

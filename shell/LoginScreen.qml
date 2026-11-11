@@ -195,10 +195,9 @@ Item {
                 Rectangle {
                     width: parent.width; height: 46; radius: 12
                     color: Config.raised(ls.field)
-                    // With glass, the bar's sheen rather than an outline
-                    border.width: password.activeFocus && !Config.glass ? 1 : 0
+                    // (flat, with glass too: an outline while it has the keyboard)
+                    border.width: password.activeFocus ? 1 : 0
                     border.color: ls.messageIsError ? ls.error : ls.accent
-                    Gloss { radius: parent.radius }
                     Text {
                         id: lockIcon
                         anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
@@ -234,7 +233,6 @@ Item {
                         width: 34; height: 34; radius: 9
                         color: password.text !== "" ? ls.accent : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                        Gloss { radius: goBtn.radius; visible: Config.glassGloss && password.text !== "" }
                         Text {
                             anchors.centerIn: parent
                             text: ls.glyph(ls.busy ? 0xF226 : 0xEA1F)
@@ -340,7 +338,6 @@ Item {
                     required property var modelData
                     width: parent.width; height: 40; radius: 10
                     color: modelData.current ? ls.accent : itemHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: parent.modelData.current || itemHover.hovered ? 1 : 0 }
                     Row {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 10

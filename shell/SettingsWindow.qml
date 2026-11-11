@@ -93,7 +93,8 @@ FloatingWindow {
     // Buttons, switches, fields and other controls: solid grey, or with glass the frosted fill the
     // bar's containers have (a hint of the wallpaper's colour), so their sheen picks it up too
     readonly property color control: Config.raised(Config.tint("#2a313c"))
-    function controlHover(solid) { return Config.glass ? Config.hoverOn(control) : solid; }
+    // (a button or a field under the pointer: the muted hover, as everywhere, with glass or without)
+    function controlHover(solid) { return Config.hover; }
     // The theme's greys, named for what they're used for (each worked out once, not per item)
     readonly property color well: Config.tint("#151920")           // sunken areas: the content pane, search wells, segmented tracks
     readonly property color divider: Config.tint("#262c35")        // separators, chosen rows, meter tracks
@@ -525,7 +526,7 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
                             width: parent.width; height: 38; radius: 9
-                            color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
+                            color: current ? win.accent : navHover.hovered ? Config.hover : "transparent"
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Text {
                                 id: navIcon
@@ -533,14 +534,17 @@ FloatingWindow {
                                 text: win.glyph(parent.modelData.icon)
                                 ChalkFace {}
                                 // Colourful: each page its own colour; monotone: the accent when current
-                                color: Config.colourful ? Config.pageColour(parent.modelData.id) : parent.current ? win.accent : win.dim
+                                // (on the page you're on, dark like its name: it sits on the active colour)
+                                color: parent.current ? win.accentText : Config.colourful ? Config.pageColour(parent.modelData.id) : win.dim
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 font.family: win.bar.iconFont; font.pixelSize: 17
                             }
                             Text {
                                 visible: !win.compact
                                 anchors { left: navIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: parent.modelData.label
-                                color: parent.current ? win.text : win.dim
+                                color: parent.current ? win.accentText : win.dim
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                             }
                             HoverHandler { id: navHover }
@@ -708,13 +712,13 @@ FloatingWindow {
                             readonly property bool chosen: index === pageSearch.pick
                             width: parent.width; height: pageHitCol.implicitHeight + 14
                             radius: 9
-                            color: chosen ? win.divider : pageHitHover.hovered ? Config.hover : "transparent"
+                            color: chosen ? win.accent : pageHitHover.hovered ? Config.hover : "transparent"
                             Text {
                                 id: pageHitIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
                                 ChalkFace {}
-                                color: pageHit.chosen ? win.accent : win.dim
+                                color: pageHit.chosen ? win.accentText : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 16
                             }
                             Column {
@@ -724,7 +728,7 @@ FloatingWindow {
                                 Text {
                                     width: parent.width
                                     text: pageHit.modelData.label
-                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    color: pageHit.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
                                 Text {
@@ -732,7 +736,7 @@ FloatingWindow {
                                     text: (SettingsIndex.pageNames[pageHit.modelData.page] || "")
                                         + (pageHit.modelData.group && pageHit.modelData.group !== pageHit.modelData.label ? " → " + pageHit.modelData.group : "")
                                         + (pageHit.modelData.detail ? " · " + pageHit.modelData.detail : "")
-                                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                                    color: pageHit.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
                                     elide: Text.ElideRight
                                 }
                             }
@@ -1034,7 +1038,7 @@ FloatingWindow {
                     readonly property bool picked: dropLayer.searching && index === dropLayer.pick
                     // Clear of the scrollbar, when there is one
                     width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
-                    color: rowHover.hovered ? Config.hover : picked ? win.divider : "transparent"
+                    color: picked ? win.accent : rowHover.hovered ? Config.hover : "transparent"
                     FolderSwatch {
                         id: rowFolder
                         visible: !!parent.modelData.folder
@@ -1046,14 +1050,14 @@ FloatingWindow {
                         visible: !rowFolder.visible && !!parent.modelData.icon
                         anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
                         text: visible ? win.glyph(parent.modelData.icon) : ""
-                        color: parent.current ? win.accent : win.dim
+                        color: parent.picked ? win.accentText : parent.current ? win.accent : win.dim
                         font.family: win.bar.iconFont; font.pixelSize: 17
                     }
                     Text {
                         readonly property Item lead: rowFolder.visible ? rowFolder : rowIcon.visible ? rowIcon : null
                         anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
-                        color: parent.current ? win.accent : win.text
+                        color: parent.picked ? win.accentText : parent.current ? win.accent : win.text
                         font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                         elide: Text.ElideMiddle      // device names differ at the end: keep it in view
                     }
@@ -1304,7 +1308,7 @@ FloatingWindow {
         property bool checked: false
         signal toggled(bool value)
         width: 42; height: 24; radius: 12
-        color: checked ? (tgHover.hovered ? Qt.lighter(win.accent, 1.08) : win.accent)
+        color: checked ? win.accent
             : (tgHover.hovered ? win.controlHover(win.knobHover) : win.control)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
@@ -1445,7 +1449,7 @@ FloatingWindow {
         property bool compactLabel: false   // with an icon: show just the icon (narrow window)
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: 8
-        color: primary ? (btnHover.hovered ? Qt.lighter(win.accent, 1.1) : win.accent)
+        color: primary ? win.accent
             : btnHover.hovered ? win.controlHover(win.controlHoverSolid) : win.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
@@ -1570,7 +1574,6 @@ FloatingWindow {
                     readonly property bool current: fontSetting.value === modelData
                     width: ListView.view.width; height: 36; radius: 8
                     color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (current || fontHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         text: parent.modelData
@@ -1899,14 +1902,13 @@ FloatingWindow {
                         readonly property bool chosen: index === ovPage.pick
                         width: parent.width; height: hitCol.implicitHeight + 18
                         radius: 9
-                        color: chosen ? win.divider : hitHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (chosen || hitHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
+                        color: chosen ? win.accent : hitHover.hovered ? Config.hover : "transparent"
                         Text {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                             text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
                             ChalkFace {}
-                            color: hitRow.chosen ? win.accent : win.dim
+                            color: hitRow.chosen ? win.accentText : win.dim
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
                         Column {
@@ -1916,7 +1918,7 @@ FloatingWindow {
                             Text {
                                 width: parent.width
                                 text: hitRow.modelData.label
-                                color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                color: hitRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                 elide: Text.ElideRight
                             }
                             Text {
@@ -1924,7 +1926,7 @@ FloatingWindow {
                                 text: (SettingsIndex.pageNames[hitRow.modelData.page] || "")
                                     + (hitRow.modelData.group && hitRow.modelData.group !== hitRow.modelData.label ? " → " + hitRow.modelData.group : "")
                                     + (hitRow.modelData.detail ? " · " + hitRow.modelData.detail : "")
-                                color: win.dim; font.family: win.font; font.pixelSize: 11
+                                color: hitRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
                         }
@@ -2204,7 +2206,7 @@ FloatingWindow {
                                             readonly property bool chosen: index === loc.pick
                                             width: parent.width; height: placeCol.implicitHeight + 14
                                             radius: 9
-                                            color: chosen ? win.divider : placeHover.hovered ? Config.hover : "transparent"
+                                            color: chosen ? win.accent : placeHover.hovered ? Config.hover : "transparent"
                                             Column {
                                                 id: placeCol
                                                 anchors { left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -2212,14 +2214,14 @@ FloatingWindow {
                                                 Text {
                                                     width: parent.width
                                                     text: placeRow.modelData.name
-                                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                                    color: placeRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                                     elide: Text.ElideRight
                                                 }
                                                 Text {
                                                     width: parent.width
                                                     visible: text !== ""
                                                     text: [placeRow.modelData.admin1, placeRow.modelData.country].filter(x => x).join(", ")
-                                                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                                                    color: placeRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
                                                     elide: Text.ElideRight
                                                 }
                                             }
@@ -4655,7 +4657,6 @@ FloatingWindow {
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : spotHover.hovered ? Config.hoverOn(win.divider) : win.divider
-                                Gloss { radius: parent.radius; opacity: (current || spotHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 HoverHandler { id: spotHover }
                                 ClickTap { onTapped: Config.s.notificationPosition = parent.modelData }
@@ -5173,9 +5174,7 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: 12
-                            color: on ? Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16) : shapeHover.hovered ? Config.hoverOn(win.well) : win.well
-                            Gloss { radius: parent.radius; opacity: (on || shapeHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
-                            border.width: on ? 2 : 0; border.color: win.accent
+                            color: on ? win.accent : shapeHover.hovered ? Config.hover : win.well
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
                             // in the icon's colour, and Tint app icons (and its strength); with glass,
@@ -5205,7 +5204,8 @@ FloatingWindow {
                             Text {
                                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
                                 text: shapeCard.modelData.label
-                                color: shapeCard.on ? win.text : win.dim
+                                color: shapeCard.on ? win.accentText : win.dim
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
                             }
                             HoverHandler { id: shapeHover }
@@ -5381,7 +5381,6 @@ FloatingWindow {
                                 required property string filePath
                                 width: dirList.width; height: 32; radius: 6
                                 color: dirHover.hovered ? Config.hover : "transparent"
-                                Gloss { radius: parent.radius; opacity: (dirHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                 Text {
                                     id: dirIcon
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
