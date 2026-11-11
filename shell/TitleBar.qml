@@ -338,7 +338,9 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(btn.modelData.glyph)
-                        visible: btnArea.containsMouse
+                        // (it comes in with the colour behind it, not ahead of it)
+                        opacity: btnArea.containsMouse ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                         color: Config.tint("#12151a")
                         font.family: tabler.name; font.pixelSize: Math.round(12 * tb.s)
                     }

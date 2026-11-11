@@ -238,6 +238,8 @@ Rectangle {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
                         color: closeHover.hovered ? card.textColor : card.dim
+                        // (with the fill behind it, not ahead of it)
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: card.bar.iconFont; font.pixelSize: 13
                     }
                     HoverHandler { id: closeHover }

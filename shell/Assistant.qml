@@ -356,6 +356,8 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
                         color: closeHover.hovered ? root.textColor : root.dimTextColor
+                        // (with the fill behind it, not ahead of it)
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: tabler.name; font.pixelSize: 18
                     }
                     HoverHandler { id: closeHover }

@@ -636,6 +636,8 @@ FloatingWindow {
                         anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         text: win.glyph(0xEB55)
                         color: pageFindClearHover.hovered ? win.text : win.dim
+                        // (with the fill behind it, not ahead of it)
+                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: win.bar.iconFont; font.pixelSize: 15
                         HoverHandler { id: pageFindClearHover }
                         ClickTap { onTapped: { pageFind.text = ""; pageFind.forceActiveFocus(); } }
@@ -1136,6 +1138,8 @@ FloatingWindow {
             anchors.centerIn: parent
             text: win.glyph(iconButton.icon)
             color: iconButtonHover.hovered ? win.text : win.dim
+            // (with the fill behind it, not ahead of it)
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             font.family: win.bar.iconFont; font.pixelSize: 18
         }
         HoverHandler { id: iconButtonHover }
@@ -1884,6 +1888,8 @@ FloatingWindow {
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     text: win.glyph(0xEB55)
                     color: clearHover.hovered ? win.text : win.dim
+                    // (with the fill behind it, not ahead of it)
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     font.family: win.bar.iconFont; font.pixelSize: 16
                     HoverHandler { id: clearHover }
                     ClickTap { onTapped: { findField.text = ""; findField.forceActiveFocus(); } }
