@@ -1894,106 +1894,139 @@ FloatingWindow {
                 }
             }
             Item { width: 1; height: 6 }
-            // Results, while searching
-            Text {
-                visible: findField.text.trim().length >= 2 && ovPage.found.length === 0
-                topPadding: 8; leftPadding: 4
-                text: "No settings match “" + findField.text.trim() + "”"
-                color: win.dim; font.family: win.font; font.pixelSize: 13
-            }
-            Group {
-                visible: ovPage.found.length > 0
-                Repeater {
-                    model: ovPage.found
-                    delegate: Rectangle {
-                        id: hitRow
-                        required property var modelData
-                        required property int index
-                        readonly property bool chosen: index === ovPage.pick
-                        width: parent.width; height: hitCol.implicitHeight + 18
-                        radius: 9
-                        color: chosen ? win.accent : hitHover.hovered ? Config.hover : "transparent"
+            // What's under the search box scrolls by itself (the results, or the tiles), so the
+            // box stays where it is: the page as a whole is made to fit, and never scrolls
+            Item {
+                width: parent.width
+                height: Math.max(160, scroller.height - 80)
+                Flickable {
+                    id: ovScroll
+                    anchors { fill: parent; rightMargin: contentHeight > height ? 18 : 0 }
+                    contentHeight: ovInner.implicitHeight + 8
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    SmoothWheel { flick: ovScroll }
+                    Column {
+                        id: ovInner
+                        width: ovScroll.width
+                        spacing: 4
+                        // Results, while searching
                         Text {
-                            id: hitIcon
-                            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                            text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
-                            color: hitRow.chosen ? win.accentText : win.dim
-                            font.family: win.bar.iconFont; font.pixelSize: 17
+                            visible: findField.text.trim().length >= 2 && ovPage.found.length === 0
+                            topPadding: 8; leftPadding: 4
+                            text: "No settings match “" + findField.text.trim() + "”"
+                            color: win.dim; font.family: win.font; font.pixelSize: 13
                         }
-                        Column {
-                            id: hitCol
-                            anchors { left: hitIcon.right; leftMargin: 12; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            spacing: 1
-                            Text {
-                                width: parent.width
-                                text: hitRow.modelData.label
-                                color: hitRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                width: parent.width
-                                text: (SettingsIndex.pageNames[hitRow.modelData.page] || "")
-                                    + (hitRow.modelData.group && hitRow.modelData.group !== hitRow.modelData.label ? " → " + hitRow.modelData.group : "")
-                                    + (hitRow.modelData.detail ? " · " + hitRow.modelData.detail : "")
-                                color: hitRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
-                                elide: Text.ElideRight
+                        Group {
+                            visible: ovPage.found.length > 0
+                            Repeater {
+                                model: ovPage.found
+                                delegate: Rectangle {
+                                    id: hitRow
+                                    required property var modelData
+                                    required property int index
+                                    readonly property bool chosen: index === ovPage.pick
+                                    width: parent.width; height: hitCol.implicitHeight + 18
+                                    radius: 9
+                                    color: chosen ? win.accent : hitHover.hovered ? Config.hover : "transparent"
+                                    Text {
+                                        id: hitIcon
+                                        anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                        text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
+                                        color: hitRow.chosen ? win.accentText : win.dim
+                                        font.family: win.bar.iconFont; font.pixelSize: 17
+                                    }
+                                    Column {
+                                        id: hitCol
+                                        anchors { left: hitIcon.right; leftMargin: 12; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                                        spacing: 1
+                                        Text {
+                                            width: parent.width
+                                            text: hitRow.modelData.label
+                                            color: hitRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: (SettingsIndex.pageNames[hitRow.modelData.page] || "")
+                                                + (hitRow.modelData.group && hitRow.modelData.group !== hitRow.modelData.label ? " → " + hitRow.modelData.group : "")
+                                                + (hitRow.modelData.detail ? " · " + hitRow.modelData.detail : "")
+                                            color: hitRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    HoverHandler { id: hitHover; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
+                                    ClickTap { onTapped: ovPage.open(hitRow.modelData) }
+                                }
                             }
                         }
-                        HoverHandler { id: hitHover; onHoveredChanged: if (hovered) ovPage.pick = hitRow.index }
-                        ClickTap { onTapped: ovPage.open(hitRow.modelData) }
+                        Flow {
+                            id: tiles
+                            visible: findField.text.trim().length < 2
+                            width: parent.width
+                            spacing: 10
+                            // Two or three across, filling the width
+                            readonly property int across: width >= 560 ? 3 : width >= 340 ? 2 : 1
+                            readonly property real tileW: (width - spacing * (across - 1)) / across
+                            Repeater {
+                                model: win.sections
+                                delegate: Rectangle {
+                                    id: tile
+                                    required property var modelData
+                                    width: tiles.tileW
+                                    height: 112
+                                    radius: 12
+                                    color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
+                                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                    Rectangle {
+                                        x: 14; y: 14
+                                        width: 34; height: 34; radius: 10
+                                        // The page's own colour when colourful, else the accent
+                                        readonly property color pc: Config.pageColour(tile.modelData.id)
+                                        color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: win.glyph(tile.modelData.icon)
+                                            color: parent.pc
+                                            font.family: win.bar.iconFont; font.pixelSize: 18
+                                        }
+                                    }
+                                    Column {
+                                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14; topMargin: 58 }
+                                        spacing: 2
+                                        Text {
+                                            width: parent.width
+                                            text: tile.modelData.label
+                                            color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: tile.modelData.about
+                                            color: win.dim; font.family: win.font; font.pixelSize: 11
+                                            wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight
+                                        }
+                                    }
+                                    HoverHandler { id: tileHover }
+                                    ClickTap { onTapped: win.section = tile.modelData.id }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            Flow {
-                id: tiles
-                visible: findField.text.trim().length < 2
-                width: parent.width
-                spacing: 10
-                // Two or three across, filling the width
-                readonly property int across: width >= 560 ? 3 : width >= 340 ? 2 : 1
-                readonly property real tileW: (width - spacing * (across - 1)) / across
-                Repeater {
-                    model: win.sections
-                    delegate: Rectangle {
-                        id: tile
-                        required property var modelData
-                        width: tiles.tileW
-                        height: 112
-                        radius: 12
-                        color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        Rectangle {
-                            x: 14; y: 14
-                            width: 34; height: 34; radius: 10
-                            // The page's own colour when colourful, else the accent
-                            readonly property color pc: Config.pageColour(tile.modelData.id)
-                            color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
-                            Text {
-                                anchors.centerIn: parent
-                                text: win.glyph(tile.modelData.icon)
-                                color: parent.pc
-                                font.family: win.bar.iconFont; font.pixelSize: 18
-                            }
-                        }
-                        Column {
-                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14; topMargin: 58 }
-                            spacing: 2
-                            Text {
-                                width: parent.width
-                                text: tile.modelData.label
-                                color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                width: parent.width
-                                text: tile.modelData.about
-                                color: win.dim; font.family: win.font; font.pixelSize: 11
-                                wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight
-                            }
-                        }
-                        HoverHandler { id: tileHover }
-                        ClickTap { onTapped: win.section = tile.modelData.id }
-                    }
+                ThinScrollbar {
+                    flick: ovScroll
+                    color: win.text
+                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right; bottomMargin: 8 }
+                }
+                ScrollShade {
+                    anchors { top: parent.top; left: parent.left; right: ovScroll.right }
+                    distance: ovScroll.contentY
+                }
+                ScrollShade {
+                    atBottom: true
+                    anchors { bottom: parent.bottom; left: parent.left; right: ovScroll.right }
+                    distance: ovScroll.contentHeight - ovScroll.height - ovScroll.contentY
                 }
             }
         }

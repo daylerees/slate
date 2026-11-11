@@ -46,3 +46,4 @@ things off as they're done.
 - To look into: without glass, every control whose solid fill is swapped for the muted hover (buttons, tiles, cards: `Config.hoverOn`) animates through a brighter colour as the pointer comes and goes. `HoverFill.qml` fixes it for the three placement pickers; the rest could use it too.
 - Position pickers (menu bar, dock): hovering and clicking an edge, including just beside it; needs a pointer in the test session.
 - The hand pointer over everything clickable (Config.handCursor) is kept (2026-11-11): tests for it; the lock and login screens don't have it.
+- All Settings: the search box stays put while the tiles or results scroll under it (needs a window short enough to scroll).
