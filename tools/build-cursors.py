@@ -8,7 +8,8 @@ redrawn without colour, so every cursor matches the white pointer.
 
 What changes (everything else is copied as it is):
   - the corner resize cursors' coloured quarter-circles become white, like the sides
-  - the loading spinner's four colours become four greys (so it still visibly turns)
+  - the loading spinner's four colours become four greys (so it still visibly turns), and it
+    keeps one hotspot through its frames (Bibata's alternates between two, which made it wobble)
   - the coloured badges (copy, not-allowed, link, help…) become dark grey, keeping their
     white symbols; the crosshair's red dot becomes black
 Both formats are written: hyprcursors/ (SVG, used by Hyprland) and cursors/ (XCursor
@@ -168,10 +169,18 @@ def main():
         meta = files.get("meta.hl", b"").decode()
         order = [m.group(1) for m in re.finditer(r"define_size\s*=\s*\d+\s*,\s*([^,\s]+\.svg)", meta)] or sorted(new)
         frames = read_xcursor(xc)
+        # An animated cursor keeps one hotspot through all its frames at a size (the one most
+        # of them have). Bibata's loading spinner alternates between two a pixel apart, and
+        # since a cursor is placed by its hotspot, the spinner shifted left and right as it turned
+        steady = {}
+        for nominal in {f[0] for f in frames}:
+            spots = [(f[3], f[4]) for f in frames if f[0] == nominal]
+            steady[nominal] = max(sorted(set(spots)), key=spots.count)
         seen, images = {}, []
         for nominal, w, h, xh, yh, delay in frames:
             i = seen.get(nominal, 0)
             seen[nominal] = i + 1
+            xh, yh = steady[nominal]
             images.append((nominal, render(new[order[i % len(order)]], w, h), xh, yh, delay))
         write_xcursor(xc, images)
 

@@ -7,7 +7,9 @@ the white pointer.
 ## Changes from Bibata Modern Ice
 
 - The corner resize cursors' coloured quarter-circles are white, like the side ones.
-- The loading spinner's four colours are four greys.
+- The loading spinner's four colours are four greys, and it keeps one hotspot through all its
+  frames (Bibata's alternates between two a pixel apart, which made it shift left and right
+  as it turned).
 - The coloured badges (copy, not-allowed, link, help, context menu…) are dark grey, with
   their white symbols; the crosshair's red dot is black.
 - The diagonal double-arrow names (`nwse-resize`, `size_fdiag`, `nesw-resize`, `size_bdiag`)
