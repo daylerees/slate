@@ -277,6 +277,36 @@ PanelWindow {
         return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + (h > 0 || d > 0 ? h + " h " : "") + m + " min";
     }
 
+    // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
+    readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
+    // What's on the line besides the title: how much room the fixed things take, and how many
+    // things there are (flexible spaces included). The line (a Grid) leaves a gap between every
+    // two things it shows and passes over anything with no size, so an empty title has no gap
+    // of its own; a flexible space always keeps a sliver of size, so it always has its two.
+    // (The title's size isn't read here: how long it may be depends on this)
+    readonly property real lineOthers: {
+        let sum = 0;
+        for (const c of left.children)
+            if (c.visible && !c.isSpace && c !== titleSlotTop) sum += vert ? c.height : c.width;
+        return sum;
+    }
+    readonly property int lineOthersCount: {
+        let n = 0;
+        for (const c of left.children)
+            if (c.visible && c !== titleSlotTop && (c.isSpace || (vert ? c.height : c.width) > 0)) n++;
+        return n;
+    }
+    readonly property int lineSpaces: { let n = 0; for (const c of left.children) if (c.isSpace) n++; return n; }
+    // What the title could have: everything the others don't need, a gap before or after each
+    readonly property real lineFixed: lineOthers + gap * lineOthersCount
+    // What each flexible space gets: an equal share of what's left once the title has its own
+    readonly property real flex: {
+        if (lineSpaces === 0) return 0;
+        const title = titleSlotTop.visible && titleSlotTop.parent === left ? (vert ? titleSlotTop.height : titleSlotTop.width) : 0;
+        const gaps = gap * Math.max(0, lineOthersCount - 1 + (title > 0 ? 1 : 0));
+        return Math.max(0, (lineLength - lineOthers - title - gaps) / lineSpaces);
+    }
+
     // ---- Drawing -----------------------------------------------------------
     Item {
         id: content
@@ -325,9 +355,10 @@ PanelWindow {
                     onClicked: m => {
                         const onItem = row => {
                             const p = mapToItem(row, m.x, m.y);
-                            return row.contains(p) && row.childAt(p.x, p.y) !== null;
+                            const c = row.childAt(p.x, p.y);
+                            return row.contains(p) && c !== null && !c.isSpace;       // (a flexible space is empty bar)
                         };
-                        if (!onItem(left) && !onItem(right) && bar.popouts) bar.popouts.close();
+                        if (!onItem(left) && bar.popouts) bar.popouts.close();
                     }
                 }
             }
@@ -369,7 +400,15 @@ PanelWindow {
         }
         // (Rounded screen corners: ScreenCorners.qml draws all four, over the bar)
 
-        // ---- Left side ---------------------------------------------------
+        // ---- The line of things along the bar ------------------------------
+        // One line, in the order Config.barLayout gives (Settings → Menu Bar): containers, the
+        // active window (titleSlotTop) and flexible spaces, which share whatever room is left.
+        // Everything on the bar is written out once below, as it always was; arrange() only
+        // decides which of them are on the line and in what order, by handing each to the line
+        // in turn (anything not in the arrangement waits, unseen, in `parked`). So the bar
+        // looks exactly as it did: Slate's own arrangement is the old left group, the title,
+        // one flexible space, and the old right group.
+        Component { id: flexSpace; Item { readonly property bool isSpace: true; width: bar.vert ? 1 : Math.max(0.01, bar.flex); height: bar.vert ? Math.max(0.01, bar.flex) : 1 } }
         BarLine {
             id: left
             opacity: bar.dimmed ? 0.4 : 1
@@ -379,6 +418,43 @@ PanelWindow {
             verticalItemAlignment: Grid.AlignVCenter
             x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding
             y: bar.vert ? bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
+
+            // The things that can be on the line, by the first item of the container they are
+            // (for now each of today's containers moves as one piece)
+            readonly property var pieces: ({ control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn,
+                                             windowmode: wsCap, workspaces: wsCap, tray: trayCapsule,
+                                             clock: clockCap, power: powerBtn })
+            property var spaces: []            // the flexible spaces made for this arrangement
+            function piece(entry) {
+                if (entry === "title") return titleSlotTop;
+                if (!entry || !entry.items || entry.items.length === 0) return null;
+                const id = entry.items[0];
+                return Config.barStatusItems.indexOf(id) >= 0 ? status : (pieces[id] || null);
+            }
+            // Put the line in the order the arrangement gives. A thing joins the end of the
+            // line as it's handed over, so: everything off, then each back on in its turn
+            function arrange() {
+                let order = Config.barLayout.slice();
+                // A left bar's title reads upwards, growing up from where it sits: where it's
+                // followed by a flexible space (Slate's own arrangement), it goes after the
+                // space instead, down by what comes next
+                if (bar.vert && !bar.atRight) {
+                    const t = order.indexOf("title");
+                    if (t >= 0 && order[t + 1] === "space") { order[t] = "space"; order[t + 1] = "title"; }
+                }
+                for (const sp of spaces) sp.destroy();
+                const made = [], placed = [];
+                for (const c of [flameBtn, appsBtn, spacesBtn, chalkBtn, wsCap, titleSlotTop, trayCapsule, status, clockCap, powerBtn]) c.parent = parked;
+                for (const entry of order) {
+                    if (entry === "space") { made.push(flexSpace.createObject(left)); continue; }
+                    const p = piece(entry);
+                    if (p && placed.indexOf(p) < 0) { placed.push(p); p.parent = left; }
+                }
+                spaces = made;
+            }
+            Component.onCompleted: arrange()
+            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } }
+            Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
             // Control centre: Slate's mark (a slab of slate, accent along its top edge)
             Capsule {
@@ -402,6 +478,7 @@ PanelWindow {
             }
             // Apps: three soft rounded bars
             Capsule {
+                id: appsBtn
                 visible: Config.s.barShowApps
                 length: bar.capsuleHeight + 8
                 hoverText: "Apps"
@@ -605,29 +682,27 @@ PanelWindow {
             // Placeholder for the title area (it moves to the bottom group on a left bar)
             Item {
                 id: titleSlotTop
-                visible: titleArea.parent === titleSlotTop && Config.s.barShowTitle
+                visible: Config.s.barShowTitle
                 width: childrenRect.width; height: childrenRect.height
             }
             BarLine {
                 id: titleArea
-                // On a left bar the title reads upwards, so it sits at the bottom, just above
-                // the tray, and grows up from there
-                parent: bar.vert && !bar.atRight ? titleSlotBottom : titleSlotTop
+                // (On a left bar the title reads upwards, so in Slate's own arrangement it sits
+                // at the bottom, just above the tray, and grows up from there: arrange() puts it
+                // after the flexible space there)
+                parent: titleSlotTop
                 visible: Config.s.barShowTitle
                 spacing: bar.gap
                 horizontalItemAlignment: Grid.AlignHCenter
                 verticalItemAlignment: Grid.AlignVCenter
                 readonly property var s: bar.shownItem
-                // Room for the title before the right-hand group (with a gap), when the title
-                // sits at the end of the left group: a long title stops there and fades out
-                // rather than running under the status icons. (On a left bar it sits in the
-                // right group's own end, where there's nothing to run into: no limit.)
+                // Room for the title: what the line has left once everything else on it has
+                // what it needs (the gaps between them included). A long title stops there and
+                // fades out rather than running under whatever comes next
                 readonly property real room: {
-                    if (parent !== titleSlotTop) return Infinity;
-                    const start = bar.vert ? left.y + titleSlotTop.y : left.x + titleSlotTop.x;
-                    const end = bar.vert ? right.y : right.x;
-                    const icon = tileSlotStart.visible ? (bar.vert ? tileSlotStart.height : tileSlotStart.width) + spacing : 0;
-                    return Math.max(0, end - start - icon - 2 * bar.gap);
+                    const tile = tileSlotStart.visible ? tileSlotStart : tileSlotEnd.visible ? tileSlotEnd : null;
+                    const icon = tile ? (bar.vert ? tile.height : tile.width) + spacing : 0;
+                    return Math.max(0, bar.lineLength - bar.lineFixed - icon);
                 }
 
                 // The icon's place before the title (or, on a left bar, after it). It goes by whether
@@ -755,31 +830,13 @@ PanelWindow {
             }
         }
 
-        // ---- Right side --------------------------------------------------
-        BarLine {
-            id: right
-            opacity: bar.dimmed ? 0.4 : 1
-            Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
-            spacing: bar.gap
-            horizontalItemAlignment: Grid.AlignHCenter
-            verticalItemAlignment: Grid.AlignVCenter
-            // Placed by the edge of what's actually shown: the grid's own size can include spacing
-            // for hidden items, and so can childrenRect, which counts hidden items too, where
-            // they last were (hiding the power button left its space at the end of the bar)
-            readonly property real shownEnd: {
-                let e = 0;
-                for (const c of children) if (c.visible) e = Math.max(e, bar.vert ? c.y + c.height : c.x + c.width);
-                return e;
-            }
-            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : parent.width - shownEnd - bar.sidePadding
-            y: bar.vert ? parent.height - shownEnd - bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
-
-            // The title area on a left bar (see titleSlotTop)
-            Item {
-                id: titleSlotBottom
-                visible: titleArea.parent === titleSlotBottom && Config.s.barShowTitle
-                width: childrenRect.width; height: childrenRect.height
-            }
+        // ---- The rest of what can go on the line ---------------------------------
+        // Written out here (it used to be the right-hand group, laid out from the bar's far
+        // end); arrange() hands each to the line above in its turn. Whatever isn't in the
+        // arrangement stays here, unseen
+        Item {
+            id: parked
+            visible: false
 
             // Tray. Collapsed (Settings → Menu Bar): one button that slides open to show the icons,
             // and closes again a few seconds after the pointer leaves (or when clicked)

@@ -125,6 +125,40 @@ Singleton {
         return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
     }
 
+    // ---- The menu bar's arrangement (Bar.qml draws it; Settings → Menu Bar changes it) -------
+    // Slate's own: the buttons, the active window, a flexible space, then the tray, the status
+    // icons, the clock and the power button. The bar as it has always been
+    readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
+    readonly property var barLayoutDefault: [
+        { items: ["control"] }, { items: ["apps"] }, { items: ["spaces"] }, { items: ["chalk"] },
+        { items: ["windowmode", "workspaces"] },
+        "title", "space",
+        { items: ["tray"] }, { items: barStatusItems }, { items: ["clock"] }, { items: ["power"] }
+    ]
+    // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
+    // container with nothing left in it dropped), or Slate's own when there's none
+    readonly property var barLayout: {
+        const saved = s.barLayout;
+        if (!saved || saved.length === undefined || saved.length === 0) return barLayoutDefault;
+        const known = ["control", "apps", "spaces", "chalk", "windowmode", "workspaces", "tray", "clock", "power"].concat(barStatusItems);
+        const seen = {}, out = [];
+        let title = false;
+        for (let i = 0; i < saved.length; i++) {
+            const e = saved[i];
+            if (e === "space") out.push("space");
+            else if (e === "title") { if (!title) { title = true; out.push("title"); } }
+            else if (e && e.items && e.items.length !== undefined) {
+                const items = [];
+                for (let j = 0; j < e.items.length; j++) {
+                    const id = String(e.items[j]);
+                    if (known.indexOf(id) >= 0 && !seen[id]) { seen[id] = true; items.push(id); }
+                }
+                if (items.length > 0) out.push({ items: items, tuck: !!e.tuck, tuckIcon: String(e.tuckIcon || ""), tuckFrom: e.tuckFrom === "start" ? "start" : e.tuckFrom === "end" ? "end" : "" });
+            }
+        }
+        return out.length > 0 ? out : barLayoutDefault;
+    }
+
     // ---- Shadows (Shadow.qml, and Hyprland's under floating windows) ------------------------
     // One colour for every shadow: still dark, with a light tint of the theme. The hue is the
     // wallpaper's when Tint from wallpaper is on, Slate's own blue-grey otherwise; never

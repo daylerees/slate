@@ -113,6 +113,11 @@ JsonAdapter {
     // Bar
     property string barPosition: "top"        // top, bottom, left or right
     property string dockPosition: "bottom"    // bottom, top, left or right (never the bar's edge)
+    // What's on the bar and in what order (Settings → Menu Bar, by dragging on the bar itself):
+    // a list, along the bar, of containers ({ items: [ids], tuck?, tuckIcon?, tuckFrom? }),
+    // "title" (the active window, bare) and "space" (a flexible space). [] = Slate's own
+    // arrangement (Config.barLayoutDefault). See plans/menu-bar-layout.md
+    property var barLayout: []
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
