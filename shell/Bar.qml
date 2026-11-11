@@ -42,6 +42,7 @@ PanelWindow {
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
+    readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color dimColor: Config.tint("#c5ccd6")
     readonly property color accent: Config.accent
     readonly property color errorColor: Config.tint("#f28b8b")
@@ -144,7 +145,7 @@ PanelWindow {
     // Reserved space follows the bar: while auto-hiding, windows get the whole screen, and when
     // the bar slides in they're pushed aside to make room (and grow back when it leaves)
     property real zoneReveal: reveal
-    property real reveal: !movingOut && (!autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible) ? 1 : 0
+    property real reveal: !movingOut && (!autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible || Config.barArranging) ? 1 : 0
     Behavior on zoneReveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
     // (quicker out when it's moving to another edge)
     Behavior on reveal { NumberAnimation { duration: Config.ms(bar.movingOut ? 300 : bar.slideMs); easing.type: Easing.InOutCubic } }
@@ -277,6 +278,7 @@ PanelWindow {
         return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + (h > 0 || d > 0 ? h + " h " : "") + m + " min";
     }
 
+    property int titleIndex: -1            // the title's place in the arrangement
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
     readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
     // What's on the line besides the title: how much room the fixed things take, and how many
@@ -410,7 +412,33 @@ PanelWindow {
         // one flexible space, and the old right group.
         Component { id: boxComp; Container {} }
         Component { id: sepComp; Separator {} }
-        Component { id: flexSpace; Item { readonly property bool isSpace: true; width: bar.vert ? 1 : Math.max(0.01, bar.flex); height: bar.vert ? Math.max(0.01, bar.flex) : 1 } }
+        // A flexible space: nothing but room on the ordinary bar. While arranging, an outlined
+        // gap wide enough to pick up, with arrows in it
+        Component {
+            id: flexSpace
+            Item {
+                id: sp
+                readonly property bool isSpace: true
+                property int index: -1
+                readonly property real len: Math.max(Config.barArranging ? 26 : 0.01, bar.flex)
+                width: bar.vert ? (Config.barArranging ? bar.capsuleHeight : 1) : len
+                height: bar.vert ? len : (Config.barArranging ? bar.capsuleHeight : 1)
+                Rectangle {
+                    visible: Config.barArranging
+                    anchors.fill: parent
+                    radius: bar.capsuleRadius
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    Text {
+                        anchors.centerIn: parent
+                        text: bar.glyph(bar.vert ? 0xEB5B : 0xEB59)
+                        color: bar.dimTextColor
+                        font.family: bar.iconFont; font.pixelSize: 14
+                    }
+                }
+            }
+        }
         BarLine {
             id: left
             opacity: bar.dimmed ? 0.4 : 1
@@ -432,23 +460,25 @@ PanelWindow {
             // Things join the end of a line as they're handed over, so: everything off first
             // (anything the arrangement leaves out stays off, unseen), then each on in its turn
             function arrange() {
-                let order = Config.barLayout.slice();
+                // (each with its place in the arrangement, which is what a change is made by)
+                let order = Config.barLayout.map((entry, at) => ({ entry: entry, at: at }));
                 // A left bar's title reads upwards, growing up from where it sits: where it's
                 // followed by a flexible space (Slate's own arrangement), it goes after the
                 // space instead, down by what comes next
                 if (bar.vert && !bar.atRight) {
-                    const t = order.indexOf("title");
-                    if (t >= 0 && order[t + 1] === "space") { order[t] = "space"; order[t + 1] = "title"; }
+                    const t = order.findIndex(o => o.entry === "title");
+                    if (t >= 0 && order[t + 1] && order[t + 1].entry === "space") { const o = order[t]; order[t] = order[t + 1]; order[t + 1] = o; }
                 }
-                for (const name in things) { things[name].shell = null; things[name].parent = parked; }
+                for (const name in things) { things[name].shell = null; things[name].name = name; things[name].parent = parked; }
                 titleSlotTop.parent = parked;
                 for (const m of made) m.destroy();
                 const fresh = [];
-                for (const entry of order) {
-                    if (entry === "space") fresh.push(flexSpace.createObject(left));
-                    else if (entry === "title") titleSlotTop.parent = left;
+                for (const o of order) {
+                    const entry = o.entry;
+                    if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
+                    else if (entry === "title") { bar.titleIndex = o.at; titleSlotTop.parent = left; }
                     else {
-                        const box = boxComp.createObject(left, { tuck: !!entry.tuck, tuckFrom: entry.tuckFrom || "" });
+                        const box = boxComp.createObject(left, { index: o.at, tuck: !!entry.tuck, tuckFrom: entry.tuckFrom || "" });
                         if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
                         box.fill(entry.items.map(id => things[id]).filter(t => !!t));
                         fresh.push(box);
@@ -467,6 +497,25 @@ PanelWindow {
                 id: titleSlotTop
                 visible: Config.s.barShowTitle
                 width: childrenRect.width; height: childrenRect.height
+                // While arranging: outlined, and with no window to name, a stand-in to pick up
+                Rectangle {
+                    visible: Config.barArranging
+                    // (no size when it isn't showing: the slot's size counts hidden things too)
+                    width: !Config.barArranging ? 0 : bar.vert ? bar.capsuleHeight : Math.max(titleArea.width + 8, standIn.implicitWidth + 20)
+                    height: !Config.barArranging ? 0 : bar.vert ? Math.max(titleArea.height + 8, 60) : bar.capsuleHeight
+                    radius: bar.capsuleRadius
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    Text {
+                        id: standIn
+                        visible: !bar.vert && titleArea.width < 2
+                        anchors.centerIn: parent
+                        text: "Active window"
+                        color: bar.dimTextColor
+                        font.family: bar.fontFamily; font.pixelSize: bar.fontSize; font.weight: Font.Medium
+                    }
+                }
             }
             BarLine {
                 id: titleArea
@@ -611,6 +660,128 @@ PanelWindow {
                 }
                 Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.wanted; width: appTile.width; height: appTile.height }
             }
+        }
+
+        // ---- Arranging: dragging things about on the bar itself --------------------------
+        // While Settings → Menu Bar is open (Config.barArranging), one area lies over the whole
+        // line, so nothing under it does its usual thing: a press picks something up. An item
+        // inside a container is picked up by itself; a container by its gripper, and a
+        // flexible space or the title anywhere, as a whole. Dropped on a container (not at its
+        // very ends) an item joins it there; dropped anywhere else, whatever it is goes into the
+        // gap, an item in a container of its own. A press without a drag picks the container,
+        // for its options on the page. It works by where things are along the line, and tells
+        // Config what moved (barMoveItem, barMoveEntry), which redraws the line. Silent while
+        // dragging, a click on the drop, as everywhere.
+        MouseArea {
+            id: arranger
+            anchors.fill: parent
+            visible: Config.barArranging
+            z: 5
+            preventStealing: true
+            property var held: null            // { kind: "item" | "entry", name, index, obj, box }
+            property bool moved: false
+            property real from: 0
+            property real at: 0                // where the pointer is, along the line
+            property var target: null          // { join, to, slot, at }
+            function along(p) { return bar.vert ? p.y : p.x; }
+            // What's showing on the line, in order, with where each starts and ends along it
+            function onLine() {
+                const out = [];
+                for (const c of left.children) {
+                    if (!c.visible) continue;
+                    const a = bar.vert ? c.y : c.x, b = a + (bar.vert ? c.height : c.width);
+                    if (c.isSpace) out.push({ kind: "space", obj: c, index: c.index, a0: a, a1: b });
+                    else if (c === titleSlotTop) out.push({ kind: "title", obj: c, index: bar.titleIndex, a0: a, a1: b });
+                    else if (c.isBox) out.push({ kind: "box", obj: c, index: c.index, a0: a, a1: b });
+                }
+                return out;
+            }
+            // A container's showing items, the same way
+            function cellsOf(box) {
+                const out = [];
+                for (const c of box.row.children) {
+                    if (!c.visible || !c.name) continue;
+                    const p = c.mapToItem(left, 0, 0), a = bar.vert ? p.y : p.x;
+                    out.push({ cell: c, a0: a, a1: a + (bar.vert ? c.height : c.width) });
+                }
+                return out;
+            }
+            function pick(a) {
+                for (const e of onLine()) {
+                    if (a < e.a0 || a > e.a1) continue;
+                    if (e.kind !== "box") return { kind: "entry", index: e.index, obj: e.obj, box: false };
+                    if (a - e.a0 > e.obj.grip + 1)
+                        for (const c of cellsOf(e.obj))
+                            if (a >= c.a0 && a <= c.a1) return { kind: "item", name: c.cell.name, index: e.index, obj: c.cell, box: true };
+                    return { kind: "entry", index: e.index, obj: e.obj, box: true };
+                }
+                return null;
+            }
+            function aim(a) {
+                const line = onLine();
+                if (held.kind === "item") {
+                    for (const e of line) {
+                        if (e.kind !== "box" || a < e.a0 + 7 || a > e.a1 - 7) continue;
+                        const cells = cellsOf(e.obj), items = Config.barLayout[e.index].items;
+                        const k = cells.findIndex(c => (c.a0 + c.a1) / 2 > a);
+                        const last = cells.length > 0 ? cells[cells.length - 1] : null;
+                        return k >= 0 ? { join: true, to: e.index, slot: items.indexOf(cells[k].cell.name), at: cells[k].a0 }
+                            : { join: true, to: e.index, slot: last ? items.indexOf(last.cell.name) + 1 : items.length, at: last ? last.a1 : e.a1 };
+                    }
+                }
+                const k = line.findIndex(e => (e.a0 + e.a1) / 2 > a);
+                if (k >= 0) return { join: false, to: line[k].index, slot: -1, at: line[k].a0 - bar.gap / 2 };
+                const end = line.length > 0 ? line[line.length - 1] : null;
+                return { join: false, to: Config.barLayout.length, slot: -1, at: end ? end.a1 + bar.gap / 2 : 0 };
+            }
+            onPressed: m => {
+                const a = along(mapToItem(left, m.x, m.y));
+                held = pick(a); from = a; at = a; moved = false; target = null;
+            }
+            onPositionChanged: m => {
+                if (!held) return;
+                at = along(mapToItem(left, m.x, m.y));
+                if (!moved && Math.abs(at - from) > 5) moved = true;
+                if (moved) target = aim(at);
+            }
+            onReleased: {
+                const h = held, t = target, dragged = moved;
+                held = null; target = null; moved = false;
+                if (!h) { Config.barSelected = -1; return; }
+                if (!dragged) {              // a press, not a drag: pick this container (or let go of it)
+                    Config.barSelected = Config.barSelected !== h.index ? h.index : -1;
+                    Config.click();
+                    return;
+                }
+                if (!t) return;
+                if (h.kind === "item") Config.barMoveItem(h.name, t.to, t.join ? t.slot : -1);
+                else Config.barMoveEntry(h.index, t.to);
+                Config.click();
+            }
+            onCanceled: { held = null; target = null; moved = false; }
+        }
+        // Where it will land: a line in the accent colour
+        Rectangle {
+            visible: !!arranger.target
+            z: 6
+            readonly property real along: arranger.target ? arranger.target.at : 0
+            x: bar.vert ? left.x : left.x + along - 1
+            y: bar.vert ? left.y + along - 1 : left.y
+            width: bar.vert ? bar.capsuleHeight : 2
+            height: bar.vert ? 2 : bar.capsuleHeight
+            radius: 1
+            color: bar.accent
+        }
+        // What's being carried, under the pointer
+        ShaderEffectSource {
+            visible: arranger.moved && !!arranger.held
+            z: 7
+            sourceItem: arranger.held ? arranger.held.obj : null
+            opacity: 0.85
+            width: sourceItem ? sourceItem.width : 0
+            height: sourceItem ? sourceItem.height : 0
+            x: bar.vert ? left.x : left.x + arranger.at - width / 2
+            y: bar.vert ? left.y + arranger.at - height / 2 : left.y
         }
 
         // ---- Everything that can go in a container ---------------------------------
@@ -1159,6 +1330,7 @@ PanelWindow {
     component Segment: Item {
         id: seg
         property Item shell: null
+        property string name: ""                // what it's called in the arrangement (set as it's placed)
         property bool wanted: true
         property bool isToggle: false           // a container's open/close button (it doesn't fade with the rest)
         property bool hover: true               // false: its parts have hover fills of their own
@@ -1246,7 +1418,31 @@ PanelWindow {
     // them open, closing again a few seconds after the pointer leaves (or when clicked).
     component Container: Capsule {
         id: box
+        readonly property bool isBox: true
+        property int index: -1                  // its place in the arrangement
         property var cells: []                  // its things, in order
+        // Being arranged (Settings → Menu Bar is open): outlined, brighter when it's the one
+        // picked, with a gripper at its start to move it whole by. Only then: the ordinary bar
+        // has neither
+        readonly property real grip: Config.barArranging ? 14 : 0
+        // (an outline of its own, not the shape's border: giving the shape a border, even of
+        // no width, changed how its edge was drawn by a few pixels)
+        Rectangle {
+            visible: Config.barArranging
+            anchors.fill: parent
+            radius: parent.radius
+            color: "transparent"
+            border.width: 1
+            border.color: Config.barSelected === box.index ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+        }
+        Text {
+            visible: Config.barArranging
+            x: bar.vert ? (parent.width - width) / 2 : (box.grip - width) / 2 + 1
+            y: bar.vert ? (box.grip - height) / 2 + 1 : (parent.height - height) / 2
+            text: bar.glyph(bar.vert ? 0xEC00 : 0xEC01)
+            color: Config.barSelected === box.index ? bar.accent : bar.dimTextColor
+            font.family: bar.iconFont; font.pixelSize: 13
+        }
         property bool tuck: false
         property string tuckFrom: ""            // "start": the button first, the things after it; else last
         property int tuckIcon: 0xEC38
@@ -1266,7 +1462,7 @@ PanelWindow {
         visible: cells.some(c => c.wanted)
         readonly property real fullLength: bar.vert ? row.height : row.width
         readonly property real closedLength: bar.vert ? toggle.height : toggle.width
-        length: tuck ? closedLength + (fullLength - closedLength) * openness : fullLength
+        length: (tuck ? closedLength + (fullLength - closedLength) * openness : fullLength) + grip
         clip: tuck
         HoverHandler { onHoveredChanged: if (hovered) closing.stop(); else if (box.expanded) closing.restart() }
         // Stays open while one of its panels is open
@@ -1274,9 +1470,10 @@ PanelWindow {
         BarLine {
             id: row
             // Held at the end with the button, so the things slide out from it
-            x: bar.vert || box.tuckFrom === "start" ? 0 : parent.width - width
-            y: !bar.vert || box.tuckFrom === "start" ? 0 : parent.height - height
+            x: bar.vert ? 0 : box.tuckFrom === "start" ? box.grip : parent.width - width
+            y: !bar.vert ? 0 : box.tuckFrom === "start" ? box.grip : parent.height - height
         }
+        property alias row: row
         // The button that opens and closes it (while it tucks)
         Segment {
             id: toggle

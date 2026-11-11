@@ -121,6 +121,11 @@ FloatingWindow {
     function minuteOptions(list) { return list.map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") })); }
 
     property string section: "overview"
+    // While the Menu Bar page is showing, the bar itself is being arranged: its things can be
+    // dragged about (Bar.qml), and the page shows the pool and the picked container's options
+    readonly property bool arrangingBar: visible && section === "bar"
+    onArrangingBarChanged: Config.barArranging = arrangingBar
+    Component.onDestruction: Config.barArranging = false
     readonly property int scrolledTo: Math.round(scroller.contentY)   // (tests: the "test" IPC)
 
     // ---- Back where it was after Slate reloads or restarts ----------------
@@ -2291,8 +2296,78 @@ FloatingWindow {
     Component {
         id: barPage
         Column {
+            id: barPane
             spacing: 4
             PageTitle { text: "Menu Bar" }
+            // ---- Arranging the bar: while this page is open, the bar itself can be dragged
+            // about (Bar.qml). Here: what isn't on it (the pool), and the picked container
+            readonly property var pool: Config.barItems.filter(i => !Config.s[i.key])
+            readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
+            readonly property bool pickedBox: !!picked && typeof picked !== "string"
+            IntroText {
+                text: "While this page is open, you can arrange the menu bar itself. Drag anything on it to another place: onto a container to join it, "
+                    + "or between two for a container of its own. Drag a container by its gripper to move it whole. Nothing on the bar opens while you're here."
+            }
+            GroupLabel { text: "Not on the bar" }
+            Group {
+                SettingRow {
+                    label: barPane.pool.length === 0 && Config.s.barShowTitle ? "Everything's on the bar" : "Put back on the bar"
+                    detail: barPane.pool.length === 0 && Config.s.barShowTitle ? "Things you take off the bar wait here. Click one to put it back where it was"
+                        : "Click one to put it back where it was, then drag it where you'd like it"
+                }
+                Flow {
+                    x: 16; width: parent.width - 32
+                    bottomPadding: 12
+                    spacing: 8
+                    visible: barPane.pool.length > 0 || !Config.s.barShowTitle
+                    Repeater {
+                        model: barPane.pool
+                        Button {
+                            required property var modelData
+                            icon: modelData.icon; label: modelData.label
+                            onClicked: Config.barSetShown(modelData.id, true)
+                        }
+                    }
+                    Button { visible: !Config.s.barShowTitle; icon: 0xEFE6; label: "Active window"; onClicked: Config.barSetShown("title", true) }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Flexible space"
+                    detail: "Takes up the spare room, pushing what's either side of it apart. Add as many as you like; they share the room between them"
+                    Button { icon: 0xEB59; label: "Add one"; onClicked: Config.barAddSpace(Config.barLayout.length) }
+                }
+            }
+            GroupLabel { text: "The container you've picked" }
+            Group {
+                SettingRow {
+                    visible: !barPane.picked
+                    label: "Nothing picked"
+                    detail: "Click a container, a flexible space or the active window on the bar to pick it"
+                }
+                SettingRow {
+                    visible: !!barPane.picked && !barPane.pickedBox
+                    label: barPane.picked === "space" ? "A flexible space" : "The active window"
+                    detail: barPane.picked === "space" ? "Take it away and what it was holding apart closes up" : "The focused window's icon and title. Take it off the bar and it waits above"
+                    Button { label: barPane.picked === "space" ? "Take away" : "Take off the bar"; destructive: true; onClicked: Config.barRemoveEntry(Config.barSelected) }
+                }
+                SettingRow {
+                    visible: barPane.pickedBox
+                    label: barPane.pickedBox ? barPane.picked.items.map(id => (Config.barItem(id) || { label: id }).label).join(", ") : ""
+                    detail: "Take it off the bar and its things wait above. Split it up and each gets a container of its own"
+                    Row {
+                        spacing: 8
+                        Button { visible: barPane.pickedBox && barPane.picked.items.length > 1; label: "Split up"; onClicked: Config.barSplit(Config.barSelected) }
+                        Button { label: "Take off the bar"; destructive: true; onClicked: Config.barRemoveEntry(Config.barSelected) }
+                    }
+                }
+                Separator { visible: barPane.pickedBox && barPane.picked.items.length > 1 }
+                SettingRow {
+                    visible: barPane.pickedBox && barPane.picked.items.length > 1
+                    label: "Tuck away"
+                    detail: "Its things hide behind one button that slides them open, and close again a few seconds after the pointer leaves"
+                    Toggle { checked: barPane.pickedBox && !!barPane.picked.tuck; onToggled: v => Config.barSetTuck(Config.barSelected, v) }
+                }
+            }
             GroupLabel { text: "Position & behaviour" }
             Group {
                 SettingRow {

@@ -256,9 +256,35 @@ icons in it, tuck-away, hover descriptions.
   icon still only shows when the dots do (`barShowWindowMode && barShowWorkspaces`), as it
   always did. Dayle hasn't answered whether they should be separable; they are.
 
+**Stage 3a and 3b, built 2026-11-12, for Dayle to try by hand (no tests yet, at his
+asking: "we'll run the tests at the end after I've manually tested"):**
+
+- **Arrange mode is on while Settings shows the Menu Bar page** (`win.arrangingBar` →
+  `Config.barArranging`). The bar stays out (no auto-hide) while it is.
+- **On the bar** (`Bar.qml`): every container outlined with a gripper at its start (it's 14 px
+  longer while arranging), flexible spaces outlined with arrows and wide enough to hold,
+  the title outlined (a stand-in reading "Active window" when no window is focused). One
+  `MouseArea` (`arranger`) lies over the line and works by where things are along it:
+  `onLine()`, `cellsOf(box)`, `pick(a)`, `aim(a)`. An accent line shows where a thing will
+  land and a ghost of it follows the pointer. A press without a drag picks the thing
+  (`Config.barSelected`).
+- **On the page** (`barPage` in `SettingsWindow.qml`): what to do; **Not on the bar** (items
+  whose switch is off, clicked to put back; **Add one** for a flexible space, which lands at
+  the end to be dragged into place); **The container you've picked** (Split up, Take off the
+  bar, Tuck away; a picked flexible space or the title can be taken off too).
+- Seen in the container's screenshot of the page: outlines, grippers, the space and the pool
+  draw as meant, and the ordinary bar (page closed) still matches the approved picture.
+  **Not tried**: an actual drag (the test session has no pointer). That's what Dayle is
+  testing.
+- Known gaps: the grippers and the outline of the title only read well on a top or bottom
+  bar (side bars untested); a left bar's swapped title and space aren't allowed for when
+  working out where a drop goes; the container that's picked stays picked by its place, so
+  it's let go of after every move.
+
 ## Next
 
-**Stage 3a: dragging on the bar** (not started beyond the groundwork). What I'd worked out:
+**Stage 3a's remaining part: the test hook and live tests** (below, step 5), once Dayle is
+happy with how it behaves. What I'd worked out for 3a, for reference:
 
 1. **Switch arrange mode on**: the Settings window sets `Config.barArranging` to "visible and
    on the Menu Bar page" (`win.section === "bar"`), and clears it when hidden.
