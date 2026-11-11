@@ -28,7 +28,8 @@ PanelWindow {
     readonly property real panelWidth: Math.max(300, Math.min(560, width - 32))
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18
-    readonly property color barColor: Config.surface(Config.tint("#0f1216"))
+    // (at its own opacity with glass: Settings → Assistant → Glass)
+    readonly property color barColor: Config.assistantSurface(Config.tint("#0f1216"))
     readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
     // Chalk's side of the conversation: a touch of its own colour over the field's
     readonly property color replyColor: Qt.tint(fieldColor, Qt.rgba(Config.pageColour("assistant").r, Config.pageColour("assistant").g, Config.pageColour("assistant").b, 0.10))
@@ -318,7 +319,7 @@ PanelWindow {
         scale: 0.98 + 0.02 * root.fade
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
+        Shadow { blur: 26; dropY: 5; strength: Config.assistantShadowShare }      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
         MouseArea { anchors.fill: parent }       // swallow clicks inside

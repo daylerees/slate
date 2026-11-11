@@ -194,6 +194,8 @@ Singleton {
         ["Workspaces wrap around", "workspaces", "circular loop cycle last first ends"],
         ["Hot Corners", "hotcorners", "screen corners actions"],
         ["Notifications", "notifications", "pop-ups toasts position do not disturb history"],
+        ["Launcher glass", "launcher", "blur opacity transparency see-through frosted app launcher window"],
+        ["Chalk's window glass", "assistant", "blur opacity transparency see-through frosted chalk assistant window"],
         ["Notification glass", "notifications", "blur opacity hover transparency see-through frosted pop-ups toasts"],
         ["Security", "lock", "lock and idle locking lock screen screen off sleep suspend idle login screen password"],
         ["Lock screen", "lock", "password lock"],

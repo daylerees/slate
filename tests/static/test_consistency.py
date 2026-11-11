@@ -126,7 +126,9 @@ class Settings(Case):
         named = set(m.group(1).split("|"))
         # (notifications have a rule of their own, with their own opacity: SLATE_GLASS_TOAST)
         self.assertIn('glassRule("SLATE_GLASS_TOAST", "^slate-notifications$"', slate.read("shell", "Config.qml"))
-        for layer in ("dock-menu", "dock-previews", "launcher", "picker", "switcher",
+        for own in ('"SLATE_GLASS_LAUNCHER", "^slate-launcher$"', '"SLATE_GLASS_CHALK", "^slate-assistant$"'):
+            self.assertIn("glassRule(" + own, slate.read("shell", "Config.qml"))
+        for layer in ("dock-menu", "dock-previews", "picker", "switcher",
                       "tray-menu", "desktop-menu", "confirm", "polkit", "osd"):
             with self.subTest(layer):
                 self.assertIn(layer, named, f"slate-{layer} isn't blurred behind with glass")

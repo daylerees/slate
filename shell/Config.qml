@@ -820,13 +820,16 @@ Singleton {
     // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
     // for a moment
     readonly property string glassRules: ""
-        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|launcher|assistant|picker|switcher|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|picker|switcher|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
         + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
         // (the panels that come out of the bar: an opacity and a blur of their own too)
         + glassRule("SLATE_GLASS_PANEL", "^slate-popout$", panelGlassCut, s.barPanelBlur)
         // (notifications as they pop up: the same again, Settings → Notifications → Glass)
         + glassRule("SLATE_GLASS_TOAST", "^slate-notifications$", toastGlassCut, s.notificationBlur)
+        // (the launcher, and Chalk's window: Settings → Launcher → Glass, → Assistant → Glass)
+        + glassRule("SLATE_GLASS_LAUNCHER", "^slate-launcher$", launcherGlassCut, s.launcherBlur)
+        + glassRule("SLATE_GLASS_CHALK", "^slate-assistant$", assistantGlassCut, s.assistantBlur)
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
@@ -1347,6 +1350,19 @@ Singleton {
         return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
     }
     readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
+    // The launcher and Chalk's window: a background opacity of their own with glass, a blur rule
+    // and a shadow kept under it, as the panels' are. An opacity not set (below 0) is Appearance's
+    function ownGlassOpacity(v, blur) { return v < 0 ? glassOpacity : Math.max(blur ? 0.01 : 0, Math.min(1, v)); }
+    function ownGlassCut(o) { return o < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(o * 0.85 * 10) / 10); }
+    function ownShadowShare(o, blur) { return !glass || !blur ? 1 : Math.min(1, Math.max(0, o - 0.25) / Math.max(0.01, shadowStrength)); }
+    readonly property real launcherGlassOpacity: ownGlassOpacity(s.launcherOpacity, s.launcherBlur)
+    readonly property real launcherGlassCut: ownGlassCut(launcherGlassOpacity)
+    readonly property real launcherShadowShare: ownShadowShare(launcherGlassOpacity, s.launcherBlur)
+    function launcherSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * launcherGlassOpacity) : c; }
+    readonly property real assistantGlassOpacity: ownGlassOpacity(s.assistantOpacity, s.assistantBlur)
+    readonly property real assistantGlassCut: ownGlassCut(assistantGlassOpacity)
+    readonly property real assistantShadowShare: ownShadowShare(assistantGlassOpacity, s.assistantBlur)
+    function assistantSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * assistantGlassOpacity) : c; }
     // Notifications as they pop up: a background opacity of their own with glass, another while
     // the pointer's on one (to read it by), a blur rule and a shadow kept under it, as the
     // panels' are (Settings → Notifications → Glass)
@@ -1369,7 +1385,7 @@ Singleton {
     function glassRule(v, match, cut, wanted) {
         // (the number after the cut: put up by one whenever a rule here changes what it matches,
         // so a Hyprland that's still running remakes it)
-        const c = cut.toFixed(3), made = `"${c} 6"`;
+        const c = cut.toFixed(3), made = `"${c} 7"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;

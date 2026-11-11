@@ -276,7 +276,7 @@ FloatingWindow {
             "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
-        launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
+        launcher: ["launcherBlur", "launcherOpacity", "launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
             "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
             "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
         debug: ["logLevel"],
@@ -300,7 +300,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
-        assistant: ["assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
+        assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -2831,6 +2831,24 @@ FloatingWindow {
                     onPicked: v => Config.s.launcherSearchEngine = v
                 }
             }
+            // (only with glass on: Appearance → Glass)
+            GroupLabel { visible: Config.s.glass; text: "Glass" }
+            Group {
+                visible: Config.s.glass
+                ToggleSetting {
+                    label: "Blur"
+                    detail: "What's behind the launcher is blurred, like frosted glass. Off, you see straight through it"
+                    key: "launcherBlur"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Opacity"
+                    settingKey: "launcherOpacity"
+                    defaultText: "Appearance's glass opacity"
+                    detail: "How solid its background is: 100% can't be seen through, lower is clearer"
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.launcherGlassOpacity * 100); onMoved: v => Config.s.launcherOpacity = v / 100 }
+                }
+            }
         }
     }
 
@@ -4291,6 +4309,24 @@ FloatingWindow {
                 }
             }
             Footnote { text: "Run the line for your agent in a terminal once. Slate's tools stay off for every agent until the switch at the top is on." }
+            // (only with glass on: Appearance → Glass)
+            GroupLabel { visible: Config.s.glass; text: "Glass" }
+            Group {
+                visible: Config.s.glass
+                ToggleSetting {
+                    label: "Blur"
+                    detail: "What's behind Chalk's window is blurred, like frosted glass. Off, you see straight through it"
+                    key: "assistantBlur"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Opacity"
+                    settingKey: "assistantOpacity"
+                    defaultText: "Appearance's glass opacity"
+                    detail: "How solid its background is: 100% can't be seen through, lower is clearer"
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.assistantGlassOpacity * 100); onMoved: v => Config.s.assistantOpacity = v / 100 }
+                }
+            }
         }
     }
 

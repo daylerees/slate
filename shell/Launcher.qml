@@ -40,7 +40,8 @@ PanelWindow {
     readonly property real tileSize: 36
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18   // how far the panel drops as it fades in
-    readonly property color barColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+    // (the bar's colour, at the launcher's own opacity with glass: Settings → Launcher → Glass)
+    readonly property color barColor: Config.launcherSurface(Config.tint("#0f1216"))
     readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))    // bar capsules
     readonly property color selectColor: Config.tint("#262c35")
     readonly property color textColor: Config.tint("#eef1f5")
@@ -754,7 +755,7 @@ PanelWindow {
         // Glass: a thin light rim
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
+        Shadow { blur: 26; dropY: 5; strength: Config.launcherShadowShare }      // raised: Slate's shadow, with glass too
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
 
         // Swallow clicks so they don't close the launcher

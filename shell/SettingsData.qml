@@ -176,6 +176,12 @@ JsonAdapter {
     property string dockHoverEffect: "magnify"   // pointing at the dock: magnify, tilt (icons turn to face the pointer), both, fade, fademagnify, glow (a ring and glow in the icon's colour), glowmagnify, raise (just the icon under the pointer lifts) or none
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
+    // The launcher's and Chalk's windows with glass: a blur and a background opacity of their
+    // own. -1: as Appearance's glass opacity has it (how they've always been)
+    property bool launcherBlur: true
+    property real launcherOpacity: -1
+    property bool assistantBlur: true
+    property real assistantOpacity: -1
     property bool notificationBlur: true      // with glass: what's behind a notification is blurred (off: seen straight through it)
     property real notificationOpacity: 0.8    // with glass: a notification's background, 0 clear … 1 solid
     property real notificationHoverOpacity: 0.8   // ...and while the pointer's on it
