@@ -319,7 +319,6 @@ PanelWindow {
                 x: bar.vert ? bar.bgX : 0
                 y: bar.vert ? 0 : bar.bgY
                 color: bar.barBackground
-
                 // Clicking an empty part of the bar closes any open panel
                 MouseArea {
                     anchors.fill: parent
@@ -903,7 +902,7 @@ PanelWindow {
                 Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
                 readonly property bool showIcons: !collapsible || openness > 0
                 // Which icons are switched on, in order along the bar (each Segment's slot)
-                readonly property var switchedOn: [hasBell, hasClip, hasShot, hasGame, hasWifi, hasKb, hasBt, hasVol, hasBat]
+                readonly property var switchedOn: [hasBell, hasClip, hasShot, hasGame, hasKb, hasBt, hasVol, hasWifi, hasBat]
                 // The same while they're laid out, then the button; first/last/separators follow
                 // whichever are shown
                 readonly property var shown: switchedOn.map(x => x && showIcons).concat([collapsible])
@@ -975,24 +974,10 @@ PanelWindow {
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
                     Separator { group: status; before: 4 }
-                    Segment {
-                        id: wifiSeg
-                        group: status; slot: 4
-                        pastel: "wifi"            // its colour when the look is Colourful
-                        readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
-                        readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
-                        readonly property real signal: net ? net.signalStrength : 0
-                        iconCode: !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
-                        label: Config.s.barValueWifi ? (net ? net.name : "Offline") : ""
-                        hoverText: net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
-                            : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
-                        onClicked: bar.openPopout("wifi", wifiSeg)
-                    }
-                    Separator { group: status; before: 5 }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
-                        group: status; slot: 5
+                        group: status; slot: 4
                         pastel: "keyboard"            // its colour when the look is Colourful
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
@@ -1001,11 +986,11 @@ PanelWindow {
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
-                    Separator { group: status; before: 6 }
+                    Separator { group: status; before: 5 }
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
-                        group: status; slot: 6
+                        group: status; slot: 5
                         pastel: "bluetooth"            // its colour when the look is Colourful
                         readonly property var adapter: Bluetooth.defaultAdapter
                         readonly property bool on: !!adapter && adapter.enabled
@@ -1017,10 +1002,10 @@ PanelWindow {
                             : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
-                    Separator { group: status; before: 7 }
+                    Separator { group: status; before: 6 }
                     Segment {
                         id: volSeg
-                        group: status; slot: 7
+                        group: status; slot: 6
                         pastel: "volume"            // its colour when the look is Colourful
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
@@ -1037,6 +1022,21 @@ PanelWindow {
                             sink.audio.volume = Math.max(0, Math.min(1, vol + (delta > 0 ? 0.05 : -0.05)));
                         }
                         PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
+                    }
+                    Separator { group: status; before: 7 }
+                    // Wi-Fi: just before the battery
+                    Segment {
+                        id: wifiSeg
+                        group: status; slot: 7
+                        pastel: "wifi"            // its colour when the look is Colourful
+                        readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
+                        readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
+                        readonly property real signal: net ? net.signalStrength : 0
+                        iconCode: !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
+                        label: Config.s.barValueWifi ? (net ? net.name : "Offline") : ""
+                        hoverText: net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
+                            : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
+                        onClicked: bar.openPopout("wifi", wifiSeg)
                     }
                     Separator { group: status; before: 8 }
                     Segment {

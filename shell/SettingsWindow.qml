@@ -2404,12 +2404,6 @@ FloatingWindow {
                     key: "barShowGameMode"
                 }
                 Separator {}
-                ToggleSetting {
-                    label: "Wi-Fi"
-                    detail: "Signal strength; click for networks"
-                    key: "barShowWifi"
-                }
-                Separator {}
                 SettingRow {
                     label: "Keyboard layout"
                     settingKey: "barShowKeyboard"
@@ -2431,6 +2425,12 @@ FloatingWindow {
                 }
                 Separator {}
                 ToggleSetting {
+                    label: "Wi-Fi"
+                    detail: "Signal strength; click for networks"
+                    key: "barShowWifi"
+                }
+                Separator {}
+                ToggleSetting {
                     label: "Battery"
                     detail: "Charge level; click for power profiles. Hidden on computers without a battery"
                     key: "barShowBattery"
@@ -2449,12 +2449,6 @@ FloatingWindow {
                 }
                 Separator {}
                 ToggleSetting {
-                    label: "Wi-Fi network name"
-                    detail: "Beside the Wi-Fi icon"
-                    key: "barValueWifi"
-                }
-                Separator {}
-                ToggleSetting {
                     label: "Keyboard layout code"
                     detail: "The layout in use (GB, FR…) beside the keyboard icon"
                     key: "barValueKeyboard"
@@ -2470,6 +2464,12 @@ FloatingWindow {
                     label: "Volume percentage"
                     detail: "Beside the volume icon"
                     key: "barValueVolume"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Wi-Fi network name"
+                    detail: "Beside the Wi-Fi icon"
+                    key: "barValueWifi"
                 }
                 Separator {}
                 ToggleSetting {
