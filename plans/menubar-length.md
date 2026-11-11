@@ -36,6 +36,28 @@ to put in the overflow though." And then: "Maybe the overflow has its own ladder
 | 7 | Overflow without a "more" button? | No. **There's always a "more" button** |
 | 8 | The assistant | **Later, as one tool** for arranging the bar that covers items, containers, collapse modes and the overflow order together. Not in this plan; noted in `plans/draggable-menubar.md` too |
 
+## A rule for all of it: use what Slate already has
+
+Dayle, 2026-11-11: when changing any UX, use existing patterns and themes, and insist on
+consistency wherever possible. For every stage below, before drawing anything new:
+
+- **Reuse the component that already does it.** The "more" panel is one of the bar's panels
+  (`Popouts.qml`: its layout, `RowButton` rows, `Divider`, the settings-link footer). The
+  "more" item is a `Segment` in a `Container`. The ordered list drags as the bar and the
+  dock do (a gap opens, the thing follows the pointer). The collapse mode is the same
+  chooser Settings uses for other three-way choices. A question is asked with
+  `PowerConfirm.confirmWith`, never a card of its own.
+- **Take colours, sizes and fonts from the theme, never a literal.** `Config.tint`, the
+  accent, the bar's own sizes and font; light and dark, the wallpaper's tint, Colourful on
+  and off, glass and flat. The two named colours: the **active colour** for what stays
+  selected, the **muted hover** for what's pointed at, the same with glass or without.
+- **Flat unless told otherwise.** No sheen on anything new; only what Dayle names is glossy.
+- **Every animation through `Config.ms`**, and nothing that ignores game mode.
+- **Slate's voice** for every word shown (warm, plain, British spelling), and its sounds for
+  every press (`ClickTap` / `ClickArea`; dragging silent, a click on the drop).
+- **If something new seems needed, look again first**, and if it still is, make it match
+  its nearest relative and say so when reporting, rather than letting a one-off slip in.
+
 ## The idea: two ladders
 
 **The slimming ladder** gives up the cheapest things first, and loses nothing you can't get
