@@ -1611,7 +1611,8 @@ Singleton {
     // still be in the colours in use (light or dark, the wallpaper's tint, the accent).
     // Written a moment after any of them changes. Not on the login screen
     readonly property string coverColours: JSON.stringify({
-        background: "" + tint("#0f1216"), text: "" + tint("#eef1f5"), dim: "" + tint("#8b94a3"), accent: "" + accent }) + "\n"
+        background: "" + tint("#0f1216"), text: "" + tint("#eef1f5"), dim: "" + tint("#8b94a3"), accent: "" + accent,
+        mark: "" + tint("#566173") }) + "\n"
     onCoverColoursChanged: coverLater.restart()
     Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
     FileView {

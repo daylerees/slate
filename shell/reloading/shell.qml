@@ -5,12 +5,13 @@
 //   qs -p <slate>/reloading                          show it
 //   qs -p <slate>/reloading ipc call cover done      fade it out and quit
 // It reads only what it needs from Slate's settings (animations, game mode) and the theme's
-// colours as Slate last noted them, uses Slate's fonts and icon, and quits by itself after a while, so it can never be left over a screen.
+// colours as Slate last noted them, uses Slate's fonts, and quits by itself after a while, so it can never be left over a screen.
 
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import QtQuick.Shapes
 
 ShellRoot {
     id: root
@@ -46,6 +47,7 @@ ShellRoot {
     property color text: "#eef1f5"
     property color dim: "#8b94a3"
     property color accent: "#8fb3e8"
+    property color mark: "#566173"          // the body of Slate's mark
     FileView {
         path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/cover.json"
         blockLoading: true
@@ -58,6 +60,7 @@ ShellRoot {
                 if (ok(c.text)) root.text = c.text;
                 if (ok(c.dim)) root.dim = c.dim;
                 if (ok(c.accent)) root.accent = c.accent;
+                if (ok(c.mark)) root.mark = c.mark;
             } catch (e) {}
         }
     }
@@ -90,12 +93,36 @@ ShellRoot {
                 Column {
                     anchors.centerIn: parent
                     spacing: 18
-                    Image {
+                    // Slate's mark, drawn in the theme's colours (as SlateMark.qml draws it, on an
+                    // 18×18 grid): a slab of slate tilted up to the right, the accent along its top
+                    Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 84; height: 84
-                        sourceSize: Qt.size(256, 256)
-                        source: "file://" + root.slate + "/assets/icon/icon-256.png"
-                        smooth: true
+                        Shape {
+                            width: 18; height: 18
+                            scale: parent.width / 18
+                            transformOrigin: Item.TopLeft
+                            preferredRendererType: Shape.CurveRenderer
+                            ShapePath {
+                                fillColor: root.mark
+                                strokeColor: root.mark
+                                strokeWidth: 1.6
+                                joinStyle: ShapePath.RoundJoin
+                                startX: 3.4; startY: 7.6
+                                PathLine { x: 14.6; y: 4.6 }
+                                PathLine { x: 14.6; y: 13.4 }
+                                PathLine { x: 3.4; y: 16.4 }
+                                PathLine { x: 3.4; y: 7.6 }
+                            }
+                            ShapePath {
+                                fillColor: "transparent"
+                                strokeColor: root.accent
+                                strokeWidth: 2.4
+                                capStyle: ShapePath.RoundCap
+                                startX: 3.3; startY: 6.4
+                                PathLine { x: 14.7; y: 3.4 }
+                            }
+                        }
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter

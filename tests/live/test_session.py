@@ -125,6 +125,6 @@ class Session(LiveCase):
             self.s.settle(0.2)
         with open(path, encoding="utf-8") as f:
             c = json.load(f)
-        for key in ("background", "text", "dim", "accent"):
+        for key in ("background", "text", "dim", "accent", "mark"):
             self.assertRegex(c[key], r"^#[0-9a-f]{6}$", f"{key} isn't a colour")
 
