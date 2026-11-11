@@ -54,6 +54,10 @@ Singleton {
         const a = Qt.lighter(c, 1.0);
         return s.lightMode ? Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, Math.max(a.hslSaturation, 0.45), 0.42, 1) : a;
     }
+    // An experiment: the pointer becomes a hand over anything in Slate that can be clicked
+    // (ClickTap and ClickArea, which everything pressable uses). One switch, here, to end it
+    readonly property bool handCursor: true
+    readonly property Component handHover: Component { HoverHandler { cursorShape: Qt.PointingHandCursor } }
     // Hover highlight, everywhere in Slate: the accent, lightly. `hover` is see-through, for
     // things with no background of their own; hoverOn(base) is it laid over a solid colour
     readonly property real hoverStrength: 0.22

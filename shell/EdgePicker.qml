@@ -61,6 +61,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: Config.handCursor && ep.over !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor
         onPositionChanged: m => ep.over = ep.edgeAt(m.x, m.y)
         onEntered: ep.over = ep.edgeAt(mouseX, mouseY)
         onExited: ep.over = ""
