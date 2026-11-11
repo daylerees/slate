@@ -762,7 +762,6 @@ PanelWindow {
                         visible: wifiView.askingFor === netRow.modelData.name
                         width: parent.width; height: 34; radius: 8
                         color: pop.card
-                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         TextInput {
                             id: psk
                             anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
@@ -1150,7 +1149,6 @@ PanelWindow {
                                         visible: !spApps.visible
                                         width: 28; height: 28; radius: 7
                                         color: spDelHover.hovered ? Config.hover : "transparent"
-                                        Gloss { radius: parent.radius; opacity: (spDelHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                         HoverHandler { id: spDelHover }
                                         // A MouseArea, so the click stops here rather than also opening the space
@@ -1220,7 +1218,6 @@ PanelWindow {
                     id: spBack
                     width: 26; height: 26; radius: 7
                     color: spBackHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (spBackHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover }
                     ClickTap { onTapped: spacesView.mode = "list" }
@@ -1391,7 +1388,6 @@ PanelWindow {
                 visible: spacesView.mode === "new"
                 width: parent.width; height: 34; radius: 8
                 color: pop.card
-                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: spName.activeFocus ? 1 : 0
                 border.color: pop.accent
                 TextInput {
@@ -1551,7 +1547,6 @@ PanelWindow {
                     id: spHexBox
                     width: 92; height: 30; radius: 8
                     color: pop.card
-                    Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                     border.width: spHex.activeFocus ? 1 : 0
                     border.color: pop.accent
                     TextInput {
@@ -1580,7 +1575,6 @@ PanelWindow {
                 Rectangle {
                     width: spCancel.implicitWidth + 28; height: 32; radius: 8
                     color: spCancelHover.hovered ? Config.hover : "transparent"
-                    Gloss { radius: parent.radius; opacity: (spCancelHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover }
                     ClickTap { onTapped: spacesView.mode = "list" }
@@ -2413,8 +2407,6 @@ PanelWindow {
                             color: controlButtonHover.hovered ? Config.hoverOn(base) : Qt.rgba(base.r, base.g, base.b, 0.82)
                             border.width: 1
                             border.color: Qt.rgba(pop.text.r, pop.text.g, pop.text.b, controlButtonHover.hovered ? 0.22 : 0.14)
-                            // glass: a sheen (RowButton's own takes over while hovered)
-                            Gloss { radius: parent.radius; opacity: controlButtonHover.hovered ? 0 : 1 }
                             HoverHandler { id: controlButtonHover }
                             onClicked: {
                                 if (modelData.act === "settings") { pop.close(); pop.slate(["settings", "open"]); }

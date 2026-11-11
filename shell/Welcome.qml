@@ -805,7 +805,6 @@ PanelWindow {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 width: backText.implicitWidth + 32; height: 38; radius: 10
                 color: backHover.hovered ? Config.hoverOn(w.card) : w.card
-                Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                 HoverHandler { id: backHover }
                 ClickTap { onTapped: w.page-- }
@@ -818,7 +817,6 @@ PanelWindow {
                     visible: w.page === w.pages - 1
                     width: setText.implicitWidth + 32; height: 38; radius: 10
                     color: setHover.hovered ? Config.hoverOn(w.card) : w.card
-                    Gloss { radius: parent.radius; opacity: (setHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                     HoverHandler { id: setHover }
                     ClickTap {
@@ -891,7 +889,6 @@ PanelWindow {
                     Rectangle {
                         width: askNo.implicitWidth + 28; height: 32; radius: 8
                         color: askNoHover.hovered ? Config.hoverOn(w.card) : w.card
-                        Gloss { radius: parent.radius; opacity: askNoHover.hovered ? 1 : 0 }
                         Text { id: askNo; anchors.centerIn: parent; text: "Cancel"; color: w.text; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                         HoverHandler { id: askNoHover }
                         ClickTap { onTapped: w.answer(false) }
@@ -899,7 +896,6 @@ PanelWindow {
                     Rectangle {
                         width: askYes.implicitWidth + 28; height: 32; radius: 8
                         color: askYesHover.hovered ? Qt.lighter(w.accent, 1.08) : w.accent
-                        Gloss { radius: parent.radius }
                         Text { id: askYes; anchors.centerIn: parent; text: w.askText.button; color: w.accentText; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                         HoverHandler { id: askYesHover }
                         ClickTap { onTapped: w.answer(true) }

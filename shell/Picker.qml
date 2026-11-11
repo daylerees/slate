@@ -495,7 +495,6 @@ PanelWindow {
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                 width: clearLabel.implicitWidth + 24; height: 28; radius: 8
                 color: clearHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
-                Gloss { radius: parent.radius; opacity: (clearHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverHandler { id: clearHover }
                 ClickTap { onTapped: root.clearClips() }

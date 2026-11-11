@@ -172,7 +172,6 @@ FloatingWindow {
                 width: 34; height: 34; radius: 17
                 opacity: pk.folder === "/" ? 0.35 : 1
                 color: upHover.hovered ? Config.hover : "transparent"
-                Gloss { radius: parent.radius; opacity: upHover.hovered ? 1 : 0 }
                 Text { anchors.centerIn: parent; text: pk.glyph(0xEA19); color: upHover.hovered ? pk.text : pk.dim; font.family: pk.iconFont; font.pixelSize: 18 }
                 HoverHandler { id: upHover }
                 ClickTap { onTapped: pk.up() }
@@ -340,7 +339,6 @@ FloatingWindow {
             Rectangle {
                 width: cancelText.implicitWidth + 28; height: 34; radius: 9
                 color: cancelHover.hovered ? Config.hoverOn(Config.raised(Config.tint("#2a313c"))) : Config.raised(Config.tint("#2a313c"))
-                Gloss { radius: parent.radius }
                 Text { id: cancelText; anchors.centerIn: parent; text: "Cancel"; color: pk.text; font.family: pk.font; font.pixelSize: 12; font.weight: Font.Medium }
                 HoverHandler { id: cancelHover }
                 ClickTap { onTapped: pk.visible = false }
@@ -349,7 +347,6 @@ FloatingWindow {
                 width: useText.implicitWidth + 28; height: 34; radius: 9
                 opacity: pk.chosen ? 1 : 0.45
                 color: useHover.hovered && pk.chosen ? Qt.lighter(pk.accent, 1.08) : pk.accent
-                Gloss { radius: parent.radius }
                 Text { id: useText; anchors.centerIn: parent; text: "Use picture"; color: pk.accentText; font.family: pk.font; font.pixelSize: 12; font.weight: Font.DemiBold }
                 HoverHandler { id: useHover }
                 ClickTap { onTapped: pk.use() }

@@ -131,7 +131,6 @@ PanelWindow {
             : btnHover.hovered ? root.controlLit : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
-        Gloss { radius: parent.radius }   // glass: a sheen
         Row {
             id: btnRow
             anchors.centerIn: parent

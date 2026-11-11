@@ -1127,7 +1127,6 @@ FloatingWindow {
         signal clicked()
         width: 34; height: 34; radius: 17
         color: iconButtonHover.hovered ? Config.hover : "transparent"
-        Gloss { radius: parent.radius; opacity: (iconButtonHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Text {
             anchors.centerIn: parent
@@ -1164,7 +1163,6 @@ FloatingWindow {
         property Item field: null
         radius: 8
         color: win.control
-        Gloss { radius: parent.radius }   // glass: a sheen
         HoverHandler { id: fieldFrameHover; cursorShape: Qt.IBeamCursor }
         border.width: (fieldFrame.field && fieldFrame.field.activeFocus) || fieldFrameHover.hovered ? 1 : 0
         border.color: fieldFrame.field && fieldFrame.field.activeFocus ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.5)
@@ -1418,7 +1416,6 @@ FloatingWindow {
                 opacity: soundSetting.audible ? 1 : 0.4
                 color: playHover.hovered && soundSetting.audible ? win.controlHover(win.controlHoverSolid) : win.control
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                Gloss { radius: parent.radius }   // glass: a sheen
                 Text {
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 1      // the triangle looks centred a touch right
@@ -1453,7 +1450,6 @@ FloatingWindow {
             : btnHover.hovered ? win.controlHover(win.controlHoverSolid) : win.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
-        Gloss { radius: parent.radius }   // glass: a sheen
         Row {
             id: btnRow
             anchors.centerIn: parent
@@ -5858,7 +5854,6 @@ FloatingWindow {
                                 anchors { left: parent.left; right: parent.right; leftMargin: 60; rightMargin: 14; top: parent.top }
                                 height: 36; radius: 8
                                 color: win.control
-                                Gloss { radius: parent.radius }   // glass: a sheen
                                 border.width: 1; border.color: win.accent
                                 TextInput {
                                     id: psk

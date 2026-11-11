@@ -256,7 +256,6 @@ PanelWindow {
                     visible: root.hasInput
                     width: parent.width; height: 38; radius: 10
                     color: root.buttonColor
-                    Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                     border.width: field.activeFocus ? 1 : 0
                     border.color: root.accent
                     TextInput {
@@ -377,7 +376,6 @@ PanelWindow {
         radius: 10
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
         color: primary ? (hh.hovered ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
-        Gloss { radius: parent.radius; opacity: (hh.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button

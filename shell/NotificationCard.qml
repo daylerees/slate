@@ -233,7 +233,6 @@ Rectangle {
                     width: 20; height: 20
                     radius: 5
                     color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
-                    Gloss { radius: parent.radius }   // glass: a sheen
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
@@ -290,7 +289,6 @@ Rectangle {
                         radius: 8
                         // Accent-tinted; solid accent on hover
                         color: actHover.hovered ? card.accent : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.16)
-                        Gloss { radius: parent.radius }   // glass: a sheen
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Text {
                             id: actText

@@ -317,7 +317,6 @@ PanelWindow {
         radius: 10
         readonly property color base: primary ? root.accent : root.fieldColor
         color: primary ? (hh.hovered && !dimmed ? Qt.lighter(base, 1.08) : base) : (hh.hovered ? Config.hoverOn(base) : base)
-        Gloss { radius: parent.radius; opacity: (hh.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }

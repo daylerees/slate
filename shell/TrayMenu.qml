@@ -118,7 +118,6 @@ PanelWindow {
                     Rectangle {
                         anchors.fill: parent; radius: 7
                         color: backHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (backHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Text {
                             id: backArrow
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }

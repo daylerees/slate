@@ -352,7 +352,6 @@ PanelWindow {
                     width: 34; height: 34; radius: 17      // (Settings' close button)
                     color: closeHover.hovered ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4) : "transparent"
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                    Gloss { radius: parent.radius; opacity: closeHover.hovered ? 1 : 0 }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
@@ -673,7 +672,6 @@ PanelWindow {
                 visible: root.on
                 width: parent.width; height: 44; radius: 10
                 color: root.fieldColor
-                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 Text {
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                     text: root.working ? "Chalk is working…" : "What would you like to do?"
@@ -763,7 +761,6 @@ PanelWindow {
         opacity: shownFor || done ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-        Gloss { radius: parent.radius }   // glass: a sheen
         Text {
             anchors.centerIn: parent
             text: String.fromCodePoint(chip.done ? 0xEA5E : 0xEA7A)      // tick, copy
@@ -788,7 +785,6 @@ PanelWindow {
         color: primary ? (pillHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
             : pillHover.hovered ? (Config.glass ? Config.hoverOn(control) : Config.tint("#323a46")) : control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-        Gloss { radius: parent.radius }   // glass: a sheen
         Row {
             id: pillRow
             anchors.centerIn: parent
