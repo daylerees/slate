@@ -2344,19 +2344,6 @@ FloatingWindow {
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.barOpacity < 0 ? Config.barGlassOpacity : Config.s.barOpacity) * 100); onMoved: v => Config.s.barOpacity = v / 100 }
                 }
                 Separator {}
-                ToggleSetting {
-                    label: "Panel blur"
-                    detail: "What's behind the panels that open from the bar is blurred. Off, you see straight through them"
-                    key: "barPanelBlur"
-                }
-                Separator {}
-                SettingRow {
-                    label: "Panel opacity"
-                    settingKey: "barPanelOpacity"
-                    detail: "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
-                }
-                Separator {}
                 SettingRow {
                     label: "Contents opacity"
                     settingKey: "barItemOpacity"
@@ -2369,6 +2356,19 @@ FloatingWindow {
                     settingKey: "barItemHoverOpacity"
                     detail: "How solid a container is while the pointer's over it, with everything in it: its icons, text, highlight and dividers"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Panel blur"
+                    detail: "What's behind the panels that open from the bar is blurred. Off, you see straight through them"
+                    key: "barPanelBlur"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Panel opacity"
+                    settingKey: "barPanelOpacity"
+                    detail: "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
                 }
             }
         }
