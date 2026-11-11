@@ -2421,7 +2421,6 @@ PanelWindow {
                         visible: controlView.player !== null
                         width: parent.width; height: 104; radius: 12
                         color: pop.card
-                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         Item {
                             visible: controlView.player !== null
                             anchors { fill: parent; margins: 12 }
