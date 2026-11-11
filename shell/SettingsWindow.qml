@@ -2347,8 +2347,8 @@ FloatingWindow {
                     visible: Config.s.glass
                     label: "Background opacity"
                     settingKey: "barOpacity"
-                    detail: "With Glass on: how much of its colour the bar's background keeps. Lower is clearer"
-                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.barOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                    detail: "How solid the bar's background is: 100% can't be seen through, lower is clearer"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barGlassOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
                 }
             }
             GroupLabel { text: "Containers" }
@@ -2356,15 +2356,15 @@ FloatingWindow {
                 SettingRow {
                     label: "Container opacity"
                     settingKey: "barItemOpacity"
-                    detail: "How solid the containers on the bar are. 100% is Slate's own; at 0% only what's in them shows"
-                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.s.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
+                    detail: "How solid the containers on the bar are: 100% can't be seen through; at 0% only what's in them shows"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Hover opacity"
                     settingKey: "barItemHoverOpacity"
-                    detail: "How strong the highlight is on what the pointer's over. 100% is Slate's own"
-                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.s.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
+                    detail: "How solid the highlight is on what the pointer's over"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
                 }
             }
         }
@@ -2509,15 +2509,15 @@ FloatingWindow {
                 SettingRow {
                     label: "Background opacity"
                     settingKey: "dockOpacity"
-                    detail: "How much of its colour the dock keeps, next to the rest of Slate's glass: lower is clearer"
-                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.dockOpacity * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
+                    detail: "How solid the dock's background is: 100% can't be seen through, lower is clearer"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.dockGlassOpacity * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Tile opacity"
                     settingKey: "dockTileOpacity"
-                    detail: "The tiles behind the dock's icons and its buttons: lower lets the dock show through them"
-                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.dockTileOpacity * 100); onMoved: v => Config.s.dockTileOpacity = v / 100 }
+                    detail: "The tiles behind the dock's icons and its buttons: 100% is solid, lower lets the dock show through them"
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.dockTileOpacity * 100); onMoved: v => Config.s.dockTileOpacity = v / 100 }
                 }
             }
         }

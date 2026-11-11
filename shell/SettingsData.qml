@@ -119,9 +119,9 @@ JsonAdapter {
     // arrangement (Config.barLayoutDefault). See plans/menu-bar-layout.md
     property var barLayout: []
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)
-    property real barOpacity: 1.0             // with glass: the bar's background, as a share of the opacity it would have
-    property real barItemOpacity: 1.0         // the containers on the bar: a share of their fill's own opacity (0: none, 2: twice as solid)
-    property real barItemHoverOpacity: 1.0    // ...and of the highlight under the pointer
+    property real barOpacity: -1              // with glass: the bar's background, 0 clear … 1 solid (below 0: Slate's own)
+    property real barItemOpacity: -1          // the containers on the bar, 0 clear … 1 solid (below 0: Slate's own: solid, or frosted with glass)
+    property real barItemHoverOpacity: 0.22   // ...and the highlight under the pointer
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
@@ -169,7 +169,7 @@ JsonAdapter {
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockBlur: true              // with glass: what's behind the dock is blurred (off: seen straight through it)
-    property real dockOpacity: 0.8            // with glass: the dock's background, as a share of the opacity the rest of Slate's glass has
+    property real dockOpacity: -1             // with glass: the dock's background, 0 clear … 1 solid (below 0: Slate's own, a fifth clearer than the rest of the glass)
     property real dockTileOpacity: 1.0        // with glass: the tiles behind its icons and its buttons (1: solid)
     property bool dockAutoHide: true          // hide when the workspace has windows
     property bool dockShowLauncher: true      // the Apps button at the start of the dock

@@ -1142,18 +1142,34 @@ Singleton {
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))
     // A surface's colour: as it is, or see-through with glass
     function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }
-    // The dock's own background with glass: clearer than the rest by Settings → Dock →
-    // Background opacity (and Hyprland starts blurring behind it that much sooner: dockGlassCut,
-    // as glassCut below). And the tiles on it (its icons' and its buttons'): Tile opacity
-    readonly property real dockGlassOpacity: glassOpacity * Math.max(0.2, Math.min(1, s.dockOpacity))
-    readonly property real dockTileOpacity: glass ? Math.max(0.2, Math.min(1, s.dockTileOpacity)) : 1
-    function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
+    // Opacity sliders (Settings → Dock, → Menu Bar) are plain opacity: 0 is clear, 1 is solid.
+    // Below 0 is "Slate's own", which is what each starts as, and follows the look.
+    // The dock's own background with glass: Slate's own is a fifth clearer than the rest of the
+    // glass (and Hyprland starts blurring behind it that much sooner: dockGlassCut, as glassCut
+    // below). And the tiles on it (its icons' and its buttons'): solid unless turned down
+    readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.min(1, s.dockOpacity)
+    readonly property real dockTileOpacity: glass ? Math.max(0, Math.min(1, s.dockTileOpacity)) : 1
     readonly property real dockGlassCut: Math.max(0.05, dockGlassOpacity * 0.85)
-    // The menu bar's own background with glass (Bar.qml's barBackground): in dark mode a
-    // quarter of the way from the glass's opacity to solid, then Settings → Menu Bar →
-    // Background opacity's share of that
-    readonly property real barGlassOpacity: (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
-        * Math.max(0.2, Math.min(1, s.barOpacity))
+    // The menu bar's own background with glass (Bar.qml's barBackground): Slate's own is, in
+    // dark mode, a quarter of the way from the glass's opacity to solid
+    readonly property real barGlassOpacity: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
+        : Math.min(1, s.barOpacity)
+    // The containers on the bar, of colour `c` when solid. Slate's own: solid, or with glass the
+    // frosted film everything raised has (raised). At an opacity of your own, with glass: the
+    // film alone up to its own opacity, then the solid colour coming in under it (as frostedTile)
+    readonly property real barItemOwnOpacity: glass ? raised(Qt.rgba(0, 0, 0, 1)).a : 1
+    readonly property real barItemOpacity: s.barItemOpacity < 0 ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
+    function barContainer(c) {
+        c = Qt.lighter(c, 1.0);
+        const o = barItemOpacity;
+        if (s.barItemOpacity < 0) return raised(c);
+        if (!glass) return Qt.rgba(c.r, c.g, c.b, o);
+        const f = raised(c);
+        if (o <= f.a) return Qt.rgba(f.r, f.g, f.b, o);
+        const a = (o - f.a) / (1 - f.a);
+        const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / o;
+        return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), o);
+    }
     readonly property real barGlassCut: Math.max(0.05, Math.min(glassOpacity * 0.85, barGlassOpacity * 0.85))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.

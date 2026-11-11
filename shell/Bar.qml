@@ -41,11 +41,10 @@ PanelWindow {
         : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
-    // On the bar itself, the containers' fill by Settings → Menu Bar → Container opacity (a
-    // share of that colour's own opacity; Settings' cards and the arranging panel's chips keep
+    // On the bar itself, the containers' fill by Settings → Menu Bar → Container opacity
+    // (Config.barContainer; Settings' cards and the arranging panel's chips keep
     // capsuleColor as it is)
-    readonly property real capsuleShare: Math.max(0, Math.min(2, Config.s.barItemOpacity))
-    readonly property color capsuleFill: Qt.rgba(capsuleColor.r, capsuleColor.g, capsuleColor.b, Math.min(1, capsuleColor.a * capsuleShare))
+    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color dimColor: Config.tint("#c5ccd6")
@@ -1404,8 +1403,8 @@ PanelWindow {
 
     // Hover highlight behind bar items: the accent colour, lightly (as everywhere: Config.hover)
     readonly property color hoverFill: bar.accent
-    // (how strong, by Settings → Menu Bar → Hover opacity: a share of Slate's own)
-    readonly property real hoverStrength: Math.min(1, Config.hoverStrength * Math.max(0, Math.min(2, Config.s.barItemHoverOpacity)))
+    // (how strong: Settings → Menu Bar → Hover opacity)
+    readonly property real hoverStrength: Math.max(0, Math.min(1, Config.s.barItemHoverOpacity))
 
     // Rounded container with a soft hover tint and click handling
     // One row across the bar, or one column down a side bar, sized to what it holds (one row
@@ -1439,7 +1438,7 @@ PanelWindow {
             opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
-        Gloss { radius: cap.radius; opacity: Math.min(1, bar.capsuleShare) }          // glass: a sheen (fading with the container)
+        Gloss { radius: cap.radius; opacity: Math.min(1, bar.capsuleFill.a / 0.05) }          // glass: a sheen (gone with the container)
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
         ClickTap { onTapped: cap.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
