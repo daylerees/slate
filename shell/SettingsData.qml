@@ -233,7 +233,7 @@ JsonAdapter {
 
     // Screensaver (Settings → Screensaver): starts after this many idle minutes (0 = never)
     property int screensaverMinutes: 5
-    property string screensaverStyle: "drift"    // drift, slideshow, videos or black
+    property string screensaverStyle: "black"    // drift, slideshow, videos or black
     property string screensaverVideoFolder: ""   // videos for the Videos style ("" = ~/Videos/Screensaver)
     property string screensaverVideoQuality: "auto"  // Get scenery videos: auto (for the screen), 2160p, 1440p or 1080p
     property bool screensaverClock: true         // the clock on drift and slideshow
