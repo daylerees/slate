@@ -1842,8 +1842,7 @@ FloatingWindow {
             Rectangle {
                 width: parent.width; height: 44
                 radius: 12
-                color: win.card
-                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+                color: win.card          // (flat, as Slate's other text boxes: no sheen)
                 border.width: findField.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
                     id: findIcon
