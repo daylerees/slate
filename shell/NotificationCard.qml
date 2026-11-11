@@ -66,7 +66,7 @@ Rectangle {
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
-    Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 1.15 }       // (flat in the bell panel)
+    Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 0.7 }       // (flat in the bell panel)
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
     // of it, so nothing shows through), kept within the room their window leaves round them
