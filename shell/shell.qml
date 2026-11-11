@@ -155,7 +155,7 @@ ShellRoot {
             // (menu item priority: its window, and a row moved to a place in its list; and the
             // "Try it shorter" dropdown: its menu opened or closed, a length chosen from it)
             else if (what === "length") { if (a === "pick") barEditor.lengthPick(Number(b)); else barEditor.lengthMenu(a === "open"); }
-            else if (what === "priority") { if (a === "move") barEditor.priorityMove(b, n(c)); else Config.barPrioritising = a === "open"; }
+            else if (what === "priority") { if (a === "move") barEditor.priorityMove(b, n(c)); else if (a === "scroll") barEditor.priorityScroll(Number(b)); else Config.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }

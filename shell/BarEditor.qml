@@ -204,6 +204,23 @@ PanelWindow {
             ClickTap { onTapped: sw.toggled(!sw.checked) }
         }
     }
+    // A soft shadow along the top or bottom edge of a scrolling list, saying there's more that
+    // way: it fades with the distance (px) from that end, gone just as you reach it (as
+    // Settings has: SettingsWindow.qml's ScrollShade)
+    component ScrollShade: Rectangle {
+        id: scrollShade
+        property bool atBottom: false
+        property real distance: 0
+        property real cornerRadius: 0      // the rounding of the corners it sits in
+        height: 18
+        topLeftRadius: atBottom ? 0 : cornerRadius; topRightRadius: atBottom ? 0 : cornerRadius
+        bottomLeftRadius: atBottom ? cornerRadius : 0; bottomRightRadius: atBottom ? cornerRadius : 0
+        opacity: Math.max(0, Math.min(1, distance / 24))
+        gradient: Gradient {
+            GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
+            GradientStop { position: 1; color: scrollShade.atBottom ? Config.shade(Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+        }
+    }
     // A paragraph of explanation
     component Para: Text {
         width: parent ? parent.width : 0
@@ -628,7 +645,8 @@ PanelWindow {
     // priority first (the last to leave), so it's Config.barOverflowOrder backwards, without
     // what always stays, which never leaves and so has no place in it
     readonly property var priority: Config.barOverflowOrder.filter(id => !Config.barStays(id)).reverse()
-    readonly property var priorityState: ({ open: prioritising, list: priority, lengthMenu: lengthMenuOpen, length: length.label })
+    function priorityScroll(y) { prioFlick.contentY = Math.max(0, Math.min(prioFlick.contentHeight - prioFlick.height, y)); }
+    readonly property var priorityState: ({ open: prioritising, list: priority, scroll: prioFlick.contentY, scrollMax: Math.max(0, prioFlick.contentHeight - prioFlick.height), lengthMenu: lengthMenuOpen, length: length.label })
     function priorityMove(id, slot) {          // (tests: as a row dragged to a place and let go)
         if (priority.indexOf(id) < 0) return;
         prioList.held = id; prioList.moving = priority.slice();
@@ -871,6 +889,19 @@ PanelWindow {
                         onReleased: { prioList.drop(); grabbed = ""; }
                         onCanceled: { prioList.held = ""; prioList.moving = null; grabbed = ""; }
                     }
+                }
+                // While the list scrolls: a soft shadow at the top once scrolled down, and at the
+                // bottom while there's more below
+                ScrollShade {
+                    anchors { top: prioFlick.top; left: prioFlick.left; right: prioFlick.right }
+                    cornerRadius: 8
+                    distance: prioFlick.contentY
+                }
+                ScrollShade {
+                    atBottom: true
+                    anchors { bottom: prioFlick.bottom; left: prioFlick.left; right: prioFlick.right }
+                    cornerRadius: 8
+                    distance: prioFlick.contentHeight - prioFlick.height - prioFlick.contentY
                 }
                 ThinScrollbar {
                     flick: prioFlick

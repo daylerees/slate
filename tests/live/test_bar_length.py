@@ -330,6 +330,17 @@ class BarLength(LiveCase):
         self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
         self.assertFalse(self.bar()["priority"]["open"], "priority came back by itself")
 
+    def test_priority_list_scrolls(self):
+        self.priority_window()
+        st = self.bar()["priority"]
+        self.assertGreater(st["scrollMax"], 0, "the list is longer than its window, and should scroll")
+        self.ipc("test", "arrange", "priority", "scroll", "60", "")
+        self.s.settle(0.3)
+        self.assertEqual(self.bar()["priority"]["scroll"], 60)
+        self.ipc("test", "arrange", "priority", "scroll", "100000", "")
+        self.s.settle(0.3)
+        self.assertEqual(self.bar()["priority"]["scroll"], st["scrollMax"], "it scrolled past its end")
+
     def test_try_it_shorter_is_a_dropdown_in_both_windows(self):
         self.priority_window()
         for where in ("close", "open"):         # (the arranging panel, then menu item priority)
