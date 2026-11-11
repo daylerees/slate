@@ -151,7 +151,7 @@ Singleton {
         ["Change wallpaper", "appearance", "automatically rotate shuffle slideshow timer login cycle background theme"],
         ["Menu Bar", "bar", "top bar panel status"],
         ["Container opacity", "bar", "menu bar items groups containers capsules pills transparency transparent see-through opacity"],
-        ["Hover opacity", "bar", "menu bar items groups containers hover highlight pointer transparency opacity"],
+        ["Hover opacity", "bar", "menu bar items groups containers hover pointer over transparency transparent see-through opacity"],
         ["Blur", "bar", "menu bar glass blur frosted frosting clear see through"],
         ["Background opacity", "bar", "menu bar glass transparency transparent see-through clear opacity background"],
         ["Arrange the menu bar", "bar", "edit layout drag reorder order containers pool items show hide tray battery wifi volume notifications power clock time 24 hour 12 hour seconds date values text beside icons percentage network name collapse tuck away flexible space bluetooth keyboard layout"],

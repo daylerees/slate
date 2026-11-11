@@ -1159,11 +1159,13 @@ Singleton {
     // film alone up to its own opacity, then the solid colour coming in under it (as frostedTile)
     readonly property real barItemOwnOpacity: glass ? raised(Qt.rgba(0, 0, 0, 1)).a : 1
     readonly property real barItemOpacity: s.barItemOpacity < 0 || !glass ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
-    function barContainer(c) {
+    // ...and while the pointer's over one: Hover opacity (Slate's own: no different)
+    readonly property real barItemHoverOpacity: s.barItemHoverOpacity < 0 || !glass ? barItemOpacity : Math.min(1, s.barItemHoverOpacity)
+    function barContainer(c, hovered) {
         c = Qt.lighter(c, 1.0);
-        const o = barItemOpacity;
+        const o = hovered ? barItemHoverOpacity : barItemOpacity;
         // (with glass only, like the rest of Settings → Menu Bar → Glass: solid otherwise)
-        if (s.barItemOpacity < 0 || !glass) return raised(c);
+        if (!glass || (s.barItemOpacity < 0 && (!hovered || s.barItemHoverOpacity < 0))) return raised(c);
         const f = raised(c);
         if (o <= f.a) return Qt.rgba(f.r, f.g, f.b, o);
         const a = (o - f.a) / (1 - f.a);

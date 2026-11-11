@@ -44,7 +44,9 @@ PanelWindow {
     // On the bar itself, the containers' fill by Settings → Menu Bar → Container opacity
     // (Config.barContainer; Settings' cards and the arranging panel's chips keep
     // capsuleColor as it is)
-    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
+    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"), false)
+    // (and with the pointer over it: Hover opacity)
+    readonly property color capsuleHoverFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"), true)
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color dimColor: Config.tint("#c5ccd6")
@@ -1403,8 +1405,7 @@ PanelWindow {
 
     // Hover highlight behind bar items: the accent colour, lightly (as everywhere: Config.hover)
     readonly property color hoverFill: bar.accent
-    // (how strong: Settings → Menu Bar → Hover opacity)
-    readonly property real hoverStrength: Config.glass ? Math.max(0, Math.min(1, Config.s.barItemHoverOpacity)) : Config.hoverStrength
+    readonly property real hoverStrength: Config.hoverStrength
 
     // Rounded container with a soft hover tint and click handling
     // One row across the bar, or one column down a side bar, sized to what it holds (one row
@@ -1430,7 +1431,8 @@ PanelWindow {
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: bar.capsuleRadius
-        color: bar.capsuleFill
+        color: capHover.hovered && !Config.barArranging ? bar.capsuleHoverFill : bar.capsuleFill
+        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
@@ -1438,7 +1440,7 @@ PanelWindow {
             opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
-        Gloss { radius: cap.radius; opacity: Math.min(1, bar.capsuleFill.a / 0.05) }          // glass: a sheen (gone with the container)
+        Gloss { radius: cap.radius; opacity: Math.min(1, cap.color.a / 0.05) }          // glass: a sheen (gone with the container)
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
         ClickTap { onTapped: cap.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
