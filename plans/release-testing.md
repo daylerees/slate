@@ -38,3 +38,4 @@ things off as they're done.
 - Settings → Power → Charging limit: shown only where UPower supports it, asks before
   charging to full. Not yet reachable from the assistant (no tool or setting for it).
 - A notification from an app that sends no name shows its launcher's name (ZapZap did this).
+- A notification whose picture can't be loaded falls back to the app's tile or the bell (it left a blank).

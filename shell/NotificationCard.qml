@@ -149,8 +149,13 @@ Rectangle {
                 id: picture
                 anchors.fill: parent
                 radius: 9
-                visible: !icon.fromSlate && card.image !== "" && !card.preview
-                source: visible ? card.image : ""
+                // (only once it has loaded: a picture that can't be, or an icon given by a name
+                // the theme hasn't got, left a blank where the icon goes. And an icon given by
+                // name gives way to the app's own tile, which is the same icon as Slate draws it)
+                readonly property bool byName: card.image.startsWith("image://icon/") && !card.image.startsWith("image://icon//")
+                readonly property bool wanted: !icon.fromSlate && card.image !== "" && !card.preview && !(byName && card.tilePath !== "")
+                visible: wanted && status === Image.Ready
+                source: wanted ? card.image : ""
             }
             Image {
                 id: tile
