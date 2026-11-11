@@ -5873,36 +5873,6 @@ FloatingWindow {
             }
 
             PageTitle { text: "Network" }
-            GroupLabel { text: "Connection" }
-            Group {
-                SettingRow {
-                    label: wifiPane.onWire ? "Connected by cable"
-                        : wifiPane.current ? "Connected to " + wifiPane.current.name
-                        : "Not connected"
-                    detail: wifiPane.onWire ? (wifiPane.current ? "Wired, with " + wifiPane.current.name + " on Wi-Fi as well" : "Wired")
-                        : wifiPane.current ? "Wi-Fi"
-                        : !wifiPane.dev && wifiPane.wires.length === 0 ? "Slate can't find a network socket or Wi-Fi on this computer"
-                        : !wifiPane.dev ? "Plug in a cable and it connects by itself"
-                        : !Networking.wifiEnabled ? "Wi-Fi is off. Switch it on below, or plug in a cable"
-                        : "Choose a network below, or plug in a cable"
-                }
-                Repeater {
-                    model: wifiPane.facts
-                    delegate: Column {
-                        id: factRow
-                        required property var modelData
-                        width: parent.width
-                        Separator {}
-                        SettingRow {
-                            label: factRow.modelData.k
-                            Text {
-                                text: factRow.modelData.v
-                                color: win.dim; font.family: win.font; font.pixelSize: 13
-                            }
-                        }
-                    }
-                }
-            }
             GroupLabel { visible: wifiPane.wires.length > 0; text: "Wired" }
             Group {
                 visible: wifiPane.wires.length > 0
@@ -6058,6 +6028,36 @@ FloatingWindow {
                                     text: "Password for " + netRow.n.name + ", then Enter"
                                     color: win.dim; font.family: win.font; font.pixelSize: 13
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+            GroupLabel { text: "Connection" }
+            Group {
+                SettingRow {
+                    label: wifiPane.onWire ? "Connected by cable"
+                        : wifiPane.current ? "Connected to " + wifiPane.current.name
+                        : "Not connected"
+                    detail: wifiPane.onWire ? (wifiPane.current ? "Wired, with " + wifiPane.current.name + " on Wi-Fi as well" : "Wired")
+                        : wifiPane.current ? "Wi-Fi"
+                        : !wifiPane.dev && wifiPane.wires.length === 0 ? "Slate can't find a network socket or Wi-Fi on this computer"
+                        : !wifiPane.dev ? "Plug in a cable and it connects by itself"
+                        : !Networking.wifiEnabled ? "Wi-Fi is off. Switch it on below, or plug in a cable"
+                        : "Choose a network below, or plug in a cable"
+                }
+                Repeater {
+                    model: wifiPane.facts
+                    delegate: Column {
+                        id: factRow
+                        required property var modelData
+                        width: parent.width
+                        Separator {}
+                        SettingRow {
+                            label: factRow.modelData.k
+                            Text {
+                                text: factRow.modelData.v
+                                color: win.dim; font.family: win.font; font.pixelSize: 13
                             }
                         }
                     }
