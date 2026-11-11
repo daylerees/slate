@@ -190,6 +190,20 @@ PanelWindow {
             ClickTap { onTapped: sw.toggled(!sw.checked) }
         }
     }
+    // The workspace dots as a picture of themselves: four, the first the one you're on, the
+    // next with windows on it (for the pool's chip and what's carried, in place of an icon)
+    component WorkspaceDots: Row {
+        spacing: 5
+        Repeater {
+            model: 4
+            Rectangle {
+                required property int index
+                anchors.verticalCenter: parent.verticalCenter
+                width: 12; height: 12; radius: Config.dotRadius(12)
+                color: index === 0 ? root.accent : index === 1 ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
+            }
+        }
+    }
     // Something from the bar, drawn as it is there, with its name beside it: the bar's own
     // container shape, sizes, font and colours (the icon in its Colourful colour, as on the
     // bar). `item`: its name in the arrangement, "" for what isn't an item
@@ -226,8 +240,9 @@ PanelWindow {
                 sourceSize: Qt.size(32, 32)
                 source: visible ? "file://" + Quickshell.shellPath("assets/icon/icon-64.png") : ""
             }
+            WorkspaceDots { visible: barChip.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
             Text {
-                visible: barChip.item !== "control"
+                visible: barChip.item !== "control" && barChip.item !== "workspaces"
                 anchors.verticalCenter: parent.verticalCenter
                 text: barChip.icon ? root.glyph(barChip.icon) : ""
                 color: barChip.iconColour
@@ -545,7 +560,9 @@ PanelWindow {
                         required property var modelData
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
+                        WorkspaceDots { visible: parent.modelData.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
                         Text {
+                            visible: parent.modelData.item !== "workspaces"
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.modelData.code ? root.glyph(parent.modelData.code) : ""
                             color: root.iconColour(parent.modelData.item)
