@@ -44,3 +44,4 @@ things off as they're done.
 - The bar's default arrangement changed (Apps with Chalk in one container; Spaces, window mode and workspaces in another): `test_bar_layout.py`, `test_bar_length.py` and every bar screenshot assume the old one.
 - Visual scenes assistant-empty and others wait for agent == claude, but the default agent is now none: update them.
 - To look into: without glass, every control whose solid fill is swapped for the muted hover (buttons, tiles, cards: `Config.hoverOn`) animates through a brighter colour as the pointer comes and goes. `HoverFill.qml` fixes it for the three placement pickers; the rest could use it too.
+- Position pickers (menu bar, dock): hovering and clicking an edge, including just beside it; needs a pointer in the test session.

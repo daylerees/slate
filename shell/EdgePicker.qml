@@ -38,9 +38,32 @@ Rectangle {
             radius: 3
             color: current ? ep.accent : "transparent"
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-            HoverFill { base: Config.tint("#262c35"); hovered: spotHover.hovered; gone: spot.current; radius: spot.radius }
-            HoverHandler { id: spotHover }
-            ClickTap { onTapped: ep.picked(spot.modelData) }
+            HoverFill { base: Config.tint("#262c35"); hovered: ep.over === spot.modelData; gone: spot.current; radius: spot.radius }
         }
+    }
+    // Which edge the pointer's on, worked out here for the whole picture: the edges are thin, so
+    // each reacts a little way beyond what's drawn (`reach`), and the one whose middle is nearest
+    // wins where two reach the same place. One area for hovering and clicking alike
+    readonly property real reach: 7
+    property string over: ""
+    function edgeAt(px, py) {
+        let best = "", bestD = 1e9;
+        for (const e of ["top", "bottom", "left", "right"]) {
+            const r = place(e, bar);
+            if (px < r.x - reach || px > r.x + r.width + reach || py < r.y - reach || py > r.y + r.height + reach) continue;
+            // (how far from the edge's own strip: 0 on it)
+            const dx = Math.max(r.x - px, 0, px - (r.x + r.width)), dy = Math.max(r.y - py, 0, py - (r.y + r.height));
+            const d = Math.max(dx, dy);
+            if (d < bestD) { bestD = d; best = e; }
+        }
+        return best;
+    }
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onPositionChanged: m => ep.over = ep.edgeAt(m.x, m.y)
+        onEntered: ep.over = ep.edgeAt(mouseX, mouseY)
+        onExited: ep.over = ""
+        onClicked: m => { const e = ep.edgeAt(m.x, m.y); if (e !== "") { Config.click(); ep.picked(e); } }
     }
 }
