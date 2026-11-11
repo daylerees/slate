@@ -1,7 +1,8 @@
 #!/bin/sh
 # The slate command: run and talk to Slate without knowing it's built on Quickshell.
 #   slate                  start Slate (if it isn't running)
-#   slate restart          restart it (reloads in place; --full stops and starts it again)
+#   slate restart          restart it (reloads in place; --full stops and starts it again). The
+#                          screen fades to "Reloading Slate" and back; --no-cover: without that
 #   slate stop             stop it
 #   slate ipc call <target> <function> [args]   e.g. slate ipc call settings toggle
 #   slate ipc show         list what can be called
@@ -51,13 +52,37 @@ stop() {
     for _ in 1 2 3 4 5 6 7 8 9 10; do [ -z "$(pids)" ] && return 0; sleep 0.2; done
 }
 
+# The cover over a restart (reloading/shell.qml): the screen fades to "Reloading Slate", Slate
+# restarts underneath, and it fades back once the new one says it's ready ($XDG_RUNTIME_DIR/
+# slate-ready). Not when nothing's running to cover for, in the tests, or with --no-cover.
+READY="${XDG_RUNTIME_DIR:-/tmp}/slate-ready"
+cover_up() {
+    [ -f "$SLATE_DIR/reloading/shell.qml" ] || return 1
+    setsid qs -n -p "$SLATE_DIR/reloading" >/dev/null 2>&1 </dev/null &
+    sleep 0.4                     # (faded in)
+}
+cover_down() {
+    # Wait for the new Slate (a few seconds at most; the cover takes itself down regardless)
+    i=0; while [ ! -e "$READY" ] && [ "$i" -lt 60 ]; do sleep 0.2; i=$((i + 1)); done
+    sleep 0.3
+    qs -p "$SLATE_DIR/reloading" ipc call cover done >/dev/null 2>&1
+}
+
 case "${1:-start}" in
     start) start ;;
     # Reload in place when running (no shutdown); start it otherwise
     restart)
-        if [ "$2" = "--full" ]; then stop; start
+        full=; cover=1
+        for a in "$2" "$3"; do case "$a" in --full) full=1 ;; --no-cover) cover= ;; esac; done
+        [ "$SLATE_TEST" = "1" ] && cover=
+        [ -z "$(pids)" ] && cover=
+        [ -n "$cover" ] && { cover_up || cover=; }
+        rm -f "$READY"
+        if [ -n "$full" ]; then stop; start
         elif [ -n "$(pids)" ]; then qs -p "$SLATE_DIR" ipc call shell reload >/dev/null 2>&1 || { stop; start; }
-        else start; fi ;;
+        else start; fi
+        [ -n "$cover" ] && cover_down
+        : ;;
     stop) stop ;;
     ipc) shift; exec qs -p "$SLATE_DIR" ipc "$@" ;;
     log) exec tail -f "$LOG" ;;

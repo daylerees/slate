@@ -109,6 +109,8 @@ shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
 shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
+reloading/              the "Reloading Slate" cover `slate restart` shows: a small Quickshell
+                        setup of its own, so it outlives the Slate it covers for
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
                         everything it's installed with, greeter/emergency/ is its fallback
 ```

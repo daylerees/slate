@@ -107,7 +107,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 ## Everyday commands
 
 ```sh
-# Restart Slate
+# Restart Slate (the screen fades to "Reloading Slate" and back; your apps stay open)
 slate restart
 
 # Talk to a running Slate

@@ -90,3 +90,29 @@ class Session(LiveCase):
         self.ipc("shell", "reload")
         self.s.settle(4)
         self.wait(lambda st: st["popout"] == "", "Slate after the reload")
+
+    def test_reloading_cover(self):
+        """The cover `slate restart` puts up ("Reloading Slate", reloading/shell.qml): it shows
+        over the screen, and fades away and goes when told the new Slate is ready."""
+        cover = os.path.join(self.s.slate_dir, "reloading")
+        self.s.run(["sh", "-c", f'setsid qs -n -p "{cover}" >/dev/null 2>&1 </dev/null &'])
+        up = lambda: "namespace: slate-reloading" in self.s.hyprctl("layers")
+        for _ in range(40):
+            if up():
+                break
+            self.s.settle(0.1)
+        self.assertTrue(up(), "the cover didn't come up")
+        self.s.settle(0.6)
+        self.screenshot("reloading-cover")
+        self.s.run(["qs", "-p", cover, "ipc", "call", "cover", "done"])
+        for _ in range(40):
+            if not up():
+                break
+            self.s.settle(0.1)
+        self.assertFalse(up(), "the cover stayed up after it was told Slate was ready")
+
+    def test_restart_says_when_its_ready(self):
+        """Slate writes its ready mark as it loads, which `slate restart` waits for before
+        taking the cover down."""
+        self.assertTrue(os.path.exists(os.path.join(self.s.h.runtime, "slate-ready")))
+

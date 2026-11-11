@@ -142,7 +142,7 @@ hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow 
 -- animate themselves, so Hyprland shouldn't add its own fade on top
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(bar|bar-editor|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out|titlebar)$" },
+  match = { namespace = "^slate-(bar|bar-editor|reloading|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|space-badge|welcome|fade-in|fade-out|titlebar)$" },
   no_anim = true,
 })
 -- Slate's own title bars (TitleBar.qml) are a little see-through: what's behind them (windows

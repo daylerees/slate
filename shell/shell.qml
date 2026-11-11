@@ -106,10 +106,11 @@ ShellRoot {
     }
 
     // ---- For the test suite (tests/, with SLATE_TEST=1) ---------------------------------
-    // $XDG_RUNTIME_DIR/slate-ready once Slate has loaded, so tests wait for it rather than guess
+    // $XDG_RUNTIME_DIR/slate-ready once Slate has loaded: tests wait for it rather than guess,
+    // and so does `slate restart`, to take its "Reloading Slate" cover down
     Component.onCompleted: {
         Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("scripts/tray-watcher.py")]);     // the tray's register (below)
-        if (Config.testMode) Qt.callLater(() => Qt.callLater(() => readyMark.running = true));
+        Qt.callLater(() => Qt.callLater(() => readyMark.running = true));
     }
     Process { id: readyMark; command: ["sh", "-c", ': > "${XDG_RUNTIME_DIR:-/tmp}/slate-ready"'] }
     // What's on screen, as JSON, for tests to check rather than reading pixels:
