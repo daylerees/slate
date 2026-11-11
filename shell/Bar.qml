@@ -1293,19 +1293,19 @@ PanelWindow {
                 Grid {
                     anchors.centerIn: parent
                     columns: 2
-                    spacing: 1.5
+                    spacing: 1.5       // (13 px in all, the drawn height of the icons beside it)
                     Repeater {
                         model: 4
                         Rectangle {
                             required property int index
                             readonly property bool busy: Spaces.restoring !== ""
-                            width: 6.5; height: 6.5; radius: 1.8
+                            width: 5.75; height: 5.75; radius: 1.6
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
                             // (Colourful look: one pastel; a space's own colour while it opens)
                             readonly property color ink: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, 0, bar.textColor)
                             color: lit ? ink : "transparent"
-                            border.width: 1.4; border.color: ink
+                            border.width: 1.3; border.color: ink
                             antialiasing: true
                             opacity: !busy || lit ? 1 : 0.45
                             Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
