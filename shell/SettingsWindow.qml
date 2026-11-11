@@ -1472,7 +1472,46 @@ FloatingWindow {
             }
         }
         HoverHandler { id: btnHover }
-        ClickTap { onTapped: btn.clicked() }
+        property bool tappable: true   // (off where something over it takes the press itself)
+        ClickTap { enabled: btn.tappable; onTapped: btn.clicked() }
+    }
+    // A chip in the Menu Bar page's pool: a Button that can also be dragged, onto the bar (its
+    // page, `pane`, carries it there: carryTo). Silent while dragged, a click when it lands,
+    // as everywhere
+    component PoolChip: Button {
+        id: chip
+        property var pane: null
+        property var carry: null             // what the bar is told is coming: { kind, id }
+        tappable: false
+        MouseArea {
+            anchors.fill: parent
+            preventStealing: true
+            property point from
+            property bool dragged: false
+            onPressed: m => {
+                from = Qt.point(m.x, m.y); dragged = false;
+                const p = mapToItem(null, m.x, m.y);
+                chip.pane.pointer = Qt.point(p.x, p.y);
+                chip.pane.placed = false;
+                whereIs.restart();
+            }
+            // (asked a moment after the press, when the pointer has stopped where it was put)
+            Timer { id: whereIs; interval: 1; onTriggered: chip.pane.askWhere() }
+            onPositionChanged: m => {
+                if (!dragged && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 6) dragged = true;
+                if (!dragged) return;
+                const p = mapToItem(null, m.x, m.y);
+                chip.pane.carryTo(chip, p.x, p.y);
+            }
+            onReleased: {
+                const was = dragged;
+                dragged = false;
+                if (!was) { Config.click(); chip.clicked(); return; }
+                chip.pane.carrying = null;
+                if (Config.barDrop()) Config.click();
+            }
+            onCanceled: { dragged = false; chip.pane.carrying = null; Config.barCarry = null; Config.barCarryTarget = null; }
+        }
     }
     // A font choice: shows the current font, and opens a searchable list of
     // installed fonts (each shown in its own typeface). key = Config.s property.
@@ -2310,12 +2349,71 @@ FloatingWindow {
                 text: "While this page is open, you can arrange the menu bar itself. Drag anything on it to another place: onto a container to join it, "
                     + "or between two for a container of its own. Drag a container by its gripper to move it whole. Nothing on the bar opens while you're here."
             }
+            // ---- The pool. A chip is dragged onto the bar, which is another window: the page
+            // works out where the pointer is on the desktop (where this window is, from one
+            // look at Hyprland's pointer position as the chip is pressed, then the pointer's
+            // place in the window) and tells the bar (Config.barCarry, barCarryAt), which
+            // shows where it would land. A click puts it on the bar without dragging
+            property point origin: Qt.point(0, 0)      // this window's corner on the desktop
+            property bool placed: false                // ...once it's known
+            property point pointer: Qt.point(0, 0)     // the pointer, in this window
+            property var carrying: null                // the chip being dragged
+            Process {
+                id: whereAmI
+                command: ["hyprctl", "-j", "cursorpos"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        try {
+                            const p = JSON.parse(text);
+                            barPane.origin = Qt.point(p.x - barPane.pointer.x, p.y - barPane.pointer.y);
+                            barPane.placed = true;
+                        } catch (e) {}
+                    }
+                }
+            }
+            function askWhere() { whereAmI.running = true; }
+            function carryTo(chip, x, y) {
+                pointer = Qt.point(x, y);
+                if (!carrying) { carrying = chip; Config.barCarryAt = Qt.point(-100000, -100000); Config.barCarry = chip.carry; }
+                if (placed) Config.barCarryAt = Qt.point(origin.x + x, origin.y + y);
+            }
+            // What's being carried, under the pointer (as far as this window goes: past its
+            // edge, the line on the bar shows where it will land)
+            Rectangle {
+                parent: dropLayer.parent
+                z: 200
+                visible: !!barPane.carrying
+                x: barPane.pointer.x - width / 2; y: barPane.pointer.y - height / 2
+                width: carriedRow.implicitWidth + 28; height: 32; radius: 8
+                color: win.control
+                opacity: 0.9
+                border.width: 1; border.color: win.accent
+                Row {
+                    id: carriedRow
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: barPane.carrying ? win.glyph(barPane.carrying.icon) : ""
+                        color: win.text
+                        font.family: win.bar.iconFont; font.pixelSize: 15
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: barPane.carrying ? barPane.carrying.label : ""
+                        color: win.text
+                        font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                    }
+                }
+            }
             GroupLabel { text: "Not on the bar" }
             Group {
                 SettingRow {
-                    label: barPane.pool.length === 0 && Config.s.barShowTitle ? "Everything's on the bar" : "Put back on the bar"
-                    detail: barPane.pool.length === 0 && Config.s.barShowTitle ? "Things you take off the bar wait here. Click one to put it back where it was"
-                        : "Click one to put it back where it was, then drag it where you'd like it"
+                    label: Config.barLeaving ? "Let go to take it off the bar"
+                        : barPane.pool.length === 0 && Config.s.barShowTitle ? "Everything's on the bar" : "Put back on the bar"
+                    detail: Config.barLeaving ? "It waits here, and keeps its place for when you put it back"
+                        : barPane.pool.length === 0 && Config.s.barShowTitle ? "Drag something off the bar and it waits here"
+                        : "Drag one onto the bar where you'd like it, or click it to put it back where it was"
                 }
                 Flow {
                     x: 16; width: parent.width - 32
@@ -2324,19 +2422,51 @@ FloatingWindow {
                     visible: barPane.pool.length > 0 || !Config.s.barShowTitle
                     Repeater {
                         model: barPane.pool
-                        Button {
+                        PoolChip {
                             required property var modelData
+                            pane: barPane
                             icon: modelData.icon; label: modelData.label
+                            carry: ({ kind: "item", id: modelData.id })
                             onClicked: Config.barSetShown(modelData.id, true)
                         }
                     }
-                    Button { visible: !Config.s.barShowTitle; icon: 0xEFE6; label: "Active window"; onClicked: Config.barSetShown("title", true) }
+                    PoolChip {
+                        visible: !Config.s.barShowTitle
+                        pane: barPane
+                        icon: 0xEFE6; label: "Active window"
+                        carry: ({ kind: "title", id: "title" })
+                        onClicked: Config.barSetShown("title", true)
+                    }
                 }
                 Separator {}
                 SettingRow {
-                    label: "Flexible space"
-                    detail: "Takes up the spare room, pushing what's either side of it apart. Add as many as you like; they share the room between them"
-                    Button { icon: 0xEB59; label: "Add one"; onClicked: Config.barAddSpace(Config.barLayout.length) }
+                    label: "As many as you like"
+                    detail: "A container holds things together: put one on the bar, then drag things into it. A flexible space takes up the spare room, "
+                        + "pushing what's either side of it apart. A collapse button goes into a container, and tucks its things away behind it. "
+                        + "Drag one onto the bar, or click it: it goes at the end, the collapse button into the container you've picked"
+                }
+                Flow {
+                    x: 16; width: parent.width - 32
+                    bottomPadding: 12
+                    spacing: 8
+                    PoolChip {
+                        pane: barPane
+                        icon: 0xEAD5; label: "Container"
+                        carry: ({ kind: "box", id: "" })
+                        onClicked: Config.barAddBox(Config.barLayout.length)
+                    }
+                    PoolChip {
+                        pane: barPane
+                        icon: 0xEB59; label: "Flexible space"
+                        carry: ({ kind: "space", id: "" })
+                        onClicked: Config.barAddSpace(Config.barLayout.length)
+                    }
+                    PoolChip {
+                        pane: barPane
+                        icon: 0xEC38; label: "Collapse button"
+                        carry: ({ kind: "tuck", id: "" })
+                        onClicked: if (barPane.pickedBox) Config.barSetTuck(Config.barSelected, true)
+                    }
                 }
             }
             GroupLabel { text: "The container you've picked" }

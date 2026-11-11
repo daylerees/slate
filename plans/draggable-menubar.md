@@ -235,6 +235,37 @@ volume swap made just before, on master). Compared by cropping the bar from
 "Screenshots owed". **Not checked:** side bars, a bottom bar, a second screen, the tray with
 icons in it, tuck-away, hover descriptions.
 
+**Stages 3b, 3c, 4, 5, done and installed (2026-11-11, `76114f9` onwards). Built without a
+pointer to try them with: every drag below is for Dayle to try by hand.**
+
+- **Panels follow their button (5):** `outermost(item)` in `Bar.qml` says "start" / "end" when
+  the button is the first or last thing showing on the line; `Popouts.toggle(…, at)` keeps it
+  in `edge` (`atScreenStart` / `atScreenEnd`).
+- **The collapse button is something in a container (4):** saved as `"tuck"` among a
+  container's `items`, first or last (that's the end it sits at); `Config.barBox()` turns that
+  into `tuck` / `tuckFrom` for the bar. `barCopy()` hands out containers with their real
+  items only (`tuck`, `tuckFrom`, `tuckIcon` beside them) and `barSave()` puts the button
+  back; the bar counts cells with the button among them, so `barSlot()` converts. On the bar
+  the button drags (`barMoveTuck`): either end, another container (one that has its own
+  refuses), or off. The page gives the picked container a switch, eight icons and "Where it
+  sits". The "Tuck the status icons away" row is gone; `barStatusCollapsed` still gives
+  Slate's own arrangement its button, so whoever had it on keeps it. **The tray's own
+  tuck-away (`barTrayCollapsed`) is untouched**: it's the tray's, inside one item.
+- **Text is put away while arranging** (asked 2026-11-11): the title reads "Window", the
+  clock "00:00", status icons drop their values (`Segment.shownLabel`).
+- **Dragging between the page and the bar (3c):** pool chips are `PoolChip` (a `Button` with
+  a drag area). On press the page asks Hyprland once for the pointer's place on the desktop
+  (`hyprctl -j cursorpos`), which with the pointer's place in the window gives the window's
+  corner; from then on it tells the bar where the pointer is (`Config.barCarry`,
+  `barCarryAt`). Each bar works out whether that's on or near it (`arranger.carried()`: its
+  window sits against its edge of its screen), shows the landing line and sets
+  `Config.barCarryTarget`; the page calls `Config.barDrop()` on release. The other way: drag
+  anything more than 40 px off the bar and let go, and it's back in the pool
+  (`Config.barLeaving`; the page's pool row says so).
+- **The pool also has Container, Flexible space and Collapse button**, which never run out.
+  A container from the pool is empty (`{ items: [], keep: true }`): it shows only while
+  arranging, and goes if it's still empty when the page closes or its last thing leaves.
+
 **Things learnt that the next person needs:**
 
 - **Write every item in `parked`, never on the line.** An item taken off a showing line and
@@ -283,74 +314,27 @@ asking: "we'll run the tests at the end after I've manually tested"):**
 
 ## Next
 
-**Stage 3a's remaining part: the test hook and live tests** (below, step 5), once Dayle is
-happy with how it behaves. What I'd worked out for 3a, for reference:
+Dayle tries it by hand first ("we'll run the tests at the end after I've manually tested").
+Things most likely to need a second look, since none of it has been dragged for real: the
+landing line's place when carrying from the page (it rests on where the bar's window is
+taken to be), a side bar, a second screen, and the hover of a pool chip under its drag area.
 
-1. **Switch arrange mode on**: the Settings window sets `Config.barArranging` to "visible and
-   on the Menu Bar page" (`win.section === "bar"`), and clears it when hidden.
-2. **Give things their places**: in `arrange()`, each `Container` and flexible space gets its
-   `index` in `Config.barLayout` (carry the real index through the left-bar swap), each
-   `Segment` its `name`. Add those properties.
-3. **Show it's being arranged** (only while `Config.barArranging`, so the ordinary bar is
-   untouched):
-   - each container: a thin accent outline (stronger when it's `Config.barSelected`), and a
-     **gripper** at its start, about 12 px, which makes it that much longer while arranging
-     (Tabler grip-vertical `0xEC01`, grip-horizontal `0xEC00` on a side bar);
-   - each flexible space: at least about 22 px, outlined, with arrows (`0xEB59` / `0xEB5B`);
-   - the title when it's empty: an outlined placeholder saying "Active window", so there's
-     something to pick up.
-4. **One `MouseArea` over the line**, above everything, only while arranging, so nothing
-   underneath acts. Plain `MouseArea`, not `ClickArea`: drags are silent (sounds table); play
-   `Config.click()` on a drop. It works by geometry:
-   - on press, list what's on the line in order (`left.children` that are visible): kind
-     (box / space / title), the object, its `index`, where it starts and ends along the bar;
-   - a press on a container's gripper, a space or the title picks up that whole thing; a
-     press on an item inside a container picks up the item (find the `Segment` under the
-     pointer among the container's row's children; skip separators and the toggle);
-   - a press and release without moving selects the container (`Config.barSelected`);
-   - while moving, work out the target: for an item, inside a container (not within ~7 px of
-     its ends) means **join it**, at the place between its showing cells; anywhere else is
-     **the gap** before the first thing whose middle is past the pointer. A whole thing only
-     ever goes to a gap. Show an accent line there, dim what's being dragged, and draw a
-     ghost of it under the pointer (`ShaderEffectSource` of the item);
-   - on release: `Config.barMoveItem(name, box.index, slotAmongItsItems)` or
-     `barMoveItem(name, to, -1)` or `barMoveEntry(from, to)`. Map a slot among *showing*
-     cells back to the item's index in the container's full list (hidden items are in it).
-5. **A test hook** in `shell.qml`'s `test` target (the session has no pointer): calls the
+**Then:**
+
+1. **A test hook** in `shell.qml`'s `test` target (the session has no pointer): calls the
    `Config.bar…` functions, and `state()` gains the arrangement and what's showing in order.
    Live tests for moving, joining, a container of its own, moving a container, adding and
-   removing a space. The pixel-level dragging is for Dayle to try by hand.
-
-**Stage 3b: the page.** At the top of Settings → Menu Bar: a line saying what to do; **the
-pool** (items whose switch is off, each its icon and name from `Config.barItems`, plus
-**Flexible space**, **Container** and the **collapse button** of requirement 14, which never
-run out); and the selected container's options. Until 3c, clicking a pool chip puts it on
-the bar. Add ordinary switch rows for the control centre and the clock (their keys exist;
-`slate-mcp.py` names them in `NAMED` until the rows do).
-
-**Stage 3c: dragging between the page and the bar.** The unknown. Settings is an app window
-and isn't told where it is on the screen; ask Hyprland (`Hyprland.toplevels` /
-`lastIpcObject.at`, as window previews do). If that can't be made exact, the pool becomes a
-panel under the bar instead.
-
-**Stage 4: tuck-away as an item** (14): a collapse button dragged into a container, at most
-one each, clicked to choose its icon and direction. `Container` already has `tuck`,
-`tuckIcon`, `tuckFrom` and a `toggle` cell of its own; this makes the toggle something in the
-container's `items` and moves the tray's own tuck-away (`barTrayCollapsed`, still inside the
-tray item) and the status container's (`barStatusCollapsed`, read as `tuck` in Slate's own
-arrangement) onto it.
-
-**Stage 5: panels follow their button** (7): `Popouts.qml` decides "flush against the screen
-edge" by name today (`atScreenStart: displayed === "control"`, `atScreenEnd: displayed ===
-"session"`). The bar should say, in `openPopout`, whether the button is the first or last
-thing showing on the line.
-
-**Then:** tests for all of it (live, visual scenes for arrange mode), the site and docs
-(`site/features.html`, README, `docs/ARCHITECTURE.md`), the assistant (`barLayout` is a list,
-so `settings_set` refuses it; decide whether a tool should move bar items, per the "new
-features reach the assistant" rule), the one full test run, and re-approving screenshots
-from a whole visual run. Only then merge to `master`, and delete the `menu-bar-layout`
-branch here and on `origin` (it was pushed as a backup; see the table at the top).
+   removing a space, the collapse button, an empty container, the pool both ways
+   (`barCarry` / `barDrop`), and the outermost panel's edge. Visual scenes for arrange mode
+   and the page.
+2. Ordinary switch rows on the page for the control centre and the clock (their keys exist;
+   `slate-mcp.py` names them in `NAMED` until the rows do).
+3. The site and docs (`site/features.html`, README, `docs/ARCHITECTURE.md`), and the
+   assistant (`barLayout` is a list, so `settings_set` refuses it; decide whether a tool
+   should move bar items, per the "new features reach the assistant" rule).
+4. The one full test run, and re-approving screenshots from a whole visual run.
+5. Merge to `master`, and delete the `menu-bar-layout` branch here and on `origin` (it was
+   pushed as a backup; see the table at the top).
 
 ## Things to settle while building
 

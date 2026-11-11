@@ -177,7 +177,9 @@ Singleton {
                     const id = String(e.items[j]);
                     if (known.indexOf(id) >= 0 && !seen[id]) { seen[id] = true; items.push(id); }
                 }
+                // (an empty one stays only while it's fresh from the pool, waiting for its first thing)
                 if (items.length > 0) out.push(barBox(items, e));
+                else if (e.keep) { const b = barBox(items, null); b.keep = true; out.push(b); }
             }
         }
         if (!title) out.push("title");
@@ -198,17 +200,46 @@ Singleton {
     // ---- Arranging it (Settings → Menu Bar: while that page is open, the bar is being arranged) ----
     property bool barArranging: false          // set by the Settings window
     property int barSelected: -1               // the container picked there, by its place in the arrangement
-    onBarArrangingChanged: if (!barArranging) barSelected = -1
+    onBarArrangingChanged: {
+        if (barArranging) return;
+        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false;
+        // (a container put on the bar and never given anything goes)
+        if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
+    }
+    // Something carried from the pool on the Settings page towards the bar: what it is
+    // ({ kind: "item" | "title" | "space" | "box" | "tuck", id }), where the pointer is on the
+    // desktop, and, from the bar under it, where it would land ({ join, to, slot, bar })
+    property var barCarry: null
+    property point barCarryAt: Qt.point(0, 0)
+    property var barCarryTarget: null
+    // ...and the other way: something on the bar dragged off it (let go, it's back in the pool)
+    property bool barLeaving: false
+    // Let go of what's carried: onto the bar where it was aimed (true), or nowhere (false)
+    function barDrop() {
+        const c = barCarry, t = barCarryTarget;
+        barCarry = null; barCarryTarget = null;
+        if (!c || !t) return false;
+        if (c.kind === "item") { barSetShown(c.id, true); barMoveItem(c.id, t.to, t.join ? t.slot : -1); }
+        else if (c.kind === "title") { barSetShown("title", true); barMoveEntry(barLayout.indexOf("title"), t.to); }
+        else if (c.kind === "space") barAddSpace(t.to);
+        else if (c.kind === "box") barAddBox(t.to);
+        else if (c.kind === "tuck") {
+            if (!t.join) return false;
+            barSetTuck(t.to, true, undefined, t.slot <= barLayout[t.to].items.length / 2 ? "start" : "end");
+        }
+        return true;
+    }
     // A copy of the arrangement to change and save: each container's real items (its collapse
     // button apart, as tuck / tuckFrom). Every change goes through barSave, which puts the
     // button back among the items and drops containers left empty
     function barCopy() {
         return barLayout.map(e => typeof e === "string" ? e
-            : { items: e.items.filter(id => id !== "tuck"), tuck: !!e.tuck, tuckFrom: e.tuckFrom || "", tuckIcon: e.tuckIcon || "" });
+            : { items: e.items.filter(id => id !== "tuck"), tuck: !!e.tuck, tuckFrom: e.tuckFrom || "", tuckIcon: e.tuckIcon || "", keep: !!e.keep });
     }
     function barSave(list) {
-        s.barLayout = list.filter(e => typeof e === "string" || (e.items && e.items.length > 0))
+        s.barLayout = list.filter(e => typeof e === "string" || (e.items && (e.items.length > 0 || e.keep)))
             .map(e => typeof e === "string" ? e
+                : e.items.length === 0 ? { items: [], keep: true }
                 : { items: !e.tuck ? e.items : e.tuckFrom === "start" ? ["tuck"].concat(e.items) : e.items.concat(["tuck"]), tuckIcon: e.tuckIcon || "" });
     }
     // The bar counts a container's things with its collapse button among them: the same place
@@ -282,6 +313,12 @@ Singleton {
         list.splice(Math.max(0, Math.min(list.length, to)), 0, e);
         list.splice(from < to ? from : from + 1, 1);
         barSelected = -1;
+        barSave(list);
+    }
+    // An empty container, to drag things into (it goes again if it's left empty)
+    function barAddBox(to) {
+        const list = barCopy();
+        list.splice(Math.max(0, Math.min(list.length, to)), 0, { items: [], keep: true });
         barSave(list);
     }
     function barAddSpace(to) {

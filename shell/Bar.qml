@@ -732,9 +732,11 @@ PanelWindow {
                 }
                 return null;
             }
-            function aim(a) {
+            // Where something would land at `a` along the line: `joins` for what can go inside a
+            // container (an item, a collapse button), which lands there when it's over one
+            function aim(a, joins) {
                 const line = onLine();
-                if (held.kind === "item") {
+                if (joins) {
                     for (const e of line) {
                         if (e.kind !== "box" || a < e.a0 + 7 || a > e.a1 - 7) continue;
                         const cells = cellsOf(e.obj), items = Config.barLayout[e.index].items;
@@ -757,14 +759,26 @@ PanelWindow {
                 if (!held) return;
                 at = along(mapToItem(left, m.x, m.y));
                 if (!moved && Math.abs(at - from) > 5) moved = true;
-                if (moved) target = aim(at);
+                if (!moved) return;
+                // Well off the bar: let go there and it's back in the pool
+                const p = mapToItem(left, m.x, m.y), across = bar.vert ? p.x : p.y;
+                leaving = across < -40 || across > bar.capsuleHeight + 40;
+                Config.barLeaving = leaving;
+                target = leaving ? null : aim(at, held.kind === "item");
             }
             onReleased: {
-                const h = held, t = target, dragged = moved;
-                held = null; target = null; moved = false;
+                const h = held, t = target, dragged = moved, off = leaving;
+                held = null; target = null; moved = false; leaving = false; Config.barLeaving = false;
                 if (!h) { Config.barSelected = -1; return; }
                 if (!dragged) {              // a press, not a drag: pick this container (or let go of it)
                     Config.barSelected = Config.barSelected !== h.index ? h.index : -1;
+                    Config.click();
+                    return;
+                }
+                if (off) {
+                    if (h.kind === "item" && h.name === "tuck") Config.barMoveTuck(h.index, -1, 0);
+                    else if (h.kind === "item") Config.barSetShown(h.name, false);
+                    else Config.barRemoveEntry(h.index);
                     Config.click();
                     return;
                 }
@@ -774,13 +788,46 @@ PanelWindow {
                 else Config.barMoveEntry(h.index, t.to);
                 Config.click();
             }
-            onCanceled: { held = null; target = null; moved = false; }
+            onCanceled: { held = null; target = null; moved = false; leaving = false; Config.barLeaving = false; }
+
+            // Something carried here from the pool on the Settings page (Config.barCarry): the
+            // page says where the pointer is on the desktop; when that's on or near this bar,
+            // this bar says where it would land (and shows the line there). The page drops it
+            property bool leaving: false
+            property var carryTarget: null
+            function carried() {
+                const c = Config.barCarry, sc = bar.screen;
+                let t = null;
+                if (c && sc && Config.barArranging) {
+                    // (this bar's window on the desktop: against its edge of its screen)
+                    const ox = sc.x + (bar.side === "right" ? sc.width - bar.width : 0);
+                    const oy = sc.y + (bar.side === "bottom" ? sc.height - bar.height : 0);
+                    const g = Config.barCarryAt;
+                    const here = g.x >= sc.x && g.x < sc.x + sc.width && g.y >= sc.y && g.y < sc.y + sc.height;
+                    const p = left.mapFromItem(null, g.x - ox, g.y - oy);
+                    const across = bar.vert ? p.x : p.y;
+                    if (here && across > -30 && across < bar.capsuleHeight + 30) {
+                        const joins = c.kind === "item" || c.kind === "tuck";
+                        t = aim(along(p), joins);
+                        if (c.kind === "tuck" && !t.join) t = null;      // (a collapse button only goes in a container)
+                    }
+                }
+                carryTarget = t;
+                if (t) Config.barCarryTarget = { join: t.join, to: t.to, slot: t.slot, bar: bar };
+                else if (Config.barCarryTarget && Config.barCarryTarget.bar === bar) Config.barCarryTarget = null;
+            }
+            Connections {
+                target: Config
+                function onBarCarryAtChanged() { arranger.carried(); }
+                function onBarCarryChanged() { arranger.carried(); }
+            }
         }
         // Where it will land: a line in the accent colour
         Rectangle {
-            visible: !!arranger.target
+            readonly property var aimed: arranger.target || arranger.carryTarget
+            visible: !!aimed
             z: 6
-            readonly property real along: arranger.target ? arranger.target.at : 0
+            readonly property real along: aimed ? aimed.at : 0
             x: bar.vert ? left.x : left.x + along - 1
             y: bar.vert ? left.y + along - 1 : left.y
             width: bar.vert ? bar.capsuleHeight : 2
@@ -793,7 +840,7 @@ PanelWindow {
             visible: arranger.moved && !!arranger.held
             z: 7
             sourceItem: arranger.held ? arranger.held.obj : null
-            opacity: 0.85
+            opacity: arranger.leaving ? 0.3 : 0.85
             width: sourceItem ? sourceItem.width : 0
             height: sourceItem ? sourceItem.height : 0
             x: bar.vert ? left.x : left.x + arranger.at - width / 2
@@ -1479,8 +1526,10 @@ PanelWindow {
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
         function isLast(c) { const i = order.indexOf(c); for (let k = i + 1; k < order.length; k++) if (shows(order[k])) return false; return true; }
         function sepBefore(c) { return shows(c) && !isFirst(c); }
-        visible: cells.some(c => c.wanted)
-        readonly property real fullLength: bar.vert ? row.height : row.width
+        // (one fresh from the pool, with nothing in it yet, shows while the bar's being arranged)
+        readonly property bool hollow: Config.barArranging && cells.length === 0
+        visible: cells.some(c => c.wanted) || hollow
+        readonly property real fullLength: hollow ? 30 : bar.vert ? row.height : row.width
         readonly property real closedLength: bar.vert ? toggle.height : toggle.width
         length: (tuck ? closedLength + (fullLength - closedLength) * openness : fullLength) + grip
         clip: tuck
