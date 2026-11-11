@@ -1950,25 +1950,24 @@ ShellRoot {
                                 anchors.centerIn: parent
                                 width: parent.width - 16; height: 1
                                 color: win.tileColor
-                                opacity: Config.dockTileOpacity
                             }
                             Rectangle {
                                 visible: menuRow.modelData.kind !== "sep"
                                 anchors.fill: parent
                                 radius: 7
-                                color: rowHover.hovered ? Config.hover : "transparent"
-                                Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                                // Under the pointer: the launcher's highlight, the accent itself, flat
+                                color: rowHover.hovered ? Config.accent : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
                                     width: 5; height: 5; radius: 2.5
-                                    color: win.activeDotColor
+                                    color: rowHover.hovered ? Config.tint("#12151a") : win.activeDotColor
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 }
                                 Text {
                                     anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                     text: menuRow.modelData.label || ""
-                                    color: menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
+                                    color: rowHover.hovered ? Config.tint("#12151a") : menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
                                     font.family: win.fontFamily
                                     font.pixelSize: win.fontSize
                                     font.weight: win.fontWeight

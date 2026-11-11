@@ -163,15 +163,17 @@ PanelWindow {
                             visible: !entryRow.sep
                             anchors.fill: parent
                             radius: 7
-                            color: entryHover.hovered && entryRow.e.enabled ? Config.hover : "transparent"
-                            Gloss { radius: parent.radius; opacity: (entryHover.hovered && entryRow.e.enabled) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
+                            // Under the pointer: the launcher's highlight, the accent itself, flat
+                            readonly property bool lit: entryHover.hovered && !!entryRow.e && entryRow.e.enabled
+                            readonly property color ink: Config.tint("#12151a")      // text on it
+                            color: lit ? Config.accent : "transparent"
                             Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                             // Tick for a checked checkbox or radio item
                             Text {
                                 visible: entryRow.checked
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 text: String.fromCodePoint(0xEA5E)
-                                color: Config.accent
+                                color: parent.lit ? parent.ink : Config.accent
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }
                             // Slate's own entries: an icon from the icon font
@@ -182,7 +184,7 @@ PanelWindow {
                                 width: 16
                                 horizontalAlignment: Text.AlignHCenter
                                 text: visible ? String.fromCodePoint(entryRow.e.glyph) : ""
-                                color: tm.dimColor
+                                color: parent.lit ? parent.ink : tm.dimColor
                                 font.family: tm.bar.iconFont; font.pixelSize: 15
                             }
                             Image {
@@ -201,7 +203,7 @@ PanelWindow {
                                 width: parent.width - x - 26
                                 // Strip the underscore mnemonics some apps put in (e.g. "_Quit")
                                 text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
-                                color: tm.textColor
+                                color: parent.lit ? parent.ink : tm.textColor
                                 opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4
                                 font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                                 elide: Text.ElideRight
@@ -211,7 +213,7 @@ PanelWindow {
                                 visible: !!entryRow.e && entryRow.e.hasChildren
                                 anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                                 text: String.fromCodePoint(0xEA61)
-                                color: tm.dimColor
+                                color: parent.lit ? parent.ink : tm.dimColor
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }
                             HoverHandler { id: entryHover }
