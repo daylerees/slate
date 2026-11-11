@@ -279,7 +279,7 @@ ShellRoot {
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
                 assistant: { open: chalk.shown, working: chalk.working, turns: chalk.turns.length, asked: chalk.asked, answer: chalk.answer, actions: chalk.actions,
-                             error: chalk.error ? chalk.error.kind : "", agent: chalk.agent ? chalk.agent.id : "", session: chalk.session,
+                             error: chalk.error ? chalk.error.kind : "", errorText: chalk.error ? chalk.error.message : "", agent: chalk.agent ? chalk.agent.id : "", session: chalk.session,
                              button: Config.s.barShowAssistant && Config.assistantOn,
                              enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)

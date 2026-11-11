@@ -258,7 +258,7 @@ JsonAdapter {
     // these can be changed through the server itself
     property bool assistantEnabled: false       // let assistants use Slate's tools at all (off to start with)
     property int assistantRisksAccepted: 0      // the version of the risks you accepted when switching on (0 = never); both are needed
-    property string assistantAgent: ""          // which agent answers the prompt window: claude, custom… ("" = the first one that's ready)
+    property string assistantAgent: ""          // which agent answers Chalk: claude, custom… ("" = none: one has to be chosen)
     property string assistantModel: ""          // its model ("" = the agent's own default)
     property string assistantCommand: ""        // a command of your own (the "custom" agent): run as typed, the prompt on its stdin
     property bool assistantCommandBare: false   // …given just what you typed, without what Slate adds

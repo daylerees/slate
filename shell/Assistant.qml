@@ -143,8 +143,8 @@ PanelWindow {
     readonly property var agent: {
         const want = Config.s.assistantAgent;
         if (want === "custom") return { id: "custom", label: "Your command", installed: Config.s.assistantCommand !== "", signedIn: true, confined: false, followUps: false };
-        const usable = a => a.installed && a.signedIn && a.id !== "custom";
-        return agents.find(a => a.id === want) || agents.find(usable) || null;
+        // (none until one's chosen in Settings → Assistant: Slate doesn't pick one for you)
+        return want === "" ? null : (agents.find(a => a.id === want) || null);
     }
     // What you type follows on from the last answer (the agent keeps its thread, session) for
     // this long after it; then the thread is dropped and the next prompt starts afresh. Nothing
@@ -186,7 +186,7 @@ PanelWindow {
         if (text === "" || working || !on) return;
         if (!agent) {
             // Not looked for yet (asked by IPC before the window ever opened): sent once they're found
-            if (!looked || detect.running) { pending = text; if (!looked) { looked = true; detect.running = true; } return; }
+            if (Config.s.assistantAgent !== "" && (!looked || detect.running)) { pending = text; if (!looked) { looked = true; detect.running = true; } return; }
             begin(text);
             patch({ error: noAgent });
             field.text = "";
@@ -213,7 +213,7 @@ PanelWindow {
         runner.stdinEnabled = false;       // (closes it: the prompt is the whole of stdin)
     }
     property string pending: ""            // typed before the agents were found: sent once they are
-    readonly property var noAgent: ({ kind: "not-installed", message: "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
+    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Chalk doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
     function stop() { if (working) runner.signal(15); }
     // Try again: the same words, in place of the exchange that went wrong
     function again() {

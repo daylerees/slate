@@ -3942,12 +3942,10 @@ FloatingWindow {
                 command: ["python3", Quickshell.shellPath("scripts/assistant.py"), "detect"]
                 stdout: StdioCollector { onStreamFinished: { try { assistantPane.agents = JSON.parse(text); } catch (e) {} } }
             }
-            readonly property string inUse: {
-                const want = Config.s.assistantAgent;
-                if (want === "custom" || agents.some(a => a.id === want)) return want;
-                const first = agents.find(a => a.installed && a.signedIn && a.id !== "custom");
-                return first ? first.id : "";
-            }
+            // The one chosen ("" none, which is how it starts: Chalk asks for one to be chosen), and,
+            // for an agent Slate knows, what's known about it
+            readonly property string inUse: Config.s.assistantAgent
+            readonly property var chosen: inUse === "" || inUse === "custom" ? null : (agents.find(a => a.id === inUse) || null)
             function signIn(cmd) {
                 Quickshell.execDetached(["hyprctl", "dispatch",
                     `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w.-]/g, "")}") end`]);
@@ -3992,68 +3990,42 @@ FloatingWindow {
             }
             GroupLabel { text: "Agent" }
             Group {
-                Repeater {
-                    model: assistantPane.agents.filter(a => a.id !== "custom")
-                    Column {
-                        id: agentRow
-                        required property var modelData
-                        required property int index
-                        width: parent ? parent.width : 0
-                        readonly property bool ready: modelData.installed && modelData.signedIn
-                        readonly property bool chosen: assistantPane.inUse === modelData.id
-                        Separator { visible: agentRow.index > 0 }
-                        SettingRow {
-                            label: agentRow.modelData.label
-                            detail: (agentRow.ready ? "Ready" : agentRow.modelData.installed ? "Not signed in. Open a terminal and run " + agentRow.modelData.signIn + " once" : "Not installed")
-                                + (agentRow.modelData.confined ? ". Recommended: " : ". Keeps its own tools: ") + agentRow.modelData.note
-                            Button {
-                                label: agentRow.chosen ? "In use" : !agentRow.modelData.installed ? "Get it" : !agentRow.modelData.signedIn ? "Sign in" : "Choose"
-                                primary: agentRow.ready && !agentRow.chosen
-                                onClicked: {
-                                    if (!agentRow.modelData.installed) Qt.openUrlExternally(agentRow.modelData.url);
-                                    else if (!agentRow.modelData.signedIn) assistantPane.signIn(agentRow.modelData.signIn);
-                                    else if (!agentRow.chosen) win.assistantChoose(agentRow.modelData.id, agentRow.modelData.label, agentRow.modelData.confined);
-                                }
-                            }
-                        }
+                // Which agent answers Chalk: none to start with. What the chosen one needs shows beneath
+                DropdownSetting {
+                    label: "Agent"
+                    settingKey: "assistantAgent"
+                    detail: assistantPane.inUse === "" ? "Chalk needs an agent to ask. Choose the one you use, and what it needs shows here"
+                        : assistantPane.inUse === "custom" ? "Slate runs your command as you typed it, with what you ask on its input. What it can see and do beyond Slate's tools is up to the command"
+                        : assistantPane.chosen ? (assistantPane.chosen.confined ? "Recommended: " : "Keeps its own tools: ") + assistantPane.chosen.note
+                        : "Slate couldn't find this one. It may have been removed"
+                    value: assistantPane.inUse
+                    options: [{ value: "", label: "None" }]
+                        .concat(assistantPane.agents.filter(a => a.id !== "custom").map(a => ({ value: a.id, label: a.label })))
+                        .concat([{ value: "custom", label: "A command of your own" }])
+                    onPicked: v => {
+                        const a = assistantPane.agents.find(x => x.id === v);
+                        if (v === "") Config.s.assistantAgent = "";
+                        else if (v === "custom") win.assistantChoose("custom", "your own command", false);
+                        else if (a) win.assistantChoose(a.id, a.label, a.confined);
                     }
                 }
-                Separator { visible: assistantPane.agents.length > 1 }
+                // An agent Slate knows: whether it's ready, and its model
+                Separator { visible: !!assistantPane.chosen }
                 SettingRow {
-                    label: "A command of your own"
-                    settingKey: "assistantCommand"
-                    detail: "Slate runs this as you typed it, with what you ask on its input. What it can see and do beyond Slate's tools is up to the command"
-                    Row {
-                        spacing: 8
-                        FieldFrame {
-                            field: commandInput
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 220; height: 30
-                            TextInput {
-                                id: commandInput
-                                anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                                verticalAlignment: TextInput.AlignVCenter
-                                clip: true
-                                color: win.text; selectionColor: win.accent
-                                font.family: win.font; font.pixelSize: 12
-                                text: Config.s.assistantCommand
-                                onEditingFinished: Config.s.assistantCommand = text.trim()
-                            }
-                        }
-                        Button {
-                            label: assistantPane.inUse === "custom" ? "In use" : "Choose"
-                            onClicked: { Config.s.assistantCommand = commandInput.text.trim(); if (commandInput.text.trim() !== "" && assistantPane.inUse !== "custom") win.assistantChoose("custom", "", false); }
-                        }
+                    visible: !!assistantPane.chosen
+                    readonly property var a: assistantPane.chosen
+                    label: a ? a.label : ""
+                    detail: !a ? "" : a.installed && a.signedIn ? "Ready" : a.installed ? "Not signed in. Open a terminal and run " + a.signIn + " once" : "Not installed yet"
+                    Button {
+                        visible: !!parent.a && !(parent.a.installed && parent.a.signedIn)
+                        primary: true
+                        label: parent.a && !parent.a.installed ? "Get it" : "Sign in"
+                        onClicked: { if (!parent.a.installed) Qt.openUrlExternally(parent.a.url); else assistantPane.signIn(parent.a.signIn); }
                     }
                 }
-                Separator {}
-                ToggleSetting {
-                    label: "Just what you type"
-                    key: "assistantCommandBare"
-                    detail: "Your command gets your words alone, without what Slate adds: for a command that sets its own scene"
-                }
-                Separator {}
+                Separator { visible: !!assistantPane.chosen }
                 SettingRow {
+                    visible: !!assistantPane.chosen
                     label: "Model"
                     settingKey: "assistantModel"
                     detail: "For agents that let you pick one. Empty: the agent's own choice"
@@ -4071,6 +4043,35 @@ FloatingWindow {
                             onEditingFinished: Config.s.assistantModel = text.trim().replace(/[^\w.:\-\[\]]/g, "")
                         }
                     }
+                }
+                // A command of your own: the command, and whether Slate adds anything to what you type
+                Separator { visible: assistantPane.inUse === "custom" }
+                SettingRow {
+                    visible: assistantPane.inUse === "custom"
+                    label: "Command"
+                    settingKey: "assistantCommand"
+                    detail: Config.s.assistantCommand === "" ? "Nothing to run yet. Type the command Chalk should hand what you ask to" : "Run as you typed it"
+                    FieldFrame {
+                        field: commandInput
+                        width: 260; height: 30
+                        TextInput {
+                            id: commandInput
+                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                            verticalAlignment: TextInput.AlignVCenter
+                            clip: true
+                            color: win.text; selectionColor: win.accent
+                            font.family: win.font; font.pixelSize: 12
+                            text: Config.s.assistantCommand
+                            onEditingFinished: Config.s.assistantCommand = text.trim()
+                        }
+                    }
+                }
+                Separator { visible: assistantPane.inUse === "custom" }
+                ToggleSetting {
+                    visible: assistantPane.inUse === "custom"
+                    label: "Just what you type"
+                    key: "assistantCommandBare"
+                    detail: "Your command gets your words alone, without what Slate adds: for a command that sets its own scene"
                 }
             }
             GroupLabel { text: "What it can do" }

@@ -296,6 +296,16 @@ class Chalk(LiveCase):
         for b in binds:
             self.assertIn("Slate: Ask Chalk", b.get("description") or "")
 
+    def test_no_agent_until_one_is_chosen(self):
+        """Switched on, there's no agent to start with: Slate doesn't pick one, and asking says
+        one has to be chosen."""
+        self.config("assistantAgent", "")
+        self.assertEqual(self.chalk()["agent"], "")
+        self.ipc("assistant", "ask", "show seconds on the clock")
+        st = self.wait(lambda st: st["assistant"]["error"] == "not-installed", "being told there's no agent")
+        self.assertIn("Choose one in Settings", st["assistant"]["errorText"])
+        self.assertEqual(self.setting("barClockSeconds"), "false")
+
     def test_a_prompt_all_the_way(self):
         """Typed → the runner → the agent (a stand-in, as a command of your own) → Slate's
         server → Slate: the setting changes, the answer shows, and the list says what it did."""
