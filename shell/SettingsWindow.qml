@@ -1035,7 +1035,6 @@ FloatingWindow {
                     // Clear of the scrollbar, when there is one
                     width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
                     color: rowHover.hovered ? Config.hover : picked ? win.divider : "transparent"
-                    Gloss { radius: parent.radius; opacity: (rowHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                     FolderSwatch {
                         id: rowFolder
                         visible: !!parent.modelData.folder
@@ -1674,7 +1673,6 @@ FloatingWindow {
                 + (ddIcon.visible ? ddIcon.width + 8 : 0)
             width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: 8
             color: open || ddHover.hovered ? win.fieldHover() : win.control
-            Gloss { radius: parent.radius }   // glass: a sheen
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
@@ -1784,7 +1782,6 @@ FloatingWindow {
                         required property var modelData
                         width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: 6
                         color: pickHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (pickHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             Text { width: parent.width; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
