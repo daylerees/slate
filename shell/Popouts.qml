@@ -456,7 +456,8 @@ PanelWindow {
                         width: 2.5; height: slFill.height * 3
                         rotation: 40
                         antialiasing: true
-                        color: pop.danger          // (the red of the muted speaker beside it)
+                        color: pop.danger          // (the red of the muted speaker beside it,
+                        opacity: 0.55              // a little dimmer)
                     }
                 }
             }
