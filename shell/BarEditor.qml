@@ -402,6 +402,26 @@ PanelWindow {
                     onToggled: v => Config.s[root.textKey] = v
                 }
                 Switch {
+                    visible: root.kind === "item" && root.pickedItem === "tray"
+                    label: "Tuck its icons away"
+                    checked: Config.s.barTrayCollapsed
+                    onToggled: v => Config.s.barTrayCollapsed = v
+                }
+                Row {
+                    visible: root.kind === "item" && root.pickedItem === "clock"
+                    spacing: 6
+                    PanelButton {
+                        label: "12-hour"
+                        primary: Config.s.barClockFormat !== "24h"
+                        onClicked: Config.s.barClockFormat = "12h"
+                    }
+                    PanelButton {
+                        label: "24-hour"
+                        primary: Config.s.barClockFormat === "24h"
+                        onClicked: Config.s.barClockFormat = "24h"
+                    }
+                }
+                Switch {
                     visible: root.kind === "item" && root.pickedItem === "clock"
                     label: "Date"
                     checked: Config.s.barClockDate

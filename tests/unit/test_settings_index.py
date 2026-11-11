@@ -42,7 +42,9 @@ class SettingsIndex(Case):
             with self.subTest(page + ": " + label):
                 self.assertEqual(by.get((page, label)), key)
         linked = {it["key"] for it in self.items if it["key"]}
-        self.assertGreater(len(linked), 160, "far fewer settings linked to their rows than before")
+        # (what's on the menu bar, and how each thing shows, isn't on a page any more: it's set in
+        # the panel that arranges the bar, and named for the assistant in slate-mcp.py's NAMED)
+        self.assertGreater(len(linked), 135, "far fewer settings linked to their rows than before")
 
     def test_every_page_has_settings(self):
         """Each Settings page (bar the overview) has something search can find on it."""
