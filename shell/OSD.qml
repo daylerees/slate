@@ -247,7 +247,8 @@ PanelWindow {
             readonly property real step: dot + gap
             readonly property real dotsWidth: Math.max(dot, spaces.length * step - gap)
             // The dots, and under them the name of the workspace you're on (its own, or "Workspace 3")
-            readonly property string name: Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
+            // (Settings → Workspaces → Name when switching)
+            readonly property string name: Config.s.workspaceSwitchName && Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
             width: Math.max(dotsWidth, name !== "" ? wsName.implicitWidth : 0)
             height: dot + (name !== "" ? 8 + wsName.implicitHeight : 0)
 

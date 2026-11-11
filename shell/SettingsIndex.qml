@@ -157,6 +157,7 @@ Singleton {
         ["Blur", "bar", "menu bar glass blur frosted frosting clear see through"],
         ["Background opacity", "bar", "menu bar glass transparency transparent see-through clear opacity background"],
         ["Arrange the menu bar", "bar", "edit layout drag reorder order containers pool items show hide tray battery wifi volume notifications power clock time 24 hour 12 hour seconds date values text beside icons percentage network name collapse tuck away flexible space bluetooth keyboard layout"],
+        ["Name when switching", "workspaces", "workspace name indicator switch super left right on-screen label"],
         ["Dock", "dock", "pinned apps magnification icon size auto-hide"],
         ["Blur", "dock", "dock glass blur frosted frosting clear see through"],
         ["Background opacity", "dock", "dock glass transparency transparent see-through clear opacity background"],

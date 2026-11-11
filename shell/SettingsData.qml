@@ -207,6 +207,7 @@ JsonAdapter {
     // Switchers
     property bool switcherPreviews: true
     property bool switcherAppIcons: true      // app icon on each window's preview in Super+Tab
+    property bool workspaceSwitchName: true   // the indicator shown as you switch workspace (Super+Left/Right) names the one you land on
     property bool wrapWorkspaces: true        // Super+Left/Right and the overview go from the last workspace to the first
     property bool overviewAppIcons: false     // app icon on each window in Super+Down
     property bool overviewPreviews: true      // live pictures of the windows in Super+Down (off: their outlines and app icons)

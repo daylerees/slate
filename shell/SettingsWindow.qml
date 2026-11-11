@@ -291,7 +291,7 @@ FloatingWindow {
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName"],
         windows: ["windowMode", "focusFollowsMouse", "titleBarStyle", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons",
                   "switcherMoveAnimation", "switcherPickAnimation"],
-        workspaces: ["workspaceAnimation", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons",
+        workspaces: ["workspaceAnimation", "workspaceSwitchName", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons",
                      "overviewMoveAnimation", "overviewPickAnimation", "overviewGridSize"],
         spaces: ["barShowSpaces", "spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
@@ -4487,6 +4487,12 @@ FloatingWindow {
                               { value: "slidevert", label: "Vertical Slide" }, { value: "none", label: "None" }]
                     value: Config.s.workspaceAnimation || "slidefade"
                     onPicked: v => Config.s.workspaceAnimation = v
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Name when switching"
+                    detail: "The indicator that shows as you go to the next or previous workspace (Super+Left / Right) names the one you land on, under its dots"
+                    key: "workspaceSwitchName"
                 }
                 Separator {}
                 ToggleSetting {
