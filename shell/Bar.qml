@@ -88,12 +88,13 @@ PanelWindow {
         for (let i = 1; i <= 6; i++) { p = at(x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6); arranger.move(p.x, p.y); }
         arranger.release();
     }
+    readonly property string clockText: clock.text
     // (tests) Each thing on the line: where it is in the bar's window and whether it shows
     function lineState() {
         const out = {};
         for (const name in left.things) {
             const t = left.things[name], p = t.mapToItem(null, 0, 0);
-            out[name] = { visible: t.visible, opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
+            out[name] = { visible: t.visible, text: t.plain ? (t.slimText ? "" : t.drawnLabel) : "", opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
                           box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
         }
         return out;
@@ -361,7 +362,82 @@ PanelWindow {
     }
 
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
-    readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
+    readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding - squeeze)
+    // (tests, and the arranging panel's narrow preview: the line made this much shorter)
+    property real squeeze: 0
+
+    // ---- When it doesn't all fit: slimming (plans/menubar-length.md) --------------------------
+    // The line gives up the cheapest things first, each only if it still doesn't fit after the
+    // one before: the window's title goes (its icon stays; before that it has already
+    // shortened, and the flexible spaces have closed up), then the text beside icons, longest
+    // first, then the clock's date, then its seconds. Nothing's lost that a hover or a click
+    // doesn't bring back. `gives` is what's been given up, in that order.
+    //
+    // Worked out by trying: with nothing given up, then one thing, then two…, laying the line
+    // out afresh each time (all in one go, so none of it is drawn) until it fits. Something
+    // given up comes back only when there'd be `slimMargin` to spare with it back, so a line
+    // that only just fits doesn't have things coming and going. Not while the bar's being
+    // arranged: everything's there then, to be picked up.
+    property var gives: []
+    property bool fitting: false
+    property bool slimTitle: false
+    property int slimClock: 0                 // 1: no date; 2: no seconds either
+    readonly property real slimMargin: 28
+    readonly property real titleLeast: 44     // a title shorter than this isn't worth its room
+    function slimPlan() {
+        const plan = [];
+        if (Config.barArranging) return plan;
+        if (Config.s.barShowTitle && winTitle.shell && titleText.text !== "") plan.push("title");
+        if (!vert) {
+            const texts = [];
+            for (const id in left.things) {
+                const t = left.things[id];
+                if (t.shell && t.wanted && t.plain && t.label !== "") texts.push({ id: id, w: t.labelLength });
+            }
+            texts.sort((a, b) => b.w - a.w || (a.id < b.id ? -1 : 1));
+            for (const t of texts) plan.push("text:" + t.id);
+        }
+        if (clockCap.shell && clockCap.wanted) {
+            if (Config.s.barClockDate) plan.push("clock:date");
+            if (Config.s.barClockSeconds) plan.push("clock:seconds");
+        }
+        return plan;
+    }
+    function slimApply(given) {
+        slimTitle = given.indexOf("title") >= 0;
+        slimClock = given.indexOf("clock:seconds") >= 0 ? 2 : given.indexOf("clock:date") >= 0 ? 1 : 0;
+        for (const id in left.things) left.things[id].slimText = given.indexOf("text:" + id) >= 0;
+        // (laid out now, not when the next frame is drawn: its length is about to be read)
+        for (const c of left.children) if (c.isBox) c.relayout();
+        left.forceLayout();
+    }
+    // How much too long the line is as it stands (below 0: that much to spare), allowing the
+    // title, where it shows, the least room worth having
+    function slimOver() { return lineFixed + (winTitle.visible ? titleLeast : 0) - lineLength; }
+    function fit() {
+        if (fitting) return;
+        fitting = true;
+        const plan = slimPlan();
+        let fits = -1, roomy = -1;
+        for (let k = 0; k <= plan.length && roomy < 0; k++) {
+            slimApply(plan.slice(0, k));
+            const over = slimOver();
+            if (fits < 0 && over <= 0) fits = k;
+            if (over <= -slimMargin) roomy = k;
+        }
+        if (fits < 0) fits = plan.length;
+        if (roomy < 0) roomy = plan.length;
+        // (as few as fit; one already given up stays so unless there's room to spare without it)
+        const k = Math.max(fits, Math.min(roomy, gives.length));
+        slimApply(plan.slice(0, k));
+        gives = plan.slice(0, k);
+        fitting = false;
+    }
+    Timer { id: fitLater; interval: 40; onTriggered: bar.fit() }
+    onLineLengthChanged: fitLater.restart()
+    onLineFixedChanged: if (!fitting) fitLater.restart()
+    Connections { target: Config; function onBarArrangingChanged() { fitLater.restart(); } }
+
     // What's on the line besides the window's title: how much room the fixed things take
     // (the title's own container counted without the title), and how many things there are
     // (flexible spaces included). The line (a Grid) leaves a gap between every two things it
@@ -619,6 +695,7 @@ PanelWindow {
                 if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
                 made = fresh;
                 for (const m of old) m.destroy();
+                fitLater.restart();
             }
             Component.onCompleted: place()
             Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.afresh = true; left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
@@ -934,7 +1011,7 @@ PanelWindow {
                 stretchy: true              // (it takes the room the rest of the line doesn't need)
                 pad: 18
                 readonly property var desc: bar.shownItem
-                wanted: Config.s.barShowTitle && (Config.barArranging || titleText.text !== "")
+                wanted: Config.s.barShowTitle && (Config.barArranging || (titleText.text !== "" && !bar.slimTitle))
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
@@ -1449,14 +1526,18 @@ PanelWindow {
                     rotation: bar.textRotation
                     // What it says now, and what's drawn: taken up at the middle of a cross-fade as the
                     // minute (or the format) changes. Counting seconds, it just changes
-                    readonly property string now: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                    // (short of room, it sheds its date, then its seconds: bar.slimClock)
+                    readonly property bool date: Config.s.barClockDate && bar.slimClock < 1
+                    readonly property bool seconds: Config.s.barClockSeconds && bar.slimClock < 2
+                    readonly property string now: (date ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
-                            ? (Config.s.barClockSeconds ? "HH:mm:ss" : "HH:mm")
-                            : (Config.s.barClockSeconds ? "h:mm:ss AP" : "h:mm AP"))
+                            ? (seconds ? "HH:mm:ss" : "HH:mm")
+                            : (seconds ? "h:mm:ss AP" : "h:mm AP"))
                     property string drawn: ""
                     Component.onCompleted: drawn = now
                     text: Config.s.barClockSeconds ? now : drawn
-                    onNowChanged: if (Config.s.barClockSeconds) drawn = now; else if (!clockSwap.running) clockSwap.start()
+                    // (straight away while the line's being fitted: its length is read as it's tried)
+                    onNowChanged: if (Config.s.barClockSeconds || bar.fitting) drawn = now; else if (!clockSwap.running) clockSwap.start()
                     SequentialAnimation {
                         id: clockSwap
                         NumberAnimation { target: clock; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
@@ -1580,6 +1661,9 @@ PanelWindow {
         // (the volume, a network's name) fades from the old to the new. Changes that come
         // while one's under way are picked up by it, or by another straight after
         property string drawnLabel: ""
+        property bool slimText: false           // short of room: its text is put away (bar.fit)
+        readonly property real labelLength: segLabel.implicitWidth + 6
+        function relayout() { segRow.forceLayout(); }
         Component.onCompleted: drawnLabel = shownLabel
         onShownLabelChanged: if (!labelSwap.running) labelSwap.start()
         SequentialAnimation {
@@ -1641,7 +1725,7 @@ PanelWindow {
             visible: seg.plain
             anchors.centerIn: parent
             // No gap when there's no label, so a lone icon sits in the middle
-            spacing: seg.drawnLabel !== "" && !bar.vert ? 6 : 0
+            spacing: seg.drawnLabel !== "" && !bar.vert && !seg.slimText ? 6 : 0
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.glyph(seg.iconCode)
@@ -1651,7 +1735,7 @@ PanelWindow {
             }
             Text {
                 id: segLabel
-                visible: seg.drawnLabel !== "" && !bar.vert
+                visible: seg.drawnLabel !== "" && !bar.vert && !seg.slimText
                 anchors.verticalCenter: parent.verticalCenter
                 text: seg.drawnLabel
                 color: seg.tint
@@ -1720,6 +1804,7 @@ PanelWindow {
         readonly property bool hollow: Config.barArranging && cells.length === 0
         visible: !carried && (cells.some(c => c.wanted && !c.carried) || hollow)
         function settle() { carried = false; toggle.carried = false; }
+        function relayout() { for (const c of cells) c.relayout(); row.forceLayout(); }
         // Holding the window's title: how long it is without the title's own text (the things
         // beside it, the title's padding, a line between each two, the gripper), which is what
         // the line counts when it works out the title's room

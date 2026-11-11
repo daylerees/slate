@@ -147,6 +147,7 @@ ShellRoot {
                 Config.barFloatAt = Config.barCarryAt;
             }
             else if (what === "drag") { const p = c.split(","); topBar.testDrag(n(a), n(b), Number(p[0]), Number(p[1])); }
+            else if (what === "squeeze") topBar.squeeze = Number(a);
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
@@ -285,7 +286,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
+                       line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
