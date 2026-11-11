@@ -59,7 +59,11 @@ stop() {
 READY="${XDG_RUNTIME_DIR:-/tmp}/slate-ready"
 cover_up() {
     [ -f "$SLATE_DIR/reloading/shell.qml" ] || return 1
-    setsid qs -n -p "$SLATE_DIR/reloading" >/dev/null 2>&1 </dev/null &
+    # (at Slate's own Interface size, so its mark and words match what they cover)
+    cscale=$(ui_scale)
+    if [ -n "$cscale" ]; then QT_SCALE_FACTOR="$cscale" setsid qs -n -p "$SLATE_DIR/reloading" >/dev/null 2>&1 </dev/null &
+    else env -u QT_SCALE_FACTOR setsid qs -n -p "$SLATE_DIR/reloading" >/dev/null 2>&1 </dev/null &
+    fi
     sleep 0.4                     # (faded in)
 }
 cover_down() {

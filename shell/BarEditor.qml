@@ -95,7 +95,10 @@ PanelWindow {
             onStreamFinished: {
                 try {
                     const p = JSON.parse(text);
-                    root.origin = Qt.point(p.x - root.pointer.x, p.y - root.pointer.y);
+                    // (Hyprland's position is in its own pixels; Slate's are those over the
+                    // Interface size: Config.uiScale)
+                    const k = Config.uiScale || 1;
+                    root.origin = Qt.point(p.x / k - root.pointer.x, p.y / k - root.pointer.y);
                     root.placed = true;
                 } catch (e) {}
             }
