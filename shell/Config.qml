@@ -1193,7 +1193,8 @@ Singleton {
     readonly property var statusPastels: ({
         notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",
         keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0",
-        gamemode: "#e8a6b4"
+        gamemode: "#e8a6b4",
+        windowmode: "#9ed6b4"       // (the workspace's window mode, by the dots: a mint green)
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }
     // The bar's Apps button (its three bars) and Spaces button (its four squares): one pastel
