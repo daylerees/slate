@@ -78,7 +78,7 @@ PanelWindow {
     // the power menu's always have: now whichever buttons are there, wherever they've been put
     // What a thing would say on the bar with its text on (for the arranging panel's pool: a chip
     // carried from there is drawn as the thing will be when it lands)
-    function exampleOf(id) { const t = left.things[id]; return t && !bar.vert ? (t.exampleLabel || "") : ""; }
+    function exampleOf(id) { const t = left.things[id]; return id === "windowtitle" ? "Window" : t && !bar.vert ? (t.exampleLabel || "") : ""; }
     // (tests) A drag on the bar while it's being arranged, in the bar window's own coordinates:
     // press at one place, move to the next in steps, let go
     function testDrag(x0, y0, x1, y1) {
@@ -304,7 +304,10 @@ PanelWindow {
                 const w = hitArea.mapToItem(null, at.position.x, at.position.y);
                 const p = left.mapFromItem(null, w.x, w.y);
                 const under = left.childAt(p.x, p.y);
-                if (under && under.isBox) return;
+                if (under && under.isBox) {
+                    const q = under.row.mapFromItem(null, w.x, w.y), cell = under.row.childAt(q.x, q.y);
+                    if (cell !== winTitle && cell !== winIcon) return;
+                }
                 barMenu.openAt(w.x + bar.windowX, w.y + bar.windowY);
             }
         }
@@ -334,9 +337,9 @@ PanelWindow {
     onHoverItemChanged: titleSwap.restart()
     SequentialAnimation {
         id: titleSwap
-        NumberAnimation { target: titleArea; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
+        NumberAnimation { target: bar; property: "titleFade"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
         ScriptAction { script: bar.shownItem = bar.hoverItem }
-        NumberAnimation { target: titleArea; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
+        NumberAnimation { target: bar; property: "titleFade"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
     }
 
     // Uptime, for the power button's hover text: read again as the pointer comes onto the button
@@ -348,37 +351,37 @@ PanelWindow {
         return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + (h > 0 || d > 0 ? h + " h " : "") + m + " min";
     }
 
-    property int titleIndex: -1            // the title's place in the arrangement
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
     readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
-    // What's on the line besides the title: how much room the fixed things take, and how many
-    // things there are (flexible spaces included). The line (a Grid) leaves a gap between every
-    // two things it shows and passes over anything with no size, so an empty title has no gap
-    // of its own; a flexible space always keeps a sliver of size, so it always has its two.
-    // (The title's size isn't read here: how long it may be depends on this)
+    // What's on the line besides the window's title: how much room the fixed things take
+    // (the title's own container counted without the title), and how many things there are
+    // (flexible spaces included). The line (a Grid) leaves a gap between every two things it
+    // shows and passes over anything with no size; a flexible space always keeps a sliver of
+    // size, so it always has its two. (The title's size isn't read here: how long it may be
+    // depends on this)
     readonly property real lineOthers: {
         let sum = 0;
         for (const c of left.children)
-            if (c.visible && !c.isSpace && c !== titleSlotTop) sum += vert ? c.height : c.width;
+            if (c.visible && !c.isSpace) sum += c.isBox && c.stretchyCell ? c.fixedLength : (vert ? c.height : c.width);
         return sum;
     }
     readonly property int lineOthersCount: {
         let n = 0;
         for (const c of left.children)
-            if (c.visible && c !== titleSlotTop && (c.isSpace || (vert ? c.height : c.width) > 0)) n++;
+            if (c.visible && (c.isSpace || c.isBox || (vert ? c.height : c.width) > 0)) n++;
         return n;
     }
     readonly property int lineSpaces: { let n = 0; for (const c of left.children) if (c.isSpace && c.visible) n++; return n; }
-    property bool titleCarried: false          // the active window being dragged (arranging): off the line till it lands
-    // What the title could have: everything the others don't need, a gap before or after each
-    readonly property real lineFixed: lineOthers + gap * lineOthersCount
+    // What the title could have: everything the others don't need, a gap between each two
+    readonly property real lineFixed: lineOthers + gap * Math.max(0, lineOthersCount - 1)
     // What each flexible space gets: an equal share of what's left once the title has its own
     readonly property real flex: {
         if (lineSpaces === 0) return 0;
-        const title = titleSlotTop.visible && titleSlotTop.parent === left ? (vert ? titleSlotTop.height : titleSlotTop.width) : 0;
-        const gaps = gap * Math.max(0, lineOthersCount - 1 + (title > 0 ? 1 : 0));
-        return Math.max(0, (lineLength - lineOthers - title - gaps) / lineSpaces);
+        const title = winTitle.visible ? (vert ? titleBody.height : titleBody.width) : 0;
+        return Math.max(0, (lineLength - lineFixed - title) / lineSpaces);
     }
+    // The cross-fade between the window's title and a description of what the pointer's over
+    property real titleFade: 1
 
     // ---- Drawing -----------------------------------------------------------
     Item {
@@ -479,7 +482,7 @@ PanelWindow {
 
         // ---- The line of things along the bar ------------------------------
         // One line, in the order Config.barLayout gives (Settings → Menu Bar): containers, the
-        // active window (titleSlotTop) and flexible spaces, which share whatever room is left.
+        // window's title and flexible spaces, which share whatever room is left.
         // Everything on the bar is written out once below, as it always was; arrange() only
         // decides which of them are on the line and in what order, by handing each to the line
         // in turn (anything not in the arrangement waits, unseen, in `parked`). So the bar
@@ -554,7 +557,8 @@ PanelWindow {
             readonly property var things: ({
                 control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn, windowmode: wsMode, workspaces: wsCap,
                 tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, gamemode: gameSeg,
-                keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn })
+                keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn,
+                windowicon: winIcon, windowtitle: winTitle })
             property var made: []              // the containers and flexible spaces made for this arrangement
             // Put the line in the order the arrangement gives: a container made for each of its
             // containers and handed its things, the title, a flexible space for each "space".
@@ -576,21 +580,19 @@ PanelWindow {
                 // it's going stays unseen through the move, and shows a moment after it: shown and
                 // moved in the same instant, it was never drawn either
                 const old = made;
-                bar.titleCarried = false;
                 // (so does one that was being carried, which is back on the line from here. And
                 // all of them when the bar goes into or out of being arranged, or back to Slate's
                 // own: should one ever have been left undrawn, that draws it again)
                 for (const name in things) { const t = things[name]; t.name = name; t.held = afresh || t.carried || !t.visible || t.opacity < 1; t.carried = false; }
                 afresh = false;
                 showing.restart();
-                titleSlotTop.parent = null;
                 // (each with its place in the arrangement, which is what a change is made by)
                 let order = Config.barLayout.map((entry, at) => ({ entry: entry, at: at }));
                 // A left bar's title reads upwards, growing up from where it sits: where it's
                 // followed by a flexible space (Slate's own arrangement), it goes after the
                 // space instead, down by what comes next
                 if (bar.vert && !bar.atRight) {
-                    const t = order.findIndex(o => o.entry === "title");
+                    const t = order.findIndex(o => typeof o.entry !== "string" && o.entry.items.indexOf("windowtitle") >= 0);
                     if (t >= 0 && order[t + 1] && order[t + 1].entry === "space") { const o = order[t]; order[t] = order[t + 1]; order[t + 1] = o; }
                 }
                 const fresh = [];
@@ -598,7 +600,6 @@ PanelWindow {
                     const entry = o.entry;
                     if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
-                    else if (entry === "title") { bar.titleIndex = o.at; titleSlotTop.parent = left; }
                     else {
                         const box = boxComp.createObject(left, { index: o.at, tuck: !!entry.tuck, tuckFrom: entry.tuckFrom || "" });
                         if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
@@ -614,191 +615,6 @@ PanelWindow {
             Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.afresh = true; left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
-            // Title area: the focused window's tile and title, or, while the pointer is
-            // over something on the bar, a description of that (cross-faded)
-            // Placeholder for the title area (it moves to the bottom group on a left bar)
-            Item {
-                id: titleSlotTop
-                visible: Config.s.barShowTitle && !bar.titleCarried
-                opacity: titleArea.fade
-                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-                width: childrenRect.width; height: childrenRect.height
-                // While arranging: outlined, and with no window to name, a stand-in to pick up
-                Rectangle {
-                    visible: Config.barArranging
-                    // (no size when it isn't showing: the slot's size counts hidden things too)
-                    width: !Config.barArranging ? 0 : bar.vert ? bar.capsuleHeight : Math.max(titleArea.width + 8, standIn.implicitWidth + 20)
-                    height: !Config.barArranging ? 0 : bar.vert ? Math.max(titleArea.height + 8, 60) : bar.capsuleHeight
-                    radius: bar.capsuleRadius
-                    readonly property bool picked: Config.barSelected === bar.titleIndex
-                    color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
-                    Dashes { picked: parent.picked }
-                    Text {
-                        id: standIn
-                        visible: !bar.vert && titleArea.width < 2
-                        anchors.centerIn: parent
-                        text: "Window"
-                        color: bar.dimTextColor
-                        font.family: bar.fontFamily; font.pixelSize: bar.fontSize; font.weight: Font.Medium
-                    }
-                }
-            }
-            BarLine {
-                id: titleArea
-                // (On a left bar the title reads upwards, so in Slate's own arrangement it sits
-                // at the bottom, just above the tray, and grows up from there: arrange() puts it
-                // after the flexible space there)
-                parent: titleSlotTop
-                visible: Config.s.barShowTitle
-                // (in the middle of its outline while the bar's being arranged: the outline is as
-                // tall as a container, the title alone isn't, and it sat at the top of it)
-                x: !Config.barArranging ? 0 : bar.vert ? Math.max(0, (bar.capsuleHeight - width) / 2) : 4
-                y: !Config.barArranging ? 0 : bar.vert ? 4 : Math.max(0, (bar.capsuleHeight - height) / 2)
-                spacing: bar.gap
-                // The icon and the title fade as one, like a container (Settings → Menu Bar → Glass:
-                // Contents opacity, and Hover opacity with the pointer over either)
-                HoverHandler { id: titleHover }
-                // (on the slot it sits in: its own opacity is the cross-fade to a hover description)
-                readonly property bool lifted: titleHover.hovered && Config.barItemHoverSet
-                readonly property real fade: Config.barArranging || !(lifted || Config.barItemSet) ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
-                horizontalItemAlignment: Grid.AlignHCenter
-                verticalItemAlignment: Grid.AlignVCenter
-                readonly property var s: bar.shownItem
-                // Room for the title: what the line has left once everything else on it has
-                // what it needs (the gaps between them included). A long title stops there and
-                // fades out rather than running under whatever comes next
-                readonly property real room: {
-                    const tile = tileSlotStart.visible ? tileSlotStart : tileSlotEnd.visible ? tileSlotEnd : null;
-                    const icon = tile ? (bar.vert ? tile.height : tile.width) + spacing : 0;
-                    return Math.max(0, bar.lineLength - bar.lineFixed - icon);
-                }
-
-                // The icon's place before the title (or, on a left bar, after it). It goes by whether
-                // the icon wants to show (appTile.wanted), not its visible, which reads false while
-                // this slot is hidden: once hidden, the slot never came back until Slate reloaded
-                Item { id: tileSlotStart; visible: appTile.parent === tileSlotStart && appTile.wanted; width: appTile.width; height: appTile.height }
-                Capsule {
-                    id: appTile
-                    over: titleHover.hovered
-                    fades: false
-                    // Before the title, except on a left bar, where the title reads upwards and
-                    // starts at the bottom: the icon goes there
-                    parent: bar.vert && !bar.atRight ? tileSlotEnd : tileSlotStart
-                    readonly property var focusedTop: ToplevelManager.activeToplevel
-                    readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
-                    readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
-                    readonly property string key: titleArea.s ? (titleArea.s.hoverTile || "") : winKey
-                    readonly property string path: Config.tilePath(key)
-                    readonly property bool showGlyph: !!titleArea.s && key === "" && titleArea.s.hoverCode !== 0
-                    readonly property bool showImage: !!titleArea.s && key === "" && !showGlyph && String(titleArea.s.hoverImage) !== ""
-                    // The focused window came from a space: its tile takes the space's colour
-                    // (the whole button, for icon styles with no tile behind the icon)
-                    readonly property var space: titleArea.s || !Config.s.spaceBarTint ? null
-                        : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
-                    color: space && !tilePlate.visible ? space.colour : bar.capsuleColor
-                    Behavior on color { ColorAnimation { duration: Config.ms(200) } }
-                    property int version: 0
-                    property string tried: ""      // drawn once per icon file
-                    // Hover descriptions are text only; the app's icon can be turned off (Settings → Menu Bar)
-                    readonly property bool wanted: !titleArea.s && !!focusedTop && Config.s.barShowTitleIcon
-                    visible: wanted
-                    length: bar.capsuleHeight
-                    hoverTint: false
-                    Image {
-                        anchors { fill: parent; margins: 3 }
-                        visible: appTile.key !== ""
-                        source: appTile.key ? "file://" + appTile.path + "?v=" + appTile.version + "." + Config.tileVersion : ""
-                        sourceSize: Qt.size(96, 96)
-                        smooth: true
-                        mipmap: true
-                        layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                        onStatusChanged: if (status === Image.Error && !tileGen.running && appTile.tried !== appTile.path) { appTile.tried = appTile.path; tileGen.running = true; }
-                        // The tile behind, in the theme's colour (or the space's)
-                        IconPlate {
-                            id: tilePlate
-                            anchors.fill: parent; z: -1
-                            // (app: IconPlate's own, worked out from the tile image it sits behind)
-                            color: appTile.space ? appTile.space.colour : Config.iconTileFor(app, Config.iconPlateColor)
-                            shaded: !appTile.space && Config.iconTileShade(app) !== null
-                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
-                        }
-                        IconGloss {}            // glass: a sheen on the tile, as on the dock's icons
-                    }
-                    Process {
-                        id: tileGen
-                        command: Config.tileCommand(appTile.key, appTile.path)
-                        onExited: appTile.version++
-                    }
-                    Text {
-                        anchors.centerIn: parent
-                        visible: appTile.showGlyph
-                        text: appTile.showGlyph ? bar.glyph(titleArea.s.hoverCode) : ""
-                        color: bar.textColor
-                        font.family: bar.iconFont
-                        font.pixelSize: 16
-                    }
-                    Image {
-                        id: hoverImg
-                        anchors.centerIn: parent
-                        width: 16; height: 16
-                        source: appTile.showImage ? titleArea.s.hoverImage : ""
-                        sourceSize: Qt.size(32, 32)
-                        visible: appTile.showImage && Config.colourful     // Colourful: its own colours
-                    }
-                    ShaderEffect {
-                        anchors.fill: hoverImg
-                        visible: appTile.showImage && !Config.colourful
-                        property variant source: hoverImg
-                        property real threshold: 0.45
-                        property color tint: bar.textColor
-                        fragmentShader: Qt.resolvedUrl("shaders/mono.frag.qsb")
-                    }
-                }
-
-                // The title (turned to run down a side bar)
-                Item {
-                    width: bar.vert ? titleText.height : titleText.width
-                    height: bar.vert ? titleText.width : titleText.height
-                    Text {
-                        id: titleText
-                        anchors.centerIn: parent
-                        rotation: bar.textRotation
-                        width: Math.min(implicitWidth, bar.vert ? 320 : 560, titleArea.room)
-                        // Too long for its room: the end fades away (drawn through fadeMask)
-                        readonly property bool cut: implicitWidth > width + 0.5
-                        layer.enabled: cut
-                        // (thresholds set so the mask's soft edge fades the text, rather than
-                        // cutting it off wherever the mask isn't fully clear)
-                        layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                        // (while the bar's being arranged it just says what it is, to leave room)
-                        text: Config.barArranging ? "Window" : titleArea.s ? titleArea.s.hoverText
-                            : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
-                        leftPadding: titleArea.s || !Config.s.barShowTitleIcon ? 8 : 0      // a little space for a hover description, or with no app icon
-                        color: bar.textColor
-                        font.family: bar.fontFamily
-                        font.pixelSize: bar.fontSize
-                        font.weight: Font.Medium
-                    }
-                    // The title's fade: solid, then clear over its last 32 px (in the text's own
-                    // direction, so it works turned down a side bar too)
-                    Item {
-                        id: titleFade
-                        width: titleText.width; height: titleText.height
-                        visible: false
-                        layer.enabled: titleText.cut
-                        Rectangle {
-                            anchors.fill: parent
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0; color: "white" }
-                                GradientStop { position: Math.max(0, 1 - 32 / Math.max(1, titleFade.width)); color: "white" }
-                                GradientStop { position: 1; color: "transparent" }
-                            }
-                        }
-                    }
-                }
-                Item { id: tileSlotEnd; visible: appTile.parent === tileSlotEnd && appTile.wanted; width: appTile.width; height: appTile.height }
-            }
         }
 
         // ---- Arranging: dragging things about on the bar itself --------------------------
@@ -847,17 +663,15 @@ PanelWindow {
             // everything): its icons, as they are on the bar
             function floatOf(h) {
                 const e = Config.barLayout[h.index];
-                const icon = id => { const it = Config.barItem(id), t = left.things[id]; return { code: it ? it.icon : 0, item: id, text: t && !bar.vert ? (t.shownLabel || "") : "" }; };
+                const icon = id => { const it = Config.barItem(id), t = left.things[id]; return { code: it ? it.icon : 0, item: id, text: id === "windowtitle" ? "Window" : t && !bar.vert ? (t.shownLabel || "") : "" }; };
                 if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }], label: "" };
                 if (h.kind === "item") return { kind: "item", icons: [icon(h.name)], label: "" };
                 if (e === "space") return { kind: "space", icons: [{ code: bar.vert ? 0xEB5B : 0xEB59, item: "" }], label: "" };
-                if (e === "title") return { kind: "title", icons: [], label: "Window" };
                 return { kind: "box", icons: e.items.filter(id => id !== "tuck" && Config.barShown(id)).map(icon), label: "" };
             }
             function carry(h, on) {
                 if (!h) return;
-                if (h.kind === "entry" && Config.barLayout[h.index] === "title") bar.titleCarried = on;
-                else if (h.obj) h.obj.carried = on;
+                if (h.obj) h.obj.carried = on;
             }
             function drop() {
                 held = null; target = null; moved = false; leaving = false;
@@ -871,7 +685,6 @@ PanelWindow {
                     if (!c.visible) continue;
                     const a = bar.vert ? c.y : c.x, b = a + (bar.vert ? c.height : c.width);
                     if (c.isSpace) out.push({ kind: "space", obj: c, index: c.index, a0: a, a1: b });
-                    else if (c === titleSlotTop) out.push({ kind: "title", obj: c, index: bar.titleIndex, a0: a, a1: b });
                     else if (c.isBox) out.push({ kind: "box", obj: c, index: c.index, a0: a, a1: b });
                 }
                 return out;
@@ -978,7 +791,7 @@ PanelWindow {
             }
             onCanceled: { carry(held, false); drop(); }
             // (should a drop change nothing, so the line isn't laid again: back on it)
-            Timer { id: back; interval: 300; onTriggered: { bar.titleCarried = false; for (const n in left.things) left.things[n].carried = false; for (const c of left.children) { if (c.isBox) c.settle(); else if (c.carried) c.carried = false; } } }
+            Timer { id: back; interval: 300; onTriggered: { for (const n in left.things) left.things[n].carried = false; for (const c of left.children) { if (c.isBox) c.settle(); else if (c.carried) c.carried = false; } } }
 
             // Something carried here from the pool in the panel beside the bar (BarEditor.qml; Config.barCarry): the
             // page says where the pointer is on the desktop; when that's on or near this bar,
@@ -1001,7 +814,7 @@ PanelWindow {
                         if (c.kind === "tuck" && !t.join) t = null;      // (a collapse button only goes in a container)
                     }
                 }
-                if (t && !held) gapLen = c.kind === "space" ? 30 : c.kind === "box" ? 44 : c.kind === "title" ? 80 : bar.capsuleHeight + 8;
+                if (t && !held) gapLen = c.kind === "space" ? 30 : c.kind === "box" ? 44 : bar.capsuleHeight + 8;
                 carryTarget = t;
                 if (t) Config.barCarryTarget = { join: t.join, to: t.to, slot: t.slot, bar: bar };
                 else if (Config.barCarryTarget && Config.barCarryTarget.bar === bar) Config.barCarryTarget = null;
@@ -1020,6 +833,149 @@ PanelWindow {
         Item {
             id: parked
             visible: false
+            // The focused window, as two things: its icon and its title. Each sits in a container
+            // like the rest (together, in Slate's own arrangement). While the pointer's over
+            // something on the bar, the title gives a description of that instead (cross-faded:
+            // bar.titleFade) and the icon steps out
+            Segment {
+                id: winIcon
+                hover: false
+                readonly property var desc: bar.shownItem
+                wanted: Config.s.barShowTitleIcon && (Config.barArranging || (!desc && !!appTile.focusedTop))
+                length: bar.capsuleHeight + 4
+                Item {
+                    id: appTile
+                    anchors.centerIn: parent
+                    width: bar.capsuleHeight; height: bar.capsuleHeight
+                    opacity: bar.titleFade
+                    readonly property var focusedTop: ToplevelManager.activeToplevel
+                    readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
+                    readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
+                    // (while the bar's being arranged: Slate Settings' own icon, as a stand-in)
+                    readonly property string key: Config.barArranging ? "slate-settings" : winIcon.desc ? (winIcon.desc.hoverTile || "") : winKey
+                    readonly property string path: Config.tilePath(key)
+                    readonly property bool showGlyph: !!winIcon.desc && key === "" && winIcon.desc.hoverCode !== 0
+                    readonly property bool showImage: !!winIcon.desc && key === "" && !showGlyph && String(winIcon.desc.hoverImage) !== ""
+                    // The focused window came from a space: its tile takes the space's colour
+                    // (the whole button, for icon styles with no tile behind the icon)
+                    readonly property var space: winIcon.desc || Config.barArranging || !Config.s.spaceBarTint ? null
+                        : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
+                    Rectangle {
+                        anchors { fill: parent; margins: 2 }
+                        radius: Math.max(0, bar.capsuleRadius - 2)
+                        visible: !!appTile.space && !tilePlate.visible
+                        color: appTile.space ? appTile.space.colour : "transparent"
+                    }
+                    property int version: 0
+                    property string tried: ""      // drawn once per icon file
+                    Image {
+                        anchors { fill: parent; margins: 3 }
+                        visible: appTile.key !== ""
+                        source: appTile.key ? "file://" + appTile.path + "?v=" + appTile.version + "." + Config.tileVersion : ""
+                        sourceSize: Qt.size(96, 96)
+                        smooth: true
+                        mipmap: true
+                        layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
+                        onStatusChanged: if (status === Image.Error && !tileGen.running && appTile.tried !== appTile.path) { appTile.tried = appTile.path; tileGen.running = true; }
+                        // The tile behind, in the theme's colour (or the space's)
+                        IconPlate {
+                            id: tilePlate
+                            anchors.fill: parent; z: -1
+                            // (app: IconPlate's own, worked out from the tile image it sits behind)
+                            color: appTile.space ? appTile.space.colour : Config.iconTileFor(app, Config.iconPlateColor)
+                            shaded: !appTile.space && Config.iconTileShade(app) !== null
+                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
+                        }
+                        IconGloss {}            // glass: a sheen on the tile, as on the dock's icons
+                    }
+                    Process {
+                        id: tileGen
+                        command: Config.tileCommand(appTile.key, appTile.path)
+                        onExited: appTile.version++
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        visible: appTile.showGlyph
+                        text: appTile.showGlyph ? bar.glyph(winIcon.desc.hoverCode) : ""
+                        color: bar.textColor
+                        font.family: bar.iconFont
+                        font.pixelSize: 16
+                    }
+                    Image {
+                        id: hoverImg
+                        anchors.centerIn: parent
+                        width: 16; height: 16
+                        source: appTile.showImage ? winIcon.desc.hoverImage : ""
+                        sourceSize: Qt.size(32, 32)
+                        visible: appTile.showImage && Config.colourful     // Colourful: its own colours
+                    }
+                    ShaderEffect {
+                        anchors.fill: hoverImg
+                        visible: appTile.showImage && !Config.colourful
+                        property variant source: hoverImg
+                        property real threshold: 0.45
+                        property color tint: bar.textColor
+                        fragmentShader: Qt.resolvedUrl("shaders/mono.frag.qsb")
+                    }
+                }
+            }
+            Segment {
+                id: winTitle
+                hover: false
+                stretchy: true              // (it takes the room the rest of the line doesn't need)
+                pad: 18
+                readonly property var desc: bar.shownItem
+                wanted: Config.s.barShowTitle && (Config.barArranging || titleText.text !== "")
+                // Room for the title: what the line has left once everything else on it has what
+                // it needs (the gaps between them included). A long title stops there and fades
+                // out rather than running under whatever comes next
+                readonly property real room: Math.max(0, bar.lineLength - bar.lineFixed)
+                length: (bar.vert ? titleBody.height : titleBody.width) + pad
+                // The title (turned to run down a side bar)
+                Item {
+                    id: titleBody
+                    anchors.centerIn: parent
+                    opacity: bar.titleFade
+                    width: bar.vert ? titleText.height : titleText.width
+                    height: bar.vert ? titleText.width : titleText.height
+                    Text {
+                        id: titleText
+                        anchors.centerIn: parent
+                        rotation: bar.textRotation
+                        width: Math.min(implicitWidth, bar.vert ? 320 : 560, winTitle.room)
+                        // Too long for its room: the end fades away (drawn through fadeMask)
+                        readonly property bool cut: implicitWidth > width + 0.5
+                        layer.enabled: cut
+                        // (thresholds set so the mask's soft edge fades the text, rather than
+                        // cutting it off wherever the mask isn't fully clear)
+                        layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                        // (while the bar's being arranged it just says what it is, to leave room)
+                        text: Config.barArranging ? "Window" : winTitle.desc ? winTitle.desc.hoverText
+                            : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
+                        color: bar.textColor
+                        font.family: bar.fontFamily
+                        font.pixelSize: bar.fontSize
+                        font.weight: Font.Medium
+                    }
+                    // The title's fade: solid, then clear over its last 32 px (in the text's own
+                    // direction, so it works turned down a side bar too)
+                    Item {
+                        id: titleFade
+                        width: titleText.width; height: titleText.height
+                        visible: false
+                        layer.enabled: titleText.cut
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0; color: "white" }
+                                GradientStop { position: Math.max(0, 1 - 32 / Math.max(1, titleFade.width)); color: "white" }
+                                GradientStop { position: 1; color: "transparent" }
+                            }
+                        }
+                    }
+                }
+            }
 
             // Control centre: Slate's mark (a slab of slate, accent along its top edge)
             Segment {
@@ -1592,6 +1548,7 @@ PanelWindow {
         readonly property bool last: shell ? shell.isLast(seg) : true
         property bool held: false               // (kept unseen for a moment as it's moved: see place())
         property bool carried: false            // being dragged (arranging): off the line till it lands
+        property bool stretchy: false           // the window's title: as long as the line has room for
         visible: shell && !held ? shell.shows(seg) : false
         opacity: shell && !isToggle ? shell.openness : 1
         property int iconCode: 0
@@ -1734,6 +1691,19 @@ PanelWindow {
         readonly property bool hollow: Config.barArranging && cells.length === 0
         visible: !carried && (cells.some(c => c.wanted && !c.carried) || hollow)
         function settle() { carried = false; toggle.carried = false; }
+        // Holding the window's title: how long it is without the title's own text (the things
+        // beside it, the title's padding, a line between each two, the gripper), which is what
+        // the line counts when it works out the title's room
+        readonly property var stretchyCell: cells.find(c => c.stretchy && shows(c)) || null
+        readonly property real fixedLength: {
+            let sum = grip, n = 0;
+            for (const c of order) {
+                if (!shows(c)) continue;
+                n++;
+                sum += c.stretchy ? c.pad : (bar.vert ? c.height : c.width);
+            }
+            return sum + Math.max(0, n - 1);
+        }
         readonly property real fullLength: hollow ? Math.max(30, bar.vert ? row.height : row.width) : bar.vert ? row.height : row.width
         readonly property real closedLength: bar.vert ? toggle.height : toggle.width
         length: (tuck ? closedLength + (fullLength - closedLength) * openness : fullLength) + grip

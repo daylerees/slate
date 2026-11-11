@@ -61,7 +61,7 @@ PanelWindow {
     // ---- What's picked on the bar ---------------------------------------------------
     readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
     readonly property string pickedItem: Config.barSelectedItem
-    readonly property string kind: !picked ? "none" : picked === "space" ? "space" : picked === "title" ? "title"
+    readonly property string kind: !picked ? "none" : picked === "space" ? "space"
         : pickedItem !== "" ? "item" : "box"
     readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
     readonly property bool pickedTuck: !!picked && typeof picked !== "string" && !!picked.tuck
@@ -94,7 +94,7 @@ PanelWindow {
             carrying = chip;
             Config.barCarryAt = Qt.point(-100000, -100000);
             Config.barFloatAt = Qt.point(-100000, -100000);
-            Config.barFloat = { kind: chip.carry.kind, label: chip.carry.kind === "title" ? "Window" : "",
+            Config.barFloat = { kind: chip.carry.kind, label: "",
                                 icons: [{ code: chip.icon, item: chip.item, text: chip.item !== "" ? root.bar.exampleOf(chip.item) : "" }] };
             Config.barCarry = chip.carry;
         }
@@ -358,7 +358,7 @@ PanelWindow {
             // The pool
             Heading {
                 text: Config.barLeaving ? "Let go to take it off the bar. It waits here, and keeps its place"
-                    : root.pool.length === 0 && Config.s.barShowTitle ? "Everything's on the bar. Drag something off it and it waits here"
+                    : root.pool.length === 0 ? "Everything's on the bar. Drag something off it and it waits here"
                     : "Not on the bar"
                 color: Config.barLeaving ? root.accent : root.dim
             }
@@ -373,12 +373,6 @@ PanelWindow {
                         carry: ({ kind: "item", id: modelData.id })
                         onClicked: Config.barSetShown(modelData.id, true)
                     }
-                }
-                PoolChip {
-                    visible: !Config.s.barShowTitle
-                    icon: 0xEFE6; label: "Active window"
-                    carry: ({ kind: "title", id: "title" })
-                    onClicked: Config.barSetShown("title", true)
                 }
                 // (always more of these)
                 PoolChip {
@@ -401,7 +395,6 @@ PanelWindow {
                 text: root.kind === "none" ? "Nothing picked. Click something on the bar to see its options"
                     : root.kind === "space" ? "A flexible space: it takes up the spare room, pushing what's either side of it apart"
                         + (Config.barSpaces < 2 ? ". The bar always keeps one" : "")
-                    : root.kind === "title" ? "The active window: its icon and title"
                     : root.kind === "item" ? root.nameOf(root.pickedItem)
                     : "A container: " + (root.pickedThings.length > 0 ? root.pickedThings.map(root.nameOf).join(", ") : "nothing in it yet. Drag things into it")
             }
@@ -448,12 +441,6 @@ PanelWindow {
                     label: "Seconds"
                     checked: Config.s.barClockSeconds
                     onToggled: v => Config.s.barClockSeconds = v
-                }
-                Switch {
-                    visible: root.kind === "title"
-                    label: "App icon"
-                    checked: Config.s.barShowTitleIcon
-                    onToggled: v => Config.s.barShowTitleIcon = v
                 }
 
                 // A container

@@ -132,7 +132,7 @@ Singleton {
     readonly property var barLayoutDefault: [
         barBox(["control"]), barBox(["apps"]), barBox(["spaces"]), barBox(["chalk"]),
         barBox(["windowmode", "workspaces"]),
-        "title", "space",
+        barBox(["windowicon", "windowtitle"]), "space",
         barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["clock"]), barBox(["power"])
     ]
     // Everything that can be in a container: its name in the arrangement, what it's called, its
@@ -144,6 +144,8 @@ Singleton {
         { id: "chalk", label: "Chalk", icon: 0xF38A, key: "barShowAssistant" },
         { id: "windowmode", label: "Window mode", icon: 0xEFE6, key: "barShowWindowMode" },
         { id: "workspaces", label: "Workspaces", icon: 0xEA95, key: "barShowWorkspaces" },
+        { id: "windowicon", label: "Window icon", icon: 0xEFE6, key: "barShowTitleIcon" },
+        { id: "windowtitle", label: "Window title", icon: 0xEBC5, key: "barShowTitle" },
         { id: "tray", label: "Tray", icon: 0xEA61, key: "barShowTray" },
         { id: "notifications", label: "Notifications", icon: 0xEA35, key: "barShowNotifications" },
         { id: "clipboard", label: "Clipboard", icon: 0xEA6F, key: "barShowClipboard" },
@@ -166,11 +168,16 @@ Singleton {
         if (!saved || saved.length === undefined || saved.length === 0) return barLayoutDefault;
         const known = barItems.map(i => i.id);
         const seen = {}, out = [];
-        let title = false, spaces = 0;
+        let spaces = 0;
         for (let i = 0; i < saved.length; i++) {
             const e = saved[i];
             if (e === "space") { spaces++; out.push("space"); }
-            else if (e === "title") { if (!title) { title = true; out.push("title"); } }
+            // (from when the window's icon and title were one thing of its own on the line)
+            else if (e === "title") {
+                const items = ["windowicon", "windowtitle"].filter(id => !seen[id]);
+                for (const id of items) seen[id] = true;
+                if (items.length > 0) out.push(barBox(items, null));
+            }
             else if (e && e.items && e.items.length !== undefined) {
                 const items = [];
                 for (let j = 0; j < e.items.length; j++) {
@@ -182,9 +189,8 @@ Singleton {
                 else if (e.keep) { const b = barBox(items, null); b.keep = true; out.push(b); }
             }
         }
-        if (!title) out.push("title");
         // (there's always one flexible space: without one nothing takes up the spare room)
-        if (spaces === 0) out.splice(out.indexOf("title") + 1, 0, "space");
+        if (spaces === 0) out.splice(out.findIndex(e => typeof e !== "string" && e.items.indexOf("windowtitle") >= 0) + 1 || out.length, 0, "space");
         for (const id of known) if (!seen[id]) out.push({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" });
         return out;
     }
@@ -204,7 +210,7 @@ Singleton {
     property int barSelected: -1               // what's picked on the bar, by its place in the arrangement...
     property string barSelectedItem: ""        // ...and, when it's one thing in a container, its name ("tuck": the collapse button)
     onBarSelectedChanged: if (barSelected < 0) barSelectedItem = ""
-    // Pick something (a container, a flexible space or the title: item ""); again lets go of it
+    // Pick something (a container or a flexible space: item ""); again lets go of it
     function barPick(at, item) {
         if (barSelected === at && barSelectedItem === (item || "")) { barSelected = -1; return; }
         barSelectedItem = item || "";
@@ -229,7 +235,7 @@ Singleton {
         if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
     }
     // Something carried from the pool in the panel (BarEditor.qml) towards the bar: what it is
-    // ({ kind: "item" | "title" | "space" | "box" | "tuck", id }), where the pointer is on the
+    // ({ kind: "item" | "space" | "box", id }), where the pointer is on the
     // desktop, and, from the bar under it, where it would land ({ join, to, slot, bar })
     property var barCarry: null
     property point barCarryAt: Qt.point(0, 0)
@@ -246,7 +252,6 @@ Singleton {
         barCarry = null; barCarryTarget = null;
         if (!c || !t) return false;
         if (c.kind === "item") { barSetShown(c.id, true); barMoveItem(c.id, t.to, t.join ? t.slot : -1); }
-        else if (c.kind === "title") { barSetShown("title", true); barMoveEntry(barLayout.indexOf("title"), t.to); }
         else if (c.kind === "space") barAddSpace(t.to);
         else if (c.kind === "box") barAddBox(t.to);
         else if (c.kind === "tuck") {
@@ -331,7 +336,7 @@ Singleton {
         barSelected = -1;
         barSave(list);
     }
-    // Move a whole thing (a container, the title, a flexible space) to before what's at `to`
+    // Move a whole thing (a container, a flexible space) to before what's at `to`
     function barMoveEntry(from, to) {
         const list = barCopy();
         if (from < 0 || from >= list.length) return;
@@ -344,13 +349,12 @@ Singleton {
     // Slate's own arrangement again: its order and containers, and everything it starts with
     // on the bar (what each thing shows, like its text, is left as it is)
     readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
-        && barItems.every(i => sameValue(s[i.key], defaultOf(i.key))) && sameValue(s.barShowTitle, defaultOf("barShowTitle"))
+        && barItems.every(i => sameValue(s[i.key], defaultOf(i.key)))
     signal barRedraw()          // (the bar lays its line again, drawing everything afresh)
     function barReset() {
         barSelected = -1;
         barRedraw();
         for (const i of barItems) s[i.key] = defaultOf(i.key);
-        s.barShowTitle = defaultOf("barShowTitle");
         s.barStatusCollapsed = defaultOf("barStatusCollapsed");
         s.barLayout = [];
     }
@@ -372,7 +376,6 @@ Singleton {
         const list = barCopy();
         const e = list[at];
         if (e === "space") { if (barSpaces < 2) return; list.splice(at, 1); barSave(list); }      // (the last one stays)
-        else if (e === "title") s.barShowTitle = false;
         else if (e && e.items.length === 0) { list.splice(at, 1); barSave(list); }      // (an empty one, fresh from the pool)
         else if (e) for (const id of e.items) barSetShown(id, false);
         barSelected = -1;
@@ -399,11 +402,11 @@ Singleton {
         barSave(list);
     }
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
-    function barShown(id) { const it = id === "title" ? { key: "barShowTitle" } : barItem(id); return !!it && !!s[it.key]; }
+    function barShown(id) { const it = barItem(id); return !!it && !!s[it.key]; }
     // (Put back on the bar, a thing has its text on again: it comes as it first was, whatever
     // it was set to before it went to the pool)
     function barSetShown(id, on) {
-        const it = id === "title" ? { key: "barShowTitle" } : barItem(id);
+        const it = barItem(id);
         if (!it) return;
         if (on && !s[it.key] && barTextKeys[id]) s[barTextKeys[id]] = true;
         s[it.key] = !!on;

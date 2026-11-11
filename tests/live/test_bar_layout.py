@@ -12,7 +12,7 @@ from live import LiveCase
 SHOWN = ["barShowControl", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWindowMode", "barShowWorkspaces",
          "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode",
          "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowWifi", "barShowBattery", "barShowClock",
-         "barShowPower", "barShowTitle", "barStatusCollapsed"]
+         "barShowPower", "barShowTitle", "barShowTitleIcon", "barStatusCollapsed"]
 
 
 class BarLayout(LiveCase):
@@ -53,7 +53,7 @@ class BarLayout(LiveCase):
         self.assertTrue(st["isDefault"])
         self.assertEqual([e if isinstance(e, str) else e["items"] for e in st["layout"]][:5],
                          [["control"], ["apps"], ["spaces"], ["chalk"], ["windowmode", "workspaces"]])
-        self.assertIn("title", st["layout"])
+        self.assertEqual(st["layout"][5]["items"], ["windowicon", "windowtitle"])
         self.assertIn("space", st["layout"])
 
     def test_an_item_joins_a_container(self):
