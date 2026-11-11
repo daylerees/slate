@@ -169,8 +169,8 @@ JsonAdapter {
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
     property bool dockBlur: true              // with glass: what's behind the dock is blurred (off: seen straight through it)
-    property real dockOpacity: -1             // with glass: the dock's background, 0 clear … 1 solid (below 0: Slate's own, a fifth clearer than the rest of the glass)
-    property real dockTileOpacity: 1.0        // with glass: the tiles behind its icons and its buttons (1: solid)
+    property real dockOpacity: 0.6            // with glass: the dock's background, 0 clear … 1 solid
+    property real dockTileOpacity: 0.8        // with glass: the tiles behind its icons and its buttons, 0 gone … 1 solid
     property bool dockAutoHide: true          // hide when the workspace has windows
     property bool dockShowLauncher: true      // the Apps button at the start of the dock
     property bool dockPreviews: true          // pausing on an app in the dock shows its windows
