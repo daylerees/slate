@@ -537,7 +537,7 @@ PanelWindow {
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             Rectangle {
                 anchors.fill: parent
-                color: Config.shade(0.88)
+                color: Config.shade(0.94)
                 opacity: root.fade
             }
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
