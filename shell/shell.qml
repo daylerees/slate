@@ -161,6 +161,9 @@ ShellRoot {
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
+        // The speakers or the microphone in use, or neither, as if PipeWire had said so:
+        // what = "output", "input", "both" or "none" (the volume panel's sliders show it)
+        function audioBusy(what: string): void { popouts.pretendAudioBusy(what); }
         // Weather for the clock panel and control centre, as if it had been fetched for a place
         // (tests have no network): mild rain now, then four days
         function weather(on: bool): void {

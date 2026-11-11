@@ -361,6 +361,40 @@ PanelWindow {
         if (current === "notifications" && notifs) notifs.markRead();
     }
 
+    // Which speakers and microphones are in use just now: sound playing through one, or
+    // something listening to one ({ node's name: true }). PipeWire knows (a node that's
+    // "running"); asked once a second, and only while the volume panel's open. Without
+    // pw-dump nothing's marked, and the sliders are as they always were
+    property var audioBusy: ({})
+    Process {
+        id: audioBusyAsk
+        command: ["pw-dump"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const busy = {};
+                try {
+                    for (const o of JSON.parse(text)) {
+                        const i = o.info, p = i && i.props;
+                        if (i && p && i.state === "running" && (p["media.class"] === "Audio/Sink" || p["media.class"] === "Audio/Source"))
+                            busy[p["node.name"]] = true;
+                    }
+                } catch (e) {}
+                if (JSON.stringify(busy) !== JSON.stringify(pop.audioBusy)) pop.audioBusy = busy;
+            }
+        }
+    }
+    function pretendAudioBusy(what) {          // (tests)
+        const busy = {}, out = Pipewire.defaultAudioSink, mic = Pipewire.defaultAudioSource;
+        if (out && (what === "output" || what === "both")) busy[out.name] = true;
+        if (mic && (what === "input" || what === "both")) busy[mic.name] = true;
+        audioBusy = busy;
+    }
+    Timer {
+        interval: 1000; repeat: true; triggeredOnStart: true
+        running: pop.current === "volume" && !Config.testMode
+        onTriggered: if (!audioBusyAsk.running) audioBusyAsk.running = true
+    }
+
     // Weather from Open-Meteo for Settings' location (Config.s.latitude/longitude), every 30 min
     property var weather: null
     property var forecast: null       // daily: time[], weather_code[], temperature_2m_max[], temperature_2m_min[]
@@ -432,6 +466,7 @@ PanelWindow {
         id: sl
         property real value: 0
         property bool muted: false
+        property bool busy: false          // in use just now (sound playing, or being listened to)
         signal moved(real v)
         implicitHeight: 22
         Rectangle {
@@ -446,7 +481,33 @@ PanelWindow {
                 // red of its muted indicator across it, so it reads as there but not in use
                 color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                clip: sl.muted
+                clip: sl.muted || busyStripes.visible
+                // In use (sound playing through it, or something listening to it): stripes of a
+                // darker accent drifting along it, fading in as it starts and out as it stops.
+                // They hold still with animations off and in game mode
+                Item {
+                    id: busyStripes
+                    anchors.fill: parent
+                    opacity: sl.busy && !sl.muted ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
+                    visible: opacity > 0
+                    property real drift: 0
+                    NumberAnimation on drift {
+                        running: busyStripes.visible && Config.animate && !Config.gameMode
+                        from: 0; to: 9; duration: 700; loops: Animation.Infinite
+                    }
+                    Repeater {
+                        model: busyStripes.visible ? Math.ceil(slFill.width / 9) + 3 : 0
+                        Rectangle {
+                            required property int index
+                            x: -14 + index * 9 + busyStripes.drift; y: (slFill.height - height) / 2
+                            width: 3; height: slFill.height * 3
+                            rotation: 40
+                            antialiasing: true
+                            color: Qt.darker(pop.accent, 1.45)
+                        }
+                    }
+                }
                 Repeater {
                     model: sl.muted ? Math.ceil(slFill.width / 7) + 2 : 0
                     Rectangle {
@@ -652,6 +713,7 @@ PanelWindow {
                         width: parent.width
                         value: parent.a ? parent.a.volume : 0
                         muted: parent.a ? parent.a.muted : false
+                        busy: !!audioChannel.modelData.node && pop.audioBusy[audioChannel.modelData.node.name] === true
                         onMoved: v => { const a = parent.a; if (a) { a.muted = false; a.volume = v; } }
                     }
                 }
