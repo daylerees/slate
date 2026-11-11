@@ -24,6 +24,13 @@ Rectangle {
     readonly property string tilePath: entry && entry.entryId ? Config.tilePath(entry.entryId) : ""
     readonly property var actions: notif ? notif.actions.filter(a => a.identifier !== "default" && a.text) : []
     readonly property color accent: bar.accent
+    // (an app that sent no name of its own goes by its launcher's)
+    readonly property string appName: {
+        if (!entry) return "";
+        if (entry.appName) return entry.appName;
+        const e = entry.entryId ? DesktopEntries.byId(entry.entryId) : null;
+        return e && e.name ? e.name : "";
+    }
     // A picture from a file (screenshots, album art…) gets a large preview under the text, with
     // the app's icon beside it; other images (chat avatars) stay as the icon
     readonly property string image: entry && entry.image ? entry.image : ""
@@ -211,7 +218,7 @@ Rectangle {
                 Text {
                     id: appLabel
                     anchors { left: freshDot.visible ? freshDot.right : parent.left; leftMargin: freshDot.visible ? 6 : 0; right: timeLabel.left; rightMargin: 8 }
-                    text: card.entry ? card.entry.appName : ""
+                    text: card.appName
                     color: card.dim
                     font.family: card.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
                     elide: Text.ElideRight

@@ -37,3 +37,4 @@ things off as they're done.
   bars go yellow above 70% and red above 90%.
 - Settings → Power → Charging limit: shown only where UPower supports it, asks before
   charging to full. Not yet reachable from the assistant (no tool or setting for it).
+- A notification from an app that sends no name shows its launcher's name (ZapZap did this).

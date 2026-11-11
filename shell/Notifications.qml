@@ -91,6 +91,13 @@ Scope {
         return "";
     }
 
+    // An app that sends no name of its own (some do) goes by its launcher's name
+    function nameFor(appName, entryId) {
+        if (appName) return appName;
+        const e = entryId ? DesktopEntries.byId(entryId) : null;
+        return e && e.name ? e.name : "";
+    }
+
     // ---- Server ------------------------------------------------------------
     NotificationServer {
         keepOnReload: true
@@ -120,7 +127,7 @@ Scope {
             const item = {
                 key: key,
                 id: n.id,
-                appName: n.appName || "",
+                appName: notifs.nameFor(n.appName || "", notifs.entryFor(n)),
                 summary: n.summary || "",
                 body: n.body || "",
                 entryId: notifs.entryFor(n),
