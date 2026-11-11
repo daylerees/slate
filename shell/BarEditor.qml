@@ -213,12 +213,13 @@ PanelWindow {
         property int icon: 0
         property string label: ""
         property bool lit: false             // hovered
+        property bool grip: false            // a gripper at its start: it can be dragged
         readonly property color iconColour: item === "power" ? root.bar.errorColor
             : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
             : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
             : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
             : Config.statusColour(item, root.text)
-        width: chipRow.implicitWidth + 24; height: root.bar.capsuleHeight
+        width: chipRow.implicitWidth + (grip ? 20 : 24); height: root.bar.capsuleHeight
         radius: root.bar.capsuleRadius
         color: root.bar.capsuleColor
         Rectangle {
@@ -233,6 +234,14 @@ PanelWindow {
             id: chipRow
             anchors.centerIn: parent
             spacing: 7
+            // (as on the bar's containers while it's arranged: pick it up here, or anywhere on it)
+            Text {
+                visible: barChip.grip
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.glyph(0xEC01)
+                color: barChip.lit ? root.text : root.dim
+                font.family: root.bar.iconFont; font.pixelSize: 13
+            }
             Image {
                 visible: barChip.item === "control"
                 anchors.verticalCenter: parent.verticalCenter
@@ -263,6 +272,7 @@ PanelWindow {
         id: chip
         property var carry: null             // what the bar is told is coming: { kind, id }
         signal clicked()
+        grip: true
         item: carry && carry.kind === "item" ? carry.id : ""
         lit: chipHover.hovered
         HoverHandler { id: chipHover }
