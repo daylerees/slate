@@ -777,6 +777,12 @@ ShellRoot {
         readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
         readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+        // What's drawn on the dock's own buttons (the Apps bars, the Downloads and bin symbols, the
+        // media controls) is laid out once, at the size of a fully magnified tile, and scaled to
+        // the tile as it grows and shrinks. Sized afresh at every step instead, a symbol's size
+        // went in whole pixels and its place snapped to them, so it wobbled inside a tile that
+        // moved smoothly
+        readonly property real symbolRef: Math.max(1, base * maxScale)
         readonly property color dockColor: Config.dockSurface(Config.tint("#0f1216"))    // the dock's own background: clearer with glass
         // Slate's own tiles (Apps, media, Downloads, the Waste Basket). Dark without glass: a little
         // lighter, as they were hard to tell from the dock
@@ -2270,7 +2276,9 @@ ShellRoot {
                                 id: burger
                                 opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
-                                readonly property real w: parent.width
+                                anchors.alignWhenCentered: false
+                                readonly property real w: win.symbolRef
+                                scale: parent.width / w
                                 spacing: w * 0.075
                                 Repeater {
                                     model: 3
@@ -2351,7 +2359,9 @@ ShellRoot {
                                         text: String.fromCodePoint(0xEAFC)      // music
                                         color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
                                         font.family: "slate-tabler-icons"
-                                        font.pixelSize: Math.round(parent.height * 0.5)
+                                        font.pixelSize: Math.round(win.symbolRef * 0.5)
+                                        scale: parent.height / win.symbolRef
+                                        anchors.alignWhenCentered: false
                                     }
                                 }
                                 Image {
@@ -2413,7 +2423,9 @@ ShellRoot {
                                             opacity: !parent.modelData.on ? 0.3 : mediaCell.under === parent.modelData.id ? 1 : 0.75
                                             Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                                             font.family: "slate-tabler-icons"
-                                            font.pixelSize: Math.round(mediaWideTile.height * parent.modelData.size)
+                                            font.pixelSize: Math.round(win.symbolRef * parent.modelData.size)
+                                            scale: mediaWideTile.height / win.symbolRef
+                                            anchors.alignWhenCentered: false
                                         }
                                     }
                                 }
@@ -2464,7 +2476,9 @@ ShellRoot {
                                 text: String.fromCodePoint(0xEAFC)          // music
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
                                 font.family: "slate-tabler-icons"
-                                font.pixelSize: Math.round(parent.width * 0.5)
+                                font.pixelSize: Math.round(win.symbolRef * 0.5)
+                                scale: parent.width / win.symbolRef
+                                anchors.alignWhenCentered: false
                             }
                             // The art, cut to the icons' shape
                             Item {
@@ -2503,7 +2517,9 @@ ShellRoot {
                             }
                             Row {
                                 anchors.centerIn: parent
-                                spacing: mediaTile.width * 0.04
+                                anchors.alignWhenCentered: false
+                                scale: mediaTile.width / win.symbolRef
+                                spacing: win.symbolRef * 0.04
                                 opacity: (mediaCell.pointed ? 1 : 0) * Config.dockIconOpacity
                                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                                 Repeater {
@@ -2519,7 +2535,7 @@ ShellRoot {
                                         color: "white"
                                         opacity: modelData.on ? 1 : 0.35
                                         font.family: "slate-tabler-icons"
-                                        font.pixelSize: Math.round(mediaTile.width * modelData.size)
+                                        font.pixelSize: Math.round(win.symbolRef * modelData.size)
                                     }
                                 }
                             }
@@ -2734,7 +2750,9 @@ ShellRoot {
                                 text: String.fromCodePoint(0xF912)       // folder-down
                                 color: win.textColor
                                 font.family: "slate-tabler-icons"
-                                font.pixelSize: Math.round(parent.width * 0.5)
+                                font.pixelSize: Math.round(win.symbolRef * 0.5)
+                                scale: parent.width / win.symbolRef
+                                anchors.alignWhenCentered: false
                             }
                         }
                     }
@@ -2780,7 +2798,9 @@ ShellRoot {
                                 text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
                                 color: win.textColor
                                 font.family: "slate-tabler-icons"
-                                font.pixelSize: Math.round(parent.width * 0.5)
+                                font.pixelSize: Math.round(win.symbolRef * 0.5)
+                                scale: parent.width / win.symbolRef
+                                anchors.alignWhenCentered: false
                             }
                         }
                     }
