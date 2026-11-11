@@ -135,12 +135,36 @@ Singleton {
         "title", "space",
         { items: ["tray"] }, { items: barStatusItems, tuck: s.barStatusCollapsed }, { items: ["clock"] }, { items: ["power"] }
     ]
+    // Everything that can be in a container: its name in the arrangement, what it's called, its
+    // icon (for the pool on Settings → Menu Bar), and the setting that says whether it shows
+    readonly property var barItems: [
+        { id: "control", label: "Control centre", icon: 0xEAD7, key: "barShowControl" },
+        { id: "apps", label: "Apps", icon: 0xEC42, key: "barShowApps" },
+        { id: "spaces", label: "Spaces", icon: 0xEDBA, key: "barShowSpaces" },
+        { id: "chalk", label: "Chalk", icon: 0xF38A, key: "barShowAssistant" },
+        { id: "windowmode", label: "Window mode", icon: 0xEFE6, key: "barShowWindowMode" },
+        { id: "workspaces", label: "Workspaces", icon: 0xEA95, key: "barShowWorkspaces" },
+        { id: "tray", label: "Tray", icon: 0xEA61, key: "barShowTray" },
+        { id: "notifications", label: "Notifications", icon: 0xEA35, key: "barShowNotifications" },
+        { id: "clipboard", label: "Clipboard", icon: 0xEA6F, key: "barShowClipboard" },
+        { id: "screenshot", label: "Screenshot", icon: 0xF201, key: "barShowScreenshot" },
+        { id: "gamemode", label: "Game mode", icon: 0xF1D2, key: "barShowGameMode" },
+        { id: "keyboard", label: "Keyboard layout", icon: 0xEBD6, key: "barShowKeyboard" },
+        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, key: "barShowBluetooth" },
+        { id: "volume", label: "Volume", icon: 0xEB51, key: "barShowVolume" },
+        { id: "wifi", label: "Wi-Fi", icon: 0xEB52, key: "barShowWifi" },
+        { id: "battery", label: "Battery", icon: 0xEA30, key: "barShowBattery" },
+        { id: "clock", label: "Clock", icon: 0xEA70, key: "barShowClock" },
+        { id: "power", label: "Power", icon: 0xEB0D, key: "barShowPower" }
+    ]
+    function barItem(id) { return barItems.find(i => i.id === id) || null; }
     // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
-    // container with nothing left in it dropped), or Slate's own when there's none
+    // container with nothing left in it dropped; anything it leaves out given a container of
+    // its own at the end, so nothing can be lost), or Slate's own when there's none
     readonly property var barLayout: {
         const saved = s.barLayout;
         if (!saved || saved.length === undefined || saved.length === 0) return barLayoutDefault;
-        const known = ["control", "apps", "spaces", "chalk", "windowmode", "workspaces", "tray", "clock", "power"].concat(barStatusItems);
+        const known = barItems.map(i => i.id);
         const seen = {}, out = [];
         let title = false;
         for (let i = 0; i < saved.length; i++) {
@@ -156,8 +180,106 @@ Singleton {
                 if (items.length > 0) out.push({ items: items, tuck: !!e.tuck, tuckIcon: String(e.tuckIcon || ""), tuckFrom: e.tuckFrom === "start" ? "start" : e.tuckFrom === "end" ? "end" : "" });
             }
         }
-        return out.length > 0 ? out : barLayoutDefault;
+        if (!title) out.push("title");
+        for (const id of known) if (!seen[id]) out.push({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" });
+        return out;
     }
+
+    // ---- Arranging it (Settings → Menu Bar: while that page is open, the bar is being arranged) ----
+    property bool barArranging: false          // set by the Settings window
+    property int barSelected: -1               // the container picked there, by its place in the arrangement
+    onBarArrangingChanged: if (!barArranging) barSelected = -1
+    // A copy of the arrangement to change and save. Every change goes through barSave, which
+    // also drops containers left empty
+    function barCopy() {
+        return barLayout.map(e => typeof e === "string" ? e : { items: e.items.slice(), tuck: !!e.tuck, tuckIcon: e.tuckIcon || "", tuckFrom: e.tuckFrom || "" });
+    }
+    function barSave(list) {
+        s.barLayout = list.filter(e => typeof e === "string" || (e.items && e.items.length > 0));
+    }
+    function barWhere(list, id) {
+        for (let i = 0; i < list.length; i++) {
+            if (typeof list[i] === "string") continue;
+            const j = list[i].items.indexOf(id);
+            if (j >= 0) return { box: i, slot: j };
+        }
+        return null;
+    }
+    // Move an item: into the container at place `to` (before its item number `slot`), or, with
+    // slot < 0, into a container of its own before whatever is at place `to` (to = how many
+    // things there are: at the end)
+    function barMoveItem(id, to, slot) {
+        const list = barCopy();
+        const from = barWhere(list, id);
+        if (!from) return;
+        if (slot < 0) {
+            const marker = { items: [], marker: true };
+            list.splice(Math.max(0, Math.min(list.length, to)), 0, marker);
+            const now = barWhere(list, id);
+            list[now.box].items.splice(now.slot, 1);
+            marker.items = [id];
+        } else {
+            const target = list[to];
+            if (!target || typeof target === "string") return;
+            const at = Math.max(0, Math.min(target.items.length, slot));
+            if (target === list[from.box]) {
+                target.items.splice(from.slot, 1);
+                target.items.splice(from.slot < at ? at - 1 : at, 0, id);
+            } else {
+                list[from.box].items.splice(from.slot, 1);
+                target.items.splice(at, 0, id);
+            }
+        }
+        const kept = list.filter(e => typeof e === "string" || e.items.length > 0);
+        barSelected = -1;
+        barSave(kept);
+    }
+    // Move a whole thing (a container, the title, a flexible space) to before what's at `to`
+    function barMoveEntry(from, to) {
+        const list = barCopy();
+        if (from < 0 || from >= list.length) return;
+        const e = list[from];
+        list.splice(Math.max(0, Math.min(list.length, to)), 0, e);
+        list.splice(from < to ? from : from + 1, 1);
+        barSelected = -1;
+        barSave(list);
+    }
+    function barAddSpace(to) {
+        const list = barCopy();
+        list.splice(Math.max(0, Math.min(list.length, to)), 0, "space");
+        barSave(list);
+    }
+    // Take a flexible space away; for a container, put its items back in the pool (they keep
+    // their place, for when they're put back)
+    function barRemoveEntry(at) {
+        const list = barCopy();
+        const e = list[at];
+        if (e === "space") { list.splice(at, 1); barSave(list); }
+        else if (e === "title") s.barShowTitle = false;
+        else if (e) for (const id of e.items) barSetShown(id, false);
+        barSelected = -1;
+    }
+    // Each of a container's items into a container of its own, where it was
+    function barSplit(at) {
+        const list = barCopy();
+        const e = list[at];
+        if (!e || typeof e === "string" || e.items.length < 2) return;
+        list.splice(at, 1, ...e.items.map(id => ({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" })));
+        barSelected = -1;
+        barSave(list);
+    }
+    function barSetTuck(at, tuck, icon, from) {
+        const list = barCopy();
+        const e = list[at];
+        if (!e || typeof e === "string") return;
+        e.tuck = !!tuck;
+        if (icon !== undefined) e.tuckIcon = String(icon || "");
+        if (from !== undefined) e.tuckFrom = from === "start" ? "start" : "end";
+        barSave(list);
+    }
+    // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
+    function barShown(id) { const it = id === "title" ? { key: "barShowTitle" } : barItem(id); return !!it && !!s[it.key]; }
+    function barSetShown(id, on) { const it = id === "title" ? { key: "barShowTitle" } : barItem(id); if (it) s[it.key] = !!on; }
 
     // ---- Shadows (Shadow.qml, and Hyprland's under floating windows) ------------------------
     // One colour for every shadow: still dark, with a light tint of the theme. The hue is the

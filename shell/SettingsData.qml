@@ -121,6 +121,8 @@ JsonAdapter {
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
+    property bool barShowControl: true        // the control centre's button (Slate's mark)
+    property bool barShowClock: true          // the clock
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
     property bool barShowAssistant: true      // Chalk, the assistant's button (only while the assistant is switched on)

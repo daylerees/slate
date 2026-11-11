@@ -1,7 +1,15 @@
 # Plan: arranging the menu bar by drag and drop
 
-Status: **planned** (2026-11-11), nothing built. What Dayle asked for, in his words, then how
-I'd build it. Nothing here is decided beyond the "asked for" list.
+Status: **in progress** (last worked on 2026-11-11). Stages 1 and 2 of 5 are built and
+committed; stage 3's groundwork is committed but nothing can change the arrangement from
+the screen yet. **Picking this up in a new session? Read "Where it stands" and "Next" first.**
+
+| | |
+|---|---|
+| Branch | `menu-bar-layout`, cut from `master` at `4b824e5`. **Not pushed.** Kept apart so the whole thing can be dropped or reverted ("do this work in a fresh changeset so we can undo it") |
+| Installed | `~/.config/slate` runs this branch's head. To go back to master's bar: check out `master`, copy `shell/Bar.qml`, `Config.qml`, `SettingsData.qml`, `SettingsWindow.qml`, `shell.qml`, `scripts/slate-mcp.py` over, `slate restart --full` |
+| Tests owed | Only static + unit have been run on this branch (pass), plus the bar's live tests after stage 2 (45/45). **No full run yet.** Dayle: "we'll run a full changeset when done with all new work" |
+| Screenshots owed | On `master` too: the shadows, Chalk, dock and Wi-Fi commits (`93ddd8e`, `38714f8`, `fdb8b23`, `0bd332c`) went in without re-approving screenshots, and shadows shift nearly every scene. Re-approve from **one whole visual run**, never a filtered one (a scene shot alone renders the bar's text slightly differently) |
 
 ## Asked for
 
@@ -34,7 +42,7 @@ I'd build it. Nothing here is decided beyond the "asked for" list.
 15. A gripper on each container while arranging, to move the container as a whole (the
     handle of 11).
 
-## What the bar is today (checked in `shell/Bar.qml`)
+## What the bar was before this work (`shell/Bar.qml` on master)
 
 - A left row, the title area in the middle (it stretches), a right row. On a side bar the
   same, top to bottom.
@@ -180,23 +188,141 @@ the bar.
 A copy of the bar inside the Settings window was the first idea and is dropped: two
 drawings of the bar to keep the same, and it could only ever be nearly right.
 
-## Built so far (branch `menu-bar-layout`)
+## Where it stands
 
-- **The bar is one arranged line** (`771c335`): `Config.barLayout` (the saved list, tidied,
-  or Slate's own), `arrange()` in `Bar.qml`, flexible spaces sharing the room left over, the
-  title's room worked out from what the rest needs.
-- **Every item is a cell, every container is made from the arrangement** (the commit after):
-  `Segment` is now the one kind of thing on the bar (alone or in a group, with its own icon
-  and value or whatever is put inside it), `Container` the rounded shape that holds one or
-  several, with the tuck-away mechanics the status group had. All items are written once in
-  `parked` and only ever handed to a container: an item taken off a showing line and put
-  back in the same instant kept its size and place but was never painted again.
-- Checked with Slate's own arrangement against the approved `desktop` and
-  `bar-every-button` screenshots: pixel for pixel the same, but for the Wi-Fi and volume
-  swap made just before. The bar's live tests pass.
-- Carried over as they were: the tray's own tuck-away (`barTrayCollapsed`, inside the tray
-  item) and the status container's (`barStatusCollapsed`, as `tuck` on that container in
-  Slate's own arrangement). Both become the collapse item of 14.
+**Stage 1, done (`771c335`): the bar is one arranged line.** `Config.barLayout` is the saved
+list, tidied, or Slate's own (`barLayoutDefault`) when `s.barLayout` is empty. `arrange()` in
+`Bar.qml` puts the line in that order. Flexible spaces share the room left over (`bar.flex`);
+the title's room is what the rest doesn't need (`bar.lineFixed`).
+
+**Stage 2, done (`7b5ea82`): every item is a cell, every container is made from the
+arrangement.** `Segment` is the one kind of thing on the bar: it draws the same alone or in a
+group, with its own icon and value or whatever is put inside it (`default property alias
+inside`). `Container` is the rounded shape that holds one or several, made by `arrange()` for
+each container in the list (`boxComp.createObject`), with the separators, rounded hover ends
+and tuck-away the status group had. The items are: control (`flameBtn`), apps, spaces, chalk,
+windowmode (`wsMode`), workspaces (`wsCap`), tray (`trayCapsule`), the nine status icons,
+clock (`clockCap`), power; `left.things` maps names to them.
+
+**Stage 3 groundwork, done (the commit this file came in with): the functions that change the arrangement**,
+in `Config.qml`, used by nothing yet:
+
+- `barItems` (id, label, icon, the `barShow…` key that says whether it shows), `barItem(id)`;
+- `barArranging` (to be set by the Settings window), `barSelected` (the container picked);
+- `barCopy()`, `barSave(list)`, `barWhere(list, id)`;
+- `barMoveItem(id, to, slot)`: into the container at `to` before its item `slot`, or with
+  `slot < 0` into a container of its own before whatever is at `to`;
+- `barMoveEntry(from, to)`: a whole container, the title or a flexible space;
+- `barAddSpace(to)`, `barRemoveEntry(at)`, `barSplit(at)`, `barSetTuck(at, tuck, icon, from)`;
+- `barShown(id)`, `barSetShown(id, on)`.
+- New settings `barShowControl` and `barShowClock` (the control centre and the clock had no
+  switch), so every item can be sent to the pool.
+- `Config.barLayout` now always holds every item (anything a saved list leaves out gets a
+  container of its own at the end) and the title, so nothing can be lost.
+
+**Decided along the way: the pool is each item's own switch.** An item is "in the pool" when
+its `barShow…` setting is off; it keeps its place in the arrangement, so switching it back
+on puts it where it was. Dragging to the pool switches it off; dragging from the pool
+switches it on and moves it to where it's dropped. The switches on Settings → Menu Bar stay
+and mean the same thing, which also gives the keyboard a way to do it.
+
+**Checked:** with Slate's own arrangement, against the approved `desktop` and
+`bar-every-button` screenshots, the bar is pixel for pixel what it was (but for the Wi-Fi and
+volume swap made just before, on master). Compared by cropping the bar from
+`tests/out/visual/<scene>.actual.png` and the baseline and counting differing pixels
+(`magick compare -metric AE`), since the scenes themselves fail for the reasons under
+"Screenshots owed". **Not checked:** side bars, a bottom bar, a second screen, the tray with
+icons in it, tuck-away, hover descriptions.
+
+**Things learnt that the next person needs:**
+
+- **Write every item in `parked`, never on the line.** An item taken off a showing line and
+  put back in the same instant kept its place and size, reported itself visible, and was
+  never painted again. All items are declared in the hidden `parked` holder and only ever
+  handed to a container.
+- **The line (a `Grid`) passes over anything with no size**, and leaves a gap between every
+  two things it does show. So an empty title has no gap of its own (`lineOthersCount` counts
+  that way), and a flexible space keeps a sliver of size (0.01) so it always has its two.
+  Getting this wrong moved the right-hand group by exactly one gap.
+- **Don't read the title's size where its room is worked out**, or it loops: `lineOthers`
+  and `lineOthersCount` leave the title out, `flex` reads it.
+- **A left bar** shows the title after the flexible space that follows it (it reads upwards,
+  growing up from the tray): `arrange()` swaps the two there.
+- **Seeing the bar's state from a test**: `console.warn` from the bar didn't reach the test's
+  error check. What worked was a temporary field in `test state` (`shell.qml`) and a
+  throwaway live test that fails with it.
+- **The window mode icon and the workspace dots are two items**, together by default. The
+  icon still only shows when the dots do (`barShowWindowMode && barShowWorkspaces`), as it
+  always did. Dayle hasn't answered whether they should be separable; they are.
+
+## Next
+
+**Stage 3a: dragging on the bar** (not started beyond the groundwork). What I'd worked out:
+
+1. **Switch arrange mode on**: the Settings window sets `Config.barArranging` to "visible and
+   on the Menu Bar page" (`win.section === "bar"`), and clears it when hidden.
+2. **Give things their places**: in `arrange()`, each `Container` and flexible space gets its
+   `index` in `Config.barLayout` (carry the real index through the left-bar swap), each
+   `Segment` its `name`. Add those properties.
+3. **Show it's being arranged** (only while `Config.barArranging`, so the ordinary bar is
+   untouched):
+   - each container: a thin accent outline (stronger when it's `Config.barSelected`), and a
+     **gripper** at its start, about 12 px, which makes it that much longer while arranging
+     (Tabler grip-vertical `0xEC01`, grip-horizontal `0xEC00` on a side bar);
+   - each flexible space: at least about 22 px, outlined, with arrows (`0xEB59` / `0xEB5B`);
+   - the title when it's empty: an outlined placeholder saying "Active window", so there's
+     something to pick up.
+4. **One `MouseArea` over the line**, above everything, only while arranging, so nothing
+   underneath acts. Plain `MouseArea`, not `ClickArea`: drags are silent (sounds table); play
+   `Config.click()` on a drop. It works by geometry:
+   - on press, list what's on the line in order (`left.children` that are visible): kind
+     (box / space / title), the object, its `index`, where it starts and ends along the bar;
+   - a press on a container's gripper, a space or the title picks up that whole thing; a
+     press on an item inside a container picks up the item (find the `Segment` under the
+     pointer among the container's row's children; skip separators and the toggle);
+   - a press and release without moving selects the container (`Config.barSelected`);
+   - while moving, work out the target: for an item, inside a container (not within ~7 px of
+     its ends) means **join it**, at the place between its showing cells; anywhere else is
+     **the gap** before the first thing whose middle is past the pointer. A whole thing only
+     ever goes to a gap. Show an accent line there, dim what's being dragged, and draw a
+     ghost of it under the pointer (`ShaderEffectSource` of the item);
+   - on release: `Config.barMoveItem(name, box.index, slotAmongItsItems)` or
+     `barMoveItem(name, to, -1)` or `barMoveEntry(from, to)`. Map a slot among *showing*
+     cells back to the item's index in the container's full list (hidden items are in it).
+5. **A test hook** in `shell.qml`'s `test` target (the session has no pointer): calls the
+   `Config.bar…` functions, and `state()` gains the arrangement and what's showing in order.
+   Live tests for moving, joining, a container of its own, moving a container, adding and
+   removing a space. The pixel-level dragging is for Dayle to try by hand.
+
+**Stage 3b: the page.** At the top of Settings → Menu Bar: a line saying what to do; **the
+pool** (items whose switch is off, each its icon and name from `Config.barItems`, plus
+**Flexible space**, **Container** and the **collapse button** of requirement 14, which never
+run out); and the selected container's options. Until 3c, clicking a pool chip puts it on
+the bar. Add ordinary switch rows for the control centre and the clock (their keys exist;
+`slate-mcp.py` names them in `NAMED` until the rows do).
+
+**Stage 3c: dragging between the page and the bar.** The unknown. Settings is an app window
+and isn't told where it is on the screen; ask Hyprland (`Hyprland.toplevels` /
+`lastIpcObject.at`, as window previews do). If that can't be made exact, the pool becomes a
+panel under the bar instead.
+
+**Stage 4: tuck-away as an item** (14): a collapse button dragged into a container, at most
+one each, clicked to choose its icon and direction. `Container` already has `tuck`,
+`tuckIcon`, `tuckFrom` and a `toggle` cell of its own; this makes the toggle something in the
+container's `items` and moves the tray's own tuck-away (`barTrayCollapsed`, still inside the
+tray item) and the status container's (`barStatusCollapsed`, read as `tuck` in Slate's own
+arrangement) onto it.
+
+**Stage 5: panels follow their button** (7): `Popouts.qml` decides "flush against the screen
+edge" by name today (`atScreenStart: displayed === "control"`, `atScreenEnd: displayed ===
+"session"`). The bar should say, in `openPopout`, whether the button is the first or last
+thing showing on the line.
+
+**Then:** tests for all of it (live, visual scenes for arrange mode), the site and docs
+(`site/features.html`, README, `docs/ARCHITECTURE.md`), the assistant (`barLayout` is a list,
+so `settings_set` refuses it; decide whether a tool should move bar items, per the "new
+features reach the assistant" rule), the one full test run, and re-approving screenshots
+from a whole visual run. Only then merge to `master`.
 
 ## Things to settle while building
 

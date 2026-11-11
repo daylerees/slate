@@ -625,6 +625,7 @@ PanelWindow {
             // Control centre: Slate's mark (a slab of slate, accent along its top edge)
             Segment {
                 id: flameBtn
+                wanted: Config.s.barShowControl
                 length: bar.capsuleHeight + 8
                 hoverText: "Control centre"
                 hoverImage: "file://" + Quickshell.shellPath("assets/icon/icon-64.png")
@@ -1071,6 +1072,7 @@ PanelWindow {
             // Clock
             Segment {
                 id: clockCap
+                wanted: Config.s.barShowClock
                 length: clock.implicitWidth + 20
                 hoverText: Qt.formatDate(Config.clockDate(sysClock.date), "dddd, d MMMM yyyy")
                 hoverCode: 0xEA53

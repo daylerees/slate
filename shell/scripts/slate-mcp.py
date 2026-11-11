@@ -173,6 +173,8 @@ NAMED = {
     "windowMode": ("windows", "Default window mode"),
     "barPosition": ("bar", "Menu bar position"),
     "barLayout": ("bar", "Menu bar arrangement"),
+    "barShowControl": ("bar", "Control centre button"),
+    "barShowClock": ("bar", "Clock"),
     "dockPosition": ("dock", "Dock position"),
     "switcherAppIcons": ("windows", "Window switcher: app icons"),
     "overviewAppIcons": ("workspaces", "Workspace overview: app icons"),
