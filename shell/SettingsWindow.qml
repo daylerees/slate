@@ -5279,7 +5279,9 @@ FloatingWindow {
                     label: "Gloss"
                     settingKey: "glassGloss"
                     detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
-                    ValueSlider { per: 100; from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
+                    // (the setting runs 0 to 2; the slider shows that as 0–100%, so 50% is the sheen as
+                    // Slate first had it at full, and 100% twice that)
+                    ValueSlider { per: 50; from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossAmount * 50); onMoved: v => Config.s.glassGloss = v / 50 }
                 }
                 Separator { visible: Config.s.glass }
                 SettingRow {
