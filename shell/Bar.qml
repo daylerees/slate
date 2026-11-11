@@ -408,6 +408,8 @@ PanelWindow {
         // in turn (anything not in the arrangement waits, unseen, in `parked`). So the bar
         // looks exactly as it did: Slate's own arrangement is the old left group, the title,
         // one flexible space, and the old right group.
+        Component { id: boxComp; Container {} }
+        Component { id: sepComp; Separator {} }
         Component { id: flexSpace; Item { readonly property bool isSpace: true; width: bar.vert ? 1 : Math.max(0.01, bar.flex); height: bar.vert ? Math.max(0.01, bar.flex) : 1 } }
         BarLine {
             id: left
@@ -419,20 +421,16 @@ PanelWindow {
             x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding
             y: bar.vert ? bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
 
-            // The things that can be on the line, by the first item of the container they are
-            // (for now each of today's containers moves as one piece)
-            readonly property var pieces: ({ control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn,
-                                             windowmode: wsCap, workspaces: wsCap, tray: trayCapsule,
-                                             clock: clockCap, power: powerBtn })
-            property var spaces: []            // the flexible spaces made for this arrangement
-            function piece(entry) {
-                if (entry === "title") return titleSlotTop;
-                if (!entry || !entry.items || entry.items.length === 0) return null;
-                const id = entry.items[0];
-                return Config.barStatusItems.indexOf(id) >= 0 ? status : (pieces[id] || null);
-            }
-            // Put the line in the order the arrangement gives. A thing joins the end of the
-            // line as it's handed over, so: everything off, then each back on in its turn
+            // Everything that can go in a container, by its name in the arrangement
+            readonly property var things: ({
+                control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn, windowmode: wsMode, workspaces: wsCap,
+                tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, gamemode: gameSeg,
+                keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn })
+            property var made: []              // the containers and flexible spaces made for this arrangement
+            // Put the line in the order the arrangement gives: a container made for each of its
+            // containers and handed its things, the title, a flexible space for each "space".
+            // Things join the end of a line as they're handed over, so: everything off first
+            // (anything the arrangement leaves out stays off, unseen), then each on in its turn
             function arrange() {
                 let order = Config.barLayout.slice();
                 // A left bar's title reads upwards, growing up from where it sits: where it's
@@ -442,240 +440,25 @@ PanelWindow {
                     const t = order.indexOf("title");
                     if (t >= 0 && order[t + 1] === "space") { order[t] = "space"; order[t + 1] = "title"; }
                 }
-                for (const sp of spaces) sp.destroy();
-                const made = [], placed = [];
-                for (const c of [flameBtn, appsBtn, spacesBtn, chalkBtn, wsCap, titleSlotTop, trayCapsule, status, clockCap, powerBtn]) c.parent = parked;
+                for (const name in things) { things[name].shell = null; things[name].parent = parked; }
+                titleSlotTop.parent = parked;
+                for (const m of made) m.destroy();
+                const fresh = [];
                 for (const entry of order) {
-                    if (entry === "space") { made.push(flexSpace.createObject(left)); continue; }
-                    const p = piece(entry);
-                    if (p && placed.indexOf(p) < 0) { placed.push(p); p.parent = left; }
+                    if (entry === "space") fresh.push(flexSpace.createObject(left));
+                    else if (entry === "title") titleSlotTop.parent = left;
+                    else {
+                        const box = boxComp.createObject(left, { tuck: !!entry.tuck, tuckFrom: entry.tuckFrom || "" });
+                        if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
+                        box.fill(entry.items.map(id => things[id]).filter(t => !!t));
+                        fresh.push(box);
+                    }
                 }
-                spaces = made;
+                made = fresh;
             }
             Component.onCompleted: arrange()
             Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
-
-            // Control centre: Slate's mark (a slab of slate, accent along its top edge)
-            Capsule {
-                id: flameBtn
-                length: bar.capsuleHeight + 8
-                hoverText: "Control centre"
-                hoverImage: "file://" + Quickshell.shellPath("assets/icon/icon-64.png")
-                onClicked: bar.openPopout("control", flameBtn)
-                onRightClicked: bar.openSlateMenu(flameBtn)
-                // Turns white (the text colour) while the control centre is open
-                // (the Slate mark, Apps, Spaces and the window mode icon are all drawn 13 px tall,
-                // from their top drawn pixel to their bottom one, so they line up)
-                SlateMark {
-                    anchors.centerIn: parent
-                    size: 19.5              // (its drawn part, accent line to slab, 13 px tall)
-                    flat: true              // (straight on here; tilted elsewhere)
-                    accent: bar.accent
-                    body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.tint("#566173")
-                    Behavior on body { ColorAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
-                }
-            }
-            // Apps: three soft rounded bars
-            Capsule {
-                id: appsBtn
-                visible: Config.s.barShowApps
-                length: bar.capsuleHeight + 8
-                hoverText: "Apps"
-                hoverCode: 0xEC42
-                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"])
-                // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
-                // little thinner: optically matched to the line icons round it)
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 3.5
-                    Repeater {
-                        model: 3
-                        // Colourful look: each bar its own pastel
-                        Rectangle {
-                            required property int index
-                            width: 13; height: 2; radius: height / 2
-                            color: Config.partColour(Config.appsPastels, index, bar.textColor)
-                        }
-                    }
-                }
-            }
-
-            // Spaces: four small squares (Spaces.qml). While a space is coming back they take
-            // its colour and light up in turn
-            Capsule {
-                id: spacesBtn
-                visible: Config.s.barShowSpaces
-                length: bar.capsuleHeight + 8
-                hoverText: Spaces.restoringSpace ? "Opening " + Spaces.restoringSpace.name + "…" : "Spaces"
-                hoverCode: 0xEDBA
-                onClicked: bar.openPopout("spaces", spacesBtn)
-                property int beat: 0
-                Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
-                // (in a 16 px slot, as every icon on the bar, but drawn 13 px: solid squares carry
-                // more weight than the line icons round them, so they're drawn a little smaller
-                // to look the same size)
-                Grid {
-                    anchors.centerIn: parent
-                    columns: 2
-                    spacing: 2
-                    Repeater {
-                        model: 4
-                        Rectangle {
-                            required property int index
-                            readonly property bool busy: Spaces.restoring !== ""
-                            width: 5.5; height: 5.5; radius: 1.5
-                            // Clockwise: top left, top right, bottom right, bottom left
-                            readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
-                            // (Colourful look: each square its own pastel)
-                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, index, bar.textColor)
-                            opacity: !busy || lit ? 1 : 0.35
-                            Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
-                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
-                        }
-                    }
-                }
-            }
-
-            // Chalk, the assistant (Assistant.qml), while it's switched on: opens its prompt
-            // window, and shows a spinner while a prompt is out
-            Capsule {
-                id: chalkBtn
-                visible: Config.s.barShowAssistant && Config.assistantOn
-                length: bar.capsuleHeight + 8
-                hoverCode: 0xF38A
-                hoverText: Config.assistantWorking ? "Chalk is working…" : "Ask Chalk"
-                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
-                // Two colours in the Colourful look, as Apps and Spaces have: the speech bubble in
-                // one and the face in it in another (ChalkFace.qml). One colour otherwise.
-                // While Chalk is thinking, Slate's loading spinner takes its place, turning (the
-                // spinner Settings and the login screen use; still, with animations off or in
-                // game mode)
-                // (two items, so the icon is never the one that was turned: as one, it came back at
-                // whatever angle the spinner had stopped at)
-                Text {
-                    anchors.centerIn: parent
-                    visible: !Config.assistantWorking
-                    text: bar.glyph(0xF38A)
-                    color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
-                    font.family: bar.iconFont
-                    font.pixelSize: 17
-                    ChalkFace {}
-                }
-                Text {
-                    anchors.centerIn: parent
-                    visible: Config.assistantWorking
-                    text: bar.glyph(0xF226)
-                    color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
-                    font.family: bar.iconFont
-                    font.pixelSize: 17
-                    RotationAnimation on rotation {
-                        running: Config.assistantWorking && Config.animate && !Config.gameMode
-                        loops: Animation.Infinite; from: 0; to: 360; duration: 900
-                    }
-                }
-            }
-
-            // Workspaces: grey/white dots, plus an accent marker that glides between them
-            // (WorkspaceMarker).
-            Capsule {
-                id: wsCap
-                visible: Config.s.barShowWorkspaces
-                readonly property real dot: 14
-                readonly property real dotGap: 5
-                readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
-                readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
-                length: bar.vert ? wsLine.height : wsLine.width
-                // (each part has its own hover fill, as the status icons do)
-                hoverTint: false
-
-                BarLine {
-                  id: wsLine
-                  anchors.centerIn: parent
-                  spacing: 0
-                  // The workspace's window mode (its icon): click for a menu to give it another,
-                  // or put it back to the default (Settings → Windows). A segment, like the
-                  // status icons, with a line between it and the dots
-                  Segment {
-                    id: wsMode
-                    visible: Config.s.barShowWindowMode
-                    first: true; last: false
-                    readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
-                    readonly property bool own: !!Config.workspaceModes[String(Config.focusedWorkspaceId)]
-                    iconCode: mode.icon
-                    // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
-                    // each mode's icon fills a different share of its height)
-                    iconSize: 13 / (mode.ink || 0.75)
-                    // Closer in than a status icon: its glyph is drawn larger to match its
-                    // neighbours' height, so it carries blank space of its own at the sides
-                    pad: 12
-                    // In the accent, its own mode or the default alike (the panel and the
-                    // description say which)
-                    tint: bar.accent
-                    hoverText: Config.workspaceLabel(Config.focusedWorkspaceId) + " · " + mode.label
-                        + (own ? "" : " (the default)") + " · click to change"
-                    onClicked: bar.openPopout("windowmode", wsMode)
-                  }
-                  Separator { visible: wsMode.visible }
-                  // The dots (each with its own hover highlight, behind it)
-                  Item {
-                    id: wsDots
-                    width: bar.vert ? bar.capsuleHeight : wsRow.width + 16
-                    height: bar.vert ? wsRow.height + 16 : bar.capsuleHeight
-                BarLine {
-                    id: wsRow
-                    anchors.centerIn: parent
-                    spacing: wsCap.dotGap
-                    Repeater {
-                        model: wsCap.spaces
-                        delegate: Rectangle {
-                            id: wsDot
-                            required property var modelData
-                            readonly property int winCount: modelData.toplevels?.values?.length ?? 0
-                            readonly property bool occupied: winCount > 0
-                            // Its first window's app, for the hover description's icon: only looked up
-                            // while this dot is being described (the lookup can scan every installed
-                            // app, and ran for every dot on every window change)
-                            readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
-                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? Config.appEntry(modelData.toplevels.values[0].wayland.appId) : null
-                            readonly property string hoverText: Config.workspaceLabel(modelData.id) + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
-                            readonly property int hoverCode: 0
-                            readonly property string hoverTile: firstApp ? firstApp.id : ""
-                            readonly property url hoverImage: ""
-                            HoverHandler { id: wsDotHover; onHoveredChanged: bar.setHover(wsDot, hovered) }
-                            width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
-                            // Hover: the status icons' highlight, in the dot's shape, behind it
-                            Rectangle {
-                                z: -1
-                                anchors.centerIn: parent
-                                readonly property real size: wsCap.dot + 10
-                                width: size; height: size
-                                radius: Config.dotRadius(size)
-                                color: bar.hoverFill
-                                opacity: wsDotHover.hovered ? bar.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-                            }
-                            // Inactive workspaces are dimmed a little; the accent marker shows the active
-                            // one. Brighter under the pointer
-                            color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
-                                : occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
-                            ClickArea { anchors.fill: parent; onClicked: modelData.activate() }
-                        }
-                    }
-                }
-                  }
-                }
-                // The accent marker, gliding between dots
-                WorkspaceMarker {
-                    x: wsLine.x + wsDots.x + wsRow.x; y: wsLine.y + wsDots.y + wsRow.y
-                    width: wsRow.width; height: wsRow.height
-                    dot: wsCap.dot; step: wsCap.dot + wsCap.dotGap
-                    index: wsCap.activeIndex
-                    vertical: bar.vert
-                    color: bar.accent
-                }
-            }
 
             // Title area: the focused window's tile and title, or, while the pointer is
             // over something on the bar, a description of that (cross-faded)
@@ -830,20 +613,227 @@ PanelWindow {
             }
         }
 
-        // ---- The rest of what can go on the line ---------------------------------
-        // Written out here (it used to be the right-hand group, laid out from the bar's far
-        // end); arrange() hands each to the line above in its turn. Whatever isn't in the
-        // arrangement stays here, unseen
+        // ---- Everything that can go in a container ---------------------------------
+        // Written out here, once each; arrange() hands each to its container on the line above
+        // in its turn. Whatever isn't in the arrangement stays here, unseen. (All of them here, none
+        // written straight onto the line: a thing taken off a showing line and put back in the
+        // same breath kept its place and size but was never drawn again.)
         Item {
             id: parked
             visible: false
 
+            // Control centre: Slate's mark (a slab of slate, accent along its top edge)
+            Segment {
+                id: flameBtn
+                length: bar.capsuleHeight + 8
+                hoverText: "Control centre"
+                hoverImage: "file://" + Quickshell.shellPath("assets/icon/icon-64.png")
+                onClicked: bar.openPopout("control", flameBtn)
+                onRightClicked: bar.openSlateMenu(flameBtn)
+                // Turns white (the text colour) while the control centre is open
+                // (the Slate mark, Apps, Spaces and the window mode icon are all drawn 13 px tall,
+                // from their top drawn pixel to their bottom one, so they line up)
+                SlateMark {
+                    anchors.centerIn: parent
+                    size: 19.5              // (its drawn part, accent line to slab, 13 px tall)
+                    flat: true              // (straight on here; tilted elsewhere)
+                    accent: bar.accent
+                    body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.tint("#566173")
+                    Behavior on body { ColorAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
+                }
+            }
+            // Apps: three soft rounded bars
+            Segment {
+                id: appsBtn
+                wanted: Config.s.barShowApps
+                length: bar.capsuleHeight + 8
+                hoverText: "Apps"
+                hoverCode: 0xEC42
+                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"])
+                // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
+                // little thinner: optically matched to the line icons round it)
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 3.5
+                    Repeater {
+                        model: 3
+                        // Colourful look: each bar its own pastel
+                        Rectangle {
+                            required property int index
+                            width: 13; height: 2; radius: height / 2
+                            color: Config.partColour(Config.appsPastels, index, bar.textColor)
+                        }
+                    }
+                }
+            }
+
+            // Spaces: four small squares (Spaces.qml). While a space is coming back they take
+            // its colour and light up in turn
+            Segment {
+                id: spacesBtn
+                wanted: Config.s.barShowSpaces
+                length: bar.capsuleHeight + 8
+                hoverText: Spaces.restoringSpace ? "Opening " + Spaces.restoringSpace.name + "…" : "Spaces"
+                hoverCode: 0xEDBA
+                onClicked: bar.openPopout("spaces", spacesBtn)
+                property int beat: 0
+                Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
+                // (in a 16 px slot, as every icon on the bar, but drawn 13 px: solid squares carry
+                // more weight than the line icons round them, so they're drawn a little smaller
+                // to look the same size)
+                Grid {
+                    anchors.centerIn: parent
+                    columns: 2
+                    spacing: 2
+                    Repeater {
+                        model: 4
+                        Rectangle {
+                            required property int index
+                            readonly property bool busy: Spaces.restoring !== ""
+                            width: 5.5; height: 5.5; radius: 1.5
+                            // Clockwise: top left, top right, bottom right, bottom left
+                            readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
+                            // (Colourful look: each square its own pastel)
+                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, index, bar.textColor)
+                            opacity: !busy || lit ? 1 : 0.35
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
+                            Behavior on color { ColorAnimation { duration: Config.ms(200) } }
+                        }
+                    }
+                }
+            }
+
+            // Chalk, the assistant (Assistant.qml), while it's switched on: opens its prompt
+            // window, and shows a spinner while a prompt is out
+            Segment {
+                id: chalkBtn
+                wanted: Config.s.barShowAssistant && Config.assistantOn
+                length: bar.capsuleHeight + 8
+                hoverCode: 0xF38A
+                hoverText: Config.assistantWorking ? "Chalk is working…" : "Ask Chalk"
+                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
+                // Two colours in the Colourful look, as Apps and Spaces have: the speech bubble in
+                // one and the face in it in another (ChalkFace.qml). One colour otherwise.
+                // While Chalk is thinking, Slate's loading spinner takes its place, turning (the
+                // spinner Settings and the login screen use; still, with animations off or in
+                // game mode)
+                // (two items, so the icon is never the one that was turned: as one, it came back at
+                // whatever angle the spinner had stopped at)
+                Text {
+                    anchors.centerIn: parent
+                    visible: !Config.assistantWorking
+                    text: bar.glyph(0xF38A)
+                    color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
+                    font.family: bar.iconFont
+                    font.pixelSize: 17
+                    ChalkFace {}
+                }
+                Text {
+                    anchors.centerIn: parent
+                    visible: Config.assistantWorking
+                    text: bar.glyph(0xF226)
+                    color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
+                    font.family: bar.iconFont
+                    font.pixelSize: 17
+                    RotationAnimation on rotation {
+                        running: Config.assistantWorking && Config.animate && !Config.gameMode
+                        loops: Animation.Infinite; from: 0; to: 360; duration: 900
+                    }
+                }
+            }
+
+            // Workspaces: grey/white dots, plus an accent marker that glides between them
+            // (WorkspaceMarker).
+            // (two things on the bar: the window mode's icon, and the dots)
+                  Segment {
+                    id: wsMode
+                    // (with the dots, as it always was: no dots, no icon)
+                    wanted: Config.s.barShowWindowMode && Config.s.barShowWorkspaces
+                    readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
+                    readonly property bool own: !!Config.workspaceModes[String(Config.focusedWorkspaceId)]
+                    iconCode: mode.icon
+                    // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
+                    // each mode's icon fills a different share of its height)
+                    iconSize: 13 / (mode.ink || 0.75)
+                    // Closer in than a status icon: its glyph is drawn larger to match its
+                    // neighbours' height, so it carries blank space of its own at the sides
+                    pad: 12
+                    // In the accent, its own mode or the default alike (the panel and the
+                    // description say which)
+                    tint: bar.accent
+                    hoverText: Config.workspaceLabel(Config.focusedWorkspaceId) + " · " + mode.label
+                        + (own ? "" : " (the default)") + " · click to change"
+                    onClicked: bar.openPopout("windowmode", wsMode)
+                  }
+                  // The dots (each with its own hover highlight, behind it)
+                  Segment {
+                    id: wsCap
+                    wanted: Config.s.barShowWorkspaces
+                    hover: false
+                    readonly property real dot: 14
+                    readonly property real dotGap: 5
+                    readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
+                    readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
+                    length: (bar.vert ? wsRow.height : wsRow.width) + 16
+                BarLine {
+                    id: wsRow
+                    anchors.centerIn: parent
+                    spacing: wsCap.dotGap
+                    Repeater {
+                        model: wsCap.spaces
+                        delegate: Rectangle {
+                            id: wsDot
+                            required property var modelData
+                            readonly property int winCount: modelData.toplevels?.values?.length ?? 0
+                            readonly property bool occupied: winCount > 0
+                            // Its first window's app, for the hover description's icon: only looked up
+                            // while this dot is being described (the lookup can scan every installed
+                            // app, and ran for every dot on every window change)
+                            readonly property bool described: bar.hoverItem === wsDot || bar.shownItem === wsDot
+                            readonly property var firstApp: described && occupied && modelData.toplevels.values[0].wayland ? Config.appEntry(modelData.toplevels.values[0].wayland.appId) : null
+                            readonly property string hoverText: Config.workspaceLabel(modelData.id) + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
+                            readonly property int hoverCode: 0
+                            readonly property string hoverTile: firstApp ? firstApp.id : ""
+                            readonly property url hoverImage: ""
+                            HoverHandler { id: wsDotHover; onHoveredChanged: bar.setHover(wsDot, hovered) }
+                            width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
+                            // Hover: the status icons' highlight, in the dot's shape, behind it
+                            Rectangle {
+                                z: -1
+                                anchors.centerIn: parent
+                                readonly property real size: wsCap.dot + 10
+                                width: size; height: size
+                                radius: Config.dotRadius(size)
+                                color: bar.hoverFill
+                                opacity: wsDotHover.hovered ? bar.hoverStrength : 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                            }
+                            // Inactive workspaces are dimmed a little; the accent marker shows the active
+                            // one. Brighter under the pointer
+                            color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
+                                : occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
+                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
+                            ClickArea { anchors.fill: parent; onClicked: modelData.activate() }
+                        }
+                    }
+                }
+                // The accent marker, gliding between dots
+                WorkspaceMarker {
+                    x: wsRow.x; y: wsRow.y
+                    width: wsRow.width; height: wsRow.height
+                    dot: wsCap.dot; step: wsCap.dot + wsCap.dotGap
+                    index: wsCap.activeIndex
+                    vertical: bar.vert
+                    color: bar.accent
+                }
+            }
+
             // Tray. Collapsed (Settings → Menu Bar): one button that slides open to show the icons,
             // and closes again a few seconds after the pointer leaves (or when clicked)
-            Capsule {
+            Segment {
                 id: trayCapsule
-                visible: Config.s.barShowTray && SystemTray.items.values.length > 0
-                hoverTint: false
+                wanted: Config.s.barShowTray && SystemTray.items.values.length > 0
+                hover: false
                 readonly property bool collapsible: Config.s.barTrayCollapsed
                 property bool expanded: false
                 onCollapsibleChanged: expanded = false
@@ -954,57 +944,13 @@ PanelWindow {
                 }
             }
 
-            // Notifications | clipboard | screenshot | game mode | Wi-Fi | keyboard | Bluetooth | volume |
-            // battery: one container, hover fills each section to the separator
-            Capsule {
-                id: status
-                hoverTint: false
-                // Which sections are shown (Settings → Menu Bar); the rounded hover ends and
-                // separators follow whichever are visible
-                readonly property bool hasBell: Config.s.barShowNotifications
-                readonly property bool hasClip: Config.s.barShowClipboard
-                readonly property bool hasShot: Config.s.barShowScreenshot
-                readonly property bool hasGame: Config.s.barShowGameMode
-                readonly property bool hasWifi: Config.s.barShowWifi
-                readonly property bool hasKb: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
-                readonly property bool hasBt: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
-                readonly property bool hasVol: Config.s.barShowVolume
-                readonly property bool hasBat: Config.s.barShowBattery && UPower.displayDevice && UPower.displayDevice.isPresent
-                // Collapsed (Settings → Menu Bar): one button at the end that slides the group open,
-                // closing again a few seconds after the pointer leaves (or when clicked)
-                readonly property bool collapsible: Config.s.barStatusCollapsed
-                property bool expanded: false
-                onCollapsibleChanged: expanded = false
-                // 0 closed … 1 open, eased; the icons stay laid out until it has finished closing
-                property real openness: !collapsible || expanded ? 1 : 0
-                Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
-                readonly property bool showIcons: !collapsible || openness > 0
-                // Which icons are switched on, in order along the bar (each Segment's slot)
-                readonly property var switchedOn: [hasBell, hasClip, hasShot, hasGame, hasKb, hasBt, hasVol, hasWifi, hasBat]
-                // The same while they're laid out, then the button; first/last/separators follow
-                // whichever are shown
-                readonly property var shown: switchedOn.map(x => x && showIcons).concat([collapsible])
-                function isFirst(i) { return !shown.slice(0, i).some(x => x); }
-                function isLast(i) { return !shown.slice(i + 1).some(x => x); }
-                function sepBefore(i) { return shown[i] && !isFirst(i); }
-                visible: switchedOn.some(x => x)
-                readonly property real fullLength: bar.vert ? statusRow.height : statusRow.width
-                readonly property real closedLength: bar.vert ? statusToggle.height : statusToggle.width
-                length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
-                clip: collapsible
-                HoverHandler { onHoveredChanged: if (hovered) statusClose.stop(); else if (status.expanded) statusClose.restart() }
-                // Stays open while one of its panels is open
-                Timer { id: statusClose; interval: 4000; onTriggered: if (bar.popoutHere) restart(); else status.expanded = false }
-                BarLine {
-                    id: statusRow
-                    // Held at the end with the button, so the icons slide out from it
-                    x: bar.vert ? 0 : parent.width - width
-                    y: bar.vert ? parent.height - height : 0
-
+            // The status icons: notifications, clipboard, screenshot, game mode, keyboard,
+            // Bluetooth, volume, Wi-Fi, battery. Each a thing of its own on the bar; in Slate's
+            // own arrangement they share one container
                     // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
                     Segment {
                         id: bellBtn
-                        group: status; slot: 0
+                        wanted: Config.s.barShowNotifications
                         pastel: "notifications"            // its colour when the look is Colourful
                         iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
                         hoverText: !bar.notifs ? "Notifications"
@@ -1016,11 +962,10 @@ PanelWindow {
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
                     }
-                    Separator { group: status; before: 1 }
                     // Clipboard history: how many items it holds; click for the list
                     Segment {
                         id: clipSeg
-                        group: status; slot: 1
+                        wanted: Config.s.barShowClipboard
                         pastel: "clipboard"            // its colour when the look is Colourful
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
                         label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
@@ -1029,21 +974,19 @@ PanelWindow {
                             : "Clipboard · " + Config.clipCount + (Config.clipCount === 1 ? " item" : " items")
                         onClicked: bar.openPopout("clipboard", clipSeg)
                     }
-                    Separator { group: status; before: 2 }
                     // Screenshots: click for area / window / screen
                     Segment {
                         id: shotSeg
-                        group: status; slot: 2
+                        wanted: Config.s.barShowScreenshot
                         pastel: "screenshot"            // its colour when the look is Colourful
                         iconCode: 0xF201
                         hoverText: "Screenshot"
                         onClicked: bar.openPopout("screenshot", shotSeg)
                     }
-                    Separator { group: status; before: 3 }
                     // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
                     Segment {
                         id: gameSeg
-                        group: status; slot: 3
+                        wanted: Config.s.barShowGameMode
                         pastel: "gamemode"            // its colour when the look is Colourful
                         iconCode: 0xF1D2
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
@@ -1051,11 +994,10 @@ PanelWindow {
                         hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
-                    Separator { group: status; before: 4 }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {
                         id: kbSeg
-                        group: status; slot: 4
+                        wanted: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
                         pastel: "keyboard"            // its colour when the look is Colourful
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
@@ -1064,11 +1006,10 @@ PanelWindow {
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
-                    Separator { group: status; before: 5 }
                     // Bluetooth: off / on / something connected; beside it, how many are connected
                     Segment {
                         id: btSeg
-                        group: status; slot: 5
+                        wanted: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
                         pastel: "bluetooth"            // its colour when the look is Colourful
                         readonly property var adapter: Bluetooth.defaultAdapter
                         readonly property bool on: !!adapter && adapter.enabled
@@ -1080,10 +1021,9 @@ PanelWindow {
                             : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
-                    Separator { group: status; before: 6 }
                     Segment {
                         id: volSeg
-                        group: status; slot: 6
+                        wanted: Config.s.barShowVolume
                         pastel: "volume"            // its colour when the look is Colourful
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
@@ -1101,11 +1041,10 @@ PanelWindow {
                         }
                         PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
                     }
-                    Separator { group: status; before: 7 }
                     // Wi-Fi: just before the battery
                     Segment {
                         id: wifiSeg
-                        group: status; slot: 7
+                        wanted: Config.s.barShowWifi
                         pastel: "wifi"            // its colour when the look is Colourful
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
@@ -1116,10 +1055,9 @@ PanelWindow {
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
-                    Separator { group: status; before: 8 }
                     Segment {
                         id: batSeg
-                        group: status; slot: 8
+                        wanted: Config.s.barShowBattery && !!UPower.displayDevice && UPower.displayDevice.isPresent
                         pastel: "battery"            // its colour when the look is Colourful
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
@@ -1129,20 +1067,9 @@ PanelWindow {
                         hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
-                    Separator { group: status; before: 9 }
-                    // The button that opens and closes the group (collapsed only)
-                    Segment {
-                        id: statusToggle
-                        group: status; slot: 9
-                        iconCode: 0xEC38
-                        hoverText: status.expanded ? "Hide the status icons" : "Wi-Fi, volume, battery and more"
-                        onClicked: { status.expanded = !status.expanded; statusClose.stop(); }
-                    }
-                }
-            }
 
             // Clock
-            Capsule {
+            Segment {
                 id: clockCap
                 length: clock.implicitWidth + 20
                 hoverText: Qt.formatDate(Config.clockDate(sysClock.date), "dddd, d MMMM yyyy")
@@ -1165,9 +1092,10 @@ PanelWindow {
                 onClicked: bar.openPopout("calendar", clockCap)
             }
 
-            GlyphButton {   // power
+            Segment {       // power
                 id: powerBtn
-                visible: Config.s.barShowPower; code: 0xEB0D; tint: bar.errorColor
+                wanted: Config.s.barShowPower; iconCode: 0xEB0D; iconSize: 17; tint: bar.errorColor
+                length: bar.capsuleHeight + 8
                 hoverText: bar.uptimeText()
                 onClicked: bar.openPopout("session", powerBtn)
                 HoverHandler { onHoveredChanged: if (hovered) uptimeFile.reload() }
@@ -1219,34 +1147,26 @@ PanelWindow {
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
 
-    // Capsule holding one icon glyph
-    component GlyphButton: Capsule {
-        property int code: 0
-        hoverCode: code
-        property color tint: bar.textColor
-        length: bar.capsuleHeight + 8
-        Text {
-            anchors.centerIn: parent
-            text: bar.glyph(parent.code)
-            color: parent.tint
-            font.family: bar.iconFont
-            font.pixelSize: 17
-        }
-    }
-
-    // One section of the notifications/Wi-Fi/volume/battery group. Its hover tint reaches the
-    // separators (square there) and follows the container's rounding at the ends.
+    // One thing on the bar: a button, an icon with a value, the tray, the dots… It sits in a
+    // container (its `shell`, a Container below) alone or with others, and draws the same
+    // either way: the container is the rounded shape, and this is its hover fill (rounded where
+    // it's at the container's end, fading out where it meets a separator), its icon and value,
+    // or whatever is put inside it instead. `wanted`: whether it has anything to show (its
+    // switch in Settings, and whether this computer has the thing at all); `length`: its size
+    // along the bar, when that isn't just its icon and value.
     component Segment: Item {
         id: seg
-        // Its place in a group of segments (the status icons): slot is its position along the
-        // group, which says whether it shows and if it's at either end (rounded there). The
-        // group's last slot is its open/close button, which doesn't fade with the others
-        property var group: null
-        property int slot: -1
-        property bool first: group ? group.isFirst(slot) : false
-        property bool last: group ? group.isLast(slot) : false
-        visible: group ? group.shown[slot] : true
-        opacity: group && slot < group.shown.length - 1 ? group.openness : 1
+        property Item shell: null
+        property bool wanted: true
+        property bool isToggle: false           // a container's open/close button (it doesn't fade with the rest)
+        property bool hover: true               // false: its parts have hover fills of their own
+        property real length: -1
+        default property alias inside: custom.data
+        readonly property bool plain: custom.children.length === 0
+        readonly property bool first: shell ? shell.isFirst(seg) : true
+        readonly property bool last: shell ? shell.isLast(seg) : true
+        visible: shell ? shell.shows(seg) : false
+        opacity: shell && !isToggle ? shell.openness : 1
         property int iconCode: 0
         property real iconSize: 16
         property string label: ""
@@ -1259,12 +1179,13 @@ PanelWindow {
         property string hoverTile: ""
         property url hoverImage
         signal clicked()
+        signal rightClicked()
         signal wheel(real delta)
         // Icon and value across a top/bottom bar; just the icon, stacked, on a side bar. pad: the
         // space beside the icon, both sides together
         property real pad: 20
-        width: bar.vert ? bar.capsuleHeight : segRow.width + pad
-        height: bar.vert ? segRow.height + 14 : bar.capsuleHeight
+        width: bar.vert ? bar.capsuleHeight : length >= 0 ? length : segRow.width + pad
+        height: bar.vert ? (length >= 0 ? length : segRow.height + 14) : bar.capsuleHeight
 
         // Hover fill: solid at the group's rounded ends, fading out at the
         // square sides that meet a separator
@@ -1283,11 +1204,14 @@ PanelWindow {
             bottomLeftRadius: (bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0
             topRightRadius: (bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0
             bottomRightRadius: seg.last ? bar.capsuleRadius : 0
-            opacity: segHover.hovered ? bar.hoverStrength : 0
+            opacity: seg.hover && segHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
+        // What's put inside it, in place of the icon and value
+        Item { id: custom; anchors.fill: parent }
         Row {
             id: segRow
+            visible: seg.plain
             anchors.centerIn: parent
             // No gap when there's no label, so a lone icon sits in the middle
             spacing: seg.label !== "" && !bar.vert ? 6 : 0
@@ -1310,15 +1234,74 @@ PanelWindow {
         }
         HoverHandler { id: segHover; onHoveredChanged: if (seg.hoverText !== "") bar.setHover(seg, hovered) }
         ClickTap { onTapped: seg.clicked() }
+        ClickTap { acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
         WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
     }
 
-    // The line between two segments; with a group, shown only when the segment after it
-    // (slot "before") shows and isn't the first
+    // A container on the bar: the rounded shape, holding one thing or several in a row with a
+    // line between each. Made by the line for each container in the arrangement (arrange()),
+    // which hands it its things in order. It can tuck them away behind one button that slides
+    // them open, closing again a few seconds after the pointer leaves (or when clicked).
+    component Container: Capsule {
+        id: box
+        property var cells: []                  // its things, in order
+        property bool tuck: false
+        property string tuckFrom: ""            // "start": the button first, the things after it; else last
+        property int tuckIcon: 0xEC38
+        hoverTint: false                        // (each thing has its own hover fill)
+        property bool expanded: false
+        onTuckChanged: expanded = false
+        // 0 closed … 1 open, eased; the things stay laid out until it has finished closing
+        property real openness: !tuck || expanded ? 1 : 0
+        Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
+        readonly property bool showThings: !tuck || openness > 0
+        // Along the container: its things, and the button at one end while it tucks
+        readonly property var order: !tuck ? cells : tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
+        function shows(c) { return c === toggle ? tuck : (c.wanted && showThings); }
+        function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
+        function isLast(c) { const i = order.indexOf(c); for (let k = i + 1; k < order.length; k++) if (shows(order[k])) return false; return true; }
+        function sepBefore(c) { return shows(c) && !isFirst(c); }
+        visible: cells.some(c => c.wanted)
+        readonly property real fullLength: bar.vert ? row.height : row.width
+        readonly property real closedLength: bar.vert ? toggle.height : toggle.width
+        length: tuck ? closedLength + (fullLength - closedLength) * openness : fullLength
+        clip: tuck
+        HoverHandler { onHoveredChanged: if (hovered) closing.stop(); else if (box.expanded) closing.restart() }
+        // Stays open while one of its panels is open
+        Timer { id: closing; interval: 4000; onTriggered: if (bar.popoutHere) restart(); else box.expanded = false }
+        BarLine {
+            id: row
+            // Held at the end with the button, so the things slide out from it
+            x: bar.vert || box.tuckFrom === "start" ? 0 : parent.width - width
+            y: !bar.vert || box.tuckFrom === "start" ? 0 : parent.height - height
+        }
+        // The button that opens and closes it (while it tucks)
+        Segment {
+            id: toggle
+            shell: box
+            isToggle: true
+            iconCode: box.tuckIcon
+            hoverText: box.expanded ? "Hide these" : box.cells.filter(c => c.wanted).map(c => c.hoverText.split(" · ")[0]).filter(t => t).slice(0, 3).join(", ") + (box.cells.length > 3 ? " and more" : "")
+            onClicked: { box.expanded = !box.expanded; closing.stop(); }
+        }
+        // Take its things, in order, with a line before each but the first
+        function fill(things) {
+            cells = things;
+            const seq = order;
+            for (let i = 0; i < seq.length; i++) {
+                if (i > 0) sepComp.createObject(row, { shell: box, cell: seq[i] });
+                seq[i].shell = box;
+                seq[i].parent = row;
+            }
+        }
+    }
+
+    // The line between two things in a container: shown when the thing after it shows and
+    // isn't the first
     component Separator: Item {
-        property var group: null
-        property int before: -1
-        visible: group ? group.sepBefore(before) : true
+        property var shell: null
+        property var cell: null
+        visible: shell && cell ? shell.sepBefore(cell) : true
         width: bar.vert ? bar.capsuleHeight : 1
         height: bar.vert ? 1 : bar.capsuleHeight
         Rectangle {

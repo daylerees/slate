@@ -27,6 +27,12 @@ I'd build it. Nothing here is decided beyond the "asked for" list.
 13. The active window indicator isn't a fixed divider: it can be dragged like the rest. What
     pushes things apart is an element of its own that stands for expanding space, placed
     from the pool, as Firefox's toolbar customising has ("Flexible Space").
+14. Tucking away is an item too: a collapse button in the pool that you drag into a
+    container (a container holds at most one). Click it to choose its icon and direction.
+    (Dayle, 2026-11-11: "I've figured out how to make a bar collapsable nicely".) This
+    replaces the "Tuck away" switch on a container described below.
+15. A gripper on each container while arranging, to move the container as a whole (the
+    handle of 11).
 
 ## What the bar is today (checked in `shell/Bar.qml`)
 
@@ -173,6 +179,24 @@ the bar.
 
 A copy of the bar inside the Settings window was the first idea and is dropped: two
 drawings of the bar to keep the same, and it could only ever be nearly right.
+
+## Built so far (branch `menu-bar-layout`)
+
+- **The bar is one arranged line** (`771c335`): `Config.barLayout` (the saved list, tidied,
+  or Slate's own), `arrange()` in `Bar.qml`, flexible spaces sharing the room left over, the
+  title's room worked out from what the rest needs.
+- **Every item is a cell, every container is made from the arrangement** (the commit after):
+  `Segment` is now the one kind of thing on the bar (alone or in a group, with its own icon
+  and value or whatever is put inside it), `Container` the rounded shape that holds one or
+  several, with the tuck-away mechanics the status group had. All items are written once in
+  `parked` and only ever handed to a container: an item taken off a showing line and put
+  back in the same instant kept its size and place but was never painted again.
+- Checked with Slate's own arrangement against the approved `desktop` and
+  `bar-every-button` screenshots: pixel for pixel the same, but for the Wi-Fi and volume
+  swap made just before. The bar's live tests pass.
+- Carried over as they were: the tray's own tuck-away (`barTrayCollapsed`, inside the tray
+  item) and the status container's (`barStatusCollapsed`, as `tuck` on that container in
+  Slate's own arrangement). Both become the collapse item of 14.
 
 ## Things to settle while building
 

@@ -133,7 +133,7 @@ Singleton {
         { items: ["control"] }, { items: ["apps"] }, { items: ["spaces"] }, { items: ["chalk"] },
         { items: ["windowmode", "workspaces"] },
         "title", "space",
-        { items: ["tray"] }, { items: barStatusItems }, { items: ["clock"] }, { items: ["power"] }
+        { items: ["tray"] }, { items: barStatusItems, tuck: s.barStatusCollapsed }, { items: ["clock"] }, { items: ["power"] }
     ]
     // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
     // container with nothing left in it dropped), or Slate's own when there's none
