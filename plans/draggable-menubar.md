@@ -345,7 +345,9 @@ taken to be), a side bar, a second screen, and the hover of a pool chip under it
 3. The site and docs (`site/features.html`, README, `docs/ARCHITECTURE.md`), and the
    assistant (`barLayout` is a list, so `settings_set` refuses it; decide whether a tool
    should move bar items, per the "new features reach the assistant" rule).
-4. The one full test run, and re-approving screenshots from a whole visual run.
+4. ~~The one full test run, and re-approving screenshots from a whole visual run.~~ Not
+   here (Dayle, 2026-11-11): the full run and the screenshots are done once, when Slate is
+   ready for a release. Until then only static + unit and the tests a change touches.
 5. Merge to `master`, and delete the `menu-bar-layout` branch here and on `origin` (it was
    pushed as a backup; see the table at the top).
 

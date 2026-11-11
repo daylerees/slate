@@ -13,9 +13,23 @@ room nothing else needs. Today, when there's too little room:
 - the window title shortens and fades out at its end;
 - after that, things simply run off the end of the bar.
 
-It happens when text grows (a long network name, the date, values switched on for
-everything), when more is put on the bar in edit mode, and when the same arrangement meets
-a smaller screen: a laptop panel after a large monitor, a bigger Interface size, a side bar.
+It happens when:
+
+- text grows: a long network name, the date, values switched on for everything;
+- more is put on the bar in edit mode;
+- the same arrangement meets a smaller screen: a laptop panel after a large monitor, a side
+  bar;
+- the screen's **resolution or scaling** changes (Settings → Displays, or Hyprland's own
+  monitor scale): the same panel has fewer of Slate's pixels along it;
+- the **font** or its **size** changes (Settings → Appearance): every piece of text on the
+  bar is wider or narrower, and so is each container;
+- **Interface size** changes (Settings → Appearance, `uiScale`): everything on the bar
+  grows, and the bar's length in its own units shrinks.
+
+All of these come to the same thing for the bar, more needed or less room along the line,
+so one measure covers them: the line's length against what's on it, taken again whenever
+either changes (a new screen size or scale, a font, a restart at a new Interface size).
+None needs handling of its own, but each is worth a test or a look when checking.
 
 Dayle, in his words: "I'd like us to do something graceful in this instance, like hide some
 of the content, or put it into a button that shows overflow (below the bar in its own
