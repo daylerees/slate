@@ -35,3 +35,5 @@ things off as they're done.
 - An assistant tool for arranging the bar (items, containers, collapse, priority) and its tests.
 - Power panel: battery health and the charging limit show only where reported; the resource
   bars go yellow above 70% and red above 90%.
+- Settings → Power → Charging limit: shown only where UPower supports it, asks before
+  charging to full. Not yet reachable from the assistant (no tool or setting for it).

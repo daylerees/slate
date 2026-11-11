@@ -3507,6 +3507,60 @@ FloatingWindow {
                     onPicked: v => Config.s.powerKeyAction = v
                 }
             }
+            // The charging limit: where the laptop can stop charging short of full, which is
+            // kinder to a battery that's mostly plugged in. The system's power service (UPower)
+            // keeps it, with the level the laptop's maker set, and lets whoever's at the laptop
+            // switch it on and off. The row only shows where it's there to switch
+            property var battery: UPower.devices.values.find(d => d.isLaptopBattery) ?? null
+            readonly property string batteryPath: battery && battery.nativePath
+                ? "/org/freedesktop/UPower/devices/battery_" + String(battery.nativePath).split("/").pop().replace(/[^A-Za-z0-9]/g, "_") : ""
+            property bool limitSupported: false
+            property bool limitOn: false
+            property int limitAt: 80
+            onBatteryPathChanged: if (batteryPath !== "") limitAsk.running = true
+            Component.onCompleted: if (batteryPath !== "") limitAsk.running = true
+            Process {
+                id: limitAsk
+                command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", powerPane.batteryPath,
+                          "--method", "org.freedesktop.DBus.Properties.GetAll", "org.freedesktop.UPower.Device"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        const end = /'ChargeEndThreshold': <uint32 (\d+)>/.exec(text);
+                        powerPane.limitSupported = /'ChargeThresholdSupported': <true>/.test(text) && !!end && Number(end[1]) > 0 && Number(end[1]) < 100;
+                        powerPane.limitOn = /'ChargeThresholdEnabled': <true>/.test(text);
+                        if (end) powerPane.limitAt = Number(end[1]);
+                    }
+                }
+            }
+            Process {
+                id: limitSet
+                property bool to: true
+                command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", powerPane.batteryPath,
+                          "--method", "org.freedesktop.UPower.Device.EnableChargeThreshold", to ? "true" : "false"]
+                onExited: limitAsk.running = true
+            }
+            function setLimit(on) { limitOn = on; limitSet.to = on; limitSet.running = true; }
+            // (charging past the limit is asked about first: it's the battery's life at stake)
+            function askLimit(on) {
+                if (on || !win.confirmer) { setLimit(on); return; }
+                win.confirmer.confirmWith({
+                    title: "Charge all the way to full?",
+                    body: "Keeping a battery full wears it out sooner, most of all when your laptop spends its days plugged in. "
+                        + "Stopping at " + limitAt + "% helps it hold its charge for years longer. Charging to full is worth it when "
+                        + "you need every hour away from a socket. You can switch the limit back on at any time.",
+                    button: "Charge to full", code: 0xEA33, danger: false
+                }, () => powerPane.setLimit(false));
+            }
+            GroupLabel { visible: powerPane.limitSupported; text: "Battery" }
+            Group {
+                visible: powerPane.limitSupported
+                SettingRow {
+                    label: "Charging limit"
+                    detail: powerPane.limitOn ? "Charging stops at " + powerPane.limitAt + "%, which keeps your battery healthy for longer"
+                        : "Your battery charges to full. Stopping at " + powerPane.limitAt + "% is kinder to it"
+                    Toggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
+                }
+            }
             GroupLabel { text: "Power mode" }
             Group {
                 DropdownSetting {
