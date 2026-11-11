@@ -657,14 +657,14 @@ Singleton {
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
-            // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
-            // blur size if one's picked
-            // (SLATE_GLASS_V: made again when what the rules cover changes, not only the opacity)
-            + `if SLATE_GLASS and (SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} or SLATE_GLASS_V ~= 2) then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil; if SLATE_GLASS_DOCK then SLATE_GLASS_DOCK:set_enabled(false); SLATE_GLASS_DOCK = nil end end; `
-            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }); SLATE_GLASS_V = 2 end; `
-            // (the dock: clearer, so blurred from a lower opacity)
-            + `if not SLATE_GLASS_DOCK then SLATE_GLASS_DOCK = hl.layer_rule({ name = "slate-glass-dock-" .. math.floor(${dockGlassCut.toFixed(2)} * 100), match = { namespace = "^slate-dock$" }, blur = true, ignore_alpha = ${dockGlassCut.toFixed(2)} }) end; `
-            + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"}); SLATE_GLASS_DOCK:set_enabled(${glass ? "true" : "false"})`
+            // Glass: blur behind Slate's surfaces, from just under their own opacity (glassCut).
+            // One rule for most, one each for the dock and the menu bar, whose backgrounds have
+            // an opacity of their own (Settings → Dock, → Menu Bar). Each is made once, and made
+            // again when its opacity changes; then switched on or off
+            + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+            + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut)
+            + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut)
+            + `SLATE_GLASS_V = 3`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
@@ -1142,11 +1142,27 @@ Singleton {
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))
     // A surface's colour: as it is, or see-through with glass
     function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }
-    // The dock's own background is a fifth clearer than the rest with glass (and Hyprland
-    // starts blurring behind it that much sooner: dockGlassCut, as glassCut below)
-    readonly property real dockGlassOpacity: glassOpacity * 0.8
+    // The dock's own background with glass: clearer than the rest by Settings → Dock →
+    // Background opacity (and Hyprland starts blurring behind it that much sooner: dockGlassCut,
+    // as glassCut below). And the tiles on it (its icons' and its buttons'): Tile opacity
+    readonly property real dockGlassOpacity: glassOpacity * Math.max(0.2, Math.min(1, s.dockOpacity))
+    readonly property real dockTileOpacity: glass ? Math.max(0.2, Math.min(1, s.dockTileOpacity)) : 1
     function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
     readonly property real dockGlassCut: Math.max(0.05, dockGlassOpacity * 0.85)
+    // The menu bar's own background with glass (Bar.qml's barBackground): in dark mode a
+    // quarter of the way from the glass's opacity to solid, then Settings → Menu Bar →
+    // Background opacity's share of that
+    readonly property real barGlassOpacity: (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
+        * Math.max(0.2, Math.min(1, s.barOpacity))
+    readonly property real barGlassCut: Math.max(0.05, Math.min(glassOpacity * 0.85, barGlassOpacity * 0.85))
+    // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
+    // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it
+    function glassRule(v, match, cut) {
+        const c = cut.toFixed(2), made = `"${c} 3"`;
+        return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
+            + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 100)}", `
+            + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass ? "true" : "false"}); `;
+    }
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
     // solid grey (so the glass shows through them too)
     function raised(c) {

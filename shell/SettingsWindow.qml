@@ -270,10 +270,10 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
-        bar: ["barPosition", "barLayout", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barLayout", "barOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
-        dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread"],
+        dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockOpacity", "dockTileOpacity"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
             "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
             "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
@@ -2335,6 +2335,14 @@ FloatingWindow {
                     detail: "Tells you what you're pointing at on the bar, in place of the window title"
                     key: "barHoverDescriptions"
                 }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Background opacity"
+                    settingKey: "barOpacity"
+                    detail: "With Glass on: how much of its colour the bar's background keeps. Lower is clearer"
+                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.barOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                }
             }
         }
     }
@@ -2463,6 +2471,29 @@ FloatingWindow {
                     settingKey: "dockSpread"
                     detail: "How many neighbouring icons rise in the arc (or turn, with tilt, or stay clear, with fade)"
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
+                }
+            }
+            GroupLabel { text: "Glass" }
+            Group {
+                SettingRow {
+                    visible: !Config.s.glass
+                    label: "Glass is off"
+                    detail: "With Glass on (Appearance), you can choose here how see-through the dock and its tiles are"
+                }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Background opacity"
+                    settingKey: "dockOpacity"
+                    detail: "How much of its colour the dock keeps, next to the rest of Slate's glass: lower is clearer"
+                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.dockOpacity * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
+                }
+                Separator { visible: Config.s.glass }
+                SettingRow {
+                    visible: Config.s.glass
+                    label: "Tile opacity"
+                    settingKey: "dockTileOpacity"
+                    detail: "The tiles behind the dock's icons and its buttons: lower lets the dock show through them"
+                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.dockTileOpacity * 100); onMoved: v => Config.s.dockTileOpacity = v / 100 }
                 }
             }
         }

@@ -36,9 +36,9 @@ PanelWindow {
     // The menu bar's own background: with glass in dark mode, darker and less see-through
     // than other glass (a quarter of the way from Glass → Opacity to solid), so the bar reads as a steady
     // band whatever the wallpaper does behind it
-    readonly property color barBackground: Config.glass && !Config.s.lightMode
-        ? (c => Qt.rgba(c.r, c.g, c.b, Config.glassOpacity + (1 - Config.glassOpacity) * 0.25))(Config.tint("#0c0e12"))
-        : barColor
+    // (and clearer still by Settings → Menu Bar → Background opacity: Config.barGlassOpacity)
+    readonly property color barBackground: !Config.glass ? barColor
+        : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
@@ -385,6 +385,9 @@ PanelWindow {
                 readonly property real r: Config.s.roundedScreenCorners ? bar.cornerRadius : 0
                 visible: !Config.gameMode && opacity > 0.01
                 opacity: bar.shadow
+                // (kept fainter than where Hyprland starts blurring behind the bar, which is
+                // lower when the bar's background is made clearer)
+                strength: Config.glass ? Math.min(1, Math.max(0.1, (Config.barGlassCut - 0.04) / Math.max(0.01, Config.shadowStrength))) : 1
                 radius: 0
                 blur: 15
                 dropX: bar.vert ? (bar.atRight ? -3 : 3) : 0

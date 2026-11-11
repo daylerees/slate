@@ -1940,6 +1940,7 @@ ShellRoot {
                                 anchors.centerIn: parent
                                 width: parent.width - 16; height: 1
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                             }
                             Rectangle {
                                 visible: menuRow.modelData.kind !== "sep"
@@ -2250,6 +2251,7 @@ ShellRoot {
                                 shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
                                 fill: false
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                             }
                             // Glass: a sheen, rounded like the tile
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
@@ -2317,6 +2319,7 @@ ShellRoot {
                                 anchors.fill: parent
                                 radius: mediaWideTile.corner
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                                 Gloss { radius: parent.radius; glassHint: true; tall: false }   // glass: a sheen
                             }
                             // The art, cut to the tile's corners; a note on a faint square without it
@@ -2439,6 +2442,7 @@ ShellRoot {
                                 shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
                                 fill: false
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                             }
                             Text {
                                 visible: !mediaTile.hasArt && !mediaCell.pointed
@@ -2592,7 +2596,7 @@ ShellRoot {
                                 onStatusChanged: if (cell.isApp && status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
                                 // The tile behind, in the theme's colour: drawn once at its magnified size
                                 // and shrunk, not redrawn on every frame as the dock magnifies
-                                IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale }
+                                IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale; opacity: Config.dockTileOpacity }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
                                 IconGloss {}
@@ -2690,6 +2694,7 @@ ShellRoot {
                                 shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
                                 fill: false
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                             }
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
                             Text {
@@ -2731,6 +2736,7 @@ ShellRoot {
                                 shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
                                 fill: false
                                 color: win.tileColor
+                                opacity: Config.dockTileOpacity
                             }
                             // Glass: a sheen, rounded like the tile
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }

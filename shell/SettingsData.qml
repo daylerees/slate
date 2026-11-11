@@ -118,6 +118,7 @@ JsonAdapter {
     // "title" (the active window, bare) and "space" (a flexible space). [] = Slate's own
     // arrangement (Config.barLayoutDefault). See plans/menu-bar-layout.md
     property var barLayout: []
+    property real barOpacity: 1.0             // with glass: the bar's background, as a share of the opacity it would have
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
     // What the bar shows (Settings → Menu Bar)
@@ -164,6 +165,8 @@ JsonAdapter {
     property string dockHoverEffect: "magnify"   // pointing at the dock: magnify, tilt (icons turn to face the pointer), both, fade, fademagnify, glow (a ring and glow in the icon's colour), glowmagnify, raise (just the icon under the pointer lifts) or none
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
+    property real dockOpacity: 0.8            // with glass: the dock's background, as a share of the opacity the rest of Slate's glass has
+    property real dockTileOpacity: 1.0        // with glass: the tiles behind its icons and its buttons (1: solid)
     property bool dockAutoHide: true          // hide when the workspace has windows
     property bool dockShowLauncher: true      // the Apps button at the start of the dock
     property bool dockPreviews: true          // pausing on an app in the dock shows its windows
