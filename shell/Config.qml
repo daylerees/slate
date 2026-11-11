@@ -684,7 +684,7 @@ Singleton {
     readonly property string glassRules: ""
         + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
-        + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur)
+        + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
@@ -1165,7 +1165,9 @@ Singleton {
     readonly property real dockGlassCut: 0.005
     // The menu bar's own background with glass (Bar.qml's barBackground): Slate's own is, in
     // dark mode, a quarter of the way from the glass's opacity to solid
-    readonly property real barGlassOpacity: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
+    // (While the bar's being arranged it's solid, its containers too, with no blur: all there
+    // to see and pick up, whatever the sliders say)
+    readonly property real barGlassOpacity: barArranging ? 1 : s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
         : Math.max(s.barBlur ? 0.01 : 0, Math.min(1, s.barOpacity))
     // The containers on the bar (Bar.qml's Capsule), with glass. Slate's own: the frosted film
     // everything raised has, with what's in it at full strength. With an opacity chosen, the
@@ -1183,7 +1185,7 @@ Singleton {
     // bar that's mostly colour, and never at the clear end)
     readonly property real barGlassCut: barGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(barGlassOpacity * 0.85 * 10) / 10)
     // ...and the bar's shadow, as a share of Slate's usual: always under that threshold
-    readonly property real barShadowShare: !glass || !s.barBlur ? 1
+    readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1
         : Math.min(1, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.

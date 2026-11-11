@@ -1443,14 +1443,14 @@ PanelWindow {
         // With a Container opacity chosen (Settings → Menu Bar → Glass), or a Hover opacity and
         // the pointer over it: drawn solid, and the whole container at that opacity, its fill
         // and everything in it (icons, text, the highlight, the lines between things), faded as
-        // one. Not while the bar's being arranged: everything's there to be picked up
+        // one. While the bar's being arranged: solid and at full strength, there to be picked up
         // (`over`: the pointer's on it, or on what it goes with; `fades` false: what it's part of
         // does the fading. Both for the active window's icon, which goes with its title)
         property bool over: capHover.hovered
         property bool fades: true
         readonly property bool lifted: over && Config.barItemHoverSet
         readonly property bool own: !Config.barArranging && (lifted || Config.barItemSet)
-        color: own ? bar.capsuleSolid : bar.capsuleColor
+        color: own || (Config.barArranging && Config.glass) ? bar.capsuleSolid : bar.capsuleColor
         opacity: !own || !fades ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
         // (each part fades by itself rather than the container as one picture: drawn that way,
         // through a layer, a container showed nothing at all)
