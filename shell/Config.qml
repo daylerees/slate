@@ -1168,11 +1168,13 @@ Singleton {
     readonly property real barItemOpacity: s.barItemOpacity < 0 || !glass ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
     // ...and while the pointer's over one: Hover opacity (Slate's own: no different)
     readonly property real barItemHoverOpacity: s.barItemHoverOpacity < 0 || !glass ? barItemOpacity : Math.min(1, s.barItemHoverOpacity)
-    function barContainer(c, hovered) {
+    // (it's the whole container then, what's in it too: Bar.qml's Capsule)
+    readonly property bool barItemHoverSet: glass && s.barItemHoverOpacity >= 0
+    function barContainer(c) {
         c = Qt.lighter(c, 1.0);
-        const o = hovered ? barItemHoverOpacity : barItemOpacity;
+        const o = barItemOpacity;
         // (with glass only, like the rest of Settings → Menu Bar → Glass: solid otherwise)
-        if (!glass || (s.barItemOpacity < 0 && (!hovered || s.barItemHoverOpacity < 0))) return raised(c);
+        if (!glass || s.barItemOpacity < 0) return raised(c);
         const f = raised(c);
         if (o <= f.a) return Qt.rgba(f.r, f.g, f.b, o);
         const a = (o - f.a) / (1 - f.a);

@@ -44,9 +44,9 @@ PanelWindow {
     // On the bar itself, the containers' fill by Settings → Menu Bar → Container opacity
     // (Config.barContainer; Settings' cards and the arranging panel's chips keep
     // capsuleColor as it is)
-    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"), false)
-    // (and with the pointer over it: Hover opacity)
-    readonly property color capsuleHoverFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"), true)
+    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
+    // (and solid, for under the pointer: Hover opacity then fades the whole container)
+    readonly property color capsuleSolid: Config.frostedTile(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color dimColor: Config.tint("#c5ccd6")
@@ -1432,8 +1432,15 @@ PanelWindow {
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: bar.capsuleRadius
-        color: capHover.hovered && !Config.barArranging ? bar.capsuleHoverFill : bar.capsuleFill
+        // Under the pointer, with a Hover opacity chosen (Settings → Menu Bar → Glass): the whole
+        // container at that opacity, its fill and everything in it (icons, text, the highlight,
+        // the lines between things), faded as one
+        readonly property bool lifted: capHover.hovered && !Config.barArranging && Config.barItemHoverSet
+        color: lifted ? bar.capsuleSolid : bar.capsuleFill
+        opacity: lifted ? Config.barItemHoverOpacity : 1
+        layer.enabled: lifted && opacity < 1
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         Rectangle {
             anchors.fill: parent
             radius: parent.radius

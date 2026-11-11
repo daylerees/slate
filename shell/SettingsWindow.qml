@@ -2363,7 +2363,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Hover opacity"
                     settingKey: "barItemHoverOpacity"
-                    detail: "How solid a container is while the pointer's over it"
+                    detail: "How solid a container is while the pointer's over it, with everything in it: its icons, text, highlight and dividers"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
                 }
             }
