@@ -2335,24 +2335,24 @@ FloatingWindow {
                     detail: "Tells you what you're pointing at on the bar, in place of the window title"
                     key: "barHoverDescriptions"
                 }
-                Separator { visible: Config.s.glass }
+            }
+            // (only with glass on: Appearance → Glass)
+            GroupLabel { visible: Config.s.glass; text: "Glass" }
+            Group {
+                visible: Config.s.glass
                 ToggleSetting {
-                    visible: Config.s.glass
                     label: "Blur"
                     detail: "What's behind the bar is blurred, like frosted glass. Off, you see straight through it"
                     key: "barBlur"
                 }
-                Separator { visible: Config.s.glass }
+                Separator {}
                 SettingRow {
-                    visible: Config.s.glass
                     label: "Background opacity"
                     settingKey: "barOpacity"
                     detail: "How solid the bar's background is: 100% can't be seen through, lower is clearer"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barGlassOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
                 }
-            }
-            GroupLabel { text: "Containers" }
-            Group {
+                Separator {}
                 SettingRow {
                     label: "Container opacity"
                     settingKey: "barItemOpacity"

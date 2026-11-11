@@ -1158,12 +1158,12 @@ Singleton {
     // frosted film everything raised has (raised). At an opacity of your own, with glass: the
     // film alone up to its own opacity, then the solid colour coming in under it (as frostedTile)
     readonly property real barItemOwnOpacity: glass ? raised(Qt.rgba(0, 0, 0, 1)).a : 1
-    readonly property real barItemOpacity: s.barItemOpacity < 0 ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
+    readonly property real barItemOpacity: s.barItemOpacity < 0 || !glass ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
     function barContainer(c) {
         c = Qt.lighter(c, 1.0);
         const o = barItemOpacity;
-        if (s.barItemOpacity < 0) return raised(c);
-        if (!glass) return Qt.rgba(c.r, c.g, c.b, o);
+        // (with glass only, like the rest of Settings → Menu Bar → Glass: solid otherwise)
+        if (s.barItemOpacity < 0 || !glass) return raised(c);
         const f = raised(c);
         if (o <= f.a) return Qt.rgba(f.r, f.g, f.b, o);
         const a = (o - f.a) / (1 - f.a);

@@ -1404,7 +1404,7 @@ PanelWindow {
     // Hover highlight behind bar items: the accent colour, lightly (as everywhere: Config.hover)
     readonly property color hoverFill: bar.accent
     // (how strong: Settings → Menu Bar → Hover opacity)
-    readonly property real hoverStrength: Math.max(0, Math.min(1, Config.s.barItemHoverOpacity))
+    readonly property real hoverStrength: Config.glass ? Math.max(0, Math.min(1, Config.s.barItemHoverOpacity)) : Config.hoverStrength
 
     // Rounded container with a soft hover tint and click handling
     // One row across the bar, or one column down a side bar, sized to what it holds (one row
