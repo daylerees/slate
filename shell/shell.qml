@@ -161,6 +161,15 @@ ShellRoot {
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
+        // Weather for the clock panel and control centre, as if it had been fetched for a place
+        // (tests have no network): mild rain now, then four days
+        function weather(on: bool): void {
+            Config.s.locationName = on ? "Bristol" : "";
+            popouts.weather = on ? { temperature_2m: 14.2, apparent_temperature: 12.8, weather_code: 61 } : null;
+            popouts.forecast = on ? { time: ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09"],
+                                      weather_code: [61, 3, 0, 71, 2],
+                                      temperature_2m_max: [15, 12, 9, 3, 7], temperature_2m_min: [8, 6, 1, -2, 2] } : null;
+        }
         // The bar's right-click menu: open it, or choose one of its rows by its label
         function barMenu(what: string): void {
             if (what === "open") { topBar.menu.openAt(600, 20); return; }

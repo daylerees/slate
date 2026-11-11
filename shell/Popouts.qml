@@ -374,8 +374,9 @@ PanelWindow {
     }
     // Only once a location is set (Settings → General → Location); again when it changes
     readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude
-    onWeatherPlaceChanged: { weather = null; forecast = null; if (weatherPlace !== "") weatherFetch.running = true; }
-    Timer { interval: 30 * 60 * 1000; running: true; repeat: true; triggeredOnStart: true; onTriggered: if (pop.weatherPlace !== "") weatherFetch.running = true }
+    // (not in tests: they have no network to count on, and give it weather of their own)
+    onWeatherPlaceChanged: { weather = null; forecast = null; if (weatherPlace !== "" && !Config.testMode) weatherFetch.running = true; }
+    Timer { interval: 30 * 60 * 1000; running: true; repeat: true; triggeredOnStart: true; onTriggered: if (pop.weatherPlace !== "" && !Config.testMode) weatherFetch.running = true }
     function weatherInfo(code) {
         if (code === 0) return { text: "Clear", icon: 0xEB30 };
         if (code <= 2) return { text: "Partly cloudy", icon: 0xEC6D };
@@ -556,33 +557,41 @@ PanelWindow {
         }
     }
 
-    // One of the next few days' weather: its name, its weather's icon, then the high and low.
-    // The calendar and the control centre each size it their own way
+    // One day's weather: its name, its weather's icon, then the high and low. The calendar and
+    // the control centre each size it their own way. `today`: the day it is, as it is now (the
+    // weather and temperature at the moment), on the active colour so it stands out from the
+    // days to come
     component ForecastDay: Rectangle {
         id: forecastDay
         property int day: 0              // days from today (an index into pop.forecast)
+        property bool today: false
         property real gap: 3             // between its lines
         property real iconSize: 16
         property real tempSize: 11
+        readonly property color fg: today ? pop.accentText : pop.text
+        readonly property color faint: today ? Qt.rgba(pop.accentText.r, pop.accentText.g, pop.accentText.b, 0.7) : pop.dim
         radius: 9
         Column {
             anchors.centerIn: parent
             spacing: forecastDay.gap
             Label {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatDate(new Date(pop.forecast.time[forecastDay.day] + "T12:00"), "ddd")
-                color: pop.dim; font.pixelSize: 11
+                text: forecastDay.today ? "Today" : Qt.formatDate(new Date(pop.forecast.time[forecastDay.day] + "T12:00"), "ddd")
+                color: forecastDay.faint; font.pixelSize: 11
             }
             Icon {
                 anchors.horizontalCenter: parent.horizontalCenter
-                code: pop.weatherInfo(pop.forecast.weather_code[forecastDay.day]).icon
+                code: pop.weatherInfo(forecastDay.today && pop.weather ? pop.weather.weather_code : pop.forecast.weather_code[forecastDay.day]).icon
+                color: forecastDay.fg
                 font.pixelSize: forecastDay.iconSize
             }
             Label {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: Math.round(pop.forecast.temperature_2m_max[forecastDay.day]) + "° "
-                    + "<font color='" + pop.dim + "'>" + Math.round(pop.forecast.temperature_2m_min[forecastDay.day]) + "°</font>"
+                text: forecastDay.today && pop.weather ? Math.round(pop.weather.temperature_2m) + "°"
+                    : Math.round(pop.forecast.temperature_2m_max[forecastDay.day]) + "° "
+                      + "<font color='" + forecastDay.faint + "'>" + Math.round(pop.forecast.temperature_2m_min[forecastDay.day]) + "°</font>"
                 textFormat: Text.StyledText
+                color: forecastDay.fg
                 font.pixelSize: forecastDay.tempSize
             }
         }
@@ -2255,44 +2264,12 @@ PanelWindow {
             // Weather, when a location is set (Settings → General → Location) and it has loaded
             readonly property bool hasWeather: Config.s.locationName !== "" && pop.weather !== null
 
-            Item {
+            Column {
+                id: timeCol
                 width: parent.width
-                height: Math.max(timeCol.height, nowWeather.height)
-                Column {
-                    id: timeCol
-                    spacing: 2
-                    Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: 22 }
-                    Label { text: Qt.formatDate(cal.today, "dddd, d MMMM yyyy"); color: pop.dim; font.pixelSize: 12 }
-                }
-                // Now: icon and temperature, conditions and place underneath
-                Column {
-                    id: nowWeather
-                    visible: cal.hasWeather
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    spacing: 2
-                    Row {
-                        anchors.right: parent.right
-                        spacing: 6
-                        Icon {
-                            anchors.verticalCenter: parent.verticalCenter
-                            code: pop.weather ? pop.weatherInfo(pop.weather.weather_code).icon : 0
-                            color: pop.accent
-                            font.pixelSize: 20
-                        }
-                        Label {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: pop.weather ? Math.round(pop.weather.temperature_2m) + "°" : ""
-                            font.pixelSize: 20
-                        }
-                    }
-                    Label {
-                        anchors.right: parent.right
-                        text: pop.weather ? pop.weatherInfo(pop.weather.weather_code).text + " · " + Config.s.locationName : ""
-                        color: pop.dim; font.pixelSize: 11
-                        width: Math.min(implicitWidth, 130)
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
+                spacing: 2
+                Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: 22 }
+                Label { width: parent.width; elide: Text.ElideRight; text: Qt.formatDate(cal.today, "dddd, d MMMM yyyy"); color: pop.dim; font.pixelSize: 12 }
             }
             Divider {}
             Item {
@@ -2354,21 +2331,30 @@ PanelWindow {
                     }
                 }
             }
-            // The next few days
+            // The weather: today as it is now, standing out, then the next three days; and under
+            // them what it's doing, and where
             Divider { visible: cal.hasWeather && pop.forecast !== null }
             Row {
                 visible: cal.hasWeather && pop.forecast !== null
                 width: parent.width
                 spacing: 6
                 Repeater {
-                    model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
+                    model: pop.forecast ? Math.min(4, pop.forecast.time.length) : 0
                     delegate: ForecastDay {
                         required property int index
-                        day: index + 1
+                        day: index
+                        today: index === 0
                         width: (cal.width - 18) / 4; height: 64
-                        color: pop.card
+                        color: today ? pop.accent : pop.card
                     }
                 }
+            }
+            Label {
+                visible: cal.hasWeather && pop.forecast !== null
+                width: parent.width
+                elide: Text.ElideRight
+                text: pop.weather ? pop.weatherInfo(pop.weather.weather_code).text + " now · " + Config.s.locationName : ""
+                color: pop.dim; font.pixelSize: 11
             }
             // Reset to the current month each time the panel opens
             Connections { target: pop; function onCurrentChanged() { if (pop.current === "calendar") cal.monthOffset = 0; } }

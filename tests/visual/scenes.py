@@ -99,6 +99,13 @@ SCENES["panel-calendar-glass"] = {
     "undo": [("popout", "close")],
 }
 
+# The clock panel with weather: the date clear of it, and today's tile standing out from the
+# three days after it
+SCENES["panel-calendar-weather"] = {
+    "do": [("test", "weather", "true"), ("bar", "panel", "calendar")], "wait": lambda st: st["popout"] == "calendar", "settle": 1.0,
+    "undo": [("popout", "close"), ("test", "weather", "false")],
+}
+
 # An app held up off the dock while it's dragged: the gap it'd go into, with its placeholder
 # (dashed on a plain dock, frosted on glass). Put back where it was after.
 _DRAG = {
