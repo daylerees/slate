@@ -1874,8 +1874,8 @@ ShellRoot {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: 8
-                                    // Under the pointer: the launcher's highlight, the accent itself, flat
-                                    color: dlHover.hovered ? Config.accent : "transparent"
+                                    // Under the pointer: the muted hover, flat
+                                    color: dlHover.hovered ? Config.hover : "transparent"
                                     Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 }
                                 // The file: a picture as itself, anything else as its kind on a tile
@@ -1920,8 +1920,7 @@ ShellRoot {
                                     horizontalAlignment: Text.AlignHCenter
                                     text: dl.modelData.name
                                     elide: Text.ElideMiddle
-                                    color: dlHover.hovered ? Config.tint("#12151a") : win.textColor
-                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                    color: win.textColor
                                     font.family: Config.s.fontFamily; font.pixelSize: 11
                                 }
                                 HoverHandler { id: dlHover }
@@ -1956,21 +1955,19 @@ ShellRoot {
                                 visible: menuRow.modelData.kind !== "sep"
                                 anchors.fill: parent
                                 radius: 7
-                                // Under the pointer: the launcher's highlight, the accent itself, flat
-                                color: rowHover.hovered ? Config.accent : "transparent"
+                                // Under the pointer: the muted hover, flat (the accent is for what stays selected)
+                                color: rowHover.hovered ? Config.hover : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
                                     width: 5; height: 5; radius: 2.5
-                                    color: rowHover.hovered ? Config.tint("#12151a") : win.activeDotColor
-                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                    color: win.activeDotColor
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 }
                                 Text {
                                     anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                     text: menuRow.modelData.label || ""
-                                    color: rowHover.hovered ? Config.tint("#12151a") : menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
-                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                    color: menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
                                     font.family: win.fontFamily
                                     font.pixelSize: win.fontSize
                                     font.weight: win.fontWeight

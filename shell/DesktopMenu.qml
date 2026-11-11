@@ -32,7 +32,6 @@ PanelWindow {
     readonly property color rowHover: Config.tint("#1d222a")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimColor: Config.tint("#8b94a3")
-    readonly property color onAccent: Config.tint("#12151a")       // text on the row under the pointer
     FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
 
     Rectangle {
@@ -67,22 +66,20 @@ PanelWindow {
                         visible: !row.modelData.separator
                         anchors.fill: parent
                         radius: 7
-                        // Under the pointer: the launcher's highlight, the accent itself, flat
-                        color: itemHover.hovered ? Config.accent : "transparent"
+                        // Under the pointer: the muted hover, flat (the accent is for what stays selected)
+                        color: itemHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                         Text {
                             id: rowIcon
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             text: row.modelData.icon ? String.fromCodePoint(row.modelData.icon) : ""
-                            color: itemHover.hovered ? dm.onAccent : dm.dimColor
-                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                            color: dm.dimColor
                             font.family: tabler.name; font.pixelSize: 16
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: 36; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             text: row.modelData.label || ""
-                            color: itemHover.hovered ? dm.onAccent : dm.textColor
-                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                            color: dm.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
