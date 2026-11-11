@@ -94,7 +94,8 @@ PanelWindow {
             carrying = chip;
             Config.barCarryAt = Qt.point(-100000, -100000);
             Config.barFloatAt = Qt.point(-100000, -100000);
-            Config.barFloat = { kind: chip.carry.kind, icons: [{ code: chip.icon, item: chip.item }], label: chip.carry.kind === "title" ? "Window" : "" };
+            Config.barFloat = { kind: chip.carry.kind, label: chip.carry.kind === "title" ? "Window" : "",
+                                icons: [{ code: chip.icon, item: chip.item, text: chip.item !== "" ? root.bar.exampleOf(chip.item) : "" }] };
             Config.barCarry = chip.carry;
         }
         if (placed) { Config.barCarryAt = Qt.point(origin.x + x, origin.y + y); Config.barFloatAt = Config.barCarryAt; }
@@ -540,13 +541,25 @@ PanelWindow {
                 spacing: 12
                 Repeater {
                     model: floater.f ? floater.f.icons : []
-                    Text {
+                    Row {
                         required property var modelData
                         anchors.verticalCenter: parent.verticalCenter
-                        text: modelData.code ? root.glyph(modelData.code) : ""
-                        color: root.iconColour(modelData.item)
-                        font.family: root.bar.iconFont; font.pixelSize: 16
-                        ChalkFace {}
+                        spacing: 6
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: parent.modelData.code ? root.glyph(parent.modelData.code) : ""
+                            color: root.iconColour(parent.modelData.item)
+                            font.family: root.bar.iconFont; font.pixelSize: 16
+                            ChalkFace {}
+                        }
+                        // (its text, as on the bar)
+                        Text {
+                            visible: text !== ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: parent.modelData.text || ""
+                            color: root.text
+                            font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
+                        }
                     }
                 }
                 Text {

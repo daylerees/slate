@@ -400,7 +400,14 @@ Singleton {
     }
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
     function barShown(id) { const it = id === "title" ? { key: "barShowTitle" } : barItem(id); return !!it && !!s[it.key]; }
-    function barSetShown(id, on) { const it = id === "title" ? { key: "barShowTitle" } : barItem(id); if (it) s[it.key] = !!on; }
+    // (Put back on the bar, a thing has its text on again: it comes as it first was, whatever
+    // it was set to before it went to the pool)
+    function barSetShown(id, on) {
+        const it = id === "title" ? { key: "barShowTitle" } : barItem(id);
+        if (!it) return;
+        if (on && !s[it.key] && barTextKeys[id]) s[barTextKeys[id]] = true;
+        s[it.key] = !!on;
+    }
 
     // ---- Shadows (Shadow.qml, and Hyprland's under floating windows) ------------------------
     // One colour for every shadow: still dark, with a light tint of the theme. The hue is the

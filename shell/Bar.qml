@@ -76,6 +76,9 @@ PanelWindow {
     // Is this the very first or very last thing on the bar ("start" / "end"; "" if neither)?
     // Its panel then sits flush against that end of the screen, as the control centre's and
     // the power menu's always have: now whichever buttons are there, wherever they've been put
+    // What a thing would say on the bar with its text on (for the arranging panel's pool: a chip
+    // carried from there is drawn as the thing will be when it lands)
+    function exampleOf(id) { const t = left.things[id]; return t && !bar.vert ? (t.exampleLabel || "") : ""; }
     // (tests) A drag on the bar while it's being arranged, in the bar window's own coordinates:
     // press at one place, move to the next in steps, let go
     function testDrag(x0, y0, x1, y1) {
@@ -844,7 +847,7 @@ PanelWindow {
             // everything): its icons, as they are on the bar
             function floatOf(h) {
                 const e = Config.barLayout[h.index];
-                const icon = id => { const it = Config.barItem(id); return { code: it ? it.icon : 0, item: id }; };
+                const icon = id => { const it = Config.barItem(id), t = left.things[id]; return { code: it ? it.icon : 0, item: id, text: t && !bar.vert ? (t.shownLabel || "") : "" }; };
                 if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }], label: "" };
                 if (h.kind === "item") return { kind: "item", icons: [icon(h.name)], label: "" };
                 if (e === "space") return { kind: "space", icons: [{ code: bar.vert ? 0xEB5B : 0xEB59, item: "" }], label: "" };
@@ -1355,6 +1358,7 @@ PanelWindow {
                             : bar.notifs.unread > 0 ? bar.notifs.unread + (bar.notifs.unread === 1 ? " unread notification" : " unread notifications")
                             : "Notifications"
                         // Unread count beside the bell (hidden during Do Not Disturb)
+                        sample: "50"
                         label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.dnd
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
@@ -1365,6 +1369,7 @@ PanelWindow {
                         wanted: Config.s.barShowClipboard
                         pastel: "clipboard"            // its colour when the look is Colourful
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
+                        sample: "12"; textOn: Config.s.barValueClipboard
                         label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
                         hoverText: !Config.s.clipboardHistory ? "Clipboard history is off"
                             : Config.clipCount === 0 ? "Clipboard · empty"
@@ -1386,6 +1391,7 @@ PanelWindow {
                         wanted: Config.s.barShowGameMode
                         pastel: "gamemode"            // its colour when the look is Colourful
                         iconCode: 0xF1D2
+                        sample: "Off"; textOn: Config.s.barValueGameMode
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
                         hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
@@ -1398,6 +1404,7 @@ PanelWindow {
                         pastel: "keyboard"            // its colour when the look is Colourful
                         readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
                         iconCode: 0xEBD6
+                        sample: "GB"; textOn: Config.s.barValueKeyboard
                         label: Config.s.barValueKeyboard && current ? current.code : ""
                         hoverText: current ? "Keyboard · " + current.name : "Keyboard"
                         onClicked: bar.openPopout("keyboard", kbSeg)
@@ -1412,6 +1419,7 @@ PanelWindow {
                         readonly property bool on: !!adapter && adapter.enabled
                         readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
                         iconCode: !on ? 0xECEB : connected.length > 0 ? 0xECEA : 0xEA37
+                        sample: "5"; textOn: Config.s.barValueBluetooth
                         label: Config.s.barValueBluetooth && connected.length > 0 ? String(connected.length) : ""
                         hoverText: !on ? "Bluetooth is off"
                             : connected.length === 0 ? "Bluetooth · nothing connected"
@@ -1427,6 +1435,7 @@ PanelWindow {
                         readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
                         tint: muted ? bar.errorColor : bar.textColor
                         iconCode: muted || vol === 0 ? 0xF1C3 : vol > 0.5 ? 0xEB51 : 0xEB4F
+                        sample: "50%"; textOn: Config.s.barValueVolume
                         label: Config.s.barValueVolume ? Math.round(vol * 100) + "%" : ""
                         hoverText: "Volume " + Math.round(vol * 100) + "%" + (muted ? " · muted" : "")
                             + (sink && sink.properties && sink.properties["device.profile.description"] ? " · " + sink.properties["device.profile.description"] : "")
@@ -1447,6 +1456,7 @@ PanelWindow {
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
                         iconCode: !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
+                        sample: "Wi-Fi"; textOn: Config.s.barValueWifi
                         label: Config.s.barValueWifi ? (net ? net.name : "Offline") : ""
                         hoverText: net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
                             : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
@@ -1460,6 +1470,7 @@ PanelWindow {
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
                         readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
                         iconCode: charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
+                        sample: "80%"; textOn: Config.s.barValueBattery
                         label: Config.s.barValueBattery ? Math.round(pct * 100) + "%" : ""
                         hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
@@ -1587,8 +1598,13 @@ PanelWindow {
         property int iconCode: 0
         property real iconSize: 16
         property string label: ""
-        // (while the bar's being arranged, text is put away: more room to work in)
-        readonly property string shownLabel: Config.barArranging ? "" : label
+        // While the bar's being arranged, a thing with its text on always has some to show, so
+        // it's seen as it will be: its own, or an example (`sample`) when there's none just now
+        // (nothing unread, no devices connected). `textOn`: its text isn't switched off
+        property string sample: ""
+        property bool textOn: true
+        readonly property string exampleLabel: label !== "" ? label : sample
+        readonly property string shownLabel: !Config.barArranging ? label : textOn ? exampleLabel : ""
         property color tint: bar.textColor
         // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
         // warning colour (tint other than the text colour)

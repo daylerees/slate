@@ -140,7 +140,7 @@ ShellRoot {
             // (a chip from the pool held over the bar at a place on the desktop: the gap opens)
             else if (what === "hover") {
                 const at = c.split(",");
-                Config.barFloat = { kind: a, icons: [{ code: (Config.barItem(b) || { icon: 0xEAD5 }).icon, item: b }], label: "" };
+                Config.barFloat = { kind: a, icons: [{ code: (Config.barItem(b) || { icon: 0xEAD5 }).icon, item: b, text: topBar.exampleOf(b) }], label: "" };
                 Config.barCarry = { kind: a, id: b };
                 Config.barCarryAt = Qt.point(Number(at[0]), Number(at[1]));
                 Config.barFloatAt = Config.barCarryAt;

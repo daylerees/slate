@@ -159,6 +159,14 @@ class BarLayout(LiveCase):
         self.assertEqual(self.layout()[0]["items"], ["wifi"])
         self.assertNotEqual(at, 0)
 
+    def test_back_from_the_pool_a_thing_has_its_text_on_again(self):
+        self.keep_setting("barValueWifi")
+        self.config("barValueWifi", "false")
+        self.do("shown", "wifi", "false")
+        self.assertEqual(self.setting("barValueWifi"), "false")
+        self.do("shown", "wifi", "true")
+        self.assertEqual(self.setting("barValueWifi"), "true", "put back on the bar, Wi-Fi's text stayed off")
+
     def test_carrying_a_space_a_container_and_a_collapse_button(self):
         self.do("start")
         self.do("carry", "space", "", json.dumps({"join": False, "to": 0, "slot": -1}))
