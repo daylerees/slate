@@ -79,7 +79,7 @@ JsonAdapter {
     property string touchpadTapToClick: ""    // on / off
     property string touchpadIgnoreWhileTyping: "" // on / off
     property int cursorSize: 0                // px (0 = not set here)
-    property string focusFollowsMouse: ""     // on / off (Settings → Windows)
+    property string focusFollowsMouse: "on"   // on / off (Settings → Windows); "" leaves it to Hyprland's own config
     property string animations: ""            // normal, fast or off (Settings → Appearance)
     // How much colour the interface uses (Settings → Appearance → Colour): "monotone" (the
     // accent and greys) or "colourful" (pastels: each Settings page its own colour…)

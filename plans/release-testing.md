@@ -59,3 +59,4 @@ things off as they're done.
 - Rounded UI elements (roundedElements): a static test that no `radius:` in shell/*.qml is a bare number outside the allowed exceptions; visual scenes with it off (bar, a panel, Settings, launcher, dock, a window); Hyprland's rounding goes to 0 and back. Every radius in the UI now goes through Config.corner, so check a few screenshots with it on are pixel-identical to before.
 - Interface size: the reload cover and the arranging panel's drag from the pool at a size other than 100%. Fonts are type-to-search dropdowns now (FontSetting is a DropdownSetting).
 - titleButtons defaults to left: title bar tests and screenshots assume right.
+- focusFollowsMouse defaults to on (was unset, left to Hyprland): any test that expects it unset.
