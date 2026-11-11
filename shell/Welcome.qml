@@ -99,7 +99,7 @@ PanelWindow {
         readonly property real fit: Math.min(1, (w.width - 48) / 780, (w.height - 48) / 600)
         width: 780
         height: 600
-        radius: 18
+        radius: Config.corner(18)
         color: w.bg
         border.width: Config.glass ? 0 : 1; border.color: w.line     // (glass has its own bright rim)
         Gloss { radius: parent.radius; strength: 0.6 }                // glass: a sheen, as on Slate's panels
@@ -188,7 +188,7 @@ PanelWindow {
                                 // from Settings → Windows)
                                 readonly property bool on: modelData.key === "floating" ? Config.windowMode === "floating" : Config.windowMode !== "floating"
                                 width: (parent.width - 16) / 2; height: 290
-                                radius: 14
+                                radius: Config.corner(14)
                                 color: modeHover.hovered && usable ? Config.hoverOn(w.card) : w.card
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
@@ -198,22 +198,22 @@ PanelWindow {
                                 Rectangle {
                                     id: modeArt
                                     anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
-                                    height: 130; radius: 9
+                                    height: 130; radius: Config.corner(9)
                                     color: Config.tint("#151920")
                                     Item {
                                         anchors { fill: parent; margins: 10 }
                                         visible: modeCard.modelData.key === "tiling"
-                                        Rectangle { x: 0; y: 0; width: parent.width * 0.55 - 4; height: parent.height; radius: 6; color: modeCard.on ? w.accent : w.line; opacity: 0.9 }
-                                        Rectangle { x: parent.width * 0.55 + 4; y: 0; width: parent.width * 0.45 - 4; height: parent.height / 2 - 4; radius: 6; color: w.line }
-                                        Rectangle { x: parent.width * 0.55 + 4; y: parent.height / 2 + 4; width: parent.width * 0.45 - 4; height: parent.height / 2 - 4; radius: 6; color: w.line }
+                                        Rectangle { x: 0; y: 0; width: parent.width * 0.55 - 4; height: parent.height; radius: Config.corner(6); color: modeCard.on ? w.accent : w.line; opacity: 0.9 }
+                                        Rectangle { x: parent.width * 0.55 + 4; y: 0; width: parent.width * 0.45 - 4; height: parent.height / 2 - 4; radius: Config.corner(6); color: w.line }
+                                        Rectangle { x: parent.width * 0.55 + 4; y: parent.height / 2 + 4; width: parent.width * 0.45 - 4; height: parent.height / 2 - 4; radius: Config.corner(6); color: w.line }
                                     }
                                     Item {
                                         anchors { fill: parent; margins: 10 }
                                         visible: modeCard.modelData.key === "floating"
-                                        Rectangle { x: 6; y: 8; width: parent.width * 0.55; height: parent.height * 0.62; radius: 6; color: w.line
-                                            Rectangle { width: parent.width; height: 9; radius: 6; color: Qt.lighter(w.line, 1.3) } }
-                                        Rectangle { x: parent.width * 0.38; y: parent.height * 0.3; width: parent.width * 0.58; height: parent.height * 0.66; radius: 6; color: modeCard.on ? w.accent : Qt.lighter(w.line, 1.15)
-                                            Rectangle { width: parent.width; height: 9; radius: 6; color: Qt.lighter(parent.color, 1.15) } }
+                                        Rectangle { x: 6; y: 8; width: parent.width * 0.55; height: parent.height * 0.62; radius: Config.corner(6); color: w.line
+                                            Rectangle { width: parent.width; height: 9; radius: Config.corner(6); color: Qt.lighter(w.line, 1.3) } }
+                                        Rectangle { x: parent.width * 0.38; y: parent.height * 0.3; width: parent.width * 0.58; height: parent.height * 0.66; radius: Config.corner(6); color: modeCard.on ? w.accent : Qt.lighter(w.line, 1.15)
+                                            Rectangle { width: parent.width; height: 9; radius: Config.corner(6); color: Qt.lighter(parent.color, 1.15) } }
                                     }
                                 }
                                 Column {
@@ -225,7 +225,7 @@ PanelWindow {
                                         Rectangle {
                                             visible: modeCard.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
-                                            width: recText.implicitWidth + 14; height: 20; radius: 10
+                                            width: recText.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
                                             Text { id: recText; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
                                         }
@@ -271,7 +271,7 @@ PanelWindow {
                                 id: themeOpt
                                 required property var modelData
                                 readonly property bool on: (Config.s.themeMode || (Config.s.lightMode ? "light" : "dark")) === modelData.mode
-                                width: themeRow.implicitWidth + 28; height: 38; radius: 10
+                                width: themeRow.implicitWidth + 28; height: 38; radius: Config.corner(10)
                                 color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Row {
@@ -299,7 +299,7 @@ PanelWindow {
                                 id: accOpt
                                 required property var modelData
                                 readonly property bool on: Config.s.accentFromWallpaper === modelData.wall
-                                width: (parent.width - 12) / 2; height: 112; radius: 12
+                                width: (parent.width - 12) / 2; height: 112; radius: Config.corner(12)
                                 color: accHover.hovered ? Config.hoverOn(w.card) : w.card
                                 border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -312,7 +312,7 @@ PanelWindow {
                                         Rectangle {
                                             visible: accOpt.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
-                                            width: accRec.implicitWidth + 14; height: 20; radius: 10
+                                            width: accRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
                                             Text { id: accRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
                                         }
@@ -328,7 +328,7 @@ PanelWindow {
                                             delegate: Rectangle {
                                                 id: sw
                                                 required property string modelData
-                                                width: 22; height: 22; radius: 11
+                                                width: 22; height: 22; radius: Config.corner(11)
                                                 // As it'll look: deeper in light mode, and the wallpaper's as bold as set
                                                 color: accOpt.modelData.wall && Config.wallpaperAccent ? Config.fromWallpaper(modelData) : Config.accentShade(modelData)
                                                 border.width: !accOpt.modelData.wall && !Config.s.accentFromWallpaper && Config.s.accent.toLowerCase() === modelData ? 2 : 0
@@ -350,7 +350,7 @@ PanelWindow {
                     // Other apps: every supported one that's installed, in one go
                     Rectangle {
                         id: appsRow
-                        width: parent.width; height: appsText.implicitHeight + 28; radius: 12
+                        width: parent.width; height: appsText.implicitHeight + 28; radius: Config.corner(12)
                         color: w.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         // Installed apps Slate can theme: the list Settings' search already reads at
@@ -381,11 +381,11 @@ PanelWindow {
                         Rectangle {
                             id: appsSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 42; height: 24; radius: 12
+                            width: 42; height: 24; radius: Config.corner(12)
                             color: appsRow.on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
-                                width: 18; height: 18; radius: 9
+                                width: 18; height: 18; radius: Config.corner(9)
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: appsRow.on ? parent.width - width - 3 : 3
                                 color: appsRow.on ? w.accentText : w.text
@@ -433,7 +433,7 @@ PanelWindow {
                                 required property var modelData
                                 readonly property bool on: Config.s.glass === modelData.glass
                                 width: (parent.width - 16) / 2; height: 290
-                                radius: 14
+                                radius: Config.corner(14)
                                 color: lookHover.hovered ? Config.hoverOn(w.card) : w.card
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
@@ -443,7 +443,7 @@ PanelWindow {
                                 Rectangle {
                                     id: lookArt
                                     anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
-                                    height: 130; radius: 9
+                                    height: 130; radius: Config.corner(9)
                                     clip: true
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
@@ -453,19 +453,19 @@ PanelWindow {
                                     readonly property color surface: lookCard.modelData.glass
                                         ? Qt.rgba(w.bg.r, w.bg.g, w.bg.b, 0.42) : Qt.rgba(w.bg.r, w.bg.g, w.bg.b, 1)
                                     Rectangle {
-                                        x: 8; y: 8; width: parent.width - 16; height: 14; radius: 7
+                                        x: 8; y: 8; width: parent.width - 16; height: 14; radius: Config.corner(7)
                                         color: lookArt.surface
                                         border.width: lookCard.modelData.glass ? 1 : 0; border.color: Qt.rgba(1, 1, 1, 0.35)
                                     }
                                     Rectangle {
-                                        x: parent.width * 0.52; y: 30; width: parent.width * 0.48 - 8; height: parent.height - 40; radius: 8
+                                        x: parent.width * 0.52; y: 30; width: parent.width * 0.48 - 8; height: parent.height - 40; radius: Config.corner(8)
                                         color: lookArt.surface
                                         border.width: lookCard.modelData.glass ? 1 : 0; border.color: Qt.rgba(1, 1, 1, 0.35)
                                         // (the sheen)
                                         Rectangle {
                                             visible: lookCard.modelData.glass
                                             anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
-                                            height: parent.height * 0.45; radius: 7
+                                            height: parent.height * 0.45; radius: Config.corner(7)
                                             gradient: Gradient {
                                                 GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.28) }
                                                 GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
@@ -476,7 +476,7 @@ PanelWindow {
                                             spacing: 6
                                             Repeater {
                                                 model: 3
-                                                Rectangle { required property int index; width: parent.width * (index === 0 ? 0.7 : index === 1 ? 0.9 : 0.5); height: 5; radius: 2.5; color: index === 0 ? w.accent : w.dim; opacity: 0.85 }
+                                                Rectangle { required property int index; width: parent.width * (index === 0 ? 0.7 : index === 1 ? 0.9 : 0.5); height: 5; radius: Config.corner(2.5); color: index === 0 ? w.accent : w.dim; opacity: 0.85 }
                                             }
                                         }
                                     }
@@ -490,7 +490,7 @@ PanelWindow {
                                         Rectangle {
                                             visible: lookCard.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
-                                            width: lookRec.implicitWidth + 14; height: 20; radius: 10
+                                            width: lookRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
                                             Text { id: lookRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
                                         }
@@ -533,7 +533,7 @@ PanelWindow {
                             delegate: Rectangle {
                                 id: edgeCard
                                 required property var modelData
-                                width: (parent.width - 16) / 2; height: 250; radius: 14
+                                width: (parent.width - 16) / 2; height: 250; radius: Config.corner(14)
                                 color: w.card
                                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                                 Column {
@@ -560,7 +560,7 @@ PanelWindow {
                     Item { width: 1; height: 8 }
                     Rectangle {
                         id: hideRow
-                        width: parent.width; height: 56; radius: 12
+                        width: parent.width; height: 56; radius: Config.corner(12)
                         color: w.card
                         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                         readonly property bool on: Config.s.dockAutoHide
@@ -573,11 +573,11 @@ PanelWindow {
                         Rectangle {
                             id: hideSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 42; height: 24; radius: 12
+                            width: 42; height: 24; radius: Config.corner(12)
                             color: hideRow.on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
-                                width: 18; height: 18; radius: 9
+                                width: 18; height: 18; radius: Config.corner(9)
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: hideRow.on ? parent.width - width - 3 : 3
                                 color: hideRow.on ? w.accentText : w.text
@@ -614,7 +614,7 @@ PanelWindow {
                             id: keyOpt
                             required property var modelData
                             readonly property bool on: Config.s.keyset === modelData.key
-                            width: parent.width; height: 70; radius: 12
+                            width: parent.width; height: 70; radius: Config.corner(12)
                             color: keyHover.hovered ? Config.hoverOn(w.card) : w.card
                             border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -627,7 +627,7 @@ PanelWindow {
                                     Rectangle {
                                         visible: keyOpt.modelData.rec
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: keyRec.implicitWidth + 14; height: 20; radius: 10
+                                        width: keyRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                         color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
                                         Text { id: keyRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
                                     }
@@ -707,7 +707,7 @@ PanelWindow {
                             delegate: Rectangle {
                                 id: tip
                                 required property var modelData
-                                width: parent.cardW; height: 84; radius: 12
+                                width: parent.cardW; height: 84; radius: Config.corner(12)
                                 color: w.card
                                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                                 border.width: 1; border.color: w.line
@@ -715,7 +715,7 @@ PanelWindow {
                                 Rectangle {
                                     id: tipIcon
                                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                                    width: 38; height: 38; radius: 10
+                                    width: 38; height: 38; radius: Config.corner(10)
                                     color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.16)
                                     Text { anchors.centerIn: parent; text: w.glyph(tip.modelData.icon); color: w.accent; font.family: w.iconFont; font.pixelSize: 19 }
                                 }
@@ -738,10 +738,10 @@ PanelWindow {
                                                     text: "+"; color: w.dim; font.family: w.font; font.pixelSize: 11
                                                 }
                                                 Rectangle {
-                                                    width: Math.max(22, capText.implicitWidth + 14); height: 22; radius: 6
+                                                    width: Math.max(22, capText.implicitWidth + 14); height: 22; radius: Config.corner(6)
                                                     color: w.line
                                                     // A slightly darker lower edge, like a key
-                                                    Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 2; radius: 6; color: Qt.darker(w.line, 1.35) }
+                                                    Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 2; radius: Config.corner(6); color: Qt.darker(w.line, 1.35) }
                                                     Text { id: capText; anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: parent.parent.modelData; color: w.text; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
                                                 }
                                             }
@@ -786,7 +786,7 @@ PanelWindow {
                     model: w.pages
                     delegate: Rectangle {
                         required property int index
-                        width: index === w.page ? 22 : 8; height: 8; radius: 4
+                        width: index === w.page ? 22 : 8; height: 8; radius: Config.corner(4)
                         color: index === w.page ? w.accent : w.line
                         Behavior on width { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: Config.ms(180) } }
@@ -798,7 +798,7 @@ PanelWindow {
             Rectangle {
                 visible: w.page > 0
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                width: backText.implicitWidth + 32; height: 38; radius: 10
+                width: backText.implicitWidth + 32; height: 38; radius: Config.corner(10)
                 color: backHover.hovered ? Config.hoverOn(w.card) : w.card
                 Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                 HoverHandler { id: backHover }
@@ -810,7 +810,7 @@ PanelWindow {
                 spacing: 10
                 Rectangle {
                     visible: w.page === w.pages - 1
-                    width: setText.implicitWidth + 32; height: 38; radius: 10
+                    width: setText.implicitWidth + 32; height: 38; radius: Config.corner(10)
                     color: setHover.hovered ? Config.hoverOn(w.card) : w.card
                     Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
                     HoverHandler { id: setHover }
@@ -822,7 +822,7 @@ PanelWindow {
                     }
                 }
                 Rectangle {
-                    width: nextText.implicitWidth + 36; height: 38; radius: 10
+                    width: nextText.implicitWidth + 36; height: 38; radius: Config.corner(10)
                     color: w.accent
                     Text {
                         id: nextText
@@ -851,7 +851,7 @@ PanelWindow {
             id: askCard
             anchors.centerIn: parent
             width: 380; height: askCol.implicitHeight + 40
-            radius: 16
+            radius: Config.corner(16)
             color: Config.tint("#0f1216")
             border.width: 1; border.color: w.line
             Gloss { radius: parent.radius; strength: 0.6 }
@@ -882,14 +882,14 @@ PanelWindow {
                     anchors.right: parent.right
                     spacing: 8
                     Rectangle {
-                        width: askNo.implicitWidth + 28; height: 32; radius: 8
+                        width: askNo.implicitWidth + 28; height: 32; radius: Config.corner(8)
                         color: askNoHover.hovered ? Config.hoverOn(w.card) : w.card
                         Text { id: askNo; anchors.centerIn: parent; text: "Cancel"; color: w.text; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                         HoverHandler { id: askNoHover }
                         ClickTap { onTapped: w.answer(false) }
                     }
                     Rectangle {
-                        width: askYes.implicitWidth + 28; height: 32; radius: 8
+                        width: askYes.implicitWidth + 28; height: 32; radius: Config.corner(8)
                         color: w.accent
                         Text { id: askYes; anchors.centerIn: parent; text: w.askText.button; color: w.accentText; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
                         HoverHandler { id: askYesHover }

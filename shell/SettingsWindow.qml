@@ -269,7 +269,7 @@ FloatingWindow {
     readonly property var pageKeys: ({
         datetime: ["dateFormat", "weekStart", "temperatureUnit"],
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
-        appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
+        appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners", "roundedElements",
             "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
@@ -526,7 +526,7 @@ FloatingWindow {
                         delegate: Rectangle {
                             required property var modelData
                             readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
-                            width: parent.width; height: 38; radius: 9
+                            width: parent.width; height: 38; radius: Config.corner(9)
                             color: current ? win.accent : navHover.hovered ? Config.hover : "transparent"
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Text {
@@ -583,7 +583,7 @@ FloatingWindow {
                     visible: win.section !== "overview"
                     // Level with the close button (top right), and clear of it
                     anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
-                    height: 36; radius: 10
+                    height: 36; radius: Config.corner(10)
                     // Flat: a faint fill and no sheen, so it stays quiet above the page
                     color: win.faint
                     border.width: pageFind.activeFocus ? 1 : 0; border.color: win.accent
@@ -690,7 +690,7 @@ FloatingWindow {
                 x: header.x + pageSearch.x; y: header.y + pageSearch.y + pageSearch.height + 6
                 width: pageSearch.width
                 height: pageHitsCol.implicitHeight + 8
-                radius: 12
+                radius: Config.corner(12)
                 // Solid, so the page under it doesn't show through the results
                 color: win.well
                 border.width: 1; border.color: win.outline
@@ -714,7 +714,7 @@ FloatingWindow {
                             required property int index
                             readonly property bool chosen: index === pageSearch.pick
                             width: parent.width; height: pageHitCol.implicitHeight + 14
-                            radius: 9
+                            radius: Config.corner(9)
                             color: chosen ? win.accent : pageHitHover.hovered ? Config.hover : "transparent"
                             Text {
                                 id: pageHitIcon
@@ -765,7 +765,7 @@ FloatingWindow {
                 id: foundFlash
                 z: 4
                 opacity: 0
-                radius: 10
+                radius: Config.corner(10)
                 color: "transparent"
                 border.width: 2; border.color: win.accent
                 Rectangle { anchors.fill: parent; radius: parent.radius; color: win.accent; opacity: 0.12 }
@@ -844,7 +844,7 @@ FloatingWindow {
             id: confirmCard
             anchors.centerIn: parent
             width: 380; height: confirmCol.implicitHeight + 40
-            radius: 16
+            radius: Config.corner(16)
             color: win.bar.barColor
             border.width: 1; border.color: win.outline
             scale: win.confirming ? 1 : 0.96
@@ -974,7 +974,7 @@ FloatingWindow {
             x: dropLayer.menuX; y: dropLayer.menuY
             width: dropLayer.menuW
             height: dropLayer.menuH
-            radius: 12
+            radius: Config.corner(12)
             color: win.popupFill
             border.width: 1; border.color: win.outline
             opacity: dropLayer.visible ? 1 : 0
@@ -986,7 +986,7 @@ FloatingWindow {
                 id: dropFindBox
                 visible: dropLayer.searching
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 6 }
-                height: 32; radius: 8
+                height: 32; radius: Config.corner(8)
                 color: win.faint
                 border.width: dropFind.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
@@ -1042,7 +1042,7 @@ FloatingWindow {
                     // Searchable: the row Enter would pick
                     readonly property bool picked: dropLayer.searching && index === dropLayer.pick
                     // Clear of the scrollbar, when there is one
-                    width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: 8
+                    width: menuList.width - (menuList.contentHeight > menuList.height ? 8 : 0); height: dropLayer.rowH; radius: Config.corner(8)
                     color: picked ? win.accent : rowHover.hovered ? Config.hover : "transparent"
                     FolderSwatch {
                         id: rowFolder
@@ -1111,7 +1111,7 @@ FloatingWindow {
                 width: 1
                 height: Math.max(16, track * menuList.height / Math.max(1, menuList.contentHeight))
                 y: menuList.y + inset + (range > 0 ? (track - height) * Math.max(0, Math.min(1, menuList.contentY / range)) : 0)
-                radius: 0.5
+                radius: Config.corner(0.5)
                 color: win.text
                 opacity: 0.4
             }
@@ -1133,7 +1133,7 @@ FloatingWindow {
         id: iconButton
         property int icon                  // a Tabler glyph's code point
         signal clicked()
-        width: 34; height: 34; radius: 17
+        width: 34; height: 34; radius: Config.corner(17)
         color: iconButtonHover.hovered ? Config.hover : "transparent"
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Text {
@@ -1155,8 +1155,8 @@ FloatingWindow {
         property real distance: 0
         property real cornerRadius: 0      // the rounding of the corners it sits in
         height: 18
-        topLeftRadius: atBottom ? 0 : cornerRadius; topRightRadius: atBottom ? 0 : cornerRadius
-        bottomLeftRadius: atBottom ? cornerRadius : 0; bottomRightRadius: atBottom ? cornerRadius : 0
+        topLeftRadius: Config.corner(atBottom ? 0 : cornerRadius); topRightRadius: Config.corner(atBottom ? 0 : cornerRadius)
+        bottomLeftRadius: Config.corner(atBottom ? cornerRadius : 0); bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
         opacity: Math.max(0, Math.min(1, distance / 24))
         gradient: Gradient {
             GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
@@ -1171,7 +1171,7 @@ FloatingWindow {
     component FieldFrame: Rectangle {
         id: fieldFrame
         property Item field: null
-        radius: 8
+        radius: Config.corner(8)
         color: win.control
         HoverHandler { id: fieldFrameHover; cursorShape: Qt.IBeamCursor }
         border.width: (fieldFrame.field && fieldFrame.field.activeFocus) || fieldFrameHover.hovered ? 1 : 0
@@ -1199,7 +1199,7 @@ FloatingWindow {
         default property alias rows: groupCol.data
         width: parent ? parent.width : 0
         height: groupCol.implicitHeight + 8
-        radius: 12
+        radius: Config.corner(12)
         color: win.card
         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
         Column { id: groupCol; anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 } }
@@ -1272,7 +1272,7 @@ FloatingWindow {
             visible: settingRow.changed
             x: labels.x + labelText.width + 8
             y: labels.y + labelText.height / 2 - height / 2
-            width: 8; height: 8; radius: 4
+            width: 8; height: 8; radius: Config.corner(4)
             color: win.accent
             scale: dotHover.hovered ? 1.4 : 1
             Behavior on scale { NumberAnimation { duration: Config.ms(100) } }
@@ -1286,7 +1286,7 @@ FloatingWindow {
             x: changedDot.x + 18
             y: changedDot.y + changedDot.height / 2 - height / 2
             width: tipText.implicitWidth + 14; height: tipText.implicitHeight + 8
-            radius: 6
+            radius: Config.corner(6)
             // The theme's own shades (Config.tint: light or dark, and the wallpaper's tint)
             color: Config.tint("#262c35")
             border.width: 1; border.color: Config.tint("#3d4553")
@@ -1316,14 +1316,14 @@ FloatingWindow {
         id: toggleSwitch
         property bool checked: false
         signal toggled(bool value)
-        width: 42; height: 24; radius: 12
+        width: 42; height: 24; radius: Config.corner(12)
         color: checked ? win.accent
             : (tgHover.hovered ? win.controlHover(win.knobHover) : win.control)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
         Rectangle {
             anchors { fill: parent; margins: -3 }
-            radius: height / 2
+            radius: Config.corner(height / 2)
             color: "transparent"
             border.width: 2; border.color: win.accent
             opacity: tgHover.hovered ? 0.35 : 0
@@ -1331,7 +1331,7 @@ FloatingWindow {
         }
         HoverHandler { id: tgHover }
         Rectangle {
-            width: 18; height: 18; radius: 9
+            width: 18; height: 18; radius: Config.corner(9)
             anchors.verticalCenter: parent.verticalCenter
             x: toggleSwitch.checked ? parent.width - width - 3 : 3
             color: toggleSwitch.checked ? win.accentText : win.text
@@ -1371,16 +1371,16 @@ FloatingWindow {
             Rectangle {
                 id: trk
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width; height: 6; radius: 3
+                width: parent.width; height: 6; radius: Config.corner(3)
                 color: sliderBox.hot ? win.controlHover(win.knobHover) : win.control
                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 Rectangle {
-                    width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
+                    width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: Config.corner(3); color: win.accent
                 }
             }
             // Hover: an accent halo behind the knob, which grows a little
             Rectangle {
-                width: 28; height: 28; radius: 14
+                width: 28; height: 28; radius: Config.corner(14)
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.frac * (parent.width - 16) + 8 - width / 2
                 color: win.accent
@@ -1388,7 +1388,7 @@ FloatingWindow {
                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
             }
             Rectangle {
-                width: 16; height: 16; radius: 8
+                width: 16; height: 16; radius: Config.corner(8)
                 anchors.verticalCenter: parent.verticalCenter
                 x: parent.frac * (parent.width - 16)
                 color: win.text
@@ -1428,7 +1428,7 @@ FloatingWindow {
             // TapHandler, not ClickTap: the sound it plays is its own feedback
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 28; height: 28; radius: 14
+                width: 28; height: 28; radius: Config.corner(14)
                 opacity: soundSetting.audible ? 1 : 0.4
                 color: playHover.hovered && soundSetting.audible ? win.controlHover(win.controlHoverSolid) : win.control
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -1461,7 +1461,7 @@ FloatingWindow {
         property int icon: 0          // optional Tabler glyph before the label
         property bool compactLabel: false   // with an icon: show just the icon (narrow window)
         signal clicked()
-        width: btnRow.implicitWidth + 28; height: 32; radius: 8
+        width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
         color: primary ? win.accent
             : btnHover.hovered ? (destructive ? Config.hoverDanger : win.controlHover(win.controlHoverSolid)) : win.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -1585,7 +1585,7 @@ FloatingWindow {
                 delegate: Rectangle {
                     required property string modelData
                     readonly property bool current: fontSetting.value === modelData
-                    width: ListView.view.width; height: 36; radius: 8
+                    width: ListView.view.width; height: 36; radius: Config.corner(8)
                     color: current ? win.accent : fontHover.hovered ? Config.hover : "transparent"
                     Text {
                         anchors { left: parent.left; leftMargin: 12; right: sample.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -1645,7 +1645,7 @@ FloatingWindow {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool on: modelData.value === choiceSetting.value
-                    width: optText.implicitWidth + 26; height: 32; radius: 8
+                    width: optText.implicitWidth + 26; height: 32; radius: Config.corner(8)
                     color: on ? win.accent : optHover.hovered ? win.fieldHover() : win.control
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
@@ -1687,7 +1687,7 @@ FloatingWindow {
             // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
             readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
                 + (ddIcon.visible ? ddIcon.width + 8 : 0)
-            width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: 8
+            width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: Config.corner(8)
             color: open || ddHover.hovered ? win.fieldHover() : win.control
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -1769,7 +1769,7 @@ FloatingWindow {
             spacing: 6
             bottomPadding: 14
             Rectangle {
-                width: parent.width; height: 34; radius: 8
+                width: parent.width; height: 34; radius: Config.corner(8)
                 color: win.well
                 border.width: findBox.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
@@ -1790,7 +1790,7 @@ FloatingWindow {
                 }
             }
             Rectangle {
-                width: parent.width; height: Math.min(220, Math.max(40, pickList.contentHeight + 8)); radius: 8
+                width: parent.width; height: Math.min(220, Math.max(40, pickList.contentHeight + 8)); radius: Config.corner(8)
                 color: win.well
                 ListView {
                     id: pickList
@@ -1801,7 +1801,7 @@ FloatingWindow {
                     model: searchPicker.shown
                     delegate: Rectangle {
                         required property var modelData
-                        width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: 6
+                        width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: Config.corner(6)
                         color: pickHover.hovered ? Config.hover : "transparent"
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
@@ -1851,7 +1851,7 @@ FloatingWindow {
             function open(e) { if (e) win.goTo(e.page, e.label); }
             Rectangle {
                 width: parent.width; height: 44
-                radius: 12
+                radius: Config.corner(12)
                 color: win.card          // (flat, as Slate's other text boxes: no sheen)
                 border.width: findField.activeFocus ? 1 : 0; border.color: win.accent
                 Text {
@@ -1937,7 +1937,7 @@ FloatingWindow {
                                     required property int index
                                     readonly property bool chosen: index === ovPage.pick
                                     width: parent.width; height: hitCol.implicitHeight + 18
-                                    radius: 9
+                                    radius: Config.corner(9)
                                     color: chosen ? win.accent : hitHover.hovered ? Config.hover : "transparent"
                                     Text {
                                         id: hitIcon
@@ -1985,12 +1985,12 @@ FloatingWindow {
                                     required property var modelData
                                     width: tiles.tileW
                                     height: 112
-                                    radius: 12
+                                    radius: Config.corner(12)
                                     color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
                                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                     Rectangle {
                                         x: 14; y: 14
-                                        width: 34; height: 34; radius: 10
+                                        width: 34; height: 34; radius: Config.corner(10)
                                         // The page's own colour when colourful, else the accent
                                         readonly property color pc: Config.pageColour(tile.modelData.id)
                                         color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
@@ -2064,14 +2064,14 @@ FloatingWindow {
                         x: 16; width: 60; height: 60
                         anchors.verticalCenter: parent.verticalCenter
                         Rectangle {
-                            anchors.fill: parent; radius: width / 2
+                            anchors.fill: parent; radius: Config.corner(width / 2)
                             color: win.outline
                             visible: acctImg.status !== Image.Ready
                             Text { anchors.centerIn: parent; text: win.glyph(0xEF68); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 34 }
                         }
                         RoundImage {
                             id: acctImg
-                            anchors.fill: parent; radius: width / 2
+                            anchors.fill: parent; radius: Config.corner(width / 2)
                             source: Config.avatarUrl
                             saturation: acctHover.hovered || Config.avatarBusy ? -1 : 0
                             brightness: acctHover.hovered || Config.avatarBusy ? -0.45 : 0
@@ -2230,7 +2230,7 @@ FloatingWindow {
                                 anchors { top: parent.bottom; topMargin: 6; right: parent.right }
                                 width: 300
                                 height: locPopCol.implicitHeight + 8
-                                radius: 12
+                                radius: Config.corner(12)
                                 // Solid, so the page under it doesn't show through
                                 color: win.popupFill
                                 border.width: 1; border.color: win.outline
@@ -2256,7 +2256,7 @@ FloatingWindow {
                                             required property int index
                                             readonly property bool chosen: index === loc.pick
                                             width: parent.width; height: placeCol.implicitHeight + 14
-                                            radius: 9
+                                            radius: Config.corner(9)
                                             color: chosen ? win.accent : placeHover.hovered ? Config.hover : "transparent"
                                             Column {
                                                 id: placeCol
@@ -2702,10 +2702,10 @@ FloatingWindow {
                         parent: vidRow
                         visible: sceneryRun.running
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 16; rightMargin: 16; bottomMargin: 6 }
-                        height: 4; radius: 2
+                        height: 4; radius: Config.corner(2)
                         color: win.control
                         Rectangle {
-                            width: Math.max(height, parent.width * vidRow.progress); height: parent.height; radius: 2
+                            width: Math.max(height, parent.width * vidRow.progress); height: parent.height; radius: Config.corner(2)
                             color: win.accent
                             Behavior on width { NumberAnimation { duration: Config.ms(200) } }
                         }
@@ -2788,10 +2788,10 @@ FloatingWindow {
                     // Two-way switch: List | Grid
                     Rectangle {
                         readonly property var modes: ["list", "grid"]
-                        width: 184; height: 34; radius: 9
+                        width: 184; height: 34; radius: Config.corner(9)
                         color: win.well
                         Rectangle {
-                            width: 92 - 6; height: parent.height - 6; radius: 7
+                            width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
                             color: win.accent
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
@@ -2807,7 +2807,7 @@ FloatingWindow {
                                     width: 92; height: 34
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
-                                        radius: 7
+                                        radius: Config.corner(7)
                                         color: win.accent
                                         opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
@@ -2972,7 +2972,7 @@ FloatingWindow {
                 visible: disp.pending
                 width: parent.width
                 height: keepRow.implicitHeight + 24
-                radius: 12
+                radius: Config.corner(12)
                 color: Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0.16)
                 border.width: 1; border.color: win.accent
                 Row {
@@ -3022,7 +3022,7 @@ FloatingWindow {
                             readonly property real homeY: arrange.box.oy + (c.y - arrange.box.y0) * arrange.box.k
                             x: homeX; y: homeY
                             width: Math.max(24, sz.w * arrange.box.k - 4); height: Math.max(18, sz.h * arrange.box.k - 4)
-                            radius: 6
+                            radius: Config.corner(6)
                             color: chosen ? win.accent : win.outline
                             border.width: 1; border.color: chosen ? win.accent : win.ring
                             z: drag.active ? 2 : 1
@@ -3710,7 +3710,7 @@ FloatingWindow {
             Item { width: 1; height: 6 }
 
             Rectangle {
-                width: parent.width; height: 40; radius: 10
+                width: parent.width; height: 40; radius: Config.corner(10)
                 color: win.card
                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: findKeys.activeFocus ? 1 : 0; border.color: win.accent
@@ -3752,7 +3752,7 @@ FloatingWindow {
                                             model: keyRow.modelData.keys
                                             delegate: Rectangle {
                                                 required property string modelData
-                                                width: Math.max(26, capText.implicitWidth + 14); height: 24; radius: 6
+                                                width: Math.max(26, capText.implicitWidth + 14); height: 24; radius: Config.corner(6)
                                                 color: win.divider
                                                 border.width: 1; border.color: win.controlHoverSolid
                                                 Text { id: capText; anchors.centerIn: parent; text: parent.modelData; color: win.text; font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium }
@@ -4654,10 +4654,10 @@ FloatingWindow {
                     // Two-way switch: Circles | Squares, each with a small preview
                     Rectangle {
                         readonly property var shapes: ["circle", "square"]
-                        width: 184; height: 34; radius: 9
+                        width: 184; height: 34; radius: Config.corner(9)
                         color: win.well
                         Rectangle {
-                            width: 92 - 6; height: parent.height - 6; radius: 7
+                            width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
                             y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
                             color: win.accent
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
@@ -4672,7 +4672,7 @@ FloatingWindow {
                                     width: 92; height: 34
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
-                                        radius: 7
+                                        radius: Config.corner(7)
                                         color: win.accent
                                         opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
@@ -4813,17 +4813,17 @@ FloatingWindow {
                     detail: "Where new notifications appear on screen"
                     // A small screen: click a spot to put notifications there
                     Rectangle {
-                        width: 168; height: 104; radius: 10
+                        width: 168; height: 104; radius: Config.corner(10)
                         color: win.well
                         border.width: 1; border.color: win.controlHoverSolid
-                        Rectangle { anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 } height: 9; topLeftRadius: 9; topRightRadius: 9; color: win.outline }
+                        Rectangle { anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 } height: 9; topLeftRadius: Config.corner(9); topRightRadius: Config.corner(9); color: win.outline }
                         Repeater {
                             model: ["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"]
                             delegate: Rectangle {
                                 required property string modelData
                                 required property int index
                                 readonly property bool current: Config.s.notificationPosition === modelData
-                                width: 44; height: 22; radius: 6
+                                width: 44; height: 22; radius: Config.corner(6)
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
                                 color: current ? win.accent : "transparent"
@@ -4877,7 +4877,7 @@ FloatingWindow {
         Rectangle {
             id: thumbFrame
             width: parent.width; height: parent.width * 10 / 16
-            radius: 10
+            radius: Config.corner(10)
             color: win.card
             border.width: parent.current ? 3 : wallHover.hovered ? 1 : 0
             border.color: parent.current ? win.accent : Config.tint("#4a5360")
@@ -4900,14 +4900,14 @@ FloatingWindow {
                     anchors.fill: parent
                     visible: false
                     layer.enabled: true
-                    Rectangle { anchors.fill: parent; radius: 8 }
+                    Rectangle { anchors.fill: parent; radius: Config.corner(8) }
                 }
             }
             // Tick on the wallpaper in use
             Rectangle {
                 visible: parent.parent.current
                 anchors { right: parent.right; top: parent.top; margins: 8 }
-                width: 24; height: 24; radius: 12
+                width: 24; height: 24; radius: Config.corner(12)
                 color: win.accent
                 Text { anchors.centerIn: parent; text: win.glyph(0xEA5E); color: win.accentText; font.family: win.bar.iconFont; font.pixelSize: 15 }
             }
@@ -4975,10 +4975,10 @@ FloatingWindow {
                     // Three-way switch: Dark | Light | Auto
                     Rectangle {
                         readonly property var modes: ["dark", "light", "auto"]
-                        width: 276; height: 34; radius: 9
+                        width: 276; height: 34; radius: Config.corner(9)
                         color: win.well
                         Rectangle {
-                            width: 92 - 6; height: parent.height - 6; radius: 7
+                            width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
                             color: win.accent
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
@@ -4993,7 +4993,7 @@ FloatingWindow {
                                     width: 92; height: 34
                                     Rectangle {
                                         anchors { fill: parent; margins: 3 }
-                                        radius: 7
+                                        radius: Config.corner(7)
                                         color: win.accent
                                         opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
                                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
@@ -5030,7 +5030,7 @@ FloatingWindow {
                         spacing: 12
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 24; height: 24; radius: 12
+                            width: 24; height: 24; radius: Config.corner(12)
                             color: Config.wallpaperAccent ? Config.fromWallpaper(Config.wallpaperAccent) : "transparent"
                             border.width: 1; border.color: win.ring
                         }
@@ -5070,7 +5070,7 @@ FloatingWindow {
                                 model: ["#8fb3e8", "#7fc4c0", "#9ad3a6", "#e8c48f", "#e8a6b5", "#b9a6e8", "#eef1f5"]
                                 delegate: Rectangle {
                                     required property string modelData
-                                    width: 24; height: 24; radius: 12
+                                    width: 24; height: 24; radius: Config.corner(12)
                                     color: Config.accentShade(modelData)      // as it'll look (deeper in light mode)
                                     border.width: Config.s.accent.toLowerCase() === modelData ? 2 : 0
                                     border.color: win.text
@@ -5098,7 +5098,7 @@ FloatingWindow {
                                 width: 200; height: 24
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width; height: 10; radius: 5
+                                    width: parent.width; height: 10; radius: Config.corner(5)
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
                                         GradientStop { position: 0/6; color: Config.accentShade(Qt.hsla(0/6, 0.65, 0.74, 1)) }
@@ -5111,7 +5111,7 @@ FloatingWindow {
                                     }
                                 }
                                 Rectangle {
-                                    width: 16; height: 16; radius: 8
+                                    width: 16; height: 16; radius: Config.corner(8)
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.max(0, customRow.current.hslHue) * (parent.width - width)
                                     color: Config.accentShade(customRow.current)
@@ -5166,7 +5166,7 @@ FloatingWindow {
                         spacing: 12
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 24; height: 24; radius: 12
+                            width: 24; height: 24; radius: Config.corner(12)
                             color: Config.wallpaperTone ? Qt.hsla(Qt.lighter(Config.wallpaperTone, 1).hslHue, 0.3, 0.2, 1) : "transparent"
                             border.width: 1; border.color: win.ring
                         }
@@ -5311,6 +5311,12 @@ FloatingWindow {
                     detail: "Round off the corners of the screen and curve the bar into the screen edges"
                     key: "roundedScreenCorners"
                 }
+                Separator {}
+                ToggleSetting {
+                    label: "Rounded UI elements"
+                    detail: "Off, everything goes hard-edged and square: the bar's containers and panels, the dock, menus, buttons, switches and your windows. App icons and workspace dots keep the shapes chosen for them"
+                    key: "roundedElements"
+                }
             }
             GroupLabel { text: "App icons" }
             Group {
@@ -5341,7 +5347,7 @@ FloatingWindow {
                             id: shapeCard
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
-                            width: 92; height: 96; radius: 12
+                            width: 92; height: 96; radius: Config.corner(12)
                             color: on ? win.accent : shapeHover.hovered ? Config.hover : win.well
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
@@ -5528,7 +5534,7 @@ FloatingWindow {
                     }
                     Rectangle {
                         width: parent.width; height: 220
-                        radius: 8
+                        radius: Config.corner(8)
                         color: win.well
                         ListView {
                             id: dirList
@@ -5548,7 +5554,7 @@ FloatingWindow {
                             delegate: Rectangle {
                                 required property string fileName
                                 required property string filePath
-                                width: dirList.width; height: 32; radius: 6
+                                width: dirList.width; height: 32; radius: Config.corner(6)
                                 color: dirHover.hovered ? Config.hover : "transparent"
                                 Text {
                                     id: dirIcon
@@ -5882,7 +5888,7 @@ FloatingWindow {
                                     // Installed: Slate's pastel green when colourful (as Power's), else the accent
                                     readonly property color tone: Config.colourful ? Config.tint("#a6d3a0") : win.accent
                                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                    width: chipRow.implicitWidth + 18; height: 24; radius: 12
+                                    width: chipRow.implicitWidth + 18; height: 24; radius: Config.corner(12)
                                     color: on ? Qt.rgba(tone.r, tone.g, tone.b, 0.16) : win.control
                                     Row {
                                         id: chipRow
@@ -5957,7 +5963,7 @@ FloatingWindow {
                             Rectangle {
                                 id: netIcon
                                 anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                                width: 34; height: 34; radius: 9
+                                width: 34; height: 34; radius: Config.corner(9)
                                 color: netRow.n.connected ? win.accent : win.outline
                                 Text {
                                     anchors.centerIn: parent
@@ -6017,7 +6023,7 @@ FloatingWindow {
                             width: parent.width; height: 48
                             Rectangle {
                                 anchors { left: parent.left; right: parent.right; leftMargin: 60; rightMargin: 14; top: parent.top }
-                                height: 36; radius: 8
+                                height: 36; radius: Config.corner(8)
                                 color: win.control
                                 border.width: 1; border.color: win.accent
                                 TextInput {
@@ -6345,7 +6351,7 @@ FloatingWindow {
                         Rectangle {
                             id: devIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 34; height: 34; radius: 9
+                            width: 34; height: 34; radius: Config.corner(9)
                             color: d.connected ? win.accent : win.outline
                             Text {
                                 anchors.centerIn: parent
@@ -6513,7 +6519,7 @@ FloatingWindow {
                         Rectangle {
                             id: printerIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 34; height: 34; radius: 9
+                            width: 34; height: 34; radius: Config.corner(9)
                             color: printerRow.printer.default ? win.accent : win.outline
                             Text {
                                 anchors.centerIn: parent
@@ -6954,7 +6960,7 @@ FloatingWindow {
                     Rectangle {
                         id: previewBox
                         anchors { fill: parent; margins: 8 }
-                        radius: 10
+                        radius: Config.corner(10)
                         color: Qt.rgba(0, 0, 0, 0.35)
                         clip: true
                         Loader {
@@ -7318,11 +7324,11 @@ FloatingWindow {
                                 }
                             }
                             Rectangle {
-                                width: parent.width; height: 6; radius: 3
+                                width: parent.width; height: 6; radius: Config.corner(3)
                                 color: win.divider
                                 Rectangle {
                                     width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
-                                    height: parent.height; radius: 3
+                                    height: parent.height; radius: Config.corner(3)
                                     color: parent.parent.frac > 0.8 ? win.danger : win.accent
                                     Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                                 }

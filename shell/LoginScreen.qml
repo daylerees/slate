@@ -140,14 +140,14 @@ Item {
         // Round avatar with a border
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 132; height: 132; radius: 66
+            width: 132; height: 132; radius: Config.corner(66)
             color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
             GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: parent.radius }
             Rectangle {
                 anchors { fill: parent; margins: 4 }
-                radius: width / 2
+                radius: Config.corner(width / 2)
                 color: Config.raised(ls.field)
                 Text {
                     anchors.centerIn: parent
@@ -160,7 +160,7 @@ Item {
             Image { id: avatarImg; source: ls.avatar ? "file://" + ls.avatar : ""; visible: false; asynchronous: true }
             RoundImage {
                 anchors { fill: parent; margins: 4 }
-                radius: width / 2
+                radius: Config.corner(width / 2)
                 visible: avatarImg.status === Image.Ready
                 source: avatarImg.source
             }
@@ -172,7 +172,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 360
             height: boxCol.implicitHeight + 28
-            radius: 18
+            radius: Config.corner(18)
             color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
@@ -193,7 +193,7 @@ Item {
 
                 // Password field with a go button
                 Rectangle {
-                    width: parent.width; height: 46; radius: 12
+                    width: parent.width; height: 46; radius: Config.corner(12)
                     color: Config.raised(ls.field)
                     // (flat, with glass too: an outline while it has the keyboard)
                     border.width: password.activeFocus ? 1 : 0
@@ -230,7 +230,7 @@ Item {
                     Rectangle {
                         id: goBtn
                         anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                        width: 34; height: 34; radius: 9
+                        width: 34; height: 34; radius: Config.corner(9)
                         color: password.text !== "" ? ls.accent : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         Text {
@@ -253,7 +253,7 @@ Item {
                     readonly property bool caps: ls.message === "" && ls.capsLock
                     width: parent.width
                     height: Math.max(30, noteRow.implicitHeight + 12)
-                    radius: 10
+                    radius: Config.corner(10)
                     visible: ls.capsLock || ls.message !== ""
                     color: isError ? Qt.rgba(ls.error.r, ls.error.g, ls.error.b, 0.14) : "transparent"
                     Row {
@@ -299,7 +299,7 @@ Item {
         signal clicked()
         height: 44
         width: label ? pillRow.implicitWidth + 30 : 44
-        radius: 22
+        radius: Config.corner(22)
         readonly property color fill: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
         color: Config.glass ? "transparent" : fill
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -323,7 +323,7 @@ Item {
         signal chosen(var item)
         width: 220
         height: menuCol.implicitHeight + 12
-        radius: 16
+        radius: Config.corner(16)
         color: Config.glass ? "transparent" : ls.frame
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
@@ -336,7 +336,7 @@ Item {
                 model: m.items
                 delegate: Rectangle {
                     required property var modelData
-                    width: parent.width; height: 40; radius: 10
+                    width: parent.width; height: 40; radius: Config.corner(10)
                     color: modelData.current ? ls.accent : itemHover.hovered ? Config.hover : "transparent"
                     Row {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }

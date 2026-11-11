@@ -40,7 +40,7 @@ PanelWindow {
         // At the pointer, or to its left / above it when it would run off the screen
         x: dm.atX + width + 8 > dm.width ? Math.max(8, dm.atX - width) : dm.atX
         y: dm.atY + height + 8 > dm.height ? Math.max(8, dm.atY - height) : dm.atY
-        radius: 12
+        radius: Config.corner(12)
         color: dm.bgColor
         Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
@@ -65,7 +65,7 @@ PanelWindow {
                     Rectangle {
                         visible: !row.modelData.separator
                         anchors.fill: parent
-                        radius: 7
+                        radius: Config.corner(7)
                         // Under the pointer: the muted hover, flat (the accent is for what stays selected)
                         color: itemHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(90) } }

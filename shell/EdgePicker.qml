@@ -11,7 +11,7 @@ Rectangle {
     property color accent: Config.accent
     signal picked(string edge)
 
-    width: 168; height: 104; radius: 10
+    width: 168; height: 104; radius: Config.corner(10)
     color: Config.tint("#151920")
     border.width: 1; border.color: Config.tint("#323a46")
 
@@ -35,7 +35,7 @@ Rectangle {
             readonly property rect r: ep.place(modelData, ep.bar)
             readonly property bool current: ep.edge === modelData
             x: r.x; y: r.y; width: r.width; height: r.height
-            radius: 3
+            radius: Config.corner(3)
             color: current ? ep.accent : "transparent"
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             HoverFill { base: Config.tint("#262c35"); hovered: ep.over === spot.modelData; gone: spot.current; radius: spot.radius }

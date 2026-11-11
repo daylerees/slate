@@ -214,11 +214,11 @@ PanelWindow {
             id: track
             visible: osd.mode === "level"
             anchors { left: osdIcon.right; leftMargin: 14; right: osdText.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            height: 6; radius: 3
+            height: 6; radius: Config.corner(3)
             color: osd.bar.capsuleColor
             Rectangle {
                 width: Math.max(height, track.width * osd.value)
-                height: parent.height; radius: 3
+                height: parent.height; radius: Config.corner(3)
                 color: osd.dimmed ? Config.tint("#4f5866") : osd.bar.accent
                 Behavior on width { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
             }

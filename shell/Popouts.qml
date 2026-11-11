@@ -175,7 +175,7 @@ PanelWindow {
     // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
     // without seconds: they're big and don't tick every second
     readonly property string timeFormat: Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"
-    readonly property real radius: 14
+    readonly property real radius: Config.corner(14)
     readonly property real pad: 14
 
     // ---- Drop shadow under the panel: a copy of the panel's shape (the panel clips itself, so
@@ -245,10 +245,10 @@ PanelWindow {
             y: pop.sideways ? 0 : (pop.fromBottom ? 1 : -1) * height * (1 - pop.fade)
             color: pop.bg
             // Flush with the start or end of the screen: not on the corner against it
-            topLeftRadius: (pop.side === "bottom" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenStart) ? pop.radius : 0
-            topRightRadius: (pop.side === "bottom" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenStart) ? pop.radius : 0
-            bottomLeftRadius: (pop.side === "top" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenEnd) ? pop.radius : 0
-            bottomRightRadius: (pop.side === "top" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenEnd) ? pop.radius : 0
+            topLeftRadius: Config.corner((pop.side === "bottom" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenStart) ? pop.radius : 0)
+            topRightRadius: Config.corner((pop.side === "bottom" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenStart) ? pop.radius : 0)
+            bottomLeftRadius: Config.corner((pop.side === "top" && !pop.atScreenStart) || (pop.side === "right" && !pop.atScreenEnd) ? pop.radius : 0)
+            bottomRightRadius: Config.corner((pop.side === "top" && !pop.atScreenEnd) || (pop.side === "left" && !pop.atScreenEnd) ? pop.radius : 0)
             // Fades with its movement: in as it slides out, out as it slides back
             opacity: pop.active ? Math.max(0.01, pop.fade) : 0
 
@@ -310,8 +310,9 @@ PanelWindow {
         Canvas {
             required property int index
             width: bar.cornerRadius; height: bar.cornerRadius
-            // None at the screen's edge, for a panel flush against it
-            visible: !(pop.atScreenEnd && index === 1) && !(pop.atScreenStart && index === 0)
+            // None at the screen's edge, for a panel flush against it; and none at all with
+            // Rounded UI elements off, when a panel meets the bar square
+            visible: Config.s.roundedElements && !(pop.atScreenEnd && index === 1) && !(pop.atScreenStart && index === 0)
             // Either side of the panel where it meets the bar (above and below it on a side bar).
             // The shape is drawn for a top bar's left join and mirrored for the others.
             x: pop.sideways ? (pop.side === "left" ? 0 : pop.width - width)
@@ -474,11 +475,11 @@ PanelWindow {
         Rectangle {
             id: track
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width; height: 6; radius: 3
+            width: parent.width; height: 6; radius: Config.corner(3)
             color: pop.card
             Rectangle {
                 id: slFill
-                width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: 3
+                width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: Config.corner(3)
                 // Switched off (a muted volume): a much darker accent, with diagonal stripes in the
                 // red of its muted indicator across it, so it reads as there but not in use
                 color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
@@ -537,7 +538,7 @@ PanelWindow {
             }
         }
         Rectangle {
-            width: 16; height: 16; radius: 8
+            width: 16; height: 16; radius: Config.corner(8)
             anchors.verticalCenter: parent.verticalCenter
             x: Math.min(1, sl.value) * (sl.width - width)
             color: pop.text
@@ -562,7 +563,7 @@ PanelWindow {
         property bool danger: false        // destructive: the muted hover in red
         signal clicked()
         height: 36
-        radius: 8
+        radius: Config.corner(8)
         color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? (danger ? Config.hoverDanger : Config.hover) : "transparent"
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: rbHover }
@@ -594,10 +595,10 @@ PanelWindow {
         id: onOff
         property bool checked: false
         signal toggled()
-        width: 40; height: 22; radius: 11
+        width: 40; height: 22; radius: Config.corner(11)
         color: checked ? pop.accent : pop.card
         Rectangle {
-            width: 16; height: 16; radius: 8
+            width: 16; height: 16; radius: Config.corner(8)
             anchors.verticalCenter: parent.verticalCenter
             x: onOff.checked ? parent.width - width - 3 : 3
             color: onOff.checked ? pop.accentText : pop.text
@@ -628,7 +629,7 @@ PanelWindow {
             visible: parent.editCode !== 0
             anchors { left: titleLabel.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
             width: 24; height: 24
-            Rectangle { anchors.fill: parent; radius: 6; color: titleEditArea.containsMouse ? pop.card : "transparent" }
+            Rectangle { anchors.fill: parent; radius: Config.corner(6); color: titleEditArea.containsMouse ? pop.card : "transparent" }
             Icon { anchors.centerIn: parent; code: parent.parent.editCode; font.pixelSize: 16; color: pop.accent }
             ClickArea { id: titleEditArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: parent.parent.editClicked() }
         }
@@ -647,7 +648,7 @@ PanelWindow {
         property real tempSize: 11
         readonly property color fg: today ? pop.accentText : pop.text
         readonly property color faint: today ? Qt.rgba(pop.accentText.r, pop.accentText.g, pop.accentText.b, 0.7) : pop.dim
-        radius: 9
+        radius: Config.corner(9)
         Column {
             anchors.centerIn: parent
             spacing: forecastDay.gap
@@ -944,7 +945,7 @@ PanelWindow {
                     // Password entry for a new secured network
                     Rectangle {
                         visible: wifiView.askingFor === netRow.modelData.name
-                        width: parent.width; height: 34; radius: 8
+                        width: parent.width; height: 34; radius: Config.corner(8)
                         color: pop.card
                         TextInput {
                             id: psk
@@ -994,11 +995,11 @@ PanelWindow {
                     }
                 }
                 Rectangle {
-                    width: parent.width; height: 6; radius: 3
+                    width: parent.width; height: 6; radius: Config.corner(3)
                     color: pop.card
                     Rectangle {
                         width: Math.max(height, parent.width * signalInfo.sig)
-                        height: parent.height; radius: 3
+                        height: parent.height; radius: Config.corner(3)
                         color: signalInfo.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
                         Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                     }
@@ -1027,7 +1028,7 @@ PanelWindow {
                         required property var modelData
                         width: (wifiView.width - 6) / 2
                         height: 46
-                        radius: 9
+                        radius: Config.corner(9)
                         color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         property bool copied: false
@@ -1054,7 +1055,7 @@ PanelWindow {
             // VPN, when one is active
             Rectangle {
                 visible: wifiView.showInfo && !!wifiView.info.vpn
-                width: parent.width; height: 36; radius: 9
+                width: parent.width; height: 36; radius: Config.corner(9)
                 color: Qt.rgba(pop.accent.r, pop.accent.g, pop.accent.b, 0.14)
                 Row {
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -1287,7 +1288,7 @@ PanelWindow {
                                 Rectangle {
                                     id: spBadge
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                    width: 34; height: 34; radius: 9
+                                    width: 34; height: 34; radius: Config.corner(9)
                                     color: spRow.modelData.colour
                                     Icon { anchors.centerIn: parent; code: Spaces.iconOf(spRow.modelData); color: spacesView.inkColour; font.pixelSize: 19 }
                                 }
@@ -1332,7 +1333,7 @@ PanelWindow {
                                         id: spDel
                                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                         visible: !spApps.visible
-                                        width: 28; height: 28; radius: 7
+                                        width: 28; height: 28; radius: Config.corner(7)
                                         color: spDelHover.hovered ? Config.hoverDanger : "transparent"
                                         Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                                         HoverHandler { id: spDelHover }
@@ -1401,7 +1402,7 @@ PanelWindow {
                 width: parent.width; height: 26
                 Rectangle {
                     id: spBack
-                    width: 26; height: 26; radius: 7
+                    width: 26; height: 26; radius: Config.corner(7)
                     color: spBackHover.hovered ? Config.hover : "transparent"
                     Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
                     HoverHandler { id: spBackHover }
@@ -1456,7 +1457,7 @@ PanelWindow {
                                     id: wsShot
                                     width: parent.width
                                     height: Math.round(width / Math.max(1, wsCard.modelData.aspect || 1.6))
-                                    radius: 8
+                                    radius: Config.corner(8)
                                     color: Config.tint("#0b0d10")
                                     clip: true
                                     Image {
@@ -1495,7 +1496,7 @@ PanelWindow {
                                                              wsWin.modelData.w * wsShot.width, wsWin.modelData.h * wsShot.height)
                                                 screen: Qt.size(wsShot.width, wsShot.height)
                                                 pixelScale: wsShot.width / Math.max(1, wsCard.modelData.width || 1440)
-                                                radius: Math.max(0, wsWin.radius - 1)
+                                                radius: Config.corner(Math.max(0, wsWin.radius - 1))
                                                 opacity: wsCard.on ? 1 : 0.6
                                             }
                                             ScreencopyView {
@@ -1510,7 +1511,7 @@ PanelWindow {
                                                 // back if Hyprland dims it (it isn't focused)
                                                 layer.enabled: true
                                                 layer.effect: PreviewShape {
-                                                    radius: Math.max(0, wsWin.radius - 1)
+                                                    radius: Config.corner(Math.max(0, wsWin.radius - 1))
                                                     gain: wsWin.toplevel ? Config.undimGain(wsWin.toplevel.activated, wsWin.toplevel.lastIpcObject ? wsWin.toplevel.lastIpcObject.class : "") : 1
                                                 }
                                             }
@@ -1545,7 +1546,7 @@ PanelWindow {
                                     }
                                     Rectangle {
                                         anchors { top: parent.top; right: parent.right; margins: 5 }
-                                        width: 18; height: 18; radius: 9
+                                        width: 18; height: 18; radius: Config.corner(9)
                                         color: wsCard.on ? pop.accent : Qt.rgba(0, 0, 0, 0.45)
                                         border.width: wsCard.on ? 0 : 1.5
                                         border.color: Qt.rgba(1, 1, 1, 0.7)
@@ -1571,7 +1572,7 @@ PanelWindow {
             Label { visible: spacesView.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Rectangle {
                 visible: spacesView.mode === "new"
-                width: parent.width; height: 34; radius: 8
+                width: parent.width; height: 34; radius: Config.corner(8)
                 color: pop.card
                 border.width: spName.activeFocus ? 1 : 0
                 border.color: pop.accent
@@ -1615,7 +1616,7 @@ PanelWindow {
                         id: icCell
                         required property int modelData
                         readonly property bool on: spacesView.icon === modelData
-                        width: (spacesView.width - 28) / 15; height: width; radius: 7
+                        width: (spacesView.width - 28) / 15; height: width; radius: Config.corner(7)
                         color: on ? spacesView.colour : icHover.hovered ? Config.hover : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spacesView.inkColour : icHover.hovered ? pop.text : pop.dim }
@@ -1643,14 +1644,14 @@ PanelWindow {
                         width: 28; height: 28
                         // A ring around the picked one
                         Rectangle {
-                            anchors.fill: parent; radius: width / 2
+                            anchors.fill: parent; radius: Config.corner(width / 2)
                             color: "transparent"
                             border.width: 2
                             border.color: swatch.on ? pop.text : "transparent"
                         }
                         Rectangle {
                             anchors.centerIn: parent
-                            width: swatch.on ? 20 : swHover.hovered ? 24 : 22; height: width; radius: width / 2
+                            width: swatch.on ? 20 : swHover.hovered ? 24 : 22; height: width; radius: Config.corner(width / 2)
                             color: swatch.isCustom ? (spacesView.custom ? spacesView.colour : "transparent") : swatch.modelData
                             Behavior on width { NumberAnimation { duration: Config.ms(100) } }
                             // Your own colour: a colour wheel until one is chosen
@@ -1712,7 +1713,7 @@ PanelWindow {
                         readonly property real hue: Math.max(0, spacesView.colour.hslHue)
                         x: hue * (hueStrip.width - width)
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 20; height: 20; radius: 10
+                        width: 20; height: 20; radius: Config.corner(10)
                         color: spacesView.colour
                         border.width: 2; border.color: pop.text
                     }
@@ -1730,7 +1731,7 @@ PanelWindow {
                 }
                 Rectangle {
                     id: spHexBox
-                    width: 92; height: 30; radius: 8
+                    width: 92; height: 30; radius: Config.corner(8)
                     color: pop.card
                     border.width: spHex.activeFocus ? 1 : 0
                     border.color: pop.accent
@@ -1758,14 +1759,14 @@ PanelWindow {
                 anchors.right: parent.right
                 spacing: 8
                 Rectangle {
-                    width: spCancel.implicitWidth + 28; height: 32; radius: 8
+                    width: spCancel.implicitWidth + 28; height: 32; radius: Config.corner(8)
                     color: spCancelHover.hovered ? Config.hover : "transparent"
                     Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
                     HoverHandler { id: spCancelHover }
                     ClickTap { onTapped: spacesView.mode = "list" }
                 }
                 Rectangle {
-                    width: spSave.implicitWidth + 28; height: 32; radius: 8
+                    width: spSave.implicitWidth + 28; height: 32; radius: Config.corner(8)
                     color: spacesView.canSave ? pop.accent : pop.card
                     Label { id: spSave; anchors.centerIn: parent; text: spacesView.sameName ? "Replace" : "Save"; color: spacesView.canSave ? pop.accentText : pop.dim }
                     HoverHandler { id: spSaveHover }
@@ -1802,7 +1803,7 @@ PanelWindow {
                         id: shotTile
                         required property var modelData
                         width: (shotView.width - 16) / 3; height: 76
-                        radius: 10
+                        radius: Config.corner(10)
                         color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Column {
@@ -1857,7 +1858,7 @@ PanelWindow {
                         Rectangle {
                             id: codeCap
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: Math.max(28, codeText.implicitWidth + 10); height: 22; radius: 5
+                            width: Math.max(28, codeText.implicitWidth + 10); height: 22; radius: Config.corner(5)
                             color: layoutBtn.selected ? Qt.rgba(0, 0, 0, 0.15) : pop.card
                             Text {
                                 id: codeText
@@ -2236,10 +2237,10 @@ PanelWindow {
             // Charge bar
             Rectangle {
                 visible: bat.has
-                width: parent.width; height: 6; radius: 3
+                width: parent.width; height: 6; radius: Config.corner(3)
                 color: pop.card
                 Rectangle {
-                    width: parent.width * bat.pct; height: parent.height; radius: 3
+                    width: parent.width * bat.pct; height: parent.height; radius: Config.corner(3)
                     color: bat.pct < 0.15 && UPower.onBattery ? pop.danger : pop.accent
                 }
             }
@@ -2388,11 +2389,11 @@ PanelWindow {
                         }
                     }
                     Rectangle {
-                        width: parent.width; height: 6; radius: 3
+                        width: parent.width; height: 6; radius: Config.corner(3)
                         color: pop.card
                         Rectangle {
                             width: Math.max(height, parent.width * Math.min(1, meter.frac))
-                            height: parent.height; radius: 3
+                            height: parent.height; radius: Config.corner(3)
                             // Yellow above 70%, red above 90%
                             color: meter.frac > 0.9 ? pop.danger : meter.frac > 0.7 ? pop.warn : pop.accent
                             Behavior on color { ColorAnimation { duration: Config.ms(300) } }
@@ -2476,7 +2477,7 @@ PanelWindow {
                         width: monthGrid.cell; height: 32
                         Rectangle {
                             anchors.centerIn: parent
-                            width: 28; height: 28; radius: 14
+                            width: 28; height: 28; radius: Config.corner(14)
                             color: parent.isToday ? pop.accent : "transparent"
                         }
                         Label {
@@ -2575,7 +2576,7 @@ PanelWindow {
             // Profile
             Rectangle {
                 id: profileCard
-                width: parent.width; height: 80; radius: 12
+                width: parent.width; height: 80; radius: Config.corner(12)
                 color: pop.card
                 // Wallpaper behind the card, fading into it from the left
                 Item {
@@ -2628,7 +2629,7 @@ PanelWindow {
                 }
                 RoundImage {
                     id: avatar
-                    width: 56; height: 56; radius: 28
+                    width: 56; height: 56; radius: Config.corner(28)
                     anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                     source: Config.avatarUrl
                     // Hover: greyed and dimmed with a pencil; click to change the picture
@@ -2692,14 +2693,14 @@ PanelWindow {
 
                     Rectangle {
                         visible: controlView.player !== null
-                        width: parent.width; height: 104; radius: 12
+                        width: parent.width; height: 104; radius: Config.corner(12)
                         color: pop.card
                         Item {
                             visible: controlView.player !== null
                             anchors { fill: parent; margins: 12 }
                             RoundImage {
                                 id: art
-                                width: 80; height: 80; radius: 10
+                                width: 80; height: 80; radius: Config.corner(10)
                                 anchors.verticalCenter: parent.verticalCenter
                                 source: controlView.player ? controlView.player.trackArtUrl : ""
                                 visible: controlView.player && controlView.player.trackArtUrl !== ""
@@ -2739,7 +2740,7 @@ PanelWindow {
                         id: clockCard
                         // Nothing playing: take the media card's space too
                         readonly property bool roomy: controlView.player === null
-                        width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: 12
+                        width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: Config.corner(12)
                         color: pop.card
                         SystemClock { id: ccClock; precision: SystemClock.Minutes }
                         Column {
@@ -2819,7 +2820,7 @@ PanelWindow {
                             required property var modelData
                             width: ccTiles.tileW
                             height: ccTiles.tileH
-                            radius: 12
+                            radius: Config.corner(12)
                             selected: modelData.on
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
                             color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)

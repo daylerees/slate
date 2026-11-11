@@ -98,7 +98,7 @@ Rectangle {
                         readonly property real across: g.width * 1.6
                         readonly property real down: g.height * 1.4
                         // A circle, squashed into the ellipse by the Scale below (from its top)
-                        width: across; height: across; radius: across / 2
+                        width: across; height: across; radius: Config.corner(across / 2)
                         x: (g.width - across) / 2
                         y: g.height * 0.55 - down
                         transform: Scale { yScale: bandShine.down / Math.max(1, bandShine.across) }
@@ -160,8 +160,8 @@ Rectangle {
         Rectangle {
             visible: Config.s.lightMode
             anchors { fill: parent; margins: 1 }
-            topLeftRadius: Math.max(0, g.topLeftRadius - 1); topRightRadius: Math.max(0, g.topRightRadius - 1)
-            bottomLeftRadius: Math.max(0, g.bottomLeftRadius - 1); bottomRightRadius: Math.max(0, g.bottomRightRadius - 1)
+            topLeftRadius: Config.corner(Math.max(0, g.topLeftRadius - 1)); topRightRadius: Config.corner(Math.max(0, g.topRightRadius - 1))
+            bottomLeftRadius: Config.corner(Math.max(0, g.bottomLeftRadius - 1)); bottomRightRadius: Config.corner(Math.max(0, g.bottomRightRadius - 1))
             color: "transparent"
             border.width: 1
             border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))

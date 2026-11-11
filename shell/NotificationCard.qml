@@ -62,7 +62,7 @@ Rectangle {
     readonly property bool hasTimer: progress >= 0
     implicitHeight: band + content.height + 24 + (hasTimer ? 14 : 0)
     height: implicitHeight
-    radius: 9
+    radius: Config.corner(9)
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
@@ -109,11 +109,11 @@ Rectangle {
         id: timerTrack
         visible: card.hasTimer
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 12; rightMargin: 12; bottomMargin: 12 }
-        height: 4; radius: 2
+        height: 4; radius: Config.corner(2)
         color: Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.14)
         Rectangle {
             width: Math.max(height, parent.width * Math.max(0, card.progress))
-            height: parent.height; radius: 2
+            height: parent.height; radius: Config.corner(2)
             color: card.accent
             opacity: card.progress > 0 ? 0.85 : 0
         }
@@ -156,7 +156,7 @@ Rectangle {
             RoundImage {
                 id: picture
                 anchors.fill: parent
-                radius: 9
+                radius: Config.corner(9)
                 // (only once it has loaded: a picture that can't be, or an icon given by a name
                 // the theme hasn't got, left a blank where the icon goes. And an icon given by
                 // name gives way to the app's own tile, which is the same icon as Slate draws it)
@@ -224,7 +224,7 @@ Rectangle {
                 Rectangle {
                     id: freshDot
                     visible: card.fresh
-                    width: 6; height: 6; radius: 3
+                    width: 6; height: 6; radius: Config.corner(3)
                     color: card.accent
                     anchors { left: parent.left; verticalCenter: appLabel.verticalCenter }
                 }
@@ -251,7 +251,7 @@ Rectangle {
                     visible: cardHover.hovered
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     width: 20; height: 20
-                    radius: 5
+                    radius: Config.corner(5)
                     color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
@@ -294,7 +294,7 @@ Rectangle {
                 visible: card.preview
                 width: parent.width
                 height: visible ? Math.min(170, width * 0.56) : 0
-                radius: 10
+                radius: Config.corner(10)
                 source: card.preview ? "file://" + card.imageFile : ""
             }
             // Action buttons
@@ -308,7 +308,7 @@ Rectangle {
                         required property var modelData
                         height: 28
                         width: actText.implicitWidth + 20
-                        radius: 8
+                        radius: Config.corner(8)
                         // Accent-tinted; the muted hover under the pointer
                         color: actHover.hovered ? Config.hover : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.12)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }

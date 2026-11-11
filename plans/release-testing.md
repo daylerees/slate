@@ -56,3 +56,4 @@ things off as they're done.
 - Gloss slider is 0–100% over the setting's 0–2 (default 1.0, shown 50%): the default-hint test, and docs/ASSISTANT if it quotes the range.
 - iconTileColour defaults to on: app icon tiles in every screenshot change.
 - The Shine setting (glassShine) is gone; the rim is always on with glass. Remove it from any test that lists settings; the settings-index count drops by one.
+- Rounded UI elements (roundedElements): a static test that no `radius:` in shell/*.qml is a bare number outside the allowed exceptions; visual scenes with it off (bar, a panel, Settings, launcher, dock, a window); Hyprland's rounding goes to 0 and back. Every radius in the UI now goes through Config.corner, so check a few screenshots with it on are pixel-identical to before.

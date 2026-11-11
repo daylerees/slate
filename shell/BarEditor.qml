@@ -136,7 +136,7 @@ PanelWindow {
         property bool primary: false
         property bool destructive: false
         signal clicked()
-        width: btnRow.implicitWidth + 28; height: 32; radius: 8
+        width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
         color: primary ? root.accent
             : btnHover.hovered ? (destructive ? Config.hoverDanger : root.controlLit) : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -179,14 +179,14 @@ PanelWindow {
         }
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 42; height: 24; radius: 12
+            width: 42; height: 24; radius: Config.corner(12)
             color: sw.checked ? root.accent
                 : (swHover.hovered ? root.knobLit : root.control)
             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
             // Hover: a soft accent ring around the switch
             Rectangle {
                 anchors { fill: parent; margins: -3 }
-                radius: height / 2
+                radius: Config.corner(height / 2)
                 color: "transparent"
                 border.width: 2; border.color: root.accent
                 opacity: swHover.hovered ? 0.35 : 0
@@ -194,7 +194,7 @@ PanelWindow {
             }
             Gloss { radius: parent.radius }   // glass: a sheen
             Rectangle {
-                width: 18; height: 18; radius: 9
+                width: 18; height: 18; radius: Config.corner(9)
                 anchors.verticalCenter: parent.verticalCenter
                 x: sw.checked ? parent.width - width - 3 : 3
                 color: sw.checked ? root.accentText : root.text
@@ -213,8 +213,8 @@ PanelWindow {
         property real distance: 0
         property real cornerRadius: 0      // the rounding of the corners it sits in
         height: 18
-        topLeftRadius: atBottom ? 0 : cornerRadius; topRightRadius: atBottom ? 0 : cornerRadius
-        bottomLeftRadius: atBottom ? cornerRadius : 0; bottomRightRadius: atBottom ? cornerRadius : 0
+        topLeftRadius: Config.corner(atBottom ? 0 : cornerRadius); topRightRadius: Config.corner(atBottom ? 0 : cornerRadius)
+        bottomLeftRadius: Config.corner(atBottom ? cornerRadius : 0); bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
         opacity: Math.max(0, Math.min(1, distance / 24))
         gradient: Gradient {
             GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
@@ -246,7 +246,7 @@ PanelWindow {
         Rectangle {
             id: shortButton
             readonly property bool open: dropLayer.owner === shorter
-            width: 150; height: 32; radius: 8
+            width: 150; height: 32; radius: Config.corner(8)
             color: open || shortHover.hovered ? root.controlLit : root.control
             border.width: open ? 1 : 0; border.color: root.accent
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -297,7 +297,7 @@ PanelWindow {
             : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
             : Config.statusColour(item, root.text)
         width: chipRow.implicitWidth + (grip ? 16 : 24); height: root.bar.capsuleHeight
-        radius: root.bar.capsuleRadius
+        radius: Config.corner(root.bar.capsuleRadius)
         color: root.bar.capsuleColor
         Rectangle {
             anchors.fill: parent
@@ -387,7 +387,7 @@ PanelWindow {
         x: root.pad; y: root.pad
         width: root.vert ? 380 : Math.min(860, (root.screen ? root.screen.width : 900) - 2 * root.pad - 16)
         height: body.implicitHeight + 24
-        radius: 16
+        radius: Config.corner(16)
         color: root.bar.barColor
         opacity: root.fade * (1 - root.turn)
         visible: opacity > 0
@@ -657,7 +657,7 @@ PanelWindow {
         x: root.pad; y: root.pad
         width: panel.width
         height: prioBody.y + prioBody.height + 14
-        radius: 16
+        radius: Config.corner(16)
         color: root.bar.barColor
         opacity: root.fade * root.turn
         visible: opacity > 0
@@ -809,7 +809,7 @@ PanelWindow {
                             readonly property bool isHeld: prioList.held === modelData
                             readonly property bool lit: isHeld || prioList.lit === modelData
                             width: prioFlick.width; height: prioList.rowHeight
-                            radius: 8
+                            radius: Config.corner(8)
                             y: isHeld ? prioList.heldY : prioList.shown.indexOf(modelData) * prioList.step
                             z: isHeld ? 2 : 0
                             // (the others step out of the way of the one being dragged)
@@ -946,7 +946,7 @@ PanelWindow {
             id: menu
             x: dropLayer.menuX; y: dropLayer.menuY
             width: 200; height: dropLayer.menuH
-            radius: 12
+            radius: Config.corner(12)
             color: Config.tint("#1d222a")
             border.width: 1; border.color: Config.tint("#2a313c")
             Shadow { blur: 18; dropY: 4 }
@@ -959,7 +959,7 @@ PanelWindow {
                         id: lengthRow
                         required property var modelData
                         readonly property bool current: modelData.value === root.length.value
-                        width: parent.width; height: dropLayer.rowH; radius: 8
+                        width: parent.width; height: dropLayer.rowH; radius: Config.corner(8)
                         color: lengthHover.hovered ? Config.hover : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
@@ -1034,7 +1034,7 @@ PanelWindow {
             y: Config.barFloatAt.y - (root.screen ? root.screen.y : 0) - height / 2
             width: Math.max(root.bar.capsuleHeight + 8, floatRow.implicitWidth + 18)
             height: root.bar.capsuleHeight
-            radius: root.bar.capsuleRadius
+            radius: Config.corner(root.bar.capsuleRadius)
             color: hollow ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.14) : root.bar.capsuleSolid
             border.width: 1
             border.color: root.accent

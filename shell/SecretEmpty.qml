@@ -33,7 +33,7 @@ PanelWindow {
         anchors.centerIn: parent
         width: Math.max(280, words.implicitWidth + 56)
         height: words.implicitHeight + 44
-        radius: 18
+        radius: Config.corner(18)
         color: note.bar.barColor
         opacity: note.fade
         scale: 0.96 + 0.04 * note.fade

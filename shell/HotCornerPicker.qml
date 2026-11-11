@@ -19,7 +19,7 @@ Rectangle {
         notifications: 0xEA35, screenoff: 0xEA89 })
     function labelFor(v) { const a = actions.find(x => x.value === v); return a ? a.label : v; }
 
-    width: 420; height: 230; radius: 14
+    width: 420; height: 230; radius: Config.corner(14)
     color: Config.tint("#151920")
     border.width: 1; border.color: Config.tint("#323a46")
 
@@ -35,14 +35,14 @@ Rectangle {
             readonly property bool current: hp.selected === modelData.key
             readonly property bool atRight: index % 2 === 1
             readonly property bool atBottom: index >= 2
-            width: 150; height: 60; radius: 10
+            width: 150; height: 60; radius: Config.corner(10)
             x: atRight ? hp.width - width - 10 : 10
             y: atBottom ? hp.height - height - 10 : 10
             // Rounded like the screen on the corner it sits in
-            topLeftRadius: !atRight && !atBottom ? hp.radius - 4 : 6
-            topRightRadius: atRight && !atBottom ? hp.radius - 4 : 6
-            bottomLeftRadius: !atRight && atBottom ? hp.radius - 4 : 6
-            bottomRightRadius: atRight && atBottom ? hp.radius - 4 : 6
+            topLeftRadius: Config.corner(!atRight && !atBottom ? hp.radius - 4 : 6)
+            topRightRadius: Config.corner(atRight && !atBottom ? hp.radius - 4 : 6)
+            bottomLeftRadius: Config.corner(!atRight && atBottom ? hp.radius - 4 : 6)
+            bottomRightRadius: Config.corner(atRight && atBottom ? hp.radius - 4 : 6)
             color: "transparent"
             border.width: current ? 2 : 0
             border.color: hp.accent
@@ -57,7 +57,7 @@ Rectangle {
                 layoutDirection: corner.atRight ? Qt.RightToLeft : Qt.LeftToRight
                 spacing: 10
                 Rectangle {
-                    width: 32; height: 32; radius: 8
+                    width: 32; height: 32; radius: Config.corner(8)
                     anchors.verticalCenter: parent.verticalCenter
                     color: corner.on ? Qt.rgba(hp.accent.r, hp.accent.g, hp.accent.b, 0.18) : Config.tint("#1d222a")
                     Text {

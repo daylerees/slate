@@ -373,7 +373,7 @@ Scope {
         // Way out of the preview
         Rectangle {
             anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 20 }
-            width: previewLabel.implicitWidth + 28; height: 34; radius: 17
+            width: previewLabel.implicitWidth + 28; height: 34; radius: Config.corner(17)
             color: Config.tint("#0f1216")
             Text {
                 id: previewLabel

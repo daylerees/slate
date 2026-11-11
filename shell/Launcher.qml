@@ -747,7 +747,7 @@ PanelWindow {
         Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
-        radius: 18
+        radius: Config.corner(18)
         color: root.barColor
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
@@ -765,7 +765,7 @@ PanelWindow {
             id: field
             anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
             height: 44
-            radius: 10
+            radius: Config.corner(10)
             color: root.fieldColor
 
             // Magnifying glass
@@ -775,14 +775,14 @@ PanelWindow {
                 anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                 Rectangle {
                     x: 0; y: 0
-                    width: 13; height: 13; radius: 6.5
+                    width: 13; height: 13; radius: Config.corner(6.5)
                     color: "transparent"
                     border.color: root.dimTextColor
                     border.width: 2
                 }
                 Rectangle {
                     x: 10.5; y: 12
-                    width: 7; height: 2; radius: 1
+                    width: 7; height: 2; radius: Config.corner(1)
                     color: root.dimTextColor
                     rotation: 45
                     transformOrigin: Item.Left
@@ -887,7 +887,7 @@ PanelWindow {
                 readonly property real gridBox: Math.round(root.gridTile * 1.24)
                 width: root.gridMode ? gridBox : list.cellWidth
                 height: root.gridMode ? gridBox : list.cellHeight
-                radius: root.gridMode ? gridBox * 0.22 : 10
+                radius: Config.corner(root.gridMode ? gridBox * 0.22 : 10)
                 color: root.accent
                 // (flat, with glass too: no sheen on the selection)
                 x: (list.currentItem ? list.currentItem.x : 0) + (root.gridMode ? (list.cellWidth - gridBox) / 2 : 0)
@@ -989,7 +989,7 @@ PanelWindow {
                 Rectangle {
                     visible: row.calc
                     anchors.fill: tile
-                    radius: 9
+                    radius: Config.corner(9)
                     // Swapped round on the accent highlight, so it doesn't vanish into it
                     color: row.onAccent ? root.accentText : root.accent
                     Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
@@ -1014,7 +1014,7 @@ PanelWindow {
                 Rectangle {
                     visible: row.glyphTile
                     anchors.fill: tile
-                    radius: 9
+                    radius: Config.corner(9)
                     // Solid on the highlight: with glass it's see-through, and its icon would
                     // vanish into the accent behind it
                     color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
@@ -1036,7 +1036,7 @@ PanelWindow {
                 Rectangle {
                     visible: row.emojiTile
                     anchors.fill: tile
-                    radius: 9
+                    radius: Config.corner(9)
                     color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
                     border.width: 1; border.color: root.selectColor
                     Text {
@@ -1059,7 +1059,7 @@ PanelWindow {
                     visible: row.kind === "toggle" && !root.gridMode
                     readonly property bool on: !!row.modelData.toggleOn
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                    width: 36; height: 20; radius: 10
+                    width: 36; height: 20; radius: Config.corner(10)
                     // On the accent highlight, the track can't be the accent too: it takes the
                     // highlight's dark text colour instead. Off, it's an outline with a solid knob,
                     // so it reads on the bright highlight as well as on the panel
@@ -1071,7 +1071,7 @@ PanelWindow {
                     Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     Gloss { radius: parent.radius }   // glass: a sheen
                     Rectangle {
-                        width: 14; height: 14; radius: 7
+                        width: 14; height: 14; radius: Config.corner(7)
                         anchors.verticalCenter: parent.verticalCenter
                         x: toggleSwitch.on ? parent.width - width - 3 : 3
                         color: toggleSwitch.on ? (row.onAccent ? root.accent : root.accentText) : toggleSwitch.ink

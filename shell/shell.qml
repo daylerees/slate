@@ -1501,7 +1501,7 @@ ShellRoot {
                 anchors { horizontalCenter: floater.horizontalCenter; bottom: floater.top; bottomMargin: 8 }
                 width: removeRow.implicitWidth + 20
                 height: removeRow.implicitHeight + 10
-                radius: 7
+                radius: Config.corner(7)
                 // The warning red over the dock's own colour (solid without glass)
                 color: Qt.tint(win.bgColor, Qt.rgba(warn.r, warn.g, warn.b, Config.glass ? 0.32 : 0.22))
                 border.width: 1
@@ -1576,7 +1576,7 @@ ShellRoot {
                     win.edge === "left" ? previewPop.atX : win.edge === "right" ? previewPop.atX - width : previewPop.atX - width / 2))
                 y: Math.max(8, Math.min(previewPop.height - height - 8,
                     win.edge === "bottom" ? previewPop.atY - height : win.edge === "top" ? previewPop.atY : previewPop.atY - height / 2))
-                radius: 12
+                radius: Config.corner(12)
                 color: win.bgColor
                 opacity: previewPop.fade
                 Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
@@ -1612,7 +1612,7 @@ ShellRoot {
                                 id: liveCard
                                 required property var modelData
                                 width: previewPop.cardW; height: previewPop.cardH
-                                radius: 8
+                                radius: Config.corner(8)
                                 color: liveHover.hovered ? Config.hover : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
@@ -1626,7 +1626,7 @@ ShellRoot {
                                     live: previewPop.wanted          // (still while it fades out)
                                     // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                                     layer.enabled: true
-                                    layer.effect: PreviewShape { radius: 6; gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
+                                    layer.effect: PreviewShape { radius: Config.corner(6); gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
                                 }
                                 Text {
                                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
@@ -1654,8 +1654,8 @@ ShellRoot {
                         width: 22
                         anchors { top: parent.top; bottom: parent.bottom }
                         x: atRight ? parent.width - width : 0
-                        topLeftRadius: atRight ? 0 : previewBox.radius; bottomLeftRadius: atRight ? 0 : previewBox.radius
-                        topRightRadius: atRight ? previewBox.radius : 0; bottomRightRadius: atRight ? previewBox.radius : 0
+                        topLeftRadius: Config.corner(atRight ? 0 : previewBox.radius); bottomLeftRadius: Config.corner(atRight ? 0 : previewBox.radius)
+                        topRightRadius: Config.corner(atRight ? previewBox.radius : 0); bottomRightRadius: Config.corner(atRight ? previewBox.radius : 0)
                         opacity: Math.max(0, Math.min(1, more / 24))
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
@@ -1685,7 +1685,7 @@ ShellRoot {
                                 id: titleCard
                                 required property var modelData
                                 width: titleCol.width; height: previewPop.cardH
-                                radius: 8
+                                radius: Config.corner(8)
                                 color: titleHover.hovered ? Config.hover : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
@@ -1851,7 +1851,7 @@ ShellRoot {
                     win.edge === "left" ? appMenu.menuX : win.edge === "right" ? appMenu.menuX - width : appMenu.menuX - width / 2))
                 y: Math.max(8, Math.min(appMenu.height - height - 8,
                     win.edge === "bottom" ? appMenu.menuY - height : win.edge === "top" ? appMenu.menuY : appMenu.menuY - height / 2))
-                radius: 12
+                radius: Config.corner(12)
                 color: win.bgColor
                 Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
@@ -1903,7 +1903,7 @@ ShellRoot {
                                 width: 88; height: 92
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: 8
+                                    radius: Config.corner(8)
                                     // Under the pointer: the muted hover, flat
                                     color: dlHover.hovered ? Config.hover : "transparent"
                                     Behavior on color { ColorAnimation { duration: Config.ms(90) } }
@@ -1916,7 +1916,7 @@ ShellRoot {
                                     Rectangle {
                                         anchors.fill: parent
                                         visible: !dl.kind.image || dlThumb.status !== Image.Ready
-                                        radius: 10
+                                        radius: Config.corner(10)
                                         color: win.tileColor
                                         Gloss { radius: parent.radius; glassHint: true }
                                         Text {
@@ -1942,7 +1942,7 @@ ShellRoot {
                                         anchors.fill: parent
                                         visible: false
                                         layer.enabled: true
-                                        Rectangle { anchors.fill: parent; radius: 8 }
+                                        Rectangle { anchors.fill: parent; radius: Config.corner(8) }
                                     }
                                 }
                                 Text {
@@ -1984,14 +1984,14 @@ ShellRoot {
                             Rectangle {
                                 visible: menuRow.modelData.kind !== "sep"
                                 anchors.fill: parent
-                                radius: 7
+                                radius: Config.corner(7)
                                 // Under the pointer: the muted hover, flat (the accent is for what stays selected)
                                 // (red for what's destructive: Force Quit, Empty Waste Basket)
                                 color: rowHover.hovered ? (menuRow.modelData.danger ? Config.hoverDanger : Config.hover) : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Rectangle {
                                     visible: !!menuRow.modelData.active
-                                    width: 5; height: 5; radius: 2.5
+                                    width: 5; height: 5; radius: Config.corner(2.5)
                                     color: win.activeDotColor
                                     anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                                 }
@@ -2197,7 +2197,8 @@ ShellRoot {
                     y: strip.height - height - win.bottomGap
                     // Corners that follow the icons': the icons' own corner plus half the gap around
                     // them (a fully concentric corner looks too round); a pill for circles
-                    radius: Config.s.iconShape === "circle" ? height / 2 : Math.min(height / 2, win.iconCorner + win.padding / 2)
+                    // (square with Rounded UI elements off, whatever the icons' shape)
+                    radius: Config.corner(Config.s.iconShape === "circle" ? height / 2 : Math.min(height / 2, win.iconCorner + win.padding / 2))
                     bottomLeftRadius: 0     // flush with the screen edge
                     bottomRightRadius: 0
                     color: win.dockColor
@@ -2238,7 +2239,7 @@ ShellRoot {
                             PathRectangle {
                                 x: 0.75; y: 0.75
                                 width: dragGap.width - 1.5; height: dragGap.height - 1.5
-                                radius: Math.max(0, dragGap.radius - 0.75)
+                                radius: Config.corner(Math.max(0, dragGap.radius - 0.75))
                             }
                         }
                     }
@@ -2308,7 +2309,7 @@ ShellRoot {
                                     model: 3
                                     Rectangle {
                                         width: burger.w * 0.42; height: burger.w * 0.07
-                                        radius: height / 2
+                                        radius: Config.corner(height / 2)
                                         color: win.textColor
                                     }
                                 }
@@ -2338,7 +2339,7 @@ ShellRoot {
                         DockBacking {
                             visible: win.mediaWide > 1 && Config.glass
                             tileHeight: win.base * mediaCell.s
-                            radius: mediaWideTile.corner
+                            radius: Config.corner(mediaWideTile.corner)
                             dockTop: bg.y - row.y; color: win.dockColor
                         }
                         DockBacking {
@@ -2360,7 +2361,7 @@ ShellRoot {
                             readonly property real artCorner: Math.max(3, Math.round((height - inset * 2) * 0.16))
                             Rectangle {
                                 anchors.fill: parent
-                                radius: mediaWideTile.corner
+                                radius: Config.corner(mediaWideTile.corner)
                                 color: win.tileColor
                                 opacity: Config.dockTileOpacity
                                 Gloss { radius: parent.radius; glassHint: true; tall: false }   // glass: a sheen
@@ -2403,13 +2404,13 @@ ShellRoot {
                                 anchors.fill: wideArtBox
                                 visible: false
                                 layer.enabled: true
-                                Rectangle { anchors.fill: parent; radius: mediaWideTile.artCorner }
+                                Rectangle { anchors.fill: parent; radius: Config.corner(mediaWideTile.artCorner) }
                             }
                             // A faint edge round the art, so a dark cover still stands off the tile
                             Rectangle {
                                 anchors.fill: wideArtBox
                                 visible: win.mediaArt && mediaWideTile.hasArt
-                                radius: mediaWideTile.artCorner
+                                radius: Config.corner(mediaWideTile.artCorner)
                                 color: "transparent"
                                 border.width: 1
                                 border.color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.12)
@@ -2434,7 +2435,7 @@ ShellRoot {
                                         // A soft circle behind the one under the pointer
                                         Rectangle {
                                             anchors.centerIn: parent
-                                            width: parent.height; height: width; radius: width / 2
+                                            width: parent.height; height: width; radius: Config.corner(width / 2)
                                             readonly property bool lit: mediaCell.under === mediaButton.modelData.id && mediaButton.modelData.on
                                             color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, lit ? 0.14 : 0)
                                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -2463,7 +2464,7 @@ ShellRoot {
                                 x: mediaControls.x + parent.height * 0.12
                                 width: mediaControls.width - parent.height * 0.24
                                 y: parent.height - mediaWideTile.inset - height - parent.height * 0.04
-                                height: Math.max(2, Math.round(parent.height * 0.05)); radius: height / 2
+                                height: Math.max(2, Math.round(parent.height * 0.05)); radius: Config.corner(height / 2)
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.15)
                                 Rectangle {
                                     width: parent.known ? parent.width * Math.max(0, Math.min(1, win.player.position / win.player.length)) : 0
@@ -2526,15 +2527,15 @@ ShellRoot {
                                 anchors.fill: parent
                                 visible: false
                                 layer.enabled: true
-                                Rectangle { anchors.fill: parent; radius: mediaTile.corner }
+                                Rectangle { anchors.fill: parent; radius: Config.corner(mediaTile.corner) }
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: mediaTile.corner; glassHint: true; tall: false }
+                            Gloss { radius: Config.corner(mediaTile.corner); glassHint: true; tall: false }
                             // Under the pointer: the controls on a dark wash (over art or tile alike,
                             // so they read the same in light and dark)
                             Rectangle {
                                 anchors.fill: parent
-                                radius: mediaTile.corner
+                                radius: Config.corner(mediaTile.corner)
                                 color: "black"
                                 opacity: mediaCell.pointed ? 0.5 : 0
                                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
@@ -2675,7 +2676,7 @@ ShellRoot {
                                     visible: cell.badge.progress >= 0
                                     z: 2
                                     x: parent.width * 0.15; width: parent.width * 0.7
-                                    y: parent.height * 0.8; height: Math.max(3, parent.height * 0.08); radius: height / 2
+                                    y: parent.height * 0.8; height: Math.max(3, parent.height * 0.08); radius: Config.corner(height / 2)
                                     color: Qt.rgba(0, 0, 0, 0.45)
                                     Rectangle {
                                         width: Math.max(parent.height, parent.width * cell.badge.progress)
@@ -2692,7 +2693,7 @@ ShellRoot {
                                     z: 2
                                     height: Math.round(parent.height * 0.38)
                                     width: Math.max(height, badgeText.implicitWidth + height * 0.5)
-                                    radius: height / 2
+                                    radius: Config.corner(height / 2)
                                     x: parent.width - width * 0.75; y: -height * 0.25
                                     color: win.activeDotColor
                                     Gloss { radius: parent.radius }
@@ -2719,7 +2720,7 @@ ShellRoot {
                                 readonly property bool focusedApp: cell.app.windows.some(w => w.activated)
                                 visible: cell.app.windows.length > 0
                                 opacity: Config.dockIconOpacity
-                                width: 12; height: 3; radius: 1.5
+                                width: 12; height: 3; radius: Config.corner(1.5)
                                 color: focusedApp ? win.activeDotColor : win.dotColor
                                 // Snapped to whole device pixels: the icons move by fractions of a
                                 // pixel while magnifying, which would make the bar shimmer and look
@@ -2847,7 +2848,7 @@ ShellRoot {
                     visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible && win.dragKey === ""
                     width: labelText.implicitWidth + 16
                     height: labelText.implicitHeight + 8
-                    radius: 6
+                    radius: Config.corner(6)
                     color: win.bgColor
                     Gloss { radius: parent.radius }   // glass: a sheen
                     x: row.x + win.cellX(Math.max(0, win.hoveredIndex)) + slotLength / 2 - width / 2

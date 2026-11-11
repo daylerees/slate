@@ -17,7 +17,7 @@ import QtQuick
 Item {
     id: root
     // The surface's rounding: one radius, or each corner
-    property real radius: parent && parent.radius !== undefined ? parent.radius : 0
+    property real radius: Config.corner(parent && parent.radius !== undefined ? parent.radius : 0)
     property real topLeftRadius: radius
     property real topRightRadius: radius
     property real bottomRightRadius: radius

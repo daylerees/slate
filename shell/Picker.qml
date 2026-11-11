@@ -203,7 +203,7 @@ PanelWindow {
         Behavior on height { enabled: root.shown && root.typed; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - root.panelHeight) / 2)
-        radius: 18
+        radius: Config.corner(18)
         color: root.barColor
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
@@ -220,7 +220,7 @@ PanelWindow {
             id: field
             anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
             height: 44
-            radius: 10
+            radius: Config.corner(10)
             color: root.fieldColor
 
             Text {
@@ -316,7 +316,7 @@ PanelWindow {
             highlight: Rectangle {
                 width: list.width
                 height: list.currentItem ? list.currentItem.height : root.rowHeight
-                radius: 10
+                radius: Config.corner(10)
                 color: Config.accent           // the active colour, flat
                 y: list.currentItem ? list.currentItem.y : 0
                 Behavior on y { enabled: root.slideHighlight && Config.animate; SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 } }
@@ -338,7 +338,7 @@ PanelWindow {
                     id: badge
                     visible: !clipRow.image
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    width: 36; height: 36; radius: 9
+                    width: 36; height: 36; radius: Config.corner(9)
                     color: root.fieldColor
                     Text {
                         anchors.centerIn: parent
@@ -355,7 +355,7 @@ PanelWindow {
                     readonly property real ratio: clipRow.modelData.w && clipRow.modelData.h ? clipRow.modelData.w / clipRow.modelData.h : 1.5
                     height: root.imageRowHeight - 16
                     width: Math.min(160, Math.max(48, height * ratio))
-                    radius: 8
+                    radius: Config.corner(8)
                     source: clipRow.image ? "file://" + root.clipDir + "/" + clipRow.modelData.file : ""
                 }
 
@@ -417,7 +417,7 @@ PanelWindow {
             highlightFollowsCurrentItem: false
             highlight: Rectangle {
                 width: grid.cellWidth; height: grid.cellHeight
-                radius: 10
+                radius: Config.corner(10)
                 color: Config.accent           // the active colour, flat
                 x: grid.currentItem ? grid.currentItem.x : 0
                 y: grid.currentItem ? grid.currentItem.y : 0
@@ -493,7 +493,7 @@ PanelWindow {
                 id: clearBtn
                 visible: root.mode === "clipboard" && root.clips.length > 0
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                width: clearLabel.implicitWidth + 24; height: 28; radius: 8
+                width: clearLabel.implicitWidth + 24; height: 28; radius: Config.corner(8)
                 // (destructive: written in red, and red under the pointer)
                 color: clearHover.hovered ? Config.hoverDanger : root.fieldColor
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }

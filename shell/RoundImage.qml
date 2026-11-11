@@ -5,7 +5,7 @@ import QtQuick.Effects
 Item {
     id: ri
     property url source
-    property real radius: 12
+    property real radius: Config.corner(12)
     property real saturation: 0          // -1 = greyscale
     property real brightness: 0          // below 0 dims it
     readonly property int status: img.status

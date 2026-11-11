@@ -161,7 +161,7 @@ PanelWindow {
         x: tb.winX - tb.border; y: tb.winY - tb.border - tb.barH
         width: tb.winW + 2 * tb.border; height: tb.barH
         color: tb.barColor
-        topLeftRadius: Math.min(tb.r, height); topRightRadius: Math.min(tb.r, height)
+        topLeftRadius: Config.corner(Math.min(tb.r, height)); topRightRadius: Config.corner(Math.min(tb.r, height))
         // Its bottom corners reach down round the window's rounded top corners, their inner
         // edge following the window's curve
         Shape {
@@ -331,7 +331,7 @@ PanelWindow {
                 delegate: Rectangle {
                     id: btn
                     required property var modelData
-                    width: Math.round(18 * tb.s); height: width; radius: width / 2
+                    width: Math.round(18 * tb.s); height: width; radius: Config.corner(width / 2)
                     readonly property bool danger: modelData.act === "close"
                     color: btnArea.containsMouse ? (danger ? Config.tint("#f28b8b") : Config.accent) : Config.tint("#3a424e")
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -371,7 +371,7 @@ PanelWindow {
         id: handleBox
         readonly property real size: Math.round(44 * tb.s)
         x: tb.handle.x - size / 2; y: tb.handle.y - size / 2
-        width: size; height: size; radius: Math.round(12 * tb.s)
+        width: size; height: size; radius: Config.corner(Math.round(12 * tb.s))
         color: tb.barColor
         border.width: 1; border.color: Config.glass ? Config.glassEdge : Config.tint("#2a313c")
         opacity: tb.moved ? 1 : 0

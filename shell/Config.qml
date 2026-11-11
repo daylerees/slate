@@ -66,6 +66,13 @@ Singleton {
     // a click turns off again (the control centre's tiles, a connected Bluetooth device), to
     // say so. A choice that stays chosen when clicked doesn't change
     readonly property color accentLit: Qt.tint(accent, Qt.rgba(1, 1, 1, 0.22))
+    // ---- Rounded corners (Settings → Appearance → Rounded UI elements) -------------------
+    // Every rounded corner Slate draws is given as corner(its radius): the radius, or 0 with
+    // the setting off, when everything is a hard square (containers, panels, buttons, switches,
+    // the dock, menus, pictures, and windows, through Hyprland). Two things keep shapes of
+    // their own: app icons (Icon shape) and the workspace dots (Circles or Squares). Anything
+    // new with a rounded corner uses this too
+    function corner(radius) { return s.roundedElements ? radius : 0; }
     // ---- Dates, temperatures and the week, as you write them -----------------------------
     // Settings → Date & Time → Date format: every date Slate shows goes through dateText(date,
     // style), style being "short" (Sat 7 Nov), "day" (7 Nov), "long" (Saturday, 7 November
@@ -561,7 +568,7 @@ Singleton {
     // ...and of what holds them, where that floats by itself (the indicator shown as you
     // switch, under the window switcher, in the overview): a pill round circles, a rounded
     // rectangle round squares
-    function dotHolderRadius(height) { return s.workspaceShape === "square" ? Math.min(12, height * 0.3) : height / 2; }
+    function dotHolderRadius(height) { return corner(s.workspaceShape === "square" ? Math.min(12, height * 0.3) : height / 2); }
 
     // ---- Account picture ------------------------------------------------------------
     // AccountsService's picture for this user (shared with GNOME, KDE and the login
@@ -793,6 +800,10 @@ Singleton {
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
+            // Rounded UI elements off: windows are square too. (Put back to the config's own
+            // rounding, 10, only if Slate was what squared them)
+            + (s.roundedElements ? `; if SLATE_SQUARED then SLATE_SQUARED = nil; hl.config({ decoration = { rounding = SLATE_ROUNDING or 10 } }) end`
+                                 : `; SLATE_SQUARED = true; hl.config({ decoration = { rounding = 0 } })`)
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
             + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`
             + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "")
@@ -1415,6 +1426,10 @@ Singleton {
     // workspace and a maximised one are square (windowrules.lua): see windowRadius().
     // Read at start and again when Hyprland reloads its config.
     property real windowRounding: 10
+    // (asked again a moment after Rounded UI elements changes it: Hyprland has to be told first)
+    readonly property bool roundedNow: s.roundedElements
+    onRoundedNowChanged: roundingLater.restart()
+    Timer { id: roundingLater; interval: 900; onTriggered: { roundingProc.running = false; roundingProc.running = true; } }
     Process {
         id: roundingProc
         running: true

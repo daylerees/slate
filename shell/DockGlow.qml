@@ -30,7 +30,7 @@ Item {
     Rectangle {
         id: ring
         anchors { fill: parent; margins: -(glow.gap + glow.line) }
-        radius: glow.radius + glow.gap + glow.line
+        radius: Config.corner(glow.radius + glow.gap + glow.line)
         color: "transparent"
         border.width: glow.line
         border.color: glow.colour

@@ -593,7 +593,7 @@ PanelWindow {
             y: bar.vert ? at : (scrollGrip.thick - across) / 2
             width: bar.vert ? across : length
             height: bar.vert ? length : across
-            radius: across / 2
+            radius: Config.corner(across / 2)
             color: Config.accent
             opacity: gripHover.hovered || gripDrag.pressed ? 1 : 0.75
             Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
@@ -742,7 +742,7 @@ PanelWindow {
                 Rectangle {
                     anchors { fill: parent; margins: 2 }
                     visible: parent.len > 6
-                    radius: Math.max(0, bar.capsuleRadius - 2)
+                    radius: Config.corner(Math.max(0, bar.capsuleRadius - 2))
                     color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.14)
                     Dashes { colour: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.6) }
                 }
@@ -765,7 +765,7 @@ PanelWindow {
                 Rectangle {
                     visible: Config.barArranging
                     anchors.fill: parent
-                    radius: bar.capsuleRadius
+                    radius: Config.corner(bar.capsuleRadius)
                     readonly property bool picked: Config.barSelected === sp.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
                     Dashes { picked: parent.picked }
@@ -1123,7 +1123,7 @@ PanelWindow {
                         : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
                     Rectangle {
                         anchors { fill: parent; margins: 2 }
-                        radius: Math.max(0, bar.capsuleRadius - 2)
+                        radius: Config.corner(Math.max(0, bar.capsuleRadius - 2))
                         visible: !!appTile.space && !tilePlate.visible
                         color: appTile.space ? appTile.space.colour : "transparent"
                     }
@@ -1278,7 +1278,7 @@ PanelWindow {
                         // Colourful look: each bar its own pastel
                         Rectangle {
                             required property int index
-                            width: 13; height: 2; radius: height / 2
+                            width: 13; height: 2; radius: Config.corner(height / 2)
                             color: Config.partColour(Config.appsPastels, 0, bar.textColor)      // (one pastel for the whole icon)
                         }
                     }
@@ -1308,7 +1308,7 @@ PanelWindow {
                         Rectangle {
                             required property int index
                             readonly property bool busy: Spaces.restoring !== ""
-                            width: 5.75; height: 5.75; radius: 1.6
+                            width: 5.75; height: 5.75; radius: Config.corner(1.6)
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
                             // (Colourful look: one pastel; a space's own colour while it opens)
@@ -1780,7 +1780,7 @@ PanelWindow {
         signal rightClicked()
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
-        radius: bar.capsuleRadius
+        radius: Config.corner(bar.capsuleRadius)
         // With a Contents opacity chosen (Settings → Menu Bar → Glass), or a Hover opacity and
         // the pointer over it: drawn solid, and the whole container at that opacity, its fill
         // and everything in it (icons, text, the highlight, the lines between things), faded as
@@ -1891,10 +1891,10 @@ PanelWindow {
                 GradientStop { position: 1 - segFill.fade; color: bar.hoverFill }
                 GradientStop { position: 1.0; color: seg.last ? bar.hoverFill : "transparent" }
             }
-            topLeftRadius: seg.first ? bar.capsuleRadius : 0
-            bottomLeftRadius: (bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0
-            topRightRadius: (bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0
-            bottomRightRadius: seg.last ? bar.capsuleRadius : 0
+            topLeftRadius: Config.corner(seg.first ? bar.capsuleRadius : 0)
+            bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0)
+            topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0)
+            bottomRightRadius: Config.corner(seg.last ? bar.capsuleRadius : 0)
             opacity: seg.hover && segHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
@@ -1902,7 +1902,7 @@ PanelWindow {
         Rectangle {
             visible: Config.barArranging && !!seg.shell && Config.barSelected === seg.shell.index && Config.barSelectedItem === seg.name && seg.name !== ""
             anchors { fill: parent; margins: 2 }
-            radius: Math.max(0, bar.capsuleRadius - 2)
+            radius: Config.corner(Math.max(0, bar.capsuleRadius - 2))
             color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18)
             border.width: 2; border.color: bar.accent
         }
@@ -2086,10 +2086,10 @@ PanelWindow {
             GradientStop { position: 1 - tf.fade; color: bar.hoverFill }
             GradientStop { position: 1.0; color: tf.endLast ? bar.hoverFill : "transparent" }
         }
-        topLeftRadius: endFirst ? bar.capsuleRadius : 0
-        bottomLeftRadius: (bar.vert ? endLast : endFirst) ? bar.capsuleRadius : 0
-        topRightRadius: (bar.vert ? endFirst : endLast) ? bar.capsuleRadius : 0
-        bottomRightRadius: endLast ? bar.capsuleRadius : 0
+        topLeftRadius: Config.corner(endFirst ? bar.capsuleRadius : 0)
+        bottomLeftRadius: Config.corner((bar.vert ? endLast : endFirst) ? bar.capsuleRadius : 0)
+        topRightRadius: Config.corner((bar.vert ? endFirst : endLast) ? bar.capsuleRadius : 0)
+        bottomRightRadius: Config.corner(endLast ? bar.capsuleRadius : 0)
         opacity: lit ? bar.hoverStrength : 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
     }
@@ -2113,7 +2113,7 @@ PanelWindow {
             PathRectangle {
                 x: dashes.line / 2; y: dashes.line / 2
                 width: Math.max(0, dashes.width - dashes.line); height: Math.max(0, dashes.height - dashes.line)
-                radius: Math.max(0, (dashes.parent && dashes.parent.radius !== undefined ? dashes.parent.radius : 0) - dashes.line / 2)
+                radius: Config.corner(Math.max(0, (dashes.parent && dashes.parent.radius !== undefined ? dashes.parent.radius : 0) - dashes.line / 2))
             }
         }
     }

@@ -174,7 +174,7 @@ PanelWindow {
         anchors.centerIn: parent
         width: root.info.long ? 470 : 380
         height: content.implicitHeight + 48
-        radius: 18
+        radius: Config.corner(18)
         color: root.cardColor
         opacity: root.fade
         scale: 0.94 + 0.06 * root.fade
@@ -209,7 +209,7 @@ PanelWindow {
                 // Icon
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 56; height: 56; radius: 28
+                    width: 56; height: 56; radius: Config.corner(28)
                     color: root.buttonColor
                     Text {
                         anchors.centerIn: parent
@@ -252,7 +252,7 @@ PanelWindow {
                 // A line of text to type (spec.input), like the Spaces panel's name field
                 Rectangle {
                     visible: root.hasInput
-                    width: parent.width; height: 38; radius: 10
+                    width: parent.width; height: 38; radius: Config.corner(10)
                     color: root.buttonColor
                     border.width: field.activeFocus ? 1 : 0
                     border.color: root.accent
@@ -289,7 +289,7 @@ PanelWindow {
                     visible: root.hasOption
                     width: parent.width
                     height: reopenText.implicitHeight + 24
-                    radius: 12
+                    radius: Config.corner(12)
                     readonly property bool on: root.optionOn
                     color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -298,7 +298,7 @@ PanelWindow {
                     // Keyboard focus ring, as on the buttons
                     Rectangle {
                         anchors { fill: parent; margins: -4 }
-                        radius: parent.radius + 4
+                        radius: Config.corner(parent.radius + 4)
                         color: "transparent"
                         border.width: 2; border.color: root.textColor
                         opacity: root.focusedButton === 2 ? 0.35 : 0
@@ -327,11 +327,11 @@ PanelWindow {
                     Rectangle {
                         id: reopenSwitch
                         anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                        width: 42; height: 24; radius: 12
+                        width: 42; height: 24; radius: Config.corner(12)
                         color: reopen.on ? root.accent : Config.tint("#2a313c")
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         Rectangle {
-                            width: 18; height: 18; radius: 9
+                            width: 18; height: 18; radius: Config.corner(9)
                             anchors.verticalCenter: parent.verticalCenter
                             x: reopen.on ? parent.width - width - 3 : 3
                             color: reopen.on ? root.accentText : root.textColor
@@ -370,7 +370,7 @@ PanelWindow {
         property bool focused: false
         signal clicked()
         height: 40
-        radius: 10
+        radius: Config.corner(10)
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
         color: primary ? base : (hh.hovered ? Config.hover : base)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -378,7 +378,7 @@ PanelWindow {
         // Keyboard focus ring, just outside the button
         Rectangle {
             anchors { fill: parent; margins: -4 }
-            radius: parent.radius + 4
+            radius: Config.corner(parent.radius + 4)
             color: "transparent"
             border.width: 2
             border.color: btn.primary ? btn.base : root.textColor

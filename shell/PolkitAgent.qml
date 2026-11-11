@@ -125,7 +125,7 @@ PanelWindow {
         anchors.centerIn: parent
         width: 400
         height: content.implicitHeight + 48
-        radius: 18
+        radius: Config.corner(18)
         color: root.cardColor
         opacity: root.fade
         scale: 0.94 + 0.06 * root.fade
@@ -155,7 +155,7 @@ PanelWindow {
                 // Icon
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 56; height: 56; radius: 28
+                    width: 56; height: 56; radius: Config.corner(28)
                     color: root.fieldColor
                     Text {
                         anchors.centerIn: parent
@@ -212,7 +212,7 @@ PanelWindow {
                             id: chip
                             required property var modelData
                             readonly property bool current: root.selected === modelData
-                            width: chipText.implicitWidth + 24; height: 30; radius: 15
+                            width: chipText.implicitWidth + 24; height: 30; radius: Config.corner(15)
                             color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             HoverHandler { id: chipHover }
@@ -238,7 +238,7 @@ PanelWindow {
 
                 // Password field
                 Rectangle {
-                    width: parent.width; height: 44; radius: 12
+                    width: parent.width; height: 44; radius: Config.corner(12)
                     color: root.fieldColor
                     border.width: password.activeFocus ? 1 : 0
                     border.color: root.error !== "" || root.supplementaryIsError ? root.danger : root.accent
@@ -313,7 +313,7 @@ PanelWindow {
         property bool dimmed: false
         signal clicked()
         height: 40
-        radius: 10
+        radius: Config.corner(10)
         readonly property color base: primary ? root.accent : root.fieldColor
         color: primary ? base : (hh.hovered ? Config.hover : base)
         opacity: dimmed ? 0.55 : 1

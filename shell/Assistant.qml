@@ -312,7 +312,7 @@ PanelWindow {
         Behavior on height { enabled: root.shown; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round(Math.max(24, (parent.height - 520) / 2))
-        radius: 18
+        radius: Config.corner(18)
         color: root.barColor
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
@@ -350,7 +350,7 @@ PanelWindow {
                         id: trial
                         readonly property color ink: Config.colourful ? Config.tint("#9ed6a6") : root.accent
                         anchors.verticalCenter: parent.verticalCenter
-                        width: trialRow.implicitWidth + 18; height: 22; radius: 11
+                        width: trialRow.implicitWidth + 18; height: 22; radius: Config.corner(11)
                         color: Qt.rgba(ink.r, ink.g, ink.b, 0.16)
                         Row {
                             id: trialRow
@@ -372,7 +372,7 @@ PanelWindow {
                 Rectangle {
                     id: closeBtn
                     anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
-                    width: 34; height: 34; radius: 17      // (Settings' close button)
+                    width: 34; height: 34; radius: Config.corner(17)      // (Settings' close button)
                     color: closeHover.hovered ? Config.hover : "transparent"
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
@@ -433,8 +433,8 @@ PanelWindow {
                         visible: root.turns.length === 0
                         width: hello.implicitWidth + 28
                         height: hello.implicitHeight + 18
-                        radius: 14
-                        bottomLeftRadius: 3
+                        radius: Config.corner(14)
+                        bottomLeftRadius: Config.corner(3)
                         color: root.replyColor
                         Column {
                             id: hello
@@ -472,8 +472,8 @@ PanelWindow {
                                 anchors.right: parent.right
                                 width: Math.min(askedText.implicitWidth + 28, turn.width * 0.82)
                                 height: askedText.implicitHeight + 16
-                                radius: 14
-                                bottomRightRadius: 3        // (the corner nearest your side squared off, as chat bubbles are)
+                                radius: Config.corner(14)
+                                bottomRightRadius: Config.corner(3)        // (the corner nearest your side squared off, as chat bubbles are)
                                 color: root.accent
                                 HoverHandler { id: youHover }
                                 CopyChip {
@@ -508,10 +508,10 @@ PanelWindow {
                                 anchors.left: parent.left
                                 width: Math.min(parent.width * 0.88, Math.max(replyCol.implicitWidth, 120) + 28)
                                 height: replyCol.implicitHeight + 18
-                                radius: 14
+                                radius: Config.corner(14)
                                 // (one shape, not a square laid over the corner: on glass the bubble
                                 // is see-through, and the overlap showed as a lighter square)
-                                bottomLeftRadius: 3
+                                bottomLeftRadius: Config.corner(3)
                                 color: root.replyColor
                                 border.width: wrong ? 1 : 0
                                 border.color: Qt.rgba(root.danger.r, root.danger.g, root.danger.b, 0.55)
@@ -579,7 +579,7 @@ PanelWindow {
                                             Rectangle {
                                                 id: dot
                                                 required property int index
-                                                width: 7; height: 7; radius: 3.5
+                                                width: 7; height: 7; radius: Config.corner(3.5)
                                                 color: !typing.moving && typing.lit === index ? root.textColor : root.dimTextColor
                                                 opacity: typing.moving ? 0.35 : 1
                                                 transform: Translate { id: hop }
@@ -693,7 +693,7 @@ PanelWindow {
             // ---- The line you type -----------------------------------------
             Rectangle {
                 visible: root.on
-                width: parent.width; height: 44; radius: 10
+                width: parent.width; height: 44; radius: Config.corner(10)
                 color: root.fieldColor
                 Text {
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
@@ -778,7 +778,7 @@ PanelWindow {
         signal pressed()
         anchors { top: parent.top; right: parent.right; topMargin: 5; rightMargin: 5 }
         z: 2
-        width: 24; height: 24; radius: 8
+        width: 24; height: 24; radius: Config.corner(8)
         color: chipHover.hovered ? hoverBase : base
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         opacity: shownFor || done ? 1 : 0
@@ -804,7 +804,7 @@ PanelWindow {
         signal pressed()
         readonly property color control: Config.raised(Config.tint("#2a313c"))
         readonly property color fg: primary ? root.accentText : root.textColor
-        width: pillRow.implicitWidth + 28; height: 32; radius: 8
+        width: pillRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
         color: primary ? root.accent : pillHover.hovered ? Config.hover : control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Row {

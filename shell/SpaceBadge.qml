@@ -12,7 +12,7 @@ Rectangle {
     property real size: 26
     visible: !!space
     width: size; height: size
-    radius: Math.round(size * 0.31)
+    radius: Config.corner(Math.round(size * 0.31))
     color: space ? space.colour : "transparent"
     border.width: 1
     border.color: Qt.rgba(0, 0, 0, 0.22)

@@ -245,7 +245,7 @@ PanelWindow {
         anchors.centerIn: parent
         width: Math.min(sw.width - 80, sw.strip.length * sw.cardW + 24)
         height: sw.cardH + 24 + sw.extraH
-        radius: 18
+        radius: Config.corner(18)
         color: sw.bar.barColor
         opacity: sw.fade
         scale: 0.97 + 0.03 * sw.fade
@@ -278,7 +278,7 @@ PanelWindow {
             anchors.horizontalCenter: list.horizontalCenter
             y: list.y + list.restY - height / 2
             width: sw.cardW; height: sw.cardH
-            radius: 12
+            radius: Config.corner(12)
             color: Config.accent           // the active colour
             Gloss { radius: parent.radius }   // glass: a sheen
         }
@@ -410,7 +410,7 @@ PanelWindow {
                         screen: m ? (turned ? Qt.size(m.height / (m.scale || 1), m.width / (m.scale || 1))
                                             : Qt.size(m.width / (m.scale || 1), m.height / (m.scale || 1))) : Qt.size(1, 1)
                         pixelScale: o && o.size ? shot.width / Math.max(1, o.size[0]) : 0.25
-                        radius: 8
+                        radius: Config.corner(8)
                     }
                     // The window's live capture (shared with its other cards: see shotFor), copied
                     // at its own size
@@ -430,7 +430,7 @@ PanelWindow {
                         // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                         layer.enabled: true
                         layer.effect: PreviewShape {
-                            radius: 8
+                            radius: Config.corner(8)
                             gain: Config.undimGain(card.modelData.activated, card.modelData.lastIpcObject ? card.modelData.lastIpcObject.class : "")
                         }
                     }
@@ -443,7 +443,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         width: Math.min(parent.width, parent.height * ratio)
                         height: width / ratio
-                        radius: 8
+                        radius: Config.corner(8)
                         color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
                         border.width: 1.5
                         border.color: Qt.rgba(1, 1, 1, 0.35)
@@ -507,10 +507,10 @@ PanelWindow {
                 width: 56
                 anchors { top: parent.top; bottom: parent.bottom }
                 x: modelData === 0 ? 0 : parent.width - width
-                topLeftRadius: modelData === 0 ? panel.radius : 0
-                bottomLeftRadius: modelData === 0 ? panel.radius : 0
-                topRightRadius: modelData === 1 ? panel.radius : 0
-                bottomRightRadius: modelData === 1 ? panel.radius : 0
+                topLeftRadius: Config.corner(modelData === 0 ? panel.radius : 0)
+                bottomLeftRadius: Config.corner(modelData === 0 ? panel.radius : 0)
+                topRightRadius: Config.corner(modelData === 1 ? panel.radius : 0)
+                bottomRightRadius: Config.corner(modelData === 1 ? panel.radius : 0)
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: modelData === 0 ? Config.shade(0.6) : "transparent" }

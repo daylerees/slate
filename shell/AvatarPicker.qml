@@ -129,7 +129,7 @@ FloatingWindow {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool on: pk.folder === modelData.path
-                    width: parent.width; height: 36; radius: 9
+                    width: parent.width; height: 36; radius: Config.corner(9)
                     color: on ? pk.accent : placeHover.hovered ? Config.hover : "transparent"     // the active colour; the muted hover
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Row {
@@ -162,7 +162,7 @@ FloatingWindow {
     Rectangle {
         id: main
         anchors { top: parent.top; bottom: parent.bottom; left: side.right; right: preview.left; topMargin: 10; bottomMargin: 10 }
-        radius: 14
+        radius: Config.corner(14)
         color: pk.panel
         // Up, and where you are
         Item {
@@ -172,7 +172,7 @@ FloatingWindow {
             Rectangle {
                 id: upBtn
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                width: 34; height: 34; radius: 17
+                width: 34; height: 34; radius: Config.corner(17)
                 opacity: pk.folder === "/" ? 0.35 : 1
                 color: upHover.hovered ? Config.hover : "transparent"
                 Text { anchors.centerIn: parent; text: pk.glyph(0xEA19); color: upHover.hovered ? pk.text : pk.dim; font.family: pk.iconFont; font.pixelSize: 18 }
@@ -220,7 +220,7 @@ FloatingWindow {
                     id: frame
                     anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 4 }
                     width: parent.width - 12; height: width
-                    radius: 12
+                    radius: Config.corner(12)
                     color: cell.fileIsDir ? (cellHover.hovered ? Config.hover : "transparent") : Config.raised(Config.tint("#1d222a"))
                     border.width: cell.picked ? 2 : 0
                     border.color: pk.accent
@@ -253,7 +253,7 @@ FloatingWindow {
                             anchors.fill: parent
                             visible: false
                             layer.enabled: true
-                            Rectangle { anchors.fill: parent; radius: cell.picked ? 9 : 12 }
+                            Rectangle { anchors.fill: parent; radius: Config.corner(cell.picked ? 9 : 12) }
                         }
                     }
                     // Pointed at: a light wash over a picture
@@ -303,7 +303,7 @@ FloatingWindow {
             // Round, as your account picture shows
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 156; height: 156; radius: 78
+                width: 156; height: 156; radius: Config.corner(78)
                 color: Config.raised(Config.tint("#1d222a"))
                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: 1; border.color: Config.tint("#2a313c")
@@ -316,7 +316,7 @@ FloatingWindow {
                 RoundImage {
                     visible: pk.chosen !== ""
                     anchors { fill: parent; margins: 3 }
-                    radius: width / 2
+                    radius: Config.corner(width / 2)
                     source: pk.chosen ? "file://" + pk.chosen : ""
                 }
             }
@@ -340,14 +340,14 @@ FloatingWindow {
             anchors { bottom: parent.bottom; bottomMargin: 18; horizontalCenter: parent.horizontalCenter }
             spacing: 8
             Rectangle {
-                width: cancelText.implicitWidth + 28; height: 34; radius: 9
+                width: cancelText.implicitWidth + 28; height: 34; radius: Config.corner(9)
                 color: cancelHover.hovered ? Config.hoverOn(Config.raised(Config.tint("#2a313c"))) : Config.raised(Config.tint("#2a313c"))
                 Text { id: cancelText; anchors.centerIn: parent; text: "Cancel"; color: pk.text; font.family: pk.font; font.pixelSize: 12; font.weight: Font.Medium }
                 HoverHandler { id: cancelHover }
                 ClickTap { onTapped: pk.visible = false }
             }
             Rectangle {
-                width: useText.implicitWidth + 28; height: 34; radius: 9
+                width: useText.implicitWidth + 28; height: 34; radius: Config.corner(9)
                 opacity: pk.chosen ? 1 : 0.45
                 color: pk.accent
                 Text { id: useText; anchors.centerIn: parent; text: "Use picture"; color: pk.accentText; font.family: pk.font; font.pixelSize: 12; font.weight: Font.DemiBold }

@@ -22,14 +22,14 @@ Item {
     Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         width: 3; height: parent.height
-        radius: width / 2
+        radius: Config.corner(width / 2)
         color: sb.color; opacity: 0.08
     }
     Rectangle {
         id: thumb
         anchors.horizontalCenter: parent.horizontalCenter
         width: sb.active ? 6 : 4
-        radius: width / 2
+        radius: Config.corner(width / 2)
         // The handle in the accent colour (the track behind it stays the faint neutral)
         color: Config.accent
         opacity: sb.active ? 1 : 0.7

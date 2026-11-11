@@ -99,6 +99,7 @@ Singleton {
         ["Interface font", "appearance", "typeface"],
         ["Interface size", "appearance", "scale scaling zoom bigger smaller text size font size dpi hidpi"],
         ["Rounded screen corners", "appearance", ""],
+        ["Rounded UI elements", "appearance", "square corners sharp hard edges radius rounding windows buttons panels"],
         ["Location", "general", "weather city town sunrise sunset"],
         ["Night light", "general", "blue light warm schedule temperature"],
         ["Volume keys sound", "sound", "tick click audio feedback volume"],

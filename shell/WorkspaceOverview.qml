@@ -639,7 +639,7 @@ PanelWindow {
                 // Shadow under the lifted card
                 RectangularShadow {
                     anchors.fill: preview
-                    radius: 12
+                    radius: Config.corner(12)
                     blur: 36
                     offset.y: 18
                     color: Qt.rgba(Config.shadowColour.r, Config.shadowColour.g, Config.shadowColour.b, 0.7)
@@ -650,7 +650,7 @@ PanelWindow {
                 // Selection ring
                 Rectangle {
                     anchors { fill: preview; margins: -5 }
-                    radius: 17
+                    radius: Config.corner(17)
                     // The active colour, filled (the card itself sits on it, so it shows as its edge);
                     // bright white while lifted (holding Shift)
                     color: border.color
@@ -715,7 +715,7 @@ PanelWindow {
                             // a square window stays square)
                             readonly property real rounding: Config.windowRadius(modelData ? modelData.lastIpcObject : null,
                                 card.wins.filter(t => t.lastIpcObject && !t.lastIpcObject.floating).length)
-                            readonly property real radius: rounding > 0 ? Math.max(2.5, rounding * card.sx) : 0
+                            readonly property real radius: Config.corner(rounding > 0 ? Math.max(2.5, rounding * card.sx) : 0)
                             // What a see-through window shows behind it on screen: the blurred
                             // wallpaper (opaque windows simply cover it)
                             ShaderEffectSource {
@@ -731,7 +731,7 @@ PanelWindow {
                             Rectangle {
                                 visible: !ov.livePreviews
                                 anchors.fill: parent
-                                radius: Math.max(3, ovWin.radius)
+                                radius: Config.corner(Math.max(3, ovWin.radius))
                                 color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
                                 border.width: 1.5
                                 border.color: Qt.rgba(1, 1, 1, 0.35)
@@ -787,7 +787,7 @@ PanelWindow {
                     anchors.fill: preview
                     visible: false
                     layer.enabled: true
-                    Rectangle { anchors.fill: parent; radius: 12 * (1 - ov.zoomP) }   // square once it's the workspace
+                    Rectangle { anchors.fill: parent; radius: Config.corner(12 * (1 - ov.zoomP)) }   // square once it's the workspace
                 }
 
                 // Label

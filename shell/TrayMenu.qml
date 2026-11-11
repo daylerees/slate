@@ -82,7 +82,7 @@ PanelWindow {
             edge === "left" ? tm.anchorX + 14 : edge === "right" ? tm.anchorX - width - 14 : tm.anchorX - width / 2))
         y: Math.max(8, Math.min(tm.height - height - 8,
             edge === "top" ? tm.anchorY + 14 : edge === "bottom" ? tm.anchorY - height - 14 : tm.anchorY - height / 2))
-        radius: 12
+        radius: Config.corner(12)
         color: tm.bgColor
         Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
@@ -116,7 +116,7 @@ PanelWindow {
                     visible: tm.stack.length > 1
                     width: menuCol.width; height: visible ? 30 : 0
                     Rectangle {
-                        anchors.fill: parent; radius: 7
+                        anchors.fill: parent; radius: Config.corner(7)
                         color: backHover.hovered ? Config.hover : "transparent"
                         Text {
                             id: backArrow
@@ -161,7 +161,7 @@ PanelWindow {
                         Rectangle {
                             visible: !entryRow.sep
                             anchors.fill: parent
-                            radius: 7
+                            radius: Config.corner(7)
                             // Under the pointer: the muted hover, flat (the accent is for what stays selected)
                             color: entryHover.hovered && !!entryRow.e && entryRow.e.enabled ? Config.hover : "transparent"
                             Behavior on color { ColorAnimation { duration: Config.ms(90) } }
