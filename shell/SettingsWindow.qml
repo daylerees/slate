@@ -526,7 +526,6 @@ FloatingWindow {
                             readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
                             width: parent.width; height: 38; radius: 9
                             color: current ? win.card : navHover.hovered ? Config.hover : "transparent"
-                            Gloss { radius: parent.radius; opacity: (current || navHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Text {
                                 id: navIcon
@@ -1321,7 +1320,6 @@ FloatingWindow {
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         HoverHandler { id: tgHover }
-        Gloss { radius: parent.radius }   // glass: a sheen
         Rectangle {
             width: 18; height: 18; radius: 9
             anchors.verticalCenter: parent.verticalCenter
@@ -1365,7 +1363,6 @@ FloatingWindow {
                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 Rectangle {
                     width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: 3; color: win.accent
-                    Gloss { radius: parent.radius }   // glass: a sheen
                 }
             }
             // Hover: an accent halo behind the knob, which grows a little
@@ -1639,7 +1636,6 @@ FloatingWindow {
                     readonly property bool on: modelData.value === choiceSetting.value
                     width: optText.implicitWidth + 26; height: 32; radius: 8
                     color: on ? win.accent : optHover.hovered ? win.fieldHover() : win.control
-                    Gloss { radius: parent.radius; opacity: (on || optHover.hovered) ? 1 : 0 }   // glass: a sheen while selected or hovered
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
                     ClickTap { onTapped: { choiceSetting.picked(parent.modelData.value); choiceSetting.open = false; } }
@@ -1961,7 +1957,6 @@ FloatingWindow {
                         height: 112
                         radius: 12
                         color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
-                        Gloss { radius: parent.radius; opacity: (tileHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Rectangle {
                             x: 14; y: 14
@@ -2733,7 +2728,6 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
                             color: win.accent
-                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -4502,7 +4496,6 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
                             color: win.accent
-                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -4823,7 +4816,6 @@ FloatingWindow {
                             width: 92 - 6; height: parent.height - 6; radius: 7
                             y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
                             color: win.accent
-                            Gloss { radius: parent.radius }   // glass: a sheen on the chosen side
                             Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                         }
                         Row {
@@ -7172,7 +7164,6 @@ FloatingWindow {
                                     width: Math.max(height, parent.width * Math.min(1, parent.parent.frac))
                                     height: parent.height; radius: 3
                                     color: parent.parent.frac > 0.8 ? win.danger : win.accent
-                                    Gloss { radius: parent.radius }   // glass: a sheen
                                     Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                                 }
                             }
