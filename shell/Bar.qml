@@ -165,7 +165,7 @@ PanelWindow {
     implicitWidth: vert ? thickness + shadowPad : 0
     color: "transparent"
     WlrLayershell.namespace: "slate-bar"
-    // (above the wallpaper, which covers the windows while the bar's being arranged: Wallpaper.qml)
+    // (above the dimming laid over the windows while the bar's being arranged: BarEditor.qml)
     WlrLayershell.layer: Config.barArranging ? WlrLayer.Overlay : WlrLayer.Top
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: Math.round(barHeight * zoneReveal)

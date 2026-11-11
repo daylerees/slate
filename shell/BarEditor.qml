@@ -520,6 +520,30 @@ PanelWindow {
         }
     }
 
+    // While the bar's being arranged, everything under it is heavily dimmed: every screen's
+    // windows and desktop, under a dark wash that also takes the clicks, so nothing beneath is
+    // touched. Above the windows and below the bar (which goes up a layer meanwhile) and this panel
+    Variants {
+        model: Quickshell.screens
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.shown || root.fade > 0
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            WlrLayershell.namespace: "slate-bar-dim"
+            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            Rectangle {
+                anchors.fill: parent
+                color: Config.shade(0.72)
+                opacity: root.fade
+            }
+            MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
+        }
+    }
+
     // What's being dragged, from the bar or from the pool, under the pointer wherever it goes
     // (Config.barFloat): a window of its own over the whole screen, which the pointer goes
     // straight through. Drawn as it is on the bar while that's being arranged: its icons in a

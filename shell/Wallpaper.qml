@@ -99,9 +99,7 @@ Scope {
             color: Config.tint("#0f1216")          // plain slate until (or if no) image loads
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "slate-wallpaper"
-            // (While the menu bar's being arranged, the wallpaper comes up over the windows, so
-            // there's only the desktop behind the bar and its panel; the bar goes above it)
-            WlrLayershell.layer: Config.barArranging ? WlrLayer.Top : WlrLayer.Background
+            WlrLayershell.layer: WlrLayer.Background
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
             // Right-click the desktop: a menu of things to do from here
