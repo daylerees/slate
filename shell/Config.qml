@@ -662,8 +662,8 @@ Singleton {
             // an opacity of their own (Settings → Dock, → Menu Bar). Each is made once, and made
             // again when its opacity changes; then switched on or off
             + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
-            + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut)
-            + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut)
+            + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
+            + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur)
             + `SLATE_GLASS_V = 3`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
@@ -1156,12 +1156,13 @@ Singleton {
         * Math.max(0.2, Math.min(1, s.barOpacity))
     readonly property real barGlassCut: Math.max(0.05, Math.min(glassOpacity * 0.85, barGlassOpacity * 0.85))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
-    // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it
-    function glassRule(v, match, cut) {
+    // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
+    // `wanted` false: made, but off (the dock with its Blur switched off)
+    function glassRule(v, match, cut, wanted) {
         const c = cut.toFixed(2), made = `"${c} 3"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 100)}", `
-            + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass ? "true" : "false"}); `;
+            + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;
     }
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
     // solid grey (so the glass shows through them too)
