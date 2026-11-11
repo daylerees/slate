@@ -1248,12 +1248,12 @@ Singleton {
     readonly property bool glassGloss: glass && glossAmount > 0
     readonly property real glossTint: Math.max(0, Math.min(1, Number(s.glassGlossTint)))
     // The bright edge round glass panels (the launcher, Chalk, the bar's arranging panel…):
-    // still nearly white, with the theme's accent in it, so it belongs to the colours in use.
+    // a bright, light shade of the theme's accent, so it belongs to the colours in use.
     // (A grey accent has no colour to give: it stays white)
     readonly property color glassEdge: {
         const a = Qt.lighter(accent, 1.0);
-        const sat = Math.min(0.85, a.hslSaturation * 1.1);
-        return Qt.hsla(a.hslHue >= 0 ? a.hslHue : 0, sat, s.lightMode ? 0.9 : 0.82, s.lightMode ? 0.6 : 0.2);
+        const sat = Math.min(1, a.hslSaturation * 1.5);
+        return Qt.hsla(a.hslHue >= 0 ? a.hslHue : 0, sat, s.lightMode ? 0.8 : 0.72, s.lightMode ? 0.7 : 0.38);
     }
     // Hyprland's blur (behind see-through windows), for drawing it in previews too. Read at
     // start, when Hyprland reloads its config, and after Slate changes it (glass)
