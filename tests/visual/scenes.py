@@ -91,6 +91,14 @@ for _p in settings_pages():
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
+# A panel on glass: its shadow lies round it and the curved joins to the bar, never under them
+# (it showed through as darker corners)
+SCENES["panel-calendar-glass"] = {
+    "settings": {"glass": "true"},
+    "do": [("bar", "panel", "calendar")], "wait": lambda st: st["popout"] == "calendar", "settle": 1.0,
+    "undo": [("popout", "close")],
+}
+
 # An app held up off the dock while it's dragged: the gap it'd go into, with its placeholder
 # (dashed on a plain dock, frosted on glass). Put back where it was after.
 _DRAG = {

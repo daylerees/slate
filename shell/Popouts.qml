@@ -198,6 +198,10 @@ PanelWindow {
             bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
             dropX: pop.sideways ? (pop.side === "left" ? 3 : -3) : 0
             dropY: pop.sideways ? 3 : (pop.fromBottom ? -3 : 3)
+            // None where the panel leaves the bar: the curved joins beside it there would lie
+            // on it, and on glass showed darker than the panel
+            fadeEdge: pop.side
+            fadeFrom: bar.cornerRadius
         }
     }
 

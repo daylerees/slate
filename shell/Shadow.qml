@@ -31,6 +31,13 @@ Item {
     // band with the desktop's rounded shape taken out of it
     property rect hole: Qt.rect(0, 0, 0, 0)
     property real holeRadius: 0
+    // No shadow along one edge of the surface, where it joins something else (a panel coming out
+    // of the bar: the curved joins beside it there would lie on the shadow, and on glass show
+    // darker for it). "top" / "bottom" / "left" / "right": none within fadeFrom px of that edge
+    // (and beyond it), then growing to full over fadeOver px. "": everywhere, as usual
+    property string fadeEdge: ""
+    property real fadeFrom: 0
+    property real fadeOver: 12
     readonly property real reach: Math.ceil(blur + Math.max(Math.abs(dropX), Math.abs(dropY)))
 
     anchors.fill: parent
@@ -50,6 +57,9 @@ Item {
         readonly property real blur: root.blur
         readonly property vector4d hole: Qt.vector4d(root.hole.x + root.reach, root.hole.y + root.reach, root.hole.width, root.hole.height)
         readonly property real holeRadius: root.holeRadius
+        readonly property vector4d fade: Qt.vector4d(root.fadeEdge === "left" ? 1 : root.fadeEdge === "right" ? -1 : 0,
+                                                     root.fadeEdge === "top" ? 1 : root.fadeEdge === "bottom" ? -1 : 0,
+                                                     root.fadeFrom, root.fadeOver)
         fragmentShader: Qt.resolvedUrl("shaders/shadow.frag.qsb")
     }
 }

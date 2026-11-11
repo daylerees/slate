@@ -16,6 +16,9 @@ layout(std140, binding = 0) uniform buf {
     float blur;         // how far it reaches before it's gone (px)
     vec4 hole;          // a rounded rectangle taken out of the surface (x, y, width, height; none
     float holeRadius;   // if its width is 0): the menu bar's flared corners are made this way
+    vec4 fade;          // no shadow near one edge of the surface (a panel's, where it joins the bar):
+                        // x, y: which way in from that edge (0, 0: none); z: nothing for this far
+                        // from it; w: then growing to full over this far (px)
 };
 
 // Distance to a rounded rectangle centred on the origin (negative inside)
@@ -41,5 +44,10 @@ void main() {
     float t = clamp((shade + blur * 0.4) / (blur * 1.4), 0.0, 1.0);
     float a = (1.0 - t) * (1.0 - t);
     a *= smoothstep(-0.75, 0.75, surface);          // nothing under the surface itself
+    if (fade.x != 0.0 || fade.y != 0.0) {
+        float d = fade.x > 0.0 ? q.x - box.x : fade.x < 0.0 ? box.x + box.z - q.x
+                : fade.y > 0.0 ? q.y - box.y : box.y + box.w - q.y;
+        a *= smoothstep(fade.z, fade.z + max(fade.w, 0.001), d);
+    }
     fragColor = vec4(tint.rgb, 1.0) * (tint.a * a * qt_Opacity);
 }
