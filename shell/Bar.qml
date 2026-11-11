@@ -601,6 +601,10 @@ PanelWindow {
                 // after the flexible space there)
                 parent: titleSlotTop
                 visible: Config.s.barShowTitle
+                // (in the middle of its outline while the bar's being arranged: the outline is as
+                // tall as a container, the title alone isn't, and it sat at the top of it)
+                x: !Config.barArranging ? 0 : bar.vert ? Math.max(0, (bar.capsuleHeight - width) / 2) : 4
+                y: !Config.barArranging ? 0 : bar.vert ? 4 : Math.max(0, (bar.capsuleHeight - height) / 2)
                 spacing: bar.gap
                 // The icon and the title fade as one, like a container (Settings → Menu Bar → Glass:
                 // Container opacity, and Hover opacity with the pointer over either)
