@@ -190,8 +190,13 @@ PanelWindow {
     readonly property real thickness: barHeight + cornerRadius
     // Room for the drop shadow beyond the bar (the window is this much bigger; it takes no input)
     readonly property real shadowPad: 18
-    // Drop shadow while the pointer is on the bar or one of its panels is open
-    property real shadow: hovered || popoutHere ? 1 : 0
+    // Drop shadow while the pointer is on the bar or one of its panels is open. The pointer has
+    // to stay a moment for it, and it lingers a moment after: at the bar's edge the pointer is
+    // on and off it from one pixel to the next, and a pointer only passing over needn't set it off
+    property bool settled: false
+    Timer { id: settleIn; interval: 90; onTriggered: bar.settled = true }
+    Timer { id: settleOut; interval: 260; onTriggered: bar.settled = false }
+    property real shadow: settled || popoutHere ? 1 : 0
     Behavior on shadow { NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
     // Text along a side bar is turned to read top to bottom on the right, bottom to top on the left
     readonly property real textRotation: vert ? (atRight ? 90 : -90) : 0
@@ -214,7 +219,11 @@ PanelWindow {
     readonly property bool hovered: hover.hovered || overItems.hovered
     Timer { id: holdTimer; interval: bar.holdMs }        // shown after fill / workspace switch
     Timer { id: hoverTimer; interval: 700 }              // lingers a moment after the pointer leaves
-    onHoveredChanged: if (!hovered) hoverTimer.restart()
+    onHoveredChanged: {
+        if (!hovered) hoverTimer.restart();
+        if (hovered) { settleOut.stop(); if (!settled) settleIn.restart(); }
+        else { settleIn.stop(); if (settled) settleOut.restart(); }
+    }
 
     // Reserved space follows the "held" state; hover only slides the bar over the window
     // Auto-hide only applies when it's switched on in Settings

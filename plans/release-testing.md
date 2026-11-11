@@ -49,3 +49,4 @@ things off as they're done.
 - All Settings: the search box stays put while the tiles or results scroll under it (needs a window short enough to scroll).
 - Destructive controls hover red (Config.hoverDanger): Settings buttons, list rows' Remove, the arranging panel, dock menu rows, panels' Clear history / delete space / Shut down, the clipboard picker's Clear all. Settings separators are a faint text-colour line with glass.
 - Menu Bar → Monochrome tray icons (barTrayMono, off by default): a live test and the settings/MCP unit tests.
+- The bar's hover shadow waits 90 ms and lingers 260 ms (bar.settled): no test; needs a pointer.
