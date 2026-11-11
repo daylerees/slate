@@ -219,7 +219,7 @@ PanelWindow {
             : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
             : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
             : Config.statusColour(item, root.text)
-        width: chipRow.implicitWidth + (grip ? 20 : 24); height: root.bar.capsuleHeight
+        width: chipRow.implicitWidth + (grip ? 16 : 24); height: root.bar.capsuleHeight
         radius: root.bar.capsuleRadius
         color: root.bar.capsuleColor
         Rectangle {
@@ -233,6 +233,8 @@ PanelWindow {
         Row {
             id: chipRow
             anchors.centerIn: parent
+            // (with a gripper: nearer the chip's start, where the bar's containers have theirs)
+            anchors.horizontalCenterOffset: barChip.grip ? -3 : 0
             spacing: 7
             // (as on the bar's containers while it's arranged: pick it up here, or anywhere on it)
             Text {
@@ -241,7 +243,6 @@ PanelWindow {
                 text: root.glyph(0xEC01)
                 color: barChip.lit ? root.text : root.dim
                 font.family: root.bar.iconFont; font.pixelSize: 13
-                width: implicitWidth - 5      // (closer to the icon than the row's own spacing puts it)
             }
             Image {
                 visible: barChip.item === "control"
