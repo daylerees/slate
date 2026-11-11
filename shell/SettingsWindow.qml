@@ -3551,16 +3551,6 @@ FloatingWindow {
                     button: "Charge to full", code: 0xEA33, danger: false
                 }, () => powerPane.setLimit(false));
             }
-            GroupLabel { visible: powerPane.limitSupported; text: "Battery" }
-            Group {
-                visible: powerPane.limitSupported
-                SettingRow {
-                    label: "Charging limit"
-                    detail: powerPane.limitOn ? "Charging stops at " + powerPane.limitAt + "%, which keeps your battery healthy for longer"
-                        : "Your battery charges to full. Stopping at " + powerPane.limitAt + "% is kinder to it"
-                    Toggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
-                }
-            }
             GroupLabel { text: "Power mode" }
             Group {
                 DropdownSetting {
@@ -3579,6 +3569,16 @@ FloatingWindow {
                     options: powerPane.profileOptions
                     value: Config.s.profileOnAC
                     onPicked: v => { Config.s.profileOnAC = v; Config.applyPowerProfile(); }
+                }
+            }
+            GroupLabel { visible: powerPane.limitSupported; text: "Battery" }
+            Group {
+                visible: powerPane.limitSupported
+                SettingRow {
+                    label: "Charging limit"
+                    detail: powerPane.limitOn ? "Charging stops at " + powerPane.limitAt + "%, which keeps your battery healthy for longer"
+                        : "Your battery charges to full. Stopping at " + powerPane.limitAt + "% is kinder to it"
+                    Toggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
                 }
             }
             GroupLabel { text: "Restarting" }
