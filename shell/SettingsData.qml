@@ -107,7 +107,7 @@ JsonAdapter {
     property bool clipboardHistory: true      // keep a history of what you copy (Super+V)
     property bool keepEmptyWorkspace: false   // Settings → Workspaces: always an empty workspace after the last one in use
     property string windowMode: "tiling"       // tiling (dwindle), master, scrolling, monocle, or floating (every window floats, like a traditional desktop)
-    property string titleButtons: "right"     // floating windows' title bar buttons: left or right
+    property string titleButtons: "left"      // floating windows' title bar buttons: left or right
     property string titleBarStyle: "slate"    // floating windows' title bars: slate (Slate's own, on the window in front), or hyprbars (the optional plugin, on every floating window)
     property int windowGap: 6                 // px between tiled windows (edges get 2 more; 0 = none)
     property int soloWindowGap: 0             // px around a window alone on its workspace (0 = fills the screen)
