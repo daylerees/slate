@@ -2356,7 +2356,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Container opacity"
                     settingKey: "barItemOpacity"
-                    detail: "How solid the containers on the bar are: 100% can't be seen through; at 0% only what's in them shows"
+                    detail: "How solid the containers on the bar are, with everything in them: their icons, text and dividers. At 0% they're gone"
                     ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
                 }
                 Separator {}

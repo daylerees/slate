@@ -41,11 +41,9 @@ PanelWindow {
         : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
-    // On the bar itself, the containers' fill by Settings → Menu Bar → Container opacity
-    // (Config.barContainer; Settings' cards and the arranging panel's chips keep
+    // On the bar itself, a container with an opacity chosen (Settings → Menu Bar → Glass) is
+    // drawn solid, and the whole of it faded to that (Capsule, below; Settings' cards and the arranging panel's chips keep
     // capsuleColor as it is)
-    readonly property color capsuleFill: Config.barContainer(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
-    // (and solid, for under the pointer: Hover opacity then fades the whole container)
     readonly property color capsuleSolid: Config.frostedTile(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
@@ -1432,13 +1430,16 @@ PanelWindow {
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: bar.capsuleRadius
-        // Under the pointer, with a Hover opacity chosen (Settings → Menu Bar → Glass): the whole
-        // container at that opacity, its fill and everything in it (icons, text, the highlight,
-        // the lines between things), faded as one
-        readonly property bool lifted: capHover.hovered && !Config.barArranging && Config.barItemHoverSet
-        color: lifted ? bar.capsuleSolid : bar.capsuleFill
-        opacity: lifted ? Config.barItemHoverOpacity : 1
-        layer.enabled: lifted && opacity < 1
+        // With a Container opacity chosen (Settings → Menu Bar → Glass), or a Hover opacity and
+        // the pointer over it: drawn solid, and the whole container at that opacity, its fill
+        // and everything in it (icons, text, the highlight, the lines between things), faded as
+        // one. Not while the bar's being arranged: everything's there to be picked up
+        readonly property bool lifted: capHover.hovered && Config.barItemHoverSet
+        readonly property bool own: !Config.barArranging && (lifted || Config.barItemSet)
+        color: own ? bar.capsuleSolid : bar.capsuleColor
+        opacity: !own ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
+        // (each part fades by itself rather than the container as one picture: drawn that way,
+        // through a layer, a container showed nothing at all)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         Rectangle {
@@ -1448,7 +1449,7 @@ PanelWindow {
             opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
-        Gloss { radius: cap.radius; opacity: Math.min(1, cap.color.a / 0.05) }          // glass: a sheen (gone with the container)
+        Gloss { radius: cap.radius; }          // glass: a sheen
         HoverHandler { id: capHover; onHoveredChanged: if (cap.hoverText !== "") bar.setHover(cap, hovered) }
         ClickTap { onTapped: cap.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }

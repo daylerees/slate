@@ -1167,26 +1167,15 @@ Singleton {
     // dark mode, a quarter of the way from the glass's opacity to solid
     readonly property real barGlassOpacity: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
         : Math.max(s.barBlur ? 0.01 : 0, Math.min(1, s.barOpacity))
-    // The containers on the bar, of colour `c` when solid. Slate's own: solid, or with glass the
-    // frosted film everything raised has (raised). At an opacity of your own, with glass: the
-    // film alone up to its own opacity, then the solid colour coming in under it (as frostedTile)
-    readonly property real barItemOwnOpacity: glass ? raised(Qt.rgba(0, 0, 0, 1)).a : 1
-    readonly property real barItemOpacity: s.barItemOpacity < 0 || !glass ? barItemOwnOpacity : Math.min(1, s.barItemOpacity)
-    // ...and while the pointer's over one: Hover opacity (Slate's own: no different)
-    readonly property real barItemHoverOpacity: s.barItemHoverOpacity < 0 || !glass ? barItemOpacity : Math.min(1, s.barItemHoverOpacity)
-    // (it's the whole container then, what's in it too: Bar.qml's Capsule)
+    // The containers on the bar (Bar.qml's Capsule), with glass. Slate's own: the frosted film
+    // everything raised has, with what's in it at full strength. With an opacity chosen, the
+    // container is drawn solid and the whole of it faded to that as one: its fill, icons, text,
+    // highlight and the lines between things. And another for while the pointer's over it
+    // (Slate's own: no different)
+    readonly property bool barItemSet: glass && s.barItemOpacity >= 0
     readonly property bool barItemHoverSet: glass && s.barItemHoverOpacity >= 0
-    function barContainer(c) {
-        c = Qt.lighter(c, 1.0);
-        const o = barItemOpacity;
-        // (with glass only, like the rest of Settings → Menu Bar → Glass: solid otherwise)
-        if (!glass || s.barItemOpacity < 0) return raised(c);
-        const f = raised(c);
-        if (o <= f.a) return Qt.rgba(f.r, f.g, f.b, o);
-        const a = (o - f.a) / (1 - f.a);
-        const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / o;
-        return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), o);
-    }
+    readonly property real barItemOpacity: barItemSet ? Math.min(1, s.barItemOpacity) : 1
+    readonly property real barItemHoverOpacity: barItemHoverSet ? Math.min(1, s.barItemHoverOpacity) : barItemOpacity
     // Where Hyprland starts blurring behind the bar. Its window also holds its shadow, which
     // has to stay fainter than this or it's blurred too: so a clear bar (under a quarter) has
     // next to no threshold and no shadow, and from there both rise with it, the threshold in

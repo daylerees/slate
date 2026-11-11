@@ -120,7 +120,7 @@ JsonAdapter {
     property var barLayout: []
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)
     property real barOpacity: -1              // with glass: the bar's background, 0 clear … 1 solid (below 0: Slate's own)
-    property real barItemOpacity: -1          // with glass: the containers on the bar, 0 clear … 1 solid (below 0: Slate's own: solid, or frosted with glass)
+    property real barItemOpacity: -1          // with glass: the containers on the bar, what's in them too, 0 gone … 1 solid (below 0: Slate's own: a frosted film, its things at full strength)
     property real barItemHoverOpacity: -1     // ...and the whole container, what's in it too, while the pointer's over it (below 0: the same as when it isn't)
     property bool barAutoHide: false          // hide when one window fills the screen
     property bool barHoverDescriptions: false // describe hovered items in the title area (off to start with)
