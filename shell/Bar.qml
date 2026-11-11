@@ -273,6 +273,8 @@ PanelWindow {
         // Hyprland's notes and requests are for the focused screen's bar
         function setFilled(value: bool): void { bar.focusedBar().setFilled(value); }
         function reveal(): void { bar.focusedBar().revealNow(); }
+        // Arranging the bar (Settings → Menu Bar → Edit layout):  slate ipc call bar edit start | done
+        function edit(what: string): void { Config.barArranging = what === "start"; }
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,

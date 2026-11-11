@@ -384,6 +384,7 @@ PanelWindow {
                 elide: Text.ElideRight
                 text: root.kind === "none" ? "Nothing picked. Click something on the bar to see its options"
                     : root.kind === "space" ? "A flexible space: it takes up the spare room, pushing what's either side of it apart"
+                        + (Config.barSpaces < 2 ? ". The bar always keeps one" : "")
                     : root.kind === "title" ? "The active window: its icon and title"
                     : root.kind === "item" ? root.nameOf(root.pickedItem)
                     : "A container: " + (root.pickedThings.length > 0 ? root.pickedThings.map(root.nameOf).join(", ") : "nothing in it yet. Drag things into it")
@@ -483,7 +484,8 @@ PanelWindow {
 
                 // Off the bar
                 PanelButton {
-                    visible: root.kind !== "none"
+                    // (the last flexible space stays: something has to take up the spare room)
+                    visible: root.kind !== "none" && !(root.kind === "space" && Config.barSpaces < 2)
                     destructive: true
                     label: root.kind === "space" ? "Take away" : "Take off the bar"
                     onClicked: {

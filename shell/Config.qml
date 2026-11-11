@@ -166,10 +166,10 @@ Singleton {
         if (!saved || saved.length === undefined || saved.length === 0) return barLayoutDefault;
         const known = barItems.map(i => i.id);
         const seen = {}, out = [];
-        let title = false;
+        let title = false, spaces = 0;
         for (let i = 0; i < saved.length; i++) {
             const e = saved[i];
-            if (e === "space") out.push("space");
+            if (e === "space") { spaces++; out.push("space"); }
             else if (e === "title") { if (!title) { title = true; out.push("title"); } }
             else if (e && e.items && e.items.length !== undefined) {
                 const items = [];
@@ -183,6 +183,8 @@ Singleton {
             }
         }
         if (!title) out.push("title");
+        // (there's always one flexible space: without one nothing takes up the spare room)
+        if (spaces === 0) out.splice(out.indexOf("title") + 1, 0, "space");
         for (const id of known) if (!seen[id]) out.push({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" });
         return out;
     }
@@ -211,7 +213,16 @@ Singleton {
     // The setting that says whether an item's text shows beside its icon ("" if it has none)
     readonly property var barTextKeys: ({ clipboard: "barValueClipboard", gamemode: "barValueGameMode", wifi: "barValueWifi",
         keyboard: "barValueKeyboard", bluetooth: "barValueBluetooth", volume: "barValueVolume", battery: "barValueBattery" })
+    // (should Slate have gone away mid-arranging, its keys would have stayed: the usual ones back)
+    Timer { running: !root.isLoginScreen; interval: 0; onTriggered: Quickshell.execDetached(["hyprctl", "eval", `hl.dispatch(hl.dsp.submap("reset"))`]) }
     onBarArrangingChanged: {
+        // While it's arranged, Hyprland's shortcuts stand down (no switching workspace, no
+        // moving or closing windows under it): a set of keys with only Escape in it, which
+        // ends the arranging. Back to the usual ones after
+        Quickshell.execDetached(["hyprctl", "eval", barArranging
+            ? `if not SLATE_ARRANGING then SLATE_ARRANGING = true; hl.define_submap("slate-arranging", function() `
+              + `hl.bind("Escape", hl.dsp.exec_cmd("${slateCommand} ipc call bar edit done")) end) end; hl.dispatch(hl.dsp.submap("slate-arranging"))`
+            : `hl.dispatch(hl.dsp.submap("reset"))`]);
         if (barArranging) return;
         barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null;
         // (a container put on the bar and never given anything goes)
@@ -349,6 +360,7 @@ Singleton {
         list.splice(Math.max(0, Math.min(list.length, to)), 0, { items: [], keep: true });
         barSave(list);
     }
+    readonly property int barSpaces: barLayout.filter(e => e === "space").length
     function barAddSpace(to) {
         const list = barCopy();
         list.splice(Math.max(0, Math.min(list.length, to)), 0, "space");
@@ -359,7 +371,7 @@ Singleton {
     function barRemoveEntry(at) {
         const list = barCopy();
         const e = list[at];
-        if (e === "space") { list.splice(at, 1); barSave(list); }
+        if (e === "space") { if (barSpaces < 2) return; list.splice(at, 1); barSave(list); }      // (the last one stays)
         else if (e === "title") s.barShowTitle = false;
         else if (e && e.items.length === 0) { list.splice(at, 1); barSave(list); }      // (an empty one, fresh from the pool)
         else if (e) for (const id of e.items) barSetShown(id, false);

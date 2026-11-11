@@ -92,6 +92,27 @@ class BarLayout(LiveCase):
         self.do("remove", 0)
         self.assertEqual(self.layout().count("space"), n)
 
+    def test_the_last_flexible_space_stays(self):
+        at = self.layout().index("space")
+        self.assertEqual(self.layout().count("space"), 1)
+        self.do("remove", at)
+        self.assertEqual(self.layout().count("space"), 1, "the bar's only flexible space was taken away")
+        self.do("addSpace", 0)
+        self.do("remove", self.layout().index("space", 1))
+        self.assertEqual(self.layout().count("space"), 1)
+
+    def test_shortcuts_stand_down_while_arranging(self):
+        """Hyprland's shortcuts are off while the bar's arranged (a set of keys of its own), and
+        back after."""
+        self.assertIn("default", self.s.hyprctl("submap"))
+        self.do("start")
+        self.s.settle(0.5)
+        self.assertIn("slate-arranging", self.s.hyprctl("submap"))
+        self.ipc("bar", "edit", "done")             # (what Escape runs there)
+        self.s.wait(lambda st: not st["bar"]["arranging"], what="arranging to end")
+        self.s.settle(0.5)
+        self.assertIn("default", self.s.hyprctl("submap"))
+
     def test_an_empty_container_stays_only_while_arranging(self):
         self.do("start")
         self.do("addBox", 0)
