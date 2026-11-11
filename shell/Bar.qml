@@ -607,7 +607,7 @@ PanelWindow {
                 y: !Config.barArranging ? 0 : bar.vert ? 4 : Math.max(0, (bar.capsuleHeight - height) / 2)
                 spacing: bar.gap
                 // The icon and the title fade as one, like a container (Settings → Menu Bar → Glass:
-                // Container opacity, and Hover opacity with the pointer over either)
+                // Contents opacity, and Hover opacity with the pointer over either)
                 HoverHandler { id: titleHover }
                 // (on the slot it sits in: its own opacity is the cross-fade to a hover description)
                 readonly property bool lifted: titleHover.hovered && Config.barItemHoverSet
@@ -1444,7 +1444,7 @@ PanelWindow {
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: bar.capsuleRadius
-        // With a Container opacity chosen (Settings → Menu Bar → Glass), or a Hover opacity and
+        // With a Contents opacity chosen (Settings → Menu Bar → Glass), or a Hover opacity and
         // the pointer over it: drawn solid, and the whole container at that opacity, its fill
         // and everything in it (icons, text, the highlight, the lines between things), faded as
         // one. While the bar's being arranged: solid and at full strength, there to be picked up

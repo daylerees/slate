@@ -1170,7 +1170,7 @@ Singleton {
     readonly property real barGlassOpacity: barArranging ? 1 : s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
         : Math.max(s.barBlur ? 0.01 : 0, Math.min(1, s.barOpacity))
     // The containers on the bar (Bar.qml's Capsule), with glass: drawn solid, and the whole of
-    // each faded to Settings → Menu Bar → Glass → Container opacity as one: its fill, icons,
+    // each faded to Settings → Menu Bar → Glass → Contents opacity as one: its fill, icons,
     // text, highlight and the lines between things. And to Hover opacity while the pointer's
     // over it. Each its own: neither follows the other. (Below 0, from before they had a
     // number to start at: 1)
