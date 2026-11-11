@@ -641,11 +641,11 @@ Singleton {
         "Liquid Glass": {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.5, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: true, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" },
+            glass: true, glassOpacity: 0.7, glassBlur: 10, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" },
         "Metro Flat": {
             themeMode: "dark", colourStyle: "colourful", accentFromWallpaper: true, accentBoldness: 0.4, accent: "#8fb3e8",
             toneFromWallpaper: true, toneBoldness: 0.5,
-            glass: false, glassOpacity: 0.7, glassBlur: 10, glassShine: true, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" }
+            glass: false, glassOpacity: 0.7, glassBlur: 10, glassGloss: 1, glassGlossTint: 1, folderColour: "auto" }
     })
     // One of them for its look alone: the theme (dark, light or auto) and the accent stay as
     // they are (the Welcome window, where those are chosen on the page before)
@@ -1361,7 +1361,8 @@ Singleton {
     // window border)
     readonly property real glassCut: Math.max(0.05, glassOpacity * 0.85)
     // The shine: a thin light rim around glass surfaces
-    readonly property bool glassShine: glass && s.glassShine
+    // (always there with glass: it was a setting once, and made too little difference to keep)
+    readonly property bool glassShine: glass
     // Gloss: a sheen on the bar's containers, hover highlights and tooltips (Gloss.qml)
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0

@@ -270,7 +270,7 @@ FloatingWindow {
         datetime: ["dateFormat", "weekStart", "temperatureUnit"],
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
+            "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
@@ -441,7 +441,7 @@ FloatingWindow {
     // Slate Default: the same settings the other presets set (and light or dark), at Slate's
     // defaults, read from Config.defaultOf so it never falls out of step with them
     readonly property var presetKeys: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent",
-        "toneFromWallpaper", "toneBoldness", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "folderColour"]
+        "toneFromWallpaper", "toneBoldness", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "folderColour"]
     readonly property var themePresets: [
         { name: "Slate Default", settings: presetKeys.reduce((o, k) => { const d = Config.defaultOf(k); if (d !== undefined) o[k] = d; return o; }, {}) },
         { name: "Liquid Glass", settings: Config.lookPresets["Liquid Glass"] },
@@ -5264,14 +5264,6 @@ FloatingWindow {
                     detail: Config.s.glassBlur > 0 ? "How strongly what's behind is blurred (Hyprland's blur, so see-through windows use it too)"
                         : "Hyprland's own blur (size " + Config.hyprBlur.size + "); drag to make it stronger or softer"
                     ValueSlider { from: 0; to: 20; stepSize: 1; value: Config.s.glassBlur; onMoved: v => Config.s.glassBlur = v }
-                }
-                Separator { visible: Config.s.glass }
-                SettingRow {
-                    visible: Config.s.glass
-                    label: "Shine"
-                    settingKey: "glassShine"
-                    detail: "A thin light rim around the glass, like the edge of a pane"
-                    Toggle { checked: Config.s.glassShine; onToggled: v => Config.s.glassShine = v }
                 }
                 Separator { visible: Config.s.glass }
                 SettingRow {

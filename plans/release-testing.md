@@ -55,3 +55,4 @@ things off as they're done.
 - The bar's network item on a cable (wired icon, "Wired"; panel's wired line and details; netinfo.sh's wired output): needs a stand-in for a wired device.
 - Gloss slider is 0–100% over the setting's 0–2 (default 1.0, shown 50%): the default-hint test, and docs/ASSISTANT if it quotes the range.
 - iconTileColour defaults to on: app icon tiles in every screenshot change.
+- The Shine setting (glassShine) is gone; the rim is always on with glass. Remove it from any test that lists settings; the settings-index count drops by one.

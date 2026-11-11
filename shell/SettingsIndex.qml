@@ -84,7 +84,6 @@ Singleton {
         ["Welcome", "about", "welcome introduction tour first start getting started setup onboarding"],
         ["Glass", "appearance", "glass glassy liquid frosted translucent transparent see-through blur acrylic"],
         ["Blur", "appearance", "glass blur strength frosted"],
-        ["Shine", "appearance", "glass rim edge highlight"],
         ["Gloss", "appearance", "glass glossy sheen shiny highlight"],
         ["Gloss colour", "appearance", "glass gloss tint hue colour color wallpaper sheen"],
         ["Fast blur", "appearance", "blur performance smooth lag xray wallpaper"],
