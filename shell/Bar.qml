@@ -68,10 +68,24 @@ PanelWindow {
     // A panel is open from this bar (the panels go to whichever screen opened them)
     // (from the start of opening, so the bar is done changing before the panel slides)
     readonly property bool popoutHere: !!popouts && popouts.engaged && popouts.screen === bar.screen
+    // Is this the very first or very last thing on the bar ("start" / "end"; "" if neither)?
+    // Its panel then sits flush against that end of the screen, as the control centre's and
+    // the power menu's always have: now whichever buttons are there, wherever they've been put
+    function outermost(item) {
+        const box = item ? item.shell : null;
+        if (!box) return "";
+        const shown = [];
+        for (const c of left.children) if (c.visible && (bar.vert ? c.height : c.width) > 0.5) shown.push(c);
+        if (shown.length === 0) return "";
+        if (shown[0] === box && item.first) return "start";
+        if (shown[shown.length - 1] === box && item.last) return "end";
+        return "";
+    }
     function openPopout(name, item) {
         if (!popouts) return;
         const p = item.mapToItem(content, item.width / 2, item.height / 2);   // from the screen edge
-        popouts.toggle(name, p.x, p.y, bar.screen);
+        // (a button that isn't showing has no place to go by: the panel opens as it always did)
+        popouts.toggle(name, p.x, p.y, bar.screen, item.visible ? outermost(item) : undefined);
     }
     // With more than one screen, the bars on screens without focus are dimmed
     readonly property bool dimmed: Quickshell.screens.length > 1 && !!screen

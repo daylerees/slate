@@ -38,10 +38,15 @@ PanelWindow {
     property string pending: ""
     property int pendingFrames: 0
     // scr: the screen of the bar that opened it (the panel moves there)
-    function toggle(name, x, y, scr) {
+    // edge: "start" / "end" when the button that opens it is the first / last thing on the bar
+    // (the panel sits flush against that end of the screen), "" when it's anywhere else. Left
+    // out (opened by name, with no button to go by): as these two always were
+    property string edge: ""
+    function toggle(name, x, y, scr, at) {
         const target = scr || Config.focusedScreen;
         if (target && screen !== target) { current = ""; pending = ""; revealed = false; screen = target; }
         else if (current === name) { close(); return; }
+        edge = at !== undefined ? at : name === "control" ? "start" : name === "session" ? "end" : "";
         anchorX = x;
         anchorY = y === undefined ? 0 : y;
         displayed = name;
@@ -197,11 +202,11 @@ PanelWindow {
     }
 
     // ---- Panel body --------------------------------------------------------
-    // The control centre opens from the bar's first button and the power menu (session) from
-    // its last, so they sit flush against the start / end of the screen, rounded only on
-    // their one corner out in the screen
-    readonly property bool atScreenStart: displayed === "control"
-    readonly property bool atScreenEnd: displayed === "session"
+    // A panel opened from the bar's first or last button (in Slate's own arrangement the
+    // control centre and the power menu; whichever buttons you've put there) sits flush
+    // against the start / end of the screen, rounded only on its one corner out in the screen
+    readonly property bool atScreenStart: edge === "start"
+    readonly property bool atScreenEnd: edge === "end"
     Item {
         id: panelArea
         readonly property real bodyW: (content.item ? content.item.implicitWidth : 280) + pop.pad * 2
