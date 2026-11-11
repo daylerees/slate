@@ -277,6 +277,26 @@ class Prompt(Status):
     def test_quiet_when_not_installed(self):
         self.assertEqual(self.prompt(), [])
 
+    def test_later_holds_for_a_week_and_ends_once_up_to_date(self):
+        """"Later" waits a week. Updating in that week (from Settings, say) ends the wait, so the
+        next change is asked about: it used to run on, and that change went unasked."""
+        import time
+        later = os.path.join(self.s.env["XDG_STATE_HOME"], "slate", "greeter-later")
+        self.install_code()
+        self.use_slate()
+        self.edit("LoginScreen.qml")
+        self.assertEqual(len(self.prompt()), 1)                    # asked; the stub answers "later"
+        self.assertGreater(int(open(later).read()), time.time() + 6 * 24 * 3600)
+        self.edit("LoginScreen.qml")
+        self.assertEqual(len(self.prompt()), 1, "asked again within the week")
+        self.install_code()                                        # brought up to date another way
+        self.prompt()
+        self.assertFalse(os.path.exists(later), "the wait outlived the update")
+        # (a new change to the login screen itself: its own copy of the file, in this test's Slate)
+        with open(os.path.join(self.slate, "LoginScreen.qml"), "a") as f:
+            f.write("\n// a later change\n")
+        self.assertEqual(len(self.prompt()), 2, "the change after an update wasn't asked about")
+
 
 class Sync(GreeterCase):
     """A plain run, copying the appearance into SLATE_GREETER_DIR."""

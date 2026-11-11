@@ -184,10 +184,11 @@ class BarLength(LiveCase):
         """With room back, the last to leave is the first to return: what's still in More is
         always the start of what was. (A single small thing rarely waits there alone: More's
         own button takes about the room it would, so the last two tend to come back together.)"""
-        px = 600
-        while len(self.squeeze(px)["overflowed"]) < 3:
-            px += 40
-            self.assertLess(px, 1500, "squeezing never sent three things to More")
+        # (squeezed hard: things in a container that has tucked away leave together, as the room
+        # only comes back once its button has gone too, so it takes a long way down to see
+        # them go in more than one step)
+        px = 1400
+        self.assertGreaterEqual(len(self.squeeze(px)["overflowed"]), 3, "squeezing never sent three things to More")
         were = self.bar()["overflowed"]
         seen = {len(were)}
         while px > 0:
@@ -256,14 +257,19 @@ class BarLength(LiveCase):
         self.assertIn("volume", self.bar()["overflowed"])
 
     def test_trying_it_shorter_while_arranging(self):
+        # (ended whatever happens here: left arranging, the panel keeps the keyboard, and tests
+        # after this one that wait for a window to come to the front never see it)
+        self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
         self.ipc("test", "arrange", "start", "", "", "")
         self.s.settle(0.6)
         self.assertEqual(self.bar()["gives"], [], "the bar slimmed while being arranged")
         self.ipc("test", "arrange", "preview", "0.67", "", "")
         self.s.settle(0.6)
         st = self.bar()
-        self.assertNotEqual(st["overflowed"], [], "tried at a third of its length, nothing left the bar")
-        self.assertTrue(st["line"]["more"]["visible"])
+        # (Slate's own arrangement fits a third of the screen once its text has gone and its
+        # containers have tucked away, so nothing has to leave for More: it slims, as it would)
+        self.assertTrue(any(g.startswith("tuck:") for g in st["gives"]), f"tried at a third of its length, nothing tucked away: {st['gives']}")
+        self.assertTrue(any(g.startswith("text:") for g in st["gives"]), st["gives"])
         self.ipc("test", "arrange", "preview", "0", "", "")
         self.s.settle(0.6)
         self.assertEqual(self.bar()["gives"], [])

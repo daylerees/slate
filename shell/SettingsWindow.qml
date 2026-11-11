@@ -3305,6 +3305,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Play sound through"
+                    noneLabel: "None found"          // (no speakers or headphones: not "-1")
                     options: soundPane.sinks.map(n => ({ value: n.id, label: soundPane.nodeName(n) }))
                     value: soundPane.sink ? soundPane.sink.id : -1
                     onPicked: v => { const n = soundPane.sinks.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSink = n; }
@@ -3331,6 +3332,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Microphone"
+                    noneLabel: "None found"
                     options: soundPane.sources.map(n => ({ value: n.id, label: soundPane.nodeName(n) }))
                     value: soundPane.source ? soundPane.source.id : -1
                     onPicked: v => { const n = soundPane.sources.find(x => x.id === v); if (n) Pipewire.preferredDefaultAudioSource = n; }

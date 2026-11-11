@@ -1252,6 +1252,11 @@ Singleton {
     // Under the test suite (tests/run sets SLATE_TEST=1): no sounds, welcome, startup apps,
     // update checks or login screen prompts, so a run is quiet and the same every time
     readonly property bool testMode: Quickshell.env("SLATE_TEST") === "1"
+    // The tests' computer has no Wi-Fi and no sound card, and the bar hides what a computer
+    // hasn't got. So the tests pretend it has both (the bar they arrange and measure is the
+    // usual one), and take either away to see the bar without it: `test hardware wifi false`
+    property bool pretendWifi: testMode
+    property bool pretendAudio: testMode
     // The time the clocks show under test (SLATE_TEST_TIME, e.g. "2026-01-05T09:41:00"), so
     // screenshots match from run to run. clockDate(d) is the time to show: d, or that one
     readonly property var testTime: testMode && Quickshell.env("SLATE_TEST_TIME") ? new Date(Quickshell.env("SLATE_TEST_TIME")) : null

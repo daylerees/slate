@@ -136,7 +136,8 @@ SCENES["assistant-question"] = {
 # Chalk's prompt window (Super+K): empty, a conversation (your lines on the right, Chalk's on
 # the left with what it did, one thing declined), when it went wrong, a long one scrolled,
 # and before the assistant is switched on
-_CHALK_ON = {"assistantEnabled": "true", "assistantRisksAccepted": "1"}
+# (the assistant switched on, with an agent chosen: none is to start with)
+_CHALK_ON = {"assistantEnabled": "true", "assistantRisksAccepted": "1", "assistantAgent": "claude"}
 _CHALK_AGENTS = [{"id": "claude", "label": "Claude Code", "installed": True, "signedIn": True, "confined": True, "followUps": True}]
 import json as _json
 SCENES["assistant-empty"] = {
@@ -242,6 +243,15 @@ SCENES["secret-empty"] = {
     "undo": [("!hyprctl", "dispatch", "function() hl.dispatch(hl.dsp.workspace.toggle_special()) end")],
 }
 
+# Rounded UI elements off (Settings → Appearance): everything Slate draws is a hard square, the
+# bar's containers, a panel (which meets the bar without its curved joins), Settings and its
+# controls, the launcher and the dock's background. App icons and the workspace dot keep theirs
+_SQUARE = {"roundedElements": "false"}
+SCENES["square-panel-control"] = dict(SCENES["panel-control"], settings=_SQUARE)
+SCENES["square-settings-appearance"] = dict(SCENES["settings-appearance"], settings=_SQUARE)
+SCENES["square-launcher"] = dict(SCENES["launcher"], settings=_SQUARE)
+# (before the notification scene below: its pop-up stays for the scenes after it)
+
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)
 SCENES["notification-glass"] = {
     "settings": {"glass": "true", "notificationSeconds": "30"},
@@ -281,4 +291,3 @@ SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
 
 # The launcher's scrollbar: its length follows how many apps have loaded so far
 SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]
-

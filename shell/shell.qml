@@ -166,6 +166,10 @@ ShellRoot {
         function audioBusy(what: string): void { popouts.pretendAudioBusy(what); }
         // Weather for the clock panel and control centre, as if it had been fetched for a place
         // (tests have no network): mild rain now, then four days
+        // Hardware the tests' computer hasn't got, pretended there or not: what = "wifi" or "audio"
+        function hardware(what: string, on: bool): void {
+            if (what === "wifi") Config.pretendWifi = on; else if (what === "audio") Config.pretendAudio = on;
+        }
         function weather(on: bool): void {
             Config.s.locationName = on ? "Bristol" : "";
             popouts.weather = on ? { temperature_2m: 14.2, apparent_temperature: 12.8, weather_code: 61 } : null;

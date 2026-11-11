@@ -1604,7 +1604,7 @@ PanelWindow {
                     Segment {
                         id: volSeg
                         // (only with something to turn up or down: speakers or a microphone)
-                        wanted: Config.s.barShowVolume && (!!Pipewire.defaultAudioSink || !!Pipewire.defaultAudioSource)
+                        wanted: Config.s.barShowVolume && (!!Pipewire.defaultAudioSink || !!Pipewire.defaultAudioSource || Config.pretendAudio)
                         pastel: "volume"            // its colour when the look is Colourful
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
@@ -1628,14 +1628,14 @@ PanelWindow {
                         id: wifiSeg
                         // The network: Wi-Fi, or the cable while one's plugged in and connected (its
                         // own icon, and "Wired"). Only on a computer with either
-                        wanted: Config.s.barShowWifi && (!!wifi || !!wired)
+                        wanted: Config.s.barShowWifi && (!!wifi || !!wired || Config.pretendWifi)
                         readonly property var wired: Networking.devices.values.find(d => d.type === DeviceType.Wired) ?? null
                         readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
                         pastel: "wifi"            // its colour when the look is Colourful
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
                         readonly property real signal: net ? net.signalStrength : 0
-                        iconCode: onWire ? 0xF09F : !wifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
+                        iconCode: onWire ? 0xF09F : !wifi && !Config.pretendWifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
                         sample: "Wi-Fi"; textOn: Config.s.barValueWifi
                         label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
                         hoverText: onWire ? "Wired connection" : !wifi ? "No cable connected" : net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"

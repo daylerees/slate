@@ -51,10 +51,10 @@ class BarLayout(LiveCase):
     def test_starts_as_slates_own(self):
         st = self.bar()
         self.assertTrue(st["isDefault"])
+        # (Apps with Chalk, and Spaces with the window mode and the workspace dots)
         self.assertEqual([e if isinstance(e, str) else e["items"] for e in st["layout"]][:5],
-                         [["control"], ["apps"], ["spaces"], ["chalk"], ["windowmode", "workspaces"]])
-        self.assertEqual(st["layout"][5]["items"], ["windowicon", "windowtitle"])
-        self.assertIn("space", st["layout"])
+                         [["control"], ["apps", "chalk"], ["spaces", "windowmode", "workspaces"],
+                          ["windowicon", "windowtitle"], "space"])
 
     def test_an_item_joins_a_container(self):
         to = self.where("clock")
@@ -68,10 +68,11 @@ class BarLayout(LiveCase):
         self.assertEqual(self.layout()[1]["items"], ["control"])
 
     def test_a_container_left_empty_goes(self):
+        # (the power button is alone in its container: moved out, that container has nothing left)
         before = len(self.layout())
-        self.do("moveItem", "apps", self.where("control"), 1)
+        self.do("moveItem", "power", self.where("control"), 1)
         self.assertEqual(len(self.layout()), before - 1)
-        self.assertEqual(self.layout()[0]["items"], ["control", "apps"])
+        self.assertEqual(self.layout()[0]["items"], ["control", "power"])
 
     def test_a_container_moves_whole(self):
         at = self.where("clock")
@@ -80,9 +81,9 @@ class BarLayout(LiveCase):
 
     def test_split_up(self):
         at = self.where("windowmode")
+        self.assertEqual(self.layout()[at]["items"], ["spaces", "windowmode", "workspaces"])
         self.do("split", at)
-        self.assertEqual(self.layout()[at]["items"], ["windowmode"])
-        self.assertEqual(self.layout()[at + 1]["items"], ["workspaces"])
+        self.assertEqual([e["items"] for e in self.layout()[at:at + 3]], [["spaces"], ["windowmode"], ["workspaces"]])
 
     def test_flexible_spaces(self):
         n = self.layout().count("space")

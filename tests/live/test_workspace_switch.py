@@ -33,6 +33,10 @@ class WorkspaceSwitch(SwitcherAnimations):
                          "the old workspace is gone before the new one has arrived: the desktop shows in between")
 
     def test_no_desktop_between_the_workspaces_mid_slide(self):
+        # (without the spare empty workspace: keeping one, Slate looks after the workspaces as
+        # they change, which puts the usual animation back over this test's slowed-down one)
+        self.keep_setting("keepEmptyWorkspace")
+        self.config("keepEmptyWorkspace", "false")
         self.windows_on_two_workspaces()
         self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); setWorkspaceAnimation("slidefade")'))
         # The switch as it is, ten times slower, so a picture can be taken partway through

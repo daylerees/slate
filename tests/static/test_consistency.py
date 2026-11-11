@@ -154,6 +154,24 @@ class Settings(Case):
                 with self.subTest(f"bin/slate:{n}"):
                     self.assertIn("QT_SCALE_FACTOR", line, "a Slate window is started without the Interface size")
 
+    def test_rounded_corners_go_through_config(self):
+        """Settings → Appearance → Rounded UI elements squares everything, which works because
+        every corner is written Config.corner(radius). A corner given as a plain number would
+        stay round with the setting off. (App icons and workspace dots keep shapes of their own,
+        from Config.iconCornerFor and Config.dotRadius.)"""
+        shell = os.path.join(slate.ROOT, "shell")
+        skip = {"SlateMark.qml", "SlateLogo.qml", "FolderSwatch.qml", "Config.qml", "SettingsData.qml", "SettingsIndex.qml"}
+        bare = re.compile(r"(?<![A-Za-z0-9_.])(radius|topLeftRadius|topRightRadius|bottomLeftRadius|bottomRightRadius)\s*:\s*(\d+(?:\.\d+)?)\b(?!\s*[*/+-])")
+        for name in sorted(os.listdir(shell)):
+            if not name.endswith(".qml") or name in skip:
+                continue
+            for n, line in enumerate(slate.read("shell", name).splitlines(), 1):
+                code = line.split("//")[0]
+                for m in bare.finditer(code):
+                    if float(m.group(2)) > 0:
+                        with self.subTest(f"{name}:{n}"):
+                            self.fail(f"{name}:{n}: a corner of {m.group(2)} that isn't Config.corner(…): {line.strip()[:90]}")
+
     def test_slider_default_hints(self):
         """A row's changed-from-default dot says what the default is, as its slider shows it. A
         slider that shows a setting in other units (a 0–1 setting as a percentage) says so with
