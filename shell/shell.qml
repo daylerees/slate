@@ -2258,6 +2258,7 @@ ShellRoot {
                             // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                             Column {
                                 id: burger
+                                opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
                                 readonly property real w: parent.width
                                 spacing: w * 0.075
@@ -2326,6 +2327,7 @@ ShellRoot {
                             Item {
                                 id: wideArtBox
                                 visible: win.mediaArt
+                                opacity: Config.dockIconOpacity
                                 x: mediaWideTile.inset; y: mediaWideTile.inset
                                 width: win.mediaArt ? height : 0; height: parent.height - mediaWideTile.inset * 2
                                 layer.enabled: true
@@ -2372,6 +2374,7 @@ ShellRoot {
                             // the middle, to leave room for the progress bar beneath)
                             Row {
                                 id: mediaControls
+                                opacity: Config.dockIconOpacity
                                 anchors { left: wideArtBox.right; right: parent.right; rightMargin: mediaWideTile.inset; leftMargin: win.mediaArt ? 0 : mediaWideTile.inset }
                                 y: (parent.height - height) / 2 - parent.height * 0.08
                                 Repeater {
@@ -2409,6 +2412,7 @@ ShellRoot {
                             // How far through the track: a slim bar under the controls (only for
                             // players that say how long the track is)
                             Rectangle {
+                                opacity: Config.dockIconOpacity
                                 readonly property bool known: !!win.player && win.player.lengthSupported && win.player.length > 0
                                 visible: known
                                 x: mediaControls.x + parent.height * 0.12
@@ -2446,6 +2450,7 @@ ShellRoot {
                             }
                             Text {
                                 visible: !mediaTile.hasArt && !mediaCell.pointed
+                                opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(0xEAFC)          // music
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
@@ -2456,6 +2461,7 @@ ShellRoot {
                             Item {
                                 anchors.fill: parent
                                 visible: mediaTile.hasArt
+                                opacity: Config.dockIconOpacity
                                 layer.enabled: visible
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: mediaMask }
                                 Image {
@@ -2489,7 +2495,7 @@ ShellRoot {
                             Row {
                                 anchors.centerIn: parent
                                 spacing: mediaTile.width * 0.04
-                                opacity: mediaCell.pointed ? 1 : 0
+                                opacity: (mediaCell.pointed ? 1 : 0) * Config.dockIconOpacity
                                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                                 Repeater {
                                     model: [
@@ -2548,6 +2554,7 @@ ShellRoot {
                             // the others (and before Downloads and the Waste Basket)
                             Rectangle {
                                 visible: !cell.isApp
+                                opacity: Config.dockIconOpacity
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: win.base * 0.12
@@ -2574,11 +2581,28 @@ ShellRoot {
                                     radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
                                 }
                             }
+                            // The tile behind the icon, in the theme's colour: drawn once at its magnified
+                            // size and shrunk, not redrawn on every frame as the dock magnifies. Beside the
+                            // icon, not in it, so each has an opacity of its own (Settings → Dock → Glass)
+                            Item {
+                                id: tileBack
+                                visible: cell.isApp
+                                readonly property url source: tileImg.source     // (the plate reads whose tile it is from here)
+                                anchors.bottom: parent.bottom
+                                width: parent.width; height: width
+                                transform: [
+                                    Matrix4x4 { matrix: win.upright(tileBack.width, tileBack.height) },
+                                    Translate { y: -cell.bounce * win.base * 0.4 }
+                                ]
+                                opacity: tileImg.away * Config.dockTileOpacity
+                                IconPlate { anchors.fill: parent; drawSize: win.base * win.maxScale }
+                            }
                             Image {
                                 visible: cell.isApp
                                 // Being dragged off the dock to unpin it: faded, as it's about to go
-                                opacity: win.dragAway && cell.app.key === win.dragKey ? 0.35 : 1
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                                property real away: win.dragAway && cell.app.key === win.dragKey ? 0.35 : 1
+                                Behavior on away { NumberAnimation { duration: Config.ms(120) } }
+                                opacity: away * Config.dockIconOpacity
                                 anchors.bottom: parent.bottom
                                 id: tileImg
                                 width: parent.width; height: width
@@ -2594,9 +2618,6 @@ ShellRoot {
                                 cache: false
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                                 onStatusChanged: if (cell.isApp && status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
-                                // The tile behind, in the theme's colour: drawn once at its magnified size
-                                // and shrunk, not redrawn on every frame as the dock magnifies
-                                IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale; opacity: Config.dockTileOpacity }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
                                 IconGloss { opacity: Config.dockTileOpacity }
@@ -2648,6 +2669,7 @@ ShellRoot {
                             Rectangle {
                                 readonly property bool focusedApp: cell.app.windows.some(w => w.activated)
                                 visible: cell.app.windows.length > 0
+                                opacity: Config.dockIconOpacity
                                 width: 12; height: 3; radius: 1.5
                                 color: focusedApp ? win.activeDotColor : win.dotColor
                                 // Snapped to whole device pixels: the icons move by fractions of a
@@ -2698,6 +2720,7 @@ ShellRoot {
                             }
                             Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                             Text {
+                                opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(0xF912)       // folder-down
                                 color: win.textColor
@@ -2743,6 +2766,7 @@ ShellRoot {
                             // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
                             // once there's something in it
                             Text {
+                                opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
                                 color: win.textColor

@@ -1158,6 +1158,8 @@ Singleton {
     // drawn at 1%, enough for the blur to stay. The slider still says 0)
     readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.max(s.dockBlur ? 0.01 : 0, Math.min(1, s.dockOpacity))
     function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
+    // ...and what's on them: the icons, and the foreground of the dock's own buttons
+    readonly property real dockIconOpacity: glass ? Math.max(0, Math.min(1, s.dockIconOpacity)) : 1
     readonly property real dockTileOpacity: glass ? Math.max(0, Math.min(1, s.dockTileOpacity)) : 1
     // Where Hyprland starts blurring behind the dock: from next to nothing, whatever its
     // opacity. One rule that never changes: nothing fainter than the dock in its window needs

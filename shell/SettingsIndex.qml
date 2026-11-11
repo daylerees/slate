@@ -158,6 +158,7 @@ Singleton {
         ["Dock", "dock", "pinned apps magnification icon size auto-hide"],
         ["Blur", "dock", "dock glass blur frosted frosting clear see through"],
         ["Background opacity", "dock", "dock glass transparency transparent see-through clear opacity background"],
+        ["Icon opacity", "dock", "dock glass transparency transparent see-through icons foreground apps buttons opacity"],
         ["Tile opacity", "dock", "dock glass transparency transparent see-through icons widgets buttons tiles opacity"],
         ["Window previews", "dock", "live preview thumbnails windows hover rest pointer peek"],
         ["Previews appear after", "dock", "window previews delay wait time instant immediately how long seconds hover"],
