@@ -109,6 +109,15 @@ SCENES["settings-changed-dot"] = {
     "settle": 1.2, "undo": [("settings", "close")],
 }
 
+# An assistant asking to close a window (docs/ASSISTANT.md): Slate's own words, in its
+# confirmation window, Cancel first
+SCENES["assistant-question"] = {
+    "do": [("assistant", "confirm", "scene", '{"title": "Close Firefox?", "body": "Your assistant (Claude Code) is asking to '
+            'close this window. Anything unsaved in it could be lost.", "button": "Close", "danger": true}')],
+    "wait": lambda st: st["asking"] == "Close Firefox?",
+    "settle": 1.2, "undo": [("assistant", "withdraw", "scene")],
+}
+
 # Choosing Hyprbars (Settings → Windows → Title bars): its risks, in Slate's confirmation window,
 # with nothing built (the session's stand-in for slate-build-hyprbars says so)
 SCENES["hyprbars-question"] = {

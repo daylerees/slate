@@ -66,7 +66,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Login screen | optional greetd greeter in a minimal Hyprland, same design as the lock screen (Settings → Lock & Idle → Install) | `greeter/`, `LoginScreen.qml` |
 | Slate session | "Slate" entry on any login screen: Hyprland with Slate's own config, separate from `~/.config/hypr` | `session/` |
 | Hot corners | Per-corner actions, disarmed while locked | `HotCorners.qml` |
-| MCP server | `slate mcp`: add it to an AI agent you already use (Claude Code, Codex…) and it can answer questions about your desktop: your settings, open windows, workspaces, Spaces, apps and wallpapers. It only looks, in words: never the screen, files or the clipboard ([docs/ASSISTANT.md](docs/ASSISTANT.md)) | `scripts/slate-mcp.py`, `data/assistant-prompt.md` |
+| MCP server | `slate mcp`: add it to an AI agent you already use (Claude Code, Codex…) and, once you switch it on, that agent can answer questions about your desktop and act on it: change settings, arrange windows and workspaces, open apps and Spaces, change the wallpaper. Slate asks you before anything that can't be undone, and its tools answer in words: never the screen, files or the clipboard ([docs/ASSISTANT.md](docs/ASSISTANT.md)) | `scripts/slate-mcp.py`, `AssistantGate.qml`, `data/assistant-prompt.md` |
 | Screen corners | Rounded black screen corners | `ScreenCorners.qml`, `Bar.qml` |
 | Shared settings | `Config` singleton backed by `settings.json`; theme (accent, light/dark, wallpaper tint) | `Config.qml` |
 | Wallpaper | Drawn per screen on the background layer, cross-fades on change; picker in Settings (Super+Shift+W) | `Wallpaper.qml` |
@@ -82,7 +82,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the pieces fit, IPC, Hyprland integration, theming, settings
 - [docs/LOCK-AND-LOGIN.md](docs/LOCK-AND-LOGIN.md) — lock screen, idle/sleep, login screen (greetd) and recovery
 - [docs/SESSION.md](docs/SESSION.md) — the "Slate" login session, its Hyprland config and personal overrides
-- [docs/ASSISTANT.md](docs/ASSISTANT.md) — Slate's MCP server: adding it to an AI agent, its tools, what leaves your computer
+- [docs/ASSISTANT.md](docs/ASSISTANT.md) — Slate's MCP server for AI agents: what it means to switch it on, its tools, what Slate asks you first
 - [docs/TESTING.md](docs/TESTING.md) — the test suite: what it checks, running it, approving new screenshots
 - [docs/REDISTRIBUTION.md](docs/REDISTRIBUTION.md) — packaging status and what's left
 
@@ -114,7 +114,8 @@ slate ipc call settings toggle
 slate ipc call lock preview lock      # or: preview login
 slate ipc call launcher search "2*pi"
 
-# Let an AI agent ask about your desktop (docs/ASSISTANT.md)
+# Let an AI agent ask about your desktop and act on it (docs/ASSISTANT.md: read it first)
+slate ipc call config set assistantEnabled true
 claude mcp add slate -- ~/.config/slate/bin/slate mcp
 
 # Slate as its own login session

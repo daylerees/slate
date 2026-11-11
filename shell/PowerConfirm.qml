@@ -65,7 +65,7 @@ PanelWindow {
     // asked for it, Slate isn't asking you.
     readonly property bool hasInput: action === "custom" && !!custom && !!custom.input
     property alias inputText: field.text
-    // Any other question: spec is { title, body, button, code, danger, option?, cancelLabel?, input? }; onConfirm runs on
+    // Any other question: spec is { title, body, button, code, danger, option?, cancelLabel?, input?, id? }; onConfirm runs on
     // yes (given the option's answer), onCancel (if any) on no
     // A question asked while another is showing waits its turn (it used to replace it, and the
     // first was never answered)
@@ -92,6 +92,17 @@ PanelWindow {
         open("custom");
         focusedButton = spec.input ? 1 : 0;      // Cancel first: Enter alone doesn't delete things
         if (spec.input) Qt.callLater(() => { field.forceActiveFocus(); field.selectAll(); });
+    }
+    // Take a question back before it's answered (spec.id), whether it's showing or waiting its
+    // turn: neither its onConfirm nor its onCancel runs. For questions asked on something
+    // else's behalf that has stopped waiting (AssistantGate.qml)
+    function withdraw(id) {
+        if (!id) return;
+        waiting = waiting.filter(q => !(q.spec && q.spec.id === id));
+        if (shown && action === "custom" && custom && custom.id === id) {
+            customAction = null; customCancel = null;
+            shown = false;
+        }
     }
     function open(name) {
         screen = Config.focusedScreen;     // open on the focused screen

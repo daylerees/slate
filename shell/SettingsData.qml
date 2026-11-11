@@ -238,6 +238,13 @@ JsonAdapter {
     property int idleSuspendMinutes: 0
     property bool idleRespectInhibitors: true   // wait while video/apps keep the screen awake
 
+    // Assistants (docs/ASSISTANT.md): AI agents using Slate's MCP server (slate mcp). None of
+    // these can be changed through the server itself
+    property bool assistantEnabled: false       // let assistants use Slate's tools at all (off to start with)
+    property bool assistantAskChanges: false    // ask before every change, not only the ones that can't be undone
+    property bool assistantSeeTitles: true      // window titles are given (off: app names only)
+    property bool assistantSeeNotifications: false  // recent notifications can be read
+
     // Hot corners: none, lock, launcher, overview, control, notifications, screenoff
     property string hotCornerTopLeft: "none"
     property string hotCornerTopRight: "none"

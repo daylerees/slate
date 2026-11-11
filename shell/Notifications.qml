@@ -186,6 +186,17 @@ Scope {
     Timer { id: saveTimer; interval: 500; onTriggered: store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo,
         nextKey: notifs.nextKey, appSeen: notifs.appSeen, appSeenBase: notifs.appSeenBase, history: notifs.history }, null, 1)) }
     function save() { saveTimer.restart(); }
+    //   slate ipc call notifications dnd true      Do Not Disturb on (false: off)
+    IpcHandler {
+        target: "notifications"
+        function dnd(on: bool): void { notifs.dnd = on; }
+        function dndGet(): string { return String(notifs.dnd); }
+        // The latest ones, newest first: [{"app", "summary", "body", "time"}]
+        function list(): string {
+            return JSON.stringify(notifs.history.slice(0, 20).map(h => ({ app: h.appName || "", summary: h.summary || "", body: h.body || "", time: h.time || 0 })));
+        }
+        function clear(): void { notifs.clearAll(); }
+    }
     onDndChanged: save()
 
     // ---- Toasts ------------------------------------------------------------

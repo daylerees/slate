@@ -91,6 +91,14 @@ PanelWindow {
         function launchOnNewWorkspace(): void { root.launchOnNewWorkspace(root.results[list.currentIndex]); }
         function launchLeft(): void { root.launchBeside(root.results[list.currentIndex], -1); }
         function launchRight(): void { root.launchBeside(root.results[list.currentIndex], 1); }
+        // Start an app by its desktop entry's id (as the launcher would: counted, and on the
+        // secret workspace when that's showing). Only an app: no command, file or address
+        function launch(id: string): string {
+            const app = DesktopEntries.applications.values.find(a => a.id === id && !a.noDisplay);
+            if (!app) return "unknown";
+            root.launch(app);
+            return "ok";
+        }
     }
 
     // Switching workspace closes the launcher. Changes right after opening are

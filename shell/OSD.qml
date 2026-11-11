@@ -136,6 +136,25 @@ PanelWindow {
             if (a && action === "mute") a.muted = !a.muted;
         }
         function brightness(action: string): void { osd.brightness(action, false); }
+        // The volume as a number, for scripts and assistants: {"volume": 40, "muted": false}
+        // ("" with no speakers); and set to a percentage, shown as the keys show it
+        function volumeGet(): string {
+            const a = osd.sink ? osd.sink.audio : null;
+            return a ? JSON.stringify({ volume: Math.round(a.volume * 100), muted: a.muted }) : "";
+        }
+        function volumeSet(percent: int): void {
+            const a = osd.sink ? osd.sink.audio : null;
+            if (!a) return;
+            a.muted = false;
+            a.volume = Math.max(0, Math.min(100, percent)) / 100;
+            osd.showVolume();
+        }
+        // The screen's brightness to a percentage (never fully black)
+        function brightnessSet(percent: int): void {
+            bright.keyboard = false;
+            bright.command = ["brightnessctl", "-m", "-c", "backlight", "-n1", "set", Math.max(1, Math.min(100, percent)) + "%"];
+            bright.running = true;
+        }
         function keyboard(action: string): void { osd.brightness(action, true); }
         function workspace(): void { osd.showWorkspace(); }
     }
@@ -147,6 +166,11 @@ PanelWindow {
         function toggle(): void { const p = osd.player; if (p && p.canTogglePlaying) p.togglePlaying(); }
         function next(): void { const p = osd.player; if (p && p.canGoNext) p.next(); }
         function previous(): void { const p = osd.player; if (p && p.canGoPrevious) p.previous(); }
+        // What's playing: {"app", "title", "artist", "playing"} ("" when nothing is)
+        function info(): string {
+            const p = osd.player;
+            return p ? JSON.stringify({ app: p.identity || "", title: p.trackTitle || "", artist: p.trackArtist || "", playing: !!p.isPlaying }) : "";
+        }
     }
 
     // ---- Window --------------------------------------------------------------

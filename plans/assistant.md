@@ -1,8 +1,9 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **step 1 of 5 built** (2026-11-10): the read-only server, `slate mcp`
+Status: **steps 1 and 2 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
+its questions and the Look, Change and Always-asks tools
 ([docs/ASSISTANT.md](../docs/ASSISTANT.md)); "What building it settled", near the end, has what
-that answered. Steps 2 to 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+that answered and where it differs from what's written here. Steps 3 to 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
 accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
 ([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
@@ -176,7 +177,12 @@ and refuses, kindly, with the place in Settings to do it by hand:
   command (check), `logLevel`, `clipboardHistory`;
 - folders and paths (`wallpaperFolder`, `screenshotFolder`, `screensaverVideoFolder`,
   `wallpaper`: use `wallpaper_set`);
-- anything of type `var` (lists and objects).
+- anything of type `var` (lists and objects);
+- added 2026-11-11, agreed with Dayle: what keeps the computer yours (`idleLockMinutes`,
+  `lockBeforeSleep`, `screensaverLock`, `lockScreenPowerMenu`), what your keys type and do
+  (`kbLayouts`, `kbVariants`, `keyset`), where you are (`locationName`, `latitude`,
+  `longitude`), and `titleBarStyle` and `mainDisplay` (they need something built or chosen
+  by hand).
 
 Everything else is type-checked against `SettingsData.qml` (bool, int, real, string) and, for
 strings, against the values it's known to take. The server reads keys, types, defaults and
@@ -1044,6 +1050,37 @@ Step 1 (2026-11-10):
   Disturb in `status`; `media_info`; `notifications_list`; the gate (`assistant status`),
   the "Window titles" switch and the activity log. Until then the server has no switch of
   its own: it answers whoever the person added it to.
+
+Step 2 (2026-11-11), where it differs from the design above:
+
+- **The question's words are written in the server**, not passed as `<tool> <args>` for
+  Slate to word: `assistant confirm <id> <json>` takes the finished title, body and button.
+  They're still fixed sentences filled with checked values, in one place beside each tool
+  and held to it by the unit tests. Anything that can call `slate ipc` could already put up
+  a window of its own, so wording them in QML bought nothing.
+- **Leaving the session is done by Slate, not the server**: the question carries
+  `leave: shutdown` and `AssistantGate.qml` runs `Config.sessionAction` on a yes, so there is
+  no IPC that shuts down without asking.
+- **A question can be withdrawn** (`PowerConfirm.withdraw(id)`), showing or waiting its
+  turn, and the server withdraws on no answer in 45 seconds, on `notifications/cancelled`,
+  and when the agent closes the connection.
+- **The limits are kept per server process.** In a run (`SLATE_ASSISTANT_RUN` set) five
+  questions and a no stands; otherwise both roll over ten minutes.
+- **`assistant did` isn't built yet**: nothing reads it until the prompt window (step 5).
+  The activity log has the same facts.
+- **Only four of the keys exist so far** (`assistantEnabled`, `assistantAskChanges`,
+  `assistantSeeTitles`, `assistantSeeNotifications`); the rest arrive with what uses them.
+  Until step 3's page, switching on is `slate ipc call config set assistantEnabled true`, and
+  the gate doesn't yet need the risks accepted.
+- **`settings_restore_defaults`** was left for later, as marked.
+- **Reading brightness** is `brightnessctl` in the server (Slate only learns it from a
+  finished process); setting it goes through `osd brightnessSet` so the indicator shows.
+- **`config set themeMode`** now goes through `Config.setThemeMode` for dark, light and
+  auto. The default window mode is set with `workspacemode setDefault <mode> false`.
+- **`app_open`** checks the id against installed apps in the server, then
+  `launcher launch <id>`. `apps_list` still reads desktop entries itself (no `launcher apps`).
+- **Numbers' ranges** were read off Settings' sliders into `RANGES`; text settings' values
+  into `VALUES`. A unit test fails for a setting in neither that isn't refused.
 
 ## Sources
 

@@ -2,14 +2,47 @@
 
 Slate has an MCP server: a small program that lets an AI agent you already use (Claude Code,
 Codex, anything that speaks the [Model Context Protocol](https://modelcontextprotocol.io))
-ask about your desktop. "What's my accent colour?" "Which window is on workspace 3?" "Where
-do I change the font?"
+ask about your desktop and do things on it. "Turn on glass." "Put Firefox on workspace 2."
+"Which window is on workspace 3?" "Where do I change the font?"
 
-For now its tools only look: nothing an agent does through them changes anything. Tools
-that change settings and arrange windows, with Slate asking you first where it matters, and
-a prompt window of Slate's own, are planned ([plans/assistant.md](../plans/assistant.md)).
+It's off until you switch it on, and Slate asks you before anything that can't be undone.
+A prompt window of Slate's own, and a Settings page for all of this, are still to come
+([plans/assistant.md](../plans/assistant.md)).
 
-Nothing here runs unless you add the server to an agent yourself.
+## Before you switch it on
+
+These are best efforts, and it's fairer to say so than to promise. Using an assistant with
+Slate is your choice, and what it does on your behalf is your responsibility.
+
+- **What leaves your computer.** Whatever a tool answers (your settings, your open windows
+  and their titles, the names of your workspaces, Spaces, apps and wallpapers) goes to the
+  service behind the agent you chose, under your own account with them. Slate itself sends
+  nothing anywhere.
+- **What it can do.** It can change settings, move windows and open apps without asking.
+  Slate asks you before anything that can't be undone.
+- **What can go wrong.** Assistants make mistakes, and can be misled by text they read, like
+  the title of a web page. Slate does its best to limit the harm, but it can't promise what
+  an assistant will do, least of all one that has tools of its own.
+
+## Switching it on
+
+Until Settings has its page for this, it's one command:
+
+```sh
+slate ipc call config set assistantEnabled true      # false switches it off again
+```
+
+While it's off, every tool answers that assistants aren't switched on, and does nothing.
+
+Three more switches, set the same way:
+
+| Setting | To start with | What it does |
+|---|---|---|
+| `assistantAskChanges` | `false` | `true`: Slate asks before every change, not only the ones that can't be undone |
+| `assistantSeeTitles` | `true` | `false`: assistants get app names only, never window titles (titles carry document names and web page titles) |
+| `assistantSeeNotifications` | `false` | `true`: assistants can read your recent notifications |
+
+An assistant can't change any of these itself: Slate refuses.
 
 ## Adding it to an agent
 
@@ -35,9 +68,11 @@ Most other agents take a block like this in their settings (with the whole path 
 
 ## What the tools are
 
+**Looking.** These read, and never ask.
+
 | Tool | Answers with |
 |---|---|
-| `status` | Slate's version, the time, the theme, game mode, night light, the battery, the network's name, and the focused window and workspace |
+| `status` | Slate's version, the time, the theme, game mode, Do Not Disturb, night light, volume, brightness, the battery, the network's name, and the focused window and workspace |
 | `settings_search` | Settings that match a word or two ("glass", "dock size", "dpi"): each one's key, name, page in Settings, description, type, default and value now |
 | `settings_get` | One setting, by its key |
 | `windows_list` | Open windows: app, title, workspace, floating, full screen, focused |
@@ -45,40 +80,82 @@ Most other agents take a block like this in their settings (with the whole path 
 | `spaces_list` | Your saved Spaces: name, how many workspaces, the apps in each |
 | `apps_list` | Installed apps, by name |
 | `wallpapers_list` | The names of the pictures in your wallpaper folder and Slate's own |
+| `media_info` | What's playing: the app, title and artist |
+| `notifications_list` | Your recent notifications. Only offered while `assistantSeeNotifications` is on |
 
-## What leaves your computer
+**Changing.** These can be undone, so they happen straight away, unless you've asked Slate
+to ask about every change.
 
-Whatever a tool answers goes to the service behind the agent you added it to, under your own
-account with them, the same as anything else you show that agent. Slate itself sends nothing
-anywhere. So it's worth knowing what the answers hold:
+| Tool | Does |
+|---|---|
+| `settings_set` | Changes a setting, and answers with its value before and now |
+| `settings_show` | Opens Settings at a setting or a page, for you to look at or change |
+| `look_apply` | Switches to one of Slate's finished looks |
+| `panel_open` | Opens one of the menu bar's panels |
+| `app_open` | Starts an installed app. Only an app: no file, address or command |
+| `window_focus`, `window_move`, `window_state` | Goes to a window, moves it to a workspace, floats, tiles, maximises or full-screens it |
+| `workspace_go`, `workspace_mode`, `workspace_rename` | Switches workspace, changes how one lays out its windows, names it |
+| `space_restore`, `space_save` | Opens a saved Space, or saves workspaces as one (saving over a Space asks first) |
+| `wallpaper_set`, `wallpaper_next` | Changes the wallpaper, to a picture from `wallpapers_list` only |
+| `volume_set`, `brightness_set`, `media_control`, `do_not_disturb` | As named |
+| `screenshot` | Takes a screenshot for you, as Print does. The assistant is told "Done": it never gets the picture, or where it was saved |
+| `lock_screen`, `screensaver_start` | As named |
 
-- **Your settings**, as Settings shows them.
-- **Your open windows and their titles.** Titles carry document names and web page titles.
-- **Names**: of your workspaces, Spaces, installed apps, wallpaper files and your network.
+**Always asking.** These can't be undone or could lose work, so Slate asks you every time,
+and no setting turns the question off.
 
-And what they don't:
+| Tool | Slate asks |
+|---|---|
+| `window_close` | "Close Firefox?" |
+| `space_delete` | "Delete “Work”?" |
+| `session` | "Shut down?", "Restart?", "Log out?" or "Sleep?" |
 
-- Slate's tools answer in words only. They never give a picture of the screen, a recording,
-  the contents of a window, a file, the clipboard or anything you've typed.
-- Your location (the one in Settings → General) is never given.
-- Folders are shown without your home folder's name, which is usually your user name.
+There is no tool that runs a command, opens a file or a web address, types or clicks for
+you, reads the clipboard, answers a password prompt, unlocks the screen, or installs or
+updates anything.
 
-## Where this stops
+## What Slate does to keep an assistant in bounds
 
-These are best efforts, and it's fairer to say so than to promise:
+- **Slate decides, not the agent.** Every tool call goes through Slate's own gate first,
+  whichever agent made it: assistants switched on, the screen unlocked, the arguments
+  checked. While the screen is locked, every tool is refused.
+- **Questions are Slate's.** They appear in Slate's own confirmation window, with Cancel
+  picked first, in fixed sentences filled with checked values. The assistant can't write
+  the question. The name in brackets ("Your assistant (Claude Code)") is what the agent
+  calls itself, which proves nothing.
+- **A no is a no.** After a no, Slate doesn't ask about that tool again for ten minutes,
+  and tells the assistant to leave it. At most five questions in any ten minutes. A
+  question nobody answers is taken away after 45 seconds, and nothing happens. In game
+  mode, questions are declined without interrupting you.
+- **Settings it can't touch.** Its own permissions; anything that holds a command or
+  reaches outside Slate (default apps, startup apps, launcher commands, clipboard history,
+  log detail); folders; the lock settings; keyboard layouts and the shortcut set; your
+  location; title bar style and the main display. Slate says where you can change each
+  yourself. Everything else is checked against what that setting takes.
+- **Only from the lists.** A window by the address of one that's open, an app by an
+  installed app's id, a wallpaper from the folder, a Space that's saved. Nothing an
+  assistant makes up reaches Hyprland or Slate.
+- **Words only.** Slate's tools never give a picture of the screen, a recording, the
+  contents of a window, a file, the clipboard or anything you've typed. Your location is
+  never given, and folders are shown without your home folder's name.
+- **Text from other programs is cleaned.** Window titles, notification text and names are
+  cut to 200 characters, stripped of anything unprintable, and the agent is told they're
+  information and never instructions. This helps; it isn't something to rely on.
+- **Sixty tool calls a minute**, so a looping assistant is told to slow down.
 
-- **Slate can only answer for its own tools.** An agent with a terminal of its own can
-  already do whatever a terminal can, with or without Slate's server: take a screenshot,
-  read your files, run `slate ipc`. Adding the server gives that agent nothing it couldn't
-  reach before; it gives it a tidy, described way to ask.
-- **Assistants make mistakes, and can be misled by text they read.** A window's title is
-  written by the app or web page in it, and could be written to look like an instruction.
-  Slate cuts such text short, strips anything unprintable and tells the agent it's
-  information and never an instruction, which helps but can't be relied on. While the tools
-  only look, the most a misled agent can do through them is read what's listed above.
+Where this stops: **Slate can only answer for its own tools.** An agent with a terminal of
+its own can do whatever a terminal can, with or without Slate's server: take a screenshot,
+read your files, run `slate ipc` and skip Slate's questions altogether. So the wording here
+is "Slate's tools never show the assistant your screen", not "the assistant can't see your
+screen".
 
-Using an agent with Slate is your choice. If you'd rather it couldn't ask, don't add the
-server, or remove it.
+## What it did
+
+Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, one line
+each: the time, which agent, the tool, its arguments (cut short), and how it ended (done,
+declined, no answer, refused or failed), with a setting's value before it was changed. Tool
+calls only: Slate keeps no copy of what you typed or what the agent answered. The last
+1,000 lines are kept, and the log isn't part of `slate logs`.
 
 ## How it works
 
@@ -89,17 +166,21 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
   request carries its version, and `server/discover` says what's spoken. Earlier versions
   (2025-11-25 back to 2024-11-05) open with `initialize`. The server answers whichever the
   agent uses.
-- **It asks Slate, not the system.** Settings come from `slate ipc call config get`, windows
-  and workspaces from `hyprctl -j`, Spaces and apps the way `scripts/spaces.py` finds them.
-  If Slate isn't running, every tool says so.
+- **The gate has two halves.** The server checks and decides (tiers, the refuse list, the
+  limits, the question's words); `AssistantGate.qml` in Slate answers `assistant status`,
+  shows a question with `PowerConfirm` and holds the answer (`assistant confirm`, `answer`,
+  `withdraw`). Leaving the session on a yes is done by Slate itself, so goodbye plays first.
+- **It asks Slate, not the system.** Settings go through `slate ipc call config`, windows
+  and workspaces through `hyprctl` with fixed dispatchers, Spaces and apps the way
+  `scripts/spaces.py` does. If Slate isn't running, every tool says so.
 - **Settings are found, not listed by hand.** Keys, types, defaults and notes are read from
   `SettingsData.qml`; names, pages and descriptions from `SettingsWindow.qml`
   (`scripts/settings-index.py`, which says which setting each row changes); search words from
-  `SettingsIndex.qml`. A new setting is found without touching the server. The few whose
-  row can't be linked are named in `NAMED` in the server, and a test fails when a setting
-  has no name.
+  `SettingsIndex.qml`. What each text setting takes (`VALUES`) and each number's range
+  (`RANGES`) are kept in the server, and a test fails when a new setting is in neither and
+  isn't refused, so nothing can be set unchecked.
 - **What agents are told about Slate** (the server's instructions) is
   `shell/data/assistant-prompt.md`.
-- **Limits.** 60 tool calls a minute; past that a tool answers "slow down a moment".
-- **Tests:** `tests/unit/test_slate_mcp.py` holds it to the protocol, to text-only answers,
-  to asking Slate for nothing but `config get`, and to cleaning hostile titles.
+- **Tests:** `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
+  fake Slate, hostile input, the log) and `tests/live/test_assistant.py` (the questions in
+  the real confirmation window, and the server against a real Slate).

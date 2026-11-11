@@ -134,6 +134,7 @@ Singleton {
             if (cur === undefined) return;
             if (key === "barPosition") { root.moveBar(value); return; }
             if (key === "dockPosition") { root.moveDock(value); return; }
+            if (key === "themeMode" && ["dark", "light", "auto"].indexOf(value) >= 0) { root.setThemeMode(value); return; }   // (keeps lightMode in step)
             root.s[key] = typeof cur === "boolean" ? value === "true" : typeof cur === "number" ? Number(value) : value;
         }
         function get(key: string): string { return String(root.s[key]); }

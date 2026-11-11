@@ -214,6 +214,8 @@ ShellRoot {
                 // (the screens where the note saying the secret workspace is empty shows)
                 secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
+                askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
+                assistant: { enabled: Config.s.assistantEnabled, waiting: Object.keys(assistantGate.answers).length },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
@@ -268,6 +270,7 @@ ShellRoot {
         SecretEmpty { required property var modelData; screen: modelData; bar: topBar }
     }
     LockScreen { id: lockScreen }
+    AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen }     // what AI agents may do (slate mcp)
     Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { lock: lockScreen }
 

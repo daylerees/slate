@@ -70,9 +70,14 @@ wallpapers/             Slate's own wallpapers, 4K (made by tools/make-wallpaper
 sounds/                 volume tick; notification chime, attention, click, swish, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
-scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (ASSISTANT.md). Read-only tools
-                              over `config get`, `hyprctl -j` and spaces.py; standard library only.
+scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (ASSISTANT.md): tools that look,
+                              change and (always asking) close or leave, over Slate's IPC, `hyprctl`
+                              and spaces.py; standard library only. Every call goes through its gate
+                              and into ~/.local/state/slate/assistant/activity.jsonl.
                               data/assistant-prompt.md is what it tells an agent about Slate
+AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are
+                              allowed and what they may see, and their questions, shown with
+                              PowerConfirm and held until the server reads the answer
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
                               installed .manifest), install (install.sh --update), go back
 bin/slate-init                the one place that knows the init system and login service: systemd, or
@@ -181,14 +186,16 @@ opening any of them closes bar panels (wired in `shell.qml`).
 |---|---|
 | `bar` | `panel <control\|spaces\|notifications\|session\|volume\|wifi\|clipboard\|screenshot\|keyboard\|bluetooth\|battery\|gamemode\|calendar>`, `setFilled <bool>`, `reveal` |
 | `popout` | `toggle <name> <x>`, `close` |
-| `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight` |
+| `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight`, `launch <desktop-id>` (an app only; answers `ok` or `unknown`) |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
 | `overview` | `open`, `close`, `toggle`, `next`, `prev`, `go`, `moveLeft`, `moveRight`, `hold <bool>` |
 | `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `preview <app>`, `closePreview` |
 | `settings` | `toggle`, `open`, `close`, `page <id>` |
-| `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right) |
+| `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right), `volumeGet` (JSON), `volumeSet <0-100>`, `brightnessSet <1-100>` |
 | `lock` | `lock`, `preview <lock\|login>`, `closePreview` |
-| `media` | `toggle`, `next`, `previous` (media keys) |
+| `media` | `toggle`, `next`, `previous` (media keys), `info` (what's playing, JSON) |
+| `notifications` | `dnd <bool>`, `dndGet`, `list` (the latest, JSON), `clear` |
+| `assistant` | `status` (JSON: enabled, locked, game mode, what may be seen), `confirm <id> <json>` (ask in the confirmation window), `answer <id>` ("" until answered, then `yes` or `no`, once), `withdraw <id>`: for `slate mcp` (ASSISTANT.md) |
 | `picker` | `clipboard`, `emoji`, `toggle <clipboard\|emoji>`, `close` |
 | `wallpaper` | `set <path>`, `get` |
 | `nightlight` | `toggle`, `on`, `off` |
