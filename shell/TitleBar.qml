@@ -412,6 +412,7 @@ PanelWindow {
     // it goes back to where it was, as it was. (Hyprland's own maximise fills that part
     // entirely, with no room for the bar)
     Connections { target: Config; function onTitleBarMaximise(a) { tb.toggleMaximise(a); } }
+    property var lastPlaced: ({})      // window → { max, at }: how Slate last placed it, and when
     function sameAddress(a, b) { return String(a).replace(/^0x/, "") === String(b).replace(/^0x/, ""); }
     function toggleMaximise(addr) {
         const c = clients.find(x => sameAddress(x.address, addr));
@@ -424,12 +425,19 @@ PanelWindow {
         const key = String(c.address);
         const saved = Config.titleBarRestore[key];
         const near = (a, b) => Math.abs(a - b) <= 3;
-        const isMax = near(c.at[0], x) && near(c.at[1], y) && near(c.size[0], w) && near(c.size[1], h);
+        // Whether it's maximised now. From where Hyprland last said the window is; but that's
+        // looked up a few times a second, so straight after Slate itself has placed the window
+        // it can still be the place before. Then it's what Slate did that counts: asked twice
+        // in quick succession, the second maximised again rather than putting the window back
+        const last = lastPlaced[key];
+        const isMax = last && Date.now() - last.at < 2000 ? last.max
+            : near(c.at[0], x) && near(c.at[1], y) && near(c.size[0], w) && near(c.size[1], h);
         const r = Object.assign({}, Config.titleBarRestore);
         let to, flatNow;
         if (isMax && saved) { to = saved; delete r[key]; flatNow = false; }
         else { if (!saved) r[key] = [c.at[0], c.at[1], c.size[0], c.size[1]]; to = [x, y, w, h]; flatNow = true; }
         Config.titleBarRestore = r;
+        lastPlaced = Object.assign({}, lastPlaced, { [key]: { max: flatNow, at: Date.now() } });
         placing = true;
         placedLook = false;
         placed.restart();

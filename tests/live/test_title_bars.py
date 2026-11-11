@@ -129,6 +129,27 @@ class TitleBars(LiveCase):
             self.s.settle(0.1)
         self.assertEqual((now["at"], now["size"]), (before["at"], before["size"]), "not put back")
 
+    def test_maximise_twice_in_quick_succession_puts_it_back(self):
+        """Asked again before Slate has next looked up where the window is (it looks a few times
+        a second), the second ask went by the old place and maximised again: the window stayed
+        maximised. (It failed the test above now and then, for the same reason.)"""
+        self.config("titleBarStyle", "slate")
+        self.config("windowMode", "floating")
+        self.s.settle(1.0)
+        w = self.foot()
+        self.wait(lambda st: st["titleBar"] == w["address"], "the title bar on the new window")
+        self.s.settle(0.8)          # (where it opened is known)
+        get = lambda: next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == w["address"])
+        before = get()
+        self.ipc("titlebar", "maximise", w["address"])
+        self.ipc("titlebar", "maximise", w["address"])
+        for _ in range(30):
+            now = get()
+            if (now["at"], now["size"]) == (before["at"], before["size"]):
+                break
+            self.s.settle(0.1)
+        self.assertEqual((now["at"], now["size"]), (before["at"], before["size"]), "maximised twice over, not put back")
+
     def test_steps_away_while_moved_elsewhere(self):
         """Moved by something other than the bar (its own header, Super+drag), the bar fades
         away until the window's been still a moment."""

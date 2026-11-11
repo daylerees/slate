@@ -54,14 +54,19 @@ class WorkspaceSwitch(SwitcherAnimations):
             shots.append(self.s.screenshot(os.path.join(os.path.dirname(before), f"mid{i}.png")))
         self.s.settle(3.0)
         # The window fills the screen under the bar on both workspaces, so across the middle
-        # there's only ever a window, the terminal's grey (dimmer or not): never the wallpaper,
-        # which is coloured. (It showed in the strip the arriving workspace hadn't reached yet)
+        # there's only ever a window: the one arriving, or the one leaving under it (dimmed, and
+        # a touch see-through as it starts to go). Never the bare wallpaper, which showed in the
+        # strip the arriving workspace hadn't reached yet. The tests' wallpaper is a known
+        # gradient (lib/session.py make_wallpaper), so "bare" is a pixel that matches it
         w, h = Image.open(before).size
+        y = h // 2
+        def wallpaper(x):
+            t = (x / w + y / h) / 2
+            return (int(28 + 40 * t), int(44 + 50 * t), int(72 + 70 * (1 - t)))
         for shot in shots:
             im = Image.open(shot).convert("RGB")
-            row = [im.getpixel((x, h // 2)) for x in range(w)]
-            coloured = sum(1 for p in row if max(p) - min(p) > 14)
-            self.assertEqual(coloured, 0, f"the wallpaper shows across {coloured} px during the switch ({shot})")
+            bare = sum(1 for x in range(w) if all(abs(a - b) <= 14 for a, b in zip(im.getpixel((x, y)), wallpaper(x))))
+            self.assertEqual(bare, 0, f"the wallpaper shows across {bare} px during the switch ({shot})")
 
     def test_windows_are_square_while_a_switch_slides(self):
         self.windows_on_two_workspaces()
