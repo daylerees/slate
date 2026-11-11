@@ -61,7 +61,7 @@ Item {
             color: m.color
             opacity: echo ? 0.35 * (1 - m.p) : 1
             visible: opacity > 0.01
-            Gloss { radius: parent.radius; opacity: parent.echo ? 0 : 1 }   // glass: a sheen on the marker
+            // (flat, with glass too: no sheen on the marker)
         }
     }
 }
