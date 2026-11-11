@@ -91,6 +91,21 @@ class Base(mcp_tests.Base):
         return os.path.exists(os.path.join(self.s.dir, "claude.got"))
 
 
+class NeverTheRealThing(mcp_tests.Base):
+    """Without a stand-in, the agents' commands are blocked outright in every unit test: a
+    real one would reach the network and spend the person's own account."""
+
+    def test_blocked(self):
+        for name in ("claude", "codex"):
+            with self.subTest(name):
+                code, out = run([name, "--version"], env=self.s.env)
+                self.assertEqual(code, 127, f"a real {name} could be run from the tests")
+        code, out = run([sys.executable, SCRIPT, "run", "--agent", "claude", "--run", "r1"], env=self.s.env, input="hello")
+        # The runner only ever meets the block (which logs each call), and reports a failure
+        self.assertEqual(json.loads(out.splitlines()[-1])["type"], "error")
+        self.assertGreaterEqual(len(self.s.calls("claude")), 2)
+
+
 class Detect(Base):
     def detect(self):
         code, out = run([sys.executable, SCRIPT, "detect"], env=self.s.env)

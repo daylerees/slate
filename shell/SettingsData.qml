@@ -118,6 +118,7 @@ JsonAdapter {
     // What the bar shows (Settings → Menu Bar)
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
+    property bool barShowAssistant: true      // Chalk, the assistant's button (only while the assistant is switched on)
     // Spaces (Settings → Spaces): how windows opened from a space are marked
     property bool spaceBorders: true          // a top border in the space's colour
     property bool spaceBadges: true           // the space's icon in the window's corner
@@ -247,6 +248,7 @@ JsonAdapter {
     property string assistantCommand: ""        // a command of your own (the "custom" agent): run as typed, the prompt on its stdin
     property bool assistantCommandBare: false   // …given just what you typed, without what Slate adds
     property var assistantAgentsAccepted: []    // agents that keep tools of their own that you've said yes to
+    property bool assistantKeepChat: true       // Chalk's conversation is still there after Slate restarts (kept on this computer only)
     property bool assistantAskChanges: false    // ask before every change, not only the ones that can't be undone
     property bool assistantSeeTitles: true      // window titles are given (off: app names only)
     property bool assistantSeeNotifications: false  // recent notifications can be read

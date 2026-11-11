@@ -1,10 +1,10 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **steps 1 to 4 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
+Status: **the first version is built** (steps 1 to 5) (2026-11-11): the server, `slate mcp`, with its gate,
 its questions and the Look, Change and Always-asks tools, and Settings → Assistant with the
 risks question, and the runner with its Claude Code and custom-command adapters
 ([docs/ASSISTANT.md](../docs/ASSISTANT.md)); "What building it settled", near the end, has what
-that answered and where it differs from what's written here. Step 5 is still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+that answered and where it differs from what's written here. Codex (step 6) and the "later" list are what's left. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
 accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
 ([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
@@ -1076,8 +1076,10 @@ Step 2 (2026-11-11), where it differs from the design above:
 - **`settings_restore_defaults`** was left for later, as marked.
 - **Reading brightness** is `brightnessctl` in the server (Slate only learns it from a
   finished process); setting it goes through `osd brightnessSet` so the indicator shows.
-- **`config set themeMode`** now goes through `Config.setThemeMode` for dark, light and
-  auto. The default window mode is set with `workspacemode setDefault <mode> false`.
+- **The theme is two settings**: the server sets `themeMode` and then `lightMode` for dark
+  and light (auto leaves the switch to the time of day). Routing `config set themeMode`
+  through `Config.setThemeMode` was tried and taken out: it made one `config set` change
+  two settings, which broke the visual suite's putting-back. The default window mode is set with `workspacemode setDefault <mode> false`.
 - **`app_open`** checks the id against installed apps in the server, then
   `launcher launch <id>`. `apps_list` still reads desktop entries itself (no `launcher apps`).
 - **Numbers' ranges** were read off Settings' sliders into `RANGES`; text settings' values
@@ -1121,6 +1123,40 @@ Step 4 (2026-11-11), from one real run of Claude Code 2.1.319 (recorded, scrubbe
   while assistants are off.
 - **Tool descriptions are the cost to watch**: 34 tools on every prompt. Worth trimming
   before release if usage matters.
+
+Step 5 (2026-11-11):
+
+- **The prompt window is `Assistant.qml`**, its IPC lives in `AssistantGate.qml` (one
+  `assistant` target for both). The prompt reaches the runner on stdin (`Process.write`, then
+  closing stdin).
+- **Escape hides, Stop stops.** "Escape twice to stop" wasn't built: the first Escape has
+  already hidden the window.
+- **What it did** lists tools that change or ask, not looks; each tool says what it's doing
+  in Slate's words (`doing()` in the server), sent with `assistant did`.
+- **The icon is Tabler's sparkles (F6D7)** for the bar button, the window and the Settings
+  page, in a peach pastel. Open to a better one.
+- **The shortcuts are bound once, for every key set**, with their descriptions given at the
+  bind. A live test checks all three in Slate's set; the Copilot chord is still unchecked
+  on real hardware.
+- **No tour row on the site's front page**: it would need a recording. A feature card and a
+  section on the features page instead.
+- **Agent detection** runs when the window or the Settings page first opens, not at start-up.
+- **The window became a chat, at Dayle's asking**: every exchange stays on show (yours on
+  the right in the accent colour, Chalk's on the left), scrolling with Slate's scrollbar and
+  shades, in place of "only the latest question and answer". The five-minute fresh start
+  went with it.
+- **The conversation is kept across restarts** (`assistantKeepChat`, on to start with; the
+  last 50 exchanges in `~/.local/state/slate/assistant/chat.json`, with the agent's session
+  id). This replaces the plan's "what you typed and what the agent answered aren't kept by
+  Slate": the activity log still holds tool calls only, and the docs and Settings say which
+  is which. Switching it off deletes the file.
+- **Screenshots have to be approved from a whole visual run.** A scene shot on its own
+  renders the bar's text slightly differently from the same scene in a full run, so a
+  picture approved from a filtered run fails the full one (and the other way round).
+- **Glass**: a new window's name has to be in both lists of Slate's surfaces
+  (`windowrules.lua` and `Config.qml`'s glass rule) or it's see-through with no blur.
+- **Unit tests block every agent CLI** (`claude`, `codex`…) outright unless a test brings a
+  stand-in, and Slate in test mode never starts a real one.
 
 ## Sources
 

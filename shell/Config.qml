@@ -131,6 +131,7 @@ Singleton {
     // release changes what the risks are, and Slate asks again
     readonly property int assistantRisksVersion: 1
     readonly property bool assistantOn: s.assistantEnabled && s.assistantRisksAccepted === assistantRisksVersion && !isLoginScreen
+    property bool assistantWorking: false       // Chalk has a prompt out (Assistant.qml): the bar's button shows it
     // Switched on under an earlier version of the risks: paused until they're read again
     readonly property bool assistantRisksChanged: s.assistantEnabled && s.assistantRisksAccepted > 0 && s.assistantRisksAccepted !== assistantRisksVersion
 
@@ -143,7 +144,6 @@ Singleton {
             if (cur === undefined) return;
             if (key === "barPosition") { root.moveBar(value); return; }
             if (key === "dockPosition") { root.moveDock(value); return; }
-            if (key === "themeMode" && ["dark", "light", "auto"].indexOf(value) >= 0) { root.setThemeMode(value); return; }   // (keeps lightMode in step)
             root.s[key] = typeof cur === "boolean" ? value === "true" : typeof cur === "number" ? Number(value) : value;
         }
         function get(key: string): string { return String(root.s[key]); }
@@ -379,7 +379,7 @@ Singleton {
             // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
             // blur size if one's picked
             + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
-            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
+            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|dock|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
             + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"})`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes

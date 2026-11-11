@@ -424,6 +424,13 @@ hl.bind(mainMod .. " + period",     hl.dsp.exec_cmd(slate("picker toggle emoji")
 hl.bind(mainMod .. " + L",          hl.dsp.exec_cmd(slate("lock lock")))
 hl.bind(mainMod .. " + ALT + C",    hl.dsp.exec_cmd(slate("bar panel session")))
 end
+-- Chalk, Slate's assistant, in every key set: Super+K; a keyboard's own assistant key; and
+-- the Copilot key on recent laptops, which has no key of its own: it presses Left Super,
+-- Left Shift and F23 together (keycode 201, bound by code as keyboard tables name it
+-- differently). Switched off, they open its window saying so, never a dead key
+hl.bind(mainMod .. " + K",          hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Chalk" })
+hl.bind("XF86Assistant",            hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Chalk (assistant key)" })
+hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Chalk (Copilot key)" })
 ---------------------------
 ---- HARDWARE CONTROLS ----
 ---------------------------

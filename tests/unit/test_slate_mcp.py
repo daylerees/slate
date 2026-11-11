@@ -1014,7 +1014,7 @@ class SettingsTools(Base):
                 ("launcherColumns", 8, "8", 6, 8), ("launcherColumns", "4", "4", 8, 4), ("launcherColumns", 5.0, "5", 4, 5),
                 ("glassOpacity", 0.8, "0.8", 0.5, 0.8), ("dockIconSize", 48, "48", 32, 48),
                 ("iconShape", "circle", "circle", "tile", "circle"), ("accent", "#AA33cc", "#AA33cc", "#8fb3e8", "#AA33cc"),
-                ("themeMode", "light", "light", "", "light"), ("gameMode", True, "true", False, True)):
+                ("gameMode", True, "true", False, True)):
             with self.subTest(key + " " + repr(value)):
                 n = len(self.qs_calls("config", "set"))
                 got, err = self.tool("settings_set", {"key": key, "value": value})
@@ -1023,6 +1023,13 @@ class SettingsTools(Base):
                 sets = self.qs_calls("config", "set")
                 self.assertEqual(len(sets), n + 1, "not exactly one config set")
                 self.assertEqual(sets[-1][2:], [key, sent])
+        # The theme is two settings, as Settings sets them: the mode, and the switch it's drawn from
+        n = len(self.qs_calls("config", "set"))
+        got, err = self.tool("settings_set", {"key": "themeMode", "value": "light"})
+        self.assertEqual((got["before"], got["now"]), ("", "light"))
+        self.assertEqual([c[2:] for c in self.qs_calls("config", "set")[n:]], [["themeMode", "light"], ["lightMode", "true"]])
+        self.tool("settings_set", {"key": "themeMode", "value": "auto"})
+        self.assertEqual(self.qs_calls("config", "set")[-1][2:], ["themeMode", "auto"], "auto leaves the switch to the time of day")
         self.assertEqual(self.asked(), [], "a change asked although nobody wanted that")
         log = self.activity()
         self.assertEqual((log[0]["tool"], log[0]["tier"], log[0]["outcome"], log[0]["before"], log[0]["args"]),
@@ -1106,7 +1113,7 @@ class SettingsTools(Base):
                     self.assertTrue(low <= d <= high or d <= 0, f"{key}'s own default ({d}) is outside its range")
                 else:
                     self.assertEqual(t, "bool")
-        for key in list(mcp.VALUES) + list(mcp.RANGES) + [k for k in mcp.REFUSE if k != "barShowAssistant"]:
+        for key in list(mcp.VALUES) + list(mcp.RANGES) + [k for k in mcp.REFUSE if not mcp.own(k)]:
             with self.subTest("listed " + key):
                 self.assertIn(key, table, f"{key} is listed in slate-mcp.py but isn't a setting any more")
 
@@ -1131,7 +1138,7 @@ class SettingsTools(Base):
         table = mcp.settings()
         keys = re.findall(r"^\s*property \w+ (\w+):", slate.read("shell", "SettingsData.qml"), re.M)
         self.assertGreater(len(keys), 200)
-        shown = [k for k in keys if k not in mcp.HIDDEN and not k.startswith("assistant")]
+        shown = [k for k in keys if k not in mcp.HIDDEN and not mcp.own(k)]
         self.assertEqual(set(table), set(shown))
         for key in shown:
             with self.subTest(key):
@@ -1140,6 +1147,40 @@ class SettingsTools(Base):
         for key in list(mcp.NAMED) + list(mcp.HIDDEN) + list(mcp.PRIVATE) + list(mcp.PATHS):
             with self.subTest("listed " + key):
                 self.assertIn(key, keys, f"{key} is listed in slate-mcp.py but isn't a setting any more")
+
+
+class WhatItDid(Base):
+    """In a run the prompt window started, Slate's server tells the window what each tool
+    came to, in Slate's words: the window's list is this, never the agent's own account."""
+    RUN = {"SLATE_ASSISTANT_RUN": "r1", "SLATE_ASSISTANT_AGENT": "Claude Code"}
+
+    def did(self):
+        return [json.loads(c[2]) for c in self.qs_calls("assistant", "did")]
+
+    def test_changes_and_questions(self):
+        self.talk(call("settings_search", mid=1), call("settings_set", {"key": "glass", "value": False}, mid=2),
+                  call("window_close", {"address": "0xa1"}, mid=3), call("lock_screen", mid=4), env=self.RUN)
+        self.assertEqual([(d["run"], d["id"], d["text"], d["state"]) for d in self.did()],
+                         [("r1", 2, "Turn Glass off", "done"), ("r1", 3, "Close Editor", "asking"), ("r1", 3, "Close Editor", "done"),
+                          ("r1", 4, "Lock the screen", "done")], "looking isn't listed; everything else is, by Slate's name for it")
+
+    def test_a_no_is_listed(self):
+        self.state["answer"] = "no"
+        self.put_state()
+        self.talk(call("session", {"action": "shutdown"}), env=self.RUN)
+        self.assertEqual([(d["text"], d["state"]) for d in self.did()], [("Shut down", "asking"), ("Shut down", "declined")])
+
+    def test_only_in_a_run(self):
+        self.tool("settings_set", {"key": "glass", "value": False})
+        self.assertEqual(self.did(), [])
+
+    def test_hostile_names_are_cleaned(self):
+        self.clients[0]["class"] = "x\n" + "y" * 300
+        self.hyprland()
+        self.talk(call("window_close", {"address": "0xa1"}), env=self.RUN)
+        for d in self.did():
+            self.assertLessEqual(len(d["text"]), 80)
+            self.assertNotIn("\n", d["text"])
 
 
 class Log(Base):

@@ -455,6 +455,24 @@ PanelWindow {
                 }
             }
 
+            // Chalk, the assistant (Assistant.qml), while it's switched on: opens its prompt
+            // window; breathes while a prompt is out (not in game mode, or with animations off)
+            GlyphButton {
+                id: chalkBtn
+                visible: Config.s.barShowAssistant && Config.assistantOn
+                code: 0xF6D7
+                tint: Config.colourful ? Config.pageColour("assistant") : bar.textColor
+                hoverText: Config.assistantWorking ? "Chalk is working…" : "Ask Chalk"
+                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
+                SequentialAnimation on opacity {
+                    running: Config.assistantWorking && Config.animate && !Config.gameMode
+                    loops: Animation.Infinite
+                    onRunningChanged: if (!running) chalkBtn.opacity = 1
+                    NumberAnimation { to: 0.35; duration: Config.ms(700); easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 1; duration: Config.ms(700); easing.type: Easing.InOutSine }
+                }
+            }
+
             // Workspaces: grey/white dots, plus an accent marker that glides between them
             // (WorkspaceMarker).
             Capsule {

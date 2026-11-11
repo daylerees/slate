@@ -118,6 +118,54 @@ SCENES["assistant-question"] = {
     "settle": 1.2, "undo": [("assistant", "withdraw", "scene")],
 }
 
+# Chalk's prompt window (Super+K): empty, a conversation (your lines on the right, Chalk's on
+# the left with what it did, one thing declined), when it went wrong, a long one scrolled,
+# and before the assistant is switched on
+_CHALK_ON = {"assistantEnabled": "true", "assistantRisksAccepted": "1"}
+_CHALK_AGENTS = [{"id": "claude", "label": "Claude Code", "installed": True, "signedIn": True, "confined": True, "followUps": True}]
+import json as _json
+SCENES["assistant-empty"] = {
+    "settings": _CHALK_ON,
+    "do": [("test", "chalk", _json.dumps({"agents": _CHALK_AGENTS})), ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["agent"] == "claude",
+    "undo": [("assistant", "close"), ("test", "chalk", "{}")],
+}
+SCENES["assistant-answer"] = {
+    "settings": _CHALK_ON,
+    "do": [("test", "chalk", _json.dumps({"agents": _CHALK_AGENTS,
+            "history": [{"asked": "is glass on?", "answer": "No, glass is off at the moment."}],
+            "asked": "turn on glass, put Firefox on workspace 2 and close the terminal",
+            "answer": "I've turned glass on and moved Firefox to workspace 2. The terminal is still open, as you said no to closing it.",
+            "actions": [{"id": 1, "text": "Turn Glass on", "state": "done"}, {"id": 2, "text": "Move Firefox to workspace 2", "state": "done"},
+                        {"id": 3, "text": "Close Terminal", "state": "declined"}]})), ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and len(st["assistant"]["actions"]) == 3,
+    "undo": [("assistant", "close"), ("test", "chalk", "{}")],
+}
+SCENES["assistant-error"] = {
+    "settings": _CHALK_ON,
+    "do": [("test", "chalk", _json.dumps({"agents": _CHALK_AGENTS, "asked": "turn on glass",
+            "error": {"kind": "offline", "message": "Slate couldn't reach Claude just now. Your question is still here: try again in a moment.", "detail": ""}})),
+           ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["error"] == "offline",
+    "undo": [("assistant", "close"), ("test", "chalk", "{}")],
+}
+SCENES["assistant-long"] = {
+    "settings": _CHALK_ON,
+    "do": [("test", "chalk", _json.dumps({"agents": _CHALK_AGENTS,
+            "history": [{"asked": "question %d" % i, "answer": "This is answer %d, long enough to wrap onto a second line in Chalk's side of the conversation." % i}
+                        for i in range(1, 9)],
+            "asked": "and the last one", "answer": "Here it is."})), ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["turns"] == 9,
+    "undo": [("assistant", "close"), ("test", "chalk", "{}")],
+}
+SCENES["assistant-off"] = {
+    "do": [("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and not st["assistant"]["enabled"],
+    "undo": [("assistant", "close")],
+}
+# The bar with Chalk's button, after Spaces
+SCENES["bar-chalk"] = {"settings": _CHALK_ON, "wait": lambda st: st["assistant"]["button"], "settle": 1.0}
+
 # Switching the assistant on (Settings → Assistant): the risks, in the confirmation window's long form
 SCENES["assistant-risks"] = {
     "do": [("settings", "page", "assistant"), ("test", "assistant", "on")],

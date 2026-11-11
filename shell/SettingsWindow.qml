@@ -260,7 +260,7 @@ FloatingWindow {
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
-        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
+        bar: ["barPosition", "barAutoHide", "barHoverDescriptions", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread"],
@@ -288,7 +288,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
-        assistant: ["assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
+        assistant: ["assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -365,6 +365,21 @@ FloatingWindow {
         if (!confirmer) return;
         confirmer.confirmWith({ title: "Switch on the assistant?", body: assistantRisks, long: true,
                                 button: "Switch on", code: 0xF6D7, danger: false }, () => assistantAccept());
+    }
+    // Choosing which agent answers the prompt window. One Slate can't confine (it keeps tools
+    // of its own: a command of your own always does) asks once, per agent
+    function assistantChoose(id, label, confined) {
+        const accepted = Config.s.assistantAgentsAccepted || [];
+        if (confined || accepted.indexOf(id) >= 0 || !confirmer) { Config.s.assistantAgent = id; return; }
+        const own = id === "custom";
+        confirmer.confirmWith({
+            title: own ? "Use your own command?" : "Use " + label + "?",
+            body: (own ? "Slate runs your command as you typed it and can't limit what it does, so it can do more than Slate's tools allow: "
+                       : "Slate can't switch off " + label + "'s own tools, so it can do more than Slate's tools allow: ")
+                + "run commands, read your files, see your screen. Slate's questions and limits only cover Slate's own tools. "
+                + "If you use it, that's yours to answer for.",
+            button: "Use it", code: 0xF6D7, danger: false
+        }, () => { Config.s.assistantAgentsAccepted = accepted.concat([id]); Config.s.assistantAgent = id; });
     }
     // Read the risks again, while it's on: the same words, and the chance to think again
     function assistantReadRisks() {
@@ -2311,6 +2326,12 @@ FloatingWindow {
                 }
                 Separator {}
                 ToggleSetting {
+                    label: "Chalk"
+                    detail: "The assistant's button, after Spaces, while the assistant is switched on (Settings → Assistant)"
+                    key: "barShowAssistant"
+                }
+                Separator {}
+                ToggleSetting {
                     label: "Workspaces"
                     detail: "A dot for each workspace; the highlighted one is where you are"
                     key: "barShowWorkspaces"
@@ -4032,13 +4053,46 @@ FloatingWindow {
                 const d = new Date(iso);
                 return isNaN(d) ? "" : Qt.formatDateTime(d, (Config.s.barClockFormat === "24h" ? "d MMM, HH:mm" : "d MMM, h:mm ap"));
             }
+            // The agents there are (scripts/assistant.py detect), and the one a prompt would go to
+            property var agents: []
+            Process {
+                running: true
+                command: ["python3", Quickshell.shellPath("scripts/assistant.py"), "detect"]
+                stdout: StdioCollector { onStreamFinished: { try { assistantPane.agents = JSON.parse(text); } catch (e) {} } }
+            }
+            readonly property string inUse: {
+                const want = Config.s.assistantAgent;
+                if (want === "custom" || agents.some(a => a.id === want)) return want;
+                const first = agents.find(a => a.installed && a.signedIn && a.id !== "custom");
+                return first ? first.id : "";
+            }
+            function signIn(cmd) {
+                Quickshell.execDetached(["hyprctl", "dispatch",
+                    `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w.-]/g, "")}") end`]);
+            }
+            // What Slate adds to a prompt (scripts/assistant.py briefing), read when asked for
+            property bool showAdds: false
+            property string adds: ""
+            Process {
+                id: addsProc
+                command: ["python3", Quickshell.shellPath("scripts/assistant.py"), "briefing"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        try {
+                            const b = JSON.parse(text);
+                            assistantPane.adds = b.briefing + "\n\n" + (b.context || "(Right now: a few lines on the time and the focused window, added while the assistant is switched on.)");
+                        } catch (e) {}
+                    }
+                }
+            }
             property string copied: ""
             Timer { id: copiedReset; interval: 1600; onTriggered: assistantPane.copied = "" }
             function copy(what, text) { Quickshell.execDetached(["wl-copy", text]); copied = what; copiedReset.restart(); }
 
             IntroText {
                 text: "Ask an AI agent you already use, like Claude Code or Codex, to change a setting, move a window or tell you what's where. "
-                    + "It works through Slate's own tools, and Slate asks you before anything that can't be undone."
+                    + "It works through Slate's own tools, and Slate asks you before anything that can't be undone. "
+                    + "Chalk is Slate's own way to ask: press Super+K, type what you want, and your agent does it."
             }
             GroupLabel { text: "Assistant" }
             Group {
@@ -4052,6 +4106,89 @@ FloatingWindow {
                         + "but it can't promise what one will do, so using it is your choice and your responsibility."
                     Toggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
                     below: [Button { visible: Config.assistantOn; label: "Read the risks again"; onClicked: win.assistantReadRisks() }]
+                }
+            }
+            GroupLabel { text: "Agent" }
+            Group {
+                Repeater {
+                    model: assistantPane.agents.filter(a => a.id !== "custom")
+                    Column {
+                        id: agentRow
+                        required property var modelData
+                        required property int index
+                        width: parent ? parent.width : 0
+                        readonly property bool ready: modelData.installed && modelData.signedIn
+                        readonly property bool chosen: assistantPane.inUse === modelData.id
+                        Separator { visible: agentRow.index > 0 }
+                        SettingRow {
+                            label: agentRow.modelData.label
+                            detail: (agentRow.ready ? "Ready" : agentRow.modelData.installed ? "Not signed in. Open a terminal and run " + agentRow.modelData.signIn + " once" : "Not installed")
+                                + (agentRow.modelData.confined ? ". Recommended: " : ". Keeps its own tools: ") + agentRow.modelData.note
+                            Button {
+                                label: agentRow.chosen ? "In use" : !agentRow.modelData.installed ? "Get it" : !agentRow.modelData.signedIn ? "Sign in" : "Choose"
+                                primary: agentRow.ready && !agentRow.chosen
+                                onClicked: {
+                                    if (!agentRow.modelData.installed) Qt.openUrlExternally(agentRow.modelData.url);
+                                    else if (!agentRow.modelData.signedIn) assistantPane.signIn(agentRow.modelData.signIn);
+                                    else if (!agentRow.chosen) win.assistantChoose(agentRow.modelData.id, agentRow.modelData.label, agentRow.modelData.confined);
+                                }
+                            }
+                        }
+                    }
+                }
+                Separator { visible: assistantPane.agents.length > 1 }
+                SettingRow {
+                    label: "A command of your own"
+                    settingKey: "assistantCommand"
+                    detail: "Slate runs this as you typed it, with what you ask on its input. What it can see and do beyond Slate's tools is up to the command"
+                    Row {
+                        spacing: 8
+                        FieldFrame {
+                            field: commandInput
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 220; height: 30
+                            TextInput {
+                                id: commandInput
+                                anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                                verticalAlignment: TextInput.AlignVCenter
+                                clip: true
+                                color: win.text; selectionColor: win.accent
+                                font.family: win.font; font.pixelSize: 12
+                                text: Config.s.assistantCommand
+                                onEditingFinished: Config.s.assistantCommand = text.trim()
+                            }
+                        }
+                        Button {
+                            label: assistantPane.inUse === "custom" ? "In use" : "Choose"
+                            onClicked: { Config.s.assistantCommand = commandInput.text.trim(); if (commandInput.text.trim() !== "" && assistantPane.inUse !== "custom") win.assistantChoose("custom", "", false); }
+                        }
+                    }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Just what you type"
+                    key: "assistantCommandBare"
+                    detail: "Your command gets your words alone, without what Slate adds: for a command that sets its own scene"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Model"
+                    settingKey: "assistantModel"
+                    detail: "For agents that let you pick one. Empty: the agent's own choice"
+                    FieldFrame {
+                        field: modelInput
+                        width: 160; height: 30
+                        TextInput {
+                            id: modelInput
+                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                            verticalAlignment: TextInput.AlignVCenter
+                            clip: true
+                            color: win.text; selectionColor: win.accent
+                            font.family: win.font; font.pixelSize: 12
+                            text: Config.s.assistantModel
+                            onEditingFinished: Config.s.assistantModel = text.trim().replace(/[^\w.:\-\[\]]/g, "")
+                        }
+                    }
                 }
             }
             GroupLabel { text: "What it can do" }
@@ -4092,12 +4229,32 @@ FloatingWindow {
                 }
             }
             Footnote { text: "Slate's tools never show an assistant your screen, your files or your clipboard. An agent with tools of its own can do more than Slate's tools allow, and Slate can't limit those." }
+            GroupLabel { text: "Chalk" }
+            Group {
+                ToggleSetting {
+                    label: "Show on the menu bar"
+                    key: "barShowAssistant"
+                    detail: "Chalk's button, after Spaces, while the assistant is switched on"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Ask Chalk"
+                    detail: "Super+K, or your keyboard's Copilot or assistant key if it has one. You can change them in Shortcuts"
+                    Button { label: "Shortcuts"; onClicked: win.goTo("shortcuts", "") }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Keep the conversation"
+                    key: "assistantKeepChat"
+                    detail: "What you asked Chalk and what it answered are still in its window after Slate restarts: the last 100 messages, kept on this computer only. Off: it's forgotten when Slate restarts, and what was kept is deleted"
+                }
+            }
             GroupLabel { text: "Activity" }
             Group {
                 SettingRow {
                     label: assistantPane.activity.length === 0 ? "Nothing here yet" : "What assistants did"
                     detail: assistantPane.activity.length === 0 ? "What assistants do with Slate's tools will show up here"
-                        : "The latest " + assistantPane.activity.length + (assistantPane.activity.length === 1 ? " thing" : " things") + ", newest first. Only tool calls are kept, never what you typed"
+                        : "The latest " + assistantPane.activity.length + (assistantPane.activity.length === 1 ? " thing" : " things") + ", newest first. This list holds what was done, never what you typed"
                     Button {
                         visible: assistantPane.activity.length > 0
                         label: "Clear"; destructive: true
@@ -4130,6 +4287,25 @@ FloatingWindow {
                     visible: assistantPane.activity.length > 8
                     label: assistantPane.showAll ? "Showing all " + assistantPane.activity.length : "Showing the latest 8"
                     Button { label: assistantPane.showAll ? "Show fewer" : "Show more"; onClicked: assistantPane.showAll = !assistantPane.showAll }
+                }
+            }
+            GroupLabel { text: "What Slate adds" }
+            Group {
+                SettingRow {
+                    label: "See what Slate adds"
+                    detail: "Alongside what you type, Slate tells the agent who it is here and a few lines about the moment. Nothing else is sent with your words"
+                    Button {
+                        label: assistantPane.showAdds ? "Hide" : "Show"
+                        onClicked: { assistantPane.showAdds = !assistantPane.showAdds; if (assistantPane.showAdds) { addsProc.running = false; addsProc.running = true; } }
+                    }
+                }
+                Text {
+                    visible: assistantPane.showAdds
+                    x: 16; width: parent.width - 32
+                    bottomPadding: 12
+                    text: assistantPane.adds
+                    textFormat: Text.PlainText; wrapMode: Text.Wrap
+                    color: win.dim; font.family: win.font; font.pixelSize: 12
                 }
             }
             GroupLabel { text: "Use Slate from other apps" }

@@ -43,7 +43,10 @@ class Stubs:
     BLOCKED = ("hyprctl", "notify-send", "qs", "quickshell", "systemctl", "loginctl", "gsettings",
                "nmcli", "bluetoothctl", "wpctl", "pactl", "busctl", "gdbus", "dbus-send", "xdg-open",
                "wl-copy", "wl-paste", "pw-play", "brightnessctl", "powerprofilesctl", "lpadmin",
-               "pkexec", "sudo")
+               "pkexec", "sudo",
+               # the agent CLIs the assistant can drive: a real one would reach the network and
+               # spend the person's own account (tests bring stand-ins: test_assistant.py)
+               "claude", "codex", "agy", "gemini", "ollama")
 
     def __init__(self, home):
         self.home = home

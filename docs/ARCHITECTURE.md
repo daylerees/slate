@@ -80,6 +80,9 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               in an empty folder with Slate's server as its tools, and turns what
                               it prints into start/text/done/error lines. scripts/slate_agents.py
                               has the agents (Claude Code, a command of your own)
+Assistant.qml                 Chalk's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
+                              for a prompt, shows the answer (plain text) and what was done, as
+                              Slate's server reports it (`assistant did`)
 AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are
                               allowed and what they may see, and their questions, shown with
                               PowerConfirm and held until the server reads the answer
@@ -200,7 +203,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `lock` | `lock`, `preview <lock\|login>`, `closePreview` |
 | `media` | `toggle`, `next`, `previous` (media keys), `info` (what's playing, JSON) |
 | `notifications` | `dnd <bool>`, `dndGet`, `list` (the latest, JSON), `clear` |
-| `assistant` | `status` (JSON: enabled, locked, game mode, what may be seen), `confirm <id> <json>` (ask in the confirmation window), `answer <id>` ("" until answered, then `yes` or `no`, once), `withdraw <id>`: for `slate mcp` (ASSISTANT.md) |
+| `assistant` | `toggle`, `open`, `close`, `ask <text>` (open and send), `stop` (the prompt window); `did <json>` (what a tool did, from the server); `status` (JSON: enabled, locked, game mode, what may be seen), `confirm <id> <json>` (ask in the confirmation window), `answer <id>` ("" until answered, then `yes` or `no`, once), `withdraw <id>`: for `slate mcp` (ASSISTANT.md) |
 | `picker` | `clipboard`, `emoji`, `toggle <clipboard\|emoji>`, `close` |
 | `wallpaper` | `set <path>`, `get` |
 | `nightlight` | `toggle`, `on`, `off` |

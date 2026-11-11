@@ -67,12 +67,17 @@ ShellRoot {
     Launcher {
         id: appLauncher
         notifs: notifs
-        onShownChanged: if (shown) { winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) { winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); chalk.closeWindow(); }
+    }
+    // Chalk, the assistant's prompt window (Super+K): one of the things only one of shows at a time
+    Assistant {
+        id: chalk
+        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); }
+        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); chalk.closeWindow(); }
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
@@ -169,6 +174,17 @@ ShellRoot {
             if (what === "risks") w.assistantReadRisks();
             else w.assistantSwitch(what === "on");
         }
+        // As saying yes to an agent that keeps its own tools (Settings → Assistant) leaves it
+        function assistantAccepted(id: string): void { Config.s.assistantAgentsAccepted = id === "" ? [] : [id]; }
+        // The prompt window as a run would leave it: {asked, answer, working, actions, error}
+        function chalk(json: string): void {
+            const st = JSON.parse(json);
+            // (history: earlier exchanges, shown above this one)
+            const now = st.asked ? [{ asked: st.asked, answer: st.answer || "", actions: st.actions || [], error: st.error || null }] : [];
+            chalk.turns = (st.history || []).map(h => ({ asked: h.asked || "", answer: h.answer || "", actions: h.actions || [], error: h.error || null })).concat(now);
+            chalk.working = !!st.working;
+            if (st.agents) { chalk.agents = st.agents; chalk.looked = true; }
+        }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
@@ -222,7 +238,10 @@ ShellRoot {
                 secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
-                assistant: { enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
+                assistant: { open: chalk.shown, working: chalk.working, turns: chalk.turns.length, asked: chalk.asked, answer: chalk.answer, actions: chalk.actions,
+                             error: chalk.error ? chalk.error.kind : "", agent: chalk.agent ? chalk.agent.id : "", session: chalk.session,
+                             button: Config.s.barShowAssistant && Config.assistantOn,
+                             enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
@@ -277,7 +296,11 @@ ShellRoot {
         SecretEmpty { required property var modelData; screen: modelData; bar: topBar }
     }
     LockScreen { id: lockScreen }
-    AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen }     // what AI agents may do (slate mcp)
+    AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: chalk }     // what AI agents may do (slate mcp)
+    // A bar panel opening takes the prompt window's place, like the other overlays
+    Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") chalk.closeWindow(); } }
+    // The screen locks: the prompt window closes and a run stops
+    Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { chalk.closeWindow(); chalk.stop(); } } }
     Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { lock: lockScreen }
 
@@ -512,12 +535,12 @@ ShellRoot {
     Switcher {
         id: winSwitcher
         bar: topBar
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); wsOverview.close(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) { appLauncher.closeLauncher(); wsOverview.close(); popouts.close(); picker.close(); chalk.closeWindow(); }
     }
     WorkspaceOverview {
         id: wsOverview
         bar: topBar
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); chalk.closeWindow(); }
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)

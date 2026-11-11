@@ -37,7 +37,7 @@
     <a href="#desktop">Desktop</a><a href="#appearance">Appearance</a><a href="#app-theming">App theming</a>
     <a href="#displays">Displays</a><a href="#input">Keyboard and Mouse</a><a href="#sound">Sound</a>
     <a href="#power">Power</a><a href="#lock">Lock and login</a><a href="#apps">Apps</a>
-    <a href="#tools">Tools</a><a href="#settings">Settings app</a><a href="#shortcuts">Shortcuts</a>
+    <a href="#assistant">Assistant</a><a href="#tools">Tools</a><a href="#settings">Settings app</a><a href="#shortcuts">Shortcuts</a>
     <a href="#under-the-hood">Under the hood</a>
   </nav>
 </section>
@@ -85,6 +85,7 @@
         <li>Control centre button (the slate mark); right-click it for Settings, the wallpaper, Do Not Disturb, Night Light, glass, updates, restarting Slate, locking and logging out</li>
         <li>Apps button, with right-click shortcuts to Settings pages</li>
         <li>Spaces button: save and bring back sets of workspaces (see Windows)</li>
+        <li>Chalk's button, while the assistant is switched on: opens its prompt window, and breathes while it's working</li>
         <li>Workspaces as dots, with a springy indicator</li>
         <li>Before the dots, the workspace's window mode: click it for a panel to give that workspace a mode of its own (tiling, side stack, scrolling, stacking, floating or solo) or put it back to the default, and to name it</li>
         <li>The focused window's icon and title (the icon can be turned off)</li>
@@ -536,6 +537,53 @@
   </div>
 </section>
 
+<section id="assistant" class="fp-section">
+  <h2><i class="ti">&#xF6D7;</i> Chalk, the assistant</h2>
+  <p class="fp-intro">Ask for what you want in a line, and an AI agent you already use does it through Slate's own tools. It's off until you switch it on, and switching it on tells you what that means first.</p>
+  <div class="fp-grid">
+    <article>
+      <h3>Ask Chalk</h3>
+      <ul>
+        <li>Super+K, the button on the menu bar, or your keyboard's Copilot or assistant key opens a small prompt window, like the launcher</li>
+        <li>Type what you want: "turn on glass", "put Firefox on workspace 2", "make the dock smaller", "where do I change the font?"</li>
+        <li>The answer appears as it's written, with a list of what was done, in Slate's own words</li>
+        <li>It reads like a chat: your lines on the right, Chalk's on the left. Ask a follow-up, or start afresh</li>
+        <li>The conversation is still there after a restart (the last 100 messages, kept on your computer only), unless you switch that off</li>
+        <li>Close the window and it carries on, with a notification when it's done</li>
+        <li>Stop ends it at any time</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Your own agent</h3>
+      <ul>
+        <li>Chalk uses an agent you already have and are signed in to: Claude Code, or a command of your own. Slate keeps no keys and sends nothing anywhere itself</li>
+        <li>With Claude Code, Slate switches off the agent's own tools for the prompt, so it works through Slate's alone</li>
+        <li>An agent Slate can't limit that way is marked "Keeps its own tools", and choosing it asks first</li>
+        <li>Slate tells the agent who it is here and a few lines about the moment; Settings shows you exactly what</li>
+      </ul>
+    </article>
+    <article>
+      <h3>What Slate asks you first</h3>
+      <ul>
+        <li>Changing a setting, moving a window, opening an app or a Space, the wallpaper, volume and brightness happen straight away, and can be put back</li>
+        <li>Closing a window, deleting a Space, and logging out, restarting, shutting down or sleeping always ask, in Slate's own confirmation window</li>
+        <li>A switch makes Slate ask about every change</li>
+        <li>Some settings are yours alone: what the assistant may do, locking, keyboard layouts, default and startup apps, folders and your location</li>
+        <li>Everything it did is listed in Settings → Assistant → Activity</li>
+      </ul>
+    </article>
+    <article>
+      <h3>What it's told, and what it isn't</h3>
+      <ul>
+        <li>What you type, and what Slate tells the assistant about your desktop (your settings, your open windows and their titles), goes to the service behind your agent, under your own account with them</li>
+        <li>Slate's tools answer in words: they never show an assistant your screen, your files or your clipboard</li>
+        <li>Window titles and notifications each have a switch; notifications start off</li>
+        <li>Slate does its best to keep an assistant within these limits, but it can't promise what one will do, so using it is your choice and your responsibility</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="tools" class="fp-section">
   <h2><i class="ti">&#xEBCA;</i> Built-in tools</h2>
   <div class="fp-grid">
@@ -624,6 +672,7 @@
         <dt>Super T</dt><dd>Text editor</dd>
         <dt>Super C</dt><dd>Calculator</dd>
         <dt>Ctrl Shift Esc</dt><dd>System monitor</dd>
+        <dt>Super K</dt><dd>Ask Chalk, the assistant (also the Copilot or assistant key)</dd>
         <dt>Super Z</dt><dd>Settings</dd>
         <dt>Super X</dt><dd>Control centre</dd>
         <dt>Super A</dt><dd>Notifications</dd>

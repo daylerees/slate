@@ -5,6 +5,7 @@
 // what needs asking and writes the question's words (fixed sentences, never the model's);
 // this shows it and holds the answer until the server reads it.
 //   slate ipc call assistant status
+// The same IPC target opens the prompt window (Assistant.qml): slate ipc call assistant toggle
 // Nothing here is loaded on the lock or login screens, and status says when the screen is
 // locked so the server refuses.
 
@@ -16,6 +17,7 @@ Scope {
     id: root
     required property var powerConfirm
     required property var lockScreen
+    property var window: null              // the prompt window (Assistant.qml)
 
     // Questions asked and not yet read back: id → "yes" or "no" ("" while it's showing or
     // waiting its turn)
@@ -44,6 +46,16 @@ Scope {
 
     IpcHandler {
         target: "assistant"
+        // The prompt window (Super+K): toggle, open, close; ask opens it and sends; stop ends a run
+        function toggle(): void { if (!root.window) return; if (root.window.shown) root.window.closeWindow(); else root.window.openWindow(); }
+        function open(): void { if (root.window) root.window.openWindow(); }
+        function close(): void { if (root.window) root.window.closeWindow(); }
+        function ask(text: string): void { if (root.window) root.window.ask(text); }
+        function stop(): void { if (root.window) root.window.stop(); }
+        // Start afresh, as New does: the conversation is forgotten (and what was kept, deleted)
+        function clear(): void { if (root.window) root.window.fresh(); }
+        // From Slate's server, as a tool is used in a run the prompt window started: its list
+        function did(json: string): void { if (root.window) root.window.did(json); }
         function status(): string {
             return JSON.stringify({
                 enabled: Config.assistantOn,

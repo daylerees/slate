@@ -263,7 +263,7 @@ class Session:
         """Close everything that might be open, so each test starts from the plain desktop."""
         for target, fn in (("settings", "close"), ("launcher", "close"), ("picker", "close"), ("switcher", "cancel"),
                            ("overview", "close"), ("popout", "close"), ("power", "cancel"), ("polkit", "close"),
-                           ("screensaver", "stop"), ("lock", "closePreview"), ("dock", "closeMenu"),
+                           ("screensaver", "stop"), ("lock", "closePreview"), ("assistant", "stop"), ("assistant", "clear"), ("assistant", "close"), ("dock", "closeMenu"),
                            ("dock", "closePreview")):
             try:
                 self.ipc(target, fn)

@@ -38,6 +38,7 @@ the screen, and settings that could do any of that are refused (REFUSE).
 import collections
 import datetime
 import glob
+import itertools
 import json
 import os
 import queue
@@ -180,6 +181,13 @@ NAMED = {
     "hotCornerBottomLeft": ("hotcorners", "Bottom left corner"),
     "hotCornerBottomRight": ("hotcorners", "Bottom right corner"),
 }
+
+
+def own(key):
+    """The assistant's own settings: never shown to an assistant, never changed by one."""
+    return key.startswith("assistant") or key == "barShowAssistant"
+
+
 TYPES = {"bool": "on or off", "int": "whole number", "real": "number", "string": "text", "var": "list"}
 
 _settings = None
@@ -216,7 +224,7 @@ def settings():
                     default = json.loads(default)
                 except ValueError:
                     pass
-            if key not in HIDDEN and not key.startswith("assistant"):
+            if key not in HIDDEN and not own(key):
                 out[key] = {"key": key, "type": kind, "default": default, "label": "", "page": "", "row": False,
                             "about": about or (" ".join(above) if len(" ".join(above).split()) > 3 else ""),
                             "detail": "", "group": "", "words": ""}
@@ -369,6 +377,24 @@ def gate():
         raise Refused("The screen is locked, so Slate isn't doing anything for assistants just now.")
 
 
+def doing(text):
+    """What this call is doing, in Slate's words, for the prompt window's list ("Turn Glass
+    on", "Close Firefox"); a tool that doesn't say is listed by its title."""
+    CALL["did"] = clean(text, 80)
+
+
+def tell(state):
+    """Tell the prompt window what this call came to (asking, done, declined…). Only in a
+    run it started, and only for tools that change something: looking isn't listed."""
+    if not RUN or CALL.get("tier") == "look":
+        return
+    try:
+        ipc("assistant", "did", json.dumps({"run": RUN, "id": CALL.get("n", 0), "state": state,
+                                            "text": CALL.get("did") or CALL.get("title", "")}))
+    except NotRunning:
+        pass
+
+
 def asker():
     return "Your assistant (%s)" % WHO if WHO else "Your assistant"
 
@@ -397,6 +423,9 @@ def ask(title, body, button, danger=False, leave=None):
         spec["leave"] = leave
     ipc("assistant", "confirm", qid, json.dumps(spec))
     CALL["asked"] = True
+    if "did" not in CALL:
+        doing(title.rstrip("?"))
+    tell("asking")
     until = time.monotonic() + ASK_TIMEOUT
     while True:
         try:
@@ -870,7 +899,7 @@ AT_START = {"uiScale"}
 
 def refused(key):
     """Why a setting can't be changed through the server (None: it can)."""
-    if key.startswith("assistant") or key == "barShowAssistant":
+    if own(key):
         return "What assistants may do is only the person's to change: Slate keeps that setting to them."
     s = settings().get(key)
     if key in REFUSE or (s and s["type"] == "var"):
@@ -948,6 +977,7 @@ def settings_set(key, value):
     name = s["label"] or key
     if before == new:
         return {"key": key, "name": name, "now": new, "note": "It was already set to that; nothing changed."}
+    doing(("Turn %s %s" % (name, "on" if new else "off")) if isinstance(new, bool) else "Set %s to %s" % (name, shown_value(new)))
     changing("Change %s to %s?" % (name, shown_value(new)),
              "%s is asking to change this setting. You can change it back at any time in Settings → %s."
              % (asker(), s["pageName"] or "All Settings"))
@@ -957,6 +987,8 @@ def settings_set(key, value):
         ipc("workspacemode", "setDefault", as_text, "false")
     else:
         ipc("config", "set", key, as_text)
+        if key == "themeMode" and new in ("dark", "light"):     # (the switch the theme is drawn from, as Settings sets it)
+            ipc("config", "set", "lightMode", "true" if new == "light" else "false")
     out = {"key": key, "name": name, "before": before, "now": value_now(s)}
     if key in AT_START:
         out["note"] = "It takes effect the next time Slate starts."
@@ -997,6 +1029,7 @@ PANELS = ["control", "spaces", "notifications", "session", "volume", "wifi", "cl
       "blurred) or Metro Flat (solid). The theme (dark or light) and accent colour stay as they are.",
       {"name": {"type": "string", "enum": LOOKS}}, ["name"], tier="change")
 def look_apply(name):
+    doing("Switch to %s" % name)
     changing("Switch to %s?" % name, "%s is asking to change how Slate looks. You can change it back at any time "
              "in Settings → Appearance." % asker(), "Switch")
     ipc("welcome", "look", name)
@@ -1020,6 +1053,7 @@ def app_open(id):
     v = apps().get(id)
     if not v:
         raise Sorry("There's no app with that id. apps_list finds an app's id by its name.")
+    doing("Open %s" % clean(v["Name"], 60))
     changing("Open %s?" % clean(v["Name"], 60), "%s is asking to start this app." % asker(), "Open")
     if ipc("launcher", "launch", id) != "ok":
         raise Sorry("Slate couldn't start that app.")
@@ -1054,6 +1088,7 @@ WORKSPACE = {"type": "integer", "minimum": 1, "maximum": 99, "description": "The
       {"address": ADDRESS}, ["address"], tier="change")
 def window_focus(address):
     c = window(address)
+    doing("Go to %s" % app_name(c.get("class", "")))
     changing("Go to %s?" % app_name(c.get("class", "")), "%s is asking to bring this window to the front." % asker(), "Go")
     hypr_do("hl.dsp.focus({ window = " + spaces.win_sel(address) + " })")
     return {"focused": app_name(c.get("class", ""))}
@@ -1064,6 +1099,7 @@ def window_focus(address):
 def window_move(address, workspace):
     c = window(address)
     name = app_name(c.get("class", ""))
+    doing("Move %s to workspace %d" % (name, workspace))
     changing("Move %s to workspace %d?" % (name, workspace), "%s is asking to move this window." % asker(), "Move")
     hypr_do("hl.dsp.window.move({ workspace = %d, follow = false, window = %s })" % (workspace, spaces.win_sel(address)))
     return {"moved": name, "workspace": workspace}
@@ -1084,6 +1120,7 @@ STATES = {
 def window_state(address, state):
     c = window(address)
     name = app_name(c.get("class", ""))
+    doing("%s %s" % ({"float": "Float", "tile": "Tile", "maximise": "Maximise", "fullscreen": "Full-screen", "restore": "Restore"}[state], name))
     changing("Change %s's window?" % name, "%s is asking to %s this window." % (asker(), state), "Change")
     hypr_do(STATES[state] % spaces.win_sel(address))
     return {"window": name, "state": state}
@@ -1092,6 +1129,7 @@ def window_state(address, state):
 @tool("workspace_go", "Go to a workspace", "Switch to a workspace by its number.",
       {"id": WORKSPACE}, ["id"], tier="change")
 def workspace_go(id):
+    doing("Go to workspace %d" % id)
     changing("Go to workspace %d?" % id, "%s is asking to switch workspace." % asker(), "Go")
     hypr_do("hl.dsp.focus({ workspace = %d })" % id)
     return {"workspace": id}
@@ -1102,6 +1140,7 @@ def workspace_go(id):
       "monocle (one at a time), solo or floating.",
       {"id": WORKSPACE, "mode": {"type": "string", "enum": MODES}}, ["id", "mode"], tier="change")
 def workspace_mode(id, mode):
+    doing("Change workspace %d to %s" % (id, mode))
     changing("Change workspace %d to %s?" % (id, mode), "%s is asking to change how this workspace lays out its "
              "windows. You can change it back from the menu bar." % asker())
     ipc("workspacemode", "set", id, mode)
@@ -1131,6 +1170,7 @@ def space(name):
 def space_restore(name):
     s = space(name)
     label = clean(s["name"], 60)
+    doing("Open “%s”" % label)
     changing("Open “%s”?" % label, "%s is asking to open this Space. Its apps will start on new workspaces." % asker(), "Open")
     ipc("spaces", "restore", s["id"])
     return {"opening": label}
@@ -1148,6 +1188,7 @@ def space_save(name, workspaces):
     if not name or not ids or not re.fullmatch(r"[\d, ]+", workspaces):
         raise Sorry("A Space needs a name and the numbers of the workspaces to save, like 1,3.")
     old = next((s for s in saved_spaces() if s["name"].lower() == name.lower()), None)
+    doing("Save “%s”" % name)
     if old:
         ask("Replace “%s”?" % clean(old["name"], 60), "%s is asking to save over this Space. What it holds now will be "
             "replaced by what's on the workspaces chosen." % asker(), "Replace", danger=True)
@@ -1187,6 +1228,7 @@ def wallpaper_next():
 @tool("volume_set", "Set the volume", "Set the speakers' volume, as a percentage (it also unmutes).",
       {"percent": {"type": "integer", "minimum": 0, "maximum": 100}}, ["percent"], tier="change")
 def volume_set(percent):
+    doing("Set the volume to %d%%" % percent)
     changing("Set the volume to %d%%?" % percent, "%s is asking to change the volume." % asker())
     v = volume()
     if v is None:
@@ -1202,6 +1244,7 @@ def brightness_set(percent):
     before = brightness()
     if before is None:
         raise Sorry("This screen's brightness can't be changed from Slate (there's no backlight to set).")
+    doing("Set the brightness to %d%%" % percent)
     changing("Set the brightness to %d%%?" % percent, "%s is asking to change the screen's brightness." % asker())
     CALL["before"] = before
     ipc("osd", "brightnessSet", percent)
@@ -1220,6 +1263,7 @@ def media_control(action):
 @tool("do_not_disturb", "Do Not Disturb", "Turn Do Not Disturb on or off (on: notifications are kept, without popping up).",
       {"on": {"type": "boolean"}}, ["on"], tier="change")
 def do_not_disturb(on):
+    doing("Turn Do Not Disturb %s" % ("on" if on else "off"))
     changing("Turn Do Not Disturb %s?" % ("on" if on else "off"), "%s is asking to change Do Not Disturb." % asker())
     CALL["before"] = ipc("notifications", "dndGet") == "true"
     ipc("notifications", "dnd", "true" if on else "false")
@@ -1264,6 +1308,7 @@ def screensaver_start():
 def window_close(address):
     c = window(address)
     name = app_name(c.get("class", ""))
+    doing("Close %s" % name)
     ask("Close %s?" % name, "%s is asking to close this window. Anything unsaved in it could be lost." % asker(),
         "Close", danger=True)
     hypr_do("hl.dsp.window.close({ window = " + spaces.win_sel(address) + " })")
@@ -1334,6 +1379,7 @@ def answer(text, error=False):
 
 
 _recent = collections.deque()
+_count = itertools.count(1)
 
 
 def call_tool(params, mid=None):
@@ -1344,7 +1390,7 @@ def call_tool(params, mid=None):
     args = params.get("arguments", {})
     check_arguments(t, args)
     CALL.clear()
-    CALL.update(tool=name, id=mid)
+    CALL.update(tool=name, id=mid, tier=t["tier"], title=t["title"], n=next(_count))
     STATUS.clear()
     t0 = time.monotonic()
     while _recent and t0 - _recent[0] > RATE_SECONDS:
@@ -1372,6 +1418,8 @@ def call_tool(params, mid=None):
         return answer("Slate couldn't do that just now.", True)
     finally:
         record(name, t["tier"], args, outcome)
+        if STATUS.get("enabled"):
+            tell(outcome)
 
 
 # ---- Messages --------------------------------------------------------------------------

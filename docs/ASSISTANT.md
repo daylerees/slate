@@ -6,8 +6,41 @@ ask about your desktop and do things on it. "Turn on glass." "Put Firefox on wor
 "Which window is on workspace 3?" "Where do I change the font?"
 
 It's off until you switch it on in Settings → Assistant, and Slate asks you before anything
-that can't be undone. A prompt window of Slate's own is still to come
-([plans/assistant.md](../plans/assistant.md)).
+that can't be undone.
+
+Slate also has a way of its own to ask: **Chalk**. Press Super+K (or the button on the menu
+bar, or your keyboard's Copilot or assistant key), type what you want in a line, and the
+agent you chose does it through the same tools.
+
+## Chalk, the prompt window
+
+- **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
+  your accent colour, Chalk's answers on the left as they're written (plain text), each with
+  a short list of what was done: Slate's own record, in Slate's words, not the agent's
+  account of itself. It scrolls once it's long. Copy copies the latest answer.
+- **Follow-ups.** What you type next carries on the same conversation. **New** (Ctrl+N)
+  starts afresh.
+- **Keeping the conversation.** The last 100 messages are still there after Slate restarts
+  or you log in again, in `~/.local/state/slate/assistant/chat.json`: on this computer only,
+  in a folder only you can read, never sent anywhere and not part of `slate logs`. **New**
+  empties it. Settings → Assistant → **Keep the conversation** switches this off, which
+  deletes what was kept; the conversation is then forgotten whenever Slate restarts.
+- **Closing it.** Escape or a click outside hides the window and the work carries on: the
+  bar button shows it, and a notification brings the answer when it's done. **Stop** ends it.
+  Locking the screen stops it too.
+- **Which agent answers** is in Settings → Assistant → Agent. Claude Code is the
+  recommended one: for each prompt Slate switches off its own tools (shell, files, web) and
+  every other MCP server, so it works through Slate's alone, and nothing in your own Claude
+  Code setup is changed. **A command of your own** is run as you typed it; Slate can't limit
+  what such a command does, so choosing it asks you first. Prompts use your own account with
+  the agent, and count against it like any other.
+- **What Slate adds to your words**: who the agent is here and how to behave, and a few
+  lines about the moment (the time, the focused window and workspace). Settings → Assistant →
+  **See what Slate adds** shows both, so nothing travels with your words that you can't read.
+  It never holds your name, your computer's name or your home folder.
+- **When it goes wrong**, the window says what happened and offers the one useful thing:
+  Open Settings, Open a terminal (to sign in), or Try again.
+- **Game mode.** The window opens as normal; the bar button stops breathing.
 
 ## Before you switch it on
 
@@ -155,8 +188,9 @@ screen".
 
 Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, one line
 each: the time, which agent, the tool, its arguments (cut short), and how it ended (done,
-declined, no answer, refused or failed), with a setting's value before it was changed. Tool
-calls only: Slate keeps no copy of what you typed or what the agent answered. The last
+declined, no answer, refused or failed), with a setting's value before it was changed. This
+log holds tool calls only, never what you typed or what the agent answered (Chalk's own
+conversation is kept separately, if you leave that on: see above). The last
 1,000 lines are kept, the log isn't part of `slate logs`, and Settings → Assistant → Activity
 shows the latest 50 and clears it.
 
