@@ -820,11 +820,13 @@ Singleton {
     // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
     // for a moment
     readonly property string glassRules: ""
-        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|launcher|assistant|picker|switcher|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
         + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
         // (the panels that come out of the bar: an opacity and a blur of their own too)
         + glassRule("SLATE_GLASS_PANEL", "^slate-popout$", panelGlassCut, s.barPanelBlur)
+        // (notifications as they pop up: the same again, Settings → Notifications → Glass)
+        + glassRule("SLATE_GLASS_TOAST", "^slate-notifications$", toastGlassCut, s.notificationBlur)
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
@@ -1340,6 +1342,17 @@ Singleton {
         return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
     }
     readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
+    // Notifications as they pop up: a background opacity of their own with glass, another while
+    // the pointer's on one (to read it by), a blur rule and a shadow kept under it, as the
+    // panels' are (Settings → Notifications → Glass)
+    readonly property real toastGlassOpacity: Math.max(s.notificationBlur ? 0.01 : 0, Math.min(1, s.notificationOpacity))
+    readonly property real toastGlassHoverOpacity: Math.max(s.notificationBlur ? 0.01 : 0, Math.min(1, s.notificationHoverOpacity))
+    function toastSurface(c, hovered) { return glass ? Qt.rgba(c.r, c.g, c.b, hovered ? toastGlassHoverOpacity : toastGlassOpacity) : c; }
+    // (blur from under whichever of the two is clearer, so it's there for both)
+    readonly property real toastGlassLow: Math.min(toastGlassOpacity, toastGlassHoverOpacity)
+    readonly property real toastGlassCut: toastGlassLow < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(toastGlassLow * 0.85 * 10) / 10)
+    readonly property real toastShadowShare: !glass || !s.notificationBlur ? 1
+        : Math.min(1, Math.max(0, toastGlassLow - 0.25) / Math.max(0.01, shadowStrength))
     readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
         : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
     // ...and the bar's shadow, as a share of Slate's usual: always under that threshold
@@ -1351,7 +1364,7 @@ Singleton {
     function glassRule(v, match, cut, wanted) {
         // (the number after the cut: put up by one whenever a rule here changes what it matches,
         // so a Hyprland that's still running remakes it)
-        const c = cut.toFixed(3), made = `"${c} 5"`;
+        const c = cut.toFixed(3), made = `"${c} 6"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;

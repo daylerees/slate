@@ -176,6 +176,9 @@ JsonAdapter {
     property string dockHoverEffect: "magnify"   // pointing at the dock: magnify, tilt (icons turn to face the pointer), both, fade, fademagnify, glow (a ring and glow in the icon's colour), glowmagnify, raise (just the icon under the pointer lifts) or none
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
+    property bool notificationBlur: true      // with glass: what's behind a notification is blurred (off: seen straight through it)
+    property real notificationOpacity: 0.7    // with glass: a notification's background, 0 clear … 1 solid
+    property real notificationHoverOpacity: 0.9   // ...and while the pointer's on it
     property bool dockBlur: true              // with glass: what's behind the dock is blurred (off: seen straight through it)
     property real dockOpacity: 0.6            // with glass: the dock's background, 0 clear … 1 solid
     property real dockIconOpacity: 1.0        // with glass: its icons, and what's drawn on its buttons, 0 gone … 1 solid

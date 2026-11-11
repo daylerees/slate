@@ -71,3 +71,4 @@ things off as they're done.
 - The Date & Time page is called Region now (id still "datetime"): tests and scenes that look for its title.
 - Pages renamed: Keyboard & Mouse → Input, Printers & Scanners → Printers, Lock & Idle → Security (ids unchanged): scenes/tests that look for the titles; a search test that "keyboard", "mouse", "scanner", "lock", "idle" and the old names still find them.
 - slate-greeter-sync --prompt drops the Later snooze once the login screen is up to date: a unit test in test_greeter_sync.py.
+- Notifications → Glass (notificationBlur, notificationOpacity, notificationHoverOpacity): the default-hint test covers the sliders; a live test of the card's colour and the blur rule (SLATE_GLASS_TOAST); notifications left the general SLATE_GLASS rule (update test_glass_blurs_every_popup).

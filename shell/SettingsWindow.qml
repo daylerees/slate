@@ -296,7 +296,7 @@ FloatingWindow {
                      "overviewMoveAnimation", "overviewPickAnimation", "overviewGridSize"],
         spaces: ["spaceBarTint", "spaceBorders", "spaceBadges", "spaceSwitcherBadges"],
         hotcorners: ["hotCornerTopLeft", "hotCornerTopRight", "hotCornerBottomLeft", "hotCornerBottomRight", "hotCornerDelay"],
-        notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts"],
+        notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts", "notificationBlur", "notificationOpacity", "notificationHoverOpacity"],
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
@@ -4748,6 +4748,30 @@ FloatingWindow {
                     label: "Most at once"
                     settingKey: "notificationMaxToasts"
                     ValueSlider { from: 1; to: 8; stepSize: 1; value: Config.s.notificationMaxToasts; onMoved: v => Config.s.notificationMaxToasts = v }
+                }
+            }
+            // (only with glass on: Appearance → Glass)
+            GroupLabel { visible: Config.s.glass; text: "Glass" }
+            Group {
+                visible: Config.s.glass
+                ToggleSetting {
+                    label: "Blur"
+                    detail: "What's behind a notification is blurred, like frosted glass. Off, you see straight through it"
+                    key: "notificationBlur"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Opacity"
+                    settingKey: "notificationOpacity"
+                    detail: "How solid a notification's background is: 100% can't be seen through, lower is clearer"
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.notificationOpacity * 100); onMoved: v => Config.s.notificationOpacity = v / 100 }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Hover opacity"
+                    settingKey: "notificationHoverOpacity"
+                    detail: "How solid it is while the pointer's on it, to read it by"
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.notificationHoverOpacity * 100); onMoved: v => Config.s.notificationHoverOpacity = v / 100 }
                 }
             }
             GroupLabel { text: "History" }

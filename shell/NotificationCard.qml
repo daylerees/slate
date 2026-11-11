@@ -63,14 +63,17 @@ Rectangle {
     implicitHeight: band + content.height + 24 + (hasTimer ? 14 : 0)
     height: implicitHeight
     radius: Config.corner(9)
-    color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
+    // (a pop-up: the bar's colour at the notifications' own opacity with glass, and their hover
+    // opacity while the pointer's on it: Settings → Notifications → Glass)
+    color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor)
+        : Config.toastSurface(Config.tint("#0f1216"), cardHover.hovered)
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
     Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 0.7 }       // (flat in the bell panel)
-    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+    Behavior on color { ColorAnimation { duration: Config.ms(inPanel ? 100 : 160) } }
     // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
     // of it, so nothing shows through), kept within the room their window leaves round them
-    Shadow { visible: !card.inPanel && !Config.gameMode; blur: 14; dropY: 3 }
+    Shadow { visible: !card.inPanel && !Config.gameMode; blur: 14; dropY: 3; strength: Config.toastShadowShare }
 
     // A thick band across the top that wraps round the corners and tapers down the sides:
     // the space between the card's outline and its rounded content area, set `band` lower.

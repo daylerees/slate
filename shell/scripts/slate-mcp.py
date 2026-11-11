@@ -927,7 +927,7 @@ RANGES = {
     "windowBorderSize": (0, 12), "inactiveDim": (0, 80), "keyRepeatDelay": (150, 1000), "keyRepeatRate": (10, 80),
     "mouseSpeed": (-1, 1), "touchpadScrollSpeed": (0.1, 2), "cursorSize": (16, 64),
     "windowGap": (0, 32), "soloWindowGap": (0, 32),
-    "dockIconSize": (28, 64), "dockMagnification": (1, 2.5), "dockSpread": (1, 5), "dockOpacity": (0, 1), "dockTileOpacity": (0, 1), "dockIconOpacity": (0, 1), "barOpacity": (0, 1), "barPanelOpacity": (0, 1), "barItemOpacity": (0, 1), "barItemHoverOpacity": (0, 1), "dockPreviewDelay": (0, 3),
+    "dockIconSize": (28, 64), "dockMagnification": (1, 2.5), "dockSpread": (1, 5), "dockOpacity": (0, 1), "notificationOpacity": (0, 1), "notificationHoverOpacity": (0, 1), "dockTileOpacity": (0, 1), "dockIconOpacity": (0, 1), "barOpacity": (0, 1), "barPanelOpacity": (0, 1), "barItemOpacity": (0, 1), "barItemHoverOpacity": (0, 1), "dockPreviewDelay": (0, 3),
     "launcherColumns": (3, 10), "launcherRows": (2, 8),
     "overviewCardWidth": (480, 1000), "overviewGridSize": (2, 9),
     "notificationSeconds": (2, 15), "notificationMaxToasts": (1, 8),
