@@ -3679,23 +3679,30 @@ FloatingWindow {
             // Apps of a kind (by their categories), or every app if none say so
             function optionsFor(cats) {
                 const fit = all.filter(e => (e.categories || []).some(c => cats.includes(c)));
-                return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "" }));
+                return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name }));
             }
             function nameOf(id) { const e = id ? DesktopEntries.byId(id) : null; return e ? e.name : ""; }
+            // (each a dropdown with a search box, as Settings' other long lists are)
             GroupLabel { text: "Apps" }
             Group {
-                SearchPicker {
+                DropdownSetting {
                     label: "Terminal"
                     detail: "Super+Enter"
-                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultTerminal) || "Choose…"
+                    settingKey: "defaultTerminal"
+                    searchable: true
+                    noneLabel: "Slate's own choice"
+                    value: Config.s.defaultTerminal
                     options: defaultAppsPane.optionsFor(["TerminalEmulator"])
                     onPicked: v => Config.s.defaultTerminal = v
                 }
                 Separator {}
-                SearchPicker {
+                DropdownSetting {
                     label: "Web browser"
                     detail: "Links open in it"
-                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultBrowser) || "Choose…"
+                    settingKey: "defaultBrowser"
+                    searchable: true
+                    noneLabel: "Slate's own choice"
+                    value: Config.s.defaultBrowser
                     options: defaultAppsPane.optionsFor(["WebBrowser"])
                     onPicked: v => {
                         Config.s.defaultBrowser = v;
@@ -3703,10 +3710,13 @@ FloatingWindow {
                     }
                 }
                 Separator {}
-                SearchPicker {
+                DropdownSetting {
                     label: "Files"
                     detail: "Super+E, and folders open in it"
-                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultFileManager) || "Choose…"
+                    settingKey: "defaultFileManager"
+                    searchable: true
+                    noneLabel: "Slate's own choice"
+                    value: Config.s.defaultFileManager
                     options: defaultAppsPane.optionsFor(["FileManager"])
                     onPicked: v => {
                         Config.s.defaultFileManager = v;
@@ -3714,10 +3724,13 @@ FloatingWindow {
                     }
                 }
                 Separator {}
-                SearchPicker {
+                DropdownSetting {
                     label: "Text editor"
                     detail: "Super+T, and text files open in it"
-                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultEditor) || "Choose…"
+                    settingKey: "defaultEditor"
+                    searchable: true
+                    noneLabel: "Slate's own choice"
+                    value: Config.s.defaultEditor
                     options: defaultAppsPane.optionsFor(["TextEditor"])
                     onPicked: v => {
                         Config.s.defaultEditor = v;
@@ -3725,10 +3738,13 @@ FloatingWindow {
                     }
                 }
                 Separator {}
-                SearchPicker {
+                DropdownSetting {
                     label: "Calculator"
                     detail: "Super+C and the calculator key"
-                    buttonLabel: defaultAppsPane.nameOf(Config.s.defaultCalculator) || "Choose…"
+                    settingKey: "defaultCalculator"
+                    searchable: true
+                    noneLabel: "Slate's own choice"
+                    value: Config.s.defaultCalculator
                     options: defaultAppsPane.optionsFor(["Calculator"])
                     onPicked: v => Config.s.defaultCalculator = v
                 }

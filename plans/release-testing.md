@@ -67,3 +67,4 @@ things off as they're done.
 - Settings → Spaces no longer has the "Spaces button" switch (Edit layout does it): any test that uses it.
 - Settings → Assistant no longer has "Show on the menu bar" (Edit layout does it): any test that uses it.
 - screensaverStyle defaults to black (was drift): screensaver tests and scenes that assume drift.
+- Default Apps: the five choosers are searchable dropdowns (DropdownSetting), with the changed-from-default dot: update the page's scene and any test that used the old picker there.
