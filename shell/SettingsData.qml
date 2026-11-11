@@ -121,7 +121,7 @@ JsonAdapter {
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)
     property real barOpacity: 0.75            // with glass: the bar's background, 0 clear … 1 solid
     property bool barPanelBlur: true          // with glass: what's behind the bar's panels is blurred
-    property real barPanelOpacity: 0.75       // with glass: the panels' background, 0 clear … 1 solid (the bar's own colour)
+    property real barPanelOpacity: 0.8        // with glass: the panels' background, 0 clear … 1 solid (the bar's own colour)
     property real barItemOpacity: 0.8         // with glass: the containers on the bar, what's in them too, 0 gone … 1 solid
     property real barItemHoverOpacity: 0.8    // ...and while the pointer's over one
     property bool barAutoHide: false          // hide when one window fills the screen

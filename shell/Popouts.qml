@@ -279,7 +279,26 @@ PanelWindow {
                 }
             }
         }
+        // A little shadow from the bar along the edge the panel comes out of it by, so the bar
+        // sits over its panel (the curved joins have theirs, below). Not in game mode, as no shadow is
+        Rectangle {
+            visible: !Config.gameMode
+            opacity: pop.active ? pop.fade : 0
+            readonly property real reach: pop.barShade
+            x: pop.side === "right" ? parent.width - reach : 0
+            y: pop.side === "bottom" ? parent.height - reach : 0
+            width: pop.sideways ? reach : parent.width
+            height: pop.sideways ? parent.height : reach
+            gradient: Gradient {
+                orientation: pop.sideways ? Gradient.Horizontal : Gradient.Vertical
+                GradientStop { position: 0; color: pop.side === "bottom" || pop.side === "right" ? "transparent" : pop.barShadeColour }
+                GradientStop { position: 1; color: pop.side === "bottom" || pop.side === "right" ? pop.barShadeColour : "transparent" }
+            }
+        }
     }
+    // (how far that shadow reaches, and how dark it is against the bar)
+    readonly property real barShade: 9
+    readonly property color barShadeColour: Config.shade(Math.min(0.42, Config.shadowStrength * 0.8))
 
     // Curved joins between the bar and the panel's sides
     Repeater {
@@ -302,7 +321,9 @@ PanelWindow {
                 origin.x: bar.cornerRadius / 2; origin.y: bar.cornerRadius / 2
             }
             readonly property color fill: pop.bg
+            readonly property color shade: Config.gameMode ? "transparent" : pop.barShadeColour
             onFillChanged: requestPaint()
+            onShadeChanged: requestPaint()
             onAvailableChanged: if (available) requestPaint()
             onPaint: {
                 const r = bar.cornerRadius, ctx = getContext("2d");
@@ -314,6 +335,14 @@ PanelWindow {
                 ctx.lineTo(r, r);
                 ctx.arc(0, r, r, 0, -Math.PI / 2, true);
                 ctx.closePath();
+                ctx.fill();
+                // ...and the bar's shadow on it, as on the panel: darkest at the bar, gone a little
+                // way off (the shape's drawn for a top bar and mirrored, so on a side bar the
+                // bar's edge is its right-hand one)
+                const g = pop.sideways ? ctx.createLinearGradient(r, 0, r - pop.barShade, 0) : ctx.createLinearGradient(0, 0, 0, pop.barShade);
+                g.addColorStop(0, shade);
+                g.addColorStop(1, Qt.rgba(shade.r, shade.g, shade.b, 0));
+                ctx.fillStyle = g;
                 ctx.fill();
             }
         }
