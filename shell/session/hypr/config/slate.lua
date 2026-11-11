@@ -12,7 +12,7 @@
 LID_ACTION = LID_ACTION or ""
 -- Super+Left/Right go from the last workspace round to the first, and back (Settings → Workspaces;
 -- Slate sets this directly when it starts, when this config reloads and when it changes)
-WRAP_WORKSPACES = WRAP_WORKSPACES ~= false
+WRAP_WORKSPACES = WRAP_WORKSPACES == true       -- (off until Slate says otherwise: its own default)
 POWER_KEY_ACTION = POWER_KEY_ACTION or ""
 
 -- Touchpads, by device name. Device rules (like a speed set for one touchpad in your own

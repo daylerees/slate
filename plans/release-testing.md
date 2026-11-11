@@ -60,3 +60,4 @@ things off as they're done.
 - Interface size: the reload cover and the arranging panel's drag from the pool at a size other than 100%. Fonts are type-to-search dropdowns now (FontSetting is a DropdownSetting).
 - titleButtons defaults to left: title bar tests and screenshots assume right.
 - focusFollowsMouse defaults to on (was unset, left to Hyprland): any test that expects it unset.
+- wrapWorkspaces defaults to off and keepEmptyWorkspace to on: workspace tests and any screenshot with the workspace dots (an extra empty one) change.

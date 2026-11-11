@@ -105,7 +105,7 @@ JsonAdapter {
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)
     property string screenshotAfter: "edit"   // edit (swash, when installed) or save
     property bool clipboardHistory: true      // keep a history of what you copy (Super+V)
-    property bool keepEmptyWorkspace: false   // Settings → Workspaces: always an empty workspace after the last one in use
+    property bool keepEmptyWorkspace: true    // Settings → Workspaces: always an empty workspace after the last one in use
     property string windowMode: "tiling"       // tiling (dwindle), master, scrolling, monocle, or floating (every window floats, like a traditional desktop)
     property string titleButtons: "left"      // floating windows' title bar buttons: left or right
     property string titleBarStyle: "slate"    // floating windows' title bars: slate (Slate's own, on the window in front), or hyprbars (the optional plugin, on every floating window)
@@ -215,7 +215,7 @@ JsonAdapter {
     property bool switcherPreviews: true
     property bool switcherAppIcons: true      // app icon on each window's preview in Super+Tab
     property bool workspaceSwitchName: true   // the indicator shown as you switch workspace (Super+Left/Right) names the one you land on
-    property bool wrapWorkspaces: true        // Super+Left/Right and the overview go from the last workspace to the first
+    property bool wrapWorkspaces: false       // Super+Left/Right and the overview go from the last workspace to the first
     property bool overviewAppIcons: false     // app icon on each window in Super+Down
     property bool overviewPreviews: true      // live pictures of the windows in Super+Down (off: their outlines and app icons)
     property real overviewCardWidth: 728
