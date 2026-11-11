@@ -586,9 +586,30 @@ class Gate(Base):
             with self.subTest(names[m["id"]]):
                 self.assertTrue(m["result"]["isError"])
                 self.assertIn("aren't switched on in Slate", m["result"]["content"][0]["text"])
+                self.assertIn("Settings → Assistant", m["result"]["content"][0]["text"])
         self.assertEqual([c for c in self.qs_calls() if c[:2] != ["assistant", "status"]], [], "Slate was asked more than its status")
         self.assertEqual(self.s.calls("hyprctl"), [])
         self.assertEqual({a["outcome"] for a in self.activity()}, {"refused"})
+
+    def test_the_risks_changed(self):
+        """Switched on under an earlier version of the risks: paused, with where to go."""
+        self.put_state(enabled=False, risksChanged=True)
+        for name in ("status", "settings_set"):
+            text, err = self.tool(name)
+            self.assertTrue(err)
+            self.assertIn("Something's changed about the assistant", text)
+            self.assertIn("Settings → Assistant", text)
+        self.assertEqual(self.qs_calls("config"), [])
+
+    def test_tools_for_settings(self):
+        """--tools: what Settings → Assistant lists, straight from the server's table."""
+        code, out = run([sys.executable, SCRIPT, "--tools"], env=self.s.env)
+        self.assertEqual(code, 0, out)
+        tools = json.loads(out)
+        self.assertEqual([t["name"] for t in tools if t["tier"] == "look"], LOOKS + ["notifications_list"])
+        self.assertEqual([t["name"] for t in tools if t["tier"] == "change"], CHANGES)
+        self.assertEqual([t["name"] for t in tools if t["tier"] == "ask"], ASKS)
+        self.assertTrue(all(t["title"] for t in tools))
 
     def test_locked(self):
         self.put_state(locked=True)

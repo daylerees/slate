@@ -5,8 +5,8 @@ Codex, anything that speaks the [Model Context Protocol](https://modelcontextpro
 ask about your desktop and do things on it. "Turn on glass." "Put Firefox on workspace 2."
 "Which window is on workspace 3?" "Where do I change the font?"
 
-It's off until you switch it on, and Slate asks you before anything that can't be undone.
-A prompt window of Slate's own, and a Settings page for all of this, are still to come
+It's off until you switch it on in Settings → Assistant, and Slate asks you before anything
+that can't be undone. A prompt window of Slate's own is still to come
 ([plans/assistant.md](../plans/assistant.md)).
 
 ## Before you switch it on
@@ -26,23 +26,25 @@ Slate is your choice, and what it does on your behalf is your responsibility.
 
 ## Switching it on
 
-Until Settings has its page for this, it's one command:
-
-```sh
-slate ipc call config set assistantEnabled true      # false switches it off again
-```
+**Settings → Assistant → Let assistants use Slate.** Turning the switch on shows the points
+above and asks; only **Switch on** switches it on, and Slate records that you accepted them.
+Setting `assistantEnabled` some other way switches nothing on. If a later version of Slate
+changes what the risks are, the assistant pauses until you've read the new ones there.
+**Read the risks again** shows them at any time, with a button to switch off.
 
 While it's off, every tool answers that assistants aren't switched on, and does nothing.
 
-Three more switches, set the same way:
+The same page has:
 
 | Setting | To start with | What it does |
 |---|---|---|
-| `assistantAskChanges` | `false` | `true`: Slate asks before every change, not only the ones that can't be undone |
-| `assistantSeeTitles` | `true` | `false`: assistants get app names only, never window titles (titles carry document names and web page titles) |
-| `assistantSeeNotifications` | `false` | `true`: assistants can read your recent notifications |
+| Ask before changing anything | off | Slate asks before every change, not only the ones that can't be undone |
+| Window titles | on | Off: assistants get app names only, never window titles (titles carry document names and web page titles) |
+| Notifications | off | On: assistants can read your recent notifications |
 
-An assistant can't change any of these itself: Slate refuses.
+It also lists what the tools are, everything assistants did (Activity, with Clear), and the
+lines below for adding Slate to an agent, each with a Copy button. An assistant can't change
+any of these settings itself: Slate refuses.
 
 ## Adding it to an agent
 
@@ -81,7 +83,7 @@ Most other agents take a block like this in their settings (with the whole path 
 | `apps_list` | Installed apps, by name |
 | `wallpapers_list` | The names of the pictures in your wallpaper folder and Slate's own |
 | `media_info` | What's playing: the app, title and artist |
-| `notifications_list` | Your recent notifications. Only offered while `assistantSeeNotifications` is on |
+| `notifications_list` | Your recent notifications. Only offered while Notifications is on in Settings → Assistant |
 
 **Changing.** These can be undone, so they happen straight away, unless you've asked Slate
 to ask about every change.
@@ -155,7 +157,8 @@ Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, o
 each: the time, which agent, the tool, its arguments (cut short), and how it ended (done,
 declined, no answer, refused or failed), with a setting's value before it was changed. Tool
 calls only: Slate keeps no copy of what you typed or what the agent answered. The last
-1,000 lines are kept, and the log isn't part of `slate logs`.
+1,000 lines are kept, the log isn't part of `slate logs`, and Settings → Assistant → Activity
+shows the latest 50 and clears it.
 
 ## How it works
 

@@ -13,7 +13,7 @@ workspace 2", "which window is on workspace 3?"):
     Others         {"mcpServers": {"slate": {"command": "~/.config/slate/bin/slate", "args": ["mcp"]}}}
                    (with the whole path in place of ~)
 
-Nothing works until you allow it (docs/ASSISTANT.md says how, and what it means). What a
+Nothing works until you switch it on in Settings → Assistant, which says what it means. What a
 tool answers goes to the service behind that agent. Slate's tools answer in words only
 (your settings, your open windows and their titles, the names of your workspaces, Spaces,
 apps and wallpapers): never a picture of the screen, a file or the clipboard. Slate asks
@@ -356,9 +356,12 @@ def gate():
     except ValueError:
         raise Sorry("Slate needs restarting before assistants can use it. The person can run: slate restart") from None
     STATUS.update(st)
+    if st.get("risksChanged"):
+        raise Refused("Something's changed about the assistant in Slate, so its tools are paused until the person has "
+                      "read what's new. Tell them to have a look in Settings → Assistant.")
     if not st.get("enabled"):
         raise Refused("Assistants aren't switched on in Slate, so its tools aren't available. Only the person can "
-                      "switch them on (Slate's docs/ASSISTANT.md says how); tell them so.")
+                      "switch them on: it's in Settings → Assistant. Tell them so.")
     if st.get("locked"):
         raise Refused("The screen is locked, so Slate isn't doing anything for assistants just now.")
 
@@ -1492,6 +1495,9 @@ def main():
     if len(sys.argv) > 1:
         if sys.argv[1] in ("-h", "--help", "help"):
             print(__doc__.split("\nHow it works")[0].strip())
+            return
+        if sys.argv[1] == "--tools":        # for Settings → Assistant: what the tools are, by tier
+            print(json.dumps([{"name": t["name"], "title": t["title"], "tier": t["tier"]} for t in TOOLS]))
             return
         sys.exit("slate mcp: unknown option '%s' (see slate mcp --help)" % sys.argv[1])
     server = Server()

@@ -125,6 +125,15 @@ Singleton {
         return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
     }
 
+    // ---- Assistants (Settings → Assistant, docs/ASSISTANT.md) -------------------------------
+    // On only when switched on *and* the risks, as they're written now, were accepted there:
+    // setting assistantEnabled some other way switches nothing on. The number goes up when a
+    // release changes what the risks are, and Slate asks again
+    readonly property int assistantRisksVersion: 1
+    readonly property bool assistantOn: s.assistantEnabled && s.assistantRisksAccepted === assistantRisksVersion && !isLoginScreen
+    // Switched on under an earlier version of the risks: paused until they're read again
+    readonly property bool assistantRisksChanged: s.assistantEnabled && s.assistantRisksAccepted > 0 && s.assistantRisksAccepted !== assistantRisksVersion
+
     // Change a setting from the command line, as the Settings window does:
     //   slate ipc call config set barPosition bottom      slate ipc call config get barPosition
     IpcHandler {
@@ -776,7 +785,7 @@ Singleton {
         bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
+        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#e8c0a6", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel

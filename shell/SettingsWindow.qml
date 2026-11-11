@@ -288,6 +288,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
+        assistant: ["assistantEnabled", "assistantRisksAccepted", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -343,6 +344,35 @@ FloatingWindow {
             + "so if anything's wrong, nothing changes. You'll see it at your next logout or restart.",
         button: "Update", code: 0xEAE2
     })
+    // Settings → Assistant → Let assistants use Slate. Switching on doesn't switch it on: it
+    // shows the risks first, in plain words, and only "Switch on" does it, recording which
+    // version of them was accepted (Config.assistantOn needs both). Best efforts, said as such
+    readonly property string assistantDocs: "https://github.com/daylerees/slate/blob/master/docs/ASSISTANT.md#before-you-switch-it-on"
+    readonly property string assistantRisks: (Config.assistantRisksChanged ? "Something's changed about the assistant since you switched it on, so here it is again.<br><br>" : "Before you do, here's what it means.<br><br>")
+        + "<b>What leaves your computer.</b> What you type, and what Slate tells the assistant about your desktop "
+        + "(your settings, your open windows and their titles), goes to the service behind the agent you choose, under your own account with them.<br><br>"
+        + "<b>What it can do.</b> It can change settings and move windows without asking. Slate asks you before anything that can't be undone.<br><br>"
+        + "<b>What can go wrong.</b> Assistants make mistakes, and can be misled by text they read, like the title of a web page. "
+        + "Slate does its best to limit the harm, but it can't promise what an assistant will do, least of all one that keeps tools of its own.<br><br>"
+        + "Using the assistant is your choice, and what it does on your behalf is your responsibility. You can switch it off at any time. "
+        + "<a href=\"" + assistantDocs + "\">Read more</a>"
+    function assistantAccept() {
+        Config.s.assistantRisksAccepted = Config.assistantRisksVersion;
+        Config.s.assistantEnabled = true;
+    }
+    function assistantSwitch(on) {
+        if (!on) { Config.s.assistantEnabled = false; return; }
+        if (!confirmer) return;
+        confirmer.confirmWith({ title: "Switch on the assistant?", body: assistantRisks, long: true,
+                                button: "Switch on", code: 0xF6D7, danger: false }, () => assistantAccept());
+    }
+    // Read the risks again, while it's on: the same words, and the chance to think again
+    function assistantReadRisks() {
+        if (!confirmer) return;
+        confirmer.confirmWith({ title: "What using the assistant means", body: assistantRisks.replace("Before you do, here's what it means.<br><br>", ""), long: true,
+                                button: "Keep it on", cancelLabel: "Switch off", code: 0xF6D7, danger: false },
+                              () => {}, () => { Config.s.assistantEnabled = false; });
+    }
     // Restore defaults (the title button): asks first
     function askRestoreDefaults() {
         if (!confirmer) { confirmReset = true; return; }
@@ -727,7 +757,7 @@ FloatingWindow {
                     active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, assistant: assistantPage })[win.section]
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -3964,6 +3994,168 @@ FloatingWindow {
                 }
             }
             Footnote { text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen." }
+        }
+    }
+
+    // ---- Assistant (docs/ASSISTANT.md): AI agents using Slate's MCP server (slate mcp) -----
+    Component {
+        id: assistantPage
+        Column {
+            id: assistantPane
+            spacing: 4
+            PageTitle { text: "Assistant" }
+            readonly property string server: Config.slateCommand.replace(Quickshell.env("HOME"), "~") + " mcp"
+            // What the tools are, from the server's own table, so these lists can't go stale
+            property var tools: []
+            Process {
+                running: true
+                command: ["python3", Quickshell.shellPath("scripts/slate-mcp.py"), "--tools"]
+                stdout: StdioCollector { onStreamFinished: { try { assistantPane.tools = JSON.parse(text); } catch (e) {} } }
+            }
+            function titles(tier) { return tools.filter(t => t.tier === tier).map(t => t.title).join(" · "); }
+            function toolTitle(name) { const t = tools.find(x => x.name === name); return t ? t.title : name; }
+            // What assistants did (the server's activity log), newest first
+            readonly property string logPath: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/assistant/activity.jsonl"
+            property bool showAll: false
+            FileView { id: activityFile; path: assistantPane.logPath; watchChanges: true; printErrors: false; onFileChanged: reload() }
+            readonly property var activity: {
+                const out = [];
+                const lines = (activityFile.text() || "").split("\n");
+                for (let i = lines.length - 1; i >= 0 && out.length < 50; i--) {
+                    if (!lines[i]) continue;
+                    try { out.push(JSON.parse(lines[i])); } catch (e) {}
+                }
+                return out;
+            }
+            readonly property var outcomes: ({ done: "Done", declined: "You said no", "no answer": "No answer", refused: "Slate said no", failed: "Didn't work" })
+            function when(iso) {
+                const d = new Date(iso);
+                return isNaN(d) ? "" : Qt.formatDateTime(d, (Config.s.barClockFormat === "24h" ? "d MMM, HH:mm" : "d MMM, h:mm ap"));
+            }
+            property string copied: ""
+            Timer { id: copiedReset; interval: 1600; onTriggered: assistantPane.copied = "" }
+            function copy(what, text) { Quickshell.execDetached(["wl-copy", text]); copied = what; copiedReset.restart(); }
+
+            IntroText {
+                text: "Ask an AI agent you already use, like Claude Code or Codex, to change a setting, move a window or tell you what's where. "
+                    + "It works through Slate's own tools, and Slate asks you before anything that can't be undone."
+            }
+            GroupLabel { text: "Assistant" }
+            Group {
+                SettingRow {
+                    label: "Let assistants use Slate"
+                    settingKey: "assistantEnabled"
+                    detail: Config.assistantRisksChanged
+                        ? "Something's changed about the assistant, so it's paused. Switch it on again to read what's new."
+                        : "What Slate tells an assistant about your desktop (your settings, your open windows and their titles) is sent to the service behind the agent you use, "
+                        + "under your own account with them. Slate itself sends nothing anywhere. Slate does its best to keep an assistant within these limits, "
+                        + "but it can't promise what one will do, so using it is your choice and your responsibility."
+                    Toggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
+                    below: [Button { visible: Config.assistantOn; label: "Read the risks again"; onClicked: win.assistantReadRisks() }]
+                }
+            }
+            GroupLabel { text: "What it can do" }
+            Group {
+                SettingRow {
+                    label: "Without asking"
+                    detail: "Looking: " + assistantPane.titles("look")
+                }
+                Separator {}
+                SettingRow {
+                    label: "Changes"
+                    detail: "These can be undone: " + assistantPane.titles("change")
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Ask before changing anything"
+                    key: "assistantAskChanges"
+                    detail: "Slate asks you about every change, not only the ones that can't be undone"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Always asks first"
+                    detail: "These can't be undone, so Slate asks every time: " + assistantPane.titles("ask")
+                }
+            }
+            GroupLabel { text: "What it can see" }
+            Group {
+                ToggleSetting {
+                    label: "Window titles"
+                    key: "assistantSeeTitles"
+                    detail: "Titles carry document names and web page titles. Off: assistants get app names only"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Notifications"
+                    key: "assistantSeeNotifications"
+                    detail: "Assistants can read your recent notifications"
+                }
+            }
+            Footnote { text: "Slate's tools never show an assistant your screen, your files or your clipboard. An agent with tools of its own can do more than Slate's tools allow, and Slate can't limit those." }
+            GroupLabel { text: "Activity" }
+            Group {
+                SettingRow {
+                    label: assistantPane.activity.length === 0 ? "Nothing here yet" : "What assistants did"
+                    detail: assistantPane.activity.length === 0 ? "What assistants do with Slate's tools will show up here"
+                        : "The latest " + assistantPane.activity.length + (assistantPane.activity.length === 1 ? " thing" : " things") + ", newest first. Only tool calls are kept, never what you typed"
+                    Button {
+                        visible: assistantPane.activity.length > 0
+                        label: "Clear"; destructive: true
+                        onClicked: Quickshell.execDetached(["sh", "-c", ': > "$0"', assistantPane.logPath])
+                    }
+                }
+                Repeater {
+                    model: assistantPane.showAll ? assistantPane.activity : assistantPane.activity.slice(0, 8)
+                    Column {
+                        id: activityRow
+                        required property var modelData
+                        width: parent ? parent.width : 0
+                        Separator {}
+                        SettingRow {
+                            label: assistantPane.toolTitle(activityRow.modelData.tool)
+                                + (activityRow.modelData.args && activityRow.modelData.args.key ? ": " + activityRow.modelData.args.key : "")
+                            detail: [assistantPane.when(activityRow.modelData.time), activityRow.modelData.who,
+                                     activityRow.modelData.before !== undefined ? "was " + activityRow.modelData.before : ""].filter(x => x).join(" · ")
+                            Text {
+                                text: assistantPane.outcomes[activityRow.modelData.outcome] || ""
+                                textFormat: Text.PlainText
+                                color: activityRow.modelData.outcome === "done" ? win.dim : win.text
+                                font.family: win.font; font.pixelSize: 13
+                            }
+                        }
+                    }
+                }
+                Separator { visible: assistantPane.activity.length > 8 }
+                SettingRow {
+                    visible: assistantPane.activity.length > 8
+                    label: assistantPane.showAll ? "Showing all " + assistantPane.activity.length : "Showing the latest 8"
+                    Button { label: assistantPane.showAll ? "Show fewer" : "Show more"; onClicked: assistantPane.showAll = !assistantPane.showAll }
+                }
+            }
+            GroupLabel { text: "Use Slate from other apps" }
+            Group {
+                SettingRow {
+                    label: "Claude Code"
+                    detail: "claude mcp add slate -- " + assistantPane.server
+                    Button { label: assistantPane.copied === "claude" ? "Copied" : "Copy"; onClicked: assistantPane.copy("claude", "claude mcp add slate -- " + assistantPane.server) }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Codex"
+                    detail: "codex mcp add slate -- " + assistantPane.server
+                    Button { label: assistantPane.copied === "codex" ? "Copied" : "Copy"; onClicked: assistantPane.copy("codex", "codex mcp add slate -- " + assistantPane.server) }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Other agents"
+                    detail: "Most take an “mcpServers” block in their settings, naming Slate's MCP server"
+                    Button {
+                        label: assistantPane.copied === "json" ? "Copied" : "Copy"
+                        onClicked: assistantPane.copy("json", JSON.stringify({ mcpServers: { slate: { command: Config.slateCommand, args: ["mcp"] } } }, null, 2))
+                    }
+                }
+            }
+            Footnote { text: "Run the line for your agent in a terminal once. Slate's tools stay off for every agent until the switch at the top is on." }
         }
     }
 

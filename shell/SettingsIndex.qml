@@ -44,6 +44,7 @@ Singleton {
         { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
         { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
+        { id: "assistant", label: "Assistant", icon: 0xF6D7, more: true, about: "AI agents using Slate: what they may do and see" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
         // About is always last
@@ -88,6 +89,8 @@ Singleton {
         ["Gloss colour", "appearance", "glass gloss tint hue colour color wallpaper sheen"],
         ["Fast blur", "appearance", "blur performance smooth lag xray wallpaper"],
         ["Blur quality", "appearance", "blur passes smooth performance"],
+        ["Assistant", "assistant", "assistant ai agent agents claude chatgpt codex gemini copilot mcp server tools chalk"],
+        ["Let assistants use Slate", "assistant", "assistant ai agent switch on off enable allow mcp risks privacy"],
         ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],
         ["Check for updates", "updates", "update notification daily automatic new version"],
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],

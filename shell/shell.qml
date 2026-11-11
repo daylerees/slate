@@ -162,6 +162,13 @@ ShellRoot {
             if (w) w.ask = { title: "Test question?", body: "From the tests", button: "Yes",
                              option: { label: "Also this", detail: "A switch" }, run: v => {}, cancel: () => {} };
         }
+        // Settings → Assistant's switch and its "Read the risks again", as clicking them does
+        function assistant(what: string): void {
+            const w = settingsLoader.item;
+            if (!w) return;
+            if (what === "risks") w.assistantReadRisks();
+            else w.assistantSwitch(what === "on");
+        }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
@@ -215,7 +222,7 @@ ShellRoot {
                 secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
-                assistant: { enabled: Config.s.assistantEnabled, waiting: Object.keys(assistantGate.answers).length },
+                assistant: { enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }

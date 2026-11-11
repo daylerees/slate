@@ -46,7 +46,8 @@ Scope {
         target: "assistant"
         function status(): string {
             return JSON.stringify({
-                enabled: Config.s.assistantEnabled,
+                enabled: Config.assistantOn,
+                risksChanged: Config.assistantRisksChanged,
                 locked: root.lockScreen.locked,
                 gameMode: Config.gameMode,
                 askChanges: Config.s.assistantAskChanges,

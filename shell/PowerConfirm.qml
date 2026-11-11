@@ -65,7 +65,7 @@ PanelWindow {
     // asked for it, Slate isn't asking you.
     readonly property bool hasInput: action === "custom" && !!custom && !!custom.input
     property alias inputText: field.text
-    // Any other question: spec is { title, body, button, code, danger, option?, cancelLabel?, input?, id? }; onConfirm runs on
+    // Any other question: spec is { title, body, button, code, danger, option?, cancelLabel?, input?, id?, long? }; onConfirm runs on
     // yes (given the option's answer), onCancel (if any) on no
     // A question asked while another is showing waits its turn (it used to replace it, and the
     // first was never answered)
@@ -172,7 +172,7 @@ PanelWindow {
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: 380
+        width: root.info.long ? 470 : 380
         height: content.implicitHeight + 48
         radius: 18
         color: root.cardColor
@@ -223,6 +223,8 @@ PanelWindow {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     text: root.info.title
+                    textFormat: Text.PlainText        // never markup: some questions carry names other programs chose
+                    wrapMode: Text.WordWrap
                     color: root.textColor
                     font.family: root.fontFamily
                     font.pixelSize: 18
@@ -231,7 +233,12 @@ PanelWindow {
                 Item { width: 1; height: 6 }
                 Text {
                     width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
+                    // A long question of Slate's own (spec.long): read from the left, with bold
+                    // headings and a link. Everything else is plain text, markup and all
+                    horizontalAlignment: root.info.long ? Text.AlignLeft : Text.AlignHCenter
+                    textFormat: root.info.long ? Text.StyledText : Text.PlainText
+                    linkColor: root.accent
+                    onLinkActivated: link => Qt.openUrlExternally(link)
                     wrapMode: Text.WordWrap
                     text: root.info.body
                     color: root.dimTextColor

@@ -118,6 +118,13 @@ SCENES["assistant-question"] = {
     "settle": 1.2, "undo": [("assistant", "withdraw", "scene")],
 }
 
+# Switching the assistant on (Settings → Assistant): the risks, in the confirmation window's long form
+SCENES["assistant-risks"] = {
+    "do": [("settings", "page", "assistant"), ("test", "assistant", "on")],
+    "wait": lambda st: st["asking"] == "Switch on the assistant?",
+    "settle": 1.2, "undo": [("power", "cancel"), ("settings", "close")],
+}
+
 # Choosing Hyprbars (Settings → Windows → Title bars): its risks, in Slate's confirmation window,
 # with nothing built (the session's stand-in for slate-build-hyprbars says so)
 SCENES["hyprbars-question"] = {

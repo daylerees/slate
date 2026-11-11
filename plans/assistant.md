@@ -1,9 +1,10 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **steps 1 and 2 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
-its questions and the Look, Change and Always-asks tools
+Status: **steps 1 to 3 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
+its questions and the Look, Change and Always-asks tools, and Settings → Assistant with the
+risks question
 ([docs/ASSISTANT.md](../docs/ASSISTANT.md)); "What building it settled", near the end, has what
-that answered and where it differs from what's written here. Steps 3 to 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+that answered and where it differs from what's written here. Steps 4 and 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
 accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
 ([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
@@ -1081,6 +1082,21 @@ Step 2 (2026-11-11), where it differs from the design above:
   `launcher launch <id>`. `apps_list` still reads desktop entries itself (no `launcher apps`).
 - **Numbers' ranges** were read off Settings' sliders into `RANGES`; text settings' values
   into `VALUES`. A unit test fails for a setting in neither that isn't refused.
+
+Step 3 (2026-11-11):
+
+- **`PowerConfirm.confirmWith` has a long form** (`long: true`): a wider card, read from the
+  left, with bold headings and a link (StyledText). That settled the assumption in part 3.
+  Every other question's title and body are now plain text whatever they contain, since
+  assistants' questions carry names other programs chose.
+- **Read more** opens `docs/ASSISTANT.md` on GitHub (the docs aren't installed with Slate).
+- **Read the risks again** shows the same text with **Keep it on** and **Switch off**.
+- **The page so far**: the switch and privacy note, What it can do (from `slate-mcp.py
+  --tools`), What it can see, Activity (the latest 8, Show more for 50, Clear), Use Slate from
+  other apps (Copy). Agent, Menu bar and shortcut, and What Slate adds come with steps 4 and 5.
+- **The gate needs the risks accepted** now: `Config.assistantOn` is the switch and
+  `assistantRisksAccepted === Config.assistantRisksVersion` (1). Accepted at another version,
+  the server says something's changed and where to look.
 
 ## Sources
 

@@ -20,10 +20,16 @@ def call(tool, args, mid=1):
 class Assistant(LiveCase):
     def setUp(self):
         super().setUp()
-        for key in ("assistantEnabled", "assistantAskChanges", "barClockSeconds"):
+        for key in ("assistantEnabled", "assistantRisksAccepted", "assistantAskChanges", "barClockSeconds"):
             self.keep_setting(key)
         self.config("assistantEnabled", "false")
+        self.config("assistantRisksAccepted", "0")
         self.config("assistantAskChanges", "false")
+
+    def switch_on(self):
+        """As accepting the risks in Settings → Assistant leaves it."""
+        self.config("assistantRisksAccepted", "1")
+        self.config("assistantEnabled", "true")
 
     def status(self):
         return json.loads(self.ipc("assistant", "status"))
@@ -44,10 +50,47 @@ class Assistant(LiveCase):
 
     def test_off_to_start_with(self):
         st = self.status()
-        self.assertEqual(set(st), {"enabled", "locked", "gameMode", "askChanges", "seeTitles", "seeNotifications"})
+        self.assertEqual(set(st), {"enabled", "risksChanged", "locked", "gameMode", "askChanges", "seeTitles", "seeNotifications"})
         self.assertEqual((st["enabled"], st["locked"], st["seeTitles"], st["seeNotifications"]), (False, False, True, False))
+        # Setting the switch some other way switches nothing on: the risks have to be accepted too
         self.config("assistantEnabled", "true")
+        self.assertFalse(self.status()["enabled"])
+        self.config("assistantRisksAccepted", "1")
         self.assertTrue(self.status()["enabled"])
+        # Accepted under another version of the risks: paused until they're read again
+        self.config("assistantRisksAccepted", "99")
+        st = self.status()
+        self.assertEqual((st["enabled"], st["risksChanged"]), (False, True))
+
+    def test_switching_on_asks(self):
+        """Settings → Assistant: the switch shows the risks, and only "Switch on" switches it on."""
+        self.ipc("settings", "page", "assistant")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "assistant", "the Assistant page")
+        self.ipc("test", "assistant", "on")
+        st = self.wait(lambda st: st["asking"] == "Switch on the assistant?", "the risks")
+        for part in ("What leaves your computer.", "What it can do.", "What can go wrong.", "your responsibility", "Read more"):
+            self.assertIn(part, st["askingBody"])
+        self.assertFalse(st["assistant"]["enabled"], "on before the risks were accepted")
+        self.assertEqual(self.setting("assistantEnabled"), "false")
+        self.ipc("test", "answer", "false")
+        self.wait(lambda st: not st["power"]["open"])
+        self.assertEqual((self.setting("assistantEnabled"), self.setting("assistantRisksAccepted")), ("false", "0"), "Cancel switched it on")
+        self.ipc("test", "assistant", "on")
+        self.wait(lambda st: st["asking"] == "Switch on the assistant?")
+        self.ipc("test", "answer", "true")
+        self.wait(lambda st: st["assistant"]["enabled"], "the assistant to be on")
+        self.assertEqual((self.setting("assistantEnabled"), self.setting("assistantRisksAccepted")), ("true", "1"))
+        # Reading the risks again offers to switch off
+        self.ipc("test", "assistant", "risks")
+        self.wait(lambda st: st["asking"] == "What using the assistant means")
+        self.ipc("test", "answer", "false")
+        self.wait(lambda st: not st["assistant"]["enabled"], "the assistant to be off")
+        # Off needs no question
+        self.switch_on()
+        self.ipc("test", "assistant", "off")
+        self.wait(lambda st: not st["assistant"]["enabled"])
+        self.assertFalse(self.s.state()["power"]["open"])
+        self.ipc("settings", "close")
 
     def test_a_question(self):
         """A question shows in Slate's confirmation window; the answer is read once."""
@@ -126,7 +169,7 @@ class Assistant(LiveCase):
         self.assertTrue(err)
         self.assertIn("aren't switched on", text)
         self.assertEqual(self.setting("barClockSeconds"), "false")
-        self.config("assistantEnabled", "true")
+        self.switch_on()
         text, err = self.tool("settings_set", {"key": "barClockSeconds", "value": True})
         self.assertFalse(err, text)
         self.assertEqual((json.loads(text)["before"], json.loads(text)["now"]), (False, True))
@@ -140,7 +183,7 @@ class Assistant(LiveCase):
     def test_the_server_asks(self):
         """With "ask before changing anything" on, the change waits for your yes in the
         confirmation window, in Slate's words."""
-        self.config("assistantEnabled", "true")
+        self.switch_on()
         self.config("assistantAskChanges", "true")
         p = subprocess.Popen(self.server(), env=self.s.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         self.addCleanup(p.kill)
