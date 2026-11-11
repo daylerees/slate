@@ -74,7 +74,7 @@ Singleton {
     // new with a rounded corner uses this too
     function corner(radius) { return s.roundedElements ? radius : 0; }
     // ---- Dates, temperatures and the week, as you write them -----------------------------
-    // Settings → Date & Time → Date format: every date Slate shows goes through dateText(date,
+    // Settings → Region → Date format: every date Slate shows goes through dateText(date,
     // style), style being "short" (Sat 7 Nov), "day" (7 Nov), "long" (Saturday, 7 November
     // 2026), "longDay" (the same without the year) or "full" (7 November 2026)
     readonly property var dateFormats: ({

@@ -3811,14 +3811,14 @@ FloatingWindow {
         }
     }
 
-    // ---- Date & Time (bin/slate-init timedate: timedatectl with systemd, the same D-Bus service
+    // ---- Region (once "Date & Time"; bin/slate-init timedate: timedatectl with systemd, the same D-Bus service
     // without it where something provides it; changing them may ask for your password) --------
     Component {
         id: timePage
         Column {
             id: dateTimePane
             spacing: 4
-            PageTitle { text: "Date & Time" }
+            PageTitle { text: "Region" }
             property string zone: ""
             property bool ntp: false
             property bool canNtp: true

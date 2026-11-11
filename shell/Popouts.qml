@@ -409,7 +409,7 @@ PanelWindow {
         }
     }
     // Only once a location is set (Settings → General → Location); again when it changes
-    // (and when the temperature unit does: Settings → Date & Time → Temperature)
+    // (and when the temperature unit does: Settings → Region → Temperature)
     readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude + (Config.fahrenheit ? ",f" : "")
     // (not in tests: they have no network to count on, and give it weather of their own)
     onWeatherPlaceChanged: { weather = null; forecast = null; if (weatherPlace !== "" && !Config.testMode) weatherFetch.running = true; }
@@ -2416,7 +2416,7 @@ PanelWindow {
             property int monthOffset: 0
             readonly property date shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
             // Days from last month before the 1st, in a week that starts on the day chosen
-            // (Settings → Date & Time → Week starts on)
+            // (Settings → Region → Week starts on)
             readonly property int leadDays: (shownMonth.getDay() - Config.weekStartDay + 7) % 7
 
             // Weather, when a location is set (Settings → General → Location) and it has loaded
