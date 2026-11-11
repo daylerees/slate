@@ -43,6 +43,9 @@ JsonAdapter {
     property string nightLightFrom: "20:00"  // custom schedule
     property string nightLightTo: "07:00"
     property string locationName: ""         // Settings → General → Location; "" = not set
+    property string temperatureUnit: "celsius"   // the weather's temperatures: celsius or fahrenheit
+    property string dateFormat: "dmy"        // how dates are written: dmy (Sat 7 Nov), mdy (Sat, Nov 7) or ymd (2026-11-07)
+    property string weekStart: "monday"      // the calendar's first day: monday, sunday or saturday
     property real latitude: 0                // for weather and sunset/sunrise
     property real longitude: 0
     property string mainDisplay: ""           // Settings → Displays → Main display (monitor description; "" = the first)

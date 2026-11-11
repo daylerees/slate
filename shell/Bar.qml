@@ -1644,7 +1644,8 @@ PanelWindow {
                     }
                     Segment {
                         id: volSeg
-                        wanted: Config.s.barShowVolume
+                        // (only with something to turn up or down: speakers or a microphone)
+                        wanted: Config.s.barShowVolume && (!!Pipewire.defaultAudioSink || !!Pipewire.defaultAudioSource)
                         pastel: "volume"            // its colour when the look is Colourful
                         readonly property var sink: Pipewire.defaultAudioSink
                         readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
@@ -1666,7 +1667,8 @@ PanelWindow {
                     // Wi-Fi: just before the battery
                     Segment {
                         id: wifiSeg
-                        wanted: Config.s.barShowWifi
+                        // (only on a computer with Wi-Fi, as Bluetooth is)
+                        wanted: Config.s.barShowWifi && !!wifi
                         pastel: "wifi"            // its colour when the look is Colourful
                         readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
                         readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
@@ -1680,15 +1682,18 @@ PanelWindow {
                     }
                     Segment {
                         id: batSeg
-                        wanted: Config.s.barShowBattery && !!UPower.displayDevice && UPower.displayDevice.isPresent
+                        // On a computer with no battery it stays, as a way into the same panel
+                        // (power mode, the processor, memory and disk): a bolt, and no percentage
+                        wanted: Config.s.barShowBattery
+                        readonly property bool has: !!UPower.displayDevice && UPower.displayDevice.isPresent
                         pastel: "battery"            // its colour when the look is Colourful
                         readonly property var dev: UPower.displayDevice
                         readonly property real pct: dev && dev.ready ? dev.percentage : 0
                         readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
-                        iconCode: charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
-                        sample: "80%"; textOn: Config.s.barValueBattery
-                        label: Config.s.barValueBattery ? Math.round(pct * 100) + "%" : ""
-                        hoverText: "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
+                        iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
+                        sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
+                        label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
+                        hoverText: !has ? "Power and system" : "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
 
@@ -1697,7 +1702,7 @@ PanelWindow {
                 id: clockCap
                 wanted: Config.s.barShowClock
                 length: clock.implicitWidth + 20
-                hoverText: Qt.formatDate(Config.clockDate(sysClock.date), "dddd, d MMMM yyyy")
+                hoverText: Config.dateText(Config.clockDate(sysClock.date), "long")
                 hoverCode: 0xEA53
                 SystemClock { id: sysClock; precision: Config.s.barClockSeconds ? SystemClock.Seconds : SystemClock.Minutes }
                 Text {
@@ -1708,7 +1713,7 @@ PanelWindow {
                     // (short of room, it sheds its date, then its seconds: bar.slimClock)
                     readonly property bool date: Config.s.barClockDate && bar.slimClock < 1
                     readonly property bool seconds: Config.s.barClockSeconds && bar.slimClock < 2
-                    readonly property string now: (date ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                    readonly property string now: (date ? Config.dateText(Config.clockDate(sysClock.date), "short") + "  " : "")
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (seconds ? "HH:mm:ss" : "HH:mm")
                             : (seconds ? "h:mm:ss AP" : "h:mm AP"))

@@ -131,7 +131,7 @@ Rectangle {
         if (s < 60) return "now";
         if (s < 3600) return Math.floor(s / 60) + " min ago";
         if (s < 86400) return Math.floor(s / 3600) + " h ago";
-        return Qt.formatDate(new Date(t), "d MMM");
+        return Config.dateText(new Date(t), "day");
     }
 
     Item {

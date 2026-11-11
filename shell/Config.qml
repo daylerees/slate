@@ -66,6 +66,22 @@ Singleton {
     // a click turns off again (the control centre's tiles, a connected Bluetooth device), to
     // say so. A choice that stays chosen when clicked doesn't change
     readonly property color accentLit: Qt.tint(accent, Qt.rgba(1, 1, 1, 0.22))
+    // ---- Dates, temperatures and the week, as you write them -----------------------------
+    // Settings → Date & Time → Date format: every date Slate shows goes through dateText(date,
+    // style), style being "short" (Sat 7 Nov), "day" (7 Nov), "long" (Saturday, 7 November
+    // 2026), "longDay" (the same without the year) or "full" (7 November 2026)
+    readonly property var dateFormats: ({
+        dmy: { short: "ddd d MMM", day: "d MMM", long: "dddd, d MMMM yyyy", longDay: "dddd, d MMMM", full: "d MMMM yyyy" },
+        mdy: { short: "ddd, MMM d", day: "MMM d", long: "dddd, MMMM d, yyyy", longDay: "dddd, MMMM d", full: "MMMM d, yyyy" },
+        ymd: { short: "yyyy-MM-dd", day: "MM-dd", long: "dddd, yyyy-MM-dd", longDay: "dddd, MM-dd", full: "yyyy-MM-dd" }
+    })
+    function dateText(date, style) {
+        const f = dateFormats[s.dateFormat] || dateFormats.dmy;
+        return Qt.formatDate(date, f[style] || f.short);
+    }
+    // The day a week starts on, as Date.getDay() counts them (0 Sunday … 6 Saturday)
+    readonly property int weekStartDay: s.weekStart === "sunday" ? 0 : s.weekStart === "saturday" ? 6 : 1
+    readonly property bool fahrenheit: s.temperatureUnit === "fahrenheit"
     // The muted hover of something destructive (Remove, Clear, Delete, Force Quit…): the same,
     // in the red such things are written in, so pointing at one says what it will do
     readonly property color hoverDanger: { const d = tint("#f28b8b"); return Qt.rgba(d.r, d.g, d.b, hoverStrength); }

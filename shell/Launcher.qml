@@ -536,7 +536,7 @@ PanelWindow {
                 else if (u === "month") t.setMonth(t.getMonth() + n);
                 else t.setFullYear(t.getFullYear() + n);
             }
-            return Qt.formatDate(t, "dddd d MMMM yyyy");
+            return Config.dateText(t, "long");
         }
         // Units: "<number> <unit> in|to <unit>"
         const m = /^(-?[\d.,]+)\s*([a-zA-Z°]+(?:\s?[a-zA-Z]+)?)\s+(?:in|to|as|into)\s+([a-zA-Z°]+(?:\s?[a-zA-Z]+)?)$/i.exec(text);

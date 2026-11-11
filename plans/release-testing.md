@@ -50,3 +50,5 @@ things off as they're done.
 - Destructive controls hover red (Config.hoverDanger): Settings buttons, list rows' Remove, the arranging panel, dock menu rows, panels' Clear history / delete space / Shut down, the clipboard picker's Clear all. Settings separators are a faint text-colour line with glass.
 - Menu Bar → Monochrome tray icons (barTrayMono, off by default): a live test and the settings/MCP unit tests.
 - The bar's hover shadow waits 90 ms and lingers 260 ms (bar.settled): no test; needs a pointer.
+- Date format, Week starts on, Temperature (Settings → Date & Time → Formats): unit tests for the settings/MCP lists, a live test that the bar's date and the calendar's first column follow them, weather in Fahrenheit.
+- Hardware fallbacks: no battery (the bar's item is a bolt, the panel starts at Power mode), no Wi-Fi adapter (item hidden, panel says so), no audio (item hidden, panel says so). The test container has none of the three, so every bar screenshot there changes, and tests that expect "Offline" or "0%" on the bar need updating.

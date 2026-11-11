@@ -144,7 +144,7 @@ Scope {
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatDate(Config.clockDate(clock.date), "dddd d MMMM")
+            text: Config.dateText(Config.clockDate(clock.date), "longDay")
             color: Qt.rgba(1, 1, 1, 0.75)
             font.family: Config.s.fontFamily; font.pixelSize: 22
         }

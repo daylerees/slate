@@ -267,6 +267,7 @@ FloatingWindow {
     // The settings each page can restore to their defaults. Left out on purpose: your
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
     readonly property var pageKeys: ({
+        datetime: ["dateFormat", "weekStart", "temperatureUnit"],
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners",
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
@@ -3936,7 +3937,7 @@ FloatingWindow {
             GroupLabel { text: "Clock" }
             Group {
                 SettingRow {
-                    label: Qt.formatDateTime(dateTimePane.now, "dddd d MMMM yyyy")
+                    label: Config.dateText(dateTimePane.now, "long")
                     detail: Qt.formatTime(dateTimePane.now, "HH:mm:ss")
                 }
                 Separator {}
@@ -3966,6 +3967,38 @@ FloatingWindow {
                 }
             }
             Footnote { text: "How the clock looks is under Menu bar. Changing these may ask for your password." }
+            // How dates, the week and temperatures are written, everywhere Slate shows them
+            GroupLabel { text: "Formats" }
+            Group {
+                DropdownSetting {
+                    label: "Date format"
+                    settingKey: "dateFormat"
+                    detail: "On the menu bar's clock, the calendar, notifications and everywhere else Slate shows a date"
+                    options: [{ value: "dmy", label: Qt.formatDate(dateTimePane.now, "ddd d MMM") },
+                              { value: "mdy", label: Qt.formatDate(dateTimePane.now, "ddd, MMM d") },
+                              { value: "ymd", label: Qt.formatDate(dateTimePane.now, "yyyy-MM-dd") }]
+                    value: Config.s.dateFormat
+                    onPicked: v => Config.s.dateFormat = v
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Week starts on"
+                    settingKey: "weekStart"
+                    detail: "The first day of the week in the clock's calendar"
+                    options: [{ value: "monday", label: "Monday" }, { value: "sunday", label: "Sunday" }, { value: "saturday", label: "Saturday" }]
+                    value: Config.s.weekStart
+                    onPicked: v => Config.s.weekStart = v
+                }
+                Separator {}
+                DropdownSetting {
+                    label: "Temperature"
+                    settingKey: "temperatureUnit"
+                    detail: "For the weather in the clock's panel and the control centre"
+                    options: [{ value: "celsius", label: "Celsius (°C)" }, { value: "fahrenheit", label: "Fahrenheit (°F)" }]
+                    value: Config.s.temperatureUnit
+                    onPicked: v => Config.s.temperatureUnit = v
+                }
+            }
         }
     }
 
@@ -4058,7 +4091,7 @@ FloatingWindow {
             readonly property var outcomes: ({ done: "Done", declined: "You said no", "no answer": "No answer", refused: "Slate said no", failed: "Didn't work" })
             function when(iso) {
                 const d = new Date(iso);
-                return isNaN(d) ? "" : Qt.formatDateTime(d, (Config.s.barClockFormat === "24h" ? "d MMM, HH:mm" : "d MMM, h:mm ap"));
+                return isNaN(d) ? "" : Config.dateText(d, "day") + ", " + Qt.formatTime(d, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm ap");
             }
             // The agents there are (scripts/assistant.py detect), and the one a prompt would go to
             property var agents: []
@@ -6676,10 +6709,10 @@ FloatingWindow {
             readonly property var mod: Updates.modified
             readonly property var touched: mod && mod.known ? mod.changed.concat(mod.added) : []
             readonly property string latest: Updates.latest
-            function when(iso) { return iso ? Qt.formatDate(new Date(iso), "d MMMM yyyy") : ""; }
+            function when(iso) { return iso ? Config.dateText(new Date(iso), "full") : ""; }
             function ago(ms) {
                 const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
-                return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Qt.formatDate(new Date(ms), "d MMM");
+                return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Config.dateText(new Date(ms), "day");
             }
             // "v0.4.2-15-gabc123" (a copy of the code past a release) reads as "v0.4.2 + 15 changes"
             function nice(v) {

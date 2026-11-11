@@ -402,13 +402,14 @@ PanelWindow {
     Process {
         id: weatherFetch
         command: ["curl", "-sf", "--max-time", "10",
-            "https://api.open-meteo.com/v1/forecast?latitude=" + Config.s.latitude + "&longitude=" + Config.s.longitude + "&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto"]
+            "https://api.open-meteo.com/v1/forecast?latitude=" + Config.s.latitude + "&longitude=" + Config.s.longitude + "&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto" + (Config.fahrenheit ? "&temperature_unit=fahrenheit" : "")]
         stdout: StdioCollector {
             onStreamFinished: { try { const j = JSON.parse(text); pop.weather = j.current; pop.forecast = j.daily; } catch (e) {} }
         }
     }
     // Only once a location is set (Settings → General → Location); again when it changes
-    readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude
+    // (and when the temperature unit does: Settings → Date & Time → Temperature)
+    readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude + (Config.fahrenheit ? ",f" : "")
     // (not in tests: they have no network to count on, and give it weather of their own)
     onWeatherPlaceChanged: { weather = null; forecast = null; if (weatherPlace !== "" && !Config.testMode) weatherFetch.running = true; }
     Timer { interval: 30 * 60 * 1000; running: true; repeat: true; triggeredOnStart: true; onTriggered: if (pop.weatherPlace !== "" && !Config.testMode) weatherFetch.running = true }
@@ -693,6 +694,18 @@ PanelWindow {
             readonly property var sinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream && n.audio)
             PwObjectTracker { objects: [vol.sink, vol.source].concat(vol.sinks) }
 
+            // Nothing to play through or record with (a computer with no sound card, or none
+            // found yet): say so, and what brings it back
+            PanelTitle { visible: !vol.sink && !vol.source; text: "Sound" }
+            Label {
+                visible: !vol.sink && !vol.source
+                width: parent.width
+                wrapMode: Text.Wrap
+                font.weight: Font.Normal
+                color: pop.dim
+                text: "Slate can't find any speakers or a microphone. Plug in speakers, headphones or a headset and they'll show up here."
+            }
+
             Repeater {
                 model: [
                     { node: vol.sink, title: "Output", on: 0xEB51, off: 0xF1C3 },
@@ -792,10 +805,21 @@ PanelWindow {
             PanelTitle {
                 text: "Wi-Fi"
                 Switch {
+                    visible: !!wifiView.dev
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     checked: Networking.wifiEnabled
                     onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
                 }
+            }
+            // (a computer with no Wi-Fi: say so. The bar's Wi-Fi button isn't shown there, but
+            // the panel can still be asked for)
+            Label {
+                visible: !wifiView.dev
+                width: parent.width
+                wrapMode: Text.Wrap
+                font.weight: Font.Normal
+                color: pop.dim
+                text: "This computer has no Wi-Fi. A wired connection needs no setting up here."
             }
 
             // ---- Connection details (scripts/netinfo.sh), refreshed while the panel is open
@@ -826,7 +850,7 @@ PanelWindow {
             }
 
             Label {
-                visible: !Networking.wifiEnabled || wifiView.nets.length === 0
+                visible: !!wifiView.dev && (!Networking.wifiEnabled || wifiView.nets.length === 0)
                 text: Networking.wifiEnabled ? "Searching…" : "Wi-Fi is off"
                 color: pop.dim
             }
@@ -2155,6 +2179,8 @@ PanelWindow {
             width: 300
             spacing: 12
             readonly property var dev: UPower.displayDevice
+            // (a computer with no battery: the panel is its power mode and system readings alone)
+            readonly property bool has: !!dev && dev.isPresent
             readonly property real pct: dev && dev.ready ? dev.percentage : 0
             readonly property int st: dev ? dev.state : 0
             function duration(sec) {
@@ -2169,6 +2195,7 @@ PanelWindow {
                 : UPower.onBattery ? "On battery" : "Plugged in"
 
             Row {
+                visible: bat.has
                 spacing: 10
                 Icon {
                     code: UPower.onBattery ? 0xEA34 : 0xEA33
@@ -2183,6 +2210,7 @@ PanelWindow {
             }
             // Charge bar
             Rectangle {
+                visible: bat.has
                 width: parent.width; height: 6; radius: 3
                 color: pop.card
                 Rectangle {
@@ -2217,7 +2245,7 @@ PanelWindow {
                 }
             }
 
-            Divider {}
+            Divider { visible: bat.has }
             Heading { text: "Power mode" }
             Row {
                 width: parent.width
@@ -2361,8 +2389,9 @@ PanelWindow {
             readonly property date today: Config.clockDate(calClock.date)
             property int monthOffset: 0
             readonly property date shownMonth: new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
-            // Days from last month before the 1st, in a week that starts on Monday
-            readonly property int leadDays: (shownMonth.getDay() + 6) % 7
+            // Days from last month before the 1st, in a week that starts on the day chosen
+            // (Settings → Date & Time → Week starts on)
+            readonly property int leadDays: (shownMonth.getDay() - Config.weekStartDay + 7) % 7
 
             // Weather, when a location is set (Settings → General → Location) and it has loaded
             readonly property bool hasWeather: Config.s.locationName !== "" && pop.weather !== null
@@ -2372,7 +2401,7 @@ PanelWindow {
                 width: parent.width
                 spacing: 2
                 Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: 22 }
-                Label { width: parent.width; elide: Text.ElideRight; text: Qt.formatDate(cal.today, "dddd, d MMMM yyyy"); color: pop.dim; font.pixelSize: 12 }
+                Label { width: parent.width; elide: Text.ElideRight; text: Config.dateText(cal.today, "long"); color: pop.dim; font.pixelSize: 12 }
             }
             Divider {}
             Item {
@@ -2400,9 +2429,9 @@ PanelWindow {
                 id: monthGrid
                 columns: 7
                 readonly property real cell: cal.width / 7
-                // Weekday initials, Monday first
+                // Weekday initials, from the week's first day
                 Repeater {
-                    model: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+                    model: { const d = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]; return d.slice(Config.weekStartDay).concat(d.slice(0, Config.weekStartDay)); }
                     delegate: Label {
                         required property string modelData
                         width: monthGrid.cell; height: 22
@@ -2695,7 +2724,7 @@ PanelWindow {
                             anchors.topMargin: 14
                             spacing: 2
                             Label { text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat); font.pixelSize: clockCard.roomy ? 32 : 24 }
-                            Label { text: Qt.formatDate(Config.clockDate(ccClock.date), "dddd, d MMMM"); color: pop.dim; font.pixelSize: 12 }
+                            Label { text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: 12 }
                             Row {
                                 visible: pop.weather !== null
                                 spacing: 6
@@ -2707,7 +2736,7 @@ PanelWindow {
                                 }
                                 Label {
                                     text: !pop.weather ? ""
-                                        : Math.round(pop.weather.temperature_2m) + "°C · " + pop.weatherInfo(pop.weather.weather_code).text
+                                        : Math.round(pop.weather.temperature_2m) + "°" + (Config.fahrenheit ? "F" : "C") + " · " + pop.weatherInfo(pop.weather.weather_code).text
                                           + (clockCard.roomy && pop.weather.apparent_temperature !== undefined
                                              ? " · feels " + Math.round(pop.weather.apparent_temperature) + "°" : "")
                                     color: pop.dim; font.pixelSize: 12
