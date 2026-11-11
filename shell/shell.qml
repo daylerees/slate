@@ -152,7 +152,9 @@ ShellRoot {
             else if (what === "overflow") Config.barSetOverflow(a === "" ? [] : a.split(","), b === "" ? [] : b.split(","));
             else if (what === "stay") Config.barSetStay(a, b === "true");
             else if (what === "preview") Config.barPreview = Number(a);
-            // (menu item priority: its window, and a row moved to a place in its list)
+            // (menu item priority: its window, and a row moved to a place in its list; and the
+            // "Try it shorter" dropdown: its menu opened or closed, a length chosen from it)
+            else if (what === "length") { if (a === "pick") barEditor.lengthPick(Number(b)); else barEditor.lengthMenu(a === "open"); }
             else if (what === "priority") { if (a === "move") barEditor.priorityMove(b, n(c)); else Config.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");

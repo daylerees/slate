@@ -330,6 +330,24 @@ class BarLength(LiveCase):
         self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
         self.assertFalse(self.bar()["priority"]["open"], "priority came back by itself")
 
+    def test_try_it_shorter_is_a_dropdown_in_both_windows(self):
+        self.priority_window()
+        for where in ("close", "open"):         # (the arranging panel, then menu item priority)
+            self.ipc("test", "arrange", "priority", where, "", "")
+            self.s.settle(0.4)
+            self.ipc("test", "arrange", "length", "open", "", "")
+            self.s.wait(lambda st: st["bar"]["priority"]["lengthMenu"], what="the length menu")
+            self.ipc("test", "arrange", "length", "pick", "0.5", "")
+            self.s.wait(lambda st: not st["bar"]["priority"]["lengthMenu"], what="the menu to close on a choice")
+            self.assertEqual(self.bar()["priority"]["length"], "Half")
+            self.ipc("test", "arrange", "length", "pick", "0", "")
+            self.s.settle(0.3)
+            self.assertEqual(self.bar()["priority"]["length"], "Full length")
+        # (and it doesn't outlive the window it's on)
+        self.ipc("test", "arrange", "length", "open", "", "")
+        self.ipc("test", "arrange", "priority", "close", "", "")
+        self.s.wait(lambda st: not st["bar"]["priority"]["lengthMenu"], what="the menu to go with its window")
+
     def test_defaults_put_the_order_back(self):
         self.ipc("test", "arrange", "overflow", "volume,apps", "clock", "")
         self.s.settle(0.4)

@@ -212,25 +212,42 @@ PanelWindow {
         color: root.text
         font.family: root.bar.fontFamily; font.pixelSize: 12
     }
-    // The bar tried shorter, to see what slims down and what leaves
-    component Shorter: Flow {
-        spacing: 6
+    // The bar tried shorter, to see what slims down and what leaves: a dropdown as Settings
+    // draws them (SettingsWindow.qml's DropdownSetting), its menu in dropLayer below
+    readonly property var lengths: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
+    readonly property var length: lengths.find(o => Math.abs(Config.barPreview - o.value) < 0.01) || lengths[0]
+    component Shorter: Row {
+        id: shorter
+        readonly property Item button: shortButton
+        spacing: 10
         Text {
-            height: 32
-            verticalAlignment: Text.AlignVCenter
-            rightPadding: 4
+            anchors.verticalCenter: parent.verticalCenter
             text: "Try it shorter"
             color: root.text
             font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
         }
-        Repeater {
-            model: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
-            PanelButton {
-                required property var modelData
-                label: modelData.label
-                primary: Math.abs(Config.barPreview - modelData.value) < 0.01
-                onClicked: Config.barPreview = modelData.value
+        Rectangle {
+            id: shortButton
+            readonly property bool open: dropLayer.owner === shorter
+            width: 150; height: 32; radius: 8
+            color: open || shortHover.hovered ? root.controlLit : root.control
+            border.width: open ? 1 : 0; border.color: root.accent
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+            Text {
+                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                text: root.length.label
+                color: root.text
+                font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
             }
+            Text {
+                anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                text: root.glyph(0xEA5F)                      // chevron down
+                rotation: shortButton.open ? 180 : 0
+                Behavior on rotation { NumberAnimation { duration: Config.ms(120) } }
+                color: root.dim; font.family: root.bar.iconFont; font.pixelSize: 16
+            }
+            HoverHandler { id: shortHover }
+            ClickTap { onTapped: dropLayer.owner = shortButton.open ? null : shorter }
         }
     }
     // The workspace dots as a picture of themselves: four, the first the one you're on, the
@@ -464,7 +481,7 @@ PanelWindow {
                     onClicked: Config.barPrioritising = true
                 }
             }
-            Shorter { width: parent.width }
+            Shorter { id: panelShorter }
             Line {}
 
             // What's picked, and its options
@@ -611,7 +628,7 @@ PanelWindow {
     // priority first (the last to leave), so it's Config.barOverflowOrder backwards, without
     // what always stays, which never leaves and so has no place in it
     readonly property var priority: Config.barOverflowOrder.filter(id => !Config.barStays(id)).reverse()
-    readonly property var priorityState: ({ open: prioritising, list: priority })
+    readonly property var priorityState: ({ open: prioritising, list: priority, lengthMenu: lengthMenuOpen, length: length.label })
     function priorityMove(id, slot) {          // (tests: as a row dragged to a place and let go)
         if (priority.indexOf(id) < 0) return;
         prioList.held = id; prioList.moving = priority.slice();
@@ -705,7 +722,7 @@ PanelWindow {
                         + " To change that, go back, click something on the bar and use Always keep on the bar."
                 }
                 Item { width: 1; height: 4 }
-                Shorter { width: parent.width }
+                Shorter { id: prioShorter }
             }
 
             Item {
@@ -859,6 +876,77 @@ PanelWindow {
                     flick: prioFlick
                     color: root.text
                     anchors { top: prioFlick.top; bottom: prioFlick.bottom; left: prioFlick.right; leftMargin: 8 }
+                }
+            }
+        }
+    }
+
+    // ---- The dropdown's menu ------------------------------------------------------------
+    // Over whichever of the two windows is up, as Settings has its own (dropLayer there):
+    // under the button, or above it where there isn't room, so it stays on the window
+    function lengthMenu(open) { dropLayer.owner = open ? (prioritising ? prioShorter : panelShorter) : null; }
+    function lengthPick(value) { dropLayer.owner = null; Config.barPreview = value; }
+    readonly property bool lengthMenuOpen: dropLayer.owner !== null
+    Item {
+        id: dropLayer
+        readonly property Item over: root.prioritising ? prio : panel
+        x: over.x; y: over.y; width: over.width; height: over.height
+        z: 100
+        property var owner: null
+        visible: owner !== null
+        onVisibleChanged: if (visible) place()
+        readonly property real rowH: 34
+        readonly property real menuH: root.lengths.length * rowH + 12
+        property real menuX: 0
+        property real menuY: 0
+        function place() {
+            const b = owner.button, p = b.mapToItem(dropLayer, 0, 0);
+            menuX = Math.max(8, Math.min(width - menu.width - 8, p.x));
+            const below = height - 8 - (p.y + b.height + 6);
+            menuY = menuH <= below ? p.y + b.height + 6 : Math.max(8, p.y - 6 - menuH);
+        }
+        Connections {
+            target: root
+            function onPrioritisingChanged() { dropLayer.owner = null; }
+            function onShownChanged() { dropLayer.owner = null; }
+        }
+        // Click anywhere else to close
+        MouseArea { anchors.fill: parent; onPressed: dropLayer.owner = null }
+        Rectangle {
+            id: menu
+            x: dropLayer.menuX; y: dropLayer.menuY
+            width: 200; height: dropLayer.menuH
+            radius: 12
+            color: Config.tint("#1d222a")
+            border.width: 1; border.color: Config.tint("#2a313c")
+            Shadow { blur: 18; dropY: 4 }
+            MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
+            Column {
+                anchors { fill: parent; margins: 6 }
+                Repeater {
+                    model: root.lengths
+                    Rectangle {
+                        id: lengthRow
+                        required property var modelData
+                        readonly property bool current: modelData.value === root.length.value
+                        width: parent.width; height: dropLayer.rowH; radius: 8
+                        color: lengthHover.hovered ? Config.hover : "transparent"
+                        Text {
+                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            text: lengthRow.modelData.label
+                            color: lengthRow.current ? root.accent : root.text
+                            font.family: root.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                        }
+                        Text {
+                            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            visible: lengthRow.current
+                            text: root.glyph(0xEA5E)
+                            color: root.accent
+                            font.family: root.bar.iconFont; font.pixelSize: 16
+                        }
+                        HoverHandler { id: lengthHover }
+                        ClickArea { anchors.fill: parent; onClicked: root.lengthPick(lengthRow.modelData.value) }
+                    }
                 }
             }
         }
