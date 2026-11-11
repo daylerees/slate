@@ -242,6 +242,11 @@ JsonAdapter {
     // these can be changed through the server itself
     property bool assistantEnabled: false       // let assistants use Slate's tools at all (off to start with)
     property int assistantRisksAccepted: 0      // the version of the risks you accepted when switching on (0 = never); both are needed
+    property string assistantAgent: ""          // which agent answers the prompt window: claude, custom… ("" = the first one that's ready)
+    property string assistantModel: ""          // its model ("" = the agent's own default)
+    property string assistantCommand: ""        // a command of your own (the "custom" agent): run as typed, the prompt on its stdin
+    property bool assistantCommandBare: false   // …given just what you typed, without what Slate adds
+    property var assistantAgentsAccepted: []    // agents that keep tools of their own that you've said yes to
     property bool assistantAskChanges: false    // ask before every change, not only the ones that can't be undone
     property bool assistantSeeTitles: true      // window titles are given (off: app names only)
     property bool assistantSeeNotifications: false  // recent notifications can be read

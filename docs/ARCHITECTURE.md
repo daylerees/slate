@@ -75,6 +75,11 @@ scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (AS
                               and spaces.py; standard library only. Every call goes through its gate
                               and into ~/.local/state/slate/assistant/activity.jsonl.
                               data/assistant-prompt.md is what it tells an agent about Slate
+scripts/assistant.py          hands a prompt to the person's own agent CLI (`detect`, `run`, `briefing`):
+                              adds Slate's briefing and a few lines on the moment, runs the agent
+                              in an empty folder with Slate's server as its tools, and turns what
+                              it prints into start/text/done/error lines. scripts/slate_agents.py
+                              has the agents (Claude Code, a command of your own)
 AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are
                               allowed and what they may see, and their questions, shown with
                               PowerConfirm and held until the server reads the answer

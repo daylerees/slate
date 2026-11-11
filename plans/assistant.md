@@ -1,10 +1,10 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
-Status: **steps 1 to 3 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
+Status: **steps 1 to 4 of 5 built** (2026-11-11): the server, `slate mcp`, with its gate,
 its questions and the Look, Change and Always-asks tools, and Settings → Assistant with the
-risks question
+risks question, and the runner with its Claude Code and custom-command adapters
 ([docs/ASSISTANT.md](../docs/ASSISTANT.md)); "What building it settled", near the end, has what
-that answered and where it differs from what's written here. Steps 4 and 5 are still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
+that answered and where it differs from what's written here. Step 5 is still to do. Revised the same day: the "no spying" rule; then the safeguards restated as best efforts, with the risks shown and
 accepted when the feature is switched on; then the name (Chalk) and the scene Slate sets with every prompt; then every open question decided; then the Copilot key, and two plans for later
 ([assistant-markdown-support.md](assistant-markdown-support.md), [assistant-sounds.md](assistant-sounds.md)). Researched against Slate at `06cb8c1`, Hyprland
 0.57.2, Claude Code 2.1.319 (the only agent CLI on the machine this was written on) and the MCP
@@ -1097,6 +1097,30 @@ Step 3 (2026-11-11):
 - **The gate needs the risks accepted** now: `Config.assistantOn` is the switch and
   `assistantRisksAccepted === Config.assistantRisksVersion` (1). Accepted at another version,
   the server says something's changed and where to look.
+
+Step 4 (2026-11-11), from one real run of Claude Code 2.1.319 (recorded, scrubbed, as
+`tests/fixtures/agents/claude-tool-refused.jsonl`) and the rest against a stand-in:
+
+- **Confirmed:** `--restricted` keeps the subscription login (and keeps the person's settings
+  files and hooks out), `--system-prompt-file`, `--disable-slash-commands`, the stream's shape
+  (`system/init` with `mcp_servers[].status`, `stream_event` → `content_block_delta` →
+  `text_delta`, a `result` line with `result`, `session_id`, `is_error`), and that the run
+  took about 2.6 seconds and about 7,400 input tokens, nearly all of it Slate's tool list.
+- **The briefing replaces Claude Code's system prompt** (`--system-prompt-file`) where the
+  plan appended to it: with its own tools off, the coding agent's prompt is only cost.
+- **Not tried on the real thing** (usage was nearly spent): a follow-up with `--resume`, and
+  what a signed-out or offline run prints. The adapter follows the documentation for the
+  first and guesses from the result's text for the others, then asks `claude auth status`.
+- **The briefing is about 400 words**; a test holds it under 420.
+- **Text between tool calls** ("Let me check…") is a message of its own: the runner marks
+  the first words of each new message `fresh`, so the window replaces what it shows.
+- **In a run, questions name the agent Slate chose** (`SLATE_ASSISTANT_AGENT`), not what the
+  client calls itself.
+- **New kinds of error** beside the plan's: `off`, `not-accepted`, `stopped`, `server`.
+- **The runner checks the gate before starting anything**, so nothing is sent to an agent
+  while assistants are off.
+- **Tool descriptions are the cost to watch**: 34 tools on every prompt. Worth trimming
+  before release if usage matters.
 
 ## Sources
 

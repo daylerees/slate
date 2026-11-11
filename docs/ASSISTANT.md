@@ -184,6 +184,22 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
   isn't refused, so nothing can be set unchecked.
 - **What agents are told about Slate** (the server's instructions) is
   `shell/data/assistant-prompt.md`.
-- **Tests:** `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
+- **The runner** (`shell/scripts/assistant.py`, for the prompt window that's coming) hands
+  one prompt to the agent you chose and reads back its answer in one form whichever agent it
+  is. It adds two things of Slate's own to what you typed: a briefing (who the agent is here
+  and how to behave: the `[chalk]` and `[shared]` parts of `assistant-prompt.md`) and a few
+  lines on the moment (the time, the focused window and workspace, under the same switches as
+  the tools, and never your name or home folder). The agent runs in an empty folder of its
+  own and is stopped after two minutes.
+- **Agents** are in `shell/scripts/slate_agents.py`. Claude Code is run one prompt at a
+  time with every tool of its own switched off and only Slate's server given (`--tools ""`,
+  `--strict-mcp-config`, `--restricted`), for that run alone: nothing in your own Claude Code
+  setup changes. "A command of your own" is run as typed with the prompt on its stdin and
+  `SLATE_MCP_COMMAND`, `SLATE_MCP_CONFIG`, `SLATE_ASSISTANT_BRIEFING` and
+  `SLATE_ASSISTANT_CONTEXT` in its environment; Slate can't limit what such a command does.
+  To add an agent, write a class there beside `Claude` (how to find it, whether it's signed
+  in, its command, how to read its output) and say honestly whether it's `confined`.
+- **Tests:** `tests/unit/test_assistant.py` (the runner against a stand-in `claude` replaying
+  a recorded stream), `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
   fake Slate, hostile input, the log) and `tests/live/test_assistant.py` (the questions in
   the real confirmation window, and the server against a real Slate).

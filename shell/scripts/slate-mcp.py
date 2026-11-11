@@ -321,7 +321,10 @@ def rank(s, q):
 
 STATUS = {}                 # what Slate said before this call (assistant status)
 CALL = {}                   # this call, for the log: tool, id, before
-WHO = ""                    # what the agent calls itself (for display only: it proves nothing)
+# What the agent calls itself (for display only: it proves nothing). In a run the prompt
+# window started, Slate knows which agent it chose and says that instead
+WHO = clean(os.environ.get("SLATE_ASSISTANT_AGENT", ""), 40) if RUN else ""
+WHO_IS_SLATES = bool(WHO)
 _asked = collections.deque()        # when each question was put
 _refused = {}                       # tool → when the person said no to it
 _cancelled = set()                  # request ids the agent has given up on
@@ -1411,6 +1414,8 @@ def tool_list():
 def named(info):
     """What the agent calls itself, for the questions and the log. For display only."""
     global WHO
+    if WHO_IS_SLATES:
+        return
     if isinstance(info, dict) and isinstance(info.get("name"), str):
         WHO = clean(info.get("title") if isinstance(info.get("title"), str) and info.get("title") else info["name"], 40)
 
