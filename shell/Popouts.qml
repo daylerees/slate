@@ -431,7 +431,6 @@ PanelWindow {
         height: 36
         radius: 8
         color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
-        Gloss { radius: parent.radius; opacity: (!selected && rbHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (what's selected stays flat)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: rbHover }
         ClickTap { onTapped: rb.clicked() }
@@ -843,7 +842,6 @@ PanelWindow {
                         height: 46
                         radius: 9
                         color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
-                        Gloss { radius: parent.radius; opacity: (tileHover.hovered && modelData.copy) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
@@ -1432,7 +1430,6 @@ PanelWindow {
                         readonly property bool on: spacesView.icon === modelData
                         width: (spacesView.width - 28) / 15; height: width; radius: 7
                         color: on ? spacesView.colour : icHover.hovered ? Config.hover : "transparent"
-                        Gloss { radius: parent.radius; opacity: (!on && icHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (the one chosen stays flat)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spacesView.inkColour : icHover.hovered ? pop.text : pop.dim }
                         HoverHandler { id: icHover }
@@ -1619,7 +1616,6 @@ PanelWindow {
                         width: (shotView.width - 16) / 3; height: 76
                         radius: 10
                         color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                        Gloss { radius: parent.radius; opacity: (shotHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (fading with the colour)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Column {
                             anchors.centerIn: parent
@@ -2562,7 +2558,6 @@ PanelWindow {
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
                             color: selected ? (tileHover.hovered ? Qt.lighter(pop.accent, 1.12) : pop.accent)
                                 : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                            Gloss { radius: parent.radius; opacity: (!selected && tileHover.hovered) ? 1 : 0 }   // glass: a sheen while hovered (one that's on stays flat)
                             HoverHandler { id: tileHover }
                             onClicked: {
                                 switch (modelData.id) {
