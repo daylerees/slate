@@ -180,8 +180,8 @@ PanelWindow {
     anchors.bottom: true
     // Clear of the dock (or the bar, when either is at the bottom)
     margins.bottom: Config.dockEdge === "bottom" ? 96 : Config.barAtBottom ? osd.bar.barHeight + 28 : 48
-    implicitWidth: Math.max(340, pill.width + 40)
-    implicitHeight: 124
+    implicitWidth: Math.max(340, pill.width + 40, namePill.width + 40)
+    implicitHeight: 124 + (namePill.visible ? namePill.height + 10 : 0)
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-osd"
@@ -193,7 +193,6 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 16 + (1 - osd.fade) * 12
         width: osd.mode === "workspace" ? ws.width + 40 : 300
-        // (taller for the workspaces': their name goes under the dots)
         height: osd.mode === "workspace" ? ws.height + 28 : 52
         // (the workspace dots': a pill round circles, a rounded rectangle round squares)
         radius: osd.mode === "workspace" ? Config.dotHolderRadius(52) : 26
@@ -246,11 +245,11 @@ PanelWindow {
             readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
             readonly property real step: dot + gap
             readonly property real dotsWidth: Math.max(dot, spaces.length * step - gap)
-            // The dots, and under them the name of the workspace you're on (its own, or "Workspace 3")
-            // (Settings → Workspaces → Name when switching)
+            // The name of the workspace you're on (its own, or "Workspace 3"), shown in a holder of
+            // its own under the dots' (Settings → Workspaces → Name when switching)
             readonly property string name: Config.s.workspaceSwitchName && Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
-            width: Math.max(dotsWidth, name !== "" ? wsName.implicitWidth : 0)
-            height: dot + (name !== "" ? 8 + wsName.implicitHeight : 0)
+            width: dotsWidth
+            height: dot
 
             // The accent marker glides to the active dot (WorkspaceMarker)
             property int prevIndex: 0
@@ -280,15 +279,6 @@ PanelWindow {
                     }
                 }
             }
-            Text {
-                id: wsName
-                visible: ws.name !== ""
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: ws.dot + 8
-                text: ws.name
-                color: osd.bar.textColor
-                font.family: osd.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
-            }
             WorkspaceMarker {
                 id: wsMarker
                 x: wsRow.x
@@ -298,5 +288,28 @@ PanelWindow {
                 color: osd.bar.accent
             }
         }
+    }
+
+    // The workspace's name, in a holder of its own a little below the dots': the same look, a
+    // little smaller
+    Rectangle {
+        id: namePill
+        visible: osd.mode === "workspace" && ws.name !== ""
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: pill.y + pill.height + 10
+        width: wsName.implicitWidth + 32; height: 34
+        radius: Config.dotHolderRadius(height)
+        color: osd.bar.barColor
+        opacity: osd.fade
+        Gloss { radius: parent.radius }
+        Shadow { blur: 16; dropY: 3 }
+        Text {
+            id: wsName
+            anchors.centerIn: parent
+            text: ws.name
+            color: osd.bar.textColor
+            font.family: osd.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+        }
+
     }
 }
