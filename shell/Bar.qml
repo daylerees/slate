@@ -8,6 +8,7 @@
 
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -352,7 +353,8 @@ PanelWindow {
             if (c.visible && c !== titleSlotTop && (c.isSpace || (vert ? c.height : c.width) > 0)) n++;
         return n;
     }
-    readonly property int lineSpaces: { let n = 0; for (const c of left.children) if (c.isSpace) n++; return n; }
+    readonly property int lineSpaces: { let n = 0; for (const c of left.children) if (c.isSpace && c.visible) n++; return n; }
+    property bool titleCarried: false          // the active window being dragged (arranging): off the line till it lands
     // What the title could have: everything the others don't need, a gap before or after each
     readonly property real lineFixed: lineOthers + gap * lineOthersCount
     // What each flexible space gets: an equal share of what's left once the title has its own
@@ -469,6 +471,30 @@ PanelWindow {
         // looks exactly as it did: Slate's own arrangement is the old left group, the title,
         // one flexible space, and the old right group.
         Component { id: boxComp; Container {} }
+        // Where something being dragged would land: one of these sits before each thing on the
+        // line and in each container while the bar's being arranged, with no size (the line
+        // passes over it) until it's the place aimed at, when it opens to the size of what's
+        // carried and the rest part for it
+        Component {
+            id: slotComp
+            Item {
+                readonly property bool isSlot: true
+                property int to: -1             // the thing on the line it's before (or the container it's in)
+                property int slot: -1           // in a container: the item it's before; -1: on the line
+                readonly property bool open: !!arranger.gap && arranger.gap.to === to && arranger.gap.slot === slot
+                property real len: open ? arranger.gap.len : 0
+                Behavior on len { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
+                width: bar.vert ? (len > 0.5 ? bar.capsuleHeight : 0) : len
+                height: bar.vert ? len : (len > 0.5 ? bar.capsuleHeight : 0)
+                Rectangle {
+                    anchors { fill: parent; margins: 2 }
+                    visible: parent.len > 6
+                    radius: Math.max(0, bar.capsuleRadius - 2)
+                    color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.14)
+                    Dashes { colour: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.6) }
+                }
+            }
+        }
         Component { id: sepComp; Separator {} }
         // A flexible space: nothing but room on the ordinary bar. While arranging, an outlined
         // gap wide enough to pick up, with arrows in it
@@ -478,6 +504,8 @@ PanelWindow {
                 id: sp
                 readonly property bool isSpace: true
                 property int index: -1
+                property bool carried: false    // being dragged: off the line till it lands
+                visible: !carried
                 readonly property real len: Math.max(Config.barArranging ? 26 : 0.01, bar.flex)
                 width: bar.vert ? (Config.barArranging ? bar.capsuleHeight : 1) : len
                 height: bar.vert ? len : (Config.barArranging ? bar.capsuleHeight : 1)
@@ -487,8 +515,7 @@ PanelWindow {
                     radius: bar.capsuleRadius
                     readonly property bool picked: Config.barSelected === sp.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
-                    border.width: picked ? 2 : 1
-                    border.color: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    Dashes { picked: parent.picked }
                     Text {
                         anchors.centerIn: parent
                         text: bar.glyph(bar.vert ? 0xEB5B : 0xEB59)
@@ -533,7 +560,8 @@ PanelWindow {
                 // it's going stays unseen through the move, and shows a moment after it: shown and
                 // moved in the same instant, it was never drawn either
                 const old = made;
-                for (const name in things) { const t = things[name]; t.name = name; t.held = !t.visible || t.opacity < 1; }
+                bar.titleCarried = false;
+                for (const name in things) { const t = things[name]; t.name = name; t.carried = false; t.held = !t.visible || t.opacity < 1; }
                 showing.restart();
                 titleSlotTop.parent = null;
                 // (each with its place in the arrangement, which is what a change is made by)
@@ -548,6 +576,7 @@ PanelWindow {
                 const fresh = [];
                 for (const o of order) {
                     const entry = o.entry;
+                    if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
                     else if (entry === "title") { bar.titleIndex = o.at; titleSlotTop.parent = left; }
                     else {
@@ -557,11 +586,12 @@ PanelWindow {
                         fresh.push(box);
                     }
                 }
+                if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
                 made = fresh;
                 for (const m of old) m.destroy();
             }
             Component.onCompleted: place()
-            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } }
+            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
             // Title area: the focused window's tile and title, or, while the pointer is
@@ -569,7 +599,7 @@ PanelWindow {
             // Placeholder for the title area (it moves to the bottom group on a left bar)
             Item {
                 id: titleSlotTop
-                visible: Config.s.barShowTitle
+                visible: Config.s.barShowTitle && !bar.titleCarried
                 opacity: titleArea.fade
                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
                 width: childrenRect.width; height: childrenRect.height
@@ -582,8 +612,7 @@ PanelWindow {
                     radius: bar.capsuleRadius
                     readonly property bool picked: Config.barSelected === bar.titleIndex
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
-                    border.width: picked ? 2 : 1
-                    border.color: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+                    Dashes { picked: parent.picked }
                     Text {
                         id: standIn
                         visible: !bar.vert && titleArea.width < 2
@@ -773,6 +802,47 @@ PanelWindow {
             property real from: 0
             property real at: 0                // where the pointer is, along the line
             property var target: null          // { join, to, slot, at }
+            // The gap that's open for what's carried (from here, or from the panel's pool): the
+            // slot it is (slotComp), and how long
+            property real gapLen: 0
+            readonly property var gap: {
+                const t = target || carryTarget;
+                return t ? { to: t.to, slot: t.join ? t.slot : -1, len: gapLen } : null;
+            }
+            // The open slot's own place along the line, or null
+            function openSlot() {
+                const g = gap;
+                if (!g) return null;
+                let it = null;
+                for (const c of left.children) {
+                    if (g.slot < 0 && c.isSlot && c.to === g.to) it = c;
+                    else if (g.slot >= 0 && c.isBox && c.index === g.to)
+                        for (const d of c.row.children) if (d.isSlot && d.slot === g.slot) it = d;
+                }
+                if (!it || it.len < 2) return null;
+                const p = it.mapToItem(left, 0, 0), a = bar.vert ? p.y : p.x;
+                return { a0: a, a1: a + (bar.vert ? it.height : it.width) };
+            }
+            // What's drawn under the pointer for the thing picked up (BarEditor.qml draws it, over
+            // everything): its icons, as they are on the bar
+            function floatOf(h) {
+                const e = Config.barLayout[h.index];
+                const icon = id => { const it = Config.barItem(id); return { code: it ? it.icon : 0, item: id }; };
+                if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }], label: "" };
+                if (h.kind === "item") return { kind: "item", icons: [icon(h.name)], label: "" };
+                if (e === "space") return { kind: "space", icons: [{ code: bar.vert ? 0xEB5B : 0xEB59, item: "" }], label: "" };
+                if (e === "title") return { kind: "title", icons: [], label: "Window" };
+                return { kind: "box", icons: e.items.filter(id => id !== "tuck" && Config.barShown(id)).map(icon), label: "" };
+            }
+            function carry(h, on) {
+                if (!h) return;
+                if (h.kind === "entry" && Config.barLayout[h.index] === "title") bar.titleCarried = on;
+                else if (h.obj) h.obj.carried = on;
+            }
+            function drop() {
+                held = null; target = null; moved = false; leaving = false;
+                Config.barLeaving = false; Config.barFloat = null;
+            }
             function along(p) { return bar.vert ? p.y : p.x; }
             // What's showing on the line, in order, with where each starts and ends along it
             function onLine() {
@@ -810,6 +880,10 @@ PanelWindow {
             // Where something would land at `a` along the line: `joins` for what can go inside a
             // container (an item, a collapse button), which lands there when it's over one
             function aim(a, joins) {
+                // (over the gap that's already open: there it stays. The rest have moved to make
+                // it, and going by where they are now would send it back and forth)
+                const now = openSlot();
+                if (now && a >= now.a0 - 2 && a <= now.a1 + 2) return target || carryTarget;
                 const line = onLine();
                 if (joins) {
                     for (const e of line) {
@@ -833,8 +907,17 @@ PanelWindow {
             onPositionChanged: m => {
                 if (!held) return;
                 at = along(mapToItem(left, m.x, m.y));
-                if (!moved && Math.abs(at - from) > 5) moved = true;
+                if (!moved && Math.abs(at - from) > 5) {
+                    // Picked up: it leaves the line (the rest close up, then part where it would
+                    // land) and comes with the pointer
+                    moved = true;
+                    gapLen = bar.vert ? held.obj.height : held.obj.width;
+                    Config.barFloat = floatOf(held);
+                    carry(held, true);
+                }
                 if (!moved) return;
+                const w = mapToItem(null, m.x, m.y), sc = bar.screen;
+                Config.barFloatAt = Qt.point((sc ? sc.x : 0) + bar.windowX + w.x, (sc ? sc.y : 0) + bar.windowY + w.y);
                 // Well off the bar: let go there and it's back in the pool
                 const p = mapToItem(left, m.x, m.y), across = bar.vert ? p.x : p.y;
                 leaving = across < -40 || across > bar.capsuleHeight + 40;
@@ -843,7 +926,11 @@ PanelWindow {
             }
             onReleased: {
                 const h = held, t = target, dragged = moved, off = leaving;
-                held = null; target = null; moved = false; leaving = false; Config.barLeaving = false;
+                drop();
+                // (it stays off the line until the line's laid again with it in its new place; if
+                // nothing came of the drag, it goes back where it was)
+                if (dragged && !(off || t)) carry(h, false);
+                else if (dragged) back.restart();
                 if (!h) { Config.barSelected = -1; return; }
                 if (!dragged) {              // a press, not a drag: pick it (or let go of it), for its options in the panel
                     Config.barPick(h.index, h.kind === "item" ? h.name : "");
@@ -863,7 +950,9 @@ PanelWindow {
                 else Config.barMoveEntry(h.index, t.to);
                 Config.click();
             }
-            onCanceled: { held = null; target = null; moved = false; leaving = false; Config.barLeaving = false; }
+            onCanceled: { carry(held, false); drop(); }
+            // (should a drop change nothing, so the line isn't laid again: back on it)
+            Timer { id: back; interval: 300; onTriggered: { bar.titleCarried = false; for (const n in left.things) left.things[n].carried = false; for (const c of left.children) { if (c.isBox) c.settle(); else if (c.carried) c.carried = false; } } }
 
             // Something carried here from the pool in the panel beside the bar (BarEditor.qml; Config.barCarry): the
             // page says where the pointer is on the desktop; when that's on or near this bar,
@@ -886,6 +975,7 @@ PanelWindow {
                         if (c.kind === "tuck" && !t.join) t = null;      // (a collapse button only goes in a container)
                     }
                 }
+                if (t && !held) gapLen = c.kind === "space" ? 30 : c.kind === "box" ? 44 : c.kind === "title" ? 80 : bar.capsuleHeight + 8;
                 carryTarget = t;
                 if (t) Config.barCarryTarget = { join: t.join, to: t.to, slot: t.slot, bar: bar };
                 else if (Config.barCarryTarget && Config.barCarryTarget.bar === bar) Config.barCarryTarget = null;
@@ -896,31 +986,6 @@ PanelWindow {
                 function onBarCarryChanged() { arranger.carried(); }
             }
         }
-        // Where it will land: a line in the accent colour
-        Rectangle {
-            readonly property var aimed: arranger.target || arranger.carryTarget
-            visible: !!aimed
-            z: 6
-            readonly property real along: aimed ? aimed.at : 0
-            x: bar.vert ? left.x : left.x + along - 1
-            y: bar.vert ? left.y + along - 1 : left.y
-            width: bar.vert ? bar.capsuleHeight : 2
-            height: bar.vert ? 2 : bar.capsuleHeight
-            radius: 1
-            color: bar.accent
-        }
-        // What's being carried, under the pointer
-        ShaderEffectSource {
-            visible: arranger.moved && !!arranger.held
-            z: 7
-            sourceItem: arranger.held ? arranger.held.obj : null
-            opacity: arranger.leaving ? 0.3 : 0.85
-            width: sourceItem ? sourceItem.width : 0
-            height: sourceItem ? sourceItem.height : 0
-            x: bar.vert ? left.x : left.x + arranger.at - width / 2
-            y: bar.vert ? left.y + arranger.at - height / 2 : left.y
-        }
-
         // ---- Everything that can go in a container ---------------------------------
         // Written out here, once each; arrange() hands each to its container on the line above
         // in its turn. Whatever isn't in the arrangement stays here, unseen. (All of them here, none
@@ -1493,6 +1558,7 @@ PanelWindow {
         readonly property bool first: shell ? shell.isFirst(seg) : true
         readonly property bool last: shell ? shell.isLast(seg) : true
         property bool held: false               // (kept unseen for a moment as it's moved: see place())
+        property bool carried: false            // being dragged (arranging): off the line till it lands
         visible: shell && !held ? shell.shows(seg) : false
         opacity: shell && !isToggle ? shell.openness : 1
         property int iconCode: 0
@@ -1596,8 +1662,7 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: "transparent"
-            border.width: box.picked ? 2 : 1
-            border.color: box.picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.4)
+            Dashes { picked: box.picked }
         }
         // (picked as a whole, by its gripper: one of its things picked lights that instead)
         readonly property bool picked: Config.barSelected === box.index && Config.barSelectedItem === ""
@@ -1622,14 +1687,16 @@ PanelWindow {
         readonly property bool showThings: !tuck || openness > 0
         // Along the container: its things, and the button at one end while it tucks
         readonly property var order: !tuck ? cells : tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
-        function shows(c) { return c === toggle ? tuck : (c.wanted && showThings); }
+        function shows(c) { return !c.carried && (c === toggle ? tuck : (c.wanted && showThings)); }
+        property bool carried: false            // being dragged (arranging): off the line till it lands
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
         function isLast(c) { const i = order.indexOf(c); for (let k = i + 1; k < order.length; k++) if (shows(order[k])) return false; return true; }
         function sepBefore(c) { return shows(c) && !isFirst(c); }
         // (one fresh from the pool, with nothing in it yet, shows while the bar's being arranged)
         readonly property bool hollow: Config.barArranging && cells.length === 0
-        visible: cells.some(c => c.wanted) || hollow
-        readonly property real fullLength: hollow ? 30 : bar.vert ? row.height : row.width
+        visible: !carried && (cells.some(c => c.wanted && !c.carried) || hollow)
+        function settle() { carried = false; toggle.carried = false; }
+        readonly property real fullLength: hollow ? Math.max(30, bar.vert ? row.height : row.width) : bar.vert ? row.height : row.width
         readonly property real closedLength: bar.vert ? toggle.height : toggle.width
         length: (tuck ? closedLength + (fullLength - closedLength) * openness : fullLength) + grip
         clip: tuck
@@ -1658,9 +1725,35 @@ PanelWindow {
             cells = things;
             const seq = order;
             for (let i = 0; i < seq.length; i++) {
+                if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: i });
                 if (i > 0) sepComp.createObject(row, { shell: box, cell: seq[i] });
                 seq[i].shell = box;
                 seq[i].parent = row;
+            }
+            if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: seq.length });
+        }
+    }
+
+    // A dashed outline round its parent (a Rectangle: it takes its rounding), for the things
+    // marked out while the bar's being arranged: containers, flexible spaces, the active
+    // window, the place something would land. Heavier, in the full accent, round the one picked
+    component Dashes: Shape {
+        id: dashes
+        property bool picked: false
+        property color colour: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.55)
+        readonly property real line: picked ? 2 : 1
+        anchors.fill: parent
+        preferredRendererType: Shape.CurveRenderer
+        ShapePath {
+            strokeColor: dashes.colour
+            strokeWidth: dashes.line
+            strokeStyle: ShapePath.DashLine
+            dashPattern: [3, 2.5]
+            fillColor: "transparent"
+            PathRectangle {
+                x: dashes.line / 2; y: dashes.line / 2
+                width: Math.max(0, dashes.width - dashes.line); height: Math.max(0, dashes.height - dashes.line)
+                radius: Math.max(0, (dashes.parent && dashes.parent.radius !== undefined ? dashes.parent.radius : 0) - dashes.line / 2)
             }
         }
     }

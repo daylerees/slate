@@ -90,14 +90,20 @@ PanelWindow {
     function pressed(x, y) { pointer = Qt.point(x, y); placed = false; whereAmI.running = true; }
     function carryTo(chip, x, y) {
         pointer = Qt.point(x, y);
-        if (!carrying) { carrying = chip; Config.barCarryAt = Qt.point(-100000, -100000); Config.barCarry = chip.carry; }
-        if (placed) Config.barCarryAt = Qt.point(origin.x + x, origin.y + y);
+        if (!carrying) {
+            carrying = chip;
+            Config.barCarryAt = Qt.point(-100000, -100000);
+            Config.barFloatAt = Qt.point(-100000, -100000);
+            Config.barFloat = { kind: chip.carry.kind, icons: [{ code: chip.icon, item: chip.item }], label: chip.carry.kind === "title" ? "Window" : "" };
+            Config.barCarry = chip.carry;
+        }
+        if (placed) { Config.barCarryAt = Qt.point(origin.x + x, origin.y + y); Config.barFloatAt = Config.barCarryAt; }
     }
     function dropped() {
-        carrying = null;
+        carrying = null; Config.barFloat = null;
         if (Config.barDrop()) Config.click();
     }
-    function letGo() { carrying = null; Config.barCarry = null; Config.barCarryTarget = null; }
+    function letGo() { carrying = null; Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
     onShownChanged: if (!shown) letGo()
 
     // ---- Building blocks --------------------------------------------------------------
@@ -498,16 +504,65 @@ PanelWindow {
         }
     }
 
-    // What's being carried, under the pointer (as far as this window goes: past its edge, the
-    // line on the bar shows where it will land)
-    BarChip {
-        z: 10
-        visible: !!root.carrying
-        x: root.pointer.x - width / 2; y: root.pointer.y - height / 2
-        opacity: 0.9
-        item: root.carrying ? root.carrying.item : ""
-        icon: root.carrying ? root.carrying.icon : 0
-        label: root.carrying ? root.carrying.label : ""
-        Rectangle { anchors.fill: parent; radius: parent.radius; color: "transparent"; border.width: 1; border.color: root.accent }
+    // What's being dragged, from the bar or from the pool, under the pointer wherever it goes
+    // (Config.barFloat): a window of its own over the whole screen, which the pointer goes
+    // straight through. Drawn as it is on the bar while that's being arranged: its icons in a
+    // container; a flexible space and an empty container as their outlines
+    function iconColour(item) {
+        return item === "power" ? bar.errorColor
+            : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
+            : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
+            : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
+            : Config.statusColour(item, root.text);
+    }
+    PanelWindow {
+        screen: root.screen
+        visible: !!Config.barFloat
+        anchors { top: true; bottom: true; left: true; right: true }
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        WlrLayershell.namespace: "slate-bar-drag"
+        WlrLayershell.layer: WlrLayer.Overlay
+        mask: Region {}
+        Rectangle {
+            id: floater
+            readonly property var f: Config.barFloat
+            readonly property bool hollow: !!f && (f.kind === "space" || (f.kind === "box" && f.icons.length === 0))
+            x: Config.barFloatAt.x - (root.screen ? root.screen.x : 0) - width / 2
+            y: Config.barFloatAt.y - (root.screen ? root.screen.y : 0) - height / 2
+            width: Math.max(root.bar.capsuleHeight + 8, floatRow.implicitWidth + 18)
+            height: root.bar.capsuleHeight
+            radius: root.bar.capsuleRadius
+            color: hollow ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.14) : root.bar.capsuleSolid
+            border.width: 1
+            border.color: root.accent
+            // (pulled well off the bar: fading, as it's about to go back to the pool)
+            opacity: Config.barLeaving ? 0.45 : 0.95
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+            Shadow { blur: 14; dropY: 3 }
+            Row {
+                id: floatRow
+                anchors.centerIn: parent
+                spacing: 12
+                Repeater {
+                    model: floater.f ? floater.f.icons : []
+                    Text {
+                        required property var modelData
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.code ? root.glyph(modelData.code) : ""
+                        color: root.iconColour(modelData.item)
+                        font.family: root.bar.iconFont; font.pixelSize: 16
+                        ChalkFace {}
+                    }
+                }
+                Text {
+                    visible: text !== ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: floater.f ? floater.f.label : ""
+                    color: root.text
+                    font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
+                }
+            }
+        }
     }
 }

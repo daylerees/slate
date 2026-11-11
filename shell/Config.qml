@@ -213,7 +213,7 @@ Singleton {
         keyboard: "barValueKeyboard", bluetooth: "barValueBluetooth", volume: "barValueVolume", battery: "barValueBattery" })
     onBarArrangingChanged: {
         if (barArranging) return;
-        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false;
+        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null;
         // (a container put on the bar and never given anything goes)
         if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
     }
@@ -225,6 +225,10 @@ Singleton {
     property var barCarryTarget: null
     // ...and the other way: something on the bar dragged off it (let go, it's back in the pool)
     property bool barLeaving: false
+    // What's being dragged, from the bar or the pool, drawn under the pointer over everything
+    // (BarEditor.qml): { kind, icons: [{ code, item }], label }, and where on the desktop
+    property var barFloat: null
+    property point barFloatAt: Qt.point(0, 0)
     // Let go of what's carried: onto the bar where it was aimed (true), or nowhere (false)
     function barDrop() {
         const c = barCarry, t = barCarryTarget;
