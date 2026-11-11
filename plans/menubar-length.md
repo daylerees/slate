@@ -292,6 +292,15 @@ Where it differs from the plan above:
   overview. **The window's icon** goes with its title's row.
 - A container holding More never tucks away by itself.
 
+Added after (Dayle, 2026-11-11): **arranged and too long, the line scrolls.** While the
+bar's arranged nothing slims, everything has its text and every container a gripper, so
+what's on it can be longer than the bar and its far end couldn't be reached. The line now
+slides along inside the bar (`bar.scroll`): by a thick handle in the accent just under the
+bar, with no track, only there when the line is longer than the bar; by the wheel over the
+bar; and by itself as something's carried to within 70 px of either end. It starts from the
+beginning each time. Not while "Try it shorter" is on (the bar slims then, as it would):
+whether it should is still to be thought about.
+
 Left for later, or to look at:
 
 - Seen only in the test container: a real small screen, a side bar, a second monitor, real

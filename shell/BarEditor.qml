@@ -43,7 +43,8 @@ PanelWindow {
     readonly property string side: bar.side
     readonly property bool vert: side === "left" || side === "right"
     readonly property int pad: 30                      // room round the panel for its shadow
-    readonly property real off: bar.barHeight + 10 - pad
+    // (a little further off while the bar has its scroll handle under it)
+    readonly property real off: bar.barHeight + (bar.scrollMax > 0 ? 24 : 10) - pad
     visible: shown || fade > 0
     anchors { top: side !== "bottom"; bottom: side === "bottom"; left: side === "left"; right: side === "right" }
     margins.top: side === "top" ? off : vert ? 40 : 0

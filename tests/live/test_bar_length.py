@@ -283,3 +283,67 @@ class BarLength(LiveCase):
         self.assertEqual(st["order"][:len(self.ORDER)], self.ORDER)
         self.assertEqual(sorted(st["stay"]), ["clock", "control", "power"])
 
+    # ---- arranged, and too long to show whole: the line scrolls ----------------------------------
+    def test_no_scrolling_when_it_fits_or_isnt_arranged(self):
+        self.assertEqual(self.bar()["scroll"], {"at": 0, "max": 0, "handle": False})
+        st = self.squeeze(900)                      # (short of room, not arranged: it slims instead)
+        self.assertEqual(st["scroll"]["max"], 0)
+        self.assertFalse(st["scroll"]["handle"])
+        self.squeeze(0)
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.8)
+        self.assertEqual(self.bar()["scroll"], {"at": 0, "max": 0, "handle": False}, "a bar that fits has a scroll handle while arranged")
+        self.ipc("test", "arrange", "done", "", "", "")
+
+    def test_arranged_and_too_long_it_scrolls(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
+        self.squeeze(900)
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.8)
+        st = self.bar()
+        self.assertEqual(st["gives"], [], "it slimmed rather than scrolled")
+        self.assertGreater(st["scroll"]["max"], 50)
+        self.assertTrue(st["scroll"]["handle"], "there's nothing to scroll it by")
+        self.assertEqual(st["scroll"]["at"], 0, "it didn't start from the beginning")
+        x0 = st["line"]["control"]["x"]
+        self.ipc("test", "arrange", "scroll", "60", "", "")
+        self.s.settle(0.4)
+        st = self.bar()
+        self.assertEqual(st["scroll"]["at"], 60)
+        self.assertEqual(st["line"]["control"]["x"], x0 - 60, "the line didn't slide with it")
+        # (no further than its end, nor back past its beginning)
+        self.ipc("test", "arrange", "scroll", "100000", "", "")
+        self.s.settle(0.3)
+        self.assertEqual(self.bar()["scroll"]["at"], self.bar()["scroll"]["max"])
+        self.ipc("test", "arrange", "scroll", "-100000", "", "")
+        self.s.settle(0.3)
+        self.assertEqual(self.bar()["scroll"]["at"], 0)
+
+    def test_dragging_works_on_a_scrolled_line(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
+        self.squeeze(900)
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.8)
+        self.ipc("test", "arrange", "scroll", "80", "", "")
+        self.s.settle(0.4)
+        line = self.bar()["line"]
+        a, b = line["apps"], line["spaces"]
+        self.ipc("test", "arrange", "drag", str(a["x"] + a["w"] // 2), str(a["y"] + a["h"] // 2),
+                 f"{b['x'] + b['w'] // 2 + 6},{b['y'] + b['h'] // 2}")
+        self.s.settle(0.8)
+        self.assertIn("apps", self.layout()[self.where("spaces")]["items"], "dropped on Spaces' container, Apps didn't join it")
+
+    def test_it_goes_back_to_the_beginning(self):
+        self.squeeze(900)
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.8)
+        self.ipc("test", "arrange", "scroll", "60", "", "")
+        self.ipc("test", "arrange", "done", "", "", "")
+        self.s.settle(0.6)
+        self.assertEqual(self.bar()["scroll"], {"at": 0, "max": 0, "handle": False})
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.8)
+        self.assertEqual(self.bar()["scroll"]["at"], 0)
+        self.ipc("test", "arrange", "done", "", "", "")
+

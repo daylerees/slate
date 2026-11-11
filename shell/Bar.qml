@@ -89,6 +89,7 @@ PanelWindow {
         arranger.release();
     }
     readonly property string clockText: clock.text
+    readonly property var scrollState: ({ at: Math.round(scroll), max: Math.round(scrollMax), handle: scrollGrip.visible })
     // What's in More, for its panel (Popouts.qml): a row each, in the order they left. The
     // tray is a row for each of its icons; the window's icon goes with its title
     function moreRows() {
@@ -203,7 +204,7 @@ PanelWindow {
     WlrLayershell.layer: Config.barArranging ? WlrLayer.Overlay : WlrLayer.Top
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: Math.round(barHeight * zoneReveal)
-    mask: Region { item: hitArea }
+    mask: Region { item: hitArea; Region { item: scrollGrip } }
 
     // ---- Auto-hide state ---------------------------------------------------
     property bool filled: false          // one window fills the workspace (from Hyprland)
@@ -401,6 +402,19 @@ PanelWindow {
     // (tests, and the arranging panel's narrow preview: the line made this much shorter)
     property real squeeze: 0
 
+    // ---- Arranged, and too long to show whole: it scrolls ----------------------------------------
+    // While the bar's arranged nothing is slimmed or tucked, everything has its text and every
+    // container its gripper, so what's on it can be longer than the bar. The line then slides
+    // along inside the bar: by the thick handle under it (only there when it's needed), by the
+    // wheel over the bar, and by itself as something's carried to either end. From the
+    // beginning each time arranging starts.
+    readonly property real lineNatural: vert ? left.height : left.width
+    readonly property real scrollMax: Config.barShowAll ? Math.max(0, Math.ceil(lineNatural - lineLength)) : 0
+    property real scroll: 0
+    onScrollMaxChanged: scroll = Math.max(0, Math.min(scrollMax, scroll))
+    function scrollBy(d) { scroll = Math.max(0, Math.min(scrollMax, scroll + d)); }
+    Connections { target: Config; function onBarShowAllChanged() { bar.scroll = 0; } }
+
     // ---- When it doesn't all fit: slimming (plans/menubar-length.md) --------------------------
     // The line gives up the cheapest things first, each only if it still doesn't fit after the
     // one before: the window's title goes (its icon stays; before that it has already
@@ -544,6 +558,51 @@ PanelWindow {
     }
     // The cross-fade between the window's title and a description of what the pointer's over
     property real titleFade: 1
+
+    // The scroll handle: thicker than Slate's usual scrollbar (sideways scrolling is harder to
+    // do), in the accent, with no track. Just off the bar, on its inner side
+    Item {
+        id: scrollGrip
+        visible: bar.scrollMax > 0
+        readonly property real thick: 14                    // (its hit area: the handle's drawn slimmer within it)
+        readonly property real travel: Math.max(1, bar.lineLength - handle.length)
+        x: bar.vert ? (bar.atRight ? bar.width - bar.barHeight - thick - 2 : bar.barHeight + 2) : bar.sidePadding
+        y: bar.vert ? bar.sidePadding : (bar.atBottom ? bar.height - bar.barHeight - thick - 2 : bar.barHeight + 2)
+        width: bar.vert ? thick : bar.lineLength
+        height: bar.vert ? bar.lineLength : thick
+        Rectangle {
+            id: handle
+            readonly property real length: Math.max(64, bar.lineLength * bar.lineLength / Math.max(1, bar.lineNatural))
+            readonly property real at: scrollGrip.travel * (bar.scrollMax > 0 ? bar.scroll / bar.scrollMax : 0)
+            readonly property real across: gripHover.hovered || gripDrag.pressed ? 10 : 8
+            x: bar.vert ? (scrollGrip.thick - across) / 2 : at
+            y: bar.vert ? at : (scrollGrip.thick - across) / 2
+            width: bar.vert ? across : length
+            height: bar.vert ? length : across
+            radius: across / 2
+            color: Config.accent
+            opacity: gripHover.hovered || gripDrag.pressed ? 1 : 0.75
+            Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
+        }
+        HoverHandler { id: gripHover }
+        MouseArea {
+            id: gripDrag
+            anchors.fill: parent
+            preventStealing: true
+            property real grab: 0
+            function to(m) {
+                const a = (bar.vert ? m.y : m.x) - grab;
+                bar.scroll = Math.max(0, Math.min(bar.scrollMax, a / scrollGrip.travel * bar.scrollMax));
+            }
+            onPressed: m => {
+                const a = bar.vert ? m.y : m.x;
+                // On the handle: keep the grab point; beside it: bring its middle here
+                grab = a >= handle.at && a <= handle.at + handle.length ? a - handle.at : handle.length / 2;
+                to(m);
+            }
+            onPositionChanged: m => { if (pressed) to(m); }
+        }
+    }
 
     // ---- Drawing -----------------------------------------------------------
     Item {
@@ -712,8 +771,9 @@ PanelWindow {
             spacing: bar.gap
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
-            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding
-            y: bar.vert ? bar.sidePadding : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
+            // (slid along by bar.scroll while the bar's arranged and too long to show whole)
+            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding - bar.scroll
+            y: bar.vert ? bar.sidePadding - bar.scroll : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
 
             // Everything that can go in a container, by its name in the arrangement
             readonly property var things: ({
@@ -837,7 +897,7 @@ PanelWindow {
                 if (h.obj) h.obj.carried = on;
             }
             function drop() {
-                held = null; target = null; moved = false; leaving = false;
+                held = null; target = null; moved = false; leaving = false; edge = -1;
                 Config.barLeaving = false; Config.barFloat = null;
             }
             function along(p) { return bar.vert ? p.y : p.x; }
@@ -898,8 +958,29 @@ PanelWindow {
             }
             // (press, move and let go as functions of their own, so a test can drag without a pointer)
             onPressed: m => press(m.x, m.y)
-            onPositionChanged: m => move(m.x, m.y)
+            onPositionChanged: m => { last = Qt.point(m.x, m.y); move(m.x, m.y); }
             onReleased: release()
+            // The wheel slides a line that's too long to show whole (either way of scrolling)
+            onWheel: w => { const d = Math.abs(w.angleDelta.x) > Math.abs(w.angleDelta.y) ? w.angleDelta.x : w.angleDelta.y; bar.scrollBy(-d * 0.6); }
+            // ...and so does carrying something to either end, faster the nearer the edge: `edge`
+            // is where what's carried is along the bar itself (below 0: nothing's carried here)
+            property point last
+            property real edge: -1
+            Timer {
+                running: arranger.edge >= 0 && bar.scrollMax > 0
+                interval: 16; repeat: true
+                onTriggered: {
+                    const zone = 70, far = bar.lineLength + 2 * bar.sidePadding, a = arranger.edge;
+                    const push = a < zone ? -(zone - a) : a > far - zone ? a - (far - zone) : 0;
+                    if (push === 0) return;
+                    const was = bar.scroll;
+                    bar.scrollBy(push * 0.22);
+                    if (bar.scroll === was) return;
+                    // (the line has moved under what's carried: where it would land is worked out again)
+                    if (arranger.held && arranger.moved) arranger.move(arranger.last.x, arranger.last.y);
+                    else arranger.carried();
+                }
+            }
             function press(x, y) {
                 const m = Qt.point(x, y);
                 const a = along(mapToItem(left, m.x, m.y));
@@ -918,6 +999,7 @@ PanelWindow {
                     carry(held, true);
                 }
                 if (!moved) return;
+                edge = along(mapToItem(content, m.x, m.y));
                 const w = mapToItem(null, m.x, m.y), sc = bar.screen;
                 Config.barFloatAt = Qt.point((sc ? sc.x : 0) + bar.windowX + w.x, (sc ? sc.y : 0) + bar.windowY + w.y);
                 // Well off the bar: let go there and it's back in the pool
@@ -972,12 +1054,14 @@ PanelWindow {
                     const p = left.mapFromItem(null, g.x - ox, g.y - oy);
                     const across = bar.vert ? p.x : p.y;
                     if (here && across > -30 && across < bar.capsuleHeight + 30) {
+                        if (!held) edge = along(content.mapFromItem(null, g.x - ox, g.y - oy));
                         const joins = c.kind === "item" || c.kind === "tuck";
                         t = aim(along(p), joins);
                         if (c.kind === "tuck" && !t.join) t = null;      // (a collapse button only goes in a container)
                     }
                 }
                 if (t && !held) gapLen = c.kind === "space" ? 30 : c.kind === "box" ? 44 : bar.capsuleHeight + 8;
+                if (!t && !held) edge = -1;
                 carryTarget = t;
                 if (t) Config.barCarryTarget = { join: t.join, to: t.to, slot: t.slot, bar: bar };
                 else if (Config.barCarryTarget && Config.barCarryTarget.bar === bar) Config.barCarryTarget = null;
@@ -1092,7 +1176,8 @@ PanelWindow {
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
-                readonly property real room: Math.max(0, bar.lineLength - bar.lineFixed)
+                // (all it likes while the bar's arranged: the line scrolls then, if it has to)
+                readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed)
                 length: (bar.vert ? titleBody.height : titleBody.width) + pad
                 // The title (turned to run down a side bar)
                 Item {
