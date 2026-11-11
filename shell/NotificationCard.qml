@@ -51,7 +51,7 @@ Rectangle {
     color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor) : bar.barColor
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
-    Gloss { radius: parent.radius; band: true; strength: 1.15 }
+    Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 1.15 }       // (flat in the bell panel)
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
     // of it, so nothing shows through), kept within the room their window leaves round them
@@ -155,7 +155,7 @@ Rectangle {
                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                 onStatusChanged: if (status === Image.Error && !gen.running && icon.tried !== card.tilePath) { icon.tried = card.tilePath; gen.running = true; }
                 IconPlate { anchors.fill: parent; z: -1 }       // the tile behind, in the theme's colour
-                IconGloss {}                                    // glass: a sheen on the tile, as on the dock's icons
+                IconGloss { visible: Config.glassGloss && Config.s.iconShape !== "original" && !card.inPanel }                                    // glass: a sheen on the tile, as on the dock's icons
             }
             Process {
                 id: gen
@@ -188,8 +188,8 @@ Rectangle {
                 }
                 // Glass: a sheen on the tile (under the mark or bell, so it doesn't wash them out);
                 // on Slate's, the app icons' own (IconGloss), so it matches theirs
-                Gloss { visible: !icon.fromSlate && Config.glassGloss; radius: parent.radius; z: -0.5 }
-                IconGloss { visible: icon.fromSlate && Config.glassGloss; z: -0.5 }
+                Gloss { visible: !card.inPanel && !icon.fromSlate && Config.glassGloss; radius: parent.radius; z: -0.5 }
+                IconGloss { visible: !card.inPanel && icon.fromSlate && Config.glassGloss; z: -0.5 }
             }
         }
 
