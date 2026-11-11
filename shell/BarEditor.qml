@@ -241,6 +241,7 @@ PanelWindow {
                 text: root.glyph(0xEC01)
                 color: barChip.lit ? root.text : root.dim
                 font.family: root.bar.iconFont; font.pixelSize: 13
+                width: implicitWidth - 5      // (closer to the icon than the row's own spacing puts it)
             }
             Image {
                 visible: barChip.item === "control"
