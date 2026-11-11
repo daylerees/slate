@@ -1201,9 +1201,7 @@ Singleton {
     // each on the bar, the first of its list (the rest are for where the parts are coloured apart)
     readonly property var appsPastels: ["#e8a6c8", "#e8c48f", "#8fc7e8"]
     readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
-    // Chalk's icon, wherever it's drawn (ChalkFace.qml): its speech bubble (the Assistant
-    // page's colour, below) and the face in it
-    readonly property var chalkPastels: ["#b9a6e8", "#8fd0c8"]
+    // (Chalk's icon is one colour wherever it's drawn: the Assistant page's, below)
     function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
     // ---- Game mode (the bar's game mode panel) -----------------------------------------

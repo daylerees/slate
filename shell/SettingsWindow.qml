@@ -532,7 +532,6 @@ FloatingWindow {
                                 id: navIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: win.glyph(parent.modelData.icon)
-                                ChalkFace {}
                                 // Colourful: each page its own colour; monotone: the accent when current
                                 // (on the page you're on, dark like its name: it sits on the active colour)
                                 color: parent.current ? win.accentText : Config.colourful ? Config.pageColour(parent.modelData.id) : win.dim
@@ -720,7 +719,6 @@ FloatingWindow {
                                 id: pageHitIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
-                                ChalkFace {}
                                 color: pageHit.chosen ? win.accentText : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 16
                             }
@@ -1919,7 +1917,6 @@ FloatingWindow {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                             text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
-                            ChalkFace {}
                             color: hitRow.chosen ? win.accentText : win.dim
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
@@ -1974,7 +1971,6 @@ FloatingWindow {
                             Text {
                                 anchors.centerIn: parent
                                 text: win.glyph(tile.modelData.icon)
-                                ChalkFace {}
                                 color: parent.pc
                                 font.family: win.bar.iconFont; font.pixelSize: 18
                             }

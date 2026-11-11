@@ -338,7 +338,6 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         text: String.fromCodePoint(0xF38A)
                         color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
-                        ChalkFace {}
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -423,7 +422,6 @@ PanelWindow {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: String.fromCodePoint(0xF38A)
                                     color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
-                                    ChalkFace {}
                                 }
                                 Text {
                                     text: "Chalk"
@@ -512,7 +510,6 @@ PanelWindow {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: String.fromCodePoint(0xF38A)
                                             color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
-                                            ChalkFace {}
                                         }
                                         Text {
                                             text: "Chalk"

@@ -1872,7 +1872,6 @@ PanelWindow {
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             code: moreRow.modelData.icon
                             color: moreRow.modelData.id === "power" ? pop.danger : Config.statusColour(moreRow.modelData.id, pop.text)
-                            ChalkFace {}
                         }
                         Image {
                             visible: moreRow.modelData.image !== ""
