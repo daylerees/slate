@@ -438,8 +438,25 @@ PanelWindow {
             width: parent.width; height: 6; radius: 3
             color: pop.card
             Rectangle {
+                id: slFill
                 width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: 3
-                color: sl.muted ? pop.dim : pop.accent
+                // Switched off (a muted volume): a much darker accent, with diagonal stripes of a
+                // darker one still across it, so it reads as there but not in use
+                color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
+                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                clip: sl.muted
+                Repeater {
+                    model: sl.muted ? Math.ceil(slFill.width / 7) + 2 : 0
+                    Rectangle {
+                        required property int index
+                        // (leaning: taller than the bar and turned, cut off by the bar's own edges)
+                        x: -4 + index * 7; y: (slFill.height - height) / 2
+                        width: 2.5; height: slFill.height * 3
+                        rotation: 40
+                        antialiasing: true
+                        color: Qt.darker(pop.accent, 4.2)
+                    }
+                }
             }
         }
         Rectangle {
