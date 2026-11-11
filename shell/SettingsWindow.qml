@@ -2350,7 +2350,7 @@ FloatingWindow {
                     label: "Background opacity"
                     settingKey: "barOpacity"
                     detail: "How solid the bar's background is: 100% can't be seen through, lower is clearer"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barGlassOpacity * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.barOpacity < 0 ? Config.barGlassOpacity : Config.s.barOpacity) * 100); onMoved: v => Config.s.barOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
@@ -2510,7 +2510,7 @@ FloatingWindow {
                     label: "Background opacity"
                     settingKey: "dockOpacity"
                     detail: "How solid the dock's background is: 100% can't be seen through, lower is clearer"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.dockGlassOpacity * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
+                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.dockOpacity < 0 ? Config.dockGlassOpacity : Config.s.dockOpacity) * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {

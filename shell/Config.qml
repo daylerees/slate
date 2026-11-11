@@ -1154,7 +1154,9 @@ Singleton {
     // The dock's own background with glass: Slate's own is a fifth clearer than the rest of the
     // glass (and Hyprland starts blurring behind it that much sooner: dockGlassCut, as glassCut
     // below). And the tiles on it (its icons' and its buttons'): solid unless turned down
-    readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.min(1, s.dockOpacity)
+    // (with its blur on, never quite clear: Hyprland blurs nothing behind nothing, so 0% is
+    // drawn at 1%, enough for the blur to stay. The slider still says 0)
+    readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.max(s.dockBlur ? 0.01 : 0, Math.min(1, s.dockOpacity))
     function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
     readonly property real dockTileOpacity: glass ? Math.max(0, Math.min(1, s.dockTileOpacity)) : 1
     readonly property real dockGlassCut: ownCut(dockGlassOpacity)
@@ -1163,11 +1165,11 @@ Singleton {
     // for its sheen, which showed as a band). In steps of 0.02, so dragging a slider makes a
     // few dozen rules at most, not one for every value
     // (never quite 0, which might be taken for "no threshold": the whole window, blurred)
-    function ownCut(opacity) { return Math.max(0.01, Math.floor(Math.max(0, opacity) * 0.85 * 50) / 50); }
+    function ownCut(opacity) { return Math.max(0.005, Math.floor(Math.max(0, opacity) * 0.85 * 50) / 50); }
     // The menu bar's own background with glass (Bar.qml's barBackground): Slate's own is, in
     // dark mode, a quarter of the way from the glass's opacity to solid
     readonly property real barGlassOpacity: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
-        : Math.min(1, s.barOpacity)
+        : Math.max(s.barBlur ? 0.01 : 0, Math.min(1, s.barOpacity))
     // The containers on the bar, of colour `c` when solid. Slate's own: solid, or with glass the
     // frosted film everything raised has (raised). At an opacity of your own, with glass: the
     // film alone up to its own opacity, then the solid colour coming in under it (as frostedTile)
@@ -1193,9 +1195,9 @@ Singleton {
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)
     function glassRule(v, match, cut, wanted) {
-        const c = cut.toFixed(2), made = `"${c} 3"`;
+        const c = cut.toFixed(3), made = `"${c} 3"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
-            + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 100)}", `
+            + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;
     }
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
