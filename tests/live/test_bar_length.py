@@ -38,7 +38,7 @@ class BarLength(LiveCase):
         self.config("barClockDate", "true")
         self.config("barClockSeconds", "false")
         st = self.squeeze(1400)             # far too short for anything to stay as it was
-        gives = [g for g in st["gives"] if not g.startswith("tuck:")]     # (tucking comes after: its own tests)
+        gives = [g for g in st["gives"] if not g.startswith(("tuck:", "over:"))]     # (tucking and More come after: their own tests)
         texts = [g for g in gives if g.startswith("text:")]
         self.assertGreaterEqual(len(texts), 2, gives)
         self.assertEqual(gives[-1], "clock:date")
@@ -69,7 +69,7 @@ class BarLength(LiveCase):
         self.config("barClockDate", "true")
         self.config("barClockSeconds", "true")
         st = self.squeeze(1400)
-        self.assertEqual([g for g in st["gives"] if not g.startswith("tuck:")][-2:], ["clock:date", "clock:seconds"])
+        self.assertEqual([g for g in st["gives"] if not g.startswith(("tuck:", "over:"))][-2:], ["clock:date", "clock:seconds"])
         self.assertRegex(st["clock"], r"^\d{1,2}:\d\d( [AP]M)?$")
 
     def test_one_step_at_a_time_and_back_with_room_to_spare(self):
@@ -130,7 +130,8 @@ class BarLength(LiveCase):
         self.assertEqual(self.layout()[at]["collapse"], "never")
         st = self.squeeze(1400)
         self.assertNotIn(f"tuck:{at}", st["gives"])
-        self.assertTrue(st["line"]["wifi"]["visible"], "a container set to Never tucked")
+        # (what's left of it on the bar shows in full: nothing's behind a button)
+        self.assertTrue(st["line"]["wifi"]["visible"] or "wifi" in st["overflowed"], "a container set to Never tucked")
         self.squeeze(0)
         self.ipc("test", "arrange", "collapse", str(at), "always", "")
         self.s.settle(0.8)
@@ -146,4 +147,81 @@ class BarLength(LiveCase):
         self.s.settle(0.5)
         self.assertEqual(self.layout()[at]["collapse"], "always")
         self.assertEqual(self.layout()[at]["items"][-1], "tuck")
+
+    # ---- overflow: things leave the bar for More ------------------------------------------------
+    ORDER = ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon", "chalk",
+             "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
+
+    def test_more_is_only_there_when_something_is_in_it(self):
+        st = self.bar()
+        self.assertEqual(st["overflowed"], [])
+        self.assertFalse(st["line"]["more"]["visible"], "More shows with nothing in it")
+        st = self.squeeze(1400)
+        self.assertNotEqual(st["overflowed"], [])
+        self.assertTrue(st["line"]["more"]["visible"], "things have left the bar and there's no More to find them in")
+
+    def test_things_leave_in_order_and_some_stay(self):
+        st = self.squeeze(1400)
+        over = st["overflowed"]
+        self.assertGreaterEqual(len(over), 2, st["gives"])
+        self.assertEqual(over, [i for i in self.ORDER if i in over], "they left out of order")
+        # (one at a time: what's left is the end of the order, none skipped)
+        on_bar = [i for i in self.ORDER if st["line"][i]["visible"]]
+        if on_bar:
+            self.assertLess(max(self.ORDER.index(i) for i in over), min(self.ORDER.index(i) for i in on_bar),
+                            "something stayed on the bar while a thing minded more had left")
+        for i in over:
+            self.assertFalse(st["line"][i]["visible"], f"{i} is in More and on the bar")
+        for i in ("power", "clock", "control"):
+            self.assertNotIn(i, over)
+            self.assertTrue(st["line"][i]["visible"], f"{i} left the bar")
+        # ...after everything gentler has been tried
+        first = st["gives"].index("over:" + over[0])
+        self.assertTrue(all(not g.startswith("over:") for g in st["gives"][:first]))
+        self.assertIn("clock:date", st["gives"][:first])
+
+    def test_they_come_back_in_reverse(self):
+        """With room back, the last to leave is the first to return: what's still in More is
+        always the start of what was. (A single small thing rarely waits there alone: More's
+        own button takes about the room it would, so the last two tend to come back together.)"""
+        px = 600
+        while len(self.squeeze(px)["overflowed"]) < 3:
+            px += 40
+            self.assertLess(px, 1500, "squeezing never sent three things to More")
+        were = self.bar()["overflowed"]
+        seen = {len(were)}
+        while px > 0:
+            px = max(0, px - 20)
+            now = self.squeeze(px)["overflowed"]
+            self.assertEqual(now, were[:len(now)], f"at {px}: what's left in More isn't the first of what was there ({were})")
+            seen.add(len(now))
+        self.assertEqual(self.bar()["overflowed"], [])
+        self.assertGreater(len(seen), 2, "everything came back at once rather than as room allowed")
+
+    def test_the_more_panel_lists_them_and_they_still_work(self):
+        st = self.squeeze(1400)
+        self.assertIn("volume", st["overflowed"])
+        names = [r[0] for r in st["more"]]
+        self.assertIn("Volume", names)
+        self.assertNotIn("Clock", names)
+        self.ipc("bar", "panel", "more")
+        self.s.wait(lambda st: st["popout"] == "more", what="the More panel")
+        # A row does what the thing does on the bar: Volume's opens its panel
+        self.ipc("test", "arrange", "more", "volume", "", "")
+        self.s.wait(lambda st: st["popout"] == "volume", what="the volume panel, from More")
+        self.ipc("popout", "close")
+
+    def test_more_cant_be_taken_off_the_bar(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.6)
+        self.assertTrue(self.bar()["line"]["more"]["visible"], "More isn't there to be moved while the bar's arranged")
+        self.ipc("test", "arrange", "shown", "more", "false", "")
+        self.s.settle(0.4)
+        self.assertTrue(self.bar()["line"]["more"]["visible"])
+        # (but it moves like anything else)
+        self.ipc("test", "arrange", "moveItem", "more", "0", "-1")
+        self.s.settle(0.5)
+        self.assertEqual(self.layout()[0]["items"], ["more"])
+        self.ipc("test", "arrange", "done", "", "", "")
 

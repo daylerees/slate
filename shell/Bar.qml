@@ -89,6 +89,38 @@ PanelWindow {
         arranger.release();
     }
     readonly property string clockText: clock.text
+    // What's in More, for its panel (Popouts.qml): a row each, in the order they left. The
+    // tray is a row for each of its icons; the window's icon goes with its title
+    function moreRows() {
+        const rows = [];
+        for (const id of overflowed) {
+            const it = Config.barItem(id), t = left.things[id];
+            if (!it || !t || id === "windowicon") continue;
+            if (id === "tray") {
+                for (const tr of SystemTray.items.values)
+                    rows.push({ id: id, tray: tr, label: tr.tooltipTitle || tr.title || tr.id || "App", icon: 0, image: String(tr.icon), value: "" });
+                continue;
+            }
+            rows.push({ id: id, tray: null, label: id === "windowtitle" ? "Window" : it.label, icon: it.icon, image: "",
+                        value: id === "windowtitle" ? titleText.text : id === "workspaces" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
+        }
+        return rows;
+    }
+    // A row in More pressed, right-clicked or scrolled over: what the thing itself does on the bar
+    function moreClick(row, right) {
+        if (row.tray) {
+            const it = row.tray;
+            if ((right || it.onlyMenu || indicatorIds.includes(it.id)) && it.hasMenu) { if (popouts) popouts.close(); openTrayMenu(it.menu, moreBtn); }
+            else { if (popouts) popouts.close(); it.activate(); }
+            return;
+        }
+        const t = left.things[row.id];
+        if (!t) return;
+        if (row.id === "workspaces") { if (popouts) popouts.close(); Config.slateCall("overview", "toggle"); }
+        else if (right) t.rightClicked();
+        else t.clicked();
+    }
+    function moreWheel(row, delta) { const t = left.things[row.id]; if (t && !row.tray) t.wheel(delta); }
     // (tests) Each thing on the line: where it is in the bar's window and whether it shows
     function lineState() {
         const out = {};
@@ -111,6 +143,7 @@ PanelWindow {
     }
     function openPopout(name, item) {
         if (!popouts) return;
+        if (item.overflowed) item = moreBtn;        // (asked for from the More panel: it opens from More's place)
         const p = item.mapToItem(content, item.width / 2, item.height / 2);   // from the screen edge
         // (a button that isn't showing has no place to go by: the panel opens as it always did)
         popouts.toggle(name, p.x, p.y, bar.screen, item.visible ? outermost(item) : undefined);
@@ -200,7 +233,8 @@ PanelWindow {
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
         const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn, windowmode: wsMode,
-                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap })[name];
+                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap, more: moreBtn })[name];
+        if (name === "more" && popouts) popouts.moreBar = bar;
         if (button) openPopout(name, button);
     }
     // Tray apps with no "activate" of their own: Ayatana app indicators (Steam and others)
@@ -379,6 +413,10 @@ PanelWindow {
     // that only just fits doesn't have things coming and going. Not while the bar's being
     // arranged: everything's there then, to be picked up.
     property var gives: []
+    // ...and when slimming isn't enough, things leave the bar for More, one at a time, in the
+    // order they're least minded (Config.barOverflowDefault; some stay whatever happens), and
+    // come back in the reverse order. What's in More now, in that order:
+    property var overflowed: []
     property bool fitting: false
     property bool slimTitle: false
     property int slimClock: 0                 // 1: no date; 2: no seconds either
@@ -405,18 +443,28 @@ PanelWindow {
         // holding what's minded least first (Config.barOverflowRank)
         const boxes = [];
         for (const c of left.children) {
-            if (!c.isBox || c.collapse !== "needed") continue;
+            if (!c.isBox || c.collapse !== "needed" || c.cells.indexOf(moreBtn) >= 0) continue;     // (More is never tucked away)
             const shown = c.cells.filter(x => x.wanted);
             if (shown.length >= 2) boxes.push({ at: c.index, rank: Math.min(...shown.map(x => Config.barOverflowRank(x.name))) });
         }
         boxes.sort((a, b) => a.rank - b.rank || a.at - b.at);
         for (const b of boxes) plan.push("tuck:" + b.at);
+        // ...and then things leave for More
+        for (const id of Config.barOverflowDefault) {
+            const t = left.things[id];
+            if (!t || !t.shell || Config.barStayDefault.indexOf(id) >= 0) continue;
+            if (id === "windowtitle" ? (Config.s.barShowTitle && titleText.text !== "") : t.wanted) plan.push("over:" + id);
+        }
         return plan;
     }
     function slimApply(given) {
         slimTitle = given.indexOf("title") >= 0;
         slimClock = given.indexOf("clock:seconds") >= 0 ? 2 : given.indexOf("clock:date") >= 0 ? 1 : 0;
-        for (const id in left.things) left.things[id].slimText = given.indexOf("text:" + id) >= 0;
+        overflowed = given.filter(g => g.indexOf("over:") === 0).map(g => g.slice(5));
+        for (const id in left.things) {
+            left.things[id].slimText = given.indexOf("text:" + id) >= 0;
+            left.things[id].overflowed = given.indexOf("over:" + id) >= 0;
+        }
         for (const c of left.children) if (c.isBox) c.needTuck = given.indexOf("tuck:" + c.index) >= 0;
         // (laid out now, not when the next frame is drawn: its length is about to be read)
         for (const c of left.children) if (c.isBox) c.relayout();
@@ -665,7 +713,7 @@ PanelWindow {
                 control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn, windowmode: wsMode, workspaces: wsCap,
                 tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, gamemode: gameSeg,
                 keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn,
-                windowicon: winIcon, windowtitle: winTitle })
+                windowicon: winIcon, windowtitle: winTitle, more: moreBtn })
             property var made: []              // the containers and flexible spaces made for this arrangement
             // Put the line in the order the arrangement gives: a container made for each of its
             // containers and handed its things, the title, a flexible space for each "space".
@@ -1575,6 +1623,16 @@ PanelWindow {
                 onClicked: bar.openPopout("calendar", clockCap)
             }
 
+            // More: what holds whatever there isn't room for (bar.overflowed). Only there when
+            // something is, or while the bar's arranged, so it can be put where it's wanted
+            Segment {
+                id: moreBtn
+                wanted: bar.overflowed.length > 0 || Config.barArranging
+                iconCode: 0xEA95
+                length: bar.capsuleHeight + 8
+                hoverText: bar.overflowed.length === 1 ? "1 more thing" : bar.overflowed.length + " more things"
+                onClicked: { if (bar.popouts) bar.popouts.moreBar = bar; bar.openPopout("more", moreBtn); }
+            }
             Segment {       // power
                 id: powerBtn
                 wanted: Config.s.barShowPower; iconCode: 0xEB0D; iconSize: 17; tint: bar.errorColor
@@ -1684,6 +1742,7 @@ PanelWindow {
         // while one's under way are picked up by it, or by another straight after
         property string drawnLabel: ""
         property bool slimText: false           // short of room: its text is put away (bar.fit)
+        property bool overflowed: false         // ...or it has left the bar for More
         readonly property real labelLength: segLabel.implicitWidth + 6
         function relayout() { segRow.forceLayout(); }
         Component.onCompleted: drawnLabel = shownLabel
@@ -1827,14 +1886,14 @@ PanelWindow {
         // As long as it will be once it's settled (opening and closing are eased): what the line
         // is fitted by
         readonly property real settledLength: (tuck ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + grip
-        function shows(c) { return !c.carried && (c === toggle ? tuck : (c.wanted && showThings)); }
+        function shows(c) { return !c.carried && !c.overflowed && (c === toggle ? tuck : (c.wanted && showThings)); }
         property bool carried: false            // being dragged (arranging): off the line till it lands
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
         function isLast(c) { const i = order.indexOf(c); for (let k = i + 1; k < order.length; k++) if (shows(order[k])) return false; return true; }
         function sepBefore(c) { return shows(c) && !isFirst(c); }
         // (one fresh from the pool, with nothing in it yet, shows while the bar's being arranged)
         readonly property bool hollow: Config.barArranging && cells.length === 0
-        visible: !carried && (cells.some(c => c.wanted && !c.carried) || hollow)
+        visible: !carried && (cells.some(c => c.wanted && !c.carried && !c.overflowed) || hollow)
         function settle() { carried = false; toggle.carried = false; }
         function relayout() { for (const c of cells) c.relayout(); toggle.relayout(); row.forceLayout(); }
         // Holding the window's title: how long it is without the title's own text (the things

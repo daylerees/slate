@@ -136,7 +136,7 @@ Singleton {
         barBox(["control"]), barBox(["apps"]), barBox(["spaces"]), barBox(["chalk"]),
         barBox(["windowmode", "workspaces"]),
         barBox(["windowicon", "windowtitle"]), "space",
-        barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["clock"]), barBox(["power"])
+        barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["more"]), barBox(["clock"]), barBox(["power"])
     ]
     // Everything that can be in a container: its name in the arrangement, what it's called, its
     // icon (for the pool on Settings → Menu Bar), and the setting that says whether it shows
@@ -160,7 +160,10 @@ Singleton {
         { id: "wifi", label: "Wi-Fi", icon: 0xEB52, key: "barShowWifi" },
         { id: "battery", label: "Battery", icon: 0xEA30, key: "barShowBattery" },
         { id: "clock", label: "Clock", icon: 0xEA70, key: "barShowClock" },
-        { id: "power", label: "Power", icon: 0xEB0D, key: "barShowPower" }
+        { id: "power", label: "Power", icon: 0xEB0D, key: "barShowPower" },
+        // (what holds whatever there isn't room for: always on the bar, placed like the rest,
+        // but never taken off it. No switch of its own, so no key)
+        { id: "more", label: "More", icon: 0xEA95, key: "" }
     ]
     function barItem(id) { return barItems.find(i => i.id === id) || null; }
     // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
@@ -194,6 +197,12 @@ Singleton {
         }
         // (there's always one flexible space: without one nothing takes up the spare room)
         if (spaces === 0) out.splice(out.findIndex(e => typeof e !== "string" && e.items.indexOf("windowtitle") >= 0) + 1 || out.length, 0, "space");
+        // (a saved arrangement from before there was a More: it goes just before the clock)
+        if (!seen["more"]) {
+            seen["more"] = true;
+            const at = out.findIndex(e => typeof e !== "string" && e.items.indexOf("clock") >= 0);
+            out.splice(at >= 0 ? at : out.length, 0, barBox(["more"], null));
+        }
         for (const id of known) if (!seen[id]) out.push(barBox([id], null));
         return out;
     }
@@ -357,12 +366,12 @@ Singleton {
     // Slate's own arrangement again: its order and containers, and everything it starts with
     // on the bar (what each thing shows, like its text, is left as it is)
     readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
-        && barItems.every(i => sameValue(s[i.key], defaultOf(i.key)))
+        && barItems.every(i => i.key === "" || sameValue(s[i.key], defaultOf(i.key)))
     signal barRedraw()          // (the bar lays its line again, drawing everything afresh)
     function barReset() {
         barSelected = -1;
         barRedraw();
-        for (const i of barItems) s[i.key] = defaultOf(i.key);
+        for (const i of barItems) if (i.key !== "") s[i.key] = defaultOf(i.key);
         s.barStatusCollapsed = defaultOf("barStatusCollapsed");
         s.barLayout = [];
     }
@@ -424,12 +433,12 @@ Singleton {
     readonly property var barStayDefault: ["power", "clock", "control"]
     function barOverflowRank(id) { const i = barOverflowDefault.indexOf(id); return i < 0 ? 1000 : i; }
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
-    function barShown(id) { const it = barItem(id); return !!it && !!s[it.key]; }
+    function barShown(id) { const it = barItem(id); return !!it && (it.key === "" || !!s[it.key]); }
     // (Put back on the bar, a thing has its text on again: it comes as it first was, whatever
     // it was set to before it went to the pool)
     function barSetShown(id, on) {
         const it = barItem(id);
-        if (!it) return;
+        if (!it || it.key === "") return;          // (More has no switch: it's never off the bar)
         if (on && !s[it.key] && barTextKeys[id]) s[barTextKeys[id]] = true;
         s[it.key] = !!on;
     }

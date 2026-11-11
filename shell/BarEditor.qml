@@ -77,7 +77,7 @@ PanelWindow {
     readonly property string textKey: kind === "item" ? (Config.barTextKeys[pickedItem] || "") : ""
 
     // ---- The pool, and carrying a chip to the bar ------------------------------------
-    readonly property var pool: Config.barItems.filter(i => !Config.s[i.key])
+    readonly property var pool: Config.barItems.filter(i => i.key !== "" && !Config.s[i.key])
     property point origin: Qt.point(0, 0)      // this window's corner on the desktop
     property bool placed: false                // ...once it's known
     property point pointer: Qt.point(0, 0)     // the pointer, in this window
@@ -417,6 +417,7 @@ PanelWindow {
                 text: root.kind === "none" ? "Nothing picked. Click something on the bar to see its options"
                     : root.kind === "space" ? "A flexible space: it takes up the spare room, pushing what's either side of it apart"
                         + (Config.barSpaces < 2 ? ". The bar always keeps one" : "")
+                    : root.kind === "item" && root.pickedItem === "more" ? "More: what there isn't room for on the bar waits behind it. It shows when something does, and stays on the bar"
                     : root.kind === "item" ? root.nameOf(root.pickedItem)
                     : "A container: " + (root.pickedThings.length > 0 ? root.pickedThings.map(root.nameOf).join(", ") : "nothing in it yet. Drag things into it")
             }
@@ -525,8 +526,10 @@ PanelWindow {
 
                 // Off the bar
                 PanelButton {
-                    // (the last flexible space stays: something has to take up the spare room)
+                    // (the last flexible space stays: something has to take up the spare room. And
+                    // More, which holds what doesn't fit, is never off the bar)
                     visible: root.kind !== "none" && !(root.kind === "space" && Config.barSpaces < 2)
+                        && !(root.kind === "item" && root.pickedItem === "more")
                     destructive: true
                     label: root.kind === "space" ? "Take away" : "Take off the bar"
                     onClicked: {

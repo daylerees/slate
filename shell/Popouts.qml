@@ -270,6 +270,7 @@ PanelWindow {
                         : pop.displayed === "bluetooth" ? bluetoothPanel
                         : pop.displayed === "battery" ? batteryPanel
                         : pop.displayed === "gamemode" ? gameModePanel
+                        : pop.displayed === "more" ? morePanel
                         : pop.displayed === "windowmode" ? windowModePanel
                         : pop.displayed === "calendar" ? calendarPanel
                         : pop.displayed === "session" ? sessionPanel
@@ -1743,6 +1744,82 @@ PanelWindow {
             LinkRow {
                 code: 0xEB20; text: "Keyboard settings"
                 onClicked: pop.openSettingsPage("input")
+            }
+        }
+    }
+
+    // ---- More --------------------------------------------------------------
+    // What there isn't room for on the bar just now (Bar.qml: overflowed), a row each: its
+    // icon, its name and what it says. A row does what the thing does on the bar: pressed (most
+    // open their own panel, from More's place), right-clicked, scrolled over
+    property var moreBar: null             // the bar whose More was pressed
+    Component {
+        id: morePanel
+        Column {
+            id: moreView
+            width: 300
+            spacing: 10
+            readonly property var rows: pop.moreBar ? (pop.moreBar.overflowed, pop.moreBar.moreRows()) : []
+            Label { text: "More"; font.pixelSize: 15 }
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                color: pop.dim; font.weight: Font.Normal
+                text: moreView.rows.length > 0 ? "There isn't room for these on the bar just now. They'll be back when there is"
+                                               : "Everything's on the bar. What doesn't fit will wait here"
+            }
+            Column {
+                width: parent.width
+                spacing: 4
+                visible: moreView.rows.length > 0
+                Repeater {
+                    model: moreView.rows
+                    delegate: RowButton {
+                        id: moreRow
+                        required property var modelData
+                        width: parent.width
+                        onClicked: pop.moreBar.moreClick(modelData, false)
+                        ClickTap { acceptedButtons: Qt.RightButton; onTapped: pop.moreBar.moreClick(moreRow.modelData, true) }
+                        WheelHandler { onWheel: e => pop.moreBar.moreWheel(moreRow.modelData, e.angleDelta.y) }
+                        Icon {
+                            id: moreIcon
+                            visible: moreRow.modelData.image === ""
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            code: moreRow.modelData.icon
+                            color: moreRow.modelData.id === "power" ? pop.danger : Config.statusColour(moreRow.modelData.id, pop.text)
+                            ChalkFace {}
+                        }
+                        Image {
+                            visible: moreRow.modelData.image !== ""
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            width: 18; height: 18
+                            sourceSize: Qt.size(36, 36)
+                            source: moreRow.modelData.image
+                        }
+                        Label {
+                            id: moreName
+                            anchors { left: parent.left; leftMargin: 38; verticalCenter: parent.verticalCenter }
+                            text: moreRow.modelData.label
+                            width: Math.min(implicitWidth, parent.width - 38 - 10 - (moreValue.visible ? moreValue.width + 10 : 0))
+                            elide: Text.ElideRight
+                        }
+                        Label {
+                            id: moreValue
+                            visible: text !== ""
+                            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            width: Math.min(implicitWidth, parent.width * 0.5)
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
+                            color: pop.dim; font.weight: Font.Normal
+                            text: moreRow.modelData.value
+                        }
+                    }
+                }
+            }
+            Divider {}
+            LinkRow {
+                code: 0xEB20; text: "Menu bar settings"
+                onClicked: pop.openSettingsPage("bar")
             }
         }
     }
