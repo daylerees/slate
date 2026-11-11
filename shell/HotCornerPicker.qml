@@ -43,10 +43,14 @@ Rectangle {
             topRightRadius: atRight && !atBottom ? hp.radius - 4 : 6
             bottomLeftRadius: !atRight && atBottom ? hp.radius - 4 : 6
             bottomRightRadius: atRight && atBottom ? hp.radius - 4 : 6
-            color: cornerHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
+            color: "transparent"
             border.width: current ? 2 : 0
             border.color: hp.accent
-            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+            HoverFill {
+                base: Config.tint("#262c35"); hovered: cornerHover.hovered
+                topLeftRadius: corner.topLeftRadius; topRightRadius: corner.topRightRadius
+                bottomLeftRadius: corner.bottomLeftRadius; bottomRightRadius: corner.bottomRightRadius
+            }
 
             Row {
                 anchors { verticalCenter: parent.verticalCenter; left: corner.atRight ? undefined : parent.left; right: corner.atRight ? parent.right : undefined; leftMargin: 12; rightMargin: 12 }

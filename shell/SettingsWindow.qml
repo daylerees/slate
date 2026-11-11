@@ -4744,8 +4744,9 @@ FloatingWindow {
                                 width: 44; height: 22; radius: 6
                                 x: [8, (168 - 44) / 2, 168 - 44 - 8][index % 3]
                                 y: index < 3 ? 16 : 104 - 22 - 8
-                                color: current ? win.accent : spotHover.hovered ? Config.hoverOn(win.divider) : win.divider
+                                color: current ? win.accent : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                HoverFill { base: win.divider; hovered: spotHover.hovered; gone: parent.current; radius: parent.radius }
                                 HoverHandler { id: spotHover }
                                 ClickTap { onTapped: Config.s.notificationPosition = parent.modelData }
                             }

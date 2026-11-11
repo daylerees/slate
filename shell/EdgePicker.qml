@@ -36,8 +36,9 @@ Rectangle {
             readonly property bool current: ep.edge === modelData
             x: r.x; y: r.y; width: r.width; height: r.height
             radius: 3
-            color: current ? ep.accent : spotHover.hovered ? Config.hoverOn(Config.tint("#262c35")) : Config.tint("#262c35")
+            color: current ? ep.accent : "transparent"
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+            HoverFill { base: Config.tint("#262c35"); hovered: spotHover.hovered; gone: spot.current; radius: spot.radius }
             HoverHandler { id: spotHover }
             ClickTap { onTapped: ep.picked(spot.modelData) }
         }
