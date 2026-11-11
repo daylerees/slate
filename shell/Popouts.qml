@@ -480,8 +480,8 @@ PanelWindow {
                 // Switched off (a muted volume): a much darker accent, with diagonal stripes in the
                 // red of its muted indicator across it, so it reads as there but not in use
                 color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
-                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                clip: sl.muted || busyStripes.visible
+                Behavior on color { ColorAnimation { duration: Config.ms(320) } }
+                clip: mutedStripes.visible || busyStripes.visible
                 // In use (sound playing through it, or something listening to it): stripes of a
                 // darker accent drifting along it, fading in as it starts and out as it stops.
                 // They hold still with animations off and in game mode
@@ -508,22 +508,31 @@ PanelWindow {
                         }
                     }
                 }
-                // (the muted stripes drift too while it's in use: sound is playing, unheard)
-                property real mutedDrift: 0
-                NumberAnimation on mutedDrift {
-                    running: sl.muted && sl.busy && Config.animate && !Config.gameMode
-                    from: 0; to: 7; duration: 700 * 7 / 9; loops: Animation.Infinite
-                }
-                Repeater {
-                    model: sl.muted ? Math.ceil(slFill.width / 7) + 3 : 0
-                    Rectangle {
-                        required property int index
-                        // (leaning: taller than the bar and turned, cut off by the bar's own edges)
-                        x: -11 + index * 7 + slFill.mutedDrift; y: (slFill.height - height) / 2
-                        width: 2.5; height: slFill.height * 3
-                        rotation: 40
-                        antialiasing: true
-                        color: pop.danger          // (the red of the muted speaker beside it)
+                // Muted: the red stripes, fading in and out as it's muted and unmuted (across to
+                // the in-use stripes, or to none). They drift too while it's in use: sound is
+                // playing, unheard
+                Item {
+                    id: mutedStripes
+                    anchors.fill: parent
+                    opacity: sl.muted ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
+                    visible: opacity > 0
+                    property real drift: 0
+                    NumberAnimation on drift {
+                        running: mutedStripes.visible && sl.busy && Config.animate && !Config.gameMode
+                        from: 0; to: 7; duration: 700 * 7 / 9; loops: Animation.Infinite
+                    }
+                    Repeater {
+                        model: mutedStripes.visible ? Math.ceil(slFill.width / 7) + 3 : 0
+                        Rectangle {
+                            required property int index
+                            // (leaning: taller than the bar and turned, cut off by the bar's own edges)
+                            x: -11 + index * 7 + mutedStripes.drift; y: (slFill.height - height) / 2
+                            width: 2.5; height: slFill.height * 3
+                            rotation: 40
+                            antialiasing: true
+                            color: pop.danger          // (the red of the muted speaker beside it)
+                        }
                     }
                 }
             }
