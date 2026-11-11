@@ -280,9 +280,10 @@ PanelWindow {
             }
         }
         // A little shadow from the bar along the edge the panel comes out of it by, so the bar
-        // sits over its panel (the curved joins have theirs, below). Not in game mode, as no shadow is
+        // sits over its panel (the curved joins have theirs, below). With glass only (a flat panel
+        // is one piece with its bar), and not in game mode, as no shadow is
         Rectangle {
-            visible: !Config.gameMode
+            visible: pop.barShadeOn
             opacity: pop.active ? pop.fade : 0
             readonly property real reach: pop.barShade
             x: pop.side === "right" ? parent.width - reach : 0
@@ -297,6 +298,7 @@ PanelWindow {
         }
     }
     // (how far that shadow reaches, and how dark it is against the bar)
+    readonly property bool barShadeOn: Config.glass && !Config.gameMode
     readonly property real barShade: 9
     readonly property color barShadeColour: Config.shade(Math.min(0.42, Config.shadowStrength * 0.8))
 
@@ -321,7 +323,7 @@ PanelWindow {
                 origin.x: bar.cornerRadius / 2; origin.y: bar.cornerRadius / 2
             }
             readonly property color fill: pop.bg
-            readonly property color shade: Config.gameMode ? "transparent" : pop.barShadeColour
+            readonly property color shade: pop.barShadeOn ? pop.barShadeColour : "transparent"
             onFillChanged: requestPaint()
             onShadeChanged: requestPaint()
             onAvailableChanged: if (available) requestPaint()
