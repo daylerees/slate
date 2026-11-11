@@ -1696,8 +1696,6 @@ PanelWindow {
                     anchors.centerIn: parent
                     // Turned to run along a side bar, like the window title
                     rotation: bar.textRotation
-                    // What it says now, and what's drawn: taken up at the middle of a cross-fade as the
-                    // minute (or the format) changes. Counting seconds, it just changes
                     // (short of room, it sheds its date, then its seconds: bar.slimClock)
                     readonly property bool date: Config.s.barClockDate && bar.slimClock < 1
                     readonly property bool seconds: Config.s.barClockSeconds && bar.slimClock < 2
@@ -1705,18 +1703,8 @@ PanelWindow {
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (seconds ? "HH:mm:ss" : "HH:mm")
                             : (seconds ? "h:mm:ss AP" : "h:mm AP"))
-                    property string drawn: ""
-                    Component.onCompleted: drawn = now
-                    text: Config.s.barClockSeconds ? now : drawn
-                    // (straight away while the line's being fitted: its length is read as it's tried)
-                    onNowChanged: if (Config.s.barClockSeconds || bar.fitting) drawn = now; else if (!clockSwap.running) clockSwap.start()
-                    SequentialAnimation {
-                        id: clockSwap
-                        NumberAnimation { target: clock; property: "opacity"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
-                        ScriptAction { script: clock.drawn = clock.now }
-                        NumberAnimation { target: clock; property: "opacity"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
-                        onFinished: if (clock.drawn !== clock.now) start()
-                    }
+                    // (it just changes: no fade from one minute to the next)
+                    text: now
                     color: bar.textColor
                     font.family: bar.fontFamily
                     font.pixelSize: bar.fontSize
