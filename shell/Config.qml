@@ -1313,7 +1313,9 @@ Singleton {
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)
     function glassRule(v, match, cut, wanted) {
-        const c = cut.toFixed(3), made = `"${c} 4"`;
+        // (the number after the cut: put up by one whenever a rule here changes what it matches,
+        // so a Hyprland that's still running remakes it)
+        const c = cut.toFixed(3), made = `"${c} 5"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;
