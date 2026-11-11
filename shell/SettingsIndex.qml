@@ -27,7 +27,7 @@ Singleton {
         { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling, scrolling or floating, gaps, borders, focus and Super+Tab" },
         { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
         { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
-        { id: "wifi", label: "Wi-Fi", icon: 0xEB52, about: "Networks to join, and Wi-Fi on or off" },
+        { id: "wifi", label: "Network", icon: 0xF09F, about: "Your connection, wired and Wi-Fi, and networks to join" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
         { id: "printers", label: "Printers & Scanners", icon: 0xEB0E, more: true, about: "Adding printers, test pages, and scanning" },
         { id: "webcam", label: "Webcam", icon: 0xEA54, more: true, about: "The camera's picture: brightness, colour, light and flicker" },
@@ -198,6 +198,8 @@ Singleton {
         ["Idle and sleep", "lock", "screen off suspend sleep idle timeout"],
         ["Login screen", "lock", "greeter greetd sign in install update switch back display manager"],
         ["Wi-Fi", "wifi", "wireless network internet"],
+        ["Network", "wifi", "connection internet ip address gateway dns link speed online offline"],
+        ["Wired", "wifi", "ethernet cable lan socket network"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
         ["Printers & Scanners", "printers", "print printer printing scanner scan scanning cups sane test page"],
         ["About Slate", "about", "version restart settings file"]

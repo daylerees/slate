@@ -5838,12 +5838,135 @@ FloatingWindow {
             // Look for networks while this page is open
             Binding { target: wifiPane.dev; property: "scannerEnabled"; value: true; when: wifiPane.dev !== null && win.visible }
 
-            PageTitle { text: "Wi-Fi" }
-            GroupLabel { text: "Status" }
+            // Wired: every network socket this computer has, and whether a cable's connected.
+            // A cable carries the connection whenever there is one, Wi-Fi or not
+            readonly property var wires: Networking.devices.values.filter(d => d.type === DeviceType.Wired)
+            readonly property bool onWire: wires.some(d => d.connected)
+            // The connection's details (scripts/netinfo.sh: the cable's while on one, the Wi-Fi's
+            // otherwise), refreshed while the page is open
+            property var info: ({})
+            Process {
+                id: netDetails
+                command: [Quickshell.shellPath("scripts/netinfo.sh")]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        const o = {};
+                        for (const line of text.split("\n")) {
+                            const i = line.indexOf("=");
+                            if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
+                        }
+                        wifiPane.info = o;
+                    }
+                }
+            }
+            Timer {
+                interval: 5000; repeat: true; triggeredOnStart: true
+                running: win.visible
+                onTriggered: if (!netDetails.running) netDetails.running = true
+            }
+            function band(freq) {
+                const mhz = parseInt(freq);
+                return isNaN(mhz) ? "" : mhz >= 5925 ? "6 GHz" : mhz >= 4900 ? "5 GHz" : "2.4 GHz";
+            }
+            // What there is to say about the connection, as rows: only the ones that are known
+            readonly property var facts: {
+                const i = info, wired = i.wired !== undefined;
+                if (i.ip === undefined) return [];
+                const t = [
+                    { k: "IP address", v: (i.ip || "").split("/")[0] },
+                    { k: "Gateway", v: i.gateway || "" },
+                    { k: "DNS", v: i.dns && i.dns !== i.gateway ? i.dns : "" },
+                    { k: "Link speed", v: i.rate || "" },
+                    { k: "Band", v: wired ? "" : [band(i.freq), i.channel ? "channel " + i.channel : ""].filter(x => x).join(" · ") },
+                    { k: "Security", v: wired ? "" : (i.security || "") },
+                    { k: "VPN", v: i.vpn || "" }
+                ];
+                return t.filter(x => x.v);
+            }
+
+            PageTitle { text: "Network" }
+            GroupLabel { text: "Connection" }
+            Group {
+                SettingRow {
+                    label: wifiPane.onWire ? "Connected by cable"
+                        : wifiPane.current ? "Connected to " + wifiPane.current.name
+                        : "Not connected"
+                    detail: wifiPane.onWire ? (wifiPane.current ? "Wired, with " + wifiPane.current.name + " on Wi-Fi as well" : "Wired")
+                        : wifiPane.current ? "Wi-Fi"
+                        : !wifiPane.dev && wifiPane.wires.length === 0 ? "Slate can't find a network socket or Wi-Fi on this computer"
+                        : !wifiPane.dev ? "Plug in a cable and it connects by itself"
+                        : !Networking.wifiEnabled ? "Wi-Fi is off. Switch it on below, or plug in a cable"
+                        : "Choose a network below, or plug in a cable"
+                }
+                Repeater {
+                    model: wifiPane.facts
+                    delegate: Column {
+                        id: factRow
+                        required property var modelData
+                        width: parent.width
+                        Separator {}
+                        SettingRow {
+                            label: factRow.modelData.k
+                            Text {
+                                text: factRow.modelData.v
+                                color: win.dim; font.family: win.font; font.pixelSize: 13
+                            }
+                        }
+                    }
+                }
+            }
+            GroupLabel { visible: wifiPane.wires.length > 0; text: "Wired" }
+            Group {
+                visible: wifiPane.wires.length > 0
+                Repeater {
+                    model: wifiPane.wires
+                    delegate: Column {
+                        id: wireRow
+                        required property var modelData
+                        required property int index
+                        width: parent.width
+                        Separator { visible: wireRow.index > 0 }
+                        Item {
+                            width: parent.width; height: 60
+                            Rectangle {
+                                id: wireIcon
+                                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                width: 34; height: 34; radius: Config.corner(9)
+                                color: wireRow.modelData.connected ? win.accent : win.outline
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: win.glyph(wireRow.modelData.connected ? 0xF09F : 0xF0A0)
+                                    color: wireRow.modelData.connected ? win.accentText : win.text
+                                    font.family: win.bar.iconFont; font.pixelSize: 17
+                                }
+                            }
+                            Column {
+                                anchors { left: wireIcon.right; leftMargin: 12; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                                spacing: 2
+                                Text {
+                                    width: parent.width; elide: Text.ElideRight
+                                    text: wifiPane.wires.length > 1 ? "Ethernet (" + wireRow.modelData.name + ")" : "Ethernet"
+                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                }
+                                Text {
+                                    width: parent.width; elide: Text.ElideRight
+                                    text: wireRow.modelData.connected
+                                            ? "Connected" + (wifiPane.info.wired === wireRow.modelData.name && wifiPane.info.rate ? " · " + wifiPane.info.rate : "")
+                                        : wireRow.modelData.state === ConnectionState.Connecting ? "Connecting…"
+                                        : "No cable connected"
+                                    color: wireRow.modelData.connected ? win.accent : win.dim
+                                    font.family: win.font; font.pixelSize: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            GroupLabel { text: "Wi-Fi" }
             Group {
                 SettingRow {
                     label: "Wi-Fi"
-                    detail: !wifiPane.dev ? "No Wi-Fi adapter found"
+                    detail: !wifiPane.dev ? "This computer has no Wi-Fi"
                         : !Networking.wifiEnabled ? "Off"
                         : wifiPane.current ? "Connected to " + wifiPane.current.name : "Not connected"
                     Toggle { visible: !!wifiPane.dev; checked: Networking.wifiEnabled; onToggled: v => Networking.wifiEnabled = v }
