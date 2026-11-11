@@ -129,6 +129,29 @@ class Settings(Case):
             with self.subTest(layer):
                 self.assertIn(layer, named, f"slate-{layer} isn't blurred behind with glass")
 
+    def test_interface_size_reaches_everything(self):
+        """Interface size scales Slate through QT_SCALE_FACTOR on its process. Two things escape
+        that: a window drawn by another process, and a position or size taken from Hyprland (in
+        its pixels) used as Slate's. So every file that reads Hyprland's pointer or a window's
+        place must use Config.uiScale, and every `qs` that bin/slate starts to draw something
+        must be handed the scale. (The reload cover and the bar's arranging panel once weren't.)"""
+        shell = os.path.join(slate.ROOT, "shell")
+        # Files that only compare Hyprland's numbers with each other need no scale: say why here
+        same_units = {"Switcher.qml": "the window's place and its monitor's size are both Hyprland's"}
+        for name in sorted(os.listdir(shell)):
+            if not name.endswith(".qml") or name in same_units:
+                continue
+            src = slate.read("shell", name)
+            if re.search(r'"cursorpos"|lastIpcObject\??\.at\b|\bo\.at\[|\bc\.at\[|\bg\.at\[', src):
+                with self.subTest(name):
+                    self.assertIn("Config.uiScale", src,
+                                  f"{name} takes a position from Hyprland but never uses Config.uiScale")
+        launcher = slate.read("shell", "bin", "slate")
+        for n, line in enumerate(launcher.splitlines(), 1):
+            if re.search(r"setsid qs\b.*-p ", line):
+                with self.subTest(f"bin/slate:{n}"):
+                    self.assertIn("QT_SCALE_FACTOR", line, "a Slate window is started without the Interface size")
+
     def test_slider_default_hints(self):
         """A row's changed-from-default dot says what the default is, as its slider shows it. A
         slider that shows a setting in other units (a 0–1 setting as a percentage) says so with

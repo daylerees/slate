@@ -84,7 +84,8 @@ Scope {
                     onStreamFinished: {
                         let inCorner = false;
                         try {
-                            const p = JSON.parse(text), sc = corner.screen;
+                            // (Hyprland's position, brought to Slate's own scale: Interface size)
+                            const q = JSON.parse(text), k = Config.uiScale || 1, p = { x: q.x / k, y: q.y / k }, sc = corner.screen;
                             if (sc) {
                                 const cx = corner.modelData.left ? sc.x : sc.x + sc.width;
                                 const cy = corner.modelData.top ? sc.y : sc.y + sc.height;

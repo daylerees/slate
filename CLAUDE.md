@@ -78,6 +78,22 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 - The lock and login screens stay silent (the login screen has no `sounds/`).
 - New sounds are played for the user to approve before they're committed.
 
+## Interface size
+
+Settings → Appearance → Interface size scales all of Slate by starting it with
+`QT_SCALE_FACTOR` (`bin/slate`), so anything drawn inside the main Slate process scales by
+itself. `Config.uiScale` is the factor in use. Two things escape it, and both have happened:
+
+- **Another process that draws** (a second `qs -p …`, like the reload cover): start it with the
+  scale too, as `start()` and `cover_up()` in `bin/slate` do.
+- **Hyprland's pixels used as Slate's** (`hyprctl cursorpos`, a window's `at`/`size`, a
+  monitor's geometry): divide by `Config.uiScale` before using them with Slate's own
+  positions, and multiply what Slate hands to Hyprland in pixels.
+
+`tests/static/test_consistency.py::test_interface_size_reaches_everything` checks both. When
+you add a window, a helper process or anything that reads a position from Hyprland, think of
+125%.
+
 ## Tests
 
 `tests/run` (docs/TESTING.md) runs every test in a container, so nothing touches the desktop.
