@@ -241,10 +241,11 @@ drop, so it starts at step 5).
    in and out one at a time. Tests as above, plus a visual scene of the panel.
 4. **The order and Stay as settings**, the "If it doesn't fit" list in the arranging panel,
    and the narrow preview.
-5. Docs and the site (`site/features.html`, README, `docs/ARCHITECTURE.md`), and the full
-   test run.
+5. Docs and the site (`site/features.html`, README, `docs/ARCHITECTURE.md`).
 
-Each stage leaves the bar working and can be stopped after.
+Each stage leaves the bar working and can be stopped after. Each runs the static and unit
+tests and the live and visual tests it touches. **No full test run here**: that's done once,
+when Slate is ready for a release (Dayle, 2026-11-11).
 
 ## Later, not here
 
