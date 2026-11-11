@@ -2844,7 +2844,6 @@ FloatingWindow {
                 SettingRow {
                     label: "Opacity"
                     settingKey: "launcherOpacity"
-                    defaultText: "Appearance's glass opacity"
                     detail: "How solid its background is: 100% can't be seen through, lower is clearer"
                     ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.launcherGlassOpacity * 100); onMoved: v => Config.s.launcherOpacity = v / 100 }
                 }
@@ -4322,7 +4321,6 @@ FloatingWindow {
                 SettingRow {
                     label: "Opacity"
                     settingKey: "assistantOpacity"
-                    defaultText: "Appearance's glass opacity"
                     detail: "How solid its background is: 100% can't be seen through, lower is clearer"
                     ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.assistantGlassOpacity * 100); onMoved: v => Config.s.assistantOpacity = v / 100 }
                 }
