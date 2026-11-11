@@ -118,6 +118,42 @@ class Settings(Case):
                     with self.subTest(os.path.relpath(os.path.join(root, name), shell) + ": Config." + fn):
                         self.assertIn(fn, have, f"Config.{fn}() is called here, but Config.qml has no such function")
 
+    def test_slider_default_hints(self):
+        """A row's changed-from-default dot says what the default is, as its slider shows it. A
+        slider that shows a setting in other units (a 0–1 setting as a percentage) says so with
+        `per`; and a default the slider can't show (one that means "not set here") has its
+        row say it in words (`defaultText`). Menu Bar's opacity sliders once said the default
+        was 1% for a setting that starts at 80%."""
+        src = slate.read("shell", "SettingsWindow.qml")
+        data = slate.read("shell", "SettingsData.qml")
+        defaults = {m.group(1): float(m.group(2)) for m in re.finditer(r"property (?:real|int) (\w+): (-?[\d.]+)", data)}
+        rows = re.split(r"\n\s*SettingRow \{", src)[1:]
+        seen = 0
+        for row in rows:
+            key = re.search(r'settingKey: "(\w+)"', row[:600])
+            slider = re.search(r"ValueSlider \{(.*?onMoved[^\n]*)", row[:2500], re.S)
+            if not key or not slider or (key.end() > slider.start()) or key.group(1) not in defaults:
+                continue
+            k, body = key.group(1), slider.group(1)
+            if "Config.s." + k not in body:
+                continue
+            seen += 1
+            with self.subTest(k):
+                scaled = re.search(r"Config\.s\.%s = (?:Math\.round\()?v / (\d+)" % k, body)
+                per = re.search(r"\bper: (\d+)", body)
+                if scaled:
+                    self.assertTrue(per and per.group(1) == scaled.group(1),
+                                    f"{k}'s slider stores v / {scaled.group(1)}: it needs per: {scaled.group(1)} for its default hint")
+                else:
+                    self.assertIsNone(per, f"{k}'s slider has per: but stores its value as it is")
+                lo, hi = re.search(r"\bfrom: (-?[\d.]+)", body), re.search(r"\bto: (-?[\d.]+)", body)
+                if lo and hi:
+                    shown = defaults[k] * (int(per.group(1)) if per else 1)
+                    if not float(lo.group(1)) <= shown <= float(hi.group(1)):
+                        self.assertIn("defaultText:", row[:key.end() + 400],
+                                      f"{k} starts at {defaults[k]}, which its slider can't show: its row needs defaultText")
+        self.assertGreater(seen, 25, "far fewer slider rows found than Settings has")
+
     def test_setting_names_unique(self):
         src = slate.read("shell", "SettingsData.qml")
         names = re.findall(r"^\s*property\s+[\w<>]+\s+(\w+)\s*:", src, re.M)

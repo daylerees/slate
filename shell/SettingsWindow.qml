@@ -1222,8 +1222,10 @@ FloatingWindow {
             if (typeof d === "number") {
                 const sl = controlSlot.children.length ? controlSlot.children[0] : null;
                 if (sl && sl.suffix !== undefined) {
-                    if (sl.zeroText && d <= sl.from) return sl.zeroText;
-                    return d.toFixed(sl.decimals || 0) + sl.suffix;
+                    // (as the slider would show it: a 0–1 setting on a percentage slider is 80%, not 1%)
+                    const v = d * (sl.per || 1);
+                    if (sl.zeroText && v <= sl.from) return sl.zeroText;
+                    return v.toFixed(sl.decimals || 0) + sl.suffix;
                 }
                 return String(d);
             }
@@ -1340,6 +1342,9 @@ FloatingWindow {
         property real value: 0
         property string suffix: ""
         property string zeroText: ""   // shown instead of the value at the bottom (e.g. "Off")
+        // How many of the slider's units one of the setting's is: 100 for a setting kept as 0–1 and
+        // shown as a percentage. Its row uses it to say what the default is, in the slider's terms
+        property real per: 1
         property int decimals: 0
         signal moved(real value)
         signal released()          // let go of the slider (after moving it, or a click)
@@ -2341,21 +2346,21 @@ FloatingWindow {
                     label: "Background opacity"
                     settingKey: "barOpacity"
                     detail: "How solid the bar's background is: 100% can't be seen through, lower is clearer"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.barOpacity < 0 ? Config.barGlassOpacity : Config.s.barOpacity) * 100); onMoved: v => Config.s.barOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.barOpacity < 0 ? Config.barGlassOpacity : Config.s.barOpacity) * 100); onMoved: v => Config.s.barOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Contents opacity"
                     settingKey: "barItemOpacity"
                     detail: "How solid the containers on the bar are, with everything in them: their icons, text and dividers. At 0% they're gone"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemOpacity * 100); onMoved: v => Config.s.barItemOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Hover opacity"
                     settingKey: "barItemHoverOpacity"
                     detail: "How solid a container is while the pointer's over it, with everything in it: its icons, text, highlight and dividers"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.barItemHoverOpacity * 100); onMoved: v => Config.s.barItemHoverOpacity = v / 100 }
                 }
                 Separator {}
                 ToggleSetting {
@@ -2369,7 +2374,7 @@ FloatingWindow {
                     settingKey: "barPanelOpacity"
                     detail: Config.s.barPanelBlur ? "How solid the panels that open from the bar are: 100% can't be seen through, lower is clearer"
                         : "How solid the panels that open from the bar are. With their blur off they stay mostly solid, so they can be read: 0% is as clear as they go"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.barPanelOpacity * 100); onMoved: v => Config.s.barPanelOpacity = v / 100 }
                 }
             }
         }
@@ -2515,21 +2520,21 @@ FloatingWindow {
                     label: "Background opacity"
                     settingKey: "dockOpacity"
                     detail: "How solid the dock's background is: 100% can't be seen through, lower is clearer"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.dockOpacity < 0 ? Config.dockGlassOpacity : Config.s.dockOpacity) * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round((Config.s.dockOpacity < 0 ? Config.dockGlassOpacity : Config.s.dockOpacity) * 100); onMoved: v => Config.s.dockOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Tile opacity"
                     settingKey: "dockTileOpacity"
                     detail: "The tiles behind the dock's icons and its buttons: 100% is solid, lower lets the dock show through them"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.dockTileOpacity * 100); onMoved: v => Config.s.dockTileOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.dockTileOpacity * 100); onMoved: v => Config.s.dockTileOpacity = v / 100 }
                 }
                 Separator {}
                 SettingRow {
                     label: "Icon opacity"
                     settingKey: "dockIconOpacity"
                     detail: "The icons, and what's drawn on the dock's own buttons: 100% is solid, at 0% they're gone"
-                    ValueSlider { from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.dockIconOpacity * 100); onMoved: v => Config.s.dockIconOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 1; suffix: "%"; value: Math.round(Config.s.dockIconOpacity * 100); onMoved: v => Config.s.dockIconOpacity = v / 100 }
                 }
             }
         }
@@ -3246,8 +3251,10 @@ FloatingWindow {
                 SettingRow {
                     label: "Pointer speed"
                     settingKey: "mouseSpeed"
+                    defaultText: "Hyprland's own"       // (not set here until you move it)
                     detail: inputPane.hasTouchpad ? "Mice and touchpads. Slower to faster; 0 is the device's own speed" : "Slower to faster; 0 is the mouse's own speed"
                     ValueSlider {
+                        per: 100
                         from: -100; to: 100; stepSize: 5
                         value: Math.round((Config.s.mouseSpeed >= -1 ? Config.s.mouseSpeed : (inputPane.cur["input:sensitivity"] || 0)) * 100)
                         onMoved: v => Config.s.mouseSpeed = v / 100
@@ -3290,7 +3297,9 @@ FloatingWindow {
                 SettingRow {
                     label: "Scroll speed"
                     settingKey: "touchpadScrollSpeed"
+                    defaultText: "Hyprland's own"       // (not set here until you move it)
                     ValueSlider {
+                        per: 100
                         from: 10; to: 200; stepSize: 10; suffix: "%"
                         value: Math.round((Config.s.touchpadScrollSpeed > 0 ? Config.s.touchpadScrollSpeed : (inputPane.cur["input:touchpad:scroll_factor"] || 1)) * 100)
                         onMoved: v => Config.s.touchpadScrollSpeed = v / 100
@@ -4598,6 +4607,7 @@ FloatingWindow {
                     visible: Config.s.overviewMoveAnimation === "grid"
                     label: "Grid size"
                     settingKey: "overviewGridSize"
+                    defaultText: { const d = Config.defaultOf("overviewGridSize"); return d + " × " + d; }
                     detail: "How many workspaces go across, and down before it scrolls (fewer down on a small screen)"
                     ValueSlider {
                         from: 2; to: 9; stepSize: 1
@@ -4893,6 +4903,7 @@ FloatingWindow {
                     settingKey: "accentBoldness"
                     detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
                     ValueSlider {
+                        per: 100
                         from: 0; to: 100; stepSize: 5; suffix: "%"
                         value: Math.round((Config.s.accentBoldness || 0) * 100)
                         onMoved: v => Config.s.accentBoldness = v / 100
@@ -5025,6 +5036,7 @@ FloatingWindow {
                     settingKey: "toneBoldness"
                     detail: "How much of the wallpaper's colour the backgrounds take, in light and dark mode. 50% is the standard amount"
                     ValueSlider {
+                        per: 100
                         from: 0; to: 100; stepSize: 5; suffix: "%"
                         value: Math.round((Config.s.toneBoldness ?? 0.5) * 100)
                         onMoved: v => Config.s.toneBoldness = v / 100
@@ -5096,7 +5108,7 @@ FloatingWindow {
                     label: "Opacity"
                     settingKey: "glassOpacity"
                     detail: "How much of their colour the surfaces keep: lower is clearer glass"
-                    ValueSlider { from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
+                    ValueSlider { per: 100; from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
                 }
                 Separator { visible: Config.s.glass }
                 SettingRow {
@@ -5121,7 +5133,7 @@ FloatingWindow {
                     label: "Gloss"
                     settingKey: "glassGloss"
                     detail: "A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none"
-                    ValueSlider { from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 200; stepSize: 10; suffix: "%"; value: Math.round(Config.glossAmount * 100); onMoved: v => Config.s.glassGloss = v / 100 }
                 }
                 Separator { visible: Config.s.glass }
                 SettingRow {
@@ -5129,7 +5141,7 @@ FloatingWindow {
                     label: "Gloss colour"
                     settingKey: "glassGlossTint"
                     detail: "How much colour the sheen takes from what it's on: the wallpaper's colour on glass, a selection's own. 0% for plain white"
-                    ValueSlider { from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossTint * 100); onMoved: v => Config.s.glassGlossTint = v / 100 }
+                    ValueSlider { per: 100; from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossTint * 100); onMoved: v => Config.s.glassGlossTint = v / 100 }
                 }
             }
             GroupLabel { text: "Blur" }
@@ -5291,6 +5303,7 @@ FloatingWindow {
                     detail: "Scales Slate only (the bar, dock, panels, launcher, title bars and this window), on every display, on top of each display's Scale. "
                         + "Apps stay as they are: to make everything larger or smaller, apps included, change Scale in Displays instead. Changing it restarts Slate"
                     ValueSlider {
+                        per: 100
                         from: 75; to: 150; stepSize: 5; suffix: "%"
                         value: Math.round(Config.s.uiScale * 100)
                         onMoved: v => Config.s.uiScale = v / 100
