@@ -3,13 +3,13 @@
 // happens on the bar (Bar.qml); here are the things that go with it:
 //   - Done, which ends it (every change is saved as it's made);
 //   - the pool: what isn't on the bar, drawn as it would be there, and the three things there
-//     are always more of (a container, a flexible space, a collapse button). A chip is clicked,
+//     are always more of (a container, a flexible space). A chip is clicked,
 //     or dragged onto the bar, which is another window: this one works out where the pointer
 //     is on the desktop (where this window is, from one look at Hyprland's pointer position as
 //     the chip is pressed, then the pointer's place in the window) and tells the bar
 //     (Config.barCarry, barCarryAt), which shows where it would land;
 //   - the options of whatever is picked on the bar (Config.barSelected, barSelectedItem):
-//     a container, one thing in it, its collapse button, a flexible space, the active window.
+//     a container (its collapse button too), one thing in it, a flexible space, the active window.
 
 import QtQuick
 import Quickshell
@@ -62,7 +62,7 @@ PanelWindow {
     readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
     readonly property string pickedItem: Config.barSelectedItem
     readonly property string kind: !picked ? "none" : picked === "space" ? "space" : picked === "title" ? "title"
-        : pickedItem === "tuck" ? "tuck" : pickedItem !== "" ? "item" : "box"
+        : pickedItem !== "" ? "item" : "box"
     readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
     readonly property bool pickedTuck: !!picked && typeof picked !== "string" && !!picked.tuck
     function nameOf(id) { const it = Config.barItem(id); return it ? it.label : id; }
@@ -375,12 +375,6 @@ PanelWindow {
                     carry: ({ kind: "space", id: "" })
                     onClicked: Config.barAddSpace(Config.barLayout.length)
                 }
-                PoolChip {
-                    icon: 0xEC38; label: "Collapse button"
-                    carry: ({ kind: "tuck", id: "" })
-                    // (clicked: into the container that's picked, or the one the picked thing is in)
-                    onClicked: if (root.picked && typeof root.picked !== "string") Config.barSetTuck(Config.barSelected, true)
-                }
             }
             Line {}
 
@@ -391,7 +385,6 @@ PanelWindow {
                 text: root.kind === "none" ? "Nothing picked. Click something on the bar to see its options"
                     : root.kind === "space" ? "A flexible space: it takes up the spare room, pushing what's either side of it apart"
                     : root.kind === "title" ? "The active window: its icon and title"
-                    : root.kind === "tuck" ? "A collapse button: this container's things tuck away behind it, and slide out when it's clicked"
                     : root.kind === "item" ? root.nameOf(root.pickedItem)
                     : "A container: " + (root.pickedThings.length > 0 ? root.pickedThings.map(root.nameOf).join(", ") : "nothing in it yet. Drag things into it")
             }
@@ -446,9 +439,16 @@ PanelWindow {
                     onToggled: v => Config.s.barShowTitleIcon = v
                 }
 
-                // The collapse button: its icon, and which end it sits at
+                // A container
+                Switch {
+                    visible: root.kind === "box" && root.pickedThings.length > 0
+                    label: "Collapse button"
+                    checked: root.pickedTuck
+                    onToggled: v => Config.barSetTuck(Config.barSelected, v)
+                }
+                // ...its icon, and which end it sits at
                 Row {
-                    visible: root.kind === "tuck"
+                    visible: root.kind === "box" && root.pickedTuck
                     spacing: 6
                     Repeater {
                         model: [0xEC38, 0xEA95, 0xEA94, 0xEA60, 0xEA61, 0xEC42, 0xEB0B, 0xEA9A]
@@ -461,7 +461,7 @@ PanelWindow {
                     }
                 }
                 Row {
-                    visible: root.kind === "tuck"
+                    visible: root.kind === "box" && root.pickedTuck
                     spacing: 6
                     PanelButton {
                         label: "At the start"
@@ -475,13 +475,6 @@ PanelWindow {
                     }
                 }
 
-                // A container
-                Switch {
-                    visible: root.kind === "box" && root.pickedThings.length > 0
-                    label: "Collapse button"
-                    checked: root.pickedTuck
-                    onToggled: v => Config.barSetTuck(Config.barSelected, v)
-                }
                 PanelButton {
                     visible: root.kind === "box" && root.pickedThings.length > 1
                     label: "Split up"
@@ -492,10 +485,9 @@ PanelWindow {
                 PanelButton {
                     visible: root.kind !== "none"
                     destructive: true
-                    label: root.kind === "space" || root.kind === "tuck" ? "Take away" : "Take off the bar"
+                    label: root.kind === "space" ? "Take away" : "Take off the bar"
                     onClicked: {
-                        if (root.kind === "tuck") Config.barSetTuck(Config.barSelected, false);
-                        else if (root.kind === "item") Config.barSetShown(root.pickedItem, false);
+                        if (root.kind === "item") Config.barSetShown(root.pickedItem, false);
                         else Config.barRemoveEntry(Config.barSelected);
                         Config.barSelected = -1;
                     }

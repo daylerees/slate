@@ -1735,7 +1735,8 @@ PanelWindow {
         Segment {
             id: toggle
             shell: box
-            name: "tuck"            // (what it's called in the arrangement: it can be dragged like the rest)
+            // (no name in the arrangement: it isn't picked up by itself. It's its container's, set
+            // up in the container's options)
             isToggle: true
             iconCode: box.tuckIcon
             hoverText: box.expanded ? "Hide these" : box.cells.filter(c => c.wanted).map(c => c.hoverText.split(" · ")[0]).filter(t => t).slice(0, 3).join(", ") + (box.cells.length > 3 ? " and more" : "")
