@@ -2161,7 +2161,7 @@ ShellRoot {
                     bottomLeftRadius: 0     // flush with the screen edge
                     bottomRightRadius: 0
                     color: win.dockColor
-                    Gloss { radius: parent.radius }   // glass: a sheen
+                    Gloss { radius: parent.radius; opacity: Math.min(1, win.dockColor.a / 0.05) }   // glass: a sheen (gone with the background)
                 }
 
                 // Where a dragged app will go: a faint tile in the gap the others make for it
@@ -2254,7 +2254,7 @@ ShellRoot {
                                 opacity: Config.dockTileOpacity
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                             // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                             Column {
                                 id: burger
@@ -2599,7 +2599,7 @@ ShellRoot {
                                 IconPlate { anchors.fill: parent; z: -1; drawSize: win.base * win.maxScale; opacity: Config.dockTileOpacity }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                                 // they come, which have no tile to follow)
-                                IconGloss {}
+                                IconGloss { opacity: Config.dockTileOpacity }
                                 // How far a download or copy has got: a slim bar near the icon's foot
                                 Rectangle {
                                     visible: cell.badge.progress >= 0
@@ -2696,7 +2696,7 @@ ShellRoot {
                                 color: win.tileColor
                                 opacity: Config.dockTileOpacity
                             }
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                             Text {
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(0xF912)       // folder-down
@@ -2739,7 +2739,7 @@ ShellRoot {
                                 opacity: Config.dockTileOpacity
                             }
                             // Glass: a sheen, rounded like the tile
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false }
+                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                             // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
                             // once there's something in it
                             Text {
