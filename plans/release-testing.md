@@ -42,3 +42,4 @@ things off as they're done.
 - Notification fallbacks: no app name (launcher's name, then one from its id, then "An app"), no title or body ("New notification"), no icon (tile, then bell).
 - The bar's Apps, Spaces and Chalk icons are one pastel each in Colourful (screenshots of the bar will differ).
 - The bar's default arrangement changed (Apps with Chalk in one container; Spaces, window mode and workspaces in another): `test_bar_layout.py`, `test_bar_length.py` and every bar screenshot assume the old one.
+- Visual scenes assistant-empty and others wait for agent == claude, but the default agent is now none: update them.

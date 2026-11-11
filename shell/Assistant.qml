@@ -344,6 +344,30 @@ PanelWindow {
                         text: "Chalk"
                         color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     }
+                    // Chalk is an experiment still, and says so: a flask and the word, on a soft
+                    // green pill (the accent with the Colourful look off). Flat, with glass too
+                    Rectangle {
+                        id: trial
+                        readonly property color ink: Config.colourful ? Config.tint("#9ed6a6") : root.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: trialRow.implicitWidth + 18; height: 22; radius: 11
+                        color: Qt.rgba(ink.r, ink.g, ink.b, 0.16)
+                        Row {
+                            id: trialRow
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: String.fromCodePoint(0xEBD2)
+                                color: trial.ink; font.family: tabler.name; font.pixelSize: 13
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Experiment"
+                                color: trial.ink; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                            }
+                        }
+                    }
                 }
                 Rectangle {
                     id: closeBtn
