@@ -2304,6 +2304,8 @@ FloatingWindow {
             readonly property var pool: Config.barItems.filter(i => !Config.s[i.key])
             readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
             readonly property bool pickedBox: !!picked && typeof picked !== "string"
+            readonly property var pickedItems: pickedBox ? picked.items.filter(id => id !== "tuck") : []
+            readonly property bool pickedTuck: pickedBox && !!picked.tuck
             IntroText {
                 text: "While this page is open, you can arrange the menu bar itself. Drag anything on it to another place: onto a container to join it, "
                     + "or between two for a container of its own. Drag a container by its gripper to move it whole. Nothing on the bar opens while you're here."
@@ -2352,20 +2354,50 @@ FloatingWindow {
                 }
                 SettingRow {
                     visible: barPane.pickedBox
-                    label: barPane.pickedBox ? barPane.picked.items.map(id => (Config.barItem(id) || { label: id }).label).join(", ") : ""
+                    label: barPane.pickedBox ? barPane.pickedItems.map(id => (Config.barItem(id) || { label: id }).label).join(", ") : ""
                     detail: "Take it off the bar and its things wait above. Split it up and each gets a container of its own"
                     Row {
                         spacing: 8
-                        Button { visible: barPane.pickedBox && barPane.picked.items.length > 1; label: "Split up"; onClicked: Config.barSplit(Config.barSelected) }
+                        Button { visible: barPane.pickedItems.length > 1; label: "Split up"; onClicked: Config.barSplit(Config.barSelected) }
                         Button { label: "Take off the bar"; destructive: true; onClicked: Config.barRemoveEntry(Config.barSelected) }
                     }
                 }
-                Separator { visible: barPane.pickedBox && barPane.picked.items.length > 1 }
+                // Its collapse button: one of the things in it (drag it on the bar to the other
+                // end, to another container, or off), with an icon of its own
+                Separator { visible: barPane.pickedBox }
                 SettingRow {
-                    visible: barPane.pickedBox && barPane.picked.items.length > 1
-                    label: "Tuck away"
-                    detail: "Its things hide behind one button that slides them open, and close again a few seconds after the pointer leaves"
-                    Toggle { checked: barPane.pickedBox && !!barPane.picked.tuck; onToggled: v => Config.barSetTuck(Config.barSelected, v) }
+                    visible: barPane.pickedBox
+                    label: "Collapse button"
+                    detail: "Its things tuck away behind one button that slides them open, and close again a few seconds after the pointer leaves. "
+                        + "On the bar, drag the button to either end of a container, into another one, or off to take it away"
+                    Toggle { checked: barPane.pickedTuck; onToggled: v => Config.barSetTuck(Config.barSelected, v) }
+                }
+                Separator { visible: barPane.pickedTuck }
+                SettingRow {
+                    visible: barPane.pickedTuck
+                    label: "Its icon"
+                    Row {
+                        spacing: 6
+                        Repeater {
+                            model: [0xEC38, 0xEA95, 0xEA94, 0xEA60, 0xEA61, 0xEC42, 0xEB0B, 0xEA9A]
+                            Button {
+                                required property int modelData
+                                width: 34
+                                icon: modelData; compactLabel: true
+                                primary: barPane.pickedTuck && (parseInt(barPane.picked.tuckIcon, 16) || 0xEC38) === modelData
+                                onClicked: Config.barSetTuck(Config.barSelected, undefined, modelData === 0xEC38 ? "" : modelData.toString(16))
+                            }
+                        }
+                    }
+                }
+                Separator { visible: barPane.pickedTuck }
+                ChoiceSetting {
+                    visible: barPane.pickedTuck
+                    label: "Where it sits"
+                    detail: "The container's things slide out from the button"
+                    value: barPane.pickedTuck ? barPane.picked.tuckFrom : "end"
+                    options: [{ value: "start", label: "At the start" }, { value: "end", label: "At the end" }]
+                    onPicked: v => Config.barSetTuck(Config.barSelected, undefined, undefined, v)
                 }
             }
             GroupLabel { text: "Position & behaviour" }
@@ -2451,12 +2483,6 @@ FloatingWindow {
                     settingKey: "barTrayCollapsed"
                     detail: "Show one button that opens to reveal the tray icons, and closes again after a few seconds"
                     Toggle { checked: Config.s.barTrayCollapsed; onToggled: v => Config.s.barTrayCollapsed = v }
-                }
-                Separator {}
-                ToggleSetting {
-                    label: "Tuck the status icons away"
-                    detail: "Show one button that opens to reveal notifications, Wi-Fi, volume, battery and the rest, and closes again after a few seconds"
-                    key: "barStatusCollapsed"
                 }
                 Separator {}
                 ToggleSetting {

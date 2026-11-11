@@ -135,7 +135,7 @@ Singleton {
         ["Keyboard layout code", "bar", "language code text beside icon layout gb us"],
         ["Connected Bluetooth devices", "bar", "bluetooth count number devices"],
         ["Tuck the tray away", "bar", "tray collapse hide icons system tray expand"],
-        ["Tuck the status icons away", "bar", "status collapse hide wifi volume battery bluetooth notifications expand button"],
+        ["Collapse button", "bar", "tuck away status collapse hide wifi volume battery bluetooth notifications expand button container"],
         ["Tiles in the icon's colour", "appearance", "icon tile background colour colourful dock launcher plate match"],
         ["Game mode", "bar", "game gaming performance fps smooth effects glass blur animations shadows touchpad"],
         ["Windows show", "workspaces", "overview live previews app icons windows cards thumbnails screenshots"],

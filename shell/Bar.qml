@@ -768,7 +768,8 @@ PanelWindow {
                     return;
                 }
                 if (!t) return;
-                if (h.kind === "item") Config.barMoveItem(h.name, t.to, t.join ? t.slot : -1);
+                if (h.kind === "item" && h.name === "tuck") Config.barMoveTuck(h.index, t.join ? t.to : -1, t.slot);
+                else if (h.kind === "item") Config.barMoveItem(h.name, t.to, t.join ? t.slot : -1);
                 else Config.barMoveEntry(h.index, t.to);
                 Config.click();
             }
@@ -1464,7 +1465,8 @@ PanelWindow {
         property bool expanded: false
         onTuckChanged: expanded = false
         // 0 closed … 1 open, eased; the things stay laid out until it has finished closing
-        property real openness: !tuck || expanded ? 1 : 0
+        // (open while the bar's being arranged, so what's in it can be got at)
+        property real openness: !tuck || expanded || Config.barArranging ? 1 : 0
         Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
         readonly property bool showThings: !tuck || openness > 0
         // Along the container: its things, and the button at one end while it tucks
@@ -1492,6 +1494,7 @@ PanelWindow {
         Segment {
             id: toggle
             shell: box
+            name: "tuck"            // (what it's called in the arrangement: it can be dragged like the rest)
             isToggle: true
             iconCode: box.tuckIcon
             hoverText: box.expanded ? "Hide these" : box.cells.filter(c => c.wanted).map(c => c.hoverText.split(" · ")[0]).filter(t => t).slice(0, 3).join(", ") + (box.cells.length > 3 ? " and more" : "")

@@ -130,10 +130,10 @@ Singleton {
     // icons, the clock and the power button. The bar as it has always been
     readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
     readonly property var barLayoutDefault: [
-        { items: ["control"] }, { items: ["apps"] }, { items: ["spaces"] }, { items: ["chalk"] },
-        { items: ["windowmode", "workspaces"] },
+        barBox(["control"]), barBox(["apps"]), barBox(["spaces"]), barBox(["chalk"]),
+        barBox(["windowmode", "workspaces"]),
         "title", "space",
-        { items: ["tray"] }, { items: barStatusItems, tuck: s.barStatusCollapsed }, { items: ["clock"] }, { items: ["power"] }
+        barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["clock"]), barBox(["power"])
     ]
     // Everything that can be in a container: its name in the arrangement, what it's called, its
     // icon (for the pool on Settings → Menu Bar), and the setting that says whether it shows
@@ -177,25 +177,45 @@ Singleton {
                     const id = String(e.items[j]);
                     if (known.indexOf(id) >= 0 && !seen[id]) { seen[id] = true; items.push(id); }
                 }
-                if (items.length > 0) out.push({ items: items, tuck: !!e.tuck, tuckIcon: String(e.tuckIcon || ""), tuckFrom: e.tuckFrom === "start" ? "start" : e.tuckFrom === "end" ? "end" : "" });
+                if (items.length > 0) out.push(barBox(items, e));
             }
         }
         if (!title) out.push("title");
         for (const id of known) if (!seen[id]) out.push({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" });
         return out;
     }
+    // A container as the bar wants it, from its real items and how it was saved. Its collapse
+    // button is one of the things in it, "tuck" (at most one, at its start or its end: that's
+    // which end the button sits at, the rest sliding out from it): `tuck` and `tuckFrom` say
+    // the same for the bar. Saved the old way (tuck: true), the button goes at the end
+    function barBox(items, saved) {
+        const has = !!saved && ((saved.items && saved.items.indexOf("tuck") >= 0) || !!saved.tuck);
+        const first = !!saved && saved.items && saved.items[0] === "tuck" || (!!saved && saved.tuckFrom === "start" && !(saved.items && saved.items.indexOf("tuck") >= 0));
+        const all = !has ? items : first ? ["tuck"].concat(items) : items.concat(["tuck"]);
+        return { items: all, tuck: has, tuckIcon: String((saved && saved.tuckIcon) || ""), tuckFrom: has ? (first ? "start" : "end") : "" };
+    }
 
     // ---- Arranging it (Settings → Menu Bar: while that page is open, the bar is being arranged) ----
     property bool barArranging: false          // set by the Settings window
     property int barSelected: -1               // the container picked there, by its place in the arrangement
     onBarArrangingChanged: if (!barArranging) barSelected = -1
-    // A copy of the arrangement to change and save. Every change goes through barSave, which
-    // also drops containers left empty
+    // A copy of the arrangement to change and save: each container's real items (its collapse
+    // button apart, as tuck / tuckFrom). Every change goes through barSave, which puts the
+    // button back among the items and drops containers left empty
     function barCopy() {
-        return barLayout.map(e => typeof e === "string" ? e : { items: e.items.slice(), tuck: !!e.tuck, tuckIcon: e.tuckIcon || "", tuckFrom: e.tuckFrom || "" });
+        return barLayout.map(e => typeof e === "string" ? e
+            : { items: e.items.filter(id => id !== "tuck"), tuck: !!e.tuck, tuckFrom: e.tuckFrom || "", tuckIcon: e.tuckIcon || "" });
     }
     function barSave(list) {
-        s.barLayout = list.filter(e => typeof e === "string" || (e.items && e.items.length > 0));
+        s.barLayout = list.filter(e => typeof e === "string" || (e.items && e.items.length > 0))
+            .map(e => typeof e === "string" ? e
+                : { items: !e.tuck ? e.items : e.tuckFrom === "start" ? ["tuck"].concat(e.items) : e.items.concat(["tuck"]), tuckIcon: e.tuckIcon || "" });
+    }
+    // The bar counts a container's things with its collapse button among them: the same place
+    // among its real items
+    function barSlot(at, slot) {
+        const e = barLayout[at];
+        return e && typeof e !== "string" && e.items[0] === "tuck" ? Math.max(0, slot - 1) : slot;
     }
     function barWhere(list, id) {
         for (let i = 0; i < list.length; i++) {
@@ -213,7 +233,7 @@ Singleton {
         const from = barWhere(list, id);
         if (!from) return;
         if (slot < 0) {
-            const marker = { items: [], marker: true };
+            const marker = { items: [], tuck: false, tuckFrom: "", tuckIcon: "" };
             list.splice(Math.max(0, Math.min(list.length, to)), 0, marker);
             const now = barWhere(list, id);
             list[now.box].items.splice(now.slot, 1);
@@ -221,7 +241,7 @@ Singleton {
         } else {
             const target = list[to];
             if (!target || typeof target === "string") return;
-            const at = Math.max(0, Math.min(target.items.length, slot));
+            const at = Math.max(0, Math.min(target.items.length, barSlot(to, slot)));
             if (target === list[from.box]) {
                 target.items.splice(from.slot, 1);
                 target.items.splice(from.slot < at ? at - 1 : at, 0, id);
@@ -230,9 +250,29 @@ Singleton {
                 target.items.splice(at, 0, id);
             }
         }
-        const kept = list.filter(e => typeof e === "string" || e.items.length > 0);
         barSelected = -1;
-        barSave(kept);
+        barSave(list);
+    }
+    // Move a container's collapse button: to the container at `to`, at its start or its end
+    // (whichever `slot`, counted as the bar does, is nearer; one that already has a button
+    // keeps its own), or, with to < 0 (dropped outside any container), off the bar: that
+    // container no longer tucks
+    function barMoveTuck(from, to, slot) {
+        const list = barCopy();
+        const src = list[from];
+        if (!src || typeof src === "string" || !src.tuck) return;
+        const dst = to >= 0 ? list[to] : null;
+        if (dst && typeof dst === "string") return;
+        if (dst && dst !== src && dst.tuck) return;
+        const icon = src.tuckIcon;
+        src.tuck = false;
+        if (dst) {
+            dst.tuck = true;
+            dst.tuckFrom = slot <= barLayout[to].items.length / 2 ? "start" : "end";
+            dst.tuckIcon = icon;
+        }
+        barSelected = -1;
+        barSave(list);
     }
     // Move a whole thing (a container, the title, a flexible space) to before what's at `to`
     function barMoveEntry(from, to) {
@@ -264,17 +304,20 @@ Singleton {
         const list = barCopy();
         const e = list[at];
         if (!e || typeof e === "string" || e.items.length < 2) return;
-        list.splice(at, 1, ...e.items.map(id => ({ items: [id], tuck: false, tuckIcon: "", tuckFrom: "" })));
+        list.splice(at, 1, ...e.items.map(id => ({ items: [id], tuck: false, tuckFrom: "", tuckIcon: "" })));
         barSelected = -1;
         barSave(list);
     }
+    // Give the container at `at` a collapse button or take it away; choose the button's icon
+    // (a Tabler codepoint, as hex; "" for Slate's own) and which end it sits at ("start" / "end").
+    // Leave any of them undefined to keep it as it is
     function barSetTuck(at, tuck, icon, from) {
         const list = barCopy();
         const e = list[at];
         if (!e || typeof e === "string") return;
-        e.tuck = !!tuck;
-        if (icon !== undefined) e.tuckIcon = String(icon || "");
+        if (tuck !== undefined) e.tuck = !!tuck;
         if (from !== undefined) e.tuckFrom = from === "start" ? "start" : "end";
+        if (icon !== undefined) e.tuckIcon = String(icon || "");
         barSave(list);
     }
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
