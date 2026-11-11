@@ -70,3 +70,4 @@ things off as they're done.
 - Default Apps: the five choosers are searchable dropdowns (DropdownSetting), with the changed-from-default dot: update the page's scene and any test that used the old picker there.
 - The Date & Time page is called Region now (id still "datetime"): tests and scenes that look for its title.
 - Pages renamed: Keyboard & Mouse → Input, Printers & Scanners → Printers, Lock & Idle → Security (ids unchanged): scenes/tests that look for the titles; a search test that "keyboard", "mouse", "scanner", "lock", "idle" and the old names still find them.
+- slate-greeter-sync --prompt drops the Later snooze once the login screen is up to date: a unit test in test_greeter_sync.py.

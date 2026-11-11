@@ -89,7 +89,9 @@ own_outdated() {   # own_outdated <expected hyprland.lua>
 if [ "${1:-}" = "--prompt" ]; then
     # Only for the login screen's own changes (see SHARED); --check still reports any change
     expected=$(hypr_expected)
-    own_outdated "$expected" || exit 0
+    # Up to date (updated from Settings, say): a "Later" from before no longer holds, so the
+    # next change is asked about. (It used to stay for its week, and that change went unasked)
+    own_outdated "$expected" || { rm -f "${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-later"; exit 0; }
     in_use || exit 0              # switched back to another login screen: nothing to keep up to date
     # Ask once per version of its own code; "Later" (or dismissing it) waits a week
     asked="${XDG_STATE_HOME:-$HOME/.local/state}/slate/greeter-asked"
