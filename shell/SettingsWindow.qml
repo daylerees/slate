@@ -1472,17 +1472,72 @@ FloatingWindow {
             }
         }
         HoverHandler { id: btnHover }
-        property bool tappable: true   // (off where something over it takes the press itself)
-        ClickTap { enabled: btn.tappable; onTapped: btn.clicked() }
+        ClickTap { onTapped: btn.clicked() }
     }
-    // A chip in the Menu Bar page's pool: a Button that can also be dragged, onto the bar (its
-    // page, `pane`, carries it there: carryTo). Silent while dragged, a click when it lands,
-    // as everywhere
-    component PoolChip: Button {
+    // Something from the bar, drawn as it is there, with its name beside it: the bar's own
+    // container shape, sizes, font and colours (the icon in its Colourful colour, as on the bar).
+    // `item`: its name in the arrangement, "" for the ones that aren't items (a container, a
+    // flexible space, a collapse button, the active window)
+    component BarChip: Rectangle {
+        id: barChip
+        property string item: ""
+        property int icon: 0
+        property string label: ""
+        property bool lit: false             // hovered
+        readonly property var onBar: win.bar
+        readonly property color iconColour: item === "power" ? onBar.errorColor
+            : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : onBar.textColor)
+            : item === "apps" ? Config.partColour(Config.appsPastels, 0, onBar.textColor)
+            : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, onBar.textColor)
+            : Config.statusColour(item, onBar.textColor)
+        width: chipRow.implicitWidth + 24; height: onBar.capsuleHeight
+        radius: onBar.capsuleRadius
+        color: onBar.capsuleColor
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: barChip.onBar.hoverFill
+            opacity: barChip.lit ? barChip.onBar.hoverStrength : 0
+            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        }
+        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+        Row {
+            id: chipRow
+            anchors.centerIn: parent
+            spacing: 7
+            Image {
+                visible: barChip.item === "control"
+                anchors.verticalCenter: parent.verticalCenter
+                width: 16; height: 16
+                sourceSize: Qt.size(32, 32)
+                source: visible ? "file://" + Quickshell.shellPath("assets/icon/icon-64.png") : ""
+            }
+            Text {
+                visible: barChip.item !== "control"
+                anchors.verticalCenter: parent.verticalCenter
+                text: barChip.icon ? win.glyph(barChip.icon) : ""
+                color: barChip.iconColour
+                font.family: barChip.onBar.iconFont; font.pixelSize: 16
+                ChalkFace {}
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: barChip.label
+                color: barChip.onBar.textColor
+                font.family: barChip.onBar.fontFamily; font.pixelSize: barChip.onBar.fontSize; font.weight: Font.Medium
+            }
+        }
+    }
+    // A chip in the Menu Bar page's pool: clicked, or dragged onto the bar (its page, `pane`,
+    // carries it there: carryTo). Silent while dragged, a click when it lands, as everywhere
+    component PoolChip: BarChip {
         id: chip
         property var pane: null
         property var carry: null             // what the bar is told is coming: { kind, id }
-        tappable: false
+        signal clicked()
+        item: carry && carry.kind === "item" ? carry.id : ""
+        lit: chipHover.hovered
+        HoverHandler { id: chipHover }
         MouseArea {
             anchors.fill: parent
             preventStealing: true
@@ -2379,32 +2434,16 @@ FloatingWindow {
             }
             // What's being carried, under the pointer (as far as this window goes: past its
             // edge, the line on the bar shows where it will land)
-            Rectangle {
+            BarChip {
                 parent: dropLayer.parent
                 z: 200
                 visible: !!barPane.carrying
                 x: barPane.pointer.x - width / 2; y: barPane.pointer.y - height / 2
-                width: carriedRow.implicitWidth + 28; height: 32; radius: 8
-                color: win.control
                 opacity: 0.9
-                border.width: 1; border.color: win.accent
-                Row {
-                    id: carriedRow
-                    anchors.centerIn: parent
-                    spacing: 6
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: barPane.carrying ? win.glyph(barPane.carrying.icon) : ""
-                        color: win.text
-                        font.family: win.bar.iconFont; font.pixelSize: 15
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: barPane.carrying ? barPane.carrying.label : ""
-                        color: win.text
-                        font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
-                    }
-                }
+                item: barPane.carrying ? barPane.carrying.item : ""
+                icon: barPane.carrying ? barPane.carrying.icon : 0
+                label: barPane.carrying ? barPane.carrying.label : ""
+                Rectangle { anchors.fill: parent; radius: parent.radius; color: "transparent"; border.width: 1; border.color: win.accent }
             }
             GroupLabel { text: "Not on the bar" }
             Group {
