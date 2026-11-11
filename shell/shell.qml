@@ -180,9 +180,11 @@ ShellRoot {
         function chalk(json: string): void {
             const st = JSON.parse(json);
             // (history: earlier exchanges, shown above this one)
-            const now = st.asked ? [{ asked: st.asked, answer: st.answer || "", actions: st.actions || [], error: st.error || null }] : [];
-            chalk.turns = (st.history || []).map(h => ({ asked: h.asked || "", answer: h.answer || "", actions: h.actions || [], error: h.error || null })).concat(now);
+            // (at / doneAt: when asked and answered, ms; left out, no time is shown)
+            const turn = h => ({ asked: h.asked || "", answer: h.answer || "", actions: h.actions || [], error: h.error || null, at: h.at || 0, doneAt: h.doneAt || 0 });
+            chalk.turns = (st.history || []).map(turn).concat(st.asked ? [turn(st)] : []);
             chalk.working = !!st.working;
+            if (st.session !== undefined) chalk.session = st.session;      // (the agent's thread, as a past answer left it)
             if (st.agents) { chalk.agents = st.agents; chalk.looked = true; }
         }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }

@@ -2,6 +2,8 @@
 // a shape, fading out towards its middle, with a faint bright line along the top edge. Put it
 // inside a rounded shape, over its fill and under its contents:
 //   Gloss { radius: parent.radius }
+// A shape with one corner unlike the others (a chat bubble) says so here too, and the sheen
+// follows it:  Gloss { radius: parent.radius; bottomLeftRadius: parent.bottomLeftRadius }
 // It only shows with glass on (and Gloss switched on).
 
 import QtQuick
@@ -114,7 +116,7 @@ Rectangle {
                     anchors.fill: parent
                     visible: false
                     layer.enabled: Config.glassGloss
-                    Rectangle { anchors.fill: parent; radius: g.radius }
+                    Rectangle { anchors.fill: parent; topLeftRadius: g.topLeftRadius; topRightRadius: g.topRightRadius; bottomLeftRadius: g.bottomLeftRadius; bottomRightRadius: g.bottomRightRadius }
                 }
             }
         }
@@ -124,7 +126,7 @@ Rectangle {
     // gets a fainter one, for the same depth
     Rectangle {
         anchors.fill: parent
-        radius: g.radius
+        topLeftRadius: g.topLeftRadius; topRightRadius: g.topRightRadius; bottomLeftRadius: g.bottomLeftRadius; bottomRightRadius: g.bottomRightRadius
         visible: g.onFill || g.lightFrost
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
@@ -144,7 +146,7 @@ Rectangle {
         layer.effect: MultiEffect { maskEnabled: true; maskSource: rimFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
         Rectangle {
             anchors.fill: parent
-            radius: g.radius
+            topLeftRadius: g.topLeftRadius; topRightRadius: g.topRightRadius; bottomLeftRadius: g.bottomLeftRadius; bottomRightRadius: g.bottomRightRadius
             color: "transparent"
             border.width: 1
             // Light mode: the outermost line is a darker one, so the shape's top edge is defined
@@ -158,7 +160,8 @@ Rectangle {
         Rectangle {
             visible: Config.s.lightMode
             anchors { fill: parent; margins: 1 }
-            radius: Math.max(0, g.radius - 1)
+            topLeftRadius: Math.max(0, g.topLeftRadius - 1); topRightRadius: Math.max(0, g.topRightRadius - 1)
+            bottomLeftRadius: Math.max(0, g.bottomLeftRadius - 1); bottomRightRadius: Math.max(0, g.bottomRightRadius - 1)
             color: "transparent"
             border.width: 1
             border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))

@@ -1133,8 +1133,10 @@ Step 5 (2026-11-11):
   already hidden the window.
 - **What it did** lists tools that change or ask, not looks; each tool says what it's doing
   in Slate's words (`doing()` in the server), sent with `assistant did`.
-- **The icon is Tabler's sparkles (F6D7)** for the bar button, the window and the Settings
-  page, in a peach pastel. Open to a better one.
+- **The icon is Tabler's message-chatbot (F38A)**, chosen by Dayle from a sheet of candidates on
+  2026-11-11 (sparkles, the first pick, is what every assistant uses): on the bar button, the
+  window's header and Chalk's bubbles, the Settings page and its questions, and the site. In a
+  peach pastel.
 - **The shortcuts are bound once, for every key set**, with their descriptions given at the
   bind. A live test checks all three in Slate's set; the Copilot chord is still unchecked
   on real hardware.

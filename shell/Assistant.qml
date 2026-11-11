@@ -8,8 +8,9 @@
 // agent linked to). "What it did" is Slate's own record, sent by Slate's MCP server as each
 // tool is used (did(), from AssistantGate's IPC): words Slate wrote, not the agent's.
 // It reads as a chat: what you asked on the right in the accent colour, Chalk's answers on
-// the left in its own, in order, kept until New
-// (Ctrl+N) or Slate restarts; what you type next carries the same conversation on. Closing the
+// the left in its own, in order. There are no "conversations" to manage: the history just
+// runs on (Clear empties it), and what you type within a few minutes of the last answer
+// follows on from it. Left longer, Chalk quietly starts afresh with the agent (followFor). Closing the
 // window lets a run carry on (a notification says when it's done); Stop ends it. Not loaded
 // on the lock or login screens, and a run stops when the screen locks.
 
@@ -18,6 +19,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 
 PanelWindow {
     id: root
@@ -75,7 +77,7 @@ PanelWindow {
             if (!Config.s.assistantKeepChat) { root.restored = true; return; }
             try {
                 const d = JSON.parse(text());
-                const clean = t => ({ asked: String(t.asked || ""), answer: String(t.answer || ""),
+                const clean = t => ({ asked: String(t.asked || ""), answer: String(t.answer || ""), at: Number(t.at) || 0, doneAt: Number(t.doneAt) || 0,
                                       error: t.error && t.error.message ? { kind: String(t.error.kind || "failed"), message: String(t.error.message), detail: String(t.error.detail || "") } : null,
                                       actions: (t.actions || []).map(a => ({ id: a.id, text: String(a.text || ""), state: String(a.state || "") })) });
                 let list = (d.turns || []).filter(t => t && t.asked).map(clean).slice(-root.maxTurns);
@@ -100,7 +102,21 @@ PanelWindow {
     }
     onTurnsChanged: chatSave.restart()
     onSessionChanged: chatSave.restart()
-    function begin(text) { turns = turns.concat([{ asked: text, answer: "", error: null, actions: [] }]).slice(-maxTurns); }
+    // (at: when you asked; doneAt: when the answer was finished. Shown as "2 min ago")
+    function begin(text) { turns = turns.concat([{ asked: text, answer: "", error: null, actions: [], at: Date.now(), doneAt: 0 }]).slice(-maxTurns); }
+    // "2 min ago", worded as on notifications, and kept fresh while the window shows
+    property int tick: 0
+    Timer { interval: 30000; running: root.shown; repeat: true; onTriggered: root.tick++ }
+    onShownChanged: if (shown) tick++
+    function ago(t) {
+        tick;
+        if (!t) return "";
+        const s = Math.max(0, (Date.now() - t) / 1000);
+        if (s < 60) return "now";
+        if (s < 3600) return Math.floor(s / 60) + " min ago";
+        if (s < 86400) return Math.floor(s / 3600) + " h ago";
+        return Qt.formatDate(new Date(t), "d MMM");
+    }
     function patch(change) {
         if (turns.length === 0) return;
         const t = turns.slice();
@@ -110,7 +126,16 @@ PanelWindow {
     property string session: ""            // the agent's conversation, for a follow-up
     property string runId: ""
     property real answeredAt: 0
-    property bool copied: false
+    // Copying a message (the icon that shows in its corner under the pointer): which one was
+    // just copied ("3:you", "3:chalk"), for a moment, so its icon can say so
+    property string copied: ""
+    Timer { id: copiedReset; interval: 1400; onTriggered: root.copied = "" }
+    function copy(which, text) {
+        if (!text) return;
+        Quickshell.execDetached(["wl-copy", text]);
+        copied = which;
+        copiedReset.restart();
+    }
     readonly property bool on: Config.assistantOn
     // The agents there are (scripts/assistant.py detect), looked for when the window first opens
     property var agents: []
@@ -121,10 +146,31 @@ PanelWindow {
         const usable = a => a.installed && a.signedIn && a.id !== "custom";
         return agents.find(a => a.id === want) || agents.find(usable) || null;
     }
+    // What you type follows on from the last answer (the agent keeps its thread, session) for
+    // this long after it; then the thread is dropped and the next prompt starts afresh. Nothing
+    // on screen changes: it's how long "and a bit bigger" can be expected to make sense, and a
+    // long thread costs more with every prompt
+    readonly property int followFor: 5 * 60 * 1000
+    function lastHeard() { return cur ? (cur.doneAt || cur.at || 0) : 0; }
     readonly property bool canFollowUp: session !== "" && !!agent && agent.followUps !== false
 
+    // Switching workspace closes it, as it does the launcher (a run carries on). Changes
+    // right after opening are ignored, so "go to a workspace and ask" still works
+    property real openedAt: 0
+    property int openedOnWorkspace: -1
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() {
+            const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
+            if (!root.shown || id === root.openedOnWorkspace) return;
+            if (Date.now() - root.openedAt > 400) root.closeWindow();
+            else root.openedOnWorkspace = id;
+        }
+    }
     function openWindow() {
         screen = Config.focusedScreen;
+        openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
+        openedAt = Date.now();
         shown = true;
         if (!looked && on) { looked = true; detect.running = true; }
         Qt.callLater(() => field.forceActiveFocus());
@@ -146,12 +192,13 @@ PanelWindow {
             field.text = "";
             return;
         }
+        const heard = lastHeard();         // (before this prompt joins the history)
         begin(text);
-        copied = false;
         field.text = "";
         runId = Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
         const cmd = ["python3", Quickshell.shellPath("scripts/assistant.py"), "run", "--agent", agent.id, "--run", runId];
         if (Config.s.assistantModel !== "" && agent.id !== "custom") cmd.push("--model", Config.s.assistantModel);
+        if (session !== "" && Date.now() - heard > followFor) session = "";       // left a while: afresh
         if (canFollowUp) cmd.push("--session", session);
         if (agent.id === "custom") {
             cmd.push("--command", Config.s.assistantCommand);
@@ -195,6 +242,7 @@ PanelWindow {
         if (!working) return;
         working = false;
         answeredAt = Date.now();
+        patch({ doneAt: answeredAt });
         // Finished out of sight: an ordinary notification, which opens the window again
         if (!shown && !Config.testMode) {
             const line = (error ? error.message : answer).split("\n")[0].slice(0, 160);
@@ -261,6 +309,7 @@ PanelWindow {
         id: panel
         width: root.panelWidth
         height: body.implicitHeight + 28
+        Behavior on height { enabled: root.shown; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: Math.round((parent.width - width) / 2)
         y: Math.round(Math.max(24, (parent.height - 520) / 2))
         radius: 18
@@ -269,11 +318,8 @@ PanelWindow {
         scale: 0.98 + 0.02 * root.fade
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        layer.enabled: !Config.glass
-        layer.effect: MultiEffect {
-            shadowEnabled: !Config.glass
-            shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: 1.0; shadowVerticalOffset: 8; blurMax: 48
-        }
+        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
+        Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
         MouseArea { anchors.fill: parent }       // swallow clicks inside
 
@@ -290,27 +336,28 @@ PanelWindow {
                     spacing: 8
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: String.fromCodePoint(0xF6D7)
+                        text: String.fromCodePoint(0xF38A)
                         color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
+                        ChalkFace {}
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Chalk"
-                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold
+                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     }
                 }
                 Rectangle {
                     id: closeBtn
                     anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
-                    width: 32; height: 32; radius: 16
-                    color: closeHover.hovered ? Config.hover : "transparent"
+                    width: 34; height: 34; radius: 17      // (Settings' close button)
+                    color: closeHover.hovered ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4) : "transparent"
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Gloss { radius: parent.radius; opacity: closeHover.hovered ? 1 : 0 }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
                         color: closeHover.hovered ? root.textColor : root.dimTextColor
-                        font.family: tabler.name; font.pixelSize: 17
+                        font.family: tabler.name; font.pixelSize: 18
                     }
                     HoverHandler { id: closeHover }
                     ClickTap { onTapped: root.closeWindow() }
@@ -338,7 +385,7 @@ PanelWindow {
             // scrollbar and a shade at whichever end has more)
             Item {
                 id: talkBox
-                visible: root.on && root.turns.length > 0
+                visible: root.on
                 width: parent.width
                 height: Math.min(talkCol.implicitHeight, Math.max(120, root.height - 320), 420)
                 readonly property bool overflows: talk.contentHeight > talk.height + 1
@@ -356,6 +403,39 @@ PanelWindow {
                     id: talkCol
                     width: parent.width
                     spacing: 14
+                    // Nothing said yet: Chalk says hello, so the window isn't a bare box. Not part
+                    // of the conversation (it isn't kept, and it goes with your first words)
+                    Rectangle {
+                        visible: root.turns.length === 0
+                        width: hello.implicitWidth + 28
+                        height: hello.implicitHeight + 18
+                        radius: 14
+                        bottomLeftRadius: 3
+                        color: root.replyColor
+                        Gloss { radius: parent.radius; bottomLeftRadius: parent.bottomLeftRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
+                        Column {
+                            id: hello
+                            anchors { left: parent.left; top: parent.top; leftMargin: 14; topMargin: 9 }
+                            spacing: 8
+                            Row {
+                                spacing: 6
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: String.fromCodePoint(0xF38A)
+                                    color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
+                                    ChalkFace {}
+                                }
+                                Text {
+                                    text: "Chalk"
+                                    color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
+                                }
+                            }
+                            Text {
+                                text: "Hello, I'm Chalk. How can I help?"
+                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                            }
+                        }
+                    }
                     Repeater {
                         model: root.turns.length
                         Column {
@@ -364,16 +444,31 @@ PanelWindow {
                             readonly property var t: root.turns[index] || ({ asked: "", answer: "", error: null, actions: [] })
                             readonly property bool latest: index === root.turns.length - 1
                             width: talkCol.width
-                            spacing: 8
+                            spacing: turn.t.at ? 20 : 8        // (room for the time under your bubble)
                             // You, on the right, in the accent colour
                             Rectangle {
                                 anchors.right: parent.right
-                                width: Math.min(askedText.implicitWidth + 28, parent.width * 0.82)
+                                width: Math.min(askedText.implicitWidth + 28, turn.width * 0.82)
                                 height: askedText.implicitHeight + 16
                                 radius: 14
+                                bottomRightRadius: 3        // (the corner nearest your side squared off, as chat bubbles are)
                                 color: root.accent
-                                // (the corner nearest your side squared off, as chat bubbles are)
-                                Rectangle { anchors { right: parent.right; bottom: parent.bottom } width: 14; height: 14; radius: 3; color: parent.color }
+                                Gloss { radius: parent.radius; bottomRightRadius: parent.bottomRightRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
+                                HoverHandler { id: youHover }
+                                CopyChip {
+                                    shownFor: youHover.hovered
+                                    done: root.copied === turn.index + ":you"
+                                    base: Qt.darker(root.accent, 1.18); ink: root.accentText
+                                    hoverBase: root.accentText; hoverInk: root.accent
+                                    onPressed: root.copy(turn.index + ":you", turn.t.asked)
+                                }
+                                // When you asked, small and dim under the bubble
+                                Text {
+                                    anchors { right: parent.right; rightMargin: 4; top: parent.bottom; topMargin: 3 }
+                                    visible: text !== ""
+                                    text: root.ago(turn.t.at)
+                                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
+                                }
                                 Text {
                                     id: askedText
                                     anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 14; rightMargin: 14 }
@@ -393,10 +488,21 @@ PanelWindow {
                                 width: Math.min(parent.width * 0.88, Math.max(replyCol.implicitWidth, 120) + 28)
                                 height: replyCol.implicitHeight + 18
                                 radius: 14
+                                // (one shape, not a square laid over the corner: on glass the bubble
+                                // is see-through, and the overlap showed as a lighter square)
+                                bottomLeftRadius: 3
                                 color: root.replyColor
                                 border.width: wrong ? 1 : 0
                                 border.color: Qt.rgba(root.danger.r, root.danger.g, root.danger.b, 0.55)
-                                Rectangle { anchors { left: parent.left; bottom: parent.bottom } width: 14; height: 14; radius: 3; color: parent.color; visible: !reply.wrong }
+                                Gloss { radius: parent.radius; bottomLeftRadius: parent.bottomLeftRadius; band: true; strength: 1.15 }   // glass: the bold glossy band notifications have (following the squared corner)
+                                HoverHandler { id: replyHover }
+                                CopyChip {
+                                    visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
+                                    shownFor: replyHover.hovered
+                                    done: root.copied === turn.index + ":chalk"
+                                    base: Config.tint("#2a313c"); ink: root.textColor
+                                    onPressed: root.copy(turn.index + ":chalk", reply.wrong ? turn.t.error.message : turn.t.answer)
+                                }
                                 Column {
                                     id: replyCol
                                     readonly property real inner: turn.width * 0.88 - 28
@@ -406,12 +512,20 @@ PanelWindow {
                                         spacing: 6
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: String.fromCodePoint(0xF6D7)
+                                            text: String.fromCodePoint(0xF38A)
                                             color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
+                                            ChalkFace {}
                                         }
                                         Text {
                                             text: "Chalk"
                                             color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
+                                        }
+                                        // When it answered
+                                        Text {
+                                            anchors.baseline: parent.children[1].baseline
+                                            visible: text !== ""
+                                            text: turn.t.doneAt ? "·  " + root.ago(turn.t.doneAt) : ""
+                                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
                                         }
                                     }
                                     TextEdit {
@@ -424,10 +538,49 @@ PanelWindow {
                                         color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
                                         font.family: root.fontFamily; font.pixelSize: 14
                                     }
-                                    Text {
+                                    // Thinking: three dots taking turns, as chat apps show someone
+                                    // typing. (Like a spinner, it isn't a transition, so its timing
+                                    // is its own.) With animations off or in game mode nothing moves
+                                    // or fades: the dots take turns to light up instead, a step at a time
+                                    Row {
+                                        id: typing
                                         visible: reply.waiting
-                                        text: "Working on it…"
-                                        color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 14
+                                        readonly property bool moving: visible && root.shown && Config.animate && !Config.gameMode
+                                        // (without motion: which dot is lit; 3 is a beat with none)
+                                        property int lit: 0
+                                        Timer {
+                                            interval: 380; repeat: true
+                                            running: typing.visible && root.shown && !typing.moving
+                                            onTriggered: typing.lit = (typing.lit + 1) % 4
+                                        }
+                                        spacing: 5
+                                        topPadding: 5; bottomPadding: 5
+                                        Repeater {
+                                            model: 3
+                                            Rectangle {
+                                                id: dot
+                                                required property int index
+                                                width: 7; height: 7; radius: 3.5
+                                                color: !typing.moving && typing.lit === index ? root.textColor : root.dimTextColor
+                                                opacity: typing.moving ? 0.35 : 1
+                                                transform: Translate { id: hop }
+                                                SequentialAnimation {
+                                                    running: typing.moving
+                                                    loops: Animation.Infinite
+                                                    onRunningChanged: if (!running) { hop.y = 0; dot.opacity = Qt.binding(() => typing.moving ? 0.35 : 1); }
+                                                    PauseAnimation { duration: dot.index * 160 }
+                                                    ParallelAnimation {
+                                                        NumberAnimation { target: hop; property: "y"; to: -4; duration: 260; easing.type: Easing.OutSine }
+                                                        NumberAnimation { target: dot; property: "opacity"; to: 1; duration: 260 }
+                                                    }
+                                                    ParallelAnimation {
+                                                        NumberAnimation { target: hop; property: "y"; to: 0; duration: 260; easing.type: Easing.InSine }
+                                                        NumberAnimation { target: dot; property: "opacity"; to: 0.35; duration: 260 }
+                                                    }
+                                                    PauseAnimation { duration: (2 - dot.index) * 160 + 420 }
+                                                }
+                                            }
+                                        }
                                     }
                                     Text {
                                         visible: reply.wrong
@@ -454,13 +607,27 @@ PanelWindow {
                                                 readonly property bool ok: modelData.state === "done"
                                                 readonly property bool waiting: modelData.state === "asking"
                                                 spacing: 8
-                                                Text {
+                                                // (the mark and the spinner are two items, so a tick or cross
+                                                // never keeps the angle the spinner stopped at)
+                                                Item {
                                                     anchors.verticalCenter: parent.verticalCenter
-                                                    text: String.fromCodePoint(actionRow.ok ? 0xEA5E : actionRow.waiting ? 0xEB13 : 0xEB55)     // tick, turning arrows, cross
-                                                    color: actionRow.ok ? Config.pageColour("power") : actionRow.waiting ? root.accent : root.danger
-                                                    font.family: tabler.name; font.pixelSize: 14
-                                                    // (a spinner: one of the animations that isn't a transition)
-                                                    RotationAnimation on rotation { running: actionRow.waiting && root.shown && Config.animate; from: 0; to: 360; duration: 1400; loops: Animation.Infinite }
+                                                    width: 14; height: 14
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        visible: !actionRow.waiting
+                                                        text: String.fromCodePoint(actionRow.ok ? 0xEA5E : 0xEB55)      // tick, cross
+                                                        color: actionRow.ok ? Config.pageColour("power") : root.danger
+                                                        font.family: tabler.name; font.pixelSize: 14
+                                                    }
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        visible: actionRow.waiting
+                                                        text: String.fromCodePoint(0xF226)                               // Slate's loading spinner
+                                                        color: root.accent
+                                                        font.family: tabler.name; font.pixelSize: 14
+                                                        // (a spinner: one of the animations that isn't a transition)
+                                                        RotationAnimation on rotation { running: actionRow.waiting && root.shown && Config.animate && !Config.gameMode; from: 0; to: 360; duration: 900; loops: Animation.Infinite }
+                                                    }
                                                 }
                                                 Text {
                                                     width: Math.min(implicitWidth, replyCol.inner - 24)
@@ -509,21 +676,16 @@ PanelWindow {
                 visible: root.on
                 width: parent.width; height: 44; radius: 10
                 color: root.fieldColor
+                Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 Text {
-                    id: mark
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                    text: String.fromCodePoint(0xF6D7)
-                    color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 18
-                }
-                Text {
-                    anchors { left: mark.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: root.working ? "Chalk is working…" : root.turns.length > 0 ? "Ask a follow-up" : "What would you like to do?"
+                    text: root.working ? "Chalk is working…" : "What would you like to do?"
                     color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     visible: field.text === ""
                 }
                 TextInput {
                     id: field
-                    anchors { left: mark.right; right: parent.right; leftMargin: 10; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
                     font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     focus: root.shown
@@ -533,7 +695,12 @@ PanelWindow {
                     onAccepted: root.send(text)
                     Keys.onPressed: e => {
                         if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true; }
-                        else if (e.key === Qt.Key_N && (e.modifiers & Qt.ControlModifier)) { root.fresh(); e.accepted = true; }
+                        // Page Up / Page Down move through the conversation, as in Slate's lists
+                        else if (e.key === Qt.Key_PageUp || e.key === Qt.Key_PageDown) {
+                            const by = (e.key === Qt.Key_PageUp ? -1 : 1) * Math.max(40, talk.height - 40);
+                            talk.contentY = Math.max(0, Math.min(Math.max(0, talk.contentHeight - talk.height), talk.contentY + by));
+                            e.accepted = true;
+                        }
                     }
                 }
             }
@@ -541,35 +708,30 @@ PanelWindow {
             // ---- Footer: who's answering, and the one useful button -----------
             Item {
                 visible: root.on
-                width: parent.width; height: 28
+                width: parent.width; height: 32
                 Text {
                     anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                    text: root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet"
-                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12
+                    text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
+                        + (root.working ? "" : "  ·  Enter to send")
+                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                 }
                 Row {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 8
-                    PillButton { visible: root.working; label: "Stop"; onPressed: root.stop() }
+                    PillButton { visible: root.working; icon: 0xED4A; label: "Stop"; onPressed: root.stop() }
                     PillButton {
                         visible: !root.working && !!root.error && ["offline", "timeout", "failed"].indexOf(root.error.kind) >= 0
-                        label: "Try again"; primary: true; onPressed: root.again()
+                        icon: 0xEB13; label: "Try again"; primary: true; onPressed: root.again()
                     }
                     PillButton {
                         visible: !root.working && !!root.error && root.error.kind === "signed-out"
-                        label: "Open a terminal"; primary: true; onPressed: root.signIn()
+                        icon: 0xEBEF; label: "Open a terminal"; primary: true; onPressed: root.signIn()
                     }
                     PillButton {
                         visible: !root.working && !!root.error && ["not-installed", "not-accepted", "off", "server"].indexOf(root.error.kind) >= 0
                         label: "Open Settings"; primary: true; onPressed: root.openSettings(root.error.kind === "server" ? "debug" : "assistant")
                     }
-                    PillButton {
-                        visible: !root.working && !root.error && root.answer !== ""
-                        label: root.copied ? "Copied" : "Copy"
-                        onPressed: { Quickshell.execDetached(["wl-copy", root.answer]); root.copied = true; }
-                    }
-                    PillButton { visible: !root.working && (root.asked !== ""); label: "New"; onPressed: { root.fresh(); field.forceActiveFocus(); } }
-                    PillButton { visible: !root.working && root.asked === ""; label: "Settings"; onPressed: root.openSettings() }
+                    PillButton { visible: !root.working && !root.error; icon: 0xEB20; label: "Settings"; onPressed: root.openSettings() }
                 }
             }
         }
@@ -584,25 +746,71 @@ PanelWindow {
             `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w.-]/g, "")}") end`]);
     }
 
-    // A small button, as on the confirmation window
+    // Copy this message: a small solid chip in the bubble's top right corner while the pointer
+    // is on the bubble (solid, so on glass it doesn't lighten the see-through bubble under it)
+    component CopyChip: Rectangle {
+        id: chip
+        property bool shownFor: false
+        property bool done: false
+        property color base: Config.tint("#2a313c")
+        property color ink: root.textColor
+        // Under the pointer: the accent, or on your own (accent-coloured) bubble its opposite
+        property color hoverBase: root.accent
+        property color hoverInk: root.accentText
+        signal pressed()
+        anchors { top: parent.top; right: parent.right; topMargin: 5; rightMargin: 5 }
+        z: 2
+        width: 24; height: 24; radius: 8
+        color: chipHover.hovered ? hoverBase : base
+        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+        opacity: shownFor || done ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        Gloss { radius: parent.radius }   // glass: a sheen
+        Text {
+            anchors.centerIn: parent
+            text: String.fromCodePoint(chip.done ? 0xEA5E : 0xEA7A)      // tick, copy
+            color: chipHover.hovered ? chip.hoverInk : chip.ink
+            font.family: tabler.name; font.pixelSize: 14
+        }
+        HoverHandler { id: chipHover; cursorShape: Qt.PointingHandCursor }
+        ClickTap { onTapped: chip.pressed() }
+    }
+
+    // A button, as in the Settings window (its Button): the same size, fill, hover, sheen, and
+    // an optional icon before the label
     component PillButton: Rectangle {
         id: pill
         property string label
         property bool primary: false
+        property int icon: 0
         signal pressed()
-        width: pillText.implicitWidth + 24; height: 28; radius: 9
+        readonly property color control: Config.raised(Config.tint("#2a313c"))
+        readonly property color fg: primary ? root.accentText : root.textColor
+        width: pillRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? (pillHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
-            : pillHover.hovered ? Config.tint("#262c35") : root.fieldColor
+            : pillHover.hovered ? (Config.glass ? Config.hoverOn(control) : Config.tint("#323a46")) : control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-        Gloss { radius: parent.radius }
-        HoverHandler { id: pillHover }
-        Text {
-            id: pillText
+        Gloss { radius: parent.radius }   // glass: a sheen
+        Row {
+            id: pillRow
             anchors.centerIn: parent
-            text: pill.label
-            color: pill.primary ? root.accentText : root.textColor
-            font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            spacing: 6
+            Text {
+                visible: pill.icon !== 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: pill.icon ? String.fromCodePoint(pill.icon) : ""
+                color: pill.fg
+                font.family: tabler.name; font.pixelSize: 15
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: pill.label
+                color: pill.fg
+                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            }
         }
+        HoverHandler { id: pillHover }
         ClickTap { onTapped: pill.pressed() }
     }
 }

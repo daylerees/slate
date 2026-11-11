@@ -809,7 +809,7 @@ Singleton {
         bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#e8c0a6", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
+        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel
@@ -823,6 +823,9 @@ Singleton {
     // its own pastel
     readonly property var appsPastels: ["#e8a6c8", "#e8c48f", "#8fc7e8"]
     readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
+    // Chalk's icon, wherever it's drawn (ChalkFace.qml): its speech bubble (the Assistant
+    // page's colour, below) and the face in it
+    readonly property var chalkPastels: ["#b9a6e8", "#8fd0c8"]
     function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
     // ---- Game mode (the bar's game mode panel) -----------------------------------------

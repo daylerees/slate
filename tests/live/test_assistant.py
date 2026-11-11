@@ -371,6 +371,23 @@ class Chalk(LiveCase):
         st = self.wait(lambda st: not st["assistant"]["working"], "it to stop", timeout=15)["assistant"]
         self.assertEqual(st["error"], "", "stopping is not an error")
 
+    def test_follows_on_for_a_few_minutes(self):
+        """What you type soon after an answer follows on from it (the agent's thread is kept);
+        left longer than five minutes, Chalk starts afresh, with the history still on show."""
+        self.config("assistantAgent", "custom")
+        self.config("assistantCommand", "echo ok")
+        self.ipc("test", "assistantAccepted", "custom")
+        now = int(time.time() * 1000)
+        for age, want in ((60, "thread-1"), (11 * 60, "")):
+            with self.subTest(f"{age} seconds ago"):
+                self.ipc("test", "chalk", json.dumps({"asked": "is glass on?", "answer": "Yes.", "session": "thread-1",
+                                                      "at": now - age * 1000, "doneAt": now - age * 1000}))
+                self.ipc("assistant", "ask", "and a bit bigger")
+                st = self.wait(lambda st: st["assistant"]["turns"] == 2 and not st["assistant"]["working"] and st["assistant"]["answer"] != "",
+                               "the answer", timeout=30)["assistant"]
+                self.assertEqual(st["session"], want)
+                self.assertEqual(st["turns"], 2, "the history went with the thread")
+
     def test_did_only_from_this_run(self):
         """What it did comes from Slate's server for the run in hand: anything else is ignored."""
         self.ipc("test", "chalk", json.dumps({"asked": "x", "working": True}))

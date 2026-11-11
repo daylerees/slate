@@ -214,7 +214,9 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(root.info.code)
-                        color: root.info.danger ? root.danger : root.accent
+                        // (Chalk's own icon keeps its two colours here too)
+                        color: root.info.danger ? root.danger : root.info.code === 0xF38A ? Config.pageColour("assistant") : root.accent
+                        ChalkFace {}
                         font.family: tabler.name
                         font.pixelSize: 26
                     }

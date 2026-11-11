@@ -44,7 +44,7 @@ Singleton {
         { id: "datetime", label: "Date & Time", icon: 0xEA70, more: true, about: "Time zone and setting the time automatically" },
         { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
-        { id: "assistant", label: "Assistant", icon: 0xF6D7, more: true, about: "AI agents using Slate: what they may do and see" },
+        { id: "assistant", label: "Assistant", icon: 0xF38A, more: true, about: "AI agents using Slate: what they may do and see" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
         // About is always last

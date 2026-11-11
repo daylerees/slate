@@ -364,7 +364,7 @@ FloatingWindow {
         if (!on) { Config.s.assistantEnabled = false; return; }
         if (!confirmer) return;
         confirmer.confirmWith({ title: "Switch on the assistant?", body: assistantRisks, long: true,
-                                button: "Switch on", code: 0xF6D7, danger: false }, () => assistantAccept());
+                                button: "Switch on", code: 0xF38A, danger: false }, () => assistantAccept());
     }
     // Choosing which agent answers the prompt window. One Slate can't confine (it keeps tools
     // of its own: a command of your own always does) asks once, per agent
@@ -378,14 +378,14 @@ FloatingWindow {
                        : "Slate can't switch off " + label + "'s own tools, so it can do more than Slate's tools allow: ")
                 + "run commands, read your files, see your screen. Slate's questions and limits only cover Slate's own tools. "
                 + "If you use it, that's yours to answer for.",
-            button: "Use it", code: 0xF6D7, danger: false
+            button: "Use it", code: 0xF38A, danger: false
         }, () => { Config.s.assistantAgentsAccepted = accepted.concat([id]); Config.s.assistantAgent = id; });
     }
     // Read the risks again, while it's on: the same words, and the chance to think again
     function assistantReadRisks() {
         if (!confirmer) return;
         confirmer.confirmWith({ title: "What using the assistant means", body: assistantRisks.replace("Before you do, here's what it means.<br><br>", ""), long: true,
-                                button: "Keep it on", cancelLabel: "Switch off", code: 0xF6D7, danger: false },
+                                button: "Keep it on", cancelLabel: "Switch off", code: 0xF38A, danger: false },
                               () => {}, () => { Config.s.assistantEnabled = false; });
     }
     // Restore defaults (the title button): asks first
@@ -522,6 +522,7 @@ FloatingWindow {
                                 id: navIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: win.glyph(parent.modelData.icon)
+                                ChalkFace {}
                                 // Colourful: each page its own colour; monotone: the accent when current
                                 color: Config.colourful ? Config.pageColour(parent.modelData.id) : parent.current ? win.accent : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 17
@@ -703,6 +704,7 @@ FloatingWindow {
                                 id: pageHitIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                                 text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
+                                ChalkFace {}
                                 color: pageHit.chosen ? win.accent : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 16
                             }
@@ -1904,6 +1906,7 @@ FloatingWindow {
                             id: hitIcon
                             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                             text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
+                            ChalkFace {}
                             color: hitRow.chosen ? win.accent : win.dim
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
@@ -1959,6 +1962,7 @@ FloatingWindow {
                             Text {
                                 anchors.centerIn: parent
                                 text: win.glyph(tile.modelData.icon)
+                                ChalkFace {}
                                 color: parent.pc
                                 font.family: win.bar.iconFont; font.pixelSize: 18
                             }
@@ -4244,9 +4248,15 @@ FloatingWindow {
                 }
                 Separator {}
                 ToggleSetting {
-                    label: "Keep the conversation"
+                    label: "Keep chat history"
                     key: "assistantKeepChat"
                     detail: "What you asked Chalk and what it answered are still in its window after Slate restarts: the last 100 messages, kept on this computer only. Off: it's forgotten when Slate restarts, and what was kept is deleted"
+                }
+                Separator {}
+                SettingRow {
+                    label: "Clear chat history"
+                    detail: "Empties Chalk's window, and what's kept of it. Nothing Chalk did is undone"
+                    Button { label: "Clear"; destructive: true; onClicked: Config.slateCall("assistant", "clear") }
                 }
             }
             GroupLabel { text: "Activity" }

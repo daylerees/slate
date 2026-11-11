@@ -52,7 +52,7 @@ Scope {
         function close(): void { if (root.window) root.window.closeWindow(); }
         function ask(text: string): void { if (root.window) root.window.ask(text); }
         function stop(): void { if (root.window) root.window.stop(); }
-        // Start afresh, as New does: the conversation is forgotten (and what was kept, deleted)
+        // As Clear does: the chat history is emptied (and what was kept, deleted)
         function clear(): void { if (root.window) root.window.fresh(); }
         // From Slate's server, as a tool is used in a run the prompt window started: its list
         function did(json: string): void { if (root.window) root.window.did(json); }

@@ -17,14 +17,16 @@ agent you chose does it through the same tools.
 - **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
   your accent colour, Chalk's answers on the left as they're written (plain text), each with
   a short list of what was done: Slate's own record, in Slate's words, not the agent's
-  account of itself. It scrolls once it's long. Copy copies the latest answer.
-- **Follow-ups.** What you type next carries on the same conversation. **New** (Ctrl+N)
-  starts afresh.
-- **Keeping the conversation.** The last 100 messages are still there after Slate restarts
-  or you log in again, in `~/.local/state/slate/assistant/chat.json`: on this computer only,
-  in a folder only you can read, never sent anywhere and not part of `slate logs`. **New**
-  empties it. Settings → Assistant → **Keep the conversation** switches this off, which
-  deletes what was kept; the conversation is then forgotten whenever Slate restarts.
+  account of itself. It scrolls once it's long. Point at a message and a copy button appears in its top right corner.
+- **Following on.** There are no conversations to manage. What you type within five minutes
+  of the last answer follows on from it ("and a bit bigger"); left longer, Chalk quietly
+  starts afresh with the agent, which also keeps each prompt small. Your history stays on
+  show either way.
+- **Chat history.** The last 100 messages are still there after Slate restarts or you log in
+  again, in `~/.local/state/slate/assistant/chat.json`: on this computer only, in a folder
+  only you can read, never sent anywhere and not part of `slate logs`. Settings → Assistant
+  → **Clear chat history** empties it, and **Keep chat history** switches keeping off, which
+  deletes what was kept; the history is then forgotten whenever Slate restarts.
 - **Closing it.** Escape or a click outside hides the window and the work carries on: the
   bar button shows it, and a notification brings the answer when it's done. **Stop** ends it.
   Locking the screen stops it too.
@@ -40,7 +42,7 @@ agent you chose does it through the same tools.
   It never holds your name, your computer's name or your home folder.
 - **When it goes wrong**, the window says what happened and offers the one useful thing:
   Open Settings, Open a terminal (to sign in), or Try again.
-- **Game mode.** The window opens as normal; the bar button stops breathing.
+- **Game mode.** The window opens as normal; the bar button's spinner and the typing dots keep still.
 
 ## Before you switch it on
 
