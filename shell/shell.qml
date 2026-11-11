@@ -1195,7 +1195,7 @@ ShellRoot {
                 if (!sl || sl.item.windows.length === 0 || win.previewMode === "off") return;
                 win.previewApp = sl.item;
                 const x = (strip.width - win.restWidth) / 2 + win.slotStart(sl.at) + win.base / 2;
-                const p = strip.mapToItem(win.contentItem, x, win.previewEdge());
+                const p = strip.mapToItem(win.contentItem, x, win.previewEdge(sl.at));
                 const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
                 previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
                 previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
@@ -1353,15 +1353,21 @@ ShellRoot {
             else if (pointedApp) previewDwell.restart();
             else { previewDwell.stop(); previewLeave.restart(); }
         }
-        // Where window previews sit (strip coordinates): a little above the top of a magnified icon,
-        // or above the dock when icons don't grow that far
-        function previewEdge() { return Math.min(bg.y - 16, row.y + row.height - base * maxScale - 12); }
+        // Where window previews sit (strip coordinates) for the icon in slot `at`: a little above
+        // the highest point of its name label (which sits above the icon, as big as the icon is
+        // just now), or above the dock when that's higher still. With no label showing (opened
+        // by `dock preview`), where one would be
+        function previewEdge(at) {
+            const icon = base * scaleAt(at);
+            const reach = hoveredIndex === at && label.text !== "" ? label.across : label.height;     // the label, away from the icon
+            return Math.min(bg.y - 16, row.y + row.height - icon - 8 - reach - 8);
+        }
         function showPreview() {
             if (dragKey !== "" || mouse.pressed) return;     // not while an app's being dragged
             const sl = slots.find(o => o.kind === "app" && pointedApp && o.item.key === pointedApp.key);
             if (!sl) return;
             previewApp = sl.item;
-            const p = strip.mapToItem(win.contentItem, row.x + cellX(sl.at) + base * scaleAt(sl.at) / 2, win.previewEdge());
+            const p = strip.mapToItem(win.contentItem, row.x + cellX(sl.at) + base * scaleAt(sl.at) / 2, win.previewEdge(sl.at));
             const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
             previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
