@@ -56,6 +56,11 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-bar-editor"
     WlrLayershell.layer: WlrLayer.Overlay
+    // The keyboard is this panel's while the bar's arranged. Nothing typed reaches a window out
+    // of sight under the wallpaper, and it's what lets a drag leave the bar: Hyprland only
+    // keeps a pressed pointer with the surface it was pressed on while something has the
+    // keyboard, and with no window focused nothing did, so the drag ended at the bar's edge
+    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region { item: panel }
 
     // ---- What's picked on the bar ---------------------------------------------------
@@ -318,6 +323,9 @@ PanelWindow {
         Shadow { blur: 22; dropY: 4 }      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         MouseArea { anchors.fill: parent }       // (a click on the panel itself does nothing)
+        // (Escape ends the arranging, as Done does)
+        focus: root.shown
+        Keys.onEscapePressed: Config.barArranging = false
 
         Column {
             id: body
