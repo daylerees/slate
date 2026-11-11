@@ -1063,7 +1063,8 @@ FloatingWindow {
                         anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: parent.modelData.label
                         color: parent.picked ? win.accentText : parent.current ? win.accent : win.text
-                        font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                        // (an option can name a typeface to be written in: the font settings' do)
+                        font.family: parent.modelData.font || win.font; font.pixelSize: 13; font.weight: Font.Medium
                         elide: Text.ElideMiddle      // device names differ at the end: keep it in view
                     }
                     Text {
@@ -1511,7 +1512,8 @@ FloatingWindow {
             .sort((x, y) => x.localeCompare(y))
         settingKey: key
         searchable: true
-        options: all.map(f => ({ value: f, label: f }))
+        // (each written in its own typeface, in the list and on the button)
+        options: all.map(f => ({ value: f, label: f, font: f }))
         value: Config.s[key]
         onPicked: v => Config.s[fontSetting.key] = v
     }
@@ -1620,7 +1622,7 @@ FloatingWindow {
                 anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 8 : 12; verticalCenter: parent.verticalCenter }
                 width: Math.min(implicitWidth, ddButton.width - x - 32)
                 text: dropdown.current ? dropdown.current.label : dropdown.noneLabel !== "" ? dropdown.noneLabel : String(dropdown.value)
-                color: win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                color: win.text; font.family: (dropdown.current && dropdown.current.font) || win.font; font.pixelSize: 12; font.weight: Font.Medium
                 elide: Text.ElideMiddle      // device names differ at the end: keep it in view
             }
             Text {
