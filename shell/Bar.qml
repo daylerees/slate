@@ -525,7 +525,7 @@ PanelWindow {
                         id: standIn
                         visible: !bar.vert && titleArea.width < 2
                         anchors.centerIn: parent
-                        text: "Active window"
+                        text: "Window"
                         color: bar.dimTextColor
                         font.family: bar.fontFamily; font.pixelSize: bar.fontSize; font.weight: Font.Medium
                     }
@@ -646,7 +646,8 @@ PanelWindow {
                         // (thresholds set so the mask's soft edge fades the text, rather than
                         // cutting it off wherever the mask isn't fully clear)
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                        text: titleArea.s ? titleArea.s.hoverText
+                        // (while the bar's being arranged it just says what it is, to leave room)
+                        text: Config.barArranging ? "Window" : titleArea.s ? titleArea.s.hoverText
                             : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
                         leftPadding: titleArea.s || !Config.s.barShowTitleIcon ? 8 : 0      // a little space for a hover description, or with no app icon
                         color: bar.textColor
@@ -1268,7 +1269,8 @@ PanelWindow {
                     anchors.centerIn: parent
                     // Turned to run along a side bar, like the window title
                     rotation: bar.textRotation
-                    text: (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
+                    // (while the bar's being arranged, a short stand-in: more room to work in)
+                    text: Config.barArranging ? "00:00" : (Config.s.barClockDate ? Qt.formatDate(Config.clockDate(sysClock.date), "ddd d MMM") + "  " : "")
                         + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
                             ? (Config.s.barClockSeconds ? "HH:mm:ss" : "HH:mm")
                             : (Config.s.barClockSeconds ? "h:mm:ss AP" : "h:mm AP"))
@@ -1359,6 +1361,8 @@ PanelWindow {
         property int iconCode: 0
         property real iconSize: 16
         property string label: ""
+        // (while the bar's being arranged, text is put away: more room to work in)
+        readonly property string shownLabel: Config.barArranging ? "" : label
         property color tint: bar.textColor
         // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
         // warning colour (tint other than the text colour)
@@ -1403,7 +1407,7 @@ PanelWindow {
             visible: seg.plain
             anchors.centerIn: parent
             // No gap when there's no label, so a lone icon sits in the middle
-            spacing: seg.label !== "" && !bar.vert ? 6 : 0
+            spacing: seg.shownLabel !== "" && !bar.vert ? 6 : 0
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.glyph(seg.iconCode)
@@ -1412,9 +1416,9 @@ PanelWindow {
                 font.pixelSize: seg.iconSize
             }
             Text {
-                visible: seg.label !== "" && !bar.vert
+                visible: seg.shownLabel !== "" && !bar.vert
                 anchors.verticalCenter: parent.verticalCenter
-                text: seg.label
+                text: seg.shownLabel
                 color: seg.tint
                 font.family: bar.fontFamily
                 font.pixelSize: bar.fontSize
