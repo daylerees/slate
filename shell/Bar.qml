@@ -338,8 +338,17 @@ PanelWindow {
     SequentialAnimation {
         id: titleSwap
         NumberAnimation { target: bar; property: "titleFade"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
-        ScriptAction { script: bar.shownItem = bar.hoverItem }
+        ScriptAction { script: { bar.shownItem = bar.hoverItem; bar.shownTop = ToplevelManager.activeToplevel; } }
         NumberAnimation { target: bar; property: "titleFade"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
+    }
+    // The window whose icon and title the bar shows: the focused one, taken up at the middle of
+    // the same cross-fade, so going from one window to another fades the old out and the new
+    // in. (A window changing its own title just changes: some do every second)
+    property var shownTop: null
+    Connections {
+        target: ToplevelManager
+        Component.onCompleted: bar.shownTop = ToplevelManager.activeToplevel
+        function onActiveToplevelChanged() { if (ToplevelManager.activeToplevel !== bar.shownTop) titleSwap.restart(); }
     }
 
     // Uptime, for the power button's hover text: read again as the pointer comes onto the button
@@ -848,7 +857,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     width: bar.capsuleHeight; height: bar.capsuleHeight
                     opacity: bar.titleFade
-                    readonly property var focusedTop: ToplevelManager.activeToplevel
+                    readonly property var focusedTop: bar.shownTop
                     readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
                     readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
                     // (while the bar's being arranged: Slate Settings' own icon, as a stand-in)
@@ -951,7 +960,7 @@ PanelWindow {
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                         // (while the bar's being arranged it just says what it is, to leave room)
                         text: Config.barArranging ? "Window" : winTitle.desc ? winTitle.desc.hoverText
-                            : ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.title : ""
+                            : bar.shownTop ? bar.shownTop.title : ""
                         color: bar.textColor
                         font.family: bar.fontFamily
                         font.pixelSize: bar.fontSize
