@@ -404,7 +404,6 @@ PanelWindow {
             Rectangle {
                 width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: 3
                 color: sl.muted ? pop.dim : pop.accent
-                Gloss { radius: parent.radius }   // glass: a sheen
             }
         }
         Rectangle {
@@ -1984,7 +1983,6 @@ PanelWindow {
                 Rectangle {
                     width: parent.width * bat.pct; height: parent.height; radius: 3
                     color: bat.pct < 0.15 && UPower.onBattery ? pop.danger : pop.accent
-                    Gloss { radius: parent.radius }   // glass: a sheen
                 }
             }
 
@@ -2113,7 +2111,6 @@ PanelWindow {
                             height: parent.height; radius: 3
                             // Red when above 80%
                             color: meter.frac > 0.8 ? pop.danger : pop.accent
-                            Gloss { radius: parent.radius }   // glass: a sheen
                             Behavior on color { ColorAnimation { duration: Config.ms(300) } }
                         }
                     }
