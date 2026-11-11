@@ -442,8 +442,8 @@ PanelWindow {
             Rectangle {
                 id: slFill
                 width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: 3
-                // Switched off (a muted volume): a much darker accent, with diagonal stripes of a
-                // darker one still across it, so it reads as there but not in use
+                // Switched off (a muted volume): a much darker accent, with diagonal stripes in the
+                // red of its muted indicator across it, so it reads as there but not in use
                 color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 clip: sl.muted
@@ -456,7 +456,7 @@ PanelWindow {
                         width: 2.5; height: slFill.height * 3
                         rotation: 40
                         antialiasing: true
-                        color: Qt.darker(pop.accent, 4.2)
+                        color: pop.danger          // (the red of the muted speaker beside it)
                     }
                 }
             }
