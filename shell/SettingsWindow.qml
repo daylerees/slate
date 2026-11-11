@@ -272,7 +272,7 @@ FloatingWindow {
             "animations", "glass", "glassOpacity", "glassBlur", "glassShine", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
             "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barHoverDescriptions", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
-            "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
+            "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
         launcher: ["launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
@@ -2371,6 +2371,12 @@ FloatingWindow {
                     label: "Hover descriptions"
                     detail: "Tells you what you're pointing at on the bar, in place of the window title"
                     key: "barHoverDescriptions"
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Monochrome tray icons"
+                    detail: "Draws the tray's app icons in one colour, like the rest of the bar, even with the Colourful look on"
+                    key: "barTrayMono"
                 }
             }
             // (only with glass on: Appearance → Glass)

@@ -1487,7 +1487,9 @@ PanelWindow {
                             HoverHandler { id: trayHover; onHoveredChanged: bar.setHover(trayItem, hovered) }
                             // Icon drawn in high-contrast black and white (light parts white,
                             // dark/coloured parts black) to match the rest of the bar; in the
-                            // Colourful look, in its own colours
+                            // Colourful look, in its own colours, unless Settings → Menu Bar →
+                            // Monochrome tray icons asks for one colour there too
+                            readonly property bool mono: !Config.colourful || Config.s.barTrayMono
                             Image {
                                 id: trayIcon
                                 anchors.centerIn: parent
@@ -1495,10 +1497,10 @@ PanelWindow {
                                 source: trayItem.modelData.icon
                                 sourceSize: Qt.size(36, 36)
                                 smooth: true
-                                visible: Config.colourful
+                                visible: !trayItem.mono
                             }
                             ShaderEffect {
-                                visible: !Config.colourful
+                                visible: trayItem.mono
                                 anchors.fill: trayIcon
                                 property variant source: trayIcon
                                 property real threshold: 0.45      // brighter than this takes the text colour

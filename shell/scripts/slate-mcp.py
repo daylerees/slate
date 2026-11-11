@@ -185,6 +185,7 @@ NAMED = {
     "barShowTitleIcon": ("bar", "Window title: app icon"),
     "barShowTray": ("bar", "App icons (tray)"),
     "barTrayCollapsed": ("bar", "Tuck the tray away"),
+    "barTrayMono": ("bar", "Tray icons in one colour, even in the Colourful look"),
     "barShowNotifications": ("bar", "Notifications"),
     "barShowClipboard": ("bar", "Clipboard"),
     "barShowScreenshot": ("bar", "Screenshot"),
