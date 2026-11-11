@@ -571,13 +571,17 @@ PanelWindow {
     // do), in the accent, with no track. Just off the bar, on its inner side
     Item {
         id: scrollGrip
-        visible: bar.scrollMax > 0
+        // Only while the bar's being arranged, and only then has it any size: it's part of what
+        // takes the pointer (the window's mask), and left its full size while out of sight it
+        // swallowed every click in a strip just under the bar, where a floating window's title
+        // sits when the window is pushed up against the bar
+        visible: Config.barArranging && bar.scrollMax > 0
         readonly property real thick: 14                    // (its hit area: the handle's drawn slimmer within it)
         readonly property real travel: Math.max(1, bar.lineLength - handle.length)
         x: bar.vert ? (bar.atRight ? bar.width - bar.barHeight - thick - 2 : bar.barHeight + 2) : bar.sidePadding
         y: bar.vert ? bar.sidePadding : (bar.atBottom ? bar.height - bar.barHeight - thick - 2 : bar.barHeight + 2)
-        width: bar.vert ? thick : bar.lineLength
-        height: bar.vert ? bar.lineLength : thick
+        width: !visible ? 0 : bar.vert ? thick : bar.lineLength
+        height: !visible ? 0 : bar.vert ? bar.lineLength : thick
         Rectangle {
             id: handle
             readonly property real length: Math.max(64, bar.lineLength * bar.lineLength / Math.max(1, bar.lineNatural))

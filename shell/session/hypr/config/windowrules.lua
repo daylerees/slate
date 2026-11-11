@@ -304,11 +304,69 @@ hl.on("window.open", soloSpill)
 -- A window opening on a floating workspace is marked as one Slate floated, so going back to
 -- tiling re-tiles it. (The float rules above ask for the tag too, but it doesn't reach the
 -- windows they float: those stayed floating when their workspace went back to tiling.)
+--
+-- And it's put right as it opens, three ways:
+--  * Its workspace's mode, not the one in front. Hyprland's rules go by the workspace you're
+--    looking at when a window appears, and a window can open on another (an app started on one
+--    workspace whose window arrives after you've gone to the next). So a window landing on a
+--    floating workspace from a tiled one is floated here, and one that was floated only
+--    because a floating workspace was in front, landing on a tiled one, is tiled again.
+--  * No bigger than nine tenths of the screen's usable part (less its title bar): only a
+--    window that opens larger is made smaller.
+--  * All of it on the screen: one that would hang off an edge is moved in.
+-- Looked at again a moment later, as some apps set their size just after they appear.
+function slateFitFloating(address)
+    local target = "address:" .. address
+    local w = hl.get_window(target)
+    local m = w and w.monitor
+    if not (w and w.mapped and w.floating and m) or (w.fullscreen or 0) ~= 0 then return end
+    local id = w.workspace and w.workspace.id
+    if not id or modeOf(id) ~= "floating" then return end
+    local r = m.reserved or {}
+    local scale = m.scale or 1
+    -- (room for the title bar above it: Slate's own, or hyprbars')
+    local barH = SLATE_TITLEBARS and (SLATE_TITLEBAR_HEIGHT or 34) or 0
+    if not SLATE_TITLEBARS and HYPRBARS_LOADED then
+        local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
+        if ok and type(h) == "number" then barH = h end
+    end
+    local ax, ay = m.x + (r.left or 0), m.y + (r.top or 0) + barH
+    local aw = math.floor(m.width / scale) - (r.left or 0) - (r.right or 0)
+    local ah = math.floor(m.height / scale) - (r.top or 0) - (r.bottom or 0) - barH
+    local x, y, sw, sh = w.at.x, w.at.y, w.size.x, w.size.y
+    local nw, nh = math.min(sw, math.floor(aw * 0.9)), math.min(sh, math.floor(ah * 0.9))
+    local nx, ny = x, y
+    if nw ~= sw or nh ~= sh then
+        -- (made smaller: centred again, as it would have been at that size)
+        nx, ny = ax + math.floor((aw - nw) / 2), ay + math.floor((ah - nh) / 2)
+    end
+    nx = math.max(ax, math.min(nx, ax + aw - nw))
+    ny = math.max(ay, math.min(ny, ay + ah - nh))
+    if nw ~= sw or nh ~= sh then hl.dispatch(hl.dsp.window.resize({ x = nw, y = nh, window = target })) end
+    if nx ~= x or ny ~= y then hl.dispatch(hl.dsp.window.move({ x = nx, y = ny, window = target })) end
+end
 hl.on("window.open", function(win)
     local id = win and win.workspace and win.workspace.id
-    if id and win.address and modeOf(id) == "floating" then
-        hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = "address:" .. win.address }))
+    if not (id and win.address) then return end
+    local target = "address:" .. win.address
+    local w = hl.get_window(target) or win
+    if (w.fullscreen or 0) ~= 0 then return end
+    local wants = modeOf(id) == "floating"
+    local front = hl.get_active_workspace()
+    if wants and not w.floating then
+        hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
+        hl.dispatch(hl.dsp.window.float({ action = "enable", window = target }))
+    elseif not wants and w.floating and front and front.id ~= id and modeOf(front.id) == "floating"
+        and w.class ~= "slate-settings" and not isDialog(w, hl.get_windows({})) then
+        hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
+        hl.dispatch(hl.dsp.window.tag({ tag = "-slate-floated", window = target }))
+        return
     end
+    if not wants then return end
+    hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
+    slateFitFloating(win.address)
+    local address = win.address
+    hl.timer(function() slateFitFloating(address) end, { timeout = 350, type = "oneshot" })
 end)
 hl.on("window.move_to_workspace", function(win) soloSpill(win) end)
 -- A workspace becoming Solo: every window on it fills a workspace of its own. Floating ones are

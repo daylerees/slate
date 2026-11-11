@@ -83,7 +83,8 @@ for _p in PANELS:
 # The control centre's "Up 1 h 29 min · Hyprland 0.57.1": the host's uptime
 SCENES["panel-control"]["mask"] = [(90, 105, 220, 20)]
 # The battery panel's System rows (CPU, memory, disk): the host machine's, live
-SCENES["panel-battery"]["mask"] = [(825, 272, 300, 115)]
+# (where they are now the panel has no battery above them: it opens from the bar's power button)
+SCENES["panel-battery"]["mask"] = [(1080, 172, 350, 130)]
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],

@@ -420,7 +420,7 @@ ShellRoot {
         // Window mode: Hyprland's layout, and the float-all rule on or off (windowrules.lua); converting open
         // windows happens only when the setting changes (below)
         const mode = `hl.config({ general = { layout = "${Config.hyprLayout}" } }); WINDOW_MODE = "${Config.windowMode}"; `
-            + `SLATE_TITLEBARS = ${Config.slateTitleBars}; WORKSPACE_MODES = ${Config.workspaceModesLua}; `
+            + `SLATE_TITLEBARS = ${Config.slateTitleBars}; SLATE_TITLEBAR_HEIGHT = ${Math.round(13 * 2.6 * Config.uiScale)}; WORKSPACE_MODES = ${Config.workspaceModesLua}; `
             + `if setWindowMode then setWindowMode(${Config.windowMode === "floating"}, false) end; `
             + `if setSpareWorkspace then setSpareWorkspace(${Config.s.keepEmptyWorkspace}) end; `;
         // Floating windows' title bars (hyprbars, when built): Slate's bar colour, text, font and button colours

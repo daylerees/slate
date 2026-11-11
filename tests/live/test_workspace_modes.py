@@ -280,3 +280,128 @@ class WorkspaceNames(LiveCase):
         # its last window closes: Hyprland removes the workspace, and the name goes with it
         self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.close({{ window = "address:{w["address"]}" }})) end')
         self.s.wait(lambda st: "7" not in st["workspaceNames"], timeout=10, what="the name to go with the workspace")
+
+
+class OpeningWindows(WorkspaceModes):
+    """A window as it opens: in its own workspace's mode whichever workspace is in front, and,
+    floating, no bigger than nine tenths of the screen and all of it on the screen."""
+
+    def opened_since(self, before):
+        return [c for c in self.s.hyprctl("clients", json_out=True) if c["address"] not in before]
+
+    def start_then_go(self, started_on, go_to, cmd="foot"):
+        """Start an app on one workspace and be on another by the time its window arrives."""
+        self.go(started_on)
+        before = {c["address"] for c in self.s.hyprctl("clients", json_out=True)}
+        self.s.hyprctl("eval", 'hl.exec_cmd("sh -c \'sleep 1.5; exec %s\'")' % cmd)
+        self.go(go_to)
+        for _ in range(40):
+            new = self.opened_since(before)
+            if new:
+                self.s.settle(0.9)
+                return next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == new[0]["address"])
+            self.s.settle(0.2)
+        self.fail("no new window")
+
+    def floating_workspace(self, ws):
+        self.keep_setting("titleBarStyle")
+        self.config("titleBarStyle", "slate")      # (floating without needing hyprbars)
+        self.ipc("workspacemode", "set", str(ws), "floating")
+        self.s.settle(0.5)
+
+    def test_floats_on_a_floating_workspace_with_a_tiled_one_in_front(self):
+        self.floating_workspace(8)
+        self.foot_on(7)                             # (something on the tiled one, to be in front of)
+        w = self.start_then_go(8, 7)
+        self.assertEqual(w["workspace"]["id"], 8)
+        self.assertTrue(w["floating"], "it went by the tiled workspace in front, and opened tiled on a floating one")
+
+    def test_tiles_on_a_tiled_workspace_with_a_floating_one_in_front(self):
+        """Started on a tiled workspace, arriving once a floating one is in front: it opened
+        floating, over the tiled windows."""
+        self.floating_workspace(8)
+        self.foot_on(7)
+        w = self.start_then_go(7, 8)
+        self.assertEqual(w["workspace"]["id"], 7)
+        self.assertFalse(w["floating"], "it went by the floating workspace in front, and floated on a tiled one")
+
+    def usable(self, w):
+        m = next(m for m in self.s.hyprctl("monitors", json_out=True) if m["id"] == w["monitor"])
+        sc = m["scale"] or 1
+        left, top, right, bottom = m["reserved"]
+        return (m["x"] + left, m["y"] + top, round(m["width"] / sc) - left - right, round(m["height"] / sc) - top - bottom)
+
+    def test_a_window_opening_too_big_is_kept_to_nine_tenths(self):
+        self.floating_workspace(8)
+        self.go(8)
+        before = {c["address"] for c in self.s.hyprctl("clients", json_out=True)}
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id=slate-test-big --window-size-pixels=3000x2000")')
+        for _ in range(40):
+            if self.opened_since(before):
+                break
+            self.s.settle(0.2)
+        self.s.settle(1.0)
+        w = self.opened_since(before)[0]
+        ax, ay, aw, ah = self.usable(w)
+        self.assertTrue(w["floating"])
+        self.assertLessEqual(w["size"][0], aw * 0.9 + 1, "wider than nine tenths of the screen")
+        self.assertLessEqual(w["size"][1], ah * 0.9 + 1, "taller than nine tenths of the screen")
+        self.assertGreater(w["size"][0], aw * 0.6, "made far smaller than it needed to be")
+        # ...and all of it on the screen
+        self.assertGreaterEqual(w["at"][0], ax)
+        self.assertGreaterEqual(w["at"][1], ay)
+        self.assertLessEqual(w["at"][0] + w["size"][0], ax + aw)
+        self.assertLessEqual(w["at"][1] + w["size"][1], ay + ah)
+
+    def floating_foot(self):
+        self.floating_workspace(8)
+        self.go(8)
+        before = {c["address"] for c in self.s.hyprctl("clients", json_out=True)}
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        for _ in range(40):
+            if self.opened_since(before):
+                break
+            self.s.settle(0.2)
+        self.s.settle(0.9)
+        return self.opened_since(before)[0]
+
+    def now(self, w):
+        return next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == w["address"])
+
+    def fit(self, w):
+        """What Slate does to a floating window as it opens (slateFitFloating, windowrules.lua)."""
+        self.s.hyprctl("eval", 'slateFitFloating("%s")' % w["address"])
+        self.s.settle(0.5)
+        return self.now(w)
+
+    def test_a_small_window_keeps_its_size(self):
+        """Only a window that's too big is made smaller."""
+        w = self.floating_foot()
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.resize({ x = 520, y = 340, window = "address:%s" })) end' % w["address"])
+        self.s.settle(0.5)
+        small = self.now(w)
+        self.assertLess(small["size"][0], 600, small["size"])
+        after = self.fit(w)
+        self.assertEqual(after["size"], small["size"], "a window smaller than the limit was resized")
+        self.assertEqual(after["at"], small["at"], "a window wholly on the screen was moved")
+
+    def test_a_window_off_the_edge_is_brought_onto_the_screen(self):
+        w = self.floating_foot()
+        ax, ay, aw, ah = self.usable(w)
+        for x, y in ((ax - 300, ay + 60), (ax + aw - 200, ay + ah - 100), (ax + 40, ay - 200)):
+            self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.resize({ x = 520, y = 340, window = "address:%s" })); hl.dispatch(hl.dsp.window.move({ x = %d, y = %d, window = "address:%s" })) end' % (w["address"], x, y, w["address"]))
+            self.s.settle(0.5)
+            moved = self.now(w)
+            self.assertEqual(moved["at"], [x, y], "the test couldn't put the window off the edge")
+            c = self.fit(w)
+            with self.subTest(at=(x, y)):
+                self.assertEqual(c["size"], moved["size"])
+                self.assertGreaterEqual(c["at"][0], ax)
+                self.assertGreaterEqual(c["at"][1], ay)
+                self.assertLessEqual(c["at"][0] + c["size"][0], ax + aw)
+                self.assertLessEqual(c["at"][1] + c["size"][1], ay + ah)
+
+
+# (only this class's own tests: the ones it borrows its helpers from run in their own)
+for _n in [n for n in dir(WorkspaceModes) if n.startswith("test_")]:
+    setattr(OpeningWindows, _n, None)
