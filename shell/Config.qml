@@ -661,9 +661,7 @@ Singleton {
             // One rule for most, one each for the dock and the menu bar, whose backgrounds have
             // an opacity of their own (Settings → Dock, → Menu Bar). Each is made once, and made
             // again when its opacity changes; then switched on or off
-            + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
-            + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
-            + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur)
+            + glassRules
             + `SLATE_GLASS_V = 3`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
@@ -680,6 +678,15 @@ Singleton {
             + `SLATE_GAME_OPAQUE:set_enabled(${gameMode ? "true" : "false"})`;
     }
     onHyprSettingsChanged: hyprPush.restart()
+    // The blur rules alone, sent straight away when one changes (an opacity slider being
+    // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
+    // for a moment
+    readonly property string glassRules: ""
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
+        + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur)
+    onGlassRulesChanged: if (!glassPush.running) glassPush.start()
+    Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
         id: hyprPush; interval: 400; running: true
         onTriggered: {
