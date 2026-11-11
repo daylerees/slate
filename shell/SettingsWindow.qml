@@ -7233,7 +7233,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Restart the shell"
                     detail: "Reloads the bar, dock, launcher, switchers and notifications"
-                    Button { label: "Restart"; onClicked: Quickshell.reload(true) }
+                    Button { label: "Restart"; onClicked: Config.restartSlate() }
                 }
             }
         }

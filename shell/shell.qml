@@ -633,7 +633,7 @@ ShellRoot {
             path: Quickshell.shellPath(modelData)
             watchChanges: true
             printErrors: false
-            onFileChanged: { root.brokenFiles = []; root.lastReloadError = ""; Quickshell.reload(false); }
+            onFileChanged: { root.brokenFiles = []; root.lastReloadError = ""; Config.restartSlate(); }
         }
     }
     Timer {

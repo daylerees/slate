@@ -259,7 +259,7 @@ PanelWindow {
             { text: "Glass", glyph: 0xEB01, checked: Config.s.glass, action: () => { Config.s.glass = !Config.s.glass; } },
             { separator: true },
             { text: Updates.available ? "Update to " + Updates.latest : "Check for updates", glyph: 0xEA96, action: slate(["settings", "page", "updates"]) },
-            { text: "Restart Slate", glyph: 0xEB13, action: () => Quickshell.reload(true) },
+            { text: "Restart Slate", glyph: 0xEB13, action: () => Config.restartSlate() },
             { text: "Show the welcome", glyph: 0xEDBA, action: slate(["welcome", "open"]) },
             { separator: true },
             { text: "Lock screen", glyph: 0xEAE2, action: slate(["lock", "lock"]) },

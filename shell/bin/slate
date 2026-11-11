@@ -3,6 +3,7 @@
 #   slate                  start Slate (if it isn't running)
 #   slate restart          restart it (reloads in place; --full stops and starts it again). The
 #                          screen fades to "Reloading Slate" and back; --no-cover: without that
+#   slate cover up|down    the "Reloading Slate" cover by itself (up before changing Slate's files)
 #   slate stop             stop it
 #   slate ipc call <target> <function> [args]   e.g. slate ipc call settings toggle
 #   slate ipc show         list what can be called
@@ -84,12 +85,15 @@ case "${1:-start}" in
         [ -n "$cover" ] && cover_down
         : ;;
     stop) stop ;;
+    # The cover by itself, for whatever changes Slate's files before restarting it: up, change
+    # them, `slate restart` (which finds it there), and it comes down when Slate's ready
+    cover) case "$2" in up) cover_up ;; down) cover_down ;; *) echo "slate cover up | down" >&2; exit 1 ;; esac ;;
     ipc) shift; exec qs -p "$SLATE_DIR" ipc "$@" ;;
     log) exec tail -f "$LOG" ;;
     logs) exec "$SLATE_DIR/bin/slate-logs" ;;
     dir) echo "$SLATE_DIR" ;;
     mcp) shift; exec python3 "$SLATE_DIR/scripts/slate-mcp.py" "$@" ;;
     build-hyprbars) shift; exec "$SLATE_DIR/bin/slate-build-hyprbars" "$@" ;;
-    -h|--help|help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+    -h|--help|help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) echo "slate: unknown command '$1' (see slate --help)" >&2; exit 1 ;;
 esac

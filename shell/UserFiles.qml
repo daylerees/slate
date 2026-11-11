@@ -88,5 +88,5 @@ Scope {
         printErrors: false
         onFileChanged: userReload.restart()
     }
-    Timer { id: userReload; interval: 500; onTriggered: Quickshell.reload(true) }
+    Timer { id: userReload; interval: 500; onTriggered: Config.restartSlate() }
 }

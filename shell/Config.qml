@@ -966,6 +966,11 @@ Singleton {
         reloadHyprland();
         restartToPage("debug");
     }
+    // Reload Slate in place, the gentle way: through `slate restart`, which fades the screen to
+    // "Reloading Slate" and back (bin/slate, reloading/shell.qml). Everything in Slate that
+    // reloads it goes through here, not Quickshell.reload itself. Detached: this Slate's
+    // windows are about to go
+    function restartSlate() { Quickshell.execDetached(["setsid", "-f", slateCommand, "restart"]); }
     function restartToPage(page) {
         Quickshell.execDetached(["setsid", "-f", "sh", "-c",
             `sleep 0.5; "$0" restart --full; for i in $(seq 40); do sleep 0.25; "$0" ipc call settings page "$1" >/dev/null 2>&1 && break; done`,
