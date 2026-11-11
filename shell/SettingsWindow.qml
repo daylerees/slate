@@ -4173,12 +4173,6 @@ FloatingWindow {
             Footnote { text: "Slate's tools never show an assistant your screen, your files or your clipboard. An agent with tools of its own can do more than Slate's tools allow, and Slate can't limit those." }
             GroupLabel { text: "Chalk" }
             Group {
-                ToggleSetting {
-                    label: "Show on the menu bar"
-                    key: "barShowAssistant"
-                    detail: "Chalk's button, after Spaces, while the assistant is switched on"
-                }
-                Separator {}
                 SettingRow {
                     label: "Ask Chalk"
                     detail: "Super+K, or your keyboard's Copilot or assistant key if it has one. You can change them in Shortcuts"
