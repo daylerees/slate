@@ -1874,9 +1874,9 @@ ShellRoot {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: 8
-                                    color: dlHover.hovered ? Config.hover : "transparent"
+                                    // Under the pointer: the launcher's highlight, the accent itself, flat
+                                    color: dlHover.hovered ? Config.accent : "transparent"
                                     Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                                    Gloss { radius: parent.radius; opacity: dlHover.hovered ? 1 : 0 }
                                 }
                                 // The file: a picture as itself, anything else as its kind on a tile
                                 Item {
@@ -1920,7 +1920,8 @@ ShellRoot {
                                     horizontalAlignment: Text.AlignHCenter
                                     text: dl.modelData.name
                                     elide: Text.ElideMiddle
-                                    color: win.textColor
+                                    color: dlHover.hovered ? Config.tint("#12151a") : win.textColor
+                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                     font.family: Config.s.fontFamily; font.pixelSize: 11
                                 }
                                 HoverHandler { id: dlHover }
