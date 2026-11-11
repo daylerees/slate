@@ -181,7 +181,7 @@ PanelWindow {
     // Clear of the dock (or the bar, when either is at the bottom)
     margins.bottom: Config.dockEdge === "bottom" ? 96 : Config.barAtBottom ? osd.bar.barHeight + 28 : 48
     implicitWidth: Math.max(340, pill.width + 40)
-    implicitHeight: 90
+    implicitHeight: 124
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-osd"
@@ -193,9 +193,10 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 16 + (1 - osd.fade) * 12
         width: osd.mode === "workspace" ? ws.width + 40 : 300
-        height: 52
+        // (taller for the workspaces': their name goes under the dots)
+        height: osd.mode === "workspace" ? ws.height + 28 : 52
         // (the workspace dots': a pill round circles, a rounded rectangle round squares)
-        radius: osd.mode === "workspace" ? Config.dotHolderRadius(height) : 26
+        radius: osd.mode === "workspace" ? Config.dotHolderRadius(52) : 26
         color: osd.bar.barColor
         opacity: osd.fade
         Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)
@@ -245,10 +246,10 @@ PanelWindow {
             readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
             readonly property real step: dot + gap
             readonly property real dotsWidth: Math.max(dot, spaces.length * step - gap)
-            // The dots, then the name of the workspace you're on (its own, or "Workspace 3")
+            // The dots, and under them the name of the workspace you're on (its own, or "Workspace 3")
             readonly property string name: Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
-            width: dotsWidth + (name !== "" ? 16 + wsName.implicitWidth : 0)
-            height: dot
+            width: Math.max(dotsWidth, name !== "" ? wsName.implicitWidth : 0)
+            height: dot + (name !== "" ? 8 + wsName.implicitHeight : 0)
 
             // The accent marker glides to the active dot (WorkspaceMarker)
             property int prevIndex: 0
@@ -265,6 +266,8 @@ PanelWindow {
             }
 
             Row {
+                id: wsRow
+                x: (ws.width - ws.dotsWidth) / 2
                 spacing: ws.gap
                 Repeater {
                     model: ws.spaces
@@ -279,15 +282,16 @@ PanelWindow {
             Text {
                 id: wsName
                 visible: ws.name !== ""
-                x: ws.dotsWidth + 16
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: ws.dot + 8
                 text: ws.name
                 color: osd.bar.textColor
                 font.family: osd.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
             }
             WorkspaceMarker {
                 id: wsMarker
-                width: ws.dotsWidth; height: parent.height
+                x: wsRow.x
+                width: ws.dotsWidth; height: ws.dot
                 dot: ws.dot; step: ws.step
                 animate: false            // moves are started above
                 color: osd.bar.accent
