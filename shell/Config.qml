@@ -1159,13 +1159,10 @@ Singleton {
     readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.max(s.dockBlur ? 0.01 : 0, Math.min(1, s.dockOpacity))
     function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
     readonly property real dockTileOpacity: glass ? Math.max(0, Math.min(1, s.dockTileOpacity)) : 1
-    readonly property real dockGlassCut: ownCut(dockGlassOpacity)
-    // Where Hyprland starts blurring behind a surface with an opacity of its own: just under
-    // it, however clear it's made (no lowest: a floor left a nearly clear dock unblurred but
-    // for its sheen, which showed as a band). In steps of 0.02, so dragging a slider makes a
-    // few dozen rules at most, not one for every value
-    // (never quite 0, which might be taken for "no threshold": the whole window, blurred)
-    function ownCut(opacity) { return Math.max(0.005, Math.floor(Math.max(0, opacity) * 0.85 * 50) / 50); }
+    // Where Hyprland starts blurring behind the dock: from next to nothing, whatever its
+    // opacity. One rule that never changes: nothing fainter than the dock in its window needs
+    // keeping clear of the blur, and remaking the rule as a slider moved made the blur blink
+    readonly property real dockGlassCut: 0.005
     // The menu bar's own background with glass (Bar.qml's barBackground): Slate's own is, in
     // dark mode, a quarter of the way from the glass's opacity to solid
     readonly property real barGlassOpacity: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
@@ -1190,7 +1187,15 @@ Singleton {
         const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / o;
         return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), o);
     }
-    readonly property real barGlassCut: Math.min(glassCut, ownCut(barGlassOpacity))
+    // Where Hyprland starts blurring behind the bar. Its window also holds its shadow, which
+    // has to stay fainter than this or it's blurred too: so a clear bar (under a quarter) has
+    // next to no threshold and no shadow, and from there both rise with it, the threshold in
+    // a few wide steps (each remakes Hyprland's rule, which blinks the blur: least seen on a
+    // bar that's mostly colour, and never at the clear end)
+    readonly property real barGlassCut: barGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(barGlassOpacity * 0.85 * 10) / 10)
+    // ...and the bar's shadow, as a share of Slate's usual: always under that threshold
+    readonly property real barShadowShare: !glass || !s.barBlur ? 1
+        : Math.min(1, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)

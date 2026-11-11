@@ -394,7 +394,7 @@ PanelWindow {
                 // (kept fainter than where Hyprland starts blurring behind the bar, which is
                 // lower when the bar's background is made clearer)
                 // (only with the bar's blur on: without it there's nothing to keep under)
-                strength: Config.glass && Config.s.barBlur ? Math.min(1, Config.barGlassCut * 0.9 / Math.max(0.01, Config.shadowStrength)) : 1
+                strength: Config.barShadowShare
                 radius: 0
                 blur: 15
                 dropX: bar.vert ? (bar.atRight ? -3 : 3) : 0
