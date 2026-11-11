@@ -121,6 +121,16 @@ FloatingWindow {
     function minuteOptions(list) { return list.map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") })); }
 
     property string section: "overview"
+    // While the menu bar's being arranged (Edit layout on its page), Settings steps out of the
+    // way, and comes back, on the page it was on, when that's done
+    property bool awayForBar: false
+    Connections {
+        target: Config
+        function onBarArrangingChanged() {
+            if (Config.barArranging) { if (win.visible) { win.awayForBar = true; win.visible = false; } }
+            else if (win.awayForBar) { win.awayForBar = false; win.keepSection = true; win.show(); }
+        }
+    }
     readonly property int scrolledTo: Math.round(scroller.contentY)   // (tests: the "test" IPC)
 
     // ---- Back where it was after Slate reloads or restarts ----------------
@@ -2299,10 +2309,9 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Arrange the menu bar"
-                    detail: Config.barArranging ? "You're arranging it now. Press Done on the panel by the bar when you've finished"
-                        : "Drag things along the bar itself, put them together in containers, add space between them, and take off what you don't use. "
-                        + "You can change it back at any time"
-                    Button { icon: 0xEB04; label: Config.barArranging ? "Done" : "Edit layout"; primary: !Config.barArranging; onClicked: Config.barArranging = !Config.barArranging }
+                    detail: "Drag things along the bar itself, put them together in containers, add space between them, and take off what you don't use. "
+                        + "Settings steps out of the way while you do, and comes back when you press Done"
+                    Button { label: "Edit layout"; onClicked: Config.barArranging = true }
                 }
             }
             GroupLabel { text: "Position & behaviour" }

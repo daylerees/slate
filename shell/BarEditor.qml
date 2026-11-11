@@ -31,7 +31,9 @@ PanelWindow {
     readonly property color accentText: Config.tint("#12151a")
     readonly property color danger: bar.errorColor
     readonly property color control: Config.raised(Config.tint("#2a313c"))
-    readonly property color controlLit: Config.glass ? Config.hoverOn(control) : Config.tint("#343c49")
+    // (under the pointer: a button, and a switch's track, as in Settings)
+    readonly property color controlLit: Config.glass ? Config.hoverOn(control) : Config.tint("#323a46")
+    readonly property color knobLit: Config.glass ? Config.hoverOn(control) : Config.tint("#38414e")
     readonly property color divider: Config.tint("#262c35")
     function glyph(code) { return String.fromCodePoint(code); }
 
@@ -103,6 +105,7 @@ PanelWindow {
         font.family: root.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
     }
     component Line: Rectangle { width: parent ? parent.width : 0; height: 1; color: root.divider }
+    // (a button and a switch as Settings draws them: SettingsWindow.qml's Button and Toggle)
     component PanelButton: Rectangle {
         id: btn
         property string label
@@ -110,7 +113,7 @@ PanelWindow {
         property bool primary: false
         property bool destructive: false
         signal clicked()
-        width: btnRow.implicitWidth + (label === "" ? 18 : 26); height: 30; radius: 8
+        width: btnRow.implicitWidth + 28; height: 32; radius: 8
         color: primary ? (btnHover.hovered ? Qt.lighter(root.accent, 1.1) : root.accent)
             : btnHover.hovered ? root.controlLit : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -144,8 +147,8 @@ PanelWindow {
         property string label
         property bool checked: false
         signal toggled(bool value)
-        spacing: 8
-        height: 30
+        spacing: 10
+        height: 32
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: sw.label
@@ -156,8 +159,17 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: 42; height: 24; radius: 12
             color: sw.checked ? (swHover.hovered ? Qt.lighter(root.accent, 1.08) : root.accent)
-                : (swHover.hovered ? root.controlLit : root.control)
+                : (swHover.hovered ? root.knobLit : root.control)
             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+            // Hover: a soft accent ring around the switch
+            Rectangle {
+                anchors { fill: parent; margins: -3 }
+                radius: height / 2
+                color: "transparent"
+                border.width: 2; border.color: root.accent
+                opacity: swHover.hovered ? 0.35 : 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+            }
             Gloss { radius: parent.radius }   // glass: a sheen
             Rectangle {
                 width: 18; height: 18; radius: 9
@@ -300,7 +312,7 @@ PanelWindow {
                     id: done
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     primary: true
-                    icon: 0xEA5E; label: "Done"
+                    label: "Done"
                     onClicked: Config.barArranging = false
                 }
             }
