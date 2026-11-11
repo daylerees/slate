@@ -118,6 +118,17 @@ class Settings(Case):
                     with self.subTest(os.path.relpath(os.path.join(root, name), shell) + ": Config." + fn):
                         self.assertIn(fn, have, f"Config.{fn}() is called here, but Config.qml has no such function")
 
+    def test_glass_blurs_every_popup(self):
+        """Slate's pop-ups are blurred behind with glass: each one's layer is named in the rule
+        (the dock's window previews were left out, and showed the desktop sharp through them)."""
+        m = re.search(r'glassRule\("SLATE_GLASS", "\^slate-\(([^)]*)\)\$"', slate.read("shell", "Config.qml"))
+        self.assertTrue(m, "the glass rule for pop-ups has gone")
+        named = set(m.group(1).split("|"))
+        for layer in ("dock-menu", "dock-previews", "launcher", "picker", "switcher", "notifications",
+                      "tray-menu", "desktop-menu", "confirm", "polkit", "osd"):
+            with self.subTest(layer):
+                self.assertIn(layer, named, f"slate-{layer} isn't blurred behind with glass")
+
     def test_slider_default_hints(self):
         """A row's changed-from-default dot says what the default is, as its slider shows it. A
         slider that shows a setting in other units (a 0–1 setting as a percentage) says so with

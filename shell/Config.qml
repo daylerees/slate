@@ -58,6 +58,10 @@ Singleton {
     // things with no background of their own; hoverOn(base) is it laid over a solid colour
     readonly property real hoverStrength: 0.22
     readonly property color hover: Qt.rgba(accent.r, accent.g, accent.b, hoverStrength)
+    // The active colour under the pointer, a little lighter: only on things that are on and that
+    // a click turns off again (the control centre's tiles, a connected Bluetooth device), to
+    // say so. A choice that stays chosen when clicked doesn't change
+    readonly property color accentLit: Qt.tint(accent, Qt.rgba(1, 1, 1, 0.22))
     // (Under the pointer, something that has a fill of its own takes the muted hover in its
     // place, not laid over it: hovering looks the same on a card, a button or a bare row, with
     // glass or without)
@@ -779,7 +783,7 @@ Singleton {
     // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
     // for a moment
     readonly property string glassRules: ""
-        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
         + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
         // (the panels that come out of the bar: an opacity and a blur of their own too)
