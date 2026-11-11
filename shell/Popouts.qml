@@ -506,12 +506,10 @@ PanelWindow {
     component ForecastDay: Rectangle {
         id: forecastDay
         property int day: 0              // days from today (an index into pop.forecast)
-        property bool gloss: false       // glass's sheen, as on the bar's containers
         property real gap: 3             // between its lines
         property real iconSize: 16
         property real tempSize: 11
         radius: 9
-        Gloss { visible: forecastDay.gloss && Config.glassGloss; radius: parent.radius }
         Column {
             anchors.centerIn: parent
             spacing: forecastDay.gap
@@ -2237,7 +2235,6 @@ PanelWindow {
                         day: index + 1
                         width: (cal.width - 18) / 4; height: 64
                         color: pop.card
-                        gloss: true
                     }
                 }
             }
