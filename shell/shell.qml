@@ -766,6 +766,7 @@ ShellRoot {
         readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
         readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+        readonly property color dockColor: Config.dockSurface(Config.tint("#0f1216"))    // the dock's own background: clearer with glass
         // Slate's own tiles (Apps, media, Downloads, the Waste Basket). Dark without glass: a little
         // lighter, as they were hard to tell from the dock
         readonly property color tileColor: Config.frostedTile(Config.tint(!Config.glass && !Config.s.lightMode ? "#29303a" : "#1d222a"))
@@ -2158,7 +2159,7 @@ ShellRoot {
                     radius: Config.s.iconShape === "circle" ? height / 2 : Math.min(height / 2, win.iconCorner + win.padding / 2)
                     bottomLeftRadius: 0     // flush with the screen edge
                     bottomRightRadius: 0
-                    color: win.bgColor
+                    color: win.dockColor
                     Gloss { radius: parent.radius }   // glass: a sheen
                 }
 
@@ -2232,7 +2233,7 @@ ShellRoot {
                             Matrix4x4 { matrix: win.tiltMatrix(launcherCell.width, launcherCell.height, win.tiltAt(win.launcherIndex)) },
                             Translate { y: -win.liftAt(win.launcherIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                         ]
-                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                        DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             anchors.bottom: parent.bottom
                             width: parent.width; height: width
@@ -2293,11 +2294,11 @@ ShellRoot {
                             visible: win.mediaWide > 1 && Config.glass
                             tileHeight: win.base * mediaCell.s
                             radius: mediaWideTile.corner
-                            dockTop: bg.y - row.y; color: win.bgColor
+                            dockTop: bg.y - row.y; color: win.dockColor
                         }
                         DockBacking {
                             visible: win.mediaWide === 1 && Config.glass
-                            dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
                         }
                         Item {
                             id: mediaWideTile
@@ -2553,7 +2554,7 @@ ShellRoot {
                             DockBacking {
                                 visible: cell.isApp && !Config.s.iconFill && Config.s.iconShape !== "original" && Config.glass
                                 tileWidth: cell.width; lift: cell.bounce * win.base * 0.4
-                                dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                                dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
                             }
                             // Glow (Settings → Dock → Hover effect), behind the icon and moving with its bounce.
                             // Kept out of the icon's Image: inside it, the icon wasn't drawn until the dock
@@ -2673,7 +2674,7 @@ ShellRoot {
                             Matrix4x4 { matrix: win.tiltMatrix(downloadsCell.width, downloadsCell.height, win.tiltAt(win.downloadsIndex)) },
                             Translate { y: -win.liftAt(win.downloadsIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                         ]
-                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                        DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: downloadsTile
                             anchors.bottom: parent.bottom
@@ -2714,7 +2715,7 @@ ShellRoot {
                             Matrix4x4 { matrix: win.tiltMatrix(trashCell.width, trashCell.height, win.tiltAt(win.trashIndex)) },
                             Translate { y: -win.liftAt(win.trashIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                         ]
-                        DockBacking { dockTop: bg.y - row.y; color: win.bgColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                        DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
                         Item {
                             id: trashTile
                             anchors.bottom: parent.bottom

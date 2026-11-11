@@ -659,9 +659,12 @@ Singleton {
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
             // Glass: blur behind Slate's surfaces (made once, then switched on or off), and the
             // blur size if one's picked
-            + `if SLATE_GLASS and SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil end; `
-            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|bar-editor|dock|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }) end; `
-            + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"})`
+            // (SLATE_GLASS_V: made again when what the rules cover changes, not only the opacity)
+            + `if SLATE_GLASS and (SLATE_GLASS_ALPHA ~= ${glassCut.toFixed(2)} or SLATE_GLASS_V ~= 2) then SLATE_GLASS:set_enabled(false); SLATE_GLASS = nil; if SLATE_GLASS_DOCK then SLATE_GLASS_DOCK:set_enabled(false); SLATE_GLASS_DOCK = nil end end; `
+            + `if not SLATE_GLASS then SLATE_GLASS_ALPHA = ${glassCut.toFixed(2)}; SLATE_GLASS = hl.layer_rule({ name = "slate-glass-" .. math.floor(${glassCut.toFixed(2)} * 100), match = { namespace = "^slate-(bar|bar-editor|dock-menu|popout|launcher|assistant|picker|switcher|notifications|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$" }, blur = true, ignore_alpha = ${glassCut.toFixed(2)} }); SLATE_GLASS_V = 2 end; `
+            // (the dock: clearer, so blurred from a lower opacity)
+            + `if not SLATE_GLASS_DOCK then SLATE_GLASS_DOCK = hl.layer_rule({ name = "slate-glass-dock-" .. math.floor(${dockGlassCut.toFixed(2)} * 100), match = { namespace = "^slate-dock$" }, blur = true, ignore_alpha = ${dockGlassCut.toFixed(2)} }) end; `
+            + `SLATE_GLASS:set_enabled(${glass ? "true" : "false"}); SLATE_GLASS_DOCK:set_enabled(${glass ? "true" : "false"})`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
             + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
@@ -1139,6 +1142,11 @@ Singleton {
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))
     // A surface's colour: as it is, or see-through with glass
     function surface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * glassOpacity) : c; }
+    // The dock's own background is a fifth clearer than the rest with glass (and Hyprland
+    // starts blurring behind it that much sooner: dockGlassCut, as glassCut below)
+    readonly property real dockGlassOpacity: glassOpacity * 0.8
+    function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
+    readonly property real dockGlassCut: Math.max(0.05, dockGlassOpacity * 0.85)
     // Cards, capsules and fields on a surface: with glass, a soft frosted layer rather than
     // solid grey (so the glass shows through them too)
     function raised(c) {
