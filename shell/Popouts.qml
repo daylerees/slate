@@ -481,10 +481,11 @@ PanelWindow {
     component RowButton: Rectangle {
         id: rb
         property bool selected: false
+        property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
         signal clicked()
         height: 36
         radius: 8
-        color: selected ? pop.accent : rbHover.hovered ? Config.hover : "transparent"
+        color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? Config.hover : "transparent"
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: rbHover }
         ClickTap { onTapped: rb.clicked() }
@@ -1880,6 +1881,7 @@ PanelWindow {
                         readonly property bool busy: d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting
                         width: parent.width
                         height: 44
+                        toggles: true
                         selected: d.connected
                         onClicked: d.connected ? d.disconnect() : d.connect()
                         Icon {
@@ -2676,7 +2678,7 @@ PanelWindow {
                             radius: 12
                             selected: modelData.on
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                            color: selected ? pop.accent
+                            color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
                                 : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
                             HoverHandler { id: tileHover }
                             onClicked: {
