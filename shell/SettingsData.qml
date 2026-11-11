@@ -122,6 +122,8 @@ JsonAdapter {
     property real barOpacity: 0.75            // with glass: the bar's background, 0 clear … 1 solid
     property bool barPanelBlur: true          // with glass: what's behind the bar's panels is blurred
     property real barPanelOpacity: 0.8        // with glass: the panels' background, 0 clear … 1 solid (the bar's own colour)
+    property var barOverflow: []              // the order things leave a bar that's short of room, first to go first ([] = Slate's own)
+    property var barStay: ["power", "clock", "control"]   // …and the ones that never leave it
     property real barItemOpacity: 0.8         // with glass: the containers on the bar, what's in them too, 0 gone … 1 solid
     property real barItemHoverOpacity: 0.8    // ...and while the pointer's over one
     property bool barAutoHide: false          // hide when one window fills the screen

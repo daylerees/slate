@@ -396,7 +396,8 @@ PanelWindow {
     }
 
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
-    readonly property real lineLength: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding - squeeze)
+    readonly property real lineFull: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
+    readonly property real lineLength: Math.max(0, lineFull - squeeze - lineFull * Config.barPreview)
     // (tests, and the arranging panel's narrow preview: the line made this much shorter)
     property real squeeze: 0
 
@@ -424,7 +425,7 @@ PanelWindow {
     readonly property real titleLeast: 44     // a title shorter than this isn't worth its room
     function slimPlan() {
         const plan = [];
-        if (Config.barArranging) return plan;
+        if (Config.barShowAll) return plan;
         if (Config.s.barShowTitle && winTitle.shell && titleText.text !== "") plan.push("title");
         if (!vert) {
             const texts = [];
@@ -450,9 +451,9 @@ PanelWindow {
         boxes.sort((a, b) => a.rank - b.rank || a.at - b.at);
         for (const b of boxes) plan.push("tuck:" + b.at);
         // ...and then things leave for More
-        for (const id of Config.barOverflowDefault) {
+        for (const id of Config.barOverflowOrder) {
             const t = left.things[id];
-            if (!t || !t.shell || Config.barStayDefault.indexOf(id) >= 0) continue;
+            if (!t || !t.shell || Config.barStays(id)) continue;
             if (id === "windowtitle" ? (Config.s.barShowTitle && titleText.text !== "") : t.wanted) plan.push("over:" + id);
         }
         return plan;
@@ -506,7 +507,13 @@ PanelWindow {
     Timer { id: fitLater; interval: 40; onTriggered: bar.fit() }
     onLineLengthChanged: fitLater.restart()
     onLineFixedChanged: if (!fitting) fitLater.restart()
-    Connections { target: Config; function onBarArrangingChanged() { fitLater.restart(); } }
+    Connections {
+        target: Config
+        function onBarArrangingChanged() { fitLater.restart(); }
+        function onBarPreviewChanged() { fitLater.restart(); }
+        function onBarOverflowOrderChanged() { fitLater.restart(); }
+        function onBarStayChanged() { fitLater.restart(); }
+    }
 
     // What's on the line besides the window's title: how much room the fixed things take
     // (the title's own container counted without the title), and how many things there are
@@ -1081,7 +1088,7 @@ PanelWindow {
                 stretchy: true              // (it takes the room the rest of the line doesn't need)
                 pad: 18
                 readonly property var desc: bar.shownItem
-                wanted: Config.s.barShowTitle && (Config.barArranging || (titleText.text !== "" && !bar.slimTitle))
+                wanted: Config.s.barShowTitle && (Config.barShowAll || (titleText.text !== "" && !bar.slimTitle))
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
@@ -1627,7 +1634,7 @@ PanelWindow {
             // something is, or while the bar's arranged, so it can be put where it's wanted
             Segment {
                 id: moreBtn
-                wanted: bar.overflowed.length > 0 || Config.barArranging
+                wanted: bar.overflowed.length > 0 || Config.barShowAll
                 iconCode: 0xEA95
                 length: bar.capsuleHeight + 8
                 hoverText: bar.overflowed.length === 1 ? "1 more thing" : bar.overflowed.length + " more things"
@@ -1869,7 +1876,7 @@ PanelWindow {
         property string collapse: "needed"
         property bool needTuck: false
         readonly property bool always: collapse === "always"
-        readonly property bool tuck: always || (collapse === "needed" && needTuck && !Config.barArranging)
+        readonly property bool tuck: always || (collapse === "needed" && needTuck && !Config.barShowAll)
         property string tuckFrom: "end"         // "start": the button first, the things after it; else last
         property int tuckIcon: 0xEC38
         hoverTint: false                        // (each thing has its own hover fill)
@@ -1877,7 +1884,8 @@ PanelWindow {
         onTuckChanged: expanded = false
         // 0 closed … 1 open, eased; the things stay laid out until it has finished closing
         // (open while the bar's being arranged, so what's in it can be got at)
-        property real openness: !tuck || expanded || Config.barArranging ? 1 : 0
+        // (...unless it's being tried shorter, when it closes as it would)
+        property real openness: !tuck || expanded || Config.barShowAll ? 1 : 0
         Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
         readonly property bool showThings: !tuck || openness > 0
         // Along the container: its things, and the button at one end while it tucks

@@ -247,7 +247,7 @@ Singleton {
               + `hl.bind("Escape", hl.dsp.exec_cmd("${slateCommand} ipc call bar edit done")) end) end; hl.dispatch(hl.dsp.submap("slate-arranging"))`
             : `hl.dispatch(hl.dsp.submap("reset"))`]);
         if (barArranging) return;
-        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null;
+        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null; barPreview = 0;
         // (a container put on the bar and never given anything goes)
         if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
     }
@@ -367,6 +367,7 @@ Singleton {
     // on the bar (what each thing shows, like its text, is left as it is)
     readonly property bool barIsDefault: (!s.barLayout || s.barLayout.length === 0) && !s.barStatusCollapsed
         && barItems.every(i => i.key === "" || sameValue(s[i.key], defaultOf(i.key)))
+        && (!s.barOverflow || s.barOverflow.length === 0) && sameValue(s.barStay, defaultOf("barStay"))
     signal barRedraw()          // (the bar lays its line again, drawing everything afresh)
     function barReset() {
         barSelected = -1;
@@ -374,6 +375,8 @@ Singleton {
         for (const i of barItems) if (i.key !== "") s[i.key] = defaultOf(i.key);
         s.barStatusCollapsed = defaultOf("barStatusCollapsed");
         s.barLayout = [];
+        s.barOverflow = [];
+        s.barStay = defaultOf("barStay");
     }
     // An empty container, to drag things into (it goes again if it's left empty)
     function barAddBox(to) {
@@ -430,8 +433,36 @@ Singleton {
     // last three stay). plans/menubar-length.md
     readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
         "chalk", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
-    readonly property var barStayDefault: ["power", "clock", "control"]
-    function barOverflowRank(id) { const i = barOverflowDefault.indexOf(id); return i < 0 ? 1000 : i; }
+    // The order in use: yours (Settings → Menu Bar → Edit layout → If it doesn't fit), with
+    // anything it leaves out put in from Slate's own, so every thing has a place; and the
+    // things that stay on the bar whatever happens. More isn't one of them: it's what the
+    // rest leave for
+    readonly property var barStay: {
+        const known = barItems.map(i => i.id);
+        return (s.barStay && s.barStay.length !== undefined ? Array.from(s.barStay) : []).map(String).filter((id, i, a) => known.indexOf(id) >= 0 && id !== "more" && a.indexOf(id) === i);
+    }
+    readonly property var barOverflowOrder: {
+        const known = barItems.map(i => i.id).filter(id => id !== "more");
+        const saved = (s.barOverflow && s.barOverflow.length !== undefined ? Array.from(s.barOverflow) : []).map(String);
+        const out = saved.filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i);
+        const own = barOverflowDefault.concat(["control", "clock", "power"]);
+        for (const id of own.concat(known)) if (out.indexOf(id) < 0 && known.indexOf(id) >= 0) out.push(id);
+        return out;
+    }
+    function barOverflowRank(id) { const i = barOverflowOrder.indexOf(id); return i < 0 ? 1000 : i; }
+    function barStays(id) { return barStay.indexOf(id) >= 0; }
+    // Set the order and what stays together (the arranging panel's list, after a drag)
+    function barSetOverflow(order, stay) { s.barOverflow = order.concat(stay.filter(id => order.indexOf(id) < 0)); s.barStay = stay; }
+    function barSetStay(id, on) {
+        const stay = barStay.filter(x => x !== id);
+        if (on) stay.push(id);
+        s.barStay = stay;
+    }
+    // Trying the bar shorter while it's arranged (the panel's "Try it shorter"): the share of its
+    // length taken off, 0 for none. While it's tried, the bar slims, tucks and overflows as it
+    // would; otherwise, arranged, everything's there to be picked up
+    property real barPreview: 0
+    readonly property bool barShowAll: barArranging && barPreview <= 0
     // On the bar, or back in the pool: an item's own switch (Settings → Menu Bar)
     function barShown(id) { const it = barItem(id); return !!it && (it.key === "" || !!s[it.key]); }
     // (Put back on the bar, a thing has its text on again: it comes as it first was, whatever

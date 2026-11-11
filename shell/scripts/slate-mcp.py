@@ -173,6 +173,8 @@ NAMED = {
     "windowMode": ("windows", "Default window mode"),
     "barPosition": ("bar", "Menu bar position"),
     "barLayout": ("bar", "Menu bar arrangement"),
+    "barOverflow": ("bar", "Menu bar: what leaves first when it doesn't fit"),
+    "barStay": ("bar", "Menu bar: what always stays on it"),
     # (what's on the menu bar and how each thing shows: set in the panel that arranges it, not on a page)
     "barShowApps": ("bar", "Apps button"),
     "barShowSpaces": ("bar", "Spaces button"),

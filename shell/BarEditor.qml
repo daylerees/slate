@@ -410,6 +410,129 @@ PanelWindow {
             }
             Line {}
 
+            // If it doesn't fit (plans/menubar-length.md): the order things leave a bar that's short
+            // of room, first to go first, dragged to change it; past the marker, the ones that
+            // always stay. And a way to see it happen: the bar tried shorter
+            Heading { text: "If it doesn't fit, these leave the bar for More, first to last. Drag to change the order" }
+            Item {
+                id: orderArea
+                width: parent.width
+                height: orderFlow.height
+                // The list as it's shown: the order (without what stays), the marker, what stays.
+                // While one's being dragged, a copy with it moved to where it would land
+                readonly property var saved: Config.barOverflowOrder.filter(id => !Config.barStays(id)).concat(["|"]).concat(Config.barOverflowOrder.filter(id => Config.barStays(id)))
+                property var moving: null           // the copy, while dragging
+                property string held: ""            // the one being dragged
+                readonly property var shown: moving || saved
+                Flow {
+                    id: orderFlow
+                    width: parent.width
+                    spacing: 6
+                    Repeater {
+                        model: orderArea.shown
+                        delegate: Item {
+                            required property string modelData
+                            readonly property string entry: modelData
+                            readonly property bool marker: modelData === "|"
+                            readonly property var it: marker ? null : Config.barItem(modelData)
+                            width: marker ? stayLabel.implicitWidth + 8 : orderChip.width
+                            height: root.bar.capsuleHeight
+                            BarChip {
+                                id: orderChip
+                                visible: !parent.marker
+                                item: parent.marker ? "" : parent.modelData
+                                icon: parent.it ? parent.it.icon : 0
+                                label: parent.it ? parent.it.label : ""
+                                grip: true
+                                // (the one being dragged: its place, held open)
+                                opacity: orderArea.held === parent.modelData ? 0.3 : 1
+                            }
+                            Text {
+                                id: stayLabel
+                                visible: parent.marker
+                                anchors.centerIn: parent
+                                text: "Always stay:"
+                                color: root.dim
+                                font.family: root.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                            }
+                        }
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    preventStealing: true
+                    property point from
+                    property string grabbed: ""
+                    function entryAt(x, y) { const c = orderFlow.childAt(x, y); return c && c.entry !== undefined ? c : null; }
+                    onPressed: m => {
+                        const c = entryAt(m.x, m.y);
+                        grabbed = c && !c.marker ? c.entry : "";
+                        from = Qt.point(m.x, m.y);
+                        const p = mapToItem(null, m.x, m.y);
+                        root.pressed(p.x, p.y);
+                    }
+                    onPositionChanged: m => {
+                        if (grabbed === "") return;
+                        if (orderArea.held === "" && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 6) {
+                            orderArea.held = grabbed;
+                            orderArea.moving = orderArea.saved.slice();
+                            const it = Config.barItem(grabbed);
+                            Config.barFloatAt = Qt.point(-100000, -100000);
+                            Config.barFloat = { kind: "item", label: "", icons: [{ code: it ? it.icon : 0, item: grabbed, text: it ? it.label : "" }] };
+                        }
+                        if (orderArea.held === "") return;
+                        const p = mapToItem(null, m.x, m.y);
+                        root.pointer = Qt.point(p.x, p.y);
+                        if (root.placed) Config.barFloatAt = Qt.point(root.origin.x + p.x, root.origin.y + p.y);
+                        // Before the first thing on its row whose middle the pointer hasn't passed;
+                        // after the last on the row otherwise
+                        let before = "", after = "";
+                        for (const c of orderFlow.children) {
+                            if (c.entry === undefined || c.entry === orderArea.held) continue;
+                            if (m.y < c.y - 3 || m.y > c.y + c.height + 3) continue;
+                            if (m.x < c.x + c.width / 2) { before = c.entry; break; }
+                            after = c.entry;
+                        }
+                        if (before === "" && after === "") return;
+                        const list = orderArea.moving.filter(id => id !== orderArea.held);
+                        const at = before !== "" ? list.indexOf(before) : list.indexOf(after) + 1;
+                        list.splice(at, 0, orderArea.held);
+                        if (list.join() !== orderArea.moving.join()) orderArea.moving = list;
+                    }
+                    onReleased: {
+                        const list = orderArea.moving;
+                        if (orderArea.held !== "" && list) {
+                            const cut = list.indexOf("|");
+                            Config.barSetOverflow(list.slice(0, cut), list.slice(cut + 1));
+                            Config.click();
+                        }
+                        orderArea.held = ""; orderArea.moving = null; grabbed = "";
+                        Config.barFloat = null;
+                    }
+                    onCanceled: { orderArea.held = ""; orderArea.moving = null; grabbed = ""; Config.barFloat = null; }
+                }
+            }
+            Row {
+                spacing: 6
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    rightPadding: 4
+                    text: "Try it shorter"
+                    color: root.text
+                    font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                }
+                Repeater {
+                    model: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
+                    PanelButton {
+                        required property var modelData
+                        label: modelData.label
+                        primary: Math.abs(Config.barPreview - modelData.value) < 0.01
+                        onClicked: Config.barPreview = modelData.value
+                    }
+                }
+            }
+            Line {}
+
             // What's picked, and its options
             Heading {
                 width: parent.width
@@ -432,6 +555,12 @@ PanelWindow {
                     label: "Show its text"
                     checked: root.textKey !== "" && !!Config.s[root.textKey]
                     onToggled: v => Config.s[root.textKey] = v
+                }
+                Switch {
+                    visible: root.kind === "item" && root.pickedItem !== "more"
+                    label: "Always keep on the bar"
+                    checked: Config.barStays(root.pickedItem)
+                    onToggled: v => Config.barSetStay(root.pickedItem, v)
                 }
                 Switch {
                     visible: root.kind === "item" && root.pickedItem === "tray"

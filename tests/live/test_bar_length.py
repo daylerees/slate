@@ -225,3 +225,61 @@ class BarLength(LiveCase):
         self.assertEqual(self.layout()[0]["items"], ["more"])
         self.ipc("test", "arrange", "done", "", "", "")
 
+    # ---- the order, what stays, and trying it shorter ----------------------------------------
+    def test_slates_own_order_and_what_stays(self):
+        st = self.bar()
+        self.assertEqual(st["order"][:len(self.ORDER)], self.ORDER)
+        self.assertEqual(sorted(st["stay"]), ["clock", "control", "power"])
+        self.assertNotIn("more", st["order"])
+
+    def test_your_own_order(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        self.ipc("test", "arrange", "overflow", "volume,apps", "power,clock,control", "")
+        self.s.settle(0.5)
+        st = self.bar()
+        self.assertEqual(st["order"][:2], ["volume", "apps"])
+        self.assertEqual(len(st["order"]), len(set(st["order"])), "a thing is in the order twice")
+        self.assertTrue(set(self.ORDER) <= set(st["order"]), "the order you gave lost the things it didn't name")
+        over = self.squeeze(1400)["overflowed"]
+        self.assertEqual(over[:2], ["volume", "apps"])
+
+    def test_something_marked_to_stay_stays(self):
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        self.assertIn("volume", self.squeeze(1400)["overflowed"])
+        self.squeeze(0)
+        self.ipc("test", "arrange", "stay", "volume", "true", "")
+        self.s.settle(0.5)
+        st = self.squeeze(1400)
+        self.assertNotIn("volume", st["overflowed"])
+        self.ipc("test", "arrange", "stay", "volume", "false", "")
+        self.s.settle(0.5)
+        self.assertIn("volume", self.bar()["overflowed"])
+
+    def test_trying_it_shorter_while_arranging(self):
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.s.settle(0.6)
+        self.assertEqual(self.bar()["gives"], [], "the bar slimmed while being arranged")
+        self.ipc("test", "arrange", "preview", "0.67", "", "")
+        self.s.settle(0.6)
+        st = self.bar()
+        self.assertNotEqual(st["overflowed"], [], "tried at a third of its length, nothing left the bar")
+        self.assertTrue(st["line"]["more"]["visible"])
+        self.ipc("test", "arrange", "preview", "0", "", "")
+        self.s.settle(0.6)
+        self.assertEqual(self.bar()["gives"], [])
+        self.ipc("test", "arrange", "preview", "0.5", "", "")
+        self.ipc("test", "arrange", "done", "", "", "")
+        self.s.settle(0.6)
+        self.assertEqual(self.bar()["gives"], [], "the bar stayed shortened after arranging ended")
+
+    def test_defaults_put_the_order_back(self):
+        self.ipc("test", "arrange", "overflow", "volume,apps", "clock", "")
+        self.s.settle(0.4)
+        self.assertFalse(self.bar()["isDefault"])
+        self.ipc("test", "arrange", "reset", "", "", "")
+        self.s.settle(0.6)
+        st = self.bar()
+        self.assertTrue(st["isDefault"])
+        self.assertEqual(st["order"][:len(self.ORDER)], self.ORDER)
+        self.assertEqual(sorted(st["stay"]), ["clock", "control", "power"])
+

@@ -149,6 +149,9 @@ ShellRoot {
             else if (what === "drag") { const p = c.split(","); topBar.testDrag(n(a), n(b), Number(p[0]), Number(p[1])); }
             else if (what === "squeeze") topBar.squeeze = Number(a);
             else if (what === "collapse") Config.barSetCollapse(n(a), b);
+            else if (what === "overflow") Config.barSetOverflow(a === "" ? [] : a.split(","), b === "" ? [] : b.split(","));
+            else if (what === "stay") Config.barSetStay(a, b === "true");
+            else if (what === "preview") Config.barPreview = Number(a);
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
@@ -288,7 +291,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
+                       line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, order: Config.barOverflowOrder, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
