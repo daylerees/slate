@@ -100,6 +100,24 @@ class Settings(Case):
             with self.subTest(key):
                 self.assertTrue(key in keys, f"{where} uses Config.s.{key}, which isn't in SettingsData.qml")
 
+    def test_config_functions_exist(self):
+        """Every Config.something(…) called from a QML file is a function Config.qml has. (A
+        call to one that's gone only warns as Slate runs, and what it was colouring turns black:
+        the dock's glass did, when its dockSurface was dropped by mistake.)"""
+        src = slate.read("shell", "Config.qml")
+        have = set(re.findall(r"^\s*function (\w+)\(", src, re.M)) | set(re.findall(r"^\s*signal (\w+)", src, re.M))
+        # (a property holding a function, or one of QtObject's own)
+        have |= set(re.findall(r"^\s*(?:readonly )?property var (\w+):", src, re.M)) | {"toString", "destroy"}
+        shell = slate.path("shell")
+        for root, _, files in os.walk(shell):
+            for name in files:
+                if not name.endswith(".qml"):
+                    continue
+                text = open(os.path.join(root, name), encoding="utf-8").read()
+                for fn in sorted(set(re.findall(r"\bConfig\.(\w+)\(", text))):
+                    with self.subTest(os.path.relpath(os.path.join(root, name), shell) + ": Config." + fn):
+                        self.assertIn(fn, have, f"Config.{fn}() is called here, but Config.qml has no such function")
+
     def test_setting_names_unique(self):
         src = slate.read("shell", "SettingsData.qml")
         names = re.findall(r"^\s*property\s+[\w<>]+\s+(\w+)\s*:", src, re.M)

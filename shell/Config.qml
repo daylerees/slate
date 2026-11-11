@@ -1148,6 +1148,7 @@ Singleton {
     // glass (and Hyprland starts blurring behind it that much sooner: dockGlassCut, as glassCut
     // below). And the tiles on it (its icons' and its buttons'): solid unless turned down
     readonly property real dockGlassOpacity: s.dockOpacity < 0 ? glassOpacity * 0.8 : Math.min(1, s.dockOpacity)
+    function dockSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * dockGlassOpacity) : c; }
     readonly property real dockTileOpacity: glass ? Math.max(0, Math.min(1, s.dockTileOpacity)) : 1
     readonly property real dockGlassCut: Math.max(0.05, dockGlassOpacity * 0.85)
     // The menu bar's own background with glass (Bar.qml's barBackground): Slate's own is, in
