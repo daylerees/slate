@@ -119,6 +119,33 @@ ShellRoot {
         enabled: Config.testMode
         // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
         // reload, remove. And answering the question that's showing in the confirmation window
+        // Arranging the menu bar without a pointer: what a drag, a click on the bar or a button
+        // on the panel comes to (Config's bar… functions)
+        function arrange(what: string, a: string, b: string, c: string): void {
+            const n = v => parseInt(v);
+            if (what === "start") Config.barArranging = true;
+            else if (what === "done") Config.barArranging = false;
+            else if (what === "reset") Config.barReset();
+            else if (what === "moveItem") Config.barMoveItem(a, n(b), n(c));
+            else if (what === "moveEntry") Config.barMoveEntry(n(a), n(b));
+            else if (what === "moveTuck") Config.barMoveTuck(n(a), n(b), n(c));
+            else if (what === "addSpace") Config.barAddSpace(n(a));
+            else if (what === "addBox") Config.barAddBox(n(a));
+            else if (what === "remove") Config.barRemoveEntry(n(a));
+            else if (what === "split") Config.barSplit(n(a));
+            else if (what === "tuck") Config.barSetTuck(n(a), b === "" ? undefined : b === "true", c === "" ? undefined : c);
+            else if (what === "tuckFrom") Config.barSetTuck(n(a), undefined, undefined, b);
+            else if (what === "shown") Config.barSetShown(a, b === "true");
+            else if (what === "pick") Config.barPick(n(a), b);
+            else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
+        }
+        // The bar's right-click menu: open it, or choose one of its rows by its label
+        function barMenu(what: string): void {
+            if (what === "open") { topBar.menu.openAt(600, 20); return; }
+            const row = topBar.menu.items.find(i => i.label === what);
+            topBar.menu.close();
+            if (row && row.run) row.run();
+        }
         function hyprbars(what: string): void {
             if (what === "choose") Config.hyprbarsChoose();
             else if (what === "rebuild") Config.hyprbarsRebuild();
@@ -244,6 +271,10 @@ ShellRoot {
                              error: chalk.error ? chalk.error.kind : "", agent: chalk.agent ? chalk.agent.id : "", session: chalk.session,
                              button: Config.s.barShowAssistant && Config.assistantOn,
                              enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
+                // The menu bar's arrangement, and arranging it (BarEditor.qml)
+                bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
+                       picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
+                       line: topBar.lineState(), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }
@@ -292,7 +323,7 @@ ShellRoot {
         FadeOut { required property var modelData; screen: modelData }
     }
     OSD { bar: topBar; popouts: popouts }
-    BarEditor { bar: topBar; confirmer: powerConfirm }       // the panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout)
+    BarEditor { id: barEditor; bar: topBar; confirmer: powerConfirm }       // the panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout)
     // The secret workspace showing with nothing on it: a note saying so, on that screen
     Variants {
         model: Quickshell.screens

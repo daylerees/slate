@@ -71,6 +71,16 @@ PanelWindow {
     // Is this the very first or very last thing on the bar ("start" / "end"; "" if neither)?
     // Its panel then sits flush against that end of the screen, as the control centre's and
     // the power menu's always have: now whichever buttons are there, wherever they've been put
+    // (tests) Each thing on the line: where it is in the bar's window and whether it shows
+    function lineState() {
+        const out = {};
+        for (const name in left.things) {
+            const t = left.things[name], p = t.mapToItem(null, 0, 0);
+            out[name] = { visible: t.visible, opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
+                          box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
+        }
+        return out;
+    }
     function outermost(item) {
         const box = item ? item.shell : null;
         if (!box) return "";
@@ -264,7 +274,33 @@ PanelWindow {
         x: bar.vert && bar.atRight ? parent.width - width : 0
         y: !bar.vert && bar.atBottom ? parent.height - height : 0
         HoverHandler { id: hover }
+        // Right-click an empty part of the bar, a flexible space or the active window: the
+        // bar's own menu. (Things on the bar keep their own right-clicks)
+        ClickTap {
+            id: barRightClick
+            acceptedButtons: Qt.RightButton
+            enabled: !Config.barArranging
+            onTapped: at => {
+                const w = hitArea.mapToItem(null, at.position.x, at.position.y);
+                const p = left.mapFromItem(null, w.x, w.y);
+                const under = left.childAt(p.x, p.y);
+                if (under && under.isBox) return;
+                barMenu.openAt(w.x + bar.windowX, w.y + bar.windowY);
+            }
+        }
     }
+    // (this window's corner within its screen: it sits against its edge)
+    readonly property real windowX: bar.screen && bar.side === "right" ? bar.screen.width - bar.width : 0
+    readonly property real windowY: bar.screen && bar.side === "bottom" ? bar.screen.height - bar.height : 0
+    DesktopMenu {
+        id: barMenu
+        screen: bar.screen
+        items: [
+            { label: "Auto-hide", icon: Config.s.barAutoHide ? 0xEA5E : 0, run: () => Config.s.barAutoHide = !Config.s.barAutoHide },
+            { label: "Edit layout", icon: 0xEB04, run: () => Config.barArranging = true }
+        ]
+    }
+    property alias menu: barMenu
 
     // ---- What's under the pointer, shown in the title area ------------------
     property Item hoverItem: null      // bar item under the pointer (has hoverText etc.)
@@ -474,7 +510,24 @@ PanelWindow {
             // containers and handed its things, the title, a flexible space for each "space".
             // Things join the end of a line as they're handed over, so: everything off first
             // (anything the arrangement leaves out stays off, unseen), then each on in its turn
-            function arrange() {
+            // A moment after the change that asked for it, not in the same instant: something
+            // that has just been switched back on (from the pool, by Defaults) and is moved to
+            // another container before it has been drawn once keeps its room there and is never
+            // drawn again
+            function arrange() { placing.restart(); }
+            Timer { id: placing; interval: 34; onTriggered: left.place() }
+            Timer { id: showing; interval: 34; onTriggered: { for (const name in left.things) left.things[name].held = false; } }
+            function place() {
+                // Each thing goes straight from the container it was in to its new one, never by way
+                // of somewhere unseen: one that went out of sight and came back in the same
+                // instant was sometimes never drawn again. The old containers go once they're empty
+                // And one that wasn't showing where it was (tucked away, say) and will show where
+                // it's going stays unseen through the move, and shows a moment after it: shown and
+                // moved in the same instant, it was never drawn either
+                const old = made;
+                for (const name in things) { const t = things[name]; t.name = name; t.held = !t.visible || t.opacity < 1; }
+                showing.restart();
+                titleSlotTop.parent = null;
                 // (each with its place in the arrangement, which is what a change is made by)
                 let order = Config.barLayout.map((entry, at) => ({ entry: entry, at: at }));
                 // A left bar's title reads upwards, growing up from where it sits: where it's
@@ -484,9 +537,6 @@ PanelWindow {
                     const t = order.findIndex(o => o.entry === "title");
                     if (t >= 0 && order[t + 1] && order[t + 1].entry === "space") { const o = order[t]; order[t] = order[t + 1]; order[t + 1] = o; }
                 }
-                for (const name in things) { things[name].shell = null; things[name].name = name; things[name].parent = parked; }
-                titleSlotTop.parent = parked;
-                for (const m of made) m.destroy();
                 const fresh = [];
                 for (const o of order) {
                     const entry = o.entry;
@@ -500,8 +550,9 @@ PanelWindow {
                     }
                 }
                 made = fresh;
+                for (const m of old) m.destroy();
             }
-            Component.onCompleted: arrange()
+            Component.onCompleted: place()
             Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
@@ -802,8 +853,7 @@ PanelWindow {
                 let t = null;
                 if (c && sc && Config.barArranging) {
                     // (this bar's window on the desktop: against its edge of its screen)
-                    const ox = sc.x + (bar.side === "right" ? sc.width - bar.width : 0);
-                    const oy = sc.y + (bar.side === "bottom" ? sc.height - bar.height : 0);
+                    const ox = sc.x + bar.windowX, oy = sc.y + bar.windowY;
                     const g = Config.barCarryAt;
                     const here = g.x >= sc.x && g.x < sc.x + sc.width && g.y >= sc.y && g.y < sc.y + sc.height;
                     const p = left.mapFromItem(null, g.x - ox, g.y - oy);
@@ -1405,7 +1455,8 @@ PanelWindow {
         readonly property bool plain: custom.children.length === 0
         readonly property bool first: shell ? shell.isFirst(seg) : true
         readonly property bool last: shell ? shell.isLast(seg) : true
-        visible: shell ? shell.shows(seg) : false
+        property bool held: false               // (kept unseen for a moment as it's moved: see place())
+        visible: shell && !held ? shell.shows(seg) : false
         opacity: shell && !isToggle ? shell.openness : 1
         property int iconCode: 0
         property real iconSize: 16
