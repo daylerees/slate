@@ -4605,12 +4605,6 @@ FloatingWindow {
                         }
                     }
                 }
-                Separator {}
-                ToggleSetting {
-                    label: "On the menu bar"
-                    detail: "The workspace dots on the bar (also in Menu bar)"
-                    key: "barShowWorkspaces"
-                }
             }
             GroupLabel { text: "Workspace overview (Super+Down)" }
             Group {

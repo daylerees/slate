@@ -61,3 +61,4 @@ things off as they're done.
 - titleButtons defaults to left: title bar tests and screenshots assume right.
 - focusFollowsMouse defaults to on (was unset, left to Hyprland): any test that expects it unset.
 - wrapWorkspaces defaults to off and keepEmptyWorkspace to on: workspace tests and any screenshot with the workspace dots (an extra empty one) change.
+- Settings → Workspaces no longer has the "On the menu bar" switch (the dots are added and removed in Edit layout): any test that uses it.
