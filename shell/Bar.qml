@@ -1287,26 +1287,30 @@ PanelWindow {
                 onClicked: bar.openPopout("spaces", spacesBtn)
                 property int beat: 0
                 Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
-                // (in a 16 px slot, as every icon on the bar, but drawn 13 px: solid squares carry
-                // more weight than the line icons round them, so they're drawn a little smaller
-                // to look the same size)
+                // Four squares in outline, in the weight of the line icons round them (the window
+                // mode's beside it most of all: a frame with lines in it). Drawn here, not from
+                // the icon font, so each can light up in turn while a space opens: filled then
                 Grid {
                     anchors.centerIn: parent
                     columns: 2
-                    spacing: 2
+                    spacing: 1.5
                     Repeater {
                         model: 4
                         Rectangle {
                             required property int index
                             readonly property bool busy: Spaces.restoring !== ""
-                            width: 5.5; height: 5.5; radius: 1.5
+                            width: 6.5; height: 6.5; radius: 1.8
                             // Clockwise: top left, top right, bottom right, bottom left
                             readonly property bool lit: busy && [0, 1, 3, 2][spacesBtn.beat] === index
-                            // (Colourful look: each square its own pastel)
-                            color: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, 0, bar.textColor)
-                            opacity: !busy || lit ? 1 : 0.35
+                            // (Colourful look: one pastel; a space's own colour while it opens)
+                            readonly property color ink: busy && Spaces.restoringSpace ? Spaces.restoringSpace.colour : Config.partColour(Config.spacesPastels, 0, bar.textColor)
+                            color: lit ? ink : "transparent"
+                            border.width: 1.4; border.color: ink
+                            antialiasing: true
+                            opacity: !busy || lit ? 1 : 0.45
                             Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
                             Behavior on color { ColorAnimation { duration: Config.ms(200) } }
+                            Behavior on border.color { ColorAnimation { duration: Config.ms(200) } }
                         }
                     }
                 }
