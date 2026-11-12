@@ -315,7 +315,7 @@ PanelWindow {
         height: 40
         radius: Config.corner(10)
         readonly property color base: primary ? root.accent : root.fieldColor
-        color: primary ? base : (hh.hovered ? Config.hover : base)
+        color: primary ? base : (hh.hovered ? Config.hoverOn(base) : base)
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }

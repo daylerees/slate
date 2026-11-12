@@ -378,6 +378,29 @@ class Pointer(Case):
         self.assertRegex(slate.read("shell", "ClickTap.qml"), r"property bool hand: true")
 
 
+class Hover(Case):
+    """Under the pointer, a fill gives way to the muted hover. Animated from a solid fill to the
+    see-through hover, a colour passes through a brighter, fuller accent and settles back: a flash
+    on every hover (seen by Dayle on the notifications panel's cards, 2026-11-12). So a fill goes to
+    Config.hoverOn(fill), solid for a solid fill, or cross-fades as layers (HoverFill)."""
+    def test_solid_fills_hover_through_hover_on(self):
+        bad = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).splitlines(), 1):
+                m = re.search(r"\? Config\.hover : ([A-Za-z_][\w.]*)", line)
+                # (from see-through to see-through doesn't flash: "transparent" and Qt.rgba fills)
+                if m and m.group(1) not in ("transparent", "Qt.rgba"):
+                    bad.append(f"{f}:{n}")
+        self.assertFalse(bad, "a fill going straight to Config.hover (use Config.hoverOn(fill)): " + ", ".join(bad))
+
+    def test_hover_on_a_solid_fill_is_solid(self):
+        config = slate.read("shell", "Config.qml")
+        m = re.search(r"function hoverOn\(base\) \{(.*?)\}\n", config)
+        self.assertTrue(m, "Config.hoverOn has moved")
+        self.assertIn("base.a", m.group(1), "hoverOn doesn't tell a solid fill from a see-through one")
+        self.assertIn("Qt.tint(", m.group(1), "hoverOn doesn't give a solid fill a solid hover")
+
+
 class Shadows(Case):
     """One shadow look everywhere (Settings → Appearance → Shadows)."""
     def test_no_shadow_sets_its_own_look(self):

@@ -5924,7 +5924,7 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: Config.corner(12)
-                            color: on ? win.accent : shapeHover.hovered ? Config.hover : win.well
+                            color: on ? win.accent : shapeHover.hovered ? Config.hoverOn(win.well) : win.well
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
                             // in the icon's colour, and Tint app icons (and its strength); with glass,

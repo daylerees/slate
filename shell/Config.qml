@@ -59,7 +59,7 @@ Singleton {
     readonly property bool handCursor: true
     readonly property Component handHover: Component { HoverHandler { cursorShape: Qt.PointingHandCursor } }
     // Hover highlight, everywhere in Slate: the accent, lightly. `hover` is see-through, for
-    // things with no background of their own; hoverOn(base) is it laid over a solid colour
+    // things with no background of their own; hoverOn(base) is it for things with a fill
     readonly property real hoverStrength: 0.22
     readonly property color hover: Qt.rgba(accent.r, accent.g, accent.b, hoverStrength)
     // The active colour under the pointer, a little lighter: only on things that are on and that
@@ -94,8 +94,10 @@ Singleton {
     readonly property color hoverDanger: { const d = tint("#f28b8b"); return Qt.rgba(d.r, d.g, d.b, hoverStrength); }
     // (Under the pointer, something that has a fill of its own takes the muted hover in its
     // place, not laid over it: hovering looks the same on a card, a button or a bare row, with
-    // glass or without)
-    function hoverOn(base) { return hover; }
+    // glass or without. A solid fill gets it as it looks on the panel behind (the hover over
+    // the panels' colour), solid too: animated from solid to see-through, a colour passes
+    // through a brighter, fuller accent on the way and settles back, a flash on every hover)
+    function hoverOn(base) { return base.a > 0.99 ? Qt.tint(tint("#0f1216"), hover) : hover; }
     property string wallpaper: s.wallpaper
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper

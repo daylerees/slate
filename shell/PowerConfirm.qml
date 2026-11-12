@@ -372,7 +372,7 @@ PanelWindow {
         height: 40
         radius: Config.corner(10)
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
-        color: primary ? base : (hh.hovered ? Config.hover : base)
+        color: primary ? base : (hh.hovered ? Config.hoverOn(base) : base)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button
