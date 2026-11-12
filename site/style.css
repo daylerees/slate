@@ -338,10 +338,6 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 .what .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .what p { color: var(--dim); margin: 0; }
 .what strong { color: var(--text); }
-.what .blend {
-  margin: 28px 0 0; padding: 18px 22px; border-radius: var(--radius);
-  background: var(--card); border: 1px solid var(--line); color: var(--text); font-size: 17px;
-}
 
 .features { background: transparent; }
 .grid {
@@ -547,3 +543,34 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
 .cl-grid ul ul { margin-top: 4px; }
 .cl-grid strong, .fp-hero .lead strong { color: var(--text); }
 .cl-grid code, .fp-hero .lead code { font-size: 13px; background: var(--surface); padding: 1px 6px; border-radius: 6px; }
+
+/* The changelog's release picker: type to find a release, arrows and Enter to go to it */
+.cl-pick { position: relative; max-width: 340px; }
+.cl-pick > .ti {
+  position: absolute; top: 50%; transform: translateY(-50%); color: var(--dim); font-size: 17px; pointer-events: none;
+}
+.cl-pick > .ti:first-child { left: 14px; }
+.cl-pick .cl-pick-chev { right: 14px; transition: transform .18s ease; }
+.cl-pick.open .cl-pick-chev { transform: translateY(-50%) rotate(180deg); }
+.cl-pick input {
+  width: 100%; box-sizing: border-box; padding: 11px 40px 11px 42px; font: inherit; font-size: 15px;
+  color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 12px; outline: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.cl-pick input::placeholder { color: var(--dim); }
+.cl-pick input:hover { background: var(--raised); }
+.cl-pick input:focus { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--raised); }
+.cl-pick-list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px;
+  list-style: none; max-height: 320px; overflow-y: auto; background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, .38); scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.cl-pick-list li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 12px;
+  border-radius: 8px; cursor: pointer; color: var(--text); font-size: 15px; font-weight: 500;
+}
+.cl-pick-list li time { color: var(--dim); font-size: 13px; font-weight: 400; }
+.cl-pick-list li.hot { background: var(--raised); }
+.cl-pick-list li.here::after { content: "\EA5E"; font-family: "Tabler"; color: var(--accent); margin-left: auto; }
+.cl-pick-list li.here time { margin-left: auto; }
+.cl-pick-list li.empty { color: var(--dim); cursor: default; font-weight: 400; }
