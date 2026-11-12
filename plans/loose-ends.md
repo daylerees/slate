@@ -38,3 +38,11 @@ waiting on something. The plans themselves are in the repository's history
 - The assistant beyond its first version (Codex, Markdown, sounds, the rest of its "later"
   list): [assistant.md](assistant.md).
 - Slate without systemd on a real Artix, Void or Gentoo install: [without-systemd.md](without-systemd.md).
+
+## Closing a window while New Space shows it crashes Slate (2026-11-12)
+Seen while recording the Spaces clip: with Spaces → New Space open (live previews of each
+workspace's windows), demo windows were closed and Slate died with "The Wayland connection
+experienced a fatal error: Invalid argument" (Quickshell's own log, /run/user/1000/quickshell/
+by-id/ups198keot). Likely a live ScreencopyView of a toplevel that goes away. Reproduce: open
+New Space, close an app on a previewed workspace. Fix: drop the capture (captureSource null)
+as the toplevel closes, or before; check the overview and the switcher, which capture too.
