@@ -32,8 +32,9 @@ class CameraWatch(Case):
 
     def watcher(self):
         p = subprocess.Popen([sys.executable, SCRIPT], env=self.env, stdout=subprocess.PIPE, text=True)
-        self.addCleanup(p.kill)
-        self.addCleanup(p.wait)
+        # (one clean-up, kill then wait: as two, they run last first, so it waited on a watcher
+        # that hadn't been told to stop, and the whole run hung)
+        self.addCleanup(lambda: (p.kill(), p.wait(timeout=10)))
         return p
 
     def line(self, p, timeout=5):
