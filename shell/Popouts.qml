@@ -2683,181 +2683,175 @@ PanelWindow {
                 }
             }
 
-            Row {
-                spacing: 12
-                // Left: media, then clock & weather
-                Column {
-                    id: ccLeft
-                    width: ccTiles.visible ? 262 : controlView.width      // (no switches chosen: the whole width)
-                    spacing: 12
-
-                    Rectangle {
-                        visible: controlView.player !== null
-                        width: parent.width; height: 104; radius: Config.corner(12)
-                        color: pop.card
-                        Item {
-                            visible: controlView.player !== null
-                            anchors { fill: parent; margins: 12 }
-                            RoundImage {
-                                id: art
-                                width: 80; height: 80; radius: Config.corner(10)
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: controlView.player ? controlView.player.trackArtUrl : ""
-                                visible: controlView.player && controlView.player.trackArtUrl !== ""
+            // Quick toggles, four to a row: one row or two. Which ones, and in what order, is
+            // yours to choose (Settings → Control Centre: Config.controlSwitches; SwitchBoard.qml
+            // draws this same grid, so keep the two alike)
+            Grid {
+                id: ccTiles
+                columns: 4
+                spacing: 8
+                visible: toggles.length > 0
+                readonly property real tileW: (controlView.width - spacing * (columns - 1)) / columns
+                // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
+                readonly property var every: ({
+                    wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                    bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                    caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                    night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                    dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                    perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
+                })
+                readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
+                    .map(id => ({ id: id, label: every[id].label, on: every[id].on, code: every[id].code }))
+                readonly property real tileH: 64
+                Repeater {
+                    model: ccTiles.toggles
+                    delegate: RowButton {
+                        id: controlTile
+                        required property var modelData
+                        width: ccTiles.tileW
+                        height: ccTiles.tileH
+                        radius: Config.corner(12)
+                        selected: modelData.on
+                        // On ones light up too when pointed at (a lighter accent), as they can be turned off
+                        color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
+                            : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                        HoverHandler { id: tileHover }
+                        onClicked: {
+                            switch (modelData.id) {
+                            case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
+                            case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
+                            case "caffeine": pop.caffeine = !pop.caffeine; break;
+                            case "night": Config.s.nightLight = !Config.s.nightLight; break;
+                            case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
+                            case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
                             }
-                            Column {
-                                anchors { left: art.visible ? art.right : parent.left; leftMargin: art.visible ? 12 : 0; right: parent.right; verticalCenter: parent.verticalCenter }
-                                spacing: 2
-                                Label { width: parent.width; text: controlView.player ? (controlView.player.trackTitle || controlView.player.identity) : "" }
-                                Label { width: parent.width; text: controlView.player ? (controlView.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
-                                Row {
-                                    spacing: 4
-                                    topPadding: 6
-                                    Repeater {
-                                        model: [
-                                            { code: 0xF693, act: "prev" },
-                                            { code: controlView.player && controlView.player.isPlaying ? 0xF690 : 0xF691, act: "play" },
-                                            { code: 0xF694, act: "next" }
-                                        ]
-                                        delegate: RowButton {
-                                            required property var modelData
-                                            width: 32; height: 30
-                                            onClicked: {
-                                                const p = controlView.player; if (!p) return;
-                                                if (modelData.act === "prev") p.previous();
-                                                else if (modelData.act === "next") p.next();
-                                                else p.togglePlaying();
-                                            }
-                                            Icon { anchors.centerIn: parent; code: parent.modelData.code; font.pixelSize: 16 }
-                                        }
-                                    }
-                                }
+                        }
+                        Column {
+                            anchors.centerIn: parent
+                            width: parent.width - 12
+                            spacing: 3
+                            Icon {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                code: controlTile.modelData.code
+                                color: controlTile.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                            }
+                            Label {
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                text: controlTile.modelData.label
+                                font.pixelSize: 11
+                                color: controlTile.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             }
                         }
                     }
+                }
+            }
 
-                    Rectangle {
-                        id: clockCard
-                        // Nothing playing: take the media card's space too
-                        readonly property bool roomy: controlView.player === null
-                        width: parent.width; height: roomy ? 104 + 12 + 92 : 92; radius: Config.corner(12)
-                        color: pop.card
-                        SystemClock { id: ccClock; precision: SystemClock.Minutes }
-                        Column {
-                            anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
-                            anchors.verticalCenter: clockCard.roomy ? undefined : parent.verticalCenter
-                            anchors.top: clockCard.roomy ? parent.top : undefined
-                            anchors.topMargin: 14
-                            spacing: 2
-                            Label { text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat); font.pixelSize: clockCard.roomy ? 32 : 24 }
-                            Label { text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: 12 }
-                            Row {
-                                visible: pop.weather !== null
-                                spacing: 6
-                                topPadding: 2
-                                Icon {
-                                    code: pop.weather ? pop.weatherInfo(pop.weather.weather_code).icon : 0
-                                    font.pixelSize: 14; color: pop.dim
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                Label {
-                                    text: !pop.weather ? ""
-                                        : Math.round(pop.weather.temperature_2m) + "°" + (Config.fahrenheit ? "F" : "C") + " · " + pop.weatherInfo(pop.weather.weather_code).text
-                                          + (clockCard.roomy && pop.weather.apparent_temperature !== undefined
-                                             ? " · feels " + Math.round(pop.weather.apparent_temperature) + "°" : "")
-                                    color: pop.dim; font.pixelSize: 12
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-                            Label {
-                                visible: clockCard.roomy && pop.forecast !== null
-                                text: pop.forecast ? "High " + Math.round(pop.forecast.temperature_2m_max[0]) + "° · Low " + Math.round(pop.forecast.temperature_2m_min[0]) + "°" : ""
-                                color: pop.dim; font.pixelSize: 12
-                            }
+            // Under them: what's playing, then the clock and weather (the whole width when nothing is)
+            Row {
+                spacing: 12
+                Rectangle {
+                    visible: controlView.player !== null
+                    width: 262; height: 104; radius: Config.corner(12)
+                    color: pop.card
+                    Item {
+                        visible: controlView.player !== null
+                        anchors { fill: parent; margins: 12 }
+                        RoundImage {
+                            id: art
+                            width: 80; height: 80; radius: Config.corner(10)
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: controlView.player ? controlView.player.trackArtUrl : ""
+                            visible: controlView.player && controlView.player.trackArtUrl !== ""
                         }
-                        // Next few days
-                        Row {
-                            visible: clockCard.roomy && pop.forecast !== null
-                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8 }
-                            spacing: 6
-                            Repeater {
-                                model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
-                                delegate: ForecastDay {
-                                    required property int index
-                                    day: index + 1
-                                    width: (parent.width - 18) / 4; height: 76
-                                    // A faint wash over the card: white on dark; on light, where white
-                                    // vanished, a shade darker
-                                    color: Config.s.lightMode ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.03)
-                                    gap: 4; iconSize: 18; tempSize: 12
+                        Column {
+                            anchors { left: art.visible ? art.right : parent.left; leftMargin: art.visible ? 12 : 0; right: parent.right; verticalCenter: parent.verticalCenter }
+                            spacing: 2
+                            Label { width: parent.width; text: controlView.player ? (controlView.player.trackTitle || controlView.player.identity) : "" }
+                            Label { width: parent.width; text: controlView.player ? (controlView.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
+                            Row {
+                                spacing: 4
+                                topPadding: 6
+                                Repeater {
+                                    model: [
+                                        { code: 0xF693, act: "prev" },
+                                        { code: controlView.player && controlView.player.isPlaying ? 0xF690 : 0xF691, act: "play" },
+                                        { code: 0xF694, act: "next" }
+                                    ]
+                                    delegate: RowButton {
+                                        required property var modelData
+                                        width: 32; height: 30
+                                        onClicked: {
+                                            const p = controlView.player; if (!p) return;
+                                            if (modelData.act === "prev") p.previous();
+                                            else if (modelData.act === "next") p.next();
+                                            else p.togglePlaying();
+                                        }
+                                        Icon { anchors.centerIn: parent; code: parent.modelData.code; font.pixelSize: 16 }
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // Right: quick toggles, as tall as the column beside them. Which ones, and in what
-                // order, is yours to choose (Settings → Control Centre: Config.controlSwitches)
-                Grid {
-                    id: ccTiles
-                    columns: 2
-                    spacing: 8
-                    visible: toggles.length > 0
-                    readonly property real tileW: (controlView.width - 262 - 12 - 8) / 2
-                    // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
-                    readonly property var every: ({
-                        wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
-                        bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
-                        caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
-                        night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
-                        dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
-                        perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
-                    })
-                    readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
-                        .map(id => ({ id: id, label: every[id].label, on: every[id].on, code: every[id].code }))
-                    readonly property int rowCount: Math.max(1, Math.ceil(toggles.length / columns))
-                    readonly property real tileH: (ccLeft.height - spacing * (rowCount - 1)) / rowCount
-                    Repeater {
-                        model: ccTiles.toggles
-                        delegate: RowButton {
-                            id: controlTile
-                            required property var modelData
-                            width: ccTiles.tileW
-                            height: ccTiles.tileH
-                            radius: Config.corner(12)
-                            selected: modelData.on
-                            // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                            color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
-                                : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                            HoverHandler { id: tileHover }
-                            onClicked: {
-                                switch (modelData.id) {
-                                case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
-                                case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
-                                case "caffeine": pop.caffeine = !pop.caffeine; break;
-                                case "night": Config.s.nightLight = !Config.s.nightLight; break;
-                                case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
-                                case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
-                                }
+                Rectangle {
+                    id: clockCard
+                    // Nothing playing: the whole width, with the days to come beside the time
+                    readonly property bool roomy: controlView.player === null
+                    width: roomy ? controlView.width : controlView.width - 262 - 12; height: 104; radius: Config.corner(12)
+                    color: pop.card
+                    SystemClock { id: ccClock; precision: SystemClock.Minutes }
+                    Column {
+                        anchors { left: parent.left; leftMargin: 14; right: ccDays.visible ? ccDays.left : parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        spacing: 2
+                        Label { text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat); font.pixelSize: clockCard.roomy ? 28 : 24 }
+                        Label { width: parent.width; text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: 12 }
+                        Row {
+                            visible: pop.weather !== null
+                            spacing: 6
+                            topPadding: 2
+                            Icon {
+                                code: pop.weather ? pop.weatherInfo(pop.weather.weather_code).icon : 0
+                                font.pixelSize: 14; color: pop.dim
+                                anchors.verticalCenter: parent.verticalCenter
                             }
-                            Column {
-                                anchors.centerIn: parent
-                                width: parent.width - 12
-                                spacing: 3
-                                Icon {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    code: controlTile.modelData.code
-                                    color: controlTile.selected ? pop.accentText : pop.text
-                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                                }
-                                Label {
-                                    width: parent.width
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: controlTile.modelData.label
-                                    font.pixelSize: 11
-                                    color: controlTile.selected ? pop.accentText : pop.text
-                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                                }
+                            Label {
+                                // (beside what's playing there's room for the temperature and the weather; alone, how it feels too)
+                                width: Math.min(implicitWidth, clockCard.width - 28 - 20 - (ccDays.visible ? ccDays.width + 14 : 0))
+                                text: !pop.weather ? ""
+                                    : Math.round(pop.weather.temperature_2m) + "°" + (Config.fahrenheit ? "F" : "C") + " · " + pop.weatherInfo(pop.weather.weather_code).text
+                                      + (clockCard.roomy && pop.weather.apparent_temperature !== undefined
+                                         ? " · feels " + Math.round(pop.weather.apparent_temperature) + "°" : "")
+                                color: pop.dim; font.pixelSize: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                        Label {
+                            visible: clockCard.roomy && pop.forecast !== null
+                            text: pop.forecast ? "High " + Math.round(pop.forecast.temperature_2m_max[0]) + "° · Low " + Math.round(pop.forecast.temperature_2m_min[0]) + "°" : ""
+                            color: pop.dim; font.pixelSize: 12
+                        }
+                    }
+                    // Next few days
+                    Row {
+                        id: ccDays
+                        visible: clockCard.roomy && pop.forecast !== null
+                        anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        spacing: 6
+                        Repeater {
+                            model: pop.forecast ? Math.min(4, pop.forecast.time.length - 1) : 0
+                            delegate: ForecastDay {
+                                required property int index
+                                day: index + 1
+                                width: 57; height: 76
+                                // A faint wash over the card: white on dark; on light, where white
+                                // vanished, a shade darker
+                                color: Config.s.lightMode ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.03)
+                                gap: 4; iconSize: 18; tempSize: 12
                             }
                         }
                     }

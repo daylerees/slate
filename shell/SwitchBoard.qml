@@ -1,7 +1,7 @@
 // Settings → Control Centre: choosing the control centre's quick switches. A small picture of
 // the panel, with its switches where they'll be; under it, the ones left over. Drag one in,
-// out, or to another place. The tiles in the picture are the size they are in the panel (they
-// share its height between however many rows there are), so what you see is how it'll look.
+// out, or to another place. The tiles in the picture are the size they are in the panel (four
+// to a row, one row or two), so what you see is how it'll look.
 
 import QtQuick
 
@@ -25,11 +25,11 @@ Item {
     // ---- The panel's own measures (Popouts.qml, the control centre) ------------------------
     readonly property real k: Math.min(1, (width - 24) / (panelW + 24))     // (a narrow window: smaller)
     readonly property real panelW: 470
-    readonly property real leftW: 262
+    readonly property real leftW: 262           // (what's playing; the clock has the rest)
     readonly property real gap: 8
-    readonly property real tileW: (panelW - leftW - 12 - gap) / 2
-    readonly property real tilesH: 208
-    readonly property int columns: 2
+    readonly property int columns: 4
+    readonly property real tileW: (panelW - gap * (columns - 1)) / columns
+    readonly property real rowH: 64
 
     readonly property var known: all.map(s => s.id)
     readonly property var order: (chosen || []).filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i).slice(0, most)
@@ -47,7 +47,7 @@ Item {
     }
     readonly property var spare: known.filter(id => showing.indexOf(id) < 0)
     readonly property int rows: Math.max(1, Math.ceil(showing.length / columns))
-    readonly property real rowH: (tilesH - gap * (rows - 1)) / rows
+    readonly property real tilesH: rows * rowH + (rows - 1) * gap
     readonly property bool full: order.filter(id => id !== held).length >= most
 
     // Where the middle of the carried tile is: over the picture, the nearest place in it
@@ -56,9 +56,9 @@ Item {
         if (!inside || full) { slot = -1; return; }
         const n = order.filter(id => id !== held).length;
         // (the rows as they'd be with this one in)
-        const r = Math.max(1, Math.ceil((n + 1) / columns)), h = (tilesH - gap * (r - 1)) / r;
-        const col = cx < grid.x0 + (tileW * k) + gap * k / 2 ? 0 : 1;
-        const row = Math.max(0, Math.min(r - 1, Math.floor((cy - grid.y0) / ((h + gap) * k))));
+        const r = Math.max(1, Math.ceil((n + 1) / columns));
+        const col = Math.max(0, Math.min(columns - 1, Math.floor((cx - grid.x0) / ((tileW + gap) * k))));
+        const row = Math.max(0, Math.min(r - 1, Math.floor((cy - grid.y0) / ((rowH + gap) * k))));
         slot = Math.min(n, row * columns + col);
     }
     function drop() {
@@ -99,22 +99,23 @@ Item {
         color: board.card
         Gloss { radius: parent.radius }
     }
-    // The panel in small: your picture and name along the top, what's playing and the clock on
-    // the left, and the switches on the right
+    // The panel in small: your picture and name along the top, the switches, then what's
+    // playing and the clock
     Rectangle {
         id: picture
         x: Math.round((board.width - width) / 2); y: panelCard.y + 14
         width: (board.panelW + 24) * board.k
-        height: (80 + 12 + board.tilesH + 24) * board.k
+        height: (12 + 80 + 12 + board.tilesH + 12 + 104 + 12) * board.k
+        Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
         radius: Config.corner(16 * board.k)
         color: board.well
         Ghost { x: 12 * board.k; y: 12 * board.k; width: board.panelW * board.k; height: 80 * board.k }
-        Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: 104 * board.k }
-        Ghost { x: 12 * board.k; y: (12 + 80 + 12 + 104 + 12) * board.k; width: board.leftW * board.k; height: 92 * board.k }
+        Ghost { x: 12 * board.k; y: parent.height - (104 + 12) * board.k; width: board.leftW * board.k; height: 104 * board.k }
+        Ghost { x: (12 + board.leftW + 12) * board.k; y: parent.height - (104 + 12) * board.k; width: (board.panelW - board.leftW - 12) * board.k; height: 104 * board.k }
         Text {
             visible: board.showing.length === 0
             x: grid.x0 - picture.x; y: grid.y0 - picture.y
-            width: (board.panelW - board.leftW - 12) * board.k; height: board.tilesH * board.k
+            width: board.panelW * board.k; height: board.tilesH * board.k
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
             wrapMode: Text.Wrap
             text: "No switches yet. Drag one here"
@@ -123,7 +124,7 @@ Item {
     }
     QtObject {
         id: grid
-        readonly property real x0: picture.x + (12 + board.leftW + 12) * board.k
+        readonly property real x0: picture.x + 12 * board.k
         readonly property real y0: picture.y + (12 + 80 + 12) * board.k
     }
 
@@ -161,7 +162,6 @@ Item {
             required property var modelData
             readonly property bool carried: board.held === modelData.id
             readonly property rect home: board.place(modelData.id)
-            readonly property bool small: height < 40          // (eight in the panel: the name beside the icon's too tight, so smaller)
             x: carried ? board.holdX : home.x
             y: carried ? board.holdY : home.y
             width: home.width; height: home.height
@@ -179,12 +179,12 @@ Item {
             Column {
                 anchors.centerIn: parent
                 width: parent.width - 12
-                spacing: sw.small ? 1 : 3
+                spacing: 3
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: String.fromCodePoint(sw.modelData.icon)
                     color: board.text
-                    font.family: board.iconFont; font.pixelSize: sw.small ? 15 : 18
+                    font.family: board.iconFont; font.pixelSize: 18
                 }
                 Text {
                     width: parent.width
@@ -192,7 +192,7 @@ Item {
                     elide: Text.ElideRight
                     text: sw.modelData.label
                     color: board.text
-                    font.family: board.font; font.pixelSize: sw.small ? 10 : 11; font.weight: Font.Medium
+                    font.family: board.font; font.pixelSize: 11; font.weight: Font.Medium
                 }
             }
             MouseArea {
