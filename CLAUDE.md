@@ -61,7 +61,7 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 
 | Moment | Sound | How |
 |---|---|---|
-| Pressing something: buttons, menu items, switches, tiles | click | `ClickTap` instead of `TapHandler`, `ClickArea` instead of `MouseArea` (they also turn the pointer into a hand over it). Areas that only catch clicks outside a panel, swallow clicks, or drag (sliders, scrollbars) stay silent |
+| Pressing something: buttons, menu items, switches, tiles | click | `ClickTap` instead of `TapHandler`, `ClickArea` instead of `MouseArea` (they also turn the pointer into a hand over it, except in menus, the dock and the desktop, which keep the arrow: `hand: false` on a `ClickTap`, `cursorShape: Qt.ArrowCursor` on a `ClickArea`). Areas that only catch clicks outside a panel, swallow clicks, or drag (sliders, scrollbars) stay silent |
 | Asking you something or warning you: confirmations, password prompts, questions, urgent notifications | attention | `Config.attention()` when it appears |
 | Moving between workspaces or through a switcher | swish | `Config.swish(step)`, with step < 0 for left/back; nothing when there's only one item, since nothing moves |
 | A notification popping up | notification | handled in `Notifications.qml` |

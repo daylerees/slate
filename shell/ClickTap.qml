@@ -7,9 +7,12 @@ import QtQuick
 // handler that does)
 TapHandler {
     id: tap
+    // false: the click, but the pointer stays an arrow (menus, the dock: things that are all
+    // pressable anyway, where a hand says nothing)
+    property bool hand: true
     onTapped: Config.click()
     Component.onCompleted: {
-        if (!Config.handCursor || !parent) return;
+        if (!hand || !Config.handCursor || !parent) return;
         const h = Config.handHover.createObject(parent);
         if (h) h.enabled = Qt.binding(() => tap.enabled);
     }

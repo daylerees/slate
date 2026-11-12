@@ -1678,7 +1678,7 @@ ShellRoot {
                                     font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                                 }
                                 HoverHandler { id: liveHover }
-                                ClickTap { onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
+                                ClickTap { hand: false; onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
                             }
                         }
                     }
@@ -1744,7 +1744,7 @@ ShellRoot {
                                     font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                                 }
                                 HoverHandler { id: titleHover }
-                                ClickTap { onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
+                                ClickTap { hand: false; onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
                             }
                         }
                     }
@@ -1956,6 +1956,7 @@ ShellRoot {
                                 }
                                 HoverHandler { id: dlHover }
                                 ClickTap {
+                                    hand: false
                                     onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
                                 }
                             }
@@ -1982,6 +1983,9 @@ ShellRoot {
             z: 10
             anchors.fill: maskBox
             hoverEnabled: true
+            // The arrow over the dock, icons and widgets alike, as over the desktop (its click
+            // sound stays); the hand is for buttons in panels and menus
+            cursorShape: Qt.ArrowCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             function stripX(m) { return strip.mapFromItem(mouse, m.x, m.y).x; }
             property point pressedAt
