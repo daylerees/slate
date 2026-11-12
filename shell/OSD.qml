@@ -292,7 +292,7 @@ PanelWindow {
             readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
             readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
             readonly property real step: dot + gap
-            readonly property real dotsWidth: Math.max(dot, spaces.length * step - gap)
+            readonly property real dotsWidth: wsDots.width
             // The name of the workspace you're on (its own, or "Workspace 3"), shown in a holder of
             // its own under the dots' (Settings → Workspaces → Name when switching)
             readonly property string name: Config.s.workspaceSwitchName && Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
@@ -305,35 +305,24 @@ PanelWindow {
             property real changedAt: 0
             onActiveIndexChanged: {
                 prevIndex = lastIndex; lastIndex = activeIndex; changedAt = Date.now();
-                wsMarker.go(activeIndex, osd.visible && osd.mode === "workspace");
+                wsDots.marker.go(activeIndex, osd.visible && osd.mode === "workspace");
             }
             // Opening: start from the workspace we just left, so the move is seen
             function prime() {
-                wsMarker.jump(Date.now() - changedAt < 500 ? prevIndex : activeIndex);
-                wsMarker.go(activeIndex, true);
+                wsDots.marker.jump(Date.now() - changedAt < 500 ? prevIndex : activeIndex);
+                wsDots.marker.go(activeIndex, true);
             }
 
-            Row {
-                id: wsRow
-                x: (ws.width - ws.dotsWidth) / 2
-                spacing: ws.gap
-                Repeater {
-                    model: ws.spaces
-                    delegate: Rectangle {
-                        required property var modelData
-                        readonly property bool occupied: (modelData.toplevels?.values?.length ?? 0) > 0
-                        width: ws.dot; height: ws.dot; radius: Config.dotRadius(ws.dot)
-                        color: occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                    }
-                }
-            }
-            WorkspaceMarker {
-                id: wsMarker
-                x: wsRow.x
-                width: ws.dotsWidth; height: ws.dot
-                dot: ws.dot; step: ws.step
-                animate: false            // moves are started above
-                color: osd.bar.accent
+            // Ten at most: with more workspaces, the row scrolls to keep yours in view and
+            // shrinks away at an end with more beyond (WorkspaceDots). The marker's moved here
+            WorkspaceDots {
+                id: wsDots
+                spaces: ws.spaces
+                activeIndex: ws.activeIndex
+                dot: ws.dot; gap: ws.gap
+                maxVisible: 10
+                markerFollows: false
+                accent: osd.bar.accent
             }
         }
     }

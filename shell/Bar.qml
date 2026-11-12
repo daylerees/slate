@@ -1394,50 +1394,21 @@ PanelWindow {
                     readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
                     readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
                     length: (bar.vert ? wsRow.height : wsRow.width) + 16
-                BarLine {
+                // The dots and the accent marker, six at most: with more workspaces, the row
+                // scrolls to keep yours in view, and shrinks away at an end with more beyond
+                // (WorkspaceDots)
+                WorkspaceDots {
                     id: wsRow
                     anchors.centerIn: parent
-                    spacing: wsCap.dotGap
-                    Repeater {
-                        model: wsCap.spaces
-                        delegate: Rectangle {
-                            id: wsDot
-                            required property var modelData
-                            readonly property int winCount: modelData.toplevels?.values?.length ?? 0
-                            readonly property bool occupied: winCount > 0
-                            readonly property string hoverText: Config.workspaceLabel(modelData.id) + " · " + (winCount === 0 ? "empty" : winCount + (winCount === 1 ? " window" : " windows"))
-                            readonly property int hoverCode: 0
-                            readonly property url hoverImage: ""
-                            HoverHandler { id: wsDotHover }
-                            width: wsCap.dot; height: wsCap.dot; radius: Config.dotRadius(wsCap.dot)
-                            // Hover: the status icons' highlight, in the dot's shape, behind it
-                            Rectangle {
-                                z: -1
-                                anchors.centerIn: parent
-                                readonly property real size: wsCap.dot + 10
-                                width: size; height: size
-                                radius: Config.dotRadius(size)
-                                color: bar.hoverFill
-                                opacity: wsDotHover.hovered ? bar.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-                            }
-                            // Inactive workspaces are dimmed a little; the accent marker shows the active
-                            // one. Brighter under the pointer
-                            color: wsDotHover.hovered ? (occupied ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
-                                : occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
-                            ClickArea { anchors.fill: parent; onClicked: modelData.activate() }
-                        }
-                    }
-                }
-                // The accent marker, gliding between dots
-                WorkspaceMarker {
-                    x: wsRow.x; y: wsRow.y
-                    width: wsRow.width; height: wsRow.height
-                    dot: wsCap.dot; step: wsCap.dot + wsCap.dotGap
-                    index: wsCap.activeIndex
+                    spaces: wsCap.spaces
+                    activeIndex: wsCap.activeIndex
+                    dot: wsCap.dot; gap: wsCap.dotGap
+                    maxVisible: 6
                     vertical: bar.vert
-                    color: bar.accent
+                    accent: bar.accent
+                    interactive: true
+                    hoverFill: bar.hoverFill
+                    hoverStrength: bar.hoverStrength
                 }
             }
 

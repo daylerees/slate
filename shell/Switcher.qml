@@ -217,26 +217,17 @@ PanelWindow {
         readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
         readonly property var selected: sw.strip.length ? sw.strip[Math.max(0, Math.min(sw.strip.length - 1, sw.index))] : null
         readonly property int activeIndex: Math.max(0, spaces.findIndex(w => selected && selected.workspace && w.id === selected.workspace.id))
-        Row {
+        // Ten at most: with more workspaces, the row scrolls to keep the selected window's in
+        // view and shrinks away at an end with more beyond (WorkspaceDots)
+        WorkspaceDots {
             id: wsDots
             anchors.centerIn: parent
-            spacing: wsPill.gap
-            Repeater {
-                model: wsPill.spaces
-                delegate: Rectangle {
-                    required property var modelData
-                    width: wsPill.dot; height: wsPill.dot; radius: Config.dotRadius(wsPill.dot)
-                    color: (modelData.toplevels?.values?.length ?? 0) > 0 ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                }
-            }
-        }
-        WorkspaceMarker {
-            x: wsDots.x; y: wsDots.y
-            width: wsDots.width; height: wsDots.height
-            dot: wsPill.dot; step: wsPill.dot + wsPill.gap
-            index: wsPill.activeIndex
+            spaces: wsPill.spaces
+            activeIndex: wsPill.activeIndex
+            dot: wsPill.dot; gap: wsPill.gap
+            maxVisible: 10
             animate: sw.moveAnimated
-            color: sw.bar.accent
+            accent: sw.bar.accent
         }
     }
 

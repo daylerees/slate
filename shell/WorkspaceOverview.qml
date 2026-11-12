@@ -873,27 +873,18 @@ PanelWindow {
             color: ov.bar.capsuleColor
             Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's capsules
 
-            Row {
+            // Ten at most: with more workspaces, the row scrolls to keep the selected one in
+            // view and shrinks away at an end with more beyond (WorkspaceDots)
+            WorkspaceDots {
                 id: dotsRow
                 anchors.centerIn: parent
-                spacing: ov.dotGap
-                Repeater {
-                    model: ov.spaces
-                    delegate: Rectangle {
-                        required property var modelData
-                        readonly property bool occupied: (ov.contents[modelData.id] || []).length > 0
-                        width: ov.dot; height: ov.dot; radius: Config.dotRadius(ov.dot)
-                        color: occupied ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
-                    }
-                }
-            }
-            WorkspaceMarker {
-                x: dotsRow.x; y: dotsRow.y
-                width: dotsRow.width; height: dotsRow.height
-                dot: ov.dot; step: ov.dot + ov.dotGap
-                index: ov.selected
+                spaces: ov.spaces
+                activeIndex: ov.selected
+                occupied: ws => (ov.contents[ws.id] || []).length > 0
+                dot: ov.dot; gap: ov.dotGap
+                maxVisible: 10
                 animate: ov.animate
-                color: ov.bar.accent
+                accent: ov.bar.accent
             }
         }
 
