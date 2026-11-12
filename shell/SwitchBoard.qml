@@ -1,7 +1,8 @@
 // Settings → Control Centre: choosing the control centre's quick switches. A small picture of
 // the panel, with its switches where they'll be; under it, the ones left over. Drag one in,
-// out, or to another place. The tiles in the picture are the size they are in the panel (four
-// to a row, one row or two), so what you see is how it'll look.
+// out, or to another place. The tiles in the picture are laid out by the same sums as the
+// panel's (Config.controlSwitchRects: the first two wide, the rest two to a row), so what you
+// see is how it'll look.
 
 import QtQuick
 
@@ -25,11 +26,11 @@ Item {
     // ---- The panel's own measures (Popouts.qml, the control centre) ------------------------
     readonly property real k: Math.min(1, (width - 24) / (panelW + 24))     // (a narrow window: smaller)
     readonly property real panelW: 470
-    readonly property real leftW: 262           // (what's playing; the clock has the rest)
+    readonly property real rightW: 208          // the switches' column
+    readonly property real leftW: panelW - rightW - 12
     readonly property real gap: 8
-    readonly property int columns: 4
-    readonly property real tileW: (panelW - gap * (columns - 1)) / columns
-    readonly property real rowH: 64
+    // (as tall as the switches need, and no shorter than the clock and what's playing)
+    readonly property real bodyH: Math.max(248, Config.controlSwitchesHeight(showing.length))
 
     readonly property var known: all.map(s => s.id)
     readonly property var order: (chosen || []).filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i).slice(0, most)
@@ -46,20 +47,24 @@ Item {
         return list;
     }
     readonly property var spare: known.filter(id => showing.indexOf(id) < 0)
-    readonly property int rows: Math.max(1, Math.ceil(showing.length / columns))
-    readonly property real tilesH: rows * rowH + (rows - 1) * gap
+    readonly property var rects: Config.controlSwitchRects(showing.length, rightW, bodyH)
     readonly property bool full: order.filter(id => id !== held).length >= most
 
-    // Where the middle of the carried tile is: over the picture, the nearest place in it
+    // Where the middle of the carried tile is: over the picture, the nearest place in it as
+    // it would be with this one in
     function aim(cx, cy) {
         const inside = cx >= picture.x && cx <= picture.x + picture.width && cy >= panelCard.y && cy <= panelCard.y + panelCard.height;
         if (!inside || full) { slot = -1; return; }
-        const n = order.filter(id => id !== held).length;
-        // (the rows as they'd be with this one in)
-        const r = Math.max(1, Math.ceil((n + 1) / columns));
-        const col = Math.max(0, Math.min(columns - 1, Math.floor((cx - grid.x0) / ((tileW + gap) * k))));
-        const row = Math.max(0, Math.min(r - 1, Math.floor((cy - grid.y0) / ((rowH + gap) * k))));
-        slot = Math.min(n, row * columns + col);
+        const n = order.filter(id => id !== held).length + 1;
+        const places = Config.controlSwitchRects(n, rightW, Math.max(248, Config.controlSwitchesHeight(n)));
+        let best = 0, bestD = 1e12;
+        for (let i = 0; i < places.length; i++) {
+            const r = places[i];
+            const dx = cx - (grid.x0 + (r.x + r.width / 2) * k), dy = cy - (grid.y0 + (r.y + r.height / 2) * k);
+            const d = dx * dx + dy * dy;
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        slot = best;
     }
     function drop() {
         const next = showing.slice();
@@ -69,9 +74,9 @@ Item {
     // A tile's place: in the picture, or among the ones left over
     function place(id) {
         const i = showing.indexOf(id);
-        if (i >= 0) return Qt.rect(grid.x0 + (i % columns) * (tileW + gap) * k, grid.y0 + Math.floor(i / columns) * (rowH + gap) * k, tileW * k, rowH * k);
-        const j = spare.indexOf(id);
-        return Qt.rect(pool.x0 + (j % pool.columns) * (tileW + gap), pool.y0 + Math.floor(j / pool.columns) * (pool.tileH + gap), tileW, pool.tileH);
+        if (i >= 0 && rects[i]) { const r = rects[i]; return Qt.rect(grid.x0 + r.x * k, grid.y0 + r.y * k, r.width * k, r.height * k); }
+        const j = Math.max(0, spare.indexOf(id));
+        return Qt.rect(pool.x0 + (j % pool.columns) * (pool.tileW + gap), pool.y0 + Math.floor(j / pool.columns) * (pool.tileH + gap), pool.tileW, pool.tileH);
     }
 
     implicitHeight: spareCard.y + spareCard.height
@@ -99,23 +104,23 @@ Item {
         color: board.card
         Gloss { radius: parent.radius }
     }
-    // The panel in small: your picture and name along the top, what's playing and the clock,
-    // then the switches along the bottom
+    // The panel in small: your picture and name along the top; under it the clock and what's
+    // playing on the left, and the switches on the right
     Rectangle {
         id: picture
         x: Math.round((board.width - width) / 2); y: panelCard.y + 14
         width: (board.panelW + 24) * board.k
-        height: (12 + 80 + 12 + board.tilesH + 12 + 104 + 12) * board.k
-        Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
+        height: (12 + 80 + 12 + board.bodyH + 12) * board.k
         radius: Config.corner(16 * board.k)
         color: board.well
+        Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
         Ghost { x: 12 * board.k; y: 12 * board.k; width: board.panelW * board.k; height: 80 * board.k }
-        Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: 104 * board.k }
-        Ghost { x: (12 + board.leftW + 12) * board.k; y: (12 + 80 + 12) * board.k; width: (board.panelW - board.leftW - 12) * board.k; height: 104 * board.k }
+        Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: (board.bodyH - 104 - 12) * board.k }
+        Ghost { x: 12 * board.k; y: (12 + 80 + 12 + board.bodyH - 104) * board.k; width: board.leftW * board.k; height: 104 * board.k }
         Text {
             visible: board.showing.length === 0
             x: grid.x0 - picture.x; y: grid.y0 - picture.y
-            width: board.panelW * board.k; height: board.tilesH * board.k
+            width: board.rightW * board.k; height: board.bodyH * board.k
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
             wrapMode: Text.Wrap
             text: "No switches yet. Drag one here"
@@ -124,8 +129,8 @@ Item {
     }
     QtObject {
         id: grid
-        readonly property real x0: picture.x + 12 * board.k
-        readonly property real y0: picture.y + (12 + 80 + 12 + 104 + 12) * board.k
+        readonly property real x0: picture.x + (12 + board.leftW + 12) * board.k
+        readonly property real y0: picture.y + (12 + 80 + 12) * board.k
     }
 
     // ---- The ones left over -------------------------------------------------------------------
@@ -147,8 +152,9 @@ Item {
     }
     QtObject {
         id: pool
-        readonly property real tileH: 64
-        readonly property int columns: Math.max(1, Math.floor((board.width - 24 + board.gap) / (board.tileW + board.gap)))
+        readonly property real tileW: 100
+        readonly property real tileH: 56
+        readonly property int columns: Math.max(1, Math.floor((board.width - 24 + board.gap) / (tileW + board.gap)))
         readonly property int rows: Math.ceil(board.spare.length / columns)
         readonly property real x0: 12
         readonly property real y0: spareCard.y + 12
@@ -162,6 +168,8 @@ Item {
             required property var modelData
             readonly property bool carried: board.held === modelData.id
             readonly property rect home: board.place(modelData.id)
+            // (a wide place in the panel: the icon beside the name, as it is there)
+            readonly property bool wide: board.showing.indexOf(modelData.id) >= 0 && home.width > board.rightW * board.k * 0.75
             x: carried ? board.holdX : home.x
             y: carried ? board.holdY : home.y
             width: home.width; height: home.height
@@ -176,7 +184,25 @@ Item {
             Behavior on width { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Shadow { visible: sw.carried; blur: 14; dropY: 3 }
+            Row {
+                visible: sw.wide
+                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                spacing: 12
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: String.fromCodePoint(sw.modelData.icon)
+                    color: board.text
+                    font.family: board.iconFont; font.pixelSize: 20
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: sw.modelData.label
+                    color: board.text
+                    font.family: board.font; font.pixelSize: 13; font.weight: Font.Medium
+                }
+            }
             Column {
+                visible: !sw.wide
                 anchors.centerIn: parent
                 width: parent.width - 12
                 spacing: 3
@@ -215,8 +241,9 @@ Item {
                         board.slot = board.order.indexOf(sw.modelData.id);
                         board.held = sw.modelData.id;
                     }
-                    board.holdX = p.x - offX; board.holdY = p.y - offY;
-                    board.aim(board.holdX + sw.width / 2, board.holdY + sw.height / 2);
+                    // (carried by its middle: its size changes with where it would land)
+                    board.aim(p.x, p.y);
+                    board.holdX = p.x - sw.width / 2; board.holdY = p.y - sw.height / 2;
                 }
                 onReleased: if (moved) board.drop()
                 onCanceled: { board.held = ""; board.slot = -1; }

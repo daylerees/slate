@@ -16,9 +16,12 @@ to date and the suite passed whole. What's below was left over from that cycle.
   `settings-control` (new) and `panel-control` with eight; `settings-overview` re-approved (a
   new tile). The static page checks (pageKeys, pastel, index) should pick the page up by
   themselves. A unit test that `slate mcp` names the setting and refuses to change it (a list).
-- **The control centre's new shape** (switches four to a row along the bottom, under what's playing and the
-  clock): re-approve `panel-control` and any scene with the panel open; look at it with and
-  without something playing, with no weather, at 853×480, and in light mode and glass.
+- **The control centre's new shape** (the clock and weather card over what's playing on the
+  left; the switches on the right, the first two wide with their state, the rest two to a row):
+  re-approve `panel-control` and any scene with the panel open; look at it with and without
+  something playing, with no weather, with one, two, five and eight switches, at 853×480, and
+  in light mode and glass. A unit-style check of `Config.controlSwitchRects` (through the
+  `test` IPC target): no overlaps, all inside the column, for 0 to 8.
 
 ## Not covered yet
 
