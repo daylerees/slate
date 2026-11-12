@@ -38,9 +38,9 @@ JsonAdapter {
     property bool goodbyeSound: true
     property int soundEffectsVolume: 100
     property bool nightLight: false          // warm the screen colours (control centre toggle)
-    // The control centre's quick switches, in order (Settings → Control Centre): up to eight of
+    // The control centre's quick switches, in order (Settings → Control Centre): eight of
     // Config.controlSwitchList
-    property var controlSwitches: ["wifi", "bt", "caffeine", "night", "dnd", "perf"]
+    property var controlSwitches: ["wifi", "bt", "airplane", "caffeine", "night", "dnd", "perf", "gamemode"]
     // Airplane mode (AirplaneMode.qml): Wi-Fi, Bluetooth and mobile broadband off together;
     // airplaneRestore: which of "wifi" and "bt" it turned off, to turn back on after
     property bool airplaneMode: false

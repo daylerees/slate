@@ -11,17 +11,18 @@ to date and the suite passed whole. What's below was left over from that cycle.
 
 - **Settings → Control Centre** (the quick switches: `controlSwitches`, `SwitchBoard.qml`): a
   live test that the page opens, that changing `controlSwitches` changes the panel's tiles and
-  their order (none, one, eight; unknown ids and repeats dropped), and that Restore defaults
-  puts the six back; a hook in the `test` IPC target to move a switch as a drag would; scenes
-  `settings-control` (new) and `panel-control` with eight; `settings-overview` re-approved (a
-  new tile). The static page checks (pageKeys, pastel, index) should pick the page up by
-  themselves. A unit test that `slate mcp` names the setting and refuses to change it (a list).
+  their order, that the panel always has eight (a short, repeated or unknown list is filled
+  from `Config.controlSwitchList`), and that Restore defaults puts the default order back; a
+  hook in the `test` IPC target to swap two switches as a drag would; scenes `settings-control`
+  (new) and `settings-overview` re-approved (a new tile). The static page checks (pageKeys,
+  pastel, index) should pick the page up by themselves. A unit test that `slate mcp` names the
+  setting and refuses to change it (a list). With more than eight switches one day: a swap
+  between the panel and "More switches".
 - **The control centre's new shape** (the clock and weather card over what's playing on the
-  left; the switches on the right, the first two wide with their state, the rest two to a row):
-  re-approve `panel-control` and any scene with the panel open; look at it with and without
-  something playing, with no weather, with one, two, five and eight switches, at 853×480, and
-  in light mode and glass. A unit-style check of `Config.controlSwitchRects` (through the
-  `test` IPC target): no overlaps, all inside the column, for 0 to 8.
+  left; eight switches on the right, two to a row, all one size): re-approve `panel-control`
+  and any scene with the panel open; look at it with and without something playing, with no
+  weather, at 853×480, and in light mode and glass. A check of `Config.controlSwitchRects`
+  (through the `test` IPC target): no overlaps, all inside the column.
 - **Airplane mode** (`AirplaneMode.qml`, `airplaneMode`, `airplaneRestore`): a live test
   through `slate ipc call airplane on/off` that the setting changes and nothing errors (the
   tests' computer has no radios, so what was on and comes back needs real hardware: check by

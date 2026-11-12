@@ -2684,8 +2684,7 @@ PanelWindow {
             }
 
             // Under your name: the clock and what's playing on the left, the quick toggles on the
-            // right. The two sides are the same height: as tall as the toggles need, and no
-            // shorter than the left side's own cards
+            // right, the two sides the same height
             Item {
                 id: ccBody
                 width: parent.width
@@ -2693,7 +2692,7 @@ PanelWindow {
                 readonly property bool playing: controlView.player !== null
                 readonly property real rightW: count > 0 ? 208 : 0
                 readonly property real leftW: count > 0 ? width - rightW - 12 : width      // (no toggles chosen: the whole width)
-                height: Math.max(playing ? 248 : 208, Config.controlSwitchesHeight(count))
+                height: 248
 
                 Column {
                     id: ccLeft
@@ -2817,32 +2816,24 @@ PanelWindow {
                     }
                 }
 
-                // Quick toggles. Which ones, and in what order, is yours to choose (Settings →
-                // Control Centre: Config.controlSwitches). The first two are wide, with what
-                // they're doing under their names; the rest are two to a row
-                // (Config.controlSwitchRects, which Settings' picture of this uses too)
+                // Quick toggles: eight, two to a row, all the same size. Which ones, and in what
+                // order, is yours to choose (Settings → Control Centre: Config.controlSwitches;
+                // Config.controlSwitchRects lays them out, for Settings' picture of this too)
                 Item {
                     id: ccTiles
                     x: ccBody.leftW + 12
                     width: ccBody.rightW; height: parent.height
                     visible: ccBody.count > 0
-                    readonly property var wifiDev: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
-                    readonly property var wifiNet: wifiDev ? (wifiDev.networks.values.find(n => n.connected) ?? null) : null
-                    readonly property var btDev: Bluetooth.defaultAdapter ? (Bluetooth.defaultAdapter.devices.values.find(d => d.connected) ?? null) : null
-                    // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList).
-                    // label: on a small tile; name and state: on a wide one
+                    // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
                     readonly property var every: ({
-                        wifi: { name: "Wi-Fi", label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA,
-                                state: !Networking.wifiEnabled ? "Off" : wifiNet ? wifiNet.name : "Not connected" },
-                        bt: { name: "Bluetooth", label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37,
-                              state: !(Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled) ? "Off" : btDev ? (btDev.name || "Connected") : "On" },
-                        caffeine: { name: "Caffeine", label: "Caffeine", on: pop.caffeine, code: 0xEF0E, state: pop.caffeine ? "Staying awake" : "Off" },
-                        night: { name: "Night Light", label: "Night Light", on: pop.nightLight, code: 0xEAF8, state: pop.nightLight ? "On" : "Off" },
-                        dnd: { name: "Do Not Disturb", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9, state: pop.notifs && pop.notifs.dnd ? "On" : "Off" },
-                        perf: { name: "Performance", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45,
-                                state: PowerProfiles.profile === PowerProfile.Performance ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power Saver" : "Balanced" },
-                        airplane: { name: "Airplane Mode", label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F, state: Config.s.airplaneMode ? "Wi-Fi and Bluetooth off" : "Off" },
-                        gamemode: { name: "Game Mode", label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2, state: Config.s.gameMode ? "Effects off" : "Off" }
+                        wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                        bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                        caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                        night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                        dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                        perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 },
+                        airplane: { label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F },
+                        gamemode: { label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2 }
                     })
                     readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
                         .map(id => Object.assign({ id: id }, every[id]))
@@ -2854,7 +2845,6 @@ PanelWindow {
                             required property var modelData
                             required property int index
                             readonly property rect at: ccTiles.rects[index] ?? Qt.rect(0, 0, 0, 0)
-                            readonly property bool wide: at.width > ccTiles.width * 0.75
                             readonly property color fg: selected ? pop.accentText : pop.text
                             x: at.x; y: at.y; width: at.width; height: at.height
                             radius: Config.corner(12)
@@ -2875,37 +2865,7 @@ PanelWindow {
                                 case "gamemode": Config.setGameMode(!Config.s.gameMode); break;
                                 }
                             }
-                            // Wide: its icon, then its name over what it's doing
-                            Icon {
-                                id: wideIcon
-                                visible: controlTile.wide
-                                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                                code: controlTile.modelData.code
-                                font.pixelSize: 20
-                                color: controlTile.fg
-                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            }
                             Column {
-                                visible: controlTile.wide
-                                anchors { left: wideIcon.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                                spacing: 1
-                                Label {
-                                    width: parent.width
-                                    text: controlTile.modelData.name
-                                    color: controlTile.fg
-                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                                }
-                                Label {
-                                    width: parent.width
-                                    text: controlTile.modelData.state
-                                    font.pixelSize: 11; font.weight: Font.Normal
-                                    color: controlTile.selected ? Qt.rgba(pop.accentText.r, pop.accentText.g, pop.accentText.b, 0.7) : pop.dim
-                                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                                }
-                            }
-                            // Small: its icon over its name
-                            Column {
-                                visible: !controlTile.wide
                                 anchors.centerIn: parent
                                 width: parent.width - 12
                                 spacing: 3

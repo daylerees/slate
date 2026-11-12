@@ -1,15 +1,16 @@
 // Settings → Control Centre: choosing the control centre's quick switches. A small picture of
-// the panel, with its switches where they'll be; under it, the ones left over. Drag one in,
-// out, or to another place. The tiles in the picture are laid out by the same sums as the
-// panel's (Config.controlSwitchRects: the first two wide, the rest two to a row), so what you
-// see is how it'll look.
+// the panel, with its eight switches where they'll be; under it, any that aren't in it. The
+// panel always has eight, so nothing is added or taken away: drag one switch onto another and
+// the two change places, whether both are in the panel or one's waiting below. The tiles in
+// the picture are laid out by the same sums as the panel's (Config.controlSwitchRects), so
+// what you see is how it'll look.
 
 import QtQuick
 
 Item {
     id: board
     property var all: []            // every switch there is: [{ id, label, icon }]
-    property var chosen: []         // the ids in the panel, in order
+    property var chosen: []         // the ids in the panel, in order (Config.controlSwitches: always full)
     property int most: 8
     signal picked(var ids)
 
@@ -29,57 +30,55 @@ Item {
     readonly property real rightW: 208          // the switches' column
     readonly property real leftW: panelW - rightW - 12
     readonly property real gap: 8
-    // (as tall as the switches need, and no shorter than the clock and what's playing)
-    readonly property real bodyH: Math.max(248, Config.controlSwitchesHeight(showing.length))
+    readonly property real bodyH: 248
 
     readonly property var known: all.map(s => s.id)
     readonly property var order: (chosen || []).filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i).slice(0, most)
+    // Every switch in a line: the panel's first, then the ones waiting
+    readonly property var line: order.concat(known.filter(id => order.indexOf(id) < 0))
+    readonly property bool waiting: line.length > order.length          // (are there any that aren't in the panel?)
 
     // ---- Dragging ---------------------------------------------------------------------------
     property string held: ""        // the switch being dragged
-    property int slot: -1           // where it would land in the panel (-1: with the ones left over)
+    property string over: ""        // the one it's over, which it would change places with
     property real holdX: 0          // its corner, as it's carried
     property real holdY: 0
-    // What the panel would show if you let go now
-    readonly property var showing: {
-        const list = order.filter(id => id !== held);
-        if (held !== "" && slot >= 0) list.splice(Math.min(slot, list.length), 0, held);
-        return list;
+    // The line as it would be if you let go now: those two swapped
+    readonly property var shown: {
+        const l = line.slice(), a = l.indexOf(held), b = l.indexOf(over);
+        if (held !== "" && over !== "" && a >= 0 && b >= 0) { l[a] = over; l[b] = held; }
+        return l;
     }
-    readonly property var spare: known.filter(id => showing.indexOf(id) < 0)
-    readonly property var rects: Config.controlSwitchRects(showing.length, rightW, bodyH)
-    readonly property bool full: order.filter(id => id !== held).length >= most
+    readonly property var rects: Config.controlSwitchRects(order.length, rightW, bodyH)
 
-    // Where the middle of the carried tile is: over the picture, the nearest place in it as
-    // it would be with this one in
-    function aim(cx, cy) {
-        const inside = cx >= picture.x && cx <= picture.x + picture.width && cy >= panelCard.y && cy <= panelCard.y + panelCard.height;
-        if (!inside || full) { slot = -1; return; }
-        const n = order.filter(id => id !== held).length + 1;
-        const places = Config.controlSwitchRects(n, rightW, Math.max(248, Config.controlSwitchesHeight(n)));
-        let best = 0, bestD = 1e12;
-        for (let i = 0; i < places.length; i++) {
-            const r = places[i];
-            const dx = cx - (grid.x0 + (r.x + r.width / 2) * k), dy = cy - (grid.y0 + (r.y + r.height / 2) * k);
-            const d = dx * dx + dy * dy;
-            if (d < bestD) { bestD = d; best = i; }
-        }
-        slot = best;
-    }
-    function drop() {
-        const next = showing.slice();
-        held = ""; slot = -1;
-        if (JSON.stringify(next) !== JSON.stringify(order)) picked(next);
-    }
-    // A tile's place: in the picture, or among the ones left over
-    function place(id) {
-        const i = showing.indexOf(id);
-        if (i >= 0 && rects[i]) { const r = rects[i]; return Qt.rect(grid.x0 + r.x * k, grid.y0 + r.y * k, r.width * k, r.height * k); }
-        const j = Math.max(0, spare.indexOf(id));
+    // The i-th place in the line: in the picture, or among the ones waiting
+    function placeAt(i) {
+        if (i < order.length && rects[i]) { const r = rects[i]; return Qt.rect(grid.x0 + r.x * k, grid.y0 + r.y * k, r.width * k, r.height * k); }
+        const j = Math.max(0, i - order.length);
         return Qt.rect(pool.x0 + (j % pool.columns) * (pool.tileW + gap), pool.y0 + Math.floor(j / pool.columns) * (pool.tileH + gap), pool.tileW, pool.tileH);
     }
+    function place(id) { return placeAt(Math.max(0, shown.indexOf(id))); }
+    // Which switch's place is under (x, y): places reach half a gap beyond their edges, so
+    // there's no dead space between neighbours. Two waiting switches don't swap (nothing changes)
+    function aim(x, y) {
+        const from = line.indexOf(held);
+        let hit = "";
+        for (let i = 0; i < line.length; i++) {
+            const r = placeAt(i), g = gap / 2;
+            if (x >= r.x - g && x <= r.x + r.width + g && y >= r.y - g && y <= r.y + r.height + g) {
+                if (i !== from && (i < order.length || from < order.length)) hit = line[i];
+                break;
+            }
+        }
+        over = hit;
+    }
+    function drop() {
+        const next = shown.slice(0, order.length);
+        held = ""; over = "";
+        if (JSON.stringify(next) !== JSON.stringify(order)) picked(next);
+    }
 
-    implicitHeight: spareCard.y + spareCard.height
+    implicitHeight: waiting ? spareCard.y + spareCard.height : panelCard.y + panelCard.height
     height: implicitHeight
 
     component Heading: Text {
@@ -113,19 +112,9 @@ Item {
         height: (12 + 80 + 12 + board.bodyH + 12) * board.k
         radius: Config.corner(16 * board.k)
         color: board.well
-        Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
         Ghost { x: 12 * board.k; y: 12 * board.k; width: board.panelW * board.k; height: 80 * board.k }
         Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: (board.bodyH - 104 - 12) * board.k }
         Ghost { x: 12 * board.k; y: (12 + 80 + 12 + board.bodyH - 104) * board.k; width: board.leftW * board.k; height: 104 * board.k }
-        Text {
-            visible: board.showing.length === 0
-            x: grid.x0 - picture.x; y: grid.y0 - picture.y
-            width: board.rightW * board.k; height: board.bodyH * board.k
-            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.Wrap
-            text: "No switches yet. Drag one here"
-            color: board.dim; font.family: board.font; font.pixelSize: 12
-        }
     }
     QtObject {
         id: grid
@@ -133,29 +122,24 @@ Item {
         readonly property real y0: picture.y + (12 + 80 + 12) * board.k
     }
 
-    // ---- The ones left over -------------------------------------------------------------------
-    Heading { id: spareHead; y: panelCard.y + panelCard.height; text: "More switches" }
+    // ---- The ones that aren't in it (none, while there are only eight) ----------------------
+    Heading { id: spareHead; visible: board.waiting; y: panelCard.y + panelCard.height; text: "More switches" }
     Rectangle {
         id: spareCard
+        visible: board.waiting
         y: spareHead.y + spareHead.height
         width: parent.width
         height: 24 + Math.max(1, pool.rows) * (pool.tileH + board.gap) - board.gap
         radius: Config.corner(12)
         color: board.card
         Gloss { radius: parent.radius }
-        Text {
-            visible: board.spare.length === 0 || (board.spare.length === 1 && board.spare[0] === board.held)
-            anchors.centerIn: parent
-            text: "Every switch is in the control centre. Drag one here to take it out"
-            color: board.dim; font.family: board.font; font.pixelSize: 12
-        }
     }
     QtObject {
         id: pool
         readonly property real tileW: 100
         readonly property real tileH: 56
         readonly property int columns: Math.max(1, Math.floor((board.width - 24 + board.gap) / (tileW + board.gap)))
-        readonly property int rows: Math.ceil(board.spare.length / columns)
+        readonly property int rows: Math.ceil((board.line.length - board.order.length) / columns)
         readonly property real x0: 12
         readonly property real y0: spareCard.y + 12
     }
@@ -167,15 +151,14 @@ Item {
             id: sw
             required property var modelData
             readonly property bool carried: board.held === modelData.id
+            readonly property bool target: board.over === modelData.id        // (the one the carried switch would swap with)
             readonly property rect home: board.place(modelData.id)
-            // (a wide place in the panel: the icon beside the name, as it is there)
-            readonly property bool wide: board.showing.indexOf(modelData.id) >= 0 && home.width > board.rightW * board.k * 0.75
             x: carried ? board.holdX : home.x
             y: carried ? board.holdY : home.y
             width: home.width; height: home.height
-            z: carried ? 3 : 1
+            z: carried ? 3 : target ? 2 : 1
             radius: Config.corner(12)
-            color: grab.containsMouse && !carried && board.held === "" ? Config.hover : board.tile
+            color: (grab.containsMouse && board.held === "") || target ? Config.hover : board.tile
             scale: carried ? 1.05 : 1
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             Behavior on scale { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
@@ -184,25 +167,7 @@ Item {
             Behavior on width { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Shadow { visible: sw.carried; blur: 14; dropY: 3 }
-            Row {
-                visible: sw.wide
-                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                spacing: 12
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: String.fromCodePoint(sw.modelData.icon)
-                    color: board.text
-                    font.family: board.iconFont; font.pixelSize: 20
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: sw.modelData.label
-                    color: board.text
-                    font.family: board.font; font.pixelSize: 13; font.weight: Font.Medium
-                }
-            }
             Column {
-                visible: !sw.wide
                 anchors.centerIn: parent
                 width: parent.width - 12
                 spacing: 3
@@ -237,8 +202,8 @@ Item {
                     if (!moved) {
                         if (Math.abs(m.x - offX) + Math.abs(m.y - offY) < 5) return;
                         moved = true;
-                        board.holdX = sw.x; board.holdY = sw.y;
-                        board.slot = board.order.indexOf(sw.modelData.id);
+                        board.over = "";
+                        board.holdX = p.x - sw.width / 2; board.holdY = p.y - sw.height / 2;
                         board.held = sw.modelData.id;
                     }
                     // (carried by its middle: its size changes with where it would land)
@@ -246,7 +211,7 @@ Item {
                     board.holdX = p.x - sw.width / 2; board.holdY = p.y - sw.height / 2;
                 }
                 onReleased: if (moved) board.drop()
-                onCanceled: { board.held = ""; board.slot = -1; }
+                onCanceled: { board.held = ""; board.over = ""; }
             }
         }
     }

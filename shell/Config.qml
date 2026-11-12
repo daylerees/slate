@@ -1244,36 +1244,24 @@ Singleton {
         { id: "airplane", label: "Airplane Mode", icon: 0xEB6F },
         { id: "gamemode", label: "Game Mode", icon: 0xF1D2 }
     ]
+    // The panel always has eight (or every one there is, if that's fewer): yours in your order,
+    // only ones that exist, each once; any places left over are filled from the list above
     readonly property int controlSwitchesMost: 8
-    // The ones you've chosen, in your order: only ones that exist, each once, eight at most
     readonly property var controlSwitches: {
         const known = controlSwitchList.map(x => x.id), saved = s.controlSwitches;
-        return (saved && saved.length !== undefined ? Array.from(saved) : []).map(String)
-            .filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i).slice(0, controlSwitchesMost);
+        const mine = (saved && saved.length !== undefined ? Array.from(saved) : []).map(String)
+            .filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i);
+        return mine.concat(known.filter(id => mine.indexOf(id) < 0)).slice(0, controlSwitchesMost);
     }
 
-    // How they're laid out in the panel's right-hand column: the first two wide, one to a
-    // row; the rest two to a row (a last one left by itself is wide too). Used by the panel and
-    // by Settings' picture of it, so the two can't differ.
-    // How tall they are before any stretching:
-    function controlSwitchesHeight(n) {
-        if (n <= 0) return 0;
-        const big = Math.min(n, 2), rows = Math.ceil(Math.max(0, n - 2) / 2);
-        return big * 52 + rows * 56 + (big + rows - 1) * 8;
-    }
-    // Each one's place in a column w wide and h tall (they stretch to fill its height)
+    // How they're laid out in the panel's right-hand column: two to a row, all the same size,
+    // sharing its height. Used by the panel and by Settings' picture of it, so the two can't
+    // differ. Each one's place in a column w wide and h tall:
     function controlSwitchRects(n, w, h) {
         if (n <= 0) return [];
-        const gap = 8, big = Math.min(n, 2), rest = Math.max(0, n - 2), rows = Math.ceil(rest / 2);
-        const k = Math.max(0, h - (big + rows - 1) * gap) / (big * 52 + rows * 56);
+        const gap = 8, rows = Math.ceil(n / 2), cw = (w - gap) / 2, ch = Math.max(0, h - (rows - 1) * gap) / rows;
         const out = [];
-        let y = 0;
-        for (let i = 0; i < big; i++) { out.push(Qt.rect(0, y, w, 52 * k)); y += 52 * k + gap; }
-        for (let r = 0; r < rows; r++) {
-            if (rest - r * 2 === 1) out.push(Qt.rect(0, y, w, 56 * k));
-            else { const cw = (w - gap) / 2; out.push(Qt.rect(0, y, cw, 56 * k)); out.push(Qt.rect(cw + gap, y, cw, 56 * k)); }
-            y += 56 * k + gap;
-        }
+        for (let i = 0; i < n; i++) out.push(Qt.rect((i % 2) * (cw + gap), Math.floor(i / 2) * (ch + gap), cw, ch));
         return out;
     }
 

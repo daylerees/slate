@@ -2676,7 +2676,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Control Centre" }
-            IntroText { text: "Choose the quick switches the control centre shows, and their order. Drag up to eight into the picture of it, and drag one out to take it away. You can change this at any time." }
+            IntroText { text: "The control centre has eight quick switches. Drag one onto another and the two change places. You can change this at any time." }
             SwitchBoard {
                 width: parent.width
                 all: Config.controlSwitchList
