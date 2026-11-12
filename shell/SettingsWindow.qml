@@ -78,6 +78,9 @@ FloatingWindow {
         // Open a page scrolled to one setting (or heading), lit up for a moment, e.g.
         //   slate ipc call settings find appearance "Interface size"
         function find(page: string, label: string): void { win.goTo(page, label); }
+        // Search, as typing into the search box showing (All Settings', or the one above any
+        // other page) does: slate ipc call settings search "dock"
+        function search(text: string): void { win.show(); win.searchFor(text); }
         // Open General with the account picture chooser showing (the control centre's avatar)
         function avatar(): void { win.keepSection = !win.visible; win.section = "general"; win.avatarPicking = true; win.show(); }
     }
@@ -121,6 +124,7 @@ FloatingWindow {
     function minuteOptions(list) { return list.map(m => ({ value: m, label: m === 0 ? "Never" : m + (m === 1 ? " minute" : " minutes") })); }
 
     property string section: "overview"
+    signal searchFor(string text)          // (the settings IPC's search: the search box showing takes it)
     // While the menu bar's being arranged (Edit layout on its page), Settings steps out of the
     // way, and comes back, on the page it was on, when that's done
     property bool awayForBar: false
@@ -603,6 +607,7 @@ FloatingWindow {
                         target: win
                         function onSectionChanged() { pageFind.text = ""; }
                         function onVisibleChanged() { pageFind.text = ""; }
+                        function onSearchFor(t) { if (pageSearch.visible) { pageFind.forceActiveFocus(); pageFind.text = t; } }
                     }
                     Text {
                         id: pageFindIcon
@@ -1853,6 +1858,7 @@ FloatingWindow {
                     Connections {
                         target: win
                         function onVisibleChanged() { if (win.visible) { findField.text = ""; findField.ready(); } }
+                        function onSearchFor(t) { if (win.section === "overview") { findField.forceActiveFocus(); findField.text = t; } }
                     }
                     // ...and when the window gets the keyboard (Hyprland focuses it a moment after it shows)
                     readonly property bool windowActive: Window.active
