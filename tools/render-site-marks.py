@@ -81,6 +81,7 @@ def to_image(a):
 
 
 # ---- The header: straight on, beside the wordmark ----------------------------------------
+MARK_SHARE = 0.84                # the mark's height, of the logo's
 def logo(H=160):
     shape = SHAPES["flat"]
     pts = shape["slab"] + shape["edge"]
@@ -89,7 +90,10 @@ def logo(H=160):
     slab, edge = masks(shape, unit, 0)
     icon = to_image(compose(slab, edge, BODY, ACCENT))
     icon = icon.crop(icon.getchannel("A").getbbox())
-    icon = icon.resize((round(icon.width * H / icon.height), H), Image.LANCZOS)
+    # The mark a little shorter than the picture (about the size the old 3D slab was), centred
+    ih = round(H * MARK_SHARE)
+    icon = icon.resize((round(icon.width * ih / icon.height), ih), Image.LANCZOS)
+    top = (H - ih) // 2
 
     # "slate" in Geist SemiBold, lower case, a little open tracking (as tools/render-logo.py)
     font = ImageFont.truetype(os.path.join(here, "..", "shell", "fonts", "Geist-Variable.ttf"), round(H * 0.56))
@@ -97,16 +101,13 @@ def logo(H=160):
     word, track = "slate", round(H * 0.012)
     widths = [font.getlength(c) for c in word]
     text_w = round(sum(widths) + track * (len(word) - 1))
-    gap = round(H * 0.16)
+    # Spaced as the old logo was: the word's letters about 0.27 of the height after the mark, and the
+    # word's x-height (not its ascenders) centred on the mark
+    gap = round(H * 0.24)
     img = Image.new("RGBA", (icon.width + gap + text_w + round(H * 0.04), H), (0, 0, 0, 0))
-    img.alpha_composite(icon, (0, 0))
-    # The word centred on the slab below the edge (its face), as the eye reads the block
-    drawn_top = shape["edge"][0][1] - 1.2                       # the edge's round top
-    drawn_bottom = shape["slab"][2][1] + 0.8                     # the slab's outlined bottom
-    face = (shape["edge"][0][1] + 1.2 - drawn_top) / (drawn_bottom - drawn_top) * H
-    mid = (face + H) / 2
-    x0, y0, x1, y1 = font.getbbox("slate")
-    y = round(mid - (y0 + y1) / 2)
+    img.alpha_composite(icon, (0, top))
+    x0, y0, x1, y1 = font.getbbox("ase")
+    y = round(top + ih / 2 - (y0 + y1) / 2)
     d = ImageDraw.Draw(img)
     x = icon.width + gap
     for c, w in zip(word, widths):
