@@ -254,12 +254,9 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   -webkit-mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
   mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
 }
-/* The Colourful look's pastels (Config.qml: appsPastels, spacesPastels, statusPastels, the
-   Assistant page's colour) */
-.bar-demo .burger i { background: #e8a6c8; }
-.bar-demo .nova { color: #b9a6e8; }
-.bar-demo .quad i { background: #8fb3e8; }
-.bar-demo .ws .mode { color: #9ed6b4; }
+/* Not the Colourful look: every icon in the bar's text colour */
+.bar-demo .burger i { background: var(--d-ink); }
+.bar-demo .quad i { background: var(--d-ink); }
 .bar-demo .group b { background: var(--d-sep); }
 .bar-demo .ws .dots span { background: var(--d-empty); }
 .bar-demo .ws .dots span.occ { background: var(--d-occ); }
