@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows · Slate docs</title>
+<meta name="description" content="How Slate arranges your windows: tiling, side stack, scrolling, stacking, solo or floating, with gaps, borders, title bars and the keys for moving them.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="windows">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Windows and workspaces</p>
+      <h1>Windows</h1>
+      <p class="lead">Out of the box, Slate tiles your windows side by side so nothing hides behind anything else. If you'd
+        rather have a traditional desktop, or something in between, each workspace can arrange its windows its own way.</p>
+
+      <h2>Window modes</h2>
+      <p>A window mode decides how windows are laid out on a workspace. There are six:</p>
+      <table>
+        <tr><th>Mode</th><th>What it does</th></tr>
+        <tr><td><strong>Tiling</strong></td><td>The default. Windows share the screen side by side, each new one splitting
+          the space. <kbd>Super</kbd> + <kbd>J</kbd> splits the other way.</td></tr>
+        <tr><td><strong>Side Stack</strong></td><td>One main window on the left, the rest stacked beside it.
+          <kbd>Super</kbd> + <kbd>J</kbd> makes the window you're in the main one.</td></tr>
+        <tr><td><strong>Scrolling</strong></td><td>Windows sit in columns on a strip that scrolls sideways as you move
+          between them. <kbd>Super</kbd> + <kbd>J</kbd> changes a column's width.</td></tr>
+        <tr><td><strong>Stacking</strong></td><td>One window at a time, filling the screen, with the others waiting behind it.
+          <kbd>Super</kbd> + <kbd>J</kbd>, or <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd>, moves between them.</td></tr>
+        <tr><td><strong>Solo</strong></td><td>Every window fills a workspace of its own: a new one opens on the next free
+          workspace. You move between windows as you move between workspaces. Dialogs stay with their app.</td></tr>
+        <tr><td><strong>Floating</strong></td><td>Windows open floating and centred, like a traditional desktop, with a
+          title bar to drag them by.</td></tr>
+      </table>
+      <p>In any mode, <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> floats the window you're in, or tiles it again.</p>
+
+      <h3>A mode for each workspace</h3>
+      <p>The button beside the workspace dots on the menu bar shows the workspace's mode. Click it to choose another
+        for just that workspace, or <strong>Default</strong> to follow the default again. The same panel has a pencil for
+        naming the workspace (see <a href="workspaces.html#names">Workspaces</a>).</p>
+
+      <h3>The default</h3>
+      <p>Every workspace without a mode of its own uses
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Windows → Default window mode</span>. If you change it
+        while windows are open in another mode, Slate asks first: <strong>Tidy up</strong> moves every workspace to the
+        new mode now, or leave them as they are and the new default is used for new workspaces only. Your windows stay
+        open either way.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p><a href="spaces.html">Spaces</a> remember each workspace's mode, so a space you bring back is laid out the way you saved it.</p></div>
+
+      <h2>Moving and resizing</h2>
+      <ul>
+        <li><strong>Move a window:</strong> hold <kbd>Super</kbd> and drag it, or press <kbd>Super</kbd> + <kbd>Shift</kbd>
+          and an arrow key.</li>
+        <li><strong>Resize a window:</strong> hold <kbd>Super</kbd> and drag with the right mouse button, or press
+          <kbd>Super</kbd> + <kbd>R</kbd> and use the arrow keys.</li>
+        <li><strong>Go to the window beside:</strong> <kbd>Super</kbd> + <kbd>Alt</kbd> and an arrow key.</li>
+        <li><strong>Maximise:</strong> <kbd>Super</kbd> + <kbd>D</kbd>. <strong>Full screen:</strong> <kbd>Super</kbd> + <kbd>F</kbd>.</li>
+        <li><strong>Close:</strong> <kbd>Super</kbd> + <kbd>Q</kbd>. If an app stops responding,
+          <kbd>Super</kbd> + <kbd>Esc</kbd> and a click on its window force-quits it.</li>
+      </ul>
+      <p>These are Slate's own shortcuts. If you've chosen Hyprland's set instead, see <a href="shortcuts.html">Keyboard shortcuts</a>.</p>
+
+      <h2>Floating windows</h2>
+      <p>Floating windows have a title bar with the window's title and app icon, a close button and a maximise button.
+        Drag the title bar to move the window, and double-click it to maximise; click maximise again to put it back.
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Windows → Title bar buttons</span> puts the buttons on
+        the left or the right.</p>
+      <p>Drop a floating window with its top above or under the menu bar and it slides back down below the bar, title
+        bar and all, so you can always grab it again. Sideways, a window can hang off the edge as much as you like.</p>
+
+      <h3>Title bars</h3>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Windows → Title bars</span> has two kinds:</p>
+      <ul>
+        <li><strong>Slate Bars</strong>, the default: Slate draws a title bar on the floating window in front, with nothing
+          to install or rebuild. It wraps round the window's rounded corners, fades out while the window moves or
+          resizes, and its top corners resize the window. With Slate Bars, a window takes focus when you click it.</li>
+        <li><strong>Hyprbars</strong>, optional: title bars from a Hyprland plugin, on every floating window. Choose it and
+          Slate explains what's involved, builds it on your computer in the background, and switches once it's ready.</li>
+      </ul>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Hyprbars has to be rebuilt after every Hyprland update. Until it is, Slate quietly uses Slate Bars instead, then
+          asks whether to rebuild, offers a reload when it's done, and asks whether to switch back. The
+          <strong>Hyprbars</strong> row in Settings → Windows has <strong>Rebuild</strong>, <strong>Retry</strong>,
+          <strong>Reload</strong> and <strong>Remove</strong> for when you want to do it yourself. Reloading keeps your windows open.</p></div>
+
+      <h2>Gaps, borders and dimming</h2>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Windows → Layout &amp; borders</span>:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Window borders</td><td>A border in your accent colour round each window when a workspace has more than one.
+          3 px to start with; 0 turns them off.</td></tr>
+        <tr><td>Window spacing</td><td>The gap between windows (the screen's edges get a little more). 6 px to start with.</td></tr>
+        <tr><td>Space around a lone window</td><td>Padding round a window that's alone on its workspace, so it keeps its
+          rounded corners. 0, the default, lets it fill the screen up to the bar.</td></tr>
+        <tr><td>Dim inactive windows</td><td>Darkens the windows you're not using, so the one you are stands out. 50% to
+          start with. Settings itself never dims, so you can watch a change take effect.</td></tr>
+      </table>
+      <p>Floating windows cast a shadow; tiled ones don't, so it doesn't read as a second outline beside the border.
+        The shadow follows your <a href="appearance.html#shadows">shadow settings</a>.</p>
+
+      <h2>Focus</h2>
+      <p><strong>Focus follows the pointer</strong>, in Settings → Windows, lets windows take the keyboard as the pointer
+        moves over them. Off, you click a window to use it (scrolling still reaches the window under the pointer). While
+        floating windows use Slate Bars, windows always take focus with a click, so the switch is hidden.</p>
+
+      <h2>Windows that look after themselves</h2>
+      <ul>
+        <li>Picture-in-picture videos float and stay on top.</li>
+        <li>Games from Steam and gamescope go full screen on a workspace of their own.</li>
+        <li>Terminals step aside for the apps they open.</li>
+        <li>Dialogs, such as file pickers and save boxes, float in the middle of the screen and stay with their app.</li>
+        <li>Floating windows remember their size, and one that would open bigger than the screen, or hang off it, is
+          brought back in.</li>
+      </ul>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

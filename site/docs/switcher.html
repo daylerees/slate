@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switching windows · Slate docs</title>
+<meta name="description" content="Slate's window switcher: Super+Tab for every open window with live previews, Shift to go back, and how to make it look and move your way.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="switcher">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Windows and workspaces</p>
+      <h1>Switching windows</h1>
+      <p class="lead">Hold <kbd>Super</kbd> and press <kbd>Tab</kbd> to see every open window in a strip across the middle of the
+        screen. Let go of <kbd>Super</kbd> and you're there.</p>
+
+      <h2>Using it</h2>
+      <ul>
+        <li><strong>Open it:</strong> hold <kbd>Super</kbd> and press <kbd>Tab</kbd>. The window you were in a moment ago is
+          already chosen, so a quick <kbd>Super</kbd> + <kbd>Tab</kbd> flips between your last two windows.</li>
+        <li><strong>Move along:</strong> keep holding <kbd>Super</kbd> and press <kbd>Tab</kbd> again, or the right arrow.</li>
+        <li><strong>Go back:</strong> add <kbd>Shift</kbd> (<kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd>), or use the left arrow.</li>
+        <li><strong>Switch:</strong> let go of <kbd>Super</kbd>, press <kbd>Enter</kbd>, or click a window.</li>
+        <li><strong>Change your mind:</strong> press <kbd>Esc</kbd>, or click outside the strip, and you stay where you were.</li>
+      </ul>
+      <p>For a plainer way round, <kbd>Alt</kbd> + <kbd>Tab</kbd> goes straight to the next window without the switcher.</p>
+
+      <h2>What it shows</h2>
+      <p>Every window on your workspaces, most recently used first, in a strip that loops round so you can go either way.
+        Each card has the window's title under it. Below the strip, your workspace dots show which workspace the chosen
+        window is on, with the marker sliding as you move.</p>
+      <p>Windows on the <a href="workspaces.html#the-secret-workspace">secret workspace</a> stay out of the switcher. A window
+        that came from a <a href="spaces.html">space</a> wears its space's icon on its card (you can turn that off in
+        Settings → Spaces).</p>
+
+      <h2>Settings</h2>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Windows → Window switcher (Super+Tab)</span>:</p>
+      <table>
+        <tr><th>Setting</th><th>Choices</th></tr>
+        <tr><td>Windows show</td><td><strong>Live previews</strong> of each window's contents; <strong>App icons</strong>,
+          each window's outline with its app's icon (nothing is captured, which is lighter); or <strong>Both</strong>, a
+          live preview with a small app icon on the corner.</td></tr>
+        <tr><td>Moving between windows</td><td><strong>Slide</strong> (the strip slides along, the chosen window in the
+          middle), <strong>Hop</strong>, <strong>Wheel</strong> (round the edge of a turning wheel), <strong>Tilt</strong>
+          (the others turned away in 3D), <strong>Orbit</strong> (round a 3D ring), <strong>Deck</strong> (dealt from a pile),
+          <strong>Fan</strong> (spread like a hand of cards) or <strong>Instant</strong>.</td></tr>
+        <tr><td>Going to the window</td><td><strong>Crossfade</strong> (a window on another workspace fades in over the one
+          you're on), <strong>Workspace animation</strong> (your usual workspace switch), or <strong>Instant</strong>.</td></tr>
+      </table>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>In game mode the switcher shows app icons rather than live previews, to keep your game running smoothly.</p></div>
+
+      <h2>Moving between workspaces instead</h2>
+      <p>To see whole workspaces rather than single windows, use the workspace overview, <kbd>Super</kbd> + <kbd>↓</kbd>.
+        See <a href="workspaces.html#the-overview">Workspaces and the overview</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications and indicators · Slate docs</title>
+<meta name="description" content="Slate's notifications: pop-ups, their history, Do Not Disturb and sounds, plus the on-screen indicators for volume, brightness, workspaces and the camera.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="notifications">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>Notifications and indicators</h1>
+      <p class="lead">Slate shows your apps' notifications itself, keeps them so you can catch up later, and lets you
+        quieten them when you need to focus. Small indicators show what changes as you press keys.</p>
+
+      <h2>Pop-ups</h2>
+      <p>When an app sends a notification, it pops up as a card with the app's icon and name, when it arrived, its
+        title and its message. A picture, like a screenshot or album art, shows as a larger preview beneath.
+        Pop-ups appear on your main display, clear of the menu bar and the dock.</p>
+      <ul>
+        <li><strong>Click the card</strong> to do what the app suggests, usually opening it where the notification
+          is about.</li>
+        <li><strong>Buttons</strong> on the card, when the app gives some, do just what they say.</li>
+        <li><strong>The close button</strong> in its corner puts it away.</li>
+      </ul>
+      <p>A thin line along the bottom shows how long the card has left. It waits while the pointer is on it, so
+        you can finish reading.</p>
+
+      <h3>Where they go and how long they stay</h3>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Notifications → Pop-ups</span>:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Position</td><td>Click a spot on the little screen: the top or bottom, at the left, centre or right.
+          Top right is the default.</td></tr>
+        <tr><td>Stay on screen for</td><td>From 2 to 15 seconds, for apps that don't choose their own time.</td></tr>
+        <tr><td>Most at once</td><td>How many pop-ups show together. When there are more, the oldest go first.</td></tr>
+      </table>
+
+      <h3>Urgent notifications</h3>
+      <p>Urgent ones have a red band across the top and stay until you close them.
+        They still pop up during Do Not Disturb.</p>
+
+      <h2>History</h2>
+      <p>Every notification is kept, so nothing's lost if you miss a pop-up. Click the bell on the menu bar, or press
+        <kbd>Super</kbd> + <kbd>A</kbd>, to see them all, newest first. The bell shows how many are new since you
+        last looked. When you're all caught up, the panel says so.</p>
+      <p>The bin button at the top of the panel clears the history, as does
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Notifications → History</span>. Your history is
+        kept on your computer, and it's still there after Slate restarts.</p>
+      <p>Apps on the dock show a badge with the notifications they've sent since you last went to them. See
+        <a href="dock.html#badges-and-progress">The dock</a>.</p>
+
+      <h2>Do Not Disturb</h2>
+      <p>Do Not Disturb quietens pop-ups so you can focus. Urgent ones still show, and everything still goes to your
+        history, so you can catch up when you're ready. Switch it on from:</p>
+      <ul>
+        <li>the switch at the top of the notifications panel,</li>
+        <li>the control centre's <a href="control-centre.html#quick-switches">quick switch</a> or its right-click menu,</li>
+        <li>the launcher (type "dnd"),</li>
+        <li>or <span class="path"><i class="ti">&#xEB20;</i> Settings → Notifications</span>.</li>
+      </ul>
+      <p>In game mode, pop-ups are held back too, and wait in the history for you.</p>
+
+      <h2>Sounds</h2>
+      <p>A soft chime plays when a notification pops up. A burst of them chimes just once, low-priority notices and
+        apps that ask for quiet stay silent, and urgent ones play Slate's attention sound instead. Set the
+        chime's volume, or turn it off at 0, with <strong>Sound</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Notifications</span> or on the
+        <a href="sound.html">Sound</a> page.</p>
+
+      <h2>On-screen indicators</h2>
+      <p>A small pill near the bottom of the screen shows what you've just changed, then fades away after a moment.</p>
+      <ul>
+        <li><strong>Volume</strong> and <strong>microphone</strong>, whenever they change, from the keys, an app or the
+          bar. Volume keys play a soft tick at the new level.</li>
+        <li><strong>Screen brightness</strong> and <strong>keyboard backlight</strong>, from their keys.</li>
+        <li><strong>Workspaces</strong>: when you move to the next or previous one (<kbd>Super</kbd> + <kbd>←</kbd>
+          <kbd>→</kbd>), a larger copy of the bar's workspace dots shows the marker gliding across. With
+          <strong>Name when switching</strong> on (in
+          <span class="path"><i class="ti">&#xEB20;</i> Settings → Workspaces</span>), the name of the workspace you
+          land on shows beneath.</li>
+        <li><strong>The camera</strong>: "Camera on", with the name of the app using it, the moment one starts, and
+          "Camera off" when it's let go. So you always know when you're on camera.</li>
+      </ul>
+      <p>While the volume panel is open, its own slider shows the change instead.</p>
+
+      <h2>How they look</h2>
+      <p>With glass on (<a href="appearance.html#glass">Appearance</a>), notifications have their own
+        <strong>Blur</strong>, <strong>Opacity</strong> and <strong>Hover opacity</strong> (how solid a card turns while
+        the pointer is on it, to read it by), in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Notifications → Glass</span>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

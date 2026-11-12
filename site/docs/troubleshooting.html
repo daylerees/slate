@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting · Slate docs</title>
+<meta name="description" content="When something in Slate isn't right: restarting, the Debug page, logs, common problems and their fixes, factory reset, and reporting a bug.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="troubleshooting">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>Troubleshooting</h1>
+      <p class="lead">Slate is an early preview, so now and then something may not look or behave as it should. Most
+        things are put right by a restart, and your apps and windows stay open through it. This page has that, and
+        what to try when it isn't enough.</p>
+
+      <h2>Restarting Slate</h2>
+      <p>If the bar, dock or a panel looks stuck or out of date, restart Slate. The screen fades to "Reloading Slate"
+        and back, and everything you had open stays open.</p>
+      <ul>
+        <li>In a terminal: <code>slate restart</code> (or <code>slate restart --full</code> to stop it completely and
+          start it again).</li>
+        <li><span class="path"><i class="ti">&#xEB20;</i> Settings → About → Restart the shell</span>.</li>
+        <li>Right-click the control centre's mark on the menu bar and choose to restart Slate.</li>
+      </ul>
+      <p>If Slate isn't running at all, <code>slate</code> on its own starts it. Open a terminal with
+        <kbd>Super</kbd> + <kbd>Return</kbd>.</p>
+
+      <h2>The Debug page</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Debug</span> (a tile on All Settings) has fixes for
+        when something hasn't caught up. Slate normally does all of this by itself, so you shouldn't often need it.</p>
+
+      <h3>Reload everything</h3>
+      <p><strong>Reload</strong> reloads Hyprland's config and restarts Slate from scratch (the bar, dock, panels and
+        Settings), then comes back to the Debug page. Your apps and windows stay open.</p>
+
+      <h3>Resync the login screen</h3>
+      <p>Slate's own login screen, if you've installed it, copies your wallpaper, settings, picture and font whenever
+        you change them in Slate. If you changed one outside Slate (replaced the wallpaper file, or changed your
+        picture, name or keyboard layout elsewhere), <strong>Resync</strong> brings it up to date.</p>
+
+      <h3>Log detail</h3>
+      <p>How much Slate writes to its log: <strong>Normal</strong>, <strong>Detailed</strong> or
+        <strong>Everything</strong>. Turn it up while tracking down a problem, then back down. Changing it restarts
+        Slate, so it asks first.</p>
+
+      <h3>Export recent logs</h3>
+      <p><strong>Export</strong> saves Slate's recent log and details about your system to a text file in Downloads,
+        to attach to a bug report. Your location is left out. The log can still name apps, windows and file paths, so
+        look the file over before you share it.</p>
+
+      <h2>Reading the log</h2>
+      <p>Slate's log is <code>~/.cache/slate.log</code>. To watch it as things happen, run <code>slate log</code>;
+        <code>slate logs</code> does the same as Export above.</p>
+
+      <h2>Common problems</h2>
+
+      <h3>Slate isn't on the login screen</h3>
+      <p>Run <code>sudo ~/.config/slate/bin/slate-session-install</code>. Some login screens only look for new sessions
+        after a restart.</p>
+
+      <h3>The session starts and ends straight away</h3>
+      <p>Usually Hyprland is too old, or <code>start-hyprland</code> is missing. Check <code>Hyprland --version</code>:
+        Slate needs 0.57 or newer. If your session uses uwsm,
+        <code>journalctl --user -b -u 'wayland-wm@*'</code> shows what went wrong. You can always pick your other
+        desktop at the login screen in the meantime.</p>
+
+      <h3>A black screen with a pointer, but no bar</h3>
+      <p>Quickshell couldn't load Slate. Open a terminal with <kbd>Super</kbd> + <kbd>Return</kbd> and run
+        <code>slate</code> to see the message, or look in <code>~/.cache/slate.log</code>. If you've installed
+        Quickshell from source (Ubuntu, Debian, openSUSE), a Qt update may mean it needs building again:
+        <code>packaging/build-quickshell.sh</code>.</p>
+
+      <h3>Icons show as boxes</h3>
+      <p>Slate's icon font didn't load. Reinstalling Slate puts it back: <code>./install.sh --no-deps</code> from the
+        Slate folder.</p>
+
+      <h3>A change to one of your own files didn't work</h3>
+      <p>Slate shows a notification saying what's wrong and where. The rest of your config still loads, so fix it and
+        save again. See <a href="customising.html#saving-and-mistakes">Your own config</a>.</p>
+
+      <h3>An app didn't change colour</h3>
+      <p>GNOME apps (Files, Text Editor and the like) read Slate's colours only when they start, so close and reopen
+        them. Apps built with GTK 3 and Qt change straight away. See <a href="app-theming.html">App theming</a>.</p>
+
+      <h3>A new pointer or setting hasn't reached everything</h3>
+      <p>The pointer theme and other environment settings reach apps when they start. Apps already open keep the old
+        ones, and Slate itself picks them up after you log out and in again.</p>
+
+      <h3>Suspend, Restart or Shut down are missing</h3>
+      <p>Or settings are greyed out with "This needs systemd or elogind". Your computer has no login service running.
+        Run <code>~/.config/slate/bin/slate-init info</code>: <code>logind=none</code> means elogind isn't installed or
+        isn't started.</p>
+
+      <h3>No sound, on a system without systemd</h3>
+      <p>Check PipeWire is installed; Slate's session starts it. <code>pgrep -a pipewire</code> should show
+        <code>pipewire</code>, <code>wireplumber</code> and <code>pipewire-pulse</code>.</p>
+
+      <h3>Hyprbars stopped after a Hyprland update</h3>
+      <p>Hyprbars, the optional title-bar plugin, needs rebuilding for each new Hyprland. Slate switches to its
+        own title bars in the meantime and asks whether to rebuild. Rebuild, Retry and Remove are in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Windows</span>.</p>
+
+      <h3>Slate's login screen won't let you in</h3>
+      <p>Slate's login screen falls back by itself to the last version that worked, then to a basic emergency login.
+        If even that fails, switch to a text console with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F3</kbd>, log in, and
+        run:</p>
+      <pre><code>sudo ~/.config/slate/bin/slate-greeter-install --revert</code></pre>
+      <p>then restart. That puts your previous login screen back.</p>
+
+      <h2>Starting over</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Debug → Factory reset</span> puts Slate back as it
+        was when first installed: every setting to its default, and your dock pins, saved Spaces, launcher history,
+        notifications, clipboard history, display layout and app theming forgotten. Your apps and windows stay open,
+        and Slate restarts with the Welcome window.</p>
+      <ul>
+        <li><strong>It asks twice</strong> before anything changes.</li>
+        <li><strong>Your own files are kept</strong> (<code>hypr/</code> and <code>user/</code>), unless you switch on
+          <strong>Also clear my own files</strong>, which swaps them for the blank ones Slate starts with.</li>
+        <li><strong>Nothing is deleted.</strong> Everything is moved to
+          <code>~/.local/share/slate/backups/factory-reset-&lt;date&gt;</code>, so you can copy it back by hand.</li>
+      </ul>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>There's no undo in Settings: putting things back from the backup folder is done by hand. If only one page
+          needs resetting, <a href="settings.html#restore-defaults">Restore defaults</a> on that page is gentler.</p></div>
+      <p>From a terminal, the same reset is <code>~/.config/slate/bin/slate-factory-reset</code>, with
+        <code>--user-files</code> to clear your own files too.</p>
+
+      <h2>Reporting a problem</h2>
+      <p>We'd be grateful to hear about anything that goes wrong, in a
+        <a href="https://github.com/daylerees/slate/issues">GitHub issue</a>. To help us find it:</p>
+      <ol>
+        <li>If you can, turn <strong>Log detail</strong> up in Settings → Debug and make the problem happen again.</li>
+        <li>Choose <strong>Export recent logs</strong> (or run <code>slate logs</code>), and look the file over.</li>
+        <li>Say what you did, what you expected and what happened instead, and attach the file.</li>
+      </ol>
+      <p>Then turn Log detail back to Normal. Thank you: every report helps.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

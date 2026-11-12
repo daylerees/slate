@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The launcher · Slate docs</title>
+<meta name="description" content="Slate's launcher: open apps, settings, windows and files, do sums and conversions, find emoji, run commands and search the web, all from one box.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="launcher">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>The launcher</h1>
+      <p class="lead">One box for opening apps and finding almost anything else: a setting, a window, a file, a sum,
+        an emoji. Open it, start typing, and press <kbd>Enter</kbd>.</p>
+
+      <h2>Opening it</h2>
+      <ul>
+        <li>Tap <kbd>Super</kbd> on its own.</li>
+        <li>Press <kbd>Super</kbd> + <kbd>Space</kbd>.</li>
+        <li>Click <strong>Apps</strong> on the menu bar, or the Apps button at the start of the dock.</li>
+      </ul>
+      <p>Press <kbd>Esc</kbd> to close it. Changing workspace closes it too.</p>
+
+      <h2>Before you type</h2>
+      <p>Your apps are listed with the ones you opened most recently at the top, ready to pick.</p>
+
+      <h2>What you can find</h2>
+      <h3>Apps</h3>
+      <p>Type part of an app's name. The search is forgiving: initials and small slips still find what you meant,
+        so "vsc" finds Visual Studio Code and "fierfox" finds Firefox. Apps you open often rise up the list.</p>
+
+      <h3>Settings</h3>
+      <p>Every setting in Slate's Settings can be found from here. Type what you want to change, like "dock size" or
+        "night light", and pick it to open Settings right at it.</p>
+
+      <h3>Open windows</h3>
+      <p>Type part of a window's title, or its app's name, to go to it, whichever workspace it's on.</p>
+
+      <h3>App actions</h3>
+      <p>What apps offer besides opening, like a browser's New Private Window, show up when you type the app's name
+        or the action's.</p>
+
+      <h3>Quick toggles</h3>
+      <p>Wi-Fi, Bluetooth, Airplane Mode, Private Mode, Do Not Disturb, night light and game mode can be switched
+        straight from the results. Type "wifi" or "dnd" and press <kbd>Enter</kbd>.</p>
+
+      <h3>Files and folders</h3>
+      <p>Files you've opened recently, and folders in your home by name.</p>
+
+      <h3>Sums and conversions</h3>
+      <p>Type a sum and the answer appears as you type. Conversions work the same way: "5 km in miles",
+        "72 f to c", "today + 30 days". Press <kbd>Enter</kbd> to copy the answer.</p>
+
+      <h3>Emoji</h3>
+      <p>Start with a colon to find an emoji by name, like <code>:smile</code>. <kbd>Enter</kbd> copies it.
+        There's also an emoji picker of its own on <kbd>Super</kbd> + <kbd>.</kbd>.</p>
+
+      <h3>Commands</h3>
+      <p>Start with <code>&gt;</code> to run a command. You can run it in a terminal, which stays open afterwards so
+        you can read what it said, or on its own with no terminal.</p>
+
+      <h3>The web</h3>
+      <p>The last result searches the web for what you typed, in the search engine you choose: DuckDuckGo (to start
+        with), Google, Bing, Brave Search, Startpage or Ecosia.</p>
+
+      <p>Each kind of result can be switched off in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Launcher → What it finds</span>, if you'd rather keep
+        the list to apps.</p>
+
+      <h2>Keyboard and mouse</h2>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd>, <kbd>Tab</kbd> <kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Move through the results.</td></tr>
+        <tr><td><kbd>Page Up</kbd> <kbd>Page Down</kbd></td><td>Move a page at a time.</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Open what's selected.</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Enter</kbd></td><td>Open the selected app on a new workspace at the end.</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> (in the grid, <kbd>Ctrl</kbd> + <kbd>←</kbd> <kbd>→</kbd>)</td><td>Open the selected app on a new workspace just to the left or right of this one.</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close the launcher.</td></tr>
+      </table>
+      <p>With the mouse, just click a result. With <strong>Wrap around</strong> on, the arrow keys go from the last
+        result back to the first, and from the first to the last.</p>
+
+      <h2>List or grid</h2>
+      <p>Choose a <strong>List</strong> or a <strong>Grid</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Launcher → Layout</span>.</p>
+      <ul>
+        <li><strong>List</strong> shows each app with a short description beneath its name (or without, if you
+          switch <strong>Show descriptions</strong> off).</li>
+        <li><strong>Grid</strong> shows bigger icons, with the selected app's name along the bottom. Set how many
+          <strong>Columns</strong> and <strong>Rows</strong> it has; the icons get smaller the more columns there are,
+          and you scroll for more rows. In the grid, the arrow keys move between apps.</li>
+      </ul>
+      <p>Either way, the launcher shrinks smoothly to fit the results as you type, and the search box stays where
+        it is.</p>
+
+      <h2>Settings</h2>
+      <p>Everything for the launcher is in <span class="path"><i class="ti">&#xEB20;</i> Settings → Launcher</span>:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Layout, Columns, Rows</td><td>List or grid, and the grid's size.</td></tr>
+        <tr><td>Show descriptions</td><td>A short line under each app's name.</td></tr>
+        <tr><td>Most used first</td><td>Orders apps by how often you open them, after how well they match.</td></tr>
+        <tr><td>Wrap around</td><td>The arrow keys loop round the results.</td></tr>
+        <tr><td>Recent apps first</td><td>Before you type, the apps you opened most recently are at the top.</td></tr>
+        <tr><td>Forgiving search</td><td>Initials and little typos still find your apps.</td></tr>
+        <tr><td>Open windows, App actions, Quick toggles, Files and folders, Conversions, Run commands, Emoji, Search the web</td>
+          <td>Each kind of result, on or off.</td></tr>
+        <tr><td>Search engine</td><td>Where web searches go.</td></tr>
+      </table>
+      <p>With glass on, there are also <strong>Blur</strong> and <strong>Opacity</strong> for the launcher's
+        background.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Right-click menus · Slate docs</title>
+<meta name="description" content="How Slate's right-click menus behave, and what's in each one: the desktop, the menu bar, the control centre, the dock and app tray icons.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="menus">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>Right-click menus</h1>
+      <p class="lead">Right-click almost anything in Slate for a short menu of what you can do with it. Every menu
+        looks and behaves the same way, so once you know one, you know them all.</p>
+
+      <h2>How they work</h2>
+      <ul>
+        <li><strong>Each menu points at what it's for</strong>, with a small pointer on its side: the dock's at the icon,
+          the bar's just off the bar, the desktop's at the cursor. Near the edge of the screen it flips or slides along
+          to stay in view.</li>
+        <li><strong>Submenus open to the side.</strong> An item with an arrow at its end has more choices. Point at it
+          (or click it) and they open beside the menu, to the right, or to the left when there isn't room.</li>
+        <li><strong>Your current choice is ticked</strong>, like the dock's position or the clock's format, and
+          switches like Auto-hide are ticked while they're on.</li>
+        <li><strong>Things that can't be undone turn red</strong> when you point at them, like Force Quit or emptying
+          the waste basket.</li>
+        <li><strong>The keys work them too.</strong> <kbd>↑</kbd> and <kbd>↓</kbd> move along the items,
+          <kbd>Enter</kbd> or <kbd>Space</kbd> chooses one, <kbd>→</kbd> goes into a submenu and <kbd>←</kbd> comes
+          back out.</li>
+        <li><strong>They get out of your way.</strong> Click outside the menu or press <kbd>Esc</kbd> to close it. It
+          also closes when you change workspace, or open the launcher, a switcher or Nova.</li>
+      </ul>
+
+      <h2>The desktop</h2>
+      <p>Right-click the wallpaper:</p>
+      <ul>
+        <li><strong>App launcher</strong>, <strong>Terminal</strong> and <strong>Files</strong>.</li>
+        <li><strong>Change wallpaper…</strong>, which opens the wallpaper settings, and <strong>Next wallpaper</strong>.</li>
+        <li><strong>Display settings</strong> and <strong>Settings</strong>.</li>
+      </ul>
+
+      <h2>The menu bar</h2>
+      <p>Right-click an empty part of the bar:</p>
+      <ul>
+        <li><strong>Auto-hide</strong>, ticked while it's on.</li>
+        <li><strong>Position</strong>: Top, Bottom, Left or Right.</li>
+        <li><strong>Clock</strong>: 12-hour or 24-hour, and <strong>Seconds</strong>.</li>
+        <li><strong>Edit layout</strong>, to arrange the bar (<a href="menu-bar.html#arranging-it-your-way">The menu bar</a>).</li>
+        <li><strong>Menu bar settings</strong>.</li>
+      </ul>
+
+      <h2>The control centre</h2>
+      <p>Right-click Slate's mark at the start of the bar:</p>
+      <ul>
+        <li><strong>Settings</strong>, <strong>Appearance</strong> and <strong>Next wallpaper</strong>.</li>
+        <li><strong>Do Not Disturb</strong>, <strong>Night Light</strong> and <strong>Glass</strong>, ticked while
+          they're on.</li>
+        <li><strong>Check for updates</strong> (or <strong>Update to</strong> the new version, when there is one),
+          <strong>Restart Slate</strong> and <strong>Show the welcome</strong>.</li>
+        <li><strong>Lock screen</strong>, <strong>Log out…</strong> and <strong>About Slate</strong>.</li>
+      </ul>
+      <p>Log out asks before it does anything. Restart Slate restarts only the shell, so your apps and windows stay
+        open.</p>
+
+      <h2>The dock</h2>
+      <h3>Apps</h3>
+      <p>Right-click an app on the dock:</p>
+      <ul>
+        <li><strong>Its open windows</strong>, to go to one. The one you're in has a dot.</li>
+        <li><strong>The app's own actions</strong> (a new private window and so on) and <strong>New Window</strong>.</li>
+        <li><strong>Pin to Dock</strong> or <strong>Unpin from Dock</strong>.</li>
+        <li><strong>Close Window</strong> (or <strong>Close 2 Windows</strong>, and so on), for every window it has open.</li>
+        <li><strong>Force Quit</strong>, for an app that's stopped responding. Anything it hasn't saved is lost.</li>
+      </ul>
+
+      <h3>The Apps button</h3>
+      <p><strong>Settings</strong>, then a few of its pages: <strong>Appearance</strong>, <strong>Wallpaper</strong>,
+        <strong>Displays</strong>, <strong>Wi-Fi</strong> and <strong>Bluetooth</strong>.</p>
+
+      <h3>What's playing</h3>
+      <p><strong>Play</strong> or <strong>Pause</strong>, <strong>Next</strong>, <strong>Previous</strong>, and
+        <strong>Show</strong> the app that's playing.</p>
+
+      <h3>Downloads</h3>
+      <p><strong>Open Downloads</strong>, to open the folder. (A left click shows a grid of your newest downloads
+        instead.)</p>
+
+      <h3>The waste basket</h3>
+      <p><strong>Open</strong>, and <strong>Empty Waste Basket…</strong> when there's something in it. Emptying deletes
+        it all for good, so Slate asks first.</p>
+
+      <h3>The dock's empty space</h3>
+      <ul>
+        <li><strong>Auto-hide</strong>, ticked while it's on.</li>
+        <li><strong>Position</strong>: Top, Bottom, Left or Right.</li>
+        <li><strong>Hover effect</strong>: Magnify, Tilt, Magnify and tilt, Fade, Fade and magnify, Glow, Glow and
+          magnify, Raise or None.</li>
+        <li><strong>Icon size</strong>: Small, Medium or Large.</li>
+        <li><strong>Show</strong>: the Apps button, What's playing, Downloads and the Waste Basket, each ticked while
+          it's on the dock.</li>
+        <li><strong>Dock settings</strong>.</li>
+      </ul>
+
+      <h2>App tray menus</h2>
+      <p>Right-click an app's icon in the bar's tray for that app's own menu, drawn in Slate's style. Its submenus open
+        in place, with a row at the top to go back. A left click does the app's main action, and a middle click its
+        other one; for apps that only have a menu, any click opens it.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

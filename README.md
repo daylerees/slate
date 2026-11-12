@@ -100,6 +100,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 |---|---|
 | Shell code + `settings.json` | `~/.config/slate/` (run with `slate`) |
 | Saved state (pinned apps, launcher counts, notification history) | `~/.local/state/slate/` |
+| Saved Spaces, and backups from a factory reset | `~/.local/share/slate/` |
 | Cache (app icon tiles) | `~/.cache/slate/tiles/` |
 | Log | `~/.cache/slate.log` |
 | Your own Hyprland config (other sessions) | `~/.config/hypr/` — not used by the Slate session |

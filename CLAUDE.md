@@ -29,6 +29,11 @@ After any change that adds, removes or changes something users can see or do, up
 docs and the site to match, in the same commit or one right after it:
 
 - `site/features.html`: the full feature list (settings, panels, shortcuts and so on).
+- `site/docs/`: the docs, a page per area (the list of pages, their sections and the Settings
+  pages each covers is `site/docs/docs.js`). Change the page that describes what changed, in the
+  same words Settings uses; a new area or Settings page gets a page (copy one, add it to
+  `docs.js` with its `covers`). `tests/static/test_docs.py` checks every Settings page is
+  covered, every page is listed, and links and headings still lead somewhere.
 - `site/index.html`: the feature cards and tour, when it's a headline feature.
 - `README.md` and `docs/` (INSTALL, ARCHITECTURE, SESSION, …) wherever they describe it.
 
@@ -179,5 +184,5 @@ docs-only changes unless they matter to users.
 
 Each release also gets a section at the top of `site/changelog.html` (newest first, below the
 `<!-- New releases go here -->` marker) with the same notes as the GitHub release: the tag
-as its heading with the date, Features / Fixes / Other as cards, and a link to it in the
-row of release links at the top. Commit it as `docs(site): add <tag> to the changelog`.
+as its heading with the date, and Features / Fixes / Other as cards (the release picker at the
+top builds itself from the sections, so it needs nothing). Commit it as `docs(site): add <tag> to the changelog`.

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your own config · Slate docs</title>
+<meta name="description" content="Keeping your own Hyprland config and QML with Slate: the files in ~/.config/slate/hypr and user/, what each is for, and how Slate keeps them safe.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="customising">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>Your own config</h1>
+      <p class="lead">Settings covers almost everything, but if you like to keep your own config, you can. Your own
+        Hyprland tweaks and QML live in files of your own, which Slate loads on top of its config and never
+        overwrites.</p>
+
+      <h2>Your files</h2>
+      <p>Slate makes these for you the first time it starts, each with instructions and examples inside. They're
+        empty of settings until you add some, so they change nothing to start with.</p>
+      <table>
+        <tr><th>File, in <code>~/.config/slate/</code></th><th>What it's for</th></tr>
+        <tr><td><code>hypr/env.lua</code></td><td>Environment variables for your apps. Loaded first</td></tr>
+        <tr><td><code>hypr/variables.lua</code></td><td>Your terminal, file manager, browser, editor and calculator;
+          which screen is which; how many workspaces get number keys; the pointer theme and size</td></tr>
+        <tr><td><code>hypr/monitors.lua</code></td><td>Monitor rules, and which workspaces go on which screen</td></tr>
+        <tr><td><code>hypr/binds.lua</code></td><td>Your own keyboard shortcuts, or replacements for Slate's</td></tr>
+        <tr><td><code>hypr/rules.lua</code></td><td>Window and workspace rules</td></tr>
+        <tr><td><code>hypr/autostart.lua</code></td><td>Commands to run when you log in</td></tr>
+        <tr><td><code>hypr/hyprland.lua</code></td><td>Anything else for Hyprland. Loaded last, so it wins over
+          everything</td></tr>
+        <tr><td><code>user/shell.qml</code></td><td>QML loaded into Slate itself: extra widgets, timers, commands of
+          your own</td></tr>
+      </table>
+      <p>They're written in Hyprland's Lua config. Its wiki, <a href="https://wiki.hypr.land/Configuring/">wiki.hypr.land</a>,
+        has everything you can put in them.</p>
+
+      <h2>How they're loaded</h2>
+      <p>The Slate session runs Hyprland with Slate's own config, and your files around it:</p>
+      <ol>
+        <li><code>env.lua</code> and <code>variables.lua</code>, first, so Slate's config uses your choices.</li>
+        <li>Slate's own config: colours, animations, inputs, shortcuts, window rules and so on.</li>
+        <li><code>monitors.lua</code>, <code>binds.lua</code>, <code>rules.lua</code>, <code>autostart.lua</code> and
+          last <code>hyprland.lua</code>, so yours win wherever they overlap.</li>
+      </ol>
+      <p>Your usual <code>~/.config/hypr</code> belongs to your other Hyprland session and isn't read, so the two never
+        get in each other's way.</p>
+
+      <h3>With Settings</h3>
+      <p>For Hyprland's side of things (keyboard, mouse, touchpad, focus, animations, default apps, the lid and the
+        power button), Settings only sends what you change there. Anything you haven't changed keeps what your own
+        files say. Where both set the same thing, your <code>hyprland.lua</code> wins, since it's loaded last.</p>
+
+      <h2>Saving and mistakes</h2>
+      <p>Saving one of your files applies it straight away: Hyprland's config reloads for the <code>.lua</code> files,
+        and Slate reloads for <code>shell.qml</code>. Your apps and windows stay open.</p>
+      <p>If something in a file is wrong, Slate tells you in a notification, with what and where. A <code>.lua</code>
+        file with a mistake is skipped while the rest still loads; a <code>shell.qml</code> with one leaves Slate
+        running without it. Fix it and save again, and it's picked up.</p>
+      <p>Commands in <code>autostart.lua</code> run once when you log in, not every time the config reloads, so
+        changes there apply from your next login.</p>
+
+      <h2>Examples</h2>
+      <h3>Hyprland</h3>
+      <pre><code>-- hypr/variables.lua
+TERMINAL = "foot"
+BROWSER  = "chromium"
+
+-- hypr/binds.lua
+hl.bind("SUPER + B", hl.dsp.exec_cmd("firefox"), { description = "Apps: Firefox" })
+hl.bind("SUPER + G", hl.dsp.exec_cmd(SLATE .. " ipc call spaces restore Coding"))
+
+-- hypr/rules.lua
+hl.window_rule({ match = { class = "^(Spotify)$" }, workspace = "5 silent" })
+
+-- hypr/hyprland.lua
+hl.config({ input = { kb_layout = "gb", kb_options = "caps:escape" } })
+hl.config({ general = { gaps_in = 4, gaps_out = 8 } })</code></pre>
+      <p>A shortcut with a <code>description</code> of <code>"Group: what it does"</code> shows in
+        <a href="shortcuts.html">Settings → Shortcuts</a>. <code>SLATE</code> is the slate command, so any of
+        <a href="command-line.html">its actions</a> can go on a key.</p>
+
+      <h3>QML</h3>
+      <p><code>user/shell.qml</code> is loaded into Slate, so anything Quickshell can do works there, and Slate's own
+        pieces too, such as <code>Config.s</code> for settings and <code>Config.accent</code> for the accent colour.
+        The file has a small clock widget to try, and this, which adds a command of your own:</p>
+      <pre><code>IpcHandler {
+    target: "mine"
+    function hello(): void { Quickshell.execDetached(["notify-send", "Hello from your shell.qml"]); }
+}</code></pre>
+      <p>Then <code>slate ipc call mine hello</code> runs it. <a href="https://quickshell.org/docs/">Quickshell's
+        docs</a> have the rest.</p>
+
+      <h2>Kept safe</h2>
+      <ul>
+        <li><strong>Updates never touch them.</strong> <code>settings.json</code>, <code>hypr/</code> and
+          <code>user/</code> are carried across to every new version, and going back to an earlier one keeps them
+          too (<a href="updating.html">Updates</a>).</li>
+        <li><strong>A factory reset leaves them alone</strong> unless you choose <strong>Also clear my own
+          files</strong>, and even then they're moved to a backup folder rather than deleted
+          (<a href="troubleshooting.html#starting-over">Starting over</a>).</li>
+        <li><strong>Slate's own files</strong> are replaced by updates. If you've edited one, Settings → Updates lists
+          it before updating, and your copy stays in <code>~/.config/slate.previous</code>. Your own files are the
+          place for changes that last.</li>
+      </ul>
+
+      <h2>Settings → About</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → About</span> says what Slate is and its licence, how
+        much memory and processor Slate itself is using right now, and a few tools:</p>
+      <ul>
+        <li><strong>Welcome</strong>: <strong>Show the welcome</strong> opens the Welcome window again.</li>
+        <li><strong>Settings file</strong>: <strong>Open file</strong> opens <code>settings.json</code>, where every
+          setting is kept.</li>
+        <li><strong>Restart the shell</strong>: reloads the bar, dock, launcher, switchers and notifications. Your apps
+          and windows stay open.</li>
+      </ul>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

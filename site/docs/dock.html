@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The dock · Slate docs</title>
+<meta name="description" content="Slate's dock: your pinned and running apps, hover effects, previews, badges, what's playing, Downloads and the waste basket, and how to set it up.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="dock">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>The dock</h1>
+      <p class="lead">The dock holds the apps you use most and the ones you have open, with what's playing, your
+        downloads and the waste basket close at hand. It sits along the bottom of your screen to start with.</p>
+
+      <h2>What's on it</h2>
+      <p>From start to end:</p>
+      <ul>
+        <li><strong>The Apps button</strong>, which opens the <a href="launcher.html">launcher</a>.</li>
+        <li><strong>What's playing</strong>, while something is.</li>
+        <li><strong>Your pinned apps</strong>, then <strong>the other apps you have open</strong>. Running apps have a
+          dot beneath them.</li>
+        <li><strong>Downloads</strong> and <strong>the waste basket</strong> at the end.</li>
+      </ul>
+      <p>Thin dividers keep these groups apart. You can switch the dividers, the Apps button, what's playing,
+        Downloads and the waste basket off in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Dock</span>.</p>
+
+      <h2>Using your apps</h2>
+      <p>Click an app to open it; its icon bounces while it starts. Click an app that's already open to go to its
+        window, and click again to step through its other windows.</p>
+
+      <h3>Window previews</h3>
+      <p>Rest the pointer on an app with windows open and live previews of them appear just above the dock.
+        Click one to go to it. You can turn previews off, or choose how long to rest first, from
+        <strong>Instant</strong> up to 3 seconds. In game mode they show as titles only.</p>
+
+      <h3>Badges and progress</h3>
+      <p>An app can show a count on its icon: the unread number it publishes itself, or the notifications it's sent
+        since you last went to it. While an app downloads or copies something, a progress bar shows how far it's
+        got. Badges stay put when Slate restarts.</p>
+
+      <h3>Hover effects</h3>
+      <p>Icons respond as the pointer moves along the dock. Choose how in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Dock → Icons</span>:</p>
+      <table>
+        <tr><th>Effect</th><th>What it does</th></tr>
+        <tr><td>Magnify</td><td>The icons near the pointer grow, the one under it most. This is the default.</td></tr>
+        <tr><td>Tilt</td><td>The icons turn in 3D towards the pointer, and the ones near it straighten up to face you.</td></tr>
+        <tr><td>Magnify and tilt</td><td>Both at once.</td></tr>
+        <tr><td>Fade</td><td>The icons away from the pointer fade, so the ones near it stand out.</td></tr>
+        <tr><td>Fade and magnify</td><td>The icons near the pointer grow, and the ones away from it fade.</td></tr>
+        <tr><td>Glow</td><td>The icon under the pointer gets a ring and a soft glow, in its own colour.</td></tr>
+        <tr><td>Glow and magnify</td><td>The icons near the pointer grow, and the one under it glows.</td></tr>
+        <tr><td>Raise</td><td>Just the icon under the pointer lifts up a little.</td></tr>
+        <tr><td>None</td><td>The icons stay as they are.</td></tr>
+      </table>
+      <p><strong>Icon size</strong>, <strong>Magnification</strong> (how large the icon under the pointer grows) and
+        <strong>Magnification spread</strong> (how many neighbours join in) are on the same page.</p>
+
+      <h2>Pinning and unpinning</h2>
+      <ul>
+        <li><strong>To pin an app</strong>, drag it from among your open apps into the pinned ones, or right-click it
+          and choose <strong>Pin to Dock</strong>.</li>
+        <li><strong>To reorder</strong>, drag an icon along the dock. The others part to make room for it.</li>
+        <li><strong>To unpin</strong>, pull a pinned app well up off the dock. A warning appears above it before you
+          let go, so nothing goes by accident. If the app is open, it stays on the dock with the other running apps
+          until you close it. <strong>Unpin from Dock</strong> in its right-click menu does the same.</li>
+      </ul>
+
+      <h2>Dropping files</h2>
+      <p>Drag files onto an app on the dock to open them in it, or onto the waste basket to put them in the bin.</p>
+
+      <h2>Right-click an app</h2>
+      <p>Right-click an app for its menu, pointing at the icon:</p>
+      <ul>
+        <li><strong>Its open windows</strong>, to go straight to one. The one you're in has a dot beside it.</li>
+        <li><strong>The app's own actions</strong>, like a browser's New Private Window, and
+          <strong>New Window</strong>.</li>
+        <li><strong>Pin to Dock</strong> or <strong>Unpin from Dock</strong>.</li>
+        <li><strong>Close Window</strong> (or <strong>Close 2 Windows</strong>, and so on), which closes every window the
+          app has open.</li>
+        <li><strong>Force Quit</strong>, for an app that has stopped responding.</li>
+      </ul>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Force Quit stops the app straight away, so anything it hasn't saved is lost. Try Close Window first.</p></div>
+      <p>Every menu on the dock is listed in <a href="menus.html#the-dock">Right-click menus</a>.</p>
+
+      <h2>The Apps button</h2>
+      <p>Click it to open the launcher. Right-click it for Settings and a few of its pages: Appearance, Wallpaper,
+        Displays, Wi-Fi and Bluetooth.</p>
+
+      <h2>What's playing</h2>
+      <p>While something plays, its album art appears after the Apps button, with Previous, Play/Pause and Next
+        beside it and a progress bar beneath. Click the art to go to the app that's playing. Right-click for the
+        controls in a menu, and to show the player. You can hide the art and keep just the controls with
+        <strong>Album art</strong> in Settings.</p>
+
+      <h2>Downloads</h2>
+      <p>Click the Downloads stack for a grid of your newest downloads, four across, with pictures shown as
+        thumbnails. Click one to open it. Right-click the stack to open the Downloads folder itself.</p>
+
+      <h2>The waste basket</h2>
+      <p>The waste basket at the end of the dock looks full when there's something in it. Click it to open it in your
+        file manager. Right-click and choose <strong>Empty Waste Basket…</strong> to delete what's in it.</p>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Emptying the waste basket deletes its contents for good, so Slate asks first.</p></div>
+
+      <h2>Where it goes</h2>
+      <p>The dock can sit on the bottom, top, left or right of your screen. Choose an edge in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Dock → Position &amp; behaviour</span>, or from the
+        dock's right-click menu. It slides off its old edge and back in at the new one. If you pick the menu bar's
+        edge, the bar moves to the opposite one.</p>
+
+      <h3>Auto-hide</h3>
+      <p>With <strong>Auto-hide</strong> on, the dock steps out of the way while the workspace has tiled windows that need
+        the room. It stays in view over an empty workspace or one with only floating windows. Push the pointer to the
+        dock's edge to bring it back.</p>
+
+      <h2>The dock's own menu</h2>
+      <p>Right-click an empty part of the dock for quick changes, without opening Settings. Each opens a submenu
+        beside it, with your current choice ticked:</p>
+      <ul>
+        <li><strong>Auto-hide</strong>, ticked while it's on.</li>
+        <li><strong>Position</strong>: Top, Bottom, Left or Right.</li>
+        <li><strong>Hover effect</strong>: any of the effects above.</li>
+        <li><strong>Icon size</strong>: Small, Medium or Large.</li>
+        <li><strong>Show</strong>: the Apps button, what's playing, Downloads and the waste basket.</li>
+        <li><strong>Dock settings</strong>, to open its page in Settings.</li>
+      </ul>
+
+      <h2>How it looks</h2>
+      <p>The dock's corners follow your icon shape. With glass on (<a href="appearance.html#glass">Appearance</a>), the
+        dock has a few more settings of its own: <strong>Blur</strong>, <strong>Background opacity</strong> (a little
+        clearer than the rest of Slate to start with), <strong>Tile opacity</strong> for the tiles behind its icons and
+        buttons, and <strong>Icon opacity</strong>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Private Mode and the camera · Slate docs</title>
+<meta name="description" content="Private Mode in Slate: microphones muted, the camera off for every app, assistants off, and screenshots and screen sharing stopped. Plus knowing when your camera's on.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="privacy">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Private Mode and the camera</h1>
+      <p class="lead">One switch for when nothing should be listening, watching or recording. Private Mode turns off
+        your microphones, your camera, assistants and screen capture together, and puts everything back as it was when
+        you're done. And whenever an app turns your camera on, Slate lets you know.</p>
+
+      <h2>Turning Private Mode on</h2>
+      <p>Any of these will do:</p>
+      <ul>
+        <li>The <strong>Private Mode</strong> quick switch in the control centre. If it isn't among your eight, add it
+          in <span class="path"><i class="ti">&#xEB20;</i> Settings → Control Centre</span>
+          (<a href="control-centre.html">Control centre and panels</a>).</li>
+        <li>Type "private" in the <a href="launcher.html">launcher</a> and switch it from the results.</li>
+        <li>From a terminal or a script: <code>slate ipc call private toggle</code> (or <code>on</code> or
+          <code>off</code>). See <a href="command-line.html">The slate command</a>.</li>
+      </ul>
+      <p>It stays on, even if you restart, until you turn it off.</p>
+
+      <h2>What it does</h2>
+      <table>
+        <tr><th>While it's on</th><th>What happens</th></tr>
+        <tr><td>Microphones</td><td>Every microphone is muted, and kept muted: if anything unmutes one, or you plug a new
+          one in, Slate mutes it again straight away.</td></tr>
+        <tr><td>The camera</td><td>Off for every app, cameras plugged in later included.</td></tr>
+        <tr><td>Assistants</td><td><a href="nova.html">Nova</a> and any other assistants using Slate are off, and they
+          can't turn Private Mode off themselves.</td></tr>
+        <tr><td>Screenshots</td><td>Slate doesn't take any. If you press <kbd>Print</kbd>, a notification reminds you
+          Private Mode is on.</td></tr>
+        <tr><td>Screen sharing</td><td>Sharing and recording your screen through the desktop portal, the way video
+          calls and most recording apps ask for it, is stopped.</td></tr>
+      </table>
+      <p>Your speakers and Slate's own sounds work as usual. The Sound and Webcam pages in Settings say when Private Mode
+        is on, each with a <strong>Turn off</strong> button.</p>
+      <p>When you turn it off, everything comes back as it was. Microphones you'd already muted yourself stay muted;
+        only the ones Private Mode muted come back.</p>
+
+      <h3>What it can't stop</h3>
+      <ul>
+        <li><strong>Apps already using the camera or a microphone</strong> keep them until they let go. Close the call
+          or the app, and they can't have them back.</li>
+        <li><strong>Apps that capture the screen directly</strong>, without the desktop portal (like
+          <code>grim</code> or <code>wf-recorder</code>), aren't stopped.</li>
+      </ul>
+
+      <h2>The camera helper</h2>
+      <p>Apps open your camera directly, so only your system can take it away from them. The first time you turn
+        Private Mode on, Slate explains this and offers to add a small helper to your system. It asks for your password
+        that once, and never again. The helper can only switch the camera off and on, nothing else.</p>
+      <p>If you'd rather not, choose <strong>Cancel</strong> and Private Mode stays off. If adding the helper doesn't
+        work out, Private Mode still turns on, with everything except the camera, and a notification says so; turn it
+        off and on again to have another go.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>The helper's switch only lasts until your computer restarts, so your camera can never be left off by
+          mistake. If Private Mode is still on, Slate simply turns the camera off again as it starts.</p></div>
+
+      <h3>On NixOS</h3>
+      <p>On NixOS, your system is set by your configuration, so Slate can't add the helper itself. Private Mode works
+        there without turning the camera off, and a notification lets you know. To have the camera covered too, add the
+        helper through your NixOS configuration.</p>
+
+      <h2>Knowing when your camera's on</h2>
+      <p>Whenever an app starts using your camera, a small pop-up like the volume one says <strong>Camera on</strong>,
+        with the app's name, and <strong>Camera off</strong> once nothing's using it any more.</p>
+      <p>Some apps reach the camera through PipeWire, and then the pop-up names PipeWire rather than the app.</p>
+
+      <h3>The menu bar's camera indicator</h3>
+      <p>For a reminder that stays put, add the camera to your menu bar: choose <strong>Edit layout</strong> from the
+        bar's right-click menu and drag the camera onto the bar (<a href="menu-bar.html#arranging-it-your-way">Arranging
+        it your way</a>). It's an eye, lit in your accent colour while an app is using the camera. Point at it to see
+        which app.</p>
+      <p>The <a href="printers-webcam.html#the-webcam">Webcam page</a> in Settings lists which apps are using the camera
+        too.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

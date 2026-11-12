@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Updates · Slate docs</title>
+<meta name="description" content="Keeping Slate up to date: notifications about new versions, what's new, updating in one click, and going back to the version before.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="updating">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Getting started</p>
+      <h1>Updates</h1>
+      <p class="lead">Slate looks for a new version once a day and lets you know with a notification. Updating takes
+        one click, keeps your settings and your own tweaks, and keeps the version you had so you can go back.</p>
+
+      <h2>Knowing there's a new version</h2>
+      <p>When a new release is out, a notification tells you. You'll find everything about it in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Updates</span>, which you can also reach from the
+        control centre's right-click menu.</p>
+      <p>The <strong>Version</strong> section shows the version you have, the latest one, and when Slate last checked.
+        <strong>Check now</strong> looks straight away. If you'd rather Slate didn't look by itself, switch off
+        <strong>Check for updates</strong>.</p>
+
+      <h2>Updating</h2>
+      <p>When there's a new version, Settings → Updates shows <strong>What's new</strong> in it, with a link to its
+        release page. Choose <strong>Update now</strong>: Slate downloads it, puts it in place and restarts on the new
+        version. Your apps and windows stay open.</p>
+      <p>Your settings and your own tweaks always come along: <code>settings.json</code>, <code>hypr/</code> and
+        <code>user/</code> in <code>~/.config/slate</code>.</p>
+      <ul>
+        <li><strong>If you've changed Slate's own files</strong> by hand (anything outside those three), Settings lists
+          them before updating, since the update replaces them. Your versions stay in the copy kept below, and you'll
+          be asked to click a second time.</li>
+        <li><strong>If the new version needs new packages</strong>, or changes the login session, it asks for your
+          password and installs them as it updates. If you cancel, or it needs a newer Hyprland or Quickshell than
+          your distro has, it stops before changing anything and tells you what to do.</li>
+        <li><strong>If an update doesn't finish</strong>, Settings says so, with <strong>Show log</strong> and
+          <strong>Try again</strong>. Nothing is lost.</li>
+      </ul>
+      <p>Each release's notes are also in the <a href="../changelog.html">changelog</a>.</p>
+
+      <h2>Going back</h2>
+      <p>Slate keeps the version you had before, in <code>~/.config/slate.previous</code>. Under
+        <strong>Previous version</strong> in Settings → Updates, <strong>Go back</strong> (and a second click to
+        confirm) switches to it.</p>
+      <p>Your settings and tweaks stay just as they are now, and the version you leave is kept in its place, so you
+        can switch back again the same way.</p>
+
+      <h2>Missing packages</h2>
+      <p>About half a minute after it starts, Slate checks that everything it needs is installed. If something's
+        missing (a package removed since, say), a notification offers to install it, with your password. It asks once
+        for each set of changes, and <strong>Later</strong> waits a week. To see what it would do, run
+        <code>~/.config/slate/bin/slate-system --check</code>.</p>
+
+      <h2>The login screen</h2>
+      <p>If you've installed Slate's own login screen, it's updated separately, because it runs from a system folder
+        before you log in. When its design changes, Slate asks with a <strong>Login screen out of date</strong>
+        notification; <strong>Update</strong> asks for your password. Until then you'll see the previous version at
+        login, which is quite safe. More in <a href="security.html">Locking and login</a>.</p>
+
+      <h2>From a copy of the code</h2>
+      <p>If you installed from a clone of the repository and would rather update that way:</p>
+      <pre><code>cd slate &amp;&amp; git pull
+./install.sh --no-deps</code></pre>
+      <p>Your settings are kept, just as with an update from Settings.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

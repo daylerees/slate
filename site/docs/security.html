@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Locking and login · Slate docs</title>
+<meta name="description" content="Slate's lock screen, locking when you're away and before sleep, the optional Slate login screen, and the screensaver with its styles, videos and preview.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="security">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Locking and login</h1>
+      <p class="lead">Your screen locks when you ask it to, when you step away, and before your computer sleeps. Slate
+        can also show something calm while you're gone, and, if you'd like, give you a login screen that matches.</p>
+
+      <h2>The lock screen</h2>
+      <p>Lock your screen with <kbd>Super</kbd> + <kbd>L</kbd>, from the power menu, or with a
+        <a href="hot-corners.html">hot corner</a>. The lock screen shows your wallpaper and your picture, and takes
+        your account password. It fades in over your desktop and back out once you're in, but it's fully locked the
+        whole time: nothing gets past it while it fades.</p>
+      <p>If the password's wrong a few times in a row, the lock screen asks you to wait a little before trying again,
+        and shows how long. A Caps Lock indicator lets you know if it's on.</p>
+      <p>Your apps and windows stay open just as you left them while the screen's locked.</p>
+
+      <h3>Lock screen settings</h3>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Security</span>, under <strong>Locking</strong>:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Lock screen</td><td><strong>Preview</strong> shows the lock screen without locking (your password still
+          closes it), and <strong>Lock now</strong> locks straight away.</td></tr>
+        <tr><td>Power menu on the lock screen</td><td>Adds a power button to the lock screen. It's off to start with,
+          because it lets anyone at the keyboard suspend, restart, shut down or log you out without your password.</td></tr>
+        <tr><td>Lock before sleep</td><td>Locks the screen whenever the computer suspends or hibernates. On to start with.</td></tr>
+      </table>
+      <p>The lock screen follows your look, glass included. Change your picture in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → General</span> (see
+        <a href="night-light.html#your-picture-and-location">Your picture and location</a>).</p>
+
+      <h2>Locking when you're away</h2>
+      <p>Under <strong>When you're away</strong>, Slate can lock, turn the screen off and suspend after times you choose:</p>
+      <table>
+        <tr><th>Setting</th><th>To start with</th></tr>
+        <tr><td>Lock after</td><td>10 minutes</td></tr>
+        <tr><td>Turn the screen off after</td><td>15 minutes. Moving the mouse or pressing a key turns it back on.</td></tr>
+        <tr><td>Suspend after</td><td>Never</td></tr>
+        <tr><td>Wait while media plays</td><td>On: you're not counted as away while a video, or an app, is keeping the
+          screen awake.</td></tr>
+      </table>
+      <p>When Slate suspends your computer for being idle, it locks first.</p>
+
+      <h2>The screensaver</h2>
+      <p>The screensaver covers the screen while you're away, before the lock and screen-off times above. Any key,
+        click or move of the pointer puts it away. Set it up in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Screensaver</span>.</p>
+
+      <h3>Styles</h3>
+      <ul>
+        <li><strong>Your wallpaper</strong>, dimmed and slowly drifting.</li>
+        <li><strong>Wallpaper slideshow</strong>: the pictures in your wallpaper folder, changing every 10 seconds to
+          5 minutes (<strong>Change picture every</strong>).</li>
+        <li><strong>Videos</strong>: silent clips, fading from one to the next.</li>
+        <li><strong>Black</strong>, the one it starts with.</li>
+      </ul>
+      <p><strong>Show the clock</strong> adds the time and date to any of them. On black, the clock moves now and
+        then, so nothing burns into your screen.</p>
+
+      <h3>Videos</h3>
+      <p>Point <strong>Videos folder</strong> at a folder of your own clips, or click <strong>Get scenery
+        videos</strong> for twelve free scenery clips: Earth from the space station, an aurora, a waterfall, penguins
+        and more. <strong>Scenery quality</strong> chooses how sharp they are, from 1080p (about 410 MB in all) to 4K
+        (about 1.1 GB). <strong>Automatic</strong> picks what suits your screen.</p>
+      <p>The Videos style needs Qt Multimedia (<code>qt6-multimedia</code>).</p>
+
+      <h3>Timing and preview</h3>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Start after</td><td>How long you're away before it starts. 5 minutes to start with.</td></tr>
+        <tr><td>Lock on wake</td><td>Waking it shows the lock screen, so you'll need your password to get back in.
+          Off to start with.</td></tr>
+        <tr><td>Preview</td><td>Shows it now. Any key, click or move of the pointer puts it away (a preview never locks).</td></tr>
+      </table>
+
+      <h2>The login screen</h2>
+      <p>Installing Slate adds <strong>Slate</strong> to the login screen you already have, and that's all. If you'd
+        like a login screen that matches Slate, with your wallpaper and picture, Slate has one of its own, built on
+        greetd. It's entirely optional, and nothing changes until you choose it.</p>
+
+      <h3>Installing it</h3>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Security → Login screen</span>, try
+        <strong>Preview</strong> first if you like. Then <strong>Install</strong> explains what's involved before it does
+        anything, and asks for your password. It needs greetd; if your computer starts a different login screen (GDM,
+        SDDM or LightDM), Settings says so and gives you the command to switch.</p>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Slate's login screen replaces your system's, and runs before anyone logs in. Slate tests every update
+          before it's installed, and keeps the last version that worked and a basic emergency login to fall back on,
+          so it's very unlikely to leave you stuck. If it ever does, see
+          <a href="troubleshooting.html">Troubleshooting</a>.</p></div>
+
+      <h3>Keeping it in step</h3>
+      <p>Your wallpaper, look and picture follow along by themselves. When the login screen's own design changes in a
+        Slate update, Slate asks for your password once to update it, with a notification that stays until you answer.
+        <strong>Later</strong> waits a week. The same <strong>Update</strong> button is in Settings.</p>
+      <p>If you changed something outside Slate, like replacing your wallpaper file in place, <strong>Resync</strong>
+        in <span class="path"><i class="ti">&#xEB20;</i> Settings → Debug</span> brings the login screen up to date.</p>
+
+      <h3>Going back</h3>
+      <p><strong>Switch back</strong>, in the same place in Settings, puts your old login screen back just as it was.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

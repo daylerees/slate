@@ -1,0 +1,235 @@
+/* Slate's docs: the site's look (../style.css: its colours, Geist, the header), laid out for
+   reading and finding your way. A sidebar of sections (docs.js fills it from its list of pages),
+   the page in a comfortable measure, and an "On this page" list beside it on wide screens. */
+
+body.docs { background: var(--bg); }
+
+.docs-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 220px;
+  gap: 40px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+/* ---- The sidebar ---------------------------------------------------------------------- */
+.docs-nav {
+  position: sticky; top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding: 4px 8px 24px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.docs-search {
+  position: relative;
+  margin: 0 0 18px;
+}
+.docs-search input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit; font-size: 14px;
+}
+.docs-search input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.docs-search .ti {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--dim); font-size: 15px; pointer-events: none;
+}
+.docs-nav h4 {
+  margin: 20px 0 6px;
+  padding: 0 10px;
+  color: var(--dim);
+  font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+}
+.docs-nav h4:first-of-type { margin-top: 0; }
+.docs-nav ul { list-style: none; margin: 0; padding: 0; }
+.docs-nav li a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--dim);
+  font-size: 14.5px; font-weight: 500;
+  line-height: 1.35;
+}
+.docs-nav li a .ti { font-size: 16px; width: 18px; text-align: center; flex: none; }
+.docs-nav li a:hover { background: var(--card); color: var(--text); text-decoration: none; }
+.docs-nav li a.current { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text); }
+.docs-nav li a.current .ti { color: var(--accent); }
+.docs-nav .none { padding: 6px 10px; color: var(--dim); font-size: 14px; }
+
+/* ---- The page ------------------------------------------------------------------------- */
+.docs-main { min-width: 0; }
+.doc { max-width: 760px; font-size: 16.5px; line-height: 1.75; }
+.doc .crumb {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+}
+.doc h1 { font-size: 38px; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 14px; }
+.doc .lead { color: var(--dim); font-size: 19px; line-height: 1.6; margin: 0 0 28px; }
+.doc h2 {
+  font-size: 24px; font-weight: 600;
+  margin: 48px 0 12px; padding-top: 28px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 84px;
+}
+.doc h3 { font-size: 18px; margin: 30px 0 8px; scroll-margin-top: 84px; }
+.doc p { margin: 0 0 16px; }
+.doc ul, .doc ol { margin: 0 0 18px; padding-left: 22px; }
+.doc li { margin: 6px 0; }
+.doc li::marker { color: var(--dim); }
+.doc strong { color: var(--text); font-weight: 600; }
+.doc a { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 3px; }
+.doc a:hover { text-decoration-color: var(--accent); }
+.doc code { font-size: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.doc pre { max-width: none; margin: 0 0 18px; }
+.doc pre code { background: none; border: 0; padding: 0; }
+
+/* Where something is in Settings: Settings → Appearance → Shadows */
+.doc .path {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 1px 9px;
+  border-radius: 7px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 14.5px; font-weight: 500;
+  white-space: nowrap;
+}
+.doc .path .ti { color: var(--accent); font-size: 14px; }
+
+/* Keys: <kbd>Super</kbd> + <kbd>Tab</kbd> */
+.doc kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit; font-size: 13.5px; font-weight: 600; line-height: 1.7;
+  text-align: center;
+}
+
+/* Asides: a tip, a note, or something to be careful of */
+.doc .callout {
+  display: flex; gap: 12px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  font-size: 15.5px; line-height: 1.6;
+}
+.doc .callout > .ti { color: var(--accent); font-size: 18px; line-height: 1.5; flex: none; }
+.doc .callout p:last-child { margin: 0; }
+.doc .callout.warn { border-left-color: #e6cf8e; }
+.doc .callout.warn > .ti { color: #e6cf8e; }
+
+/* Settings tables: what each one does */
+.doc table { width: 100%; border-collapse: collapse; margin: 0 0 22px; font-size: 15px; line-height: 1.55; }
+.doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.doc th { color: var(--dim); font-size: 13px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.doc td:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
+
+/* A picture from the site, framed */
+.doc figure { margin: 0 0 24px; }
+.doc figure img, .doc figure video { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.doc figcaption { color: var(--dim); font-size: 14px; margin-top: 8px; }
+
+/* ---- Previous and next ---------------------------------------------------------------- */
+.docs-pager {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  max-width: 760px;
+  margin: 56px 0 0; padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.docs-pager a {
+  display: block;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+.docs-pager a:hover { background: var(--card); text-decoration: none; }
+.docs-pager small { display: block; color: var(--dim); font-size: 13px; margin-bottom: 2px; }
+.docs-pager .next { text-align: right; grid-column: 2; }
+.docs-pager .edit { grid-column: 1 / -1; color: var(--dim); font-size: 14px; background: none; border: 0; padding: 0; }
+.docs-pager .edit:hover { color: var(--text); background: none; }
+
+/* ---- On this page --------------------------------------------------------------------- */
+.docs-toc {
+  position: sticky; top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  font-size: 14px;
+}
+.docs-toc h4 { margin: 0 0 8px; color: var(--dim); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.docs-toc ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
+.docs-toc li a { display: block; padding: 4px 0 4px 14px; margin-left: -1px; border-left: 2px solid transparent; color: var(--dim); line-height: 1.4; }
+.docs-toc li.sub a { padding-left: 26px; font-size: 13.5px; }
+.docs-toc li a:hover { color: var(--text); text-decoration: none; }
+.docs-toc li a.here { color: var(--text); border-left-color: var(--accent); }
+
+/* ---- The docs' front page ------------------------------------------------------------- */
+.docs-home .doc { max-width: none; }
+.docs-sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin: 8px 0 0; }
+.docs-sections a {
+  display: block;
+  padding: 18px 18px 16px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+.docs-sections a:hover { background: var(--raised); }
+.docs-sections .ti { color: var(--accent); font-size: 22px; }
+.docs-sections strong { display: block; margin: 8px 0 4px; font-size: 17px; }
+.docs-sections span { display: block; color: var(--dim); font-size: 14.5px; line-height: 1.5; }
+
+/* The header's own link to here, lit while you're in the docs */
+.top nav a.here { color: var(--text); }
+
+/* The sidebar's button on narrow screens */
+.docs-menu {
+  display: none;
+  align-items: center; gap: 8px;
+  margin: 0 0 18px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 500;
+  cursor: pointer;
+}
+
+@media (max-width: 1180px) {
+  .docs-layout { grid-template-columns: 240px minmax(0, 1fr); }
+  .docs-toc { display: none; }
+}
+@media (max-width: 860px) {
+  .docs-layout { grid-template-columns: 1fr; gap: 0; padding: 18px 16px 64px; }
+  .docs-menu { display: inline-flex; }
+  .docs-nav { display: none; position: static; max-height: none; margin: 0 0 24px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .docs-nav.open { display: block; }
+  .doc h1 { font-size: 30px; }
+  .doc .lead { font-size: 17px; }
+  .doc td:first-child { white-space: normal; }
+  .docs-pager { grid-template-columns: 1fr; }
+  .docs-pager .next { grid-column: 1; }
+}
+
+/* The header lines up with the docs' wider layout (the rest of the site keeps its own) */
+body.docs .top { padding-left: max(24px, calc((100vw - 1320px) / 2 + 24px)); padding-right: max(24px, calc((100vw - 1320px) / 2 + 24px)); }

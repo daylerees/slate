@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard, mouse and touchpad · Slate docs</title>
+<meta name="description" content="Keyboard layouts and switching between them, Caps Lock, key repeat, pointer speed and style, the touchpad, and gestures in Slate.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="input">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Keyboard, mouse and touchpad</h1>
+      <p class="lead">How your keyboard types, how your pointer moves, and what your touchpad does, all in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Input</span>. Anything you haven't changed there
+        follows Hyprland's own settings.</p>
+
+      <h2>Keyboard layouts</h2>
+      <p>Under <strong>Keyboard</strong>, <strong>Add a layout</strong> searches by language or name, like French or
+        Dvorak. Your layouts are listed underneath, and the first one is used first. Remove one you don't need with
+        the button beside it (you always keep at least one).</p>
+
+      <h3>Switching between them</h3>
+      <p>With more than one layout, <strong>Switch layouts with</strong> sets the keys that move to the next:
+        <kbd>Alt</kbd> + <kbd>Shift</kbd>, <kbd>Ctrl</kbd> + <kbd>Space</kbd>, <kbd>Caps Lock</kbd>, or no
+        shortcut at all.</p>
+      <p>The menu bar shows the layout you're on. Click it for a panel with all your layouts to choose from, or
+        scroll over it to move to the next one. See <a href="menu-bar.html">The menu bar</a>.</p>
+
+      <h2>Caps Lock and key repeat</h2>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Caps Lock key</td><td>Keep it as Caps Lock, or make it another <kbd>Ctrl</kbd>, <kbd>Esc</kbd>, or
+          nothing at all. If it's switching your layouts, it does that instead.</td></tr>
+        <tr><td>Repeat delay</td><td>How long a held key waits before it starts repeating. 500 ms to start with.</td></tr>
+        <tr><td>Repeat speed</td><td>How fast a held key repeats. 16 a second to start with.</td></tr>
+      </table>
+
+      <h2>Mouse</h2>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Pointer speed</td><td>Slower to faster, for mice and touchpads alike. 0 is the device's own speed.</td></tr>
+        <tr><td>Acceleration</td><td>Quick movements carry the pointer further. Switch it off and the pointer moves the
+          same distance however fast you move.</td></tr>
+        <tr><td>Natural scrolling</td><td>Content moves the way the wheel turns, like a touch screen.</td></tr>
+      </table>
+
+      <h2>Pointer style and size</h2>
+      <p><strong>Pointer style</strong> chooses the pointer's look: Slate's own, or any pointer theme you have installed.
+        It's used everywhere at once, by Slate, Hyprland and your apps. <strong>Pointer size</strong> runs from 16 to
+        64 px. Apps you open from then on use it too, so one that was already open may keep the old size until you
+        open it again.</p>
+      <p>Under <strong>More pointer styles</strong> are a few good themes you can add in one click, with no password
+        needed. There's more about them in <a href="icons-and-pointers.html">Icons and pointers</a>.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Over anything in Slate you can click, the pointer turns into a hand, so it's easy to tell what's a button.</p></div>
+
+      <h2>Touchpad</h2>
+      <p>On a computer with a touchpad, a <strong>Touchpad</strong> section appears:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Scroll speed</td><td>How far a two-finger scroll goes.</td></tr>
+        <tr><td>Natural scrolling</td><td>Content follows your fingers, like a phone. On to start with.</td></tr>
+        <tr><td>Tap to click</td><td>A light tap counts as a click.</td></tr>
+        <tr><td>Ignore while typing</td><td>Stops a palm on the touchpad moving the pointer as you type. Game mode lets
+          the touchpad work while you type, and puts this back when you turn it off
+          (<a href="night-light.html#game-mode">Game mode</a>).</td></tr>
+      </table>
+
+      <h3>Gestures</h3>
+      <p>Slate sets up a few touchpad gestures for you:</p>
+      <ul>
+        <li><strong>Four fingers left or right</strong> moves between workspaces.</li>
+        <li><strong>Three fingers up</strong> makes the window full screen.</li>
+        <li><strong>Three fingers down</strong> closes the window.</li>
+        <li><strong>Three fingers left</strong> floats the window, or tiles it again.</li>
+      </ul>
+
+      <h2>Your own input settings</h2>
+      <p>Anything Settings doesn't cover, like settings for one particular device, can go in your own Hyprland config
+        in <code>~/.config/slate/hypr/</code>, which Slate never overwrites. See
+        <a href="customising.html">Your own config</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

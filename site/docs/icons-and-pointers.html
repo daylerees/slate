@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Icons and pointers · Slate docs</title>
+<meta name="description" content="Choose the icon theme for your apps and Slate, colour your folders, shape app icons, and pick a pointer style, with a few good ones a click away.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="icons-and-pointers">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Look and feel</p>
+      <h1>Icons and pointers</h1>
+      <p class="lead">Pick the icons your apps and Slate use, give your folders a colour, and choose a pointer you like. A few
+        well-made icon and pointer styles go in with one click.</p>
+
+      <h2>Icon theme</h2>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Icons → Icon theme</span>, <strong>Icons</strong> lists
+        every icon theme on your computer that has app icons. The one your computer already had comes first, listed by its
+        name with "(default)" after it, for example "Papirus (default)", so you can always go back to it.</p>
+      <p>Choosing a theme changes the icons in your apps, GTK, Qt and KDE alike. Apps that are already open pick them up as
+        they can. Slate's own dock, launcher and bar redraw themselves in the new icons a moment later.</p>
+      <p>If the theme you chose is uninstalled later, your apps go back to your computer's own and Slate says so on the row.</p>
+
+      <h3>Folder colour</h3>
+      <p><strong>Folder colour</strong> colours the folders in Nautilus, Dolphin and other file managers:</p>
+      <ul>
+        <li><strong>From the wallpaper</strong>: the colour closest to your wallpaper's, changing as it changes.</li>
+        <li><strong>Theme's own</strong>, the default: the folders as your icon theme draws them.</li>
+        <li><strong>A colour</strong> of your choice, from the ones your icons come in.</li>
+      </ul>
+      <p>It works with icon themes whose folders come in colours: Papirus, Kora and Nordzy. Desktop, Home, Documents and
+        the other special folders take the same colour. With another theme, the row says it needs one of these.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Slate never changes your system's icons. It makes a small icon theme of its own in your home folder that only
+          swaps the folders, so going back to Theme's own is always clean.</p></div>
+
+      <h2>App icons</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Icons → App icons</span> sets how app icons look in the
+        dock, launcher, switcher, bar and notifications:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Shape</td><td><strong>Tile</strong> (the default), <strong>Squircle</strong>, <strong>Circle</strong>,
+          <strong>Square</strong> or <strong>Original</strong>, the icon's own shape.</td></tr>
+        <tr><td>Fill the shape</td><td>Crops each icon's own border and shadow and grows it to fill the shape, on its main
+          colour. Off, the whole icon sits smaller on a plain tile. With Original, it trims empty margins and theme shadows
+          so every icon is the same size.</td></tr>
+        <tr><td>Tiles in the icon's colour</td><td>The tile behind each icon takes a deep shade of the icon's own main
+          colour rather than the theme's. Grey icons keep the theme's tile. For icons on a tile only.</td></tr>
+        <tr><td>Tint app icons</td><td>Colours app icons with your accent. <strong>Tint strength</strong> goes from a light
+          wash of colour to icons drawn entirely in the accent.</td></tr>
+      </table>
+      <p>With <a href="appearance.html#style">Rounded UI elements</a> off, app icons keep the shape you chose here.</p>
+
+      <h2>More icon styles</h2>
+      <p>Under <strong>More icon styles</strong>, a few well-made icon themes are ready to add with one click:</p>
+      <table>
+        <tr><th>Style</th><th>What it's like</th></tr>
+        <tr><td>Kora</td><td>Soft, colourful and rounded, in colour or grey</td></tr>
+        <tr><td>MoreWaita</td><td>GNOME's own look, with icons for many more apps</td></tr>
+        <tr><td>Numix Circle</td><td>Bright, round app icons, in light or dark</td></tr>
+        <tr><td>Zafiro</td><td>Flat, soft and pastel, in dark or light</td></tr>
+        <tr><td>Nordzy</td><td>Clean and rounded, in light or dark</td></tr>
+      </table>
+      <p>Click <strong>Install</strong> and Slate downloads it from its makers' own release, checks it's exactly the
+        version Slate chose, and puts it in your own icons folder (<code>~/.local/share/icons</code>). There's no password
+        to type, and nothing from it is run. A notification says when it's ready; then choose it in
+        <strong>Icon theme</strong> whenever you like.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>If an install doesn't work out, Slate tells you. Check you're connected to the internet and try again.</p></div>
+
+      <h2>Pointers</h2>
+      <p>Your pointer's settings live with the mouse, in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Input → Mouse</span>:</p>
+      <ul>
+        <li><strong>Pointer style</strong>: <strong>Slate (default)</strong>, Slate's own pointer, or any pointer theme on
+          your computer. Hyprland and your apps all follow it; apps opened from now on use it.</li>
+        <li><strong>Pointer size</strong>: from 16 to 64 px.</li>
+      </ul>
+      <p>Over buttons, switches and links in Slate's panels and windows, the pointer becomes a hand.
+        Over the desktop, the dock and right-click menus, where everything is there to be clicked,
+        it stays an arrow.</p>
+
+      <h3>More pointer styles</h3>
+      <p>Below them, <strong>More pointer styles</strong> adds a few good pointers with one click, the same careful way as
+        the icon styles above: no password, into your own icons folder.</p>
+      <table>
+        <tr><th>Style</th><th>What it's like</th></tr>
+        <tr><td>Phinger</td><td>Soft, rounded and quiet, in light or dark</td></tr>
+        <tr><td>Apple Cursor</td><td>The Mac's pointer, redrawn, in black or white</td></tr>
+        <tr><td>Bibata</td><td>The shape Slate's own pointer comes from, in black or amber</td></tr>
+        <tr><td>Nordzy</td><td>Soft and rounded, in dark or white</td></tr>
+        <tr><td>Rosé Pine</td><td>A gentle, dusky take on KDE's pointer, in dark or light (Dawn)</td></tr>
+        <tr><td>Catppuccin</td><td>Pastel pointers: Mocha dark, Latte light, Mocha lavender and Macchiato blue</td></tr>
+      </table>
+      <p>Once one's in, choose it in <strong>Pointer style</strong>. See <a href="input.html">Keyboard, mouse and touchpad</a>
+        for the rest of the mouse settings.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

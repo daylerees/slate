@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workspaces and the overview · Slate docs</title>
+<meta name="description" content="Moving between Slate's workspaces, naming them, the workspace overview (Super+Down), the secret workspace, and Settings → Workspaces.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="workspaces">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Windows and workspaces</p>
+      <h1>Workspaces and the overview</h1>
+      <p class="lead">Workspaces give each thing you're doing a screen of its own. Slate keeps them in a row: move along it with a
+        key, see them all at once in the overview, and keep a secret one tucked away above the rest.</p>
+
+      <h2>Moving between workspaces</h2>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>The previous or next workspace. <kbd>Super</kbd> and the scroll wheel does the same.</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Go to that workspace.</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Take the window you're in to the previous or next workspace.</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>W</kbd></td><td>Move the window to a new workspace after the last one in use.</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Send the window to that workspace, staying where you are.</td></tr>
+      </table>
+      <p>You can also click a workspace's dot on the menu bar. With more than one display, each has its own workspaces:
+        <kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>1</kbd>–<kbd>9</kbd> goes to this display's workspace, and
+        <kbd>Super</kbd> + <kbd>1</kbd>–<kbd>9</kbd> moves to another display. The full list is in
+        <a href="shortcuts.html">Keyboard shortcuts</a>.</p>
+      <p>As you move, an indicator near the bottom of the screen shows your workspace dots and the name of the one you
+        land on. When you open a link from another app, Slate takes you to the workspace your browser is on.</p>
+
+      <h3>Wrapping round</h3>
+      <p>Switch on <strong>Workspaces wrap around</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Workspaces → Switching</span> and going past the last
+        workspace brings you back to the first, and the other way. It's off to start with, so the row simply stops at its ends.</p>
+
+      <h3>An empty one, always ready</h3>
+      <p><strong>Keep an empty workspace</strong>, on to start with, keeps an empty workspace after the last one in use,
+        ready and waiting for something new.</p>
+
+      <h2>Names</h2>
+      <p>Click the window mode button beside the workspace dots on the menu bar, then the pencil next to the workspace's
+        name. Give it a short name, like "Coding" or "Music", and it takes the place of "Workspace 3" in the overview,
+        the indicator, the bar's hover text and the Spaces panel. A name stays for as long as the workspace is around,
+        and it's saved with a <a href="spaces.html">space</a>. Leave the name empty to go back to the number.</p>
+
+      <h2>The overview</h2>
+      <p>Press <kbd>Super</kbd> + <kbd>↓</kbd> to see every workspace as a large card, with its windows on it.</p>
+      <ul>
+        <li><strong>Choose one</strong> with <kbd>←</kbd> / <kbd>→</kbd> (or <kbd>Super</kbd> + <kbd>←</kbd> / <kbd>→</kbd>),
+          then press <kbd>Enter</kbd> or <kbd>↑</kbd>, or just click its card.</li>
+        <li><strong>Rearrange them:</strong> hold <kbd>Shift</kbd> to lift the chosen card, then use the arrow keys to carry
+          it along the row. Everything on it goes with it: its windows, laid out as they were, its name
+          and its window mode.</li>
+        <li><strong>Close it</strong> with <kbd>Esc</kbd>, or click outside the cards.</li>
+      </ul>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Workspaces → Workspace overview (Super+Down)</span>:</p>
+      <table>
+        <tr><th>Setting</th><th>Choices</th></tr>
+        <tr><td>Windows show</td><td><strong>Live previews</strong>, <strong>App icons</strong> (each window's outline with its
+          app's icon, nothing captured) or <strong>Both</strong>.</td></tr>
+        <tr><td>Moving between workspaces</td><td><strong>Slide</strong>, <strong>Hop</strong>, <strong>Wheel</strong>,
+          <strong>Tilt</strong>, <strong>Orbit</strong>, <strong>Deck</strong>, <strong>Fan</strong>, <strong>Grid</strong> or
+          <strong>Instant</strong>. Grid lays every workspace out in rows; the arrow keys move round it, and more rows than
+          fit scroll.</td></tr>
+        <tr><td>Card size</td><td>How wide the cards are. With Grid, <strong>Grid size</strong> instead: how many go across,
+          from 2 × 2 to 9 × 9.</td></tr>
+        <tr><td>Going to the workspace</td><td><strong>Zoom</strong> (the card grows until it becomes the workspace),
+          <strong>Fade</strong>, <strong>Workspace animation</strong> or <strong>Instant</strong>.</td></tr>
+      </table>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>You can also open the overview from a <a href="hot-corners.html">hot corner</a>.</p></div>
+
+      <h2>The secret workspace</h2>
+      <p>The secret workspace sits over the others, out of sight until you want it: a quiet spot for a music player, a
+        chat window, or anything you'd like kept out of the way.</p>
+      <ul>
+        <li><kbd>Super</kbd> + <kbd>↑</kbd> (or <kbd>Super</kbd> + <kbd>S</kbd>) shows or hides it.</li>
+        <li><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> sends the window you're in there.</li>
+      </ul>
+      <p>When it's empty, a note in the middle of the screen says so. Its windows stay out of the window switcher and
+        the overview.</p>
+
+      <h2>Indicators</h2>
+      <p>Your workspaces show as dots on the menu bar, in the window switcher, in the overview and in the indicator as
+        you switch, with the one you're on lit in your accent colour.
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Workspaces → Look → Workspace indicators</span> draws them
+        as <strong>Circles</strong> or <strong>Squares</strong>, and <strong>Name when switching</strong> (in Switching)
+        turns the name under the indicator on or off.</p>
+      <h3>Lots of workspaces</h3>
+      <p>The menu bar shows up to six dots, and the switcher, the overview and the indicator up to ten. With more
+        workspaces than that, the row scrolls smoothly, keeping the one you're on in the middle, and the dots at
+        an end with more beyond it shrink and fade away, so you can see there's more that way. When you reach
+        the first or last workspace, the row stops and the marker moves on to the end.</p>
+
+      <h2>Switching animation</h2>
+      <p><strong>Workspace switching</strong>, in Settings → Workspaces → Switching, sets how one workspace gives way to the
+        next: <strong>Slide Fade</strong> (the default, the new one sliding in over the old as it fades),
+        <strong>Slide</strong>, <strong>Crossfade</strong>, <strong>Vertical Slide Fade</strong>,
+        <strong>Vertical Slide</strong> or <strong>None</strong>. While a switch slides, windows go square at the corners
+        so the desktop never peeks through between them. With
+        <a href="appearance.html#motion">animations</a> off, workspaces switch straight away.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

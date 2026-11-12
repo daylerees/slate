@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound · Slate docs</title>
+<meta name="description" content="Choosing speakers and microphones in Slate, the volume and mute, Slate's own sound effects and each one's volume, and Private Mode.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="sound">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Sound</h1>
+      <p class="lead">Where your sound plays, which microphone listens, and Slate's own quiet sounds. The volume is
+        always a click away on the menu bar, and everything else is in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Sound</span>.</p>
+
+      <h2>Volume on the menu bar</h2>
+      <p>Click the volume on the menu bar for a panel with the volume, the speakers or headphones it plays through,
+        and your microphone. Scroll over the volume icon to change it without opening anything.</p>
+      <p>While sound is playing through something, or an app is listening to a microphone, soft stripes drift along
+        its slider, and fade away when it stops. It's an easy way to tell when something's using your mic.</p>
+
+      <h3>Volume keys</h3>
+      <p>Your keyboard's volume, mute and microphone mute keys work as you'd expect, even while your screen is
+        locked, with a small pop-up showing the new level. Play, pause, next and previous keys control whatever's playing.</p>
+
+      <h2>Speakers and headphones</h2>
+      <p>Under <strong>Output</strong> in Settings:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Play sound through</td><td>The speakers or headphones your sound comes out of.</td></tr>
+        <tr><td>Volume</td><td>How loud they are.</td></tr>
+        <tr><td>Mute</td><td>Silence them, without losing the volume you had.</td></tr>
+      </table>
+
+      <h2>Microphones</h2>
+      <p>Under <strong>Input</strong>:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Microphone</td><td>Which microphone apps hear you through.</td></tr>
+        <tr><td>Input level</td><td>How loud you sound to them.</td></tr>
+        <tr><td>Mute the microphone</td><td>Nothing gets through until you unmute it.</td></tr>
+      </table>
+      <p>The control centre has quick switches for <strong>Mute</strong> and <strong>Mute microphone</strong> too
+        (<a href="control-centre.html">Control centre and panels</a>).</p>
+
+      <h2>Sound effects</h2>
+      <p>Slate has a small family of soft, rounded sounds, each for one kind of moment. Each has its own volume slider
+        under <strong>Sound effects</strong>, from off upwards. Press the play button beside one to hear it, and you'll
+        hear it again as you let go of its slider.</p>
+      <table>
+        <tr><th>Sound</th><th>When you hear it</th></tr>
+        <tr><td>Volume keys</td><td>A short tick at the new volume when you press the volume keys.</td></tr>
+        <tr><td>Notifications</td><td>A soft chime when a notification pops up. It stays quiet during Do Not Disturb.</td></tr>
+        <tr><td>Questions and warnings</td><td>A soft, questioning sound when Slate asks you to confirm something, an app
+          asks for your password, or a notification is urgent.</td></tr>
+        <tr><td>Clicks</td><td>A barely-there tap when you press Slate's buttons, menus and switches. It needs Qt
+          Multimedia (<code>qt6-multimedia</code>) so the click lands right on time; Settings says so if it's missing.</td></tr>
+        <tr><td>Switching</td><td>A soft swish when you change workspace or move through the window switcher and the
+          overview, drifting the way you're going.</td></tr>
+        <tr><td>Welcome</td><td>A gentle, warm swell when you log in (not when Slate reloads).</td></tr>
+        <tr><td>Goodbye</td><td>A gentle closing sound when you log out, restart or shut down. It plays first, so those
+          take a moment longer.</td></tr>
+      </table>
+      <p>The lock screen and the login screen are always silent.</p>
+
+      <h2>When Private Mode is on</h2>
+      <p>While <a href="privacy.html">Private Mode</a> is on, every microphone is muted and stays muted, so the Sound
+        page says so at the top, with a <strong>Turn off</strong> button. Your speakers and Slate's sounds work as
+        usual. When you turn Private Mode off, your microphones go back to just how they were.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

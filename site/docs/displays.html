@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Displays · Slate docs</title>
+<meta name="description" content="Setting up your screens in Slate: arranging them, resolution, refresh rate, scale, rotation, HDR, the main display, and keeping or undoing changes.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="displays">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Displays</h1>
+      <p class="lead">Slate picks up every screen you plug in and gives each one its own menu bar. When you'd like
+        things a little different, everything about your screens is in one place, and nothing you change sticks
+        until you say so.</p>
+
+      <h2>Arranging your screens</h2>
+      <p>Open <span class="path"><i class="ti">&#xEB20;</i> Settings → Displays</span>. With more than one screen
+        connected, the top of the page shows them as tiles, to scale, laid out as they are now. Drag a tile beside another to match where the screen really is, so the pointer crosses from one to the
+        next where you'd expect. The main display is marked <strong>Main</strong>.</p>
+      <p>Click a tile to choose that screen. Its settings appear underneath, headed with its name.</p>
+
+      <h2>A screen's settings</h2>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Use this display</td><td>Turn a screen off to leave it dark and unused. The only screen in use can't
+          be turned off, so you're never left without one.</td></tr>
+        <tr><td>Resolution</td><td>The sizes the screen reports. Laptop panels often offer only their own, so to make
+          things larger or smaller there, use Scale instead.</td></tr>
+        <tr><td>Refresh rate</td><td>How many times a second the picture updates, from the rates this resolution has.
+          Higher is smoother.</td></tr>
+        <tr><td>Scale</td><td>How large everything on this screen looks, apps included. Only scales that suit the
+          resolution are offered.</td></tr>
+        <tr><td>Rotation</td><td>For a screen turned on its side or upside down.</td></tr>
+        <tr><td>HDR</td><td>Only for screens that support it. <strong>Auto</strong> uses HDR while a game or video
+          fills the screen with HDR content, <strong>On</strong> keeps it on all the time in 10-bit colour, and
+          <strong>Off</strong> never uses it.</td></tr>
+        <tr><td>SDR brightness and SDR colour</td><td>With HDR on, how bright and how colourful everything that isn't
+          HDR looks: most apps, and the desktop.</td></tr>
+        <tr><td>Main display</td><td>Where the main menu bar lives. Every screen has a bar, and the launcher and other
+          panels open on the screen you're using.</td></tr>
+      </table>
+      <p>When you pick a new resolution, Slate keeps the refresh rate if the new size has it (or takes its fastest),
+        and moves the scale to the nearest one that suits it.</p>
+
+      <h2>Keeping a change</h2>
+      <p>A new resolution or refresh rate can leave a screen blank if it doesn't really suit it. So whenever you change
+        something, Slate asks <strong>Keep these display settings?</strong> with a countdown. Choose
+        <strong>Keep</strong> if everything looks right, or <strong>Go back</strong> to undo it straight away. If you
+        can't see the question at all, just wait: when the countdown runs out, Slate puts things back as they were by
+        itself.</p>
+
+      <h2>Making Slate bigger or smaller</h2>
+      <p>A screen's scale changes everything on it, your apps included. If you'd rather make just Slate larger or
+        smaller (the bar, the dock, the panels and the Settings window) on every screen at once, use
+        <strong>Interface size</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Appearance</span>. It works on top of each screen's
+        scale. See <a href="appearance.html#size">Appearance</a>.</p>
+
+      <h2>Brightness</h2>
+      <p>Your keyboard's brightness keys change the screen's brightness (and the keyboard's backlight, where it has
+        keys for it), with a small pop-up showing the new level, just like the volume.</p>
+
+      <h2>Your own monitor rules</h2>
+      <p>If you'd rather set your screens up by hand, rules in <code>~/.config/slate/hypr/monitors.lua</code> take
+        priority over the Displays page. Slate never overwrites that file. See
+        <a href="customising.html">Your own config</a>.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Notifications appear on your main display, so choose the screen you look at most.</p></div>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

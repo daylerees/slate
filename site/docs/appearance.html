@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appearance · Slate docs</title>
+<meta name="description" content="Slate's look: presets, dark and light, your accent colour, glass, blur, rounded corners, shadows, fonts, interface size and animations.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="appearance">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Look and feel</p>
+      <h1>Appearance</h1>
+      <p class="lead">Slate looks good from the moment you log in, and it takes its colours from your wallpaper if you'd like it to.
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Appearance</span> is where you make it your own.</p>
+
+      <h2>Wallpaper, icons and apps</h2>
+      <p>At the top of the page, three rows open pages of their own:</p>
+      <ul>
+        <li><strong>Wallpaper</strong>: your desktop picture, from your own folder or Slate's. See <a href="wallpaper.html">Wallpaper</a>.</li>
+        <li><strong>Icons</strong>: the icon theme, folder colours and the shape of app icons. See <a href="icons-and-pointers.html">Icons and pointers</a>.</li>
+        <li><strong>App Theming</strong>: terminals, editors, GTK, Qt and more following Slate's colours. See <a href="app-theming.html">App theming</a>.</li>
+      </ul>
+
+      <h2>Preset</h2>
+      <p>If you'd rather not fine-tune every setting, a preset gets you to a finished look in one go. It sets the theme,
+        colours, glass and folder colours together:</p>
+      <ul>
+        <li><strong>Slate Default</strong>: back to how Slate starts out.</li>
+        <li><strong>Liquid Glass</strong>: glass, with the accent, tint and folder colours taken from your wallpaper.</li>
+        <li><strong>Metro Flat</strong>: the same colours from your wallpaper, on solid surfaces without glass.</li>
+      </ul>
+      <p>Slate asks before applying one. Your wallpaper and every other setting stay as they are. Once you change something
+        yourself, the preset reads <strong>Custom</strong>.</p>
+
+      <h2>Theme and colour</h2>
+      <h3>Theme</h3>
+      <p><strong>Dark</strong> is the default. <strong>Light</strong> gives the bar, panels and windows light backgrounds with
+        dark text, and <strong>Auto</strong> is light by day and dark in the evening: from sunrise to sunset once you've set your
+        location in <span class="path"><i class="ti">&#xEB20;</i> Settings → General → Location</span>, or 7 in the morning to
+        7 in the evening until you do.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Light mode is still being polished, so Slate asks before switching to it. You can go back to Dark at any time.</p></div>
+
+      <h3>Colour</h3>
+      <p><strong>Colourful</strong>, the default, adds soft pastels: each Settings page has its own colour, and settings you
+        find in the launcher and Slate's notifications share it. <strong>Monotone</strong> keeps to your accent and greys.</p>
+
+      <h3>Accent colour</h3>
+      <p>The accent lights up switches, sliders, selected items and the workspace you're on. Choose one of the presets, or
+        any colour with <strong>Custom colour</strong> (slide to pick a shade, or type a hex code).</p>
+      <p>Or switch on <strong>Accent colour from wallpaper</strong> and Slate picks a bright colour from your wallpaper
+        instead. <strong>Accent boldness</strong> sets how vivid it is, from soft to bold; text on it always stays readable.</p>
+
+      <h3>Background tint</h3>
+      <p><strong>Background tint from wallpaper</strong> lets the bar, panels and window backgrounds take on the wallpaper's
+        overall hue while keeping their brightness. <strong>Tint boldness</strong> sets how much colour they take; 50% is
+        the standard amount. Off, they're a neutral slate.</p>
+      <p>With either of these on, everything shifts together when your wallpaper changes: the bar, panels, Settings and
+        any <a href="app-theming.html">themed apps</a>.</p>
+
+      <h2>Glass</h2>
+      <p>Switch on <strong>Glass</strong> and the bar, dock, panels, menus, notifications, the launcher, Settings and the lock
+        and login screens turn see-through, with the desktop blurred behind them. App icons sit on solid, glossy tiles, and
+        window borders get a sheen across their top-left corner. It's off to start with.</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Opacity</td><td>How much of their colour the surfaces keep: lower is clearer glass.</td></tr>
+        <tr><td>Blur</td><td>How strongly what's behind is blurred. It's Hyprland's blur, so see-through windows use it too;
+          0 leaves Hyprland's own.</td></tr>
+        <tr><td>Gloss</td><td>A glossy sheen on the bar's containers, hover highlights and tooltips. 0% for none.</td></tr>
+        <tr><td>Gloss colour</td><td>How much colour the sheen takes from what it's on. 0% for plain white.</td></tr>
+      </table>
+      <p>Some parts of Slate have glass settings of their own, on their own pages in Settings: the
+        <a href="menu-bar.html#how-it-looks">menu bar</a> and its panels, the <a href="dock.html">dock</a>,
+        <a href="notifications.html">notifications</a>, the <a href="launcher.html">launcher</a> and
+        <a href="nova.html">Nova</a>'s window.</p>
+
+      <h2>Blur</h2>
+      <ul>
+        <li><strong>Fast blur</strong>, on to start with: see-through windows and glass blur just the wallpaper, not the
+          windows under them. It's far less work, so everything stays smooth. Off, they blur whatever's under them, which
+          is heavier and can slow animations and the pointer.</li>
+        <li><strong>Blur quality</strong>: from Low (1 pass) to Highest (4 passes), or Hyprland's own. Medium is the
+          default; smoother blur asks a little more of your computer.</li>
+      </ul>
+
+      <h2>Style</h2>
+      <ul>
+        <li><strong>Rounded screen corners</strong> rounds off the corners of the screen and curves the bar into its edges.</li>
+        <li><strong>Rounded UI elements</strong>: switch it off and everything goes hard-edged and square: the bar's
+          containers and panels, the dock, menus, buttons, switches and your windows. App icons and workspace dots keep
+          the shapes chosen for them.</li>
+      </ul>
+
+      <h2>Shadows</h2>
+      <p>Everything raised casts a soft shadow: panels, menus, the launcher, notifications and floating windows. They're
+        dark, with a light tint of your theme, and they all follow the same settings.</p>
+      <p>At the top of the section, a preview shows a few of Slate's surfaces with their shadows. The
+        <strong>Dark</strong> and <strong>Light</strong> switches in its corner change the background behind them, so you
+        can see how they'd look over a dark window or a light one.</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Shadows</td><td>On to start with. Off, everything sits flat.</td></tr>
+        <tr><td>Darkness</td><td>How dark they are at their darkest (half as dark in light mode).</td></tr>
+        <tr><td>Softness</td><td>How gently their edge fades away. 0 is a crisp edge.</td></tr>
+        <tr><td>Spread</td><td>How far their full darkness reaches past the edge before it fades. It doesn't apply to floating windows.</td></tr>
+        <tr><td>Distance</td><td>How far they sit from what casts them. 0 is all round, like a glow.</td></tr>
+        <tr><td>Direction</td><td>Which way they fall: 0° is straight down, 90° to the left, 180° up and 270° to the right.</td></tr>
+      </table>
+      <p>As you move a slider, every shadow on screen changes with it, floating windows' too, so you can judge it in place.</p>
+      <ul>
+        <li>The menu bar's shadow, and its panels', always fall away from the bar, whichever edge it's on and whatever direction you set.</li>
+        <li>With glass on, shadows stay a little lighter than the darkness you set, so the glass doesn't blur them.</li>
+        <li>In game mode, shadows are off. Your settings are kept for when it ends.</li>
+      </ul>
+
+      <h2>Fonts</h2>
+      <p><strong>Interface font</strong> (Geist to start with) is used across the bar, panels, launcher, switchers,
+        notifications and Settings. <strong>Code font</strong> (Geist Mono) is the monospaced font for terminals and code,
+        used by the apps you theme. Each list shows every installed font in its own typeface, with a search box.</p>
+
+      <h2>Size</h2>
+      <p><strong>Interface size</strong>, from 75% to 150%, makes Slate itself larger or smaller on every display: the bar,
+        dock, panels, launcher, title bars and Settings. Your apps stay as they are; to scale everything, apps included,
+        change <strong>Scale</strong> in <a href="displays.html">Displays</a> instead.</p>
+      <p>A new size takes effect when Slate restarts, so it asks first once you let go of the slider. Your apps and
+        windows stay open, and Settings opens again right where you were.</p>
+
+      <h2>Motion</h2>
+      <p><strong>Animations</strong> covers windows opening, closing and moving, workspace switches, and Slate's own panels,
+        fades and highlights. <strong>Normal</strong> is the default, <strong>Faster</strong> halves them, and
+        <strong>Off</strong> makes everything instant. How workspaces slide is set in
+        <a href="workspaces.html#switching-animation">Workspaces</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

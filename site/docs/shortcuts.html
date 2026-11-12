@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard shortcuts · Slate docs</title>
+<meta name="description" content="Every keyboard shortcut in Slate, grouped, and choosing between Slate's set, Hyprland's defaults, or Hyprland's with Slate's extras.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="shortcuts">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>Keyboard shortcuts</h1>
+      <p class="lead">Slate's shortcuts are built around the <kbd>Super</kbd> key: tap it for apps, hold it with
+        <kbd>Tab</kbd> to switch windows, and use the arrows for workspaces. If you already know Hyprland's keys,
+        you can keep them instead.</p>
+
+      <h2>Seeing and searching them</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Shortcuts</span> lists every shortcut for the set
+        you're using, grouped, with a search box at the top. It includes shortcuts you add yourself, as long as you
+        give them a description (see <a href="#adding-your-own">Adding your own</a>).</p>
+      <p><kbd>Super</kbd> is the key with your operating system's logo on it: the Windows key on most keyboards, or
+        Command (⌘) on a Mac one.</p>
+
+      <h2>Choosing a set</h2>
+      <p>The <strong>Shortcut set</strong> at the top of Settings → Shortcuts has three choices. Changing it applies
+        straight away.</p>
+      <ul>
+        <li><strong>Slate</strong> (the default): everything on this page, below.</li>
+        <li><strong>Hyprland Defaults</strong>: Hyprland's own shortcuts, as in its example config. See
+          <a href="#hyprland-s-defaults">Hyprland's defaults</a>.</li>
+        <li><strong>Hyprland + Slate Extras</strong>: Hyprland's defaults, with Slate's shortcuts added on the keys
+          they leave free.</li>
+      </ul>
+      <p>The hardware keys (volume, brightness, media) and asking Nova work the same in all three.</p>
+
+      <h2>Apps and Slate</h2>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> (tap on its own)</td><td>The app launcher</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Space</kbd></td><td>The app launcher</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Return</kbd></td><td>A terminal (with the launcher open: the selected app on a
+          new workspace at the end)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>E</kbd></td><td>Files</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>T</kbd></td><td>Text editor</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>C</kbd></td><td>Calculator</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd></td><td>System monitor (btop)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>K</kbd></td><td>Ask <a href="nova.html">Nova</a> (also your keyboard's
+          Copilot or assistant key)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Z</kbd></td><td>Settings</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>X</kbd></td><td>Control centre</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>A</kbd></td><td>Notifications</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd></td><td>Power menu</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>L</kbd></td><td>Lock the screen</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>V</kbd></td><td>Clipboard history</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>.</kbd></td><td>Emoji</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd></td><td>Change the wallpaper</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>P</kbd></td><td>Pick a colour from the screen (copied)</td></tr>
+        <tr><td><kbd>Print</kbd></td><td>Screenshot of an area</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Print</kbd></td><td>Screenshot of the screen</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>−</kbd> / <kbd>+</kbd></td><td>Zoom out / in</td></tr>
+      </table>
+      <p>Which terminal, file manager, editor and calculator open is up to you, in
+        <a href="apps.html">Settings → Default Apps</a>.</p>
+
+      <h2>Windows</h2>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Q</kbd></td><td>Close the window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Esc</kbd></td><td>Force-quit an app (click its window)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Tab</kbd></td><td>Switch windows: hold <kbd>Super</kbd>, press <kbd>Tab</kbd>
+          to move along (<kbd>Shift</kbd> + <kbd>Tab</kbd> to go back), and let go to switch</td></tr>
+        <tr><td><kbd>Alt</kbd> + <kbd>Tab</kbd></td><td>Next window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd></td><td>Float or tile the window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>D</kbd></td><td>Maximise</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>F</kbd></td><td>Full screen</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>J</kbd></td><td>Split the other way (Side Stack: make it the main window;
+          Scrolling: change the column's width; Stacking: the next window)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>R</kbd></td><td>Resize with the arrow keys (<kbd>Esc</kbd> or
+          <kbd>Return</kbd> when you're done)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Alt</kbd> + arrows</td><td>Focus the window in that direction (Stacking: left
+          and right go to the previous or next window)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + arrows</td><td>Move the window in that direction</td></tr>
+        <tr><td><kbd>Super</kbd> + drag</td><td>Move a window</td></tr>
+        <tr><td><kbd>Super</kbd> + right-drag</td><td>Resize a window</td></tr>
+      </table>
+
+      <h2>Workspaces</h2>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Previous / next workspace (in a switcher or the
+          overview: moves through it)</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>↓</kbd></td><td>Workspace overview</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>↑</kbd> or <kbd>S</kbd></td><td>Show or hide the secret workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td><td>Move the window to the secret workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>W</kbd></td><td>Move the window to a new workspace at the end</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Move the window to the
+          previous / next workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Go to workspace 1 to 9</td></tr>
+        <tr><td><kbd>Super</kbd> + scroll</td><td>Move through your workspaces</td></tr>
+      </table>
+      <p>More about these in <a href="workspaces.html">Workspaces and the overview</a>.</p>
+
+      <h2>Monitors</h2>
+      <p>For more than one screen: these go to a screen, or to the workspaces of the screen you're on.</p>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Focus monitor 1 to 9</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Move the window to that monitor</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Go to this monitor's workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Ctrl</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Move the window
+          to this monitor's workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td>Send the window
+          to this monitor's workspace, staying where you are</td></tr>
+      </table>
+
+      <h2>Hardware keys</h2>
+      <p>These work in every set, and even while the screen is locked:</p>
+      <ul>
+        <li><strong>Volume</strong> up, down and mute, and <strong>microphone</strong> mute, with an on-screen
+          indicator.</li>
+        <li><strong>Brightness</strong> and <strong>keyboard backlight</strong> up and down.</li>
+        <li><strong>Media</strong>: play or pause, next and previous, for whatever's playing.</li>
+        <li>The <strong>calculator</strong> key opens your calculator.</li>
+      </ul>
+
+      <h2>Hyprland's defaults</h2>
+      <p>With <strong>Hyprland Defaults</strong> chosen, the keys are Hyprland's own, with Slate's launcher for its app
+        menu and Slate's log-out question for its exit:</p>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Q</kbd></td><td>A terminal</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>C</kbd></td><td>Close the window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>R</kbd></td><td>The app launcher</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>E</kbd></td><td>Files</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>V</kbd></td><td>Float or tile the window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>P</kbd></td><td>Pseudo-tile the window</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>J</kbd></td><td>Split the other way</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>M</kbd></td><td>Log out (asks first)</td></tr>
+        <tr><td><kbd>Super</kbd> + arrows</td><td>Focus the window in that direction</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>1</kbd>–<kbd>0</kbd></td><td>Go to workspace 1 to 10</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd>–<kbd>0</kbd></td><td>Move the window to workspace 1 to 10</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>S</kbd></td><td>Show or hide the secret workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td><td>Move the window to the secret workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + scroll</td><td>Next or previous workspace</td></tr>
+        <tr><td><kbd>Super</kbd> + drag / right-drag</td><td>Move / resize a window</td></tr>
+      </table>
+
+      <h3>Slate's extras</h3>
+      <p><strong>Hyprland + Slate Extras</strong> adds Slate's shortcuts wherever Hyprland's leave the keys free:
+        tapping <kbd>Super</kbd>, <kbd>Super</kbd> + <kbd>Tab</kbd>, Settings, the control centre, notifications, the
+        lock, emoji, screenshots, zoom and the rest. Three of Slate's move to new keys, because Hyprland already uses
+        theirs:</p>
+      <table>
+        <tr><th>Keys</th><th>What they do</th></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></td><td>Clipboard history</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd></td><td>Pick a colour from the screen</td></tr>
+        <tr><td><kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>↓</kbd></td><td>Workspace overview</td></tr>
+      </table>
+      <p>Settings → Shortcuts always shows exactly what's in use, so it's the best place to check.</p>
+
+      <h2>Adding your own</h2>
+      <p>Your own shortcuts go in <code>~/.config/slate/hypr/binds.lua</code>. It's loaded after Slate's, so a
+        shortcut there replaces Slate's on the same keys, and saving the file applies it straight away. If something
+        in it is wrong, a notification says what.</p>
+      <pre><code>hl.bind("SUPER + B", hl.dsp.exec_cmd("firefox"), { description = "Apps: Firefox" })
+hl.unbind("SUPER + J")   -- remove one of Slate's</code></pre>
+      <p>A <code>description</code> written as <code>"Group: what it does"</code> lists it in Settings → Shortcuts
+        under that group. Any of Slate's actions can go on a key too, through
+        <a href="command-line.html">the slate command</a>. More in <a href="customising.html">Your own config</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

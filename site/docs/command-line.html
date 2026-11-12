@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The slate command · Slate docs</title>
+<meta name="description" content="The slate command: restarting Slate, reading its log, and controlling it from scripts and key bindings with slate ipc call.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="command-line">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>The slate command</h1>
+      <p class="lead">Everything Slate does is reachable from a terminal through one command, <code>slate</code>.
+        It's handy for restarting Slate, reading its log, and putting any of Slate's actions on a key or in a
+        script.</p>
+
+      <p>The installer puts <code>slate</code> in <code>~/.local/bin</code>. If your terminal says it can't find it,
+        add that folder to your <code>PATH</code>, or use the full path, <code>~/.config/slate/bin/slate</code>.</p>
+
+      <h2>Commands</h2>
+      <table>
+        <tr><th>Command</th><th>What it does</th></tr>
+        <tr><td><code>slate</code></td><td>Starts Slate, if it isn't running</td></tr>
+        <tr><td><code>slate restart</code></td><td>Restarts Slate. The screen fades to "Reloading Slate" and back, and
+          your apps and windows stay open</td></tr>
+        <tr><td><code>slate restart --full</code></td><td>Stops Slate completely and starts it again, rather than
+          reloading it in place</td></tr>
+        <tr><td><code>slate restart --no-cover</code></td><td>Restarts without the "Reloading Slate" screen</td></tr>
+        <tr><td><code>slate stop</code></td><td>Stops Slate</td></tr>
+        <tr><td><code>slate log</code></td><td>Follows Slate's log as it's written</td></tr>
+        <tr><td><code>slate logs</code></td><td>Saves recent logs and system details to a file in Downloads, for a bug
+          report</td></tr>
+        <tr><td><code>slate ipc call &lt;target&gt; &lt;function&gt; [args]</code></td><td>Asks the running Slate to do
+          something (below)</td></tr>
+        <tr><td><code>slate ipc show</code></td><td>Lists everything that can be called</td></tr>
+        <tr><td><code>slate dir</code></td><td>Prints where Slate is installed</td></tr>
+        <tr><td><code>slate mcp</code></td><td>Slate's MCP server, for an AI agent to start
+          (<a href="assistant-server.html">Slate for AI agents</a>)</td></tr>
+        <tr><td><code>slate build-hyprbars</code></td><td>Builds Hyprbars, the optional title-bar plugin (again after
+          Hyprland updates; <code>--status</code> says where it stands)</td></tr>
+        <tr><td><code>slate --help</code></td><td>Shows this list</td></tr>
+      </table>
+
+      <h2>Talking to Slate</h2>
+      <p><code>slate ipc call</code> runs one of Slate's actions in the running Slate: the same ones its own shortcuts
+        use. Put them on a key in <code>~/.config/slate/hypr/binds.lua</code> (see
+        <a href="customising.html">Your own config</a>) or use them in your scripts.
+        <code>slate ipc show</code> lists every target and what each takes.</p>
+
+      <h3>Settings and the shell</h3>
+      <pre><code>slate ipc call settings toggle                         # open or close Settings
+slate ipc call settings page wallpaper                 # open Settings on a page
+slate ipc call settings find appearance "Interface size"   # open a page at one setting
+slate ipc call settings search "dock"                 # search Settings, as typing in its search box
+slate ipc call config get dockAutoHide                 # read a setting
+slate ipc call config set glass true                   # change a setting
+slate ipc call welcome open                            # the Welcome window
+slate ipc call shell reload                            # reload Slate in place</code></pre>
+      <p>Page names are the ones Settings uses inside: <code>general</code>, <code>appearance</code>,
+        <code>wallpaper</code>, <code>icons</code>, <code>displays</code>, <code>input</code>, <code>sound</code>,
+        <code>power</code>, <code>windows</code>, <code>workspaces</code>, <code>notifications</code>,
+        <code>wifi</code> (Network), <code>bluetooth</code>, <code>bar</code> (Menu Bar), <code>dock</code>,
+        <code>shortcuts</code>, <code>updates</code>, <code>debug</code>, <code>about</code> and so on. Setting names
+        are the keys in <code>~/.config/slate/settings.json</code>.</p>
+
+      <h3>The desktop</h3>
+      <pre><code>slate ipc call launcher toggle
+slate ipc call launcher search "2*pi"
+slate ipc call bar panel control       # control, notifications, volume, wifi, bluetooth, battery, calendar, session…
+slate ipc call overview toggle
+slate ipc call picker toggle clipboard  # or emoji
+slate ipc call wallpaper set ~/Pictures/hills.jpg
+slate ipc call wallpaper next
+slate ipc call spaces restore Coding
+slate ipc call spaces list</code></pre>
+
+      <h3>Sound, light and quiet</h3>
+      <pre><code>slate ipc call osd volume up          # up, down or mute, with the on-screen indicator
+slate ipc call osd volumeSet 40
+slate ipc call osd mic mute
+slate ipc call osd brightness down
+slate ipc call media toggle           # play or pause; next, previous
+slate ipc call notifications dnd true # Do Not Disturb on
+slate ipc call nightlight toggle
+slate ipc call airplane toggle
+slate ipc call private toggle         # Private Mode</code></pre>
+
+      <h3>Locking, power and updates</h3>
+      <pre><code>slate ipc call lock lock
+slate ipc call screensaver start
+slate ipc call power confirm logout   # asks first, as the power menu does
+slate ipc call updates check
+slate ipc call assistant ask "turn on glass"   # Nova, once it's switched on</code></pre>
+
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>These talk to the Slate that's running, so they need it started. If it isn't, <code>slate</code> starts
+          it.</p></div>
+
+      <h2>Where things live</h2>
+      <table>
+        <tr><th>What</th><th>Where</th></tr>
+        <tr><td>Slate itself, and your settings (<code>settings.json</code>)</td><td><code>~/.config/slate/</code></td></tr>
+        <tr><td>Your own Hyprland tweaks and QML</td><td><code>~/.config/slate/hypr/</code> and
+          <code>~/.config/slate/user/</code></td></tr>
+        <tr><td>The version before an update</td><td><code>~/.config/slate.previous/</code></td></tr>
+        <tr><td>Saved state: dock pins, launcher counts, notification history</td><td><code>~/.local/state/slate/</code></td></tr>
+        <tr><td>Your saved Spaces, and factory reset backups</td><td><code>~/.local/share/slate/</code></td></tr>
+        <tr><td>Caches, such as app icon tiles</td><td><code>~/.cache/slate/</code></td></tr>
+        <tr><td>The log</td><td><code>~/.cache/slate.log</code></td></tr>
+      </table>
+      <p>Your usual <code>~/.config/hypr</code> isn't used by the Slate session; it stays with your other Hyprland
+        session.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

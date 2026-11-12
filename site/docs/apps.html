@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Default and startup apps · Slate docs</title>
+<meta name="description" content="Choosing which apps Slate uses for your terminal, browser, files, text and sums, and which apps open each time you log in.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="apps">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Apps and tools</p>
+      <h1>Default and startup apps</h1>
+      <p class="lead">Tell Slate which apps you like for the everyday things, and which you'd like waiting for you
+        each time you log in.</p>
+
+      <h2>Default apps</h2>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Default Apps</span>, choose an app for each of
+        these. Slate's shortcuts and menus use them, and so do links and files you open:</p>
+      <table>
+        <tr><th>App</th><th>Used for</th></tr>
+        <tr><td>Terminal</td><td><kbd>Super</kbd> + <kbd>Return</kbd>.</td></tr>
+        <tr><td>Web browser</td><td>Links you open.</td></tr>
+        <tr><td>Files</td><td><kbd>Super</kbd> + <kbd>E</kbd>, and folders you open.</td></tr>
+        <tr><td>Text editor</td><td><kbd>Super</kbd> + <kbd>T</kbd>, and text files you open.</td></tr>
+        <tr><td>Calculator</td><td><kbd>Super</kbd> + <kbd>C</kbd>, and your keyboard's calculator key.</td></tr>
+      </table>
+      <p>Each list offers the apps you have installed that can do the job. Anything you leave unchosen uses Slate's own
+        choice, or the one set in <code>~/.config/slate/hypr/variables.lua</code> if you've set one there
+        (<a href="customising.html">Your own config</a>).</p>
+
+      <h2>Startup apps</h2>
+      <p>In <span class="path"><i class="ti">&#xEB20;</i> Settings → Startup Apps</span>, <strong>Add an app</strong>
+        and pick one from the list. It opens each time you log in. Your startup apps are listed under <strong>At
+        login</strong>, and you can remove one with the button beside it; Slate asks first, and you can always add it
+        again.</p>
+      <p>If you restart with <a href="power.html#reopening-your-apps-after-a-restart">your apps reopening</a>, each
+        startup app opens on a workspace of its own, so it doesn't crowd the windows coming back.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Anything started from your own <code>~/.config/slate/hypr/autostart.lua</code> still opens too, alongside
+          the apps listed here.</p></div>
+
+      <h2>Opening apps</h2>
+      <p>To find and open any app, use the <a href="launcher.html">launcher</a>
+        (<kbd>Super</kbd> on its own, or <kbd>Super</kbd> + <kbd>Space</kbd>), or keep your favourites on the
+        <a href="dock.html">dock</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

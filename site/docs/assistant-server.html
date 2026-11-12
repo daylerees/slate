@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slate for AI agents · Slate docs</title>
+<meta name="description" content="Slate's MCP server: letting an AI agent you already use ask about your desktop and act on it, what it can and can't do, and how Slate keeps it in bounds.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="assistant-server">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>Slate for AI agents</h1>
+      <p class="lead">Slate has an MCP server, <code>slate mcp</code>, that lets an AI agent you already use (Claude
+        Code, Codex, or any that speaks the Model Context Protocol) answer questions about your desktop and do things
+        on it. It's off until you switch it on, and Slate asks you before anything that can't be undone.</p>
+      <p>"Turn on glass." "Put Firefox on workspace 2." "Which window is on workspace 3?" "Where do I change the
+        font?" <a href="nova.html">Nova</a> is Slate's own way to ask, through the same tools; this page is about
+        using them from an agent of your own.</p>
+
+      <h2>Before you switch it on</h2>
+      <p>These are best efforts, and it's fairer to say so than to promise. Using an assistant with Slate is your
+        choice, and what it does on your behalf is your responsibility.</p>
+      <ul>
+        <li><strong>What leaves your computer.</strong> Whatever a tool answers (your settings, your open windows and
+          their titles, the names of your workspaces, Spaces, apps and wallpapers) goes to the service behind your
+          agent, under your own account with them. Slate itself sends nothing anywhere.</li>
+        <li><strong>What it can do.</strong> Change settings, move windows and open apps without asking. Slate asks
+          you before anything that can't be undone.</li>
+        <li><strong>What can go wrong.</strong> Assistants make mistakes, and can be misled by text they read, like a
+          web page's title. Slate does its best to limit the harm, but it can't promise what an assistant will do.</li>
+      </ul>
+
+      <h2>Switching it on</h2>
+      <p>Go to <span class="path"><i class="ti">&#xEB20;</i> Settings → Assistant</span> and switch on
+        <strong>Let assistants use Slate</strong>. Slate shows you the points above and asks; only
+        <strong>Switch on</strong> switches it on. <strong>Read the risks again</strong> shows them at any time, with a
+        button to switch off. If a later version of Slate changes what the risks are, assistants pause until you've
+        read the new ones.</p>
+      <p>While it's off, every tool simply answers that assistants aren't switched on, and does nothing.</p>
+
+      <h2>Adding it to an agent</h2>
+      <p>An agent starts the server itself when it needs it; you never run it by hand.</p>
+      <pre><code># Claude Code
+claude mcp add slate -- ~/.config/slate/bin/slate mcp
+
+# Codex
+codex mcp add slate -- ~/.config/slate/bin/slate mcp</code></pre>
+      <p>Most other agents take a block like this in their settings, with the whole path in place of <code>~</code>:</p>
+      <pre><code>{ "mcpServers": { "slate": { "command": "/home/you/.config/slate/bin/slate", "args": ["mcp"] } } }</code></pre>
+      <p>Settings → Assistant has these lines under <strong>Use Slate from other apps</strong>, each with a Copy
+        button, and <code>slate mcp --help</code> prints them. To take it away again, remove it the same way
+        (<code>claude mcp remove slate</code>).</p>
+
+      <h2>What it can do</h2>
+      <h3>Looking</h3>
+      <p>These only read, and never ask: Slate's status (the theme, volume, battery, the focused window and so on),
+        finding and reading settings, your open windows, workspaces, saved Spaces, installed apps, wallpapers, what's
+        playing, and your recent notifications (only while you allow it, below).</p>
+
+      <h3>Changing</h3>
+      <p>These can be undone, so they happen straight away, unless you've asked Slate to ask about every change:</p>
+      <ul>
+        <li>Changing a setting, or opening Settings at one for you to look at</li>
+        <li>Applying one of Slate's looks, opening a panel from the menu bar</li>
+        <li>Opening an installed app (only an app: no file, address or command)</li>
+        <li>Going to, moving, floating, tiling, maximising or full-screening a window</li>
+        <li>Switching workspace, changing a workspace's window mode, naming one</li>
+        <li>Opening or saving a Space (saving over one asks first)</li>
+        <li>Changing the wallpaper to one of yours or Slate's</li>
+        <li>Volume, brightness, play and pause, Do Not Disturb</li>
+        <li>Taking a screenshot for you, as <kbd>Print</kbd> does. The assistant is only told it's done: it never gets
+          the picture, or where it was saved</li>
+        <li>Locking the screen, starting the screensaver</li>
+      </ul>
+
+      <h3>Always asking</h3>
+      <p>These can't be undone or could lose work, so Slate asks you every time, in its own confirmation window, and
+        no setting turns the question off: closing a window, deleting a Space, and logging out, restarting, shutting
+        down or sleeping.</p>
+
+      <h3>What there's no tool for</h3>
+      <p>Running a command, opening a file or web address, typing or clicking for you, reading the clipboard,
+        answering a password prompt, unlocking the screen, or installing or updating anything.</p>
+
+      <h2>What it refuses</h2>
+      <p>Some settings are yours alone, and Slate refuses to let an assistant change them, saying where you can change
+        each yourself:</p>
+      <ul>
+        <li>What assistants may do and see (everything on Settings → Assistant)</li>
+        <li>Anything that holds a command or reaches outside Slate: default apps, startup apps, launcher commands,
+          clipboard history, log detail</li>
+        <li>Folders, the lock settings, keyboard layouts and the shortcut set, your location, the title bar style and
+          the main display</li>
+        <li>Private Mode, which only you can turn on or off</li>
+      </ul>
+      <p>While the screen is locked, every tool is refused.</p>
+
+      <h2>How Slate keeps it in bounds</h2>
+      <ul>
+        <li><strong>Slate decides, not the agent.</strong> Every call goes through Slate's own checks first, whichever
+          agent made it.</li>
+        <li><strong>The questions are Slate's.</strong> They use fixed sentences with checked names, with Cancel picked
+          first. The assistant can't write them.</li>
+        <li><strong>A no is a no.</strong> After a no, Slate doesn't ask about that again for ten minutes, and asks at
+          most five questions in any ten minutes. A question nobody answers goes away after 45 seconds, and nothing
+          happens. In game mode, questions are declined without interrupting you.</li>
+        <li><strong>Only from the lists.</strong> A window that's open, an app that's installed, a wallpaper from your
+          folder, a Space that's saved. Nothing an assistant makes up reaches your desktop.</li>
+        <li><strong>Words only.</strong> Slate's tools never give a picture of the screen, a window's contents, a file,
+          the clipboard or anything you've typed. Your location is never given.</li>
+        <li><strong>Text from other apps is cleaned</strong>, and the agent is told it's information, never
+          instructions. This helps, but isn't something to rely on.</li>
+        <li><strong>Sixty calls a minute</strong> at most, so a looping assistant is told to slow down.</li>
+      </ul>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Slate can only answer for its own tools. An agent with a terminal of its own can do whatever a terminal
+          can, with or without Slate's server, including running <code>slate ipc</code> and skipping Slate's
+          questions. With Claude Code, Nova switches the agent's own tools off for its prompts; an agent you add
+          yourself keeps whatever you've given it.</p></div>
+
+      <h2>Your permissions</h2>
+      <p>On <span class="path"><i class="ti">&#xEB20;</i> Settings → Assistant</span>, which an assistant can't
+        change:</p>
+      <table>
+        <tr><th>Setting</th><th>To start with</th><th>What it does</th></tr>
+        <tr><td>Ask before changing anything</td><td>Off</td><td>Slate asks before every change, not only the ones that
+          can't be undone</td></tr>
+        <tr><td>Window titles</td><td>On</td><td>Off: assistants get app names only, never window titles, which can
+          name documents and web pages</td></tr>
+        <tr><td>Notifications</td><td>Off</td><td>On: assistants can read your recent notifications</td></tr>
+      </table>
+
+      <h3>Activity</h3>
+      <p>Everything assistants did is listed under <strong>Activity</strong>: the time, which agent, what it asked for,
+        and how it ended (done, declined, no answer, refused or failed). It holds tool calls only, never what you typed
+        or what the agent answered, and stays on your computer. <strong>Clear</strong> empties it.</p>
+
+      <h2>Private Mode</h2>
+      <p>Turning on <a href="privacy.html">Private Mode</a> (a quick switch in the control centre) turns assistants
+        off too: every tool says so and does nothing, until you turn it off again. An assistant can't change Private
+        Mode itself.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

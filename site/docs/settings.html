@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Settings app · Slate docs</title>
+<meta name="description" content="Slate's Settings app: All Settings, the sidebar, searching every setting, seeing what you've changed, and restoring defaults.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="settings">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Reference</p>
+      <h1>The Settings app</h1>
+      <p class="lead">Every setting in Slate is in one place: the Settings app. Search finds any of them in a
+        moment, and anything you change can be put back just as easily.</p>
+
+      <h2>Opening Settings</h2>
+      <ul>
+        <li>Press <kbd>Super</kbd> + <kbd>Z</kbd>.</li>
+        <li>Choose the gear in the <a href="control-centre.html">control centre</a>
+          (<kbd>Super</kbd> + <kbd>X</kbd>).</li>
+        <li>Follow the link at the bottom of any of the menu bar's panels, or a right-click menu's settings item,
+          to go straight to its page.</li>
+        <li>Type a setting's name in the <a href="launcher.html">launcher</a>: every setting is searchable from there
+          too.</li>
+      </ul>
+      <p>If Slate reloads or restarts while Settings is open, it comes back on the same page, scrolled to the same
+        place. Move the window by dragging the top of its sidebar or a page's header.</p>
+
+      <h2>All Settings</h2>
+      <p>Settings opens on <strong>All Settings</strong>: a tile for every page, each with a line about what's on it,
+        and a search box across the top. Every other page has a back button to return here.</p>
+
+      <h3>The sidebar</h3>
+      <p>The pages you'll use most are down the sidebar: General, Appearance, Displays, Input, Sound, Power, Windows,
+        Workspaces, Notifications, Network and Bluetooth. The rest, such as Menu Bar, Dock, Launcher, Shortcuts,
+        Updates and About, are tiles on All Settings.</p>
+
+      <h3>Pages within pages</h3>
+      <p><strong>Wallpaper</strong>, <strong>Icons</strong> and <strong>App Theming</strong> belong to Appearance:
+        open them from the top of <span class="path"><i class="ti">&#xEB20;</i> Settings → Appearance</span>. While
+        you're on one, Appearance stays lit in the sidebar, and the back button returns to it.</p>
+
+      <h2>Searching</h2>
+      <p>Type in the search box on any page, a word or two is enough. It searches every setting by its name, its
+        description and other words people might use ("dpi" finds Interface size, for instance), and shows each match
+        with the page it's on.</p>
+      <p>Choose a result and Settings opens that page, scrolled to the setting and lit up for a moment, so it's easy
+        to spot.</p>
+
+      <h2>What you've changed</h2>
+      <p>A small dot after a setting's name means you've changed it from how Slate starts out. Point at the dot to see
+        the default, and click it to put that setting back.</p>
+
+      <h3>Restore defaults</h3>
+      <p><strong>Restore defaults</strong>, opposite each page's title, puts every setting on that page back as Slate
+        first had it. It can be clicked once something on the page has changed, and asks first, saying how many
+        settings it will change. Your other pages are left just as they are.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>To put everything back at once, there's a factory reset in Settings → Debug. It asks twice and keeps a
+          backup: see <a href="troubleshooting.html#starting-over">Troubleshooting</a>.</p></div>
+
+      <h2>The pages</h2>
+      <p>Each has a page in these docs:</p>
+      <table>
+        <tr><th>Settings page</th><th>In these docs</th></tr>
+        <tr><td>General</td><td><a href="night-light.html">Night light, game mode and caffeine</a></td></tr>
+        <tr><td>Appearance, with Wallpaper, Icons and App Theming</td><td><a href="appearance.html">Appearance</a>,
+          <a href="wallpaper.html">Wallpaper</a>, <a href="icons-and-pointers.html">Icons and pointers</a>,
+          <a href="app-theming.html">App theming</a></td></tr>
+        <tr><td>Displays</td><td><a href="displays.html">Displays</a></td></tr>
+        <tr><td>Input</td><td><a href="input.html">Keyboard, mouse and touchpad</a></td></tr>
+        <tr><td>Sound</td><td><a href="sound.html">Sound</a></td></tr>
+        <tr><td>Power</td><td><a href="power.html">Power and battery</a></td></tr>
+        <tr><td>Windows</td><td><a href="windows.html">Windows</a></td></tr>
+        <tr><td>Workspaces</td><td><a href="workspaces.html">Workspaces and the overview</a></td></tr>
+        <tr><td>Notifications</td><td><a href="notifications.html">Notifications and indicators</a></td></tr>
+        <tr><td>Network, Bluetooth</td><td><a href="network.html">Network and Bluetooth</a></td></tr>
+        <tr><td>Printers, Webcam</td><td><a href="printers-webcam.html">Printers and the webcam</a></td></tr>
+        <tr><td>Menu Bar</td><td><a href="menu-bar.html">The menu bar</a></td></tr>
+        <tr><td>Control Centre</td><td><a href="control-centre.html">Control centre and panels</a></td></tr>
+        <tr><td>Dock</td><td><a href="dock.html">The dock</a></td></tr>
+        <tr><td>Launcher</td><td><a href="launcher.html">The launcher</a></td></tr>
+        <tr><td>Spaces</td><td><a href="spaces.html">Spaces</a></td></tr>
+        <tr><td>Hot Corners</td><td><a href="hot-corners.html">Hot corners</a></td></tr>
+        <tr><td>Security, Screensaver</td><td><a href="security.html">Locking and login</a></td></tr>
+        <tr><td>Shortcuts</td><td><a href="shortcuts.html">Keyboard shortcuts</a></td></tr>
+        <tr><td>Default Apps, Startup Apps</td><td><a href="apps.html">Default and startup apps</a></td></tr>
+        <tr><td>Region</td><td><a href="region.html">Region and time</a></td></tr>
+        <tr><td>Screenshots</td><td><a href="screenshots.html">Screenshots</a></td></tr>
+        <tr><td>Assistant</td><td><a href="nova.html">Nova, the assistant</a> and
+          <a href="assistant-server.html">Slate for AI agents</a></td></tr>
+        <tr><td>Updates</td><td><a href="updating.html">Updates</a></td></tr>
+        <tr><td>Debug</td><td><a href="troubleshooting.html">Troubleshooting</a></td></tr>
+        <tr><td>About</td><td><a href="customising.html">Your own config</a></td></tr>
+      </table>
+
+      <h2>Settings and your own files</h2>
+      <p>Settings are kept in one file, <code>~/.config/slate/settings.json</code>
+        (<span class="path"><i class="ti">&#xEB20;</i> Settings → About → Settings file</span> opens it). For
+        Hyprland's side of things, such as keyboard, mouse and focus, Settings only sets what you change there:
+        anything else keeps what your own files say. See <a href="customising.html">Your own config</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

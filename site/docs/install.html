@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing Slate · Slate docs</title>
+<meta name="description" content="Installing Slate on Arch, Debian, Ubuntu, Fedora, openSUSE, NixOS and more: what it needs, the one install command, the optional login screen, and going back.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="install">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Getting started</p>
+      <h1>Installing Slate</h1>
+      <p class="lead">Slate installs as a session of its own, beside the desktop you have now. One command does it,
+        and nothing about your existing desktop changes, so you can try it and switch back at login.</p>
+
+      <h2>What you need</h2>
+      <ul>
+        <li><strong>Hyprland 0.57 or newer.</strong> Slate's session uses Hyprland's Lua config, which older versions
+          don't understand.</li>
+        <li><strong>Quickshell 0.3 or newer</strong>, the toolkit Slate is written in.</li>
+        <li><strong>A login service</strong>: systemd, which most distros use, or elogind on systems without it. It's
+          what lets Slate suspend, restart and shut down, lock before sleep, and show password prompts.</li>
+        <li>PipeWire, NetworkManager, polkit and a few other packages. The installer installs these for you.</li>
+      </ul>
+      <p>If your distro's Hyprland or Quickshell is too old, the installer says so and points you to the notes for
+        your distro below.</p>
+
+      <h2>Installing</h2>
+      <pre><code>git clone https://github.com/daylerees/slate.git &amp;&amp; cd slate
+./install.sh</code></pre>
+      <p>Run it as your normal user, not with <code>sudo</code>. It shows you what it's going to do and asks before
+        each change to your system, and asks for your password when it installs packages or adds the login entry.</p>
+      <p>When it's finished, <strong>log out, choose Slate on the login screen, and log in.</strong></p>
+
+      <h3>What the installer does</h3>
+      <ol>
+        <li><strong>Packages.</strong> Installs your distro's list (you see it first). If you have no terminal or file
+          manager, it offers kitty and Nautilus; ones you already have are used instead. It also offers to switch on
+          Bluetooth and NetworkManager if they're off.</li>
+        <li><strong>Checks</strong> that Hyprland and Quickshell are new enough.</li>
+        <li><strong>Fonts, icons and pointers.</strong> Geist and Geist Mono come with Slate, and are installed for
+          your other apps too. Papirus becomes your icon theme unless you've picked your own, and Slate's pointers are
+          made available to the session.</li>
+        <li><strong>Slate itself</strong>, copied to <code>~/.config/slate</code>, with the <code>slate</code> command
+          in <code>~/.local/bin</code>. An existing copy is kept as <code>~/.config/slate.previous</code>, and your
+          settings and own files come along.</li>
+        <li><strong>The login entry</strong>, so login screens list Slate. This works with GDM, SDDM, LightDM and
+          greetd.</li>
+      </ol>
+
+      <h3>Options</h3>
+      <table>
+        <tr><th>Option</th><th>What it does</th></tr>
+        <tr><td><code>--yes</code></td><td>Doesn't ask, and answers yes to everything</td></tr>
+        <tr><td><code>--login-screen</code></td><td>Also switches your login screen to Slate's own. Optional: read
+          <a href="#slate-s-own-login-screen">Slate's own login screen</a> first</td></tr>
+        <tr><td><code>--no-deps</code></td><td>Skips installing packages, for when you've installed them yourself</td></tr>
+        <tr><td><code>--link</code></td><td>Links <code>~/.config/slate</code> to the folder instead of copying it,
+          for working on Slate</td></tr>
+        <tr><td><code>--uninstall</code></td><td>Removes Slate (see <a href="#removing-slate">Removing Slate</a>)</td></tr>
+      </table>
+      <p><code>./install.sh --help</code> lists them too.</p>
+
+      <h2>Your distro</h2>
+
+      <h3>Arch, CachyOS, EndeavourOS and Manjaro</h3>
+      <p>Just <code>./install.sh</code>: everything is in the official repositories. If you have
+        <code>paru</code> or <code>yay</code>, it can also add <code>swash</code> (the screenshot editor) from the
+        AUR.</p>
+
+      <h3>Debian testing and sid</h3>
+      <p>Just <code>./install.sh</code>. Debian 13 "trixie" only has Hyprland up to 0.55, so you'll need testing or
+        sid.</p>
+
+      <h3>Ubuntu 26.04 and newer</h3>
+      <p><code>./install.sh</code> adds a PPA for a current Hyprland (<code>ppa:cppiber/hyprland</code>), then offers
+        to build Quickshell from source, since Ubuntu doesn't package 0.3 yet. That takes five to ten minutes.</p>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Quickshell built from source needs building again after Ubuntu updates Qt, or Slate won't start. Run
+          <code>packaging/build-quickshell.sh</code> from the Slate folder when that happens.</p></div>
+
+      <h3>Fedora 44 and newer</h3>
+      <p><code>./install.sh</code> enables two COPRs for you: <code>sdegler/hyprland</code> and
+        <code>errornointernet/quickshell</code>, since Fedora's own Quickshell is too old.</p>
+
+      <h3>openSUSE Tumbleweed</h3>
+      <p><code>./install.sh</code>. Hyprland comes from the official repositories, and the installer offers to build
+        Quickshell from source, as on Ubuntu (so the same note about Qt updates applies).</p>
+
+      <h3>NixOS</h3>
+      <p>Add the contents of <code>packaging/nixos.nix</code> to your configuration (it needs nixos-unstable for
+        Hyprland 0.57), run <code>sudo nixos-rebuild switch</code>, then <code>./install.sh --no-deps</code>. Since Nix
+        manages <code>/etc</code> and <code>/usr/share</code>, you add the Slate session with
+        <code>services.displayManager.sessionPackages</code>, and greetd with <code>services.greetd</code>, in your
+        configuration.</p>
+
+      <h3>Artix, Void and Gentoo</h3>
+      <p>Slate also runs without systemd, as long as <strong>elogind</strong> is installed and running. This support
+        is new and hasn't yet been tried on real installs, so we'd love to hear how it goes.</p>
+      <ul>
+        <li><strong>Artix:</strong> switch on the <code>world</code> and <code>galaxy</code> repositories, then run
+          <code>./install.sh</code>.</li>
+        <li><strong>Void:</strong> Hyprland needs a third-party repository with 0.57 or newer; Quickshell is in Void's
+          own. Then <code>./install.sh</code>.</li>
+        <li><strong>Gentoo:</strong> <code>./install.sh</code> shows the package list and stops, so you can emerge
+          them your way (Hyprland from hyproverlay, Quickshell from GURU), then run <code>./install.sh --no-deps</code>.</li>
+      </ul>
+      <p>Without systemd, Slate shows you the command to switch a service on rather than doing it itself, and the
+        session starts sound for you. The full notes are in
+        <a href="https://github.com/daylerees/slate/blob/master/docs/INSTALL.md#without-systemd-artix-void-gentoo">INSTALL.md</a>.</p>
+
+      <h3>Other distros</h3>
+      <p>Install Hyprland 0.57 or newer, Quickshell 0.3 or newer and the packages listed in
+        <a href="https://github.com/daylerees/slate/blob/master/docs/ARCHITECTURE.md#dependencies">ARCHITECTURE.md</a>,
+        then run <code>./install.sh --no-deps</code>.</p>
+      <p>Not yet possible: Debian 13, Ubuntu 24.04 and 25.10, Fedora 43, openSUSE Leap, Alpine, Chimera and Devuan,
+        which don't have Hyprland 0.57 yet (or have a Qt too old for Quickshell).</p>
+
+      <h2>Logging in to Slate</h2>
+      <p>Log out, and on your login screen pick <strong>Slate</strong> from the list of sessions (often behind a
+        small gear or a menu), then log in as usual. The Welcome window opens the first time:
+        <a href="first-steps.html">Your first login</a> walks you through it.</p>
+      <p>To go back to your old desktop, log out and pick it at the login screen. Nothing there has changed, and you
+        can switch between the two whenever you like.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>If Slate isn't in the list, run <code>sudo ~/.config/slate/bin/slate-session-install</code>. Some login
+          screens only look for new sessions after a restart.</p></div>
+
+      <h2>Slate's own login screen</h2>
+      <p>Slate has a matching login screen too, with your wallpaper and picture. It's optional, and nothing changes
+        your login screen unless you choose to install it, from
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Security → Slate login screen</span> (or with
+        <code>./install.sh --login-screen</code>). Settings explains what's involved before it does anything.</p>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>It replaces your system's login screen, so a broken one could stop you logging in, and it needs updating
+          with your password when Slate, Hyprland, Quickshell or greetd change. Slate guards against this: each update
+          is tested before it's installed, and if it still fails at boot, the last version that worked takes over,
+          then a basic emergency login. You can switch back from the same place in Settings at any time.</p></div>
+      <p>More in <a href="security.html">Locking and login</a>.</p>
+
+      <h2>Removing Slate</h2>
+      <pre><code>./install.sh --uninstall</code></pre>
+      <p>This takes Slate off the login screen, puts your previous login screen back if you installed Slate's, and
+        moves <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather than deleting it.
+        Packages are left installed, since other apps may use them. Slate's saved state in
+        <code>~/.local/state/slate</code> and <code>~/.cache/slate</code> can be deleted by hand if you'd like.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova, the assistant · Slate docs</title>
+<meta name="description" content="Nova lets you ask an AI agent you already use to change a setting, move a window or find something in Slate, in a line, from Slate's own prompt window.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="nova">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>Nova, the assistant</h1>
+      <p class="lead">Nova is Slate's own way to ask for things in plain words: "turn on glass", "put Firefox on
+        workspace 2", "where do I change the font?". An AI agent you already use does it, through Slate's own tools.
+        It's off until you switch it on.</p>
+
+      <h2>What it is</h2>
+      <p>Nova isn't an AI of Slate's own. It hands what you type to an agent you already have and are signed in to,
+        like Claude Code, and that agent works through a set of tools Slate gives it. Slate keeps no keys and sends
+        nothing anywhere itself: your prompts go to the agent's service under your own account, and count towards it
+        like any other.</p>
+      <p>Nova is still an experiment, and its window says so.</p>
+
+      <h2>Switching it on</h2>
+      <p>Go to <span class="path"><i class="ti">&#xEB20;</i> Settings → Assistant</span> and turn on
+        <strong>Let assistants use Slate</strong>. Before anything is switched on, Slate tells you what it means and
+        asks you to choose <strong>Switch on</strong>:</p>
+      <ul>
+        <li><strong>What leaves your computer.</strong> What you type, and what Slate's tools tell the agent about your
+          desktop (your settings, your open windows and their titles, the names of your workspaces, Spaces, apps and
+          wallpapers), goes to the service behind your agent.</li>
+        <li><strong>What it can do.</strong> Change settings, move windows and open apps without asking. Slate asks you
+          before anything that can't be undone.</li>
+        <li><strong>What can go wrong.</strong> Assistants make mistakes, and can be misled by text they read, like a
+          web page's title. Slate does its best to keep one within these limits, but it can't promise what one will
+          do, so using it is your choice and your responsibility.</li>
+      </ul>
+      <p><strong>Read the risks again</strong> shows them at any time, with a button to switch off. If a later version
+        of Slate changes what the risks are, Nova pauses until you've read the new ones.</p>
+
+      <h2>Choosing your agent</h2>
+      <p>There's no agent to start with: pick one under <strong>Agent</strong> on the same page, and what it needs
+        shows beneath it.</p>
+      <ul>
+        <li><strong>Claude Code</strong> is the recommended one. For each prompt, Slate switches off Claude Code's own
+          tools (its shell, files and web access) and any other servers you've added, so it works through Slate's
+          tools alone. Nothing in your own Claude Code setup changes. If it isn't installed or signed in yet, Settings
+          says so and offers <strong>Get it</strong> or <strong>Sign in</strong>.</li>
+        <li><strong>A command of your own</strong> runs whatever command you type, with your words on its input. Slate
+          can't limit what such a command does, so it's marked "Keeps its own tools" and choosing it asks you first.</li>
+      </ul>
+      <p><strong>Model</strong> picks a model for agents that let you choose; left empty, the agent uses its own.</p>
+
+      <h2>Asking Nova</h2>
+      <p>Open Nova with any of these:</p>
+      <ul>
+        <li><kbd>Super</kbd> + <kbd>K</kbd>.</li>
+        <li>Your keyboard's <strong>Copilot</strong> or <strong>assistant</strong> key, if it has one.</li>
+        <li>Nova's button on the menu bar, which appears while it's switched on.</li>
+      </ul>
+      <p>A small window opens, like the launcher. Type what you want in a line and press <kbd>Enter</kbd>. You can
+        change the shortcuts in <a href="shortcuts.html">Shortcuts</a>.</p>
+
+      <h3>The window</h3>
+      <ul>
+        <li><strong>It reads like a chat</strong>: your messages on the right in your accent colour, Nova's on the left,
+          each with when it was said. Answers appear as they're written.</li>
+        <li><strong>What it did</strong> is listed under each answer. That list is Slate's own record, in Slate's words,
+          not the agent's account of itself.</li>
+        <li><strong>Copy a message</strong> by pointing at it: a copy button appears in its corner.</li>
+        <li><strong>Following on</strong> just works. What you type within five minutes of the last answer carries on
+          from it ("and a bit bigger"). Left longer, Nova quietly starts afresh with the agent. There are no
+          conversations to manage, and your history stays on show either way.</li>
+        <li><strong>Close it</strong> with <kbd>Esc</kbd> or a click outside, and the work carries on: the button on the
+          bar turns while Nova's busy, and a notification brings the answer when it's done.</li>
+        <li><strong>Stop</strong> ends it at any time. Locking the screen stops it too.</li>
+      </ul>
+      <p>If something goes wrong, Nova says what happened and offers what will help: <strong>Try again</strong>,
+        <strong>Open a terminal</strong> (to sign in to your agent) or <strong>Open Settings</strong>.</p>
+
+      <h3>Chat history</h3>
+      <p>Your last 100 messages are still there after Slate restarts, kept on this computer only and never sent
+        anywhere. Turn <strong>Keep chat history</strong> off and it's forgotten whenever Slate restarts (what was
+        kept is deleted). <strong>Clear chat history</strong> empties the window; nothing Nova did is undone.</p>
+
+      <h2>What it can and can't do</h2>
+      <h3>Without asking</h3>
+      <p>Looking things up: your settings, your open windows and workspaces, your Spaces and apps, what's playing, and
+        so on. Changes that can be put back also happen straight away: changing a setting, moving a window, opening an
+        app or a Space, the wallpaper, volume and brightness.</p>
+
+      <h3>Always asking first</h3>
+      <p>Closing a window, deleting a Space, and logging out, restarting, shutting down or sleeping always ask, in
+        Slate's own confirmation window, with Cancel picked first. The assistant can't write the question. A question
+        nobody answers goes away after 45 seconds and nothing happens. After a no, Slate won't ask about the same thing
+        again for ten minutes.</p>
+      <p>Turn on <strong>Ask before changing anything</strong> and Slate asks about every change, not only the ones
+        that can't be undone.</p>
+
+      <h3>What it never does</h3>
+      <p>Slate's tools can't run a command, open a file or a web address, type or click for you, read your clipboard,
+        answer a password prompt, unlock the screen, or install anything. They answer in words only: they never show an
+        assistant your screen, your files or your clipboard. While the screen is locked, every tool is refused.</p>
+      <p>Some settings are yours alone, and Slate refuses to let an assistant change them: what the assistant may do,
+        locking, keyboard layouts and the shortcut set, default and startup apps, folders and your location.</p>
+      <div class="callout warn"><i class="ti">&#xEAC5;</i>
+        <p>Slate can only answer for its own tools. An agent with tools of its own, like a command of your own, can do
+          whatever those tools allow, and Slate can't limit that.</p></div>
+
+      <h2>What it can see</h2>
+      <p>Under <strong>What it can see</strong> in Settings:</p>
+      <ul>
+        <li><strong>Window titles</strong> (on to start with). Titles can carry document names and web page titles; off,
+          assistants get app names only.</li>
+        <li><strong>Notifications</strong> (off to start with). On, assistants can read your recent notifications.</li>
+      </ul>
+      <p><strong>See what Slate adds</strong> shows exactly what travels with your words: who the agent is here, and a few
+        lines about the moment, like the time and the window you're in. It never includes your name, your computer's
+        name or your home folder.</p>
+
+      <h2>Private Mode</h2>
+      <p>While <a href="privacy.html">Private Mode</a> is on, Nova and every assistant are off, and Nova's window says
+        so. Only you can turn Private Mode off, from the control centre or the launcher, and Nova is back as it was when you do. An
+        assistant can't change Private Mode.</p>
+
+      <h2>Settings</h2>
+      <p>Everything for Nova is in <span class="path"><i class="ti">&#xEB20;</i> Settings → Assistant</span>:</p>
+      <table>
+        <tr><th>Section</th><th>What's there</th></tr>
+        <tr><td>Assistant</td><td>Let assistants use Slate, and Read the risks again.</td></tr>
+        <tr><td>Agent</td><td>Which agent answers, whether it's ready, its model, or your own command.</td></tr>
+        <tr><td>What it can do</td><td>What it does without asking, what can be undone, Ask before changing anything,
+          and what always asks first.</td></tr>
+        <tr><td>What it can see</td><td>Window titles and notifications.</td></tr>
+        <tr><td>Nova</td><td>Its shortcuts, Keep chat history and Clear chat history.</td></tr>
+        <tr><td>Activity</td><td>Everything assistants did, with how each ended, and Clear.</td></tr>
+        <tr><td>What Slate adds</td><td>Exactly what Slate sends along with your words.</td></tr>
+        <tr><td>Use Slate from other apps</td><td>The lines to add Slate's tools to Claude Code, Codex or another agent
+          (<a href="assistant-server.html">The assistant server</a>).</td></tr>
+      </table>
+      <p>With glass on, Nova's window also has <strong>Blur</strong> and <strong>Opacity</strong>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App theming · Slate docs</title>
+<meta name="description" content="Let your terminals, editors and desktop apps follow Slate's colours, light or dark, and your accent, app by app, with backups and a clean way back.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="app-theming">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Look and feel</p>
+      <h1>App theming</h1>
+      <p class="lead">Your apps can wear Slate's colours too: light or dark, and your accent, even one picked from your wallpaper.
+        It's up to you, app by app, and switching one off puts it back the way it was.</p>
+
+      <h2>Which apps</h2>
+      <table>
+        <tr><th>Kind</th><th>Apps</th></tr>
+        <tr><td>Desktop apps</td><td>GTK apps (Files, Text Editor, Calculator and other GNOME and GTK apps), Qt apps
+          (through qt6ct), KDE apps (Dolphin, Kate and others), GNOME Text Editor, Firefox (toolbars, tabs and menus),
+          Discord (Vesktop, Vencord and Equicord), Spotify (with Spicetify) and Obsidian (a CSS snippet in each vault)</td></tr>
+        <tr><td>Terminals</td><td>kitty, Alacritty, Ghostty, foot and WezTerm. Each gets a see-through starting config if it
+          has none.</td></tr>
+        <tr><td>Editors and tools</td><td>VS Code (Code - OSS and VSCodium too), Zed, Helix, Vim and Neovim, bat, fzf, Yazi,
+          btop, cava and zathura</td></tr>
+      </table>
+      <p>Flatpak builds are themed too, in their own folders. Text colours are kept readable against each background, in
+        light mode as well as dark, and terminals and editors use your <a href="appearance.html#fonts">code font</a>.</p>
+
+      <h2>Switching an app on</h2>
+      <p>Open <span class="path"><i class="ti">&#xEB20;</i> Settings → App Theming</span>. Every app Slate can theme has a
+        row saying what it is and what Slate does to it, with a link to its <strong>Website</strong>, an
+        <strong>Open</strong> button when it's installed, and a switch. Nothing is themed until you switch it on.</p>
+      <p>Once an app is on, it follows Slate from then on: change your accent, switch between light and dark, or let a new
+        wallpaper bring new colours, and the app changes with it. Most apps pick up the change while they're open; a few
+        need a restart, and their row says so (Firefox, for example, and Obsidian if it was open).</p>
+
+      <h2>Backups and switching off</h2>
+      <p>Before Slate first changes one of your config files, it saves a copy beside it, ending in
+        <code>.bak-slate-theme</code>. Slate keeps its colours in theme files of its own and points your config at them,
+        noting every change it makes.</p>
+      <p>Switch an app off and Slate undoes exactly what it did: its theme files go, its lines come out of your config,
+        and any line of yours it replaced is put back. Your own edits stay as they are.</p>
+
+      <h2>Installing an app</h2>
+      <p>An app that isn't on your computer has an <strong>Install</strong> button, when your distribution has it. Slate asks first and says which packages
+        it will add, then installs them from your distribution's own software, which asks for your password. A notification
+        says when it's done, and you can switch on its theme straight away.</p>
+
+      <h2>Refreshing</h2>
+      <p>Sometimes an app update or a reset overwrites a theme. <strong>Refresh</strong>, at the top of the page, puts the
+        themes of every app you've switched on back in place.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Spotify and Discord updates remove their themes (Spicetify's and Vencord's patches). Slate notices within a few
+          minutes, puts them back, and tells you to restart the app. Where it can't, it says so once.</p></div>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

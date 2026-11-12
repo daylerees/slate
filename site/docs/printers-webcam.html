@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Printers and the webcam · Slate docs</title>
+<meta name="description" content="Adding printers in Slate, test pages and print jobs, scanning, and your webcam's picture: preview, colour, light, flicker and which apps are using it.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="printers-webcam">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Printers and the webcam</h1>
+      <p class="lead">Most printers from the last ten years work straight away, over your network or by USB, with no
+        driver to install. And your webcam's picture can be set just the way you like it, for every app at once.</p>
+
+      <h2>Printers</h2>
+      <p>Open <span class="path"><i class="ti">&#xEB20;</i> Settings → Printers</span>. Each printer you've added is
+        listed with what it's doing and any jobs waiting. Beside each one:</p>
+      <ul>
+        <li><strong>Make default</strong>: the one your apps print to unless you choose another.</li>
+        <li><strong>Test page</strong>: prints a page, to check everything's working.</li>
+        <li><strong>Cancel jobs</strong>: clears what's waiting to print.</li>
+        <li><strong>Remove</strong>: takes the printer off this computer. You can add it again at any time.</li>
+      </ul>
+
+      <h3>Adding a printer</h3>
+      <ol>
+        <li>Switch the printer on, and connect it to your network or plug it in.</li>
+        <li>Under <strong>Add a printer</strong>, click <strong>Search</strong>. Slate looks on your network and USB.</li>
+        <li>Click <strong>Add</strong> beside yours.</li>
+      </ol>
+      <p>For a printer that needs a driver of its own, or more settings than Slate has, <strong>Other printers</strong>
+        opens your printer settings app, or the printing service's own page in your browser.</p>
+
+      <h3>If printing isn't set up</h3>
+      <p>Printing goes through CUPS. If it isn't installed, Settings says so: install the <code>cups</code> package and
+        come back. If it's installed but not running, click <strong>Turn on</strong> (it asks for your password), or
+        run the command Settings shows in a terminal.</p>
+
+      <h2>Scanning</h2>
+      <p>Under <strong>Scanners</strong>, Slate lists the scanners it can find. <strong>Scan</strong> opens your
+        scanning app, and <strong>Look again</strong> searches once more if yours was switched off.</p>
+      <p>Scanning needs SANE (<code>sane-utils</code> or <code>sane-backends</code>, with <code>sane-airscan</code>
+        for network scanners) and a scanning app such as Document Scanner (<code>simple-scan</code>). Settings tells
+        you if either is missing.</p>
+
+      <h2>The webcam</h2>
+      <p><span class="path"><i class="ti">&#xEB20;</i> Settings → Webcam</span> sets your camera's picture.
+        Changes apply straight away, to every app that uses the camera. Webcams usually forget their settings when
+        they're unplugged or the computer restarts, so Slate keeps yours and puts them back each time you log in.</p>
+
+      <h3>Preview and who's using it</h3>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Preview</td><td>Shows the camera on the page. Its light comes on only while the preview's showing.</td></tr>
+        <tr><td>Camera</td><td>With more than one, which camera you're setting up.</td></tr>
+        <tr><td>In use by</td><td>Which apps are using the camera right now, if any.</td></tr>
+      </table>
+
+      <h3>Picture</h3>
+      <p>Brightness, contrast, colour, sharpness, gain (brightens a dim picture, at the cost of more grain) and gamma
+        (brightens or darkens the middle tones). Only the ones your camera supports are shown.</p>
+
+      <h3>Light</h3>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Automatic white balance</td><td>Adjusts the colours to the light in the room. Switch it off to set the
+          colour temperature yourself: lower is warmer, higher is cooler.</td></tr>
+        <tr><td>Automatic exposure</td><td>Adjusts how bright the picture is to the light. Switch it off to set the
+          exposure yourself: longer is brighter, but blurs movement.</td></tr>
+        <tr><td>Anti-flicker</td><td>Stops lights flickering in the picture by matching your mains electricity: 50 Hz
+          in the UK, Europe and most of the world, 60 Hz in North America.</td></tr>
+        <tr><td>Backlight compensation</td><td>Brightens you when there's a bright light behind you, like a window.</td></tr>
+      </table>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>If Settings says <strong>No webcam found</strong>, check the camera isn't switched off: some laptops have a
+          key or a little slider for it. Then click <strong>Look again</strong>.</p></div>
+      <p>While <a href="privacy.html">Private Mode</a> is on, the camera is off for every app, so the Webcam page says so,
+        with a <strong>Turn off</strong> button, in place of the picture settings. To see when an app turns your camera
+        on, see <a href="privacy.html#knowing-when-your-camera-s-on">Knowing when your camera's on</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spaces · Slate docs</title>
+<meta name="description" content="Save the apps on your workspaces, and where their windows sit, as a space, then bring them all back in one click.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="spaces">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Windows and workspaces</p>
+      <h1>Spaces</h1>
+      <p class="lead">Set up your apps across workspaces the way you like them, then save them as a space. Next time, one click
+        brings them all back, each window in its place.</p>
+
+      <h2>Saving a space</h2>
+      <p>Click <strong>Spaces</strong> on the menu bar, next to Apps, then <strong>New Space</strong>.</p>
+      <ol>
+        <li><strong>Pick the workspaces</strong> to save. Each workspace with apps on it shows as a small live preview;
+          click the ones you want, and a tick marks them.</li>
+        <li><strong>Give it a name</strong>, like Coding, Writing or Gaming.</li>
+        <li><strong>Choose an icon and a colour</strong>: one of the pastels, or any colour of your own from the colour
+          wheel or a hex code.</li>
+      </ol>
+      <p>A space keeps the apps on those workspaces, where their windows sit (tiled, or floating with their place and
+        size), each workspace's <a href="windows.html#window-modes">window mode</a> and its
+        <a href="workspaces.html#names">name</a>.</p>
+      <p>Saving under a name you already use replaces that space, and Slate tells you before you do. If there's nothing
+        open yet, the panel says so: open the apps you'd like, arrange them, then come back.</p>
+
+      <h2>Bringing one back</h2>
+      <p>Click a space in the Spaces panel. Each of its workspaces opens as a new one, its apps
+        start, and their windows go back to the same tiles, floating spots and sizes. Your other workspaces and windows
+        stay just as they are.</p>
+      <p>To remove a space, point at its row and click the delete button that takes the place of its apps. Slate asks
+        first.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>To bring a space back from a key binding or a script, use
+          <code>slate ipc call spaces restore &lt;name&gt;</code>. See <a href="command-line.html">The command line</a>.</p></div>
+
+      <h2>How its windows are marked</h2>
+      <p>Windows opened from a space wear its colours, so you can tell at a glance where they belong:</p>
+      <ul>
+        <li><strong>Top border:</strong> a thin line in the space's colour along the top of each window.</li>
+        <li><strong>Corner badge:</strong> the space's icon in the window's top left corner. It moves across to the other
+          corner when the pointer comes near, so it's never in your way.</li>
+        <li><strong>On the menu bar:</strong> the window's icon sits on the space's colour.</li>
+        <li><strong>In the switchers:</strong> the space's icon on its windows in the window switcher and the workspace overview.</li>
+      </ul>
+      <p>Each of these can be switched off in <span class="path"><i class="ti">&#xEB20;</i> Settings → Spaces</span>:
+        <strong>Colour the window's icon</strong> under Menu Bar, and <strong>Top border</strong>,
+        <strong>Corner badge</strong> and <strong>Badges in the switchers</strong> under Windows from a space.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

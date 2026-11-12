@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The menu bar · Slate docs</title>
+<meta name="description" content="Slate's menu bar: what's on it, the panels each item opens, putting it on any edge, and arranging it your way.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=27">
+<link rel="stylesheet" href="docs.css?v=1">
+</head>
+<body class="docs" data-page="menu-bar">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">The desktop</p>
+      <h1>The menu bar</h1>
+      <p class="lead">The bar along the top of your screen holds your workspaces, the window you're in, and
+        everything about your computer at a glance. Click anything on it for a panel with more.</p>
+
+      <h2>What's on it</h2>
+      <p>Out of the box, from left to right:</p>
+      <ul>
+        <li><strong>The control centre</strong>, Slate's mark: your quick switches, media, the weather and more.
+          See <a href="control-centre.html">Control centre and panels</a>.</li>
+        <li><strong>Apps</strong>, which opens the <a href="launcher.html">launcher</a>, and
+          <strong>Nova</strong>'s button when the assistant is switched on (<a href="nova.html">Nova</a>).</li>
+        <li><strong>Spaces</strong>, for saving and bringing back sets of workspaces (<a href="spaces.html">Spaces</a>).</li>
+        <li><strong>The workspace's window mode</strong> and <strong>your workspaces</strong> as dots, the one
+          you're on lit in your accent colour.</li>
+        <li><strong>The window you're in</strong>: its app's icon and its title.</li>
+        <li>On the right: <strong>app tray icons</strong> (evened up in size, whatever margin an app draws round its icon), <strong>status icons</strong> (notifications, keyboard
+          layout, Bluetooth, volume, Wi-Fi and battery), <strong>the clock</strong> and <strong>the power
+          button</strong>.</li>
+      </ul>
+      <p>A few more are off until you put them there: clipboard history, screenshots, a camera indicator
+        (an open eye while an app is using your camera) and game mode. You add them in
+        <a href="#arranging-it-your-way">Edit layout</a>.</p>
+
+      <h2>Panels</h2>
+      <p>Click almost anything on the bar and its panel slides out of the bar, joined to it by curved corners:
+        volume and the output device, Wi-Fi networks, Bluetooth devices, the battery and power mode, the
+        calendar and weather under the clock, and so on. Each panel ends with a link to its page in Settings.</p>
+      <p>Click anywhere outside a panel, press <kbd>Esc</kbd>, or change workspace to close it. Opening the
+        launcher, Nova or a switcher closes it too.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Scroll over the volume to change it, and over the keyboard layout to switch to the next one.</p></div>
+
+      <h2>Where it goes</h2>
+      <p>The bar can sit on any edge of the screen: top, bottom, left or right. Change it in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Menu Bar</span>, or right-click an empty part of the bar
+        and choose <strong>Position</strong>. It slides off its old edge and back in at the new one. If the dock was
+        on that edge, the dock moves to the opposite one.</p>
+      <p>On the left or right, the status icons drop their text and the window's title turns to run along the bar.</p>
+
+      <h3>Auto-hide</h3>
+      <p>Switch on <strong>Auto-hide</strong> (in Settings, or from the bar's right-click menu) and the bar steps out of
+        the way when a window needs the room. Push the pointer to the screen's edge and it comes back. It stays
+        while you're using it or a panel is open.</p>
+
+      <h2>Arranging it your way</h2>
+      <p>Choose <strong>Edit layout</strong> from the bar's right-click menu, or in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Menu Bar</span>. The bar itself becomes the editor,
+        with everything behind it dimmed:</p>
+      <ul>
+        <li><strong>Drag anything along the bar.</strong> A gap opens where it will land.</li>
+        <li><strong>Containers</strong> hold things together. Drag things in and out, move a whole container by its
+          gripper, split one up, or add an empty one.</li>
+        <li><strong>Flexible spaces</strong> take up the spare room and push what's either side apart. The bar always
+          keeps at least one.</li>
+        <li><strong>What you don't use</strong> waits in a pool under the bar. Drag it back, or click it, when you want it.</li>
+        <li><strong>Click anything</strong> for its options: whether it shows its text, the clock's date and seconds,
+          how a container collapses.</li>
+      </ul>
+      <p>Press <kbd>Esc</kbd> or <strong>Done</strong> when you're finished. <strong>Defaults</strong> puts everything back
+        as Slate first had it.</p>
+
+      <h2>When it doesn't all fit</h2>
+      <p>On a smaller screen, at a bigger interface size, or with a long network name, the bar slims itself
+        down rather than running off the end. The window's title shortens and then goes, the text beside icons
+        goes (longest first), and the clock sheds its date and seconds. Everything comes back as soon as
+        there's room.</p>
+      <ul>
+        <li><strong>Containers can collapse</strong> behind a button of their own: <strong>Never</strong>,
+          <strong>Always</strong>, or <strong>When needed</strong> (how they start), which tucks one away only when
+          the bar's short of room.</li>
+        <li><strong>More</strong> holds whatever still doesn't fit. You place it like anything else, and its panel lists
+          each thing with its value.</li>
+        <li><strong>Set priority</strong>, in Edit layout, decides what leaves first: drag the list into order, and
+          what's at the top stays longest. Some things always stay, Power, the clock and the control centre to start
+          with, and you can choose others.</li>
+        <li><strong>Try it shorter</strong> shows your bar at three quarters, half or a third of its length, so you can
+          see what would happen.</li>
+      </ul>
+
+      <h2>How it looks</h2>
+      <p>With glass on (<a href="appearance.html#glass">Appearance</a>), the bar has sliders of its own in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Menu Bar</span>: how see-through its background
+        is, whether what's behind it is blurred, and how solid its containers are, normally and under the pointer.
+        Its panels have their own opacity and blur too.</p>
+      <p>When you point at the bar or open a panel, a shadow appears beneath it. It follows your
+        <a href="appearance.html#shadows">shadow settings</a>.</p>
+
+      <h2>Right-click menu</h2>
+      <p>Right-click an empty part of the bar for <strong>Auto-hide</strong>, <strong>Position</strong>,
+        <strong>Clock</strong> (12 or 24-hour, and seconds), <strong>Edit layout</strong> and the bar's settings.
+        See <a href="menus.html">Right-click menus</a>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>
