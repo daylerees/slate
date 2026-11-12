@@ -74,6 +74,12 @@ PanelWindow {
         if (current !== "") revealed = true;
     }
     function close() { current = ""; pending = ""; revealed = false; revealWaiting = false; }
+    // Going to another workspace (a shortcut, the wheel, a dot on the bar) closes it, as opening
+    // the launcher, a switcher or Chalk does (shell.qml)
+    Connections {
+        target: Config
+        function onFocusedWorkspaceIdChanged() { if (pop.engaged) pop.close(); }
+    }
     // Name a workspace (the pencil on the window mode panel): the panel closes and Slate's
     // confirmation window asks, with a field for the name
     function renameWorkspace(ws) {
