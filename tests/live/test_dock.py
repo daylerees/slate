@@ -334,3 +334,66 @@ class DraggingTheOnlyPin(LiveCase):
             self.ipc("test", "dockDrag", "foot", launcher + 1, 0)
             self.ipc("test", "dockDrop")
             self.wait(lambda st: st["dock"]["dragging"] == "" and st["dock"]["pinned"] == ["foot"], "foot back")
+
+
+class DockMenu(LiveCase):
+    """The dock's own menu (a right-click on its empty space): its submenus set their settings
+    and tick the choice in use."""
+    def menu(self):
+        return self.s.state()["dockMenu"]
+
+    def item(self, label):
+        return next(i for i in self.menu()["items"] if i and i["label"] == label)
+
+    def test_items(self):
+        self.ipc("test", "dockMenu", "open")
+        self.wait(lambda st: st["dockMenu"]["open"], "the dock's menu")
+        labels = [i and i["label"] for i in self.menu()["items"]]
+        for want in ("Auto-hide", "Position", "Hover effect", "Icon size", "Show", "Dock settings"):
+            self.assertIn(want, labels)
+        self.ipc("test", "dockMenu", "Dock settings")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock", "Dock settings from its menu")
+        self.ipc("settings", "close")
+
+    def test_icon_size_ticks_the_choice(self):
+        self.keep_setting("dockIconSize")
+        for label, size in (("Large", "52"), ("Small", "32")):
+            with self.subTest(label):
+                self.ipc("test", "dockMenu", "Icon size/" + label)
+                for _ in range(20):
+                    if self.setting("dockIconSize") == size:
+                        break
+                    self.s.settle(0.1)
+                self.assertEqual(self.setting("dockIconSize"), size)
+                ticked = [j["label"] for j in self.item("Icon size")["sub"] if j and j["ticked"]]
+                self.assertEqual(ticked, [label])
+
+    def test_auto_hide_and_position(self):
+        self.keep_setting("dockAutoHide")
+        self.keep_setting("dockPosition")
+        was = self.setting("dockAutoHide")
+        self.ipc("test", "dockMenu", "Auto-hide")
+        for _ in range(20):
+            if self.setting("dockAutoHide") != was:
+                break
+            self.s.settle(0.1)
+        self.assertNotEqual(self.setting("dockAutoHide"), was)
+        self.assertEqual(self.item("Auto-hide")["ticked"], self.setting("dockAutoHide") == "true")
+        self.ipc("test", "dockMenu", "Position/Left")
+        self.wait(lambda st: st["dockEdge"] == "left", "the dock to move left from its menu")
+
+
+class MenusClose(LiveCase):
+    """An open menu closes when you go to another workspace, or the launcher opens."""
+    def test_on_workspace_change_and_the_launcher(self):
+        self.ipc("test", "barMenu", "open")
+        self.wait(lambda st: st["barMenu"]["open"])
+        self.ipc("launcher", "open")
+        self.wait(lambda st: not st["barMenu"]["open"], "the menu to close as the launcher opens")
+        self.ipc("launcher", "close")
+        self.ipc("test", "dockMenu", "open")
+        self.wait(lambda st: st["dockMenu"]["open"])
+        ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
+        self.addCleanup(lambda: self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws} }})) end"))
+        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws + 1} }})) end")
+        self.wait(lambda st: not st["dockMenu"]["open"], "the dock's menu to close on going to another workspace")

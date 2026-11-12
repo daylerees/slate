@@ -199,6 +199,15 @@ ShellRoot {
             Config.cameraApps = apps === "" ? [] : apps.split(",");
             Config.cameraOn = on;
         }
+        // The dock's own menu (its empty space): "open", or an item to choose, as barMenu
+        function dockMenu(what: string): void {
+            if (what === "open") { dockMenu.openHere(); return; }
+            const path = what.split("/");
+            let row = dockMenu.items.find(i => i.label === path[0]);
+            if (row && path.length > 1 && row.submenu) row = row.submenu.find(i => i.label === path[1]);
+            dockMenu.close();
+            if (row && row.run) row.run();
+        }
         function menuKey(key: string): void {
             const k = ({ Up: Qt.Key_Up, Down: Qt.Key_Down, Enter: Qt.Key_Return, Space: Qt.Key_Space, Left: Qt.Key_Left,
                          Right: Qt.Key_Right, Home: Qt.Key_Home, End: Qt.Key_End, Escape: Qt.Key_Escape })[key];
@@ -341,7 +350,10 @@ ShellRoot {
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
                        line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState },
-                barEdge: Config.barEdge, dockEdge: Config.dockEdge
+                barEdge: Config.barEdge, dockEdge: Config.dockEdge,
+                // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
+                dockMenu: { open: dockMenu.visible, items: dockMenu.items.map(i => i.separator ? null
+                    : { label: i.label, ticked: i.icon === 0xEA5E, sub: i.submenu ? i.submenu.map(j => j.separator ? null : { label: j.label, ticked: j.icon === 0xEA5E }) : null }) }
             });
         }
     }
