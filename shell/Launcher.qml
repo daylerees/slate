@@ -48,7 +48,27 @@ PanelWindow {
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color accent: Config.accent        // theme accent (Settings → Appearance)
     readonly property color accentText: Config.tint("#12151a")      // text on the accent
-    readonly property int slideMs: 140
+    readonly property int slideMs: 90
+    // How long a slide takes to get up to speed (and to settle): short, so the highlight answers
+    // a key at once rather than creeping off (eased over the whole slide, it felt laggy)
+    readonly property int easeMs: 35
+    // Moved by the pointer, the highlight is simply there, under it: any slide at all trailed
+    // behind the pointer (keys set this back, for their slide)
+    property bool byPointer: false
+    // Whether you've moved the selection since the search changed (keys or pointer). Until you
+    // have, it stays on the top result as results come in: they arrive a moment after the text
+    // changes, and as they're reordered the list carries the selection along with its row (so
+    // typing "c" left it on Files at the bottom, and 24*7 on "Search the web" under the answer)
+    property bool picked: false
+    // Wrapping round to the other end jumps there, highlight and list both, as opening does: a
+    // slide the length of the list took longer than a held key takes to repeat, so the
+    // selection was already a few items on before it was ever seen at the end
+    function jumpTo(index) {
+        slideHighlight = false;
+        list.currentIndex = index;
+        Qt.callLater(() => root.slideHighlight = true);
+    }
+    readonly property int moveMs: byPointer ? 0 : slideMs
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
 
     // ---- Open / close ------------------------------------------------------
@@ -67,6 +87,7 @@ PanelWindow {
     function openLauncher() {
         screen = Config.focusedScreen;     // open on the focused screen
         lastPointer = null;
+        picked = false;
         openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         slideHighlight = false;
         Qt.callLater(() => root.slideHighlight = true);
@@ -298,9 +319,13 @@ PanelWindow {
             if (j >= 0) resultModel.move(j, i, 1);
             else resultModel.insert(i, { rid: keys[i] });
         }
-        // A new search starts at the top
+        // A new search starts at the top, and stays there as more results come in until you
+        // move the selection yourself
         if (syncedQuery !== search.text) {
             syncedQuery = search.text;
+            list.currentIndex = 0;
+            list.positionViewAtBeginning();
+        } else if (!picked && list.currentIndex !== 0) {
             list.currentIndex = 0;
             list.positionViewAtBeginning();
         }
@@ -815,9 +840,12 @@ PanelWindow {
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
-                onTextChanged: { list.currentIndex = 0; if (root.shown) root.typed = true; }
+                onTextChanged: { root.byPointer = false; root.picked = false; list.currentIndex = 0; if (root.shown) root.typed = true; }
 
                 Keys.onPressed: event => {
+                    root.byPointer = false;             // (keys slide at their own pace)
+                    if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Tab, Qt.Key_Backtab, Qt.Key_PageUp, Qt.Key_PageDown,
+                         Qt.Key_Left, Qt.Key_Right, Qt.Key_Home, Qt.Key_End].includes(event.key)) root.picked = true;
                     const n = list.count;
                     const i = list.currentIndex;
                     // Items per row (1 in the list) and per page
@@ -842,7 +870,7 @@ PanelWindow {
                     // other way (in the grid, to the same column at the other end)
                     case Qt.Key_Down:
                         if (i + across < n) list.currentIndex = i + across;
-                        else if (Config.s.launcherWrap) list.currentIndex = i % across;
+                        else if (Config.s.launcherWrap) root.jumpTo(i % across);
                         else list.currentIndex = n - 1;
                         break;
                     case Qt.Key_Up:
@@ -850,11 +878,11 @@ PanelWindow {
                         else if (Config.s.launcherWrap) {
                             // the same column in the last row (or the last item, if that row is short)
                             const lastRow = Math.floor((n - 1) / across) * across;
-                            list.currentIndex = Math.min(n - 1, lastRow + i % across);
+                            root.jumpTo(Math.min(n - 1, lastRow + i % across));
                         } else list.currentIndex = 0;
                         break;
-                    case Qt.Key_Tab: list.currentIndex = i + 1 < n ? i + 1 : (Config.s.launcherWrap ? 0 : n - 1); break;
-                    case Qt.Key_Backtab: list.currentIndex = i > 0 ? i - 1 : (Config.s.launcherWrap ? n - 1 : 0); break;
+                    case Qt.Key_Tab: if (i + 1 < n) list.currentIndex = i + 1; else if (Config.s.launcherWrap) root.jumpTo(0); else list.currentIndex = n - 1; break;
+                    case Qt.Key_Backtab: if (i > 0) list.currentIndex = i - 1; else if (Config.s.launcherWrap) root.jumpTo(n - 1); else list.currentIndex = 0; break;
                     case Qt.Key_PageDown: list.currentIndex = Math.min(n - 1, i + page); break;
                     case Qt.Key_PageUp: list.currentIndex = Math.max(0, i - page); break;
                     default: return;
@@ -900,12 +928,12 @@ PanelWindow {
                 // Smoothed: a new target (the next key press) carries on at the current speed,
                 // where an eased slide restarted fast on each press and lurched when keys repeat
                 Behavior on x {
-                    enabled: root.slideHighlight && Config.animate
-                    SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 }
+                    enabled: root.slideHighlight && Config.animate && !root.byPointer
+                    SmoothedAnimation { duration: Config.ms(root.moveMs); velocity: -1; maximumEasingTime: root.easeMs }
                 }
                 Behavior on y {
-                    enabled: root.slideHighlight && Config.animate
-                    SmoothedAnimation { duration: Config.ms(root.slideMs); velocity: -1 }
+                    enabled: root.slideHighlight && Config.animate && !root.byPointer
+                    SmoothedAnimation { duration: Config.ms(root.moveMs); velocity: -1; maximumEasingTime: root.easeMs }
                 }
             }
 
@@ -916,26 +944,42 @@ PanelWindow {
                 property: "contentY"
                 duration: Config.ms(root.slideMs)
                 velocity: -1
+                maximumEasingTime: root.easeMs
+                // (and once it's there, make sure: should anything else have moved the list
+                // meanwhile, the selection is put back in view at once)
+                // (later, and only if it's really stopped: a restart stops it for a moment too)
+                onRunningChanged: if (!running) Qt.callLater(() => { if (!scrollAnim.running) list.keepInView(false); })
             }
-            onCurrentIndexChanged: {
+            // Where the selection is: its row's own place where it's been laid out (rows added
+            // or taken away above move it, so working it out from its number could be off),
+            // else its number's
+            function selTop() {
+                if (currentItem) return currentItem.y;
+                return originY + Math.floor(currentIndex / columns) * cellHeight;
+            }
+            function keepInView(animated) {
                 if (currentIndex < 0) return;
-                // (from the list's own starting point: rows added above move it, so it isn't
-                // always 0, and going by 0 scrolled the results out of sight)
-                const top = originY + Math.floor(currentIndex / columns) * cellHeight;
-                const bottom = top + cellHeight;
+                const top = selTop(), bottom = top + cellHeight;
                 // From where it's already heading (keys pressed quickly), so the scroll carries on
-                const from = scrollAnim.running ? scrollAnim.to : contentY;
+                const from = animated && scrollAnim.running ? scrollAnim.to : contentY;
                 let to = from;
                 if (top < from) to = top;
                 else if (bottom > from + height) to = bottom - height;
-                if (to === from) return;
-                if (root.slideHighlight && Config.animate) {
+                to = Math.max(originY, Math.min(originY + Math.max(0, contentHeight - height), to));
+                if (Math.abs(to - from) < 0.5) return;
+                if (animated && root.slideHighlight && Config.animate) {
                     scrollAnim.to = to;
                     scrollAnim.restart();       // a smoothed restart keeps its current speed
                 } else {
                     scrollAnim.stop();
                     contentY = to;
                 }
+            }
+            // (until you move it yourself, the selection stays on the top result: the list moves
+            // it with its row as late results reorder the rows, after syncResults has run)
+            onCurrentIndexChanged: {
+                if (!root.picked && currentIndex > 0 && count > 0) { currentIndex = 0; return; }
+                keepInView(true);
             }
 
             delegate: Item {
@@ -958,7 +1002,7 @@ PanelWindow {
                 // The list's text and calculator tile sit on the accent while selected; their
                 // colours fade over as the highlight slides in and out
                 readonly property bool onAccent: selected && !root.gridMode
-                readonly property int fadeMs: root.slideHighlight ? root.slideMs : 0
+                readonly property int fadeMs: root.slideHighlight ? root.moveMs : 0
                 property int version: 0
                 property string tried: ""          // drawn once per icon file (a new icon style is a new file)
                 width: list.cellWidth
@@ -1116,11 +1160,15 @@ PanelWindow {
                     anchors.fill: parent
                     hoverEnabled: true
                     onPositionChanged: m => {
+                        // (only once it has really moved, from where it was last taken notice of:
+                        // so a pointer resting where the launcher opens doesn't take the
+                        // selection, while a slow one, a pixel at a time, still does)
                         const g = mapToItem(null, m.x, m.y);
                         const last = root.lastPointer;
+                        if (!last) { root.lastPointer = Qt.point(g.x, g.y); return; }
+                        if (Math.abs(g.x - last.x) + Math.abs(g.y - last.y) < 2) return;
                         root.lastPointer = Qt.point(g.x, g.y);
-                        if (!last || Math.abs(g.x - last.x) + Math.abs(g.y - last.y) < 2) return;
-                        if (list.currentIndex !== row.index) list.currentIndex = row.index;
+                        if (list.currentIndex !== row.index) { root.byPointer = true; root.picked = true; list.currentIndex = row.index; }
                     }
                     onClicked: root.launch(row.modelData)
                 }
