@@ -51,9 +51,9 @@ class BarLayout(LiveCase):
     def test_starts_as_slates_own(self):
         st = self.bar()
         self.assertTrue(st["isDefault"])
-        # (Apps with Chalk, and Spaces with the window mode and the workspace dots)
+        # (Apps with Nova, and Spaces with the window mode and the workspace dots)
         self.assertEqual([e if isinstance(e, str) else e["items"] for e in st["layout"]][:5],
-                         [["control"], ["apps", "chalk"], ["spaces", "windowmode", "workspaces"],
+                         [["control"], ["apps", "nova"], ["spaces", "windowmode", "workspaces"],
                           ["windowicon", "windowtitle"], "space"])
 
     def test_an_item_joins_a_container(self):

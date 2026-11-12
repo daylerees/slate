@@ -1,4 +1,4 @@
-// Chalk, Slate's assistant: a small prompt window, like the launcher. Type what you want
+// Nova, Slate's assistant: a small prompt window, like the launcher. Type what you want
 // ("turn on glass", "put Firefox on workspace 2") and it's handed to the agent you chose
 // (Settings → Assistant), which acts through Slate's own tools (docs/ASSISTANT.md).
 //   slate ipc call assistant toggle      (or open / close / stop; Super+K)
@@ -7,10 +7,10 @@
 // answer is shown as plain text, never markup (rich text would load a picture a misled
 // agent linked to). "What it did" is Slate's own record, sent by Slate's MCP server as each
 // tool is used (did(), from AssistantGate's IPC): words Slate wrote, not the agent's.
-// It reads as a chat: what you asked on the right in the accent colour, Chalk's answers on
+// It reads as a chat: what you asked on the right in the accent colour, Nova's answers on
 // the left in its own, in order. There are no "conversations" to manage: the history just
 // runs on (Clear empties it), and what you type within a few minutes of the last answer
-// follows on from it. Left longer, Chalk quietly starts afresh with the agent (followFor). Closing the
+// follows on from it. Left longer, Nova quietly starts afresh with the agent (followFor). Closing the
 // window lets a run carry on (a notification says when it's done); Stop ends it. Not loaded
 // on the lock or login screens, and a run stops when the screen locks.
 
@@ -31,7 +31,7 @@ PanelWindow {
     // (at its own opacity with glass: Settings → Assistant → Glass)
     readonly property color barColor: Config.assistantSurface(Config.tint("#0f1216"))
     readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
-    // Chalk's side of the conversation: a touch of its own colour over the field's
+    // Nova's side of the conversation: a touch of its own colour over the field's
     readonly property color replyColor: Qt.tint(fieldColor, Qt.rgba(Config.pageColour("assistant").r, Config.pageColour("assistant").g, Config.pageColour("assistant").b, 0.10))
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
@@ -128,7 +128,7 @@ PanelWindow {
     property string runId: ""
     property real answeredAt: 0
     // Copying a message (the icon that shows in its corner under the pointer): which one was
-    // just copied ("3:you", "3:chalk"), for a moment, so its icon can say so
+    // just copied ("3:you", "3:nova"), for a moment, so its icon can say so
     property string copied: ""
     Timer { id: copiedReset; interval: 1400; onTriggered: root.copied = "" }
     function copy(which, text) {
@@ -214,7 +214,7 @@ PanelWindow {
         runner.stdinEnabled = false;       // (closes it: the prompt is the whole of stdin)
     }
     property string pending: ""            // typed before the agents were found: sent once they are
-    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Chalk doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
+    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
     function stop() { if (working) runner.signal(15); }
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
@@ -249,7 +249,7 @@ PanelWindow {
             const line = (error ? error.message : answer).split("\n")[0].slice(0, 160);
             if (line !== "") {
                 doneNote.command = ["notify-send", "-a", "Slate", "-i", Quickshell.shellPath("assets/icon/icon-64.png"),
-                                    "-h", "string:x-slate-page:assistant", "-A", "default=Open", "Chalk", line];
+                                    "-h", "string:x-slate-page:assistant", "-A", "default=Open", "Nova", line];
                 doneNote.running = true;
             }
         }
@@ -337,15 +337,15 @@ PanelWindow {
                     spacing: 8
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: String.fromCodePoint(0xF38A)
+                        text: String.fromCodePoint(0xF014)
                         color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Chalk"
+                        text: "Nova"
                         color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     }
-                    // Chalk is an experiment still, and says so: a flask and the word, on a soft
+                    // Nova is an experiment still, and says so: a flask and the word, on a soft
                     // green pill (the accent with the Colourful look off). Flat, with glass too
                     Rectangle {
                         id: trial
@@ -428,7 +428,7 @@ PanelWindow {
                     id: talkCol
                     width: parent.width
                     spacing: 14
-                    // Nothing said yet: Chalk says hello, so the window isn't a bare box. Not part
+                    // Nothing said yet: Nova says hello, so the window isn't a bare box. Not part
                     // of the conversation (it isn't kept, and it goes with your first words)
                     Rectangle {
                         visible: root.turns.length === 0
@@ -445,16 +445,16 @@ PanelWindow {
                                 spacing: 6
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: String.fromCodePoint(0xF38A)
+                                    text: String.fromCodePoint(0xF014)
                                     color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
                                 }
                                 Text {
-                                    text: "Chalk"
+                                    text: "Nova"
                                     color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
                                 }
                             }
                             Text {
-                                text: "Hello, I'm Chalk. How can I help?"
+                                text: "Hello, I'm Nova. How can I help?"
                                 color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
                             }
                         }
@@ -499,7 +499,7 @@ PanelWindow {
                                     color: root.accentText; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
                                 }
                             }
-                            // Chalk, on the left: the answer as it arrives, or what went wrong, and
+                            // Nova, on the left: the answer as it arrives, or what went wrong, and
                             // under it what was done (Slate's own record)
                             Rectangle {
                                 id: reply
@@ -520,9 +520,9 @@ PanelWindow {
                                 CopyChip {
                                     visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
                                     shownFor: replyHover.hovered
-                                    done: root.copied === turn.index + ":chalk"
+                                    done: root.copied === turn.index + ":nova"
                                     base: Config.tint("#2a313c"); ink: root.textColor
-                                    onPressed: root.copy(turn.index + ":chalk", reply.wrong ? turn.t.error.message : turn.t.answer)
+                                    onPressed: root.copy(turn.index + ":nova", reply.wrong ? turn.t.error.message : turn.t.answer)
                                 }
                                 Column {
                                     id: replyCol
@@ -533,11 +533,11 @@ PanelWindow {
                                         spacing: 6
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: String.fromCodePoint(0xF38A)
+                                            text: String.fromCodePoint(0xF014)
                                             color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
                                         }
                                         Text {
-                                            text: "Chalk"
+                                            text: "Nova"
                                             color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
                                         }
                                         // When it answered
@@ -698,7 +698,7 @@ PanelWindow {
                 color: root.fieldColor
                 Text {
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                    text: root.working ? "Chalk is working…" : "What would you like to do?"
+                    text: root.working ? "Nova is working…" : "What would you like to do?"
                     color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     visible: field.text === ""
                 }

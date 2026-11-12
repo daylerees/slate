@@ -179,7 +179,7 @@ Singleton {
         { id: "control", label: "Control centre", icon: 0xEAD7, key: "barShowControl" },
         { id: "apps", label: "Apps", icon: 0xEC42, key: "barShowApps" },
         { id: "spaces", label: "Spaces", icon: 0xEDBA, key: "barShowSpaces" },
-        { id: "chalk", label: "Chalk", icon: 0xF38A, key: "barShowAssistant" },
+        { id: "nova", label: "Nova", icon: 0xF014, key: "barShowAssistant" },
         { id: "windowmode", label: "Window mode", icon: 0xEFE6, key: "barShowWindowMode" },
         { id: "workspaces", label: "Workspaces", icon: 0xEA95, key: "barShowWorkspaces" },
         { id: "windowicon", label: "Window icon", icon: 0xEFE6, key: "barShowTitleIcon" },
@@ -201,6 +201,9 @@ Singleton {
         { id: "more", label: "More", icon: 0xEA95, key: "" }
     ]
     function barItem(id) { return barItems.find(i => i.id === id) || null; }
+    // A saved name for something on the bar, as it's called now: Nova's button was "chalk"
+    // (its old name) in arrangements and orders saved before it was renamed
+    function barId(id) { return id === "chalk" ? "nova" : String(id); }
     // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
     // container with nothing left in it dropped; anything it leaves out given a container of
     // its own at the end, so nothing can be lost), or Slate's own when there's none
@@ -222,7 +225,7 @@ Singleton {
             else if (e && e.items && e.items.length !== undefined) {
                 const items = [];
                 for (let j = 0; j < e.items.length; j++) {
-                    const id = String(e.items[j]);
+                    const id = barId(e.items[j]);
                     if (known.indexOf(id) >= 0 && !seen[id]) { seen[id] = true; items.push(id); }
                 }
                 // (an empty one stays only while it's fresh from the pool, waiting for its first thing)
@@ -477,11 +480,11 @@ Singleton {
     // rest leave for
     readonly property var barStay: {
         const known = barItems.map(i => i.id);
-        return (s.barStay && s.barStay.length !== undefined ? Array.from(s.barStay) : []).map(String).filter((id, i, a) => known.indexOf(id) >= 0 && id !== "more" && a.indexOf(id) === i);
+        return (s.barStay && s.barStay.length !== undefined ? Array.from(s.barStay) : []).map(barId).filter((id, i, a) => known.indexOf(id) >= 0 && id !== "more" && a.indexOf(id) === i);
     }
     readonly property var barOverflowOrder: {
         const known = barItems.map(i => i.id).filter(id => id !== "more");
-        const saved = (s.barOverflow && s.barOverflow.length !== undefined ? Array.from(s.barOverflow) : []).map(String);
+        const saved = (s.barOverflow && s.barOverflow.length !== undefined ? Array.from(s.barOverflow) : []).map(barId);
         const out = saved.filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i);
         const own = barOverflowDefault.concat(["control", "clock", "power"]);
         for (const id of own.concat(known)) if (out.indexOf(id) < 0 && known.indexOf(id) >= 0) out.push(id);
@@ -828,8 +831,10 @@ Singleton {
         + glassRule("SLATE_GLASS_PANEL", "^slate-popout$", panelGlassCut, s.barPanelBlur)
         // (notifications as they pop up: the same again, Settings → Notifications → Glass)
         + glassRule("SLATE_GLASS_TOAST", "^slate-notifications$", toastGlassCut, s.notificationBlur)
-        // (the launcher, and Chalk's window: Settings → Launcher → Glass, → Assistant → Glass)
+        // (the launcher, and Nova's window: Settings → Launcher → Glass, → Assistant → Glass)
         + glassRule("SLATE_GLASS_LAUNCHER", "^slate-launcher$", launcherGlassCut, s.launcherBlur)
+        // (named for Nova's old name, Chalk: a running Hyprland knows the rule by it, and a new
+        // name would leave the old rule there beside it until Hyprland restarts)
         + glassRule("SLATE_GLASS_CHALK", "^slate-assistant$", assistantGlassCut, s.assistantBlur)
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
@@ -1338,7 +1343,7 @@ Singleton {
     // each on the bar, the first of its list (the rest are for where the parts are coloured apart)
     readonly property var appsPastels: ["#e8a6c8", "#e8c48f", "#8fc7e8"]
     readonly property var spacesPastels: ["#8fb3e8", "#a6d3a0", "#e8b48f", "#c3a6e6"]
-    // (Chalk's icon is one colour wherever it's drawn: the Assistant page's, below)
+    // (Nova's icon is one colour wherever it's drawn: the Assistant page's, below)
     function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
     // ---- Game mode (the bar's game mode panel) -----------------------------------------
@@ -1445,7 +1450,7 @@ Singleton {
         return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
     }
     readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
-    // The launcher and Chalk's window: a background opacity of their own with glass, a blur rule
+    // The launcher and Nova's window: a background opacity of their own with glass, a blur rule
     // and a shadow kept under it, as the panels' are. An opacity not set (below 0) is Appearance's
     function ownGlassOpacity(v, blur) { return v < 0 ? glassOpacity : Math.max(blur ? 0.01 : 0, Math.min(1, v)); }
     function ownGlassCut(o) { return o < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(o * 0.85 * 10) / 10); }
@@ -1508,7 +1513,7 @@ Singleton {
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0
     readonly property real glossTint: Math.max(0, Math.min(1, Number(s.glassGlossTint)))
-    // The bright edge round glass panels (the launcher, Chalk, the bar's arranging panel…):
+    // The bright edge round glass panels (the launcher, Nova, the bar's arranging panel…):
     // a bright, light shade of the theme's accent, so it belongs to the colours in use.
     // (A grey accent has no colour to give: it stays white)
     readonly property color glassEdge: {

@@ -143,7 +143,7 @@ JsonAdapter {
     property bool barShowClock: true          // the clock
     property bool barShowApps: true           // apps (launcher) button
     property bool barShowSpaces: true         // Spaces (saved workspaces) button
-    property bool barShowAssistant: true      // Chalk, the assistant's button (only while the assistant is switched on)
+    property bool barShowAssistant: true      // Nova, the assistant's button (only while the assistant is switched on)
     // Spaces (Settings → Spaces): how windows opened from a space are marked
     property bool spaceBorders: true          // a top border in the space's colour
     property bool spaceBadges: true           // the space's icon in the window's corner
@@ -183,7 +183,7 @@ JsonAdapter {
     property string dockHoverEffect: "magnify"   // pointing at the dock: magnify, tilt (icons turn to face the pointer), both, fade, fademagnify, glow (a ring and glow in the icon's colour), glowmagnify, raise (just the icon under the pointer lifts) or none
     property real dockMagnification: 1.75
     property real dockSpread: 3.0
-    // The launcher's and Chalk's windows with glass: a blur and a background opacity of their
+    // The launcher's and Nova's windows with glass: a blur and a background opacity of their
     // own, 0 clear … 1 solid (below 0: as Appearance's glass opacity has it)
     property bool launcherBlur: true
     property real launcherOpacity: 0.75
@@ -282,12 +282,12 @@ JsonAdapter {
     // these can be changed through the server itself
     property bool assistantEnabled: false       // let assistants use Slate's tools at all (off to start with)
     property int assistantRisksAccepted: 0      // the version of the risks you accepted when switching on (0 = never); both are needed
-    property string assistantAgent: ""          // which agent answers Chalk: claude, custom… ("" = none: one has to be chosen)
+    property string assistantAgent: ""          // which agent answers Nova: claude, custom… ("" = none: one has to be chosen)
     property string assistantModel: ""          // its model ("" = the agent's own default)
     property string assistantCommand: ""        // a command of your own (the "custom" agent): run as typed, the prompt on its stdin
     property bool assistantCommandBare: false   // …given just what you typed, without what Slate adds
     property var assistantAgentsAccepted: []    // agents that keep tools of their own that you've said yes to
-    property bool assistantKeepChat: true       // Chalk's conversation is still there after Slate restarts (kept on this computer only)
+    property bool assistantKeepChat: true       // Nova's conversation is still there after Slate restarts (kept on this computer only)
     property bool assistantAskChanges: false    // ask before every change, not only the ones that can't be undone
     property bool assistantSeeTitles: true      // window titles are given (off: app names only)
     property bool assistantSeeNotifications: false  // recent notifications can be read

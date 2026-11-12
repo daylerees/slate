@@ -75,7 +75,7 @@ PanelWindow {
     }
     function close() { current = ""; pending = ""; revealed = false; revealWaiting = false; }
     // Going to another workspace (a shortcut, the wheel, a dot on the bar) closes it, as opening
-    // the launcher, a switcher or Chalk does (shell.qml)
+    // the launcher, a switcher or Nova does (shell.qml)
     Connections {
         target: Config
         function onFocusedWorkspaceIdChanged() { if (pop.engaged) pop.close(); }

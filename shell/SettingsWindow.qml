@@ -377,7 +377,7 @@ FloatingWindow {
         if (!on) { Config.s.assistantEnabled = false; return; }
         if (!confirmer) return;
         confirmer.confirmWith({ title: "Switch on the assistant?", body: assistantRisks, long: true,
-                                button: "Switch on", code: 0xF38A, danger: false }, () => assistantAccept());
+                                button: "Switch on", code: 0xF014, danger: false }, () => assistantAccept());
     }
     // Choosing which agent answers the prompt window. One Slate can't confine (it keeps tools
     // of its own: a command of your own always does) asks once, per agent
@@ -391,14 +391,14 @@ FloatingWindow {
                        : "Slate can't switch off " + label + "'s own tools, so it can do more than Slate's tools allow: ")
                 + "run commands, read your files, see your screen. Slate's questions and limits only cover Slate's own tools. "
                 + "If you use it, that's yours to answer for.",
-            button: "Use it", code: 0xF38A, danger: false
+            button: "Use it", code: 0xF014, danger: false
         }, () => { Config.s.assistantAgentsAccepted = accepted.concat([id]); Config.s.assistantAgent = id; });
     }
     // Read the risks again, while it's on: the same words, and the chance to think again
     function assistantReadRisks() {
         if (!confirmer) return;
         confirmer.confirmWith({ title: "What using the assistant means", body: assistantRisks.replace("Before you do, here's what it means.<br><br>", ""), long: true,
-                                button: "Keep it on", cancelLabel: "Switch off", code: 0xF38A, danger: false },
+                                button: "Keep it on", cancelLabel: "Switch off", code: 0xF014, danger: false },
                               () => {}, () => { Config.s.assistantEnabled = false; });
     }
     // Restore defaults (the title button): asks first
@@ -4021,7 +4021,7 @@ FloatingWindow {
                 command: ["python3", Quickshell.shellPath("scripts/assistant.py"), "detect"]
                 stdout: StdioCollector { onStreamFinished: { try { assistantPane.agents = JSON.parse(text); } catch (e) {} } }
             }
-            // The one chosen ("" none, which is how it starts: Chalk asks for one to be chosen), and,
+            // The one chosen ("" none, which is how it starts: Nova asks for one to be chosen), and,
             // for an agent Slate knows, what's known about it
             readonly property string inUse: Config.s.assistantAgent
             readonly property var chosen: inUse === "" || inUse === "custom" ? null : (agents.find(a => a.id === inUse) || null)
@@ -4051,7 +4051,7 @@ FloatingWindow {
             IntroText {
                 text: "Ask an AI agent you already use, like Claude Code or Codex, to change a setting, move a window or tell you what's where. "
                     + "It works through Slate's own tools, and Slate asks you before anything that can't be undone. "
-                    + "Chalk is Slate's own way to ask: press Super+K, type what you want, and your agent does it."
+                    + "Nova is Slate's own way to ask: press Super+K, type what you want, and your agent does it."
             }
             GroupLabel { text: "Assistant" }
             Group {
@@ -4069,11 +4069,11 @@ FloatingWindow {
             }
             GroupLabel { text: "Agent" }
             Group {
-                // Which agent answers Chalk: none to start with. What the chosen one needs shows beneath
+                // Which agent answers Nova: none to start with. What the chosen one needs shows beneath
                 DropdownSetting {
                     label: "Agent"
                     settingKey: "assistantAgent"
-                    detail: assistantPane.inUse === "" ? "Chalk needs an agent to ask. Choose the one you use, and what it needs shows here"
+                    detail: assistantPane.inUse === "" ? "Nova needs an agent to ask. Choose the one you use, and what it needs shows here"
                         : assistantPane.inUse === "custom" ? "Slate runs your command as you typed it, with what you ask on its input. What it can see and do beyond Slate's tools is up to the command"
                         : assistantPane.chosen ? (assistantPane.chosen.confined ? "Recommended: " : "Keeps its own tools: ") + assistantPane.chosen.note
                         : "Slate couldn't find this one. It may have been removed"
@@ -4129,7 +4129,7 @@ FloatingWindow {
                     visible: assistantPane.inUse === "custom"
                     label: "Command"
                     settingKey: "assistantCommand"
-                    detail: Config.s.assistantCommand === "" ? "Nothing to run yet. Type the command Chalk should hand what you ask to" : "Run as you typed it"
+                    detail: Config.s.assistantCommand === "" ? "Nothing to run yet. Type the command Nova should hand what you ask to" : "Run as you typed it"
                     FieldFrame {
                         field: commandInput
                         width: 260; height: 30
@@ -4191,10 +4191,10 @@ FloatingWindow {
                 }
             }
             Footnote { text: "Slate's tools never show an assistant your screen, your files or your clipboard. An agent with tools of its own can do more than Slate's tools allow, and Slate can't limit those." }
-            GroupLabel { text: "Chalk" }
+            GroupLabel { text: "Nova" }
             Group {
                 SettingRow {
-                    label: "Ask Chalk"
+                    label: "Ask Nova"
                     detail: "Super+K, or your keyboard's Copilot or assistant key if it has one. You can change them in Shortcuts"
                     Button { label: "Shortcuts"; onClicked: win.goTo("shortcuts", "") }
                 }
@@ -4202,12 +4202,12 @@ FloatingWindow {
                 ToggleSetting {
                     label: "Keep chat history"
                     key: "assistantKeepChat"
-                    detail: "What you asked Chalk and what it answered are still in its window after Slate restarts: the last 100 messages, kept on this computer only. Off: it's forgotten when Slate restarts, and what was kept is deleted"
+                    detail: "What you asked Nova and what it answered are still in its window after Slate restarts: the last 100 messages, kept on this computer only. Off: it's forgotten when Slate restarts, and what was kept is deleted"
                 }
                 Separator {}
                 SettingRow {
                     label: "Clear chat history"
-                    detail: "Empties Chalk's window, and what's kept of it. Nothing Chalk did is undone"
+                    detail: "Empties Nova's window, and what's kept of it. Nothing Nova did is undone"
                     Button { label: "Clear"; destructive: true; onClicked: Config.slateCall("assistant", "clear") }
                 }
             }
@@ -4300,7 +4300,7 @@ FloatingWindow {
                 visible: Config.s.glass
                 ToggleSetting {
                     label: "Blur"
-                    detail: "What's behind Chalk's window is blurred, like frosted glass. Off, you see straight through it"
+                    detail: "What's behind Nova's window is blurred, like frosted glass. Off, you see straight through it"
                     key: "assistantBlur"
                 }
                 Separator {}

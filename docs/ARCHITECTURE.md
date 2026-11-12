@@ -81,12 +81,12 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               it prints into start/text/done/error lines. scripts/slate_agents.py
                               has the agents (Claude Code, a command of your own)
 Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,
-                              Chalk, the bar): one look, dark with a light tint of the theme
+                              Nova, the bar): one look, dark with a light tint of the theme
                               (Config.shadowColour, also sent to Hyprland for floating windows), drawn by
                               shaders/shadow.frag with the surface's own shape cut out of it, so glass
                               can have shadows too. Off in game mode
 BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
-Assistant.qml                 Chalk's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
+Assistant.qml                 Nova's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
                               for a prompt, shows the answer (plain text) and what was done, as
                               Slate's server reports it (`assistant did`)
 AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are

@@ -8,18 +8,18 @@ ask about your desktop and do things on it. "Turn on glass." "Put Firefox on wor
 It's off until you switch it on in Settings → Assistant, and Slate asks you before anything
 that can't be undone.
 
-Slate also has a way of its own to ask: **Chalk**. Press Super+K (or the button on the menu
+Slate also has a way of its own to ask: **Nova**. Press Super+K (or the button on the menu
 bar, or your keyboard's Copilot or assistant key), type what you want in a line, and the
 agent you chose does it through the same tools.
 
-## Chalk, the prompt window
+## Nova, the prompt window
 
 - **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
-  your accent colour, Chalk's answers on the left as they're written (plain text), each with
+  your accent colour, Nova's answers on the left as they're written (plain text), each with
   a short list of what was done: Slate's own record, in Slate's words, not the agent's
   account of itself. It scrolls once it's long. Point at a message and a copy button appears in its top right corner.
 - **Following on.** There are no conversations to manage. What you type within five minutes
-  of the last answer follows on from it ("and a bit bigger"); left longer, Chalk quietly
+  of the last answer follows on from it ("and a bit bigger"); left longer, Nova quietly
   starts afresh with the agent, which also keeps each prompt small. Your history stays on
   show either way.
 - **Chat history.** The last 100 messages are still there after Slate restarts or you log in
@@ -191,7 +191,7 @@ screen".
 Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, one line
 each: the time, which agent, the tool, its arguments (cut short), and how it ended (done,
 declined, no answer, refused or failed), with a setting's value before it was changed. This
-log holds tool calls only, never what you typed or what the agent answered (Chalk's own
+log holds tool calls only, never what you typed or what the agent answered (Nova's own
 conversation is kept separately, if you leave that on: see above). The last
 1,000 lines are kept, the log isn't part of `slate logs`, and Settings → Assistant → Activity
 shows the latest 50 and clears it.
@@ -223,7 +223,7 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
 - **The runner** (`shell/scripts/assistant.py`, for the prompt window that's coming) hands
   one prompt to the agent you chose and reads back its answer in one form whichever agent it
   is. It adds two things of Slate's own to what you typed: a briefing (who the agent is here
-  and how to behave: the `[chalk]` and `[shared]` parts of `assistant-prompt.md`) and a few
+  and how to behave: the `[nova]` and `[shared]` parts of `assistant-prompt.md`) and a few
   lines on the moment (the time, the focused window and workspace, under the same switches as
   the tools, and never your name or home folder). The agent runs in an empty folder of its
   own and is stopped after two minutes.

@@ -180,7 +180,7 @@ NAMED = {
     # (what's on the menu bar and how each thing shows: set in the panel that arranges it, not on a page)
     "barShowApps": ("bar", "Apps button"),
     "barShowSpaces": ("bar", "Spaces button"),
-    "barShowAssistant": ("bar", "Chalk"),
+    "barShowAssistant": ("bar", "Nova"),
     "barShowWorkspaces": ("bar", "Workspaces"),
     "barShowWindowMode": ("bar", "Workspace window mode"),
     "barShowTitle": ("bar", "Window title"),

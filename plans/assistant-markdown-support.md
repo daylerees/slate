@@ -1,4 +1,4 @@
-# Plan: Markdown in Chalk's answers
+# Plan: Markdown in Nova's answers
 
 Status: **for later** (2026-11-10), nothing built. It follows the assistant
 ([assistant.md](assistant.md)), whose first version shows answers as plain text on purpose.
@@ -7,7 +7,7 @@ when building).
 
 ## The idea
 
-Chalk's answers are plain text in the first version: one or two sentences, which is all most
+Nova's answers are plain text in the first version: one or two sentences, which is all most
 requests need. Some answers would read better with a little structure: the steps to do
 something by hand, a list of the windows on a workspace, a setting's name in bold, a command in
 a code box with a Copy button. This plan adds a small, safe subset of Markdown for those,

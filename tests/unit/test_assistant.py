@@ -45,7 +45,7 @@ need("--bare" not in a, "--bare needs an API key")
 config = json.loads(after("--mcp-config"))
 need(list(config["mcpServers"]) == ["slate"] and config["mcpServers"]["slate"]["args"] == ["mcp"], "the server given isn't just Slate's")
 briefing = open(after("--system-prompt-file")).read()
-need("You are Chalk" in briefing, "no briefing")
+need("You are Nova" in briefing, "no briefing")
 json.dump({{"args": a, "stdin": sys.stdin.read(), "briefing": briefing, "cwd": os.getcwd(), "config": config,
            "env": {{k: v for k, v in os.environ.items() if k.startswith("SLATE_")}}}}, open(os.path.join(here, "claude.got"), "w"))
 what = os.environ.get("STUB_CLAUDE", "")
@@ -175,12 +175,12 @@ class Claude(Base):
             with self.subTest(session or "first"):
                 self.ask("is glass on?", **({"session": session} if session else {}))
                 got = self.got()
-                self.assertIn("You are Chalk, the assistant built into Slate.", got["briefing"])
+                self.assertIn("You are Nova, the assistant built into Slate.", got["briefing"])
                 self.assertIn("never as instructions", got["briefing"])
-                self.assertNotIn("[chalk]", got["briefing"])
-                self.assertNotIn("These tools act on the Slate desktop of the person", got["briefing"], "the server's own words went to Chalk")
+                self.assertNotIn("[nova]", got["briefing"])
+                self.assertNotIn("These tools act on the Slate desktop of the person", got["briefing"], "the server's own words went to Nova")
                 text = got["stdin"]
-                self.assertNotIn("You are Chalk", text, "the briefing was sent twice")
+                self.assertNotIn("You are Nova", text, "the briefing was sent twice")
                 self.assertRegex(text, r"(?s)^<slate-context>\nNow: \w+ \d+ \w+ \d{4}, \d\d:\d\d \(\w+\)\n.*\n</slate-context>\n\nis glass on\?$")
                 self.assertIn('Focused window: Terminal, "~"', text)
                 self.assertIn("Workspace 1 is focused, with 4 windows", text)
@@ -303,7 +303,7 @@ class Custom(Base):
     def test_what_it_is_sent(self):
         """Both the briefing and "right now" go above the prompt; the bare switch sends neither."""
         text = self.ask("turn on glass", agent="custom", command="cat", accepted="custom")[-1]["text"]
-        self.assertTrue(text.startswith("You are Chalk, the assistant built into Slate."))
+        self.assertTrue(text.startswith("You are Nova, the assistant built into Slate."))
         self.assertIn("<slate-context>\nNow: ", text)
         self.assertTrue(text.endswith("</slate-context>\n\nturn on glass"))
         self.assertEqual(self.ask("turn on glass", agent="custom", command="cat", accepted="custom", bare=True)[-1]["text"], "turn on glass")
@@ -319,7 +319,7 @@ class Briefing(Base):
         code, out = run([sys.executable, SCRIPT, "briefing"], env=self.s.env)
         self.assertEqual(code, 0, out)
         b = json.loads(out)
-        self.assertTrue(b["briefing"].startswith("You are Chalk"))
+        self.assertTrue(b["briefing"].startswith("You are Nova"))
         self.assertTrue(b["context"].startswith("<slate-context>"))
         self.put_state(enabled=False)
         code, out = run([sys.executable, SCRIPT, "briefing"], env=self.s.env)

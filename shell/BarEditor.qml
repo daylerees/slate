@@ -295,7 +295,7 @@ PanelWindow {
         property bool lit: false             // hovered
         property bool grip: false            // a gripper at its start: it can be dragged
         readonly property color iconColour: item === "power" ? root.bar.errorColor
-            : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
+            : item === "nova" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
             : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
             : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
             : Config.statusColour(item, root.text)
@@ -1015,7 +1015,7 @@ PanelWindow {
     // container; a flexible space and an empty container as their outlines
     function iconColour(item) {
         return item === "power" ? bar.errorColor
-            : item === "chalk" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
+            : item === "nova" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
             : item === "apps" ? Config.partColour(Config.appsPastels, 0, root.text)
             : item === "spaces" ? Config.partColour(Config.spacesPastels, 0, root.text)
             : Config.statusColour(item, root.text);

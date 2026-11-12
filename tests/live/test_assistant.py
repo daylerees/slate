@@ -24,7 +24,7 @@ class Assistant(LiveCase):
                     "assistantAgent", "assistantCommand", "assistantCommandBare", "barShowAssistant", "assistantKeepChat"):
             self.keep_setting(key)
         self.addCleanup(lambda: self.ipc("test", "assistantAccepted", ""))
-        self.addCleanup(lambda: self.ipc("test", "chalk", "{}"))
+        self.addCleanup(lambda: self.ipc("test", "nova", "{}"))
         self.config("assistantEnabled", "false")
         self.config("assistantRisksAccepted", "0")
         self.config("assistantAskChanges", "false")
@@ -224,7 +224,7 @@ print("You asked: " + asked.strip().splitlines()[-1])
 """
 
 
-class Chalk(LiveCase):
+class Nova(LiveCase):
     """The prompt window (Super+K), its bar button and shortcuts, and one prompt all the way
     through with a stand-in agent."""
 
@@ -234,12 +234,12 @@ class Chalk(LiveCase):
                     "assistantAgent", "assistantCommand", "assistantCommandBare", "barShowAssistant", "assistantKeepChat"):
             self.keep_setting(key)
         self.addCleanup(lambda: self.ipc("test", "assistantAccepted", ""))
-        self.addCleanup(lambda: self.ipc("test", "chalk", "{}"))
+        self.addCleanup(lambda: self.ipc("test", "nova", "{}"))
         self.config("assistantRisksAccepted", "1")
         self.config("assistantEnabled", "true")
         self.config("barClockSeconds", "false")
 
-    def chalk(self):
+    def nova(self):
         return self.s.state()["assistant"]
 
     def test_opens_and_closes(self):
@@ -273,34 +273,34 @@ class Chalk(LiveCase):
 
     def test_switched_off(self):
         """Off: no button on the bar, and the shortcut opens the window saying so, not a dead key."""
-        self.assertTrue(self.chalk()["button"])
+        self.assertTrue(self.nova()["button"])
         self.config("barShowAssistant", "false")
-        self.assertFalse(self.chalk()["button"])
+        self.assertFalse(self.nova()["button"])
         self.config("barShowAssistant", "true")
         self.config("assistantEnabled", "false")
-        self.assertFalse(self.chalk()["button"], "the button shows while the assistant is off")
+        self.assertFalse(self.nova()["button"], "the button shows while the assistant is off")
         self.ipc("assistant", "ask", "turn on glass")
         st = self.wait(lambda st: st["assistant"]["open"])
         self.s.settle(0.5)
-        st = self.chalk()
+        st = self.nova()
         self.assertEqual((st["working"], st["asked"], st["enabled"]), (False, "", False), "a prompt was sent while switched off")
 
     def test_shortcuts(self):
         """Super+K, the assistant key and the Copilot key (Super+Shift+F23, by keycode) all open it."""
-        binds = [b for b in self.s.hyprctl("binds", json_out=True) if "assistant toggle" in (b.get("arg") or "") or "Ask Chalk" in (b.get("description") or "")]
+        binds = [b for b in self.s.hyprctl("binds", json_out=True) if "assistant toggle" in (b.get("arg") or "") or "Ask Nova" in (b.get("description") or "")]
         seen = {(b.get("key") or "", b.get("keycode") or 0, b.get("modmask")) for b in binds}
-        self.assertEqual(len(binds), 3, f"expected three shortcuts for Chalk, found {seen}")
+        self.assertEqual(len(binds), 3, f"expected three shortcuts for Nova, found {seen}")
         self.assertTrue(any(k.upper() == "K" and m == 64 for k, c, m in seen), seen)
         self.assertTrue(any(k == "XF86Assistant" and m == 0 for k, c, m in seen), seen)
         self.assertTrue(any(c == 201 and m == 65 for k, c, m in seen), seen)
         for b in binds:
-            self.assertIn("Slate: Ask Chalk", b.get("description") or "")
+            self.assertIn("Slate: Ask Nova", b.get("description") or "")
 
     def test_no_agent_until_one_is_chosen(self):
         """Switched on, there's no agent to start with: Slate doesn't pick one, and asking says
         one has to be chosen."""
         self.config("assistantAgent", "")
-        self.assertEqual(self.chalk()["agent"], "")
+        self.assertEqual(self.nova()["agent"], "")
         self.ipc("assistant", "ask", "show seconds on the clock")
         st = self.wait(lambda st: st["assistant"]["error"] == "not-installed", "being told there's no agent")
         self.assertIn("Choose one in Settings", st["assistant"]["errorText"])
@@ -344,7 +344,7 @@ class Chalk(LiveCase):
         self.assertEqual(self.setting("assistantKeepChat"), "true")
         feed = {"history": [{"asked": "is glass on?", "answer": "Yes, glass is on."}],
                 "asked": "close the terminal", "answer": "I've left it open.", "actions": [{"id": 1, "text": "Close Terminal", "state": "declined"}]}
-        self.ipc("test", "chalk", json.dumps(feed))
+        self.ipc("test", "nova", json.dumps(feed))
         self.wait(lambda st: st["assistant"]["turns"] == 2)
         self.s.settle(1.2)
         with open(self.chat_file()) as f:
@@ -361,7 +361,7 @@ class Chalk(LiveCase):
                 break
             self.s.settle(0.1)
         self.assertFalse(os.path.exists(self.chat_file()), "switching it off left the conversation on disk")
-        self.ipc("test", "chalk", json.dumps({"asked": "another", "answer": "one"}))
+        self.ipc("test", "nova", json.dumps({"asked": "another", "answer": "one"}))
         self.s.settle(1.2)
         self.assertFalse(os.path.exists(self.chat_file()), "kept although it's switched off")
         self.s.new_log_errors()
@@ -375,7 +375,7 @@ class Chalk(LiveCase):
         self.wait(lambda st: st["assistant"]["working"], "it to start")
         self.ipc("assistant", "close")
         self.s.settle(0.6)
-        st = self.chalk()
+        st = self.nova()
         self.assertEqual((st["open"], st["working"]), (False, True), "closing the window stopped the run")
         self.ipc("assistant", "stop")
         st = self.wait(lambda st: not st["assistant"]["working"], "it to stop", timeout=15)["assistant"]
@@ -383,14 +383,14 @@ class Chalk(LiveCase):
 
     def test_follows_on_for_a_few_minutes(self):
         """What you type soon after an answer follows on from it (the agent's thread is kept);
-        left longer than five minutes, Chalk starts afresh, with the history still on show."""
+        left longer than five minutes, Nova starts afresh, with the history still on show."""
         self.config("assistantAgent", "custom")
         self.config("assistantCommand", "echo ok")
         self.ipc("test", "assistantAccepted", "custom")
         now = int(time.time() * 1000)
         for age, want in ((60, "thread-1"), (11 * 60, "")):
             with self.subTest(f"{age} seconds ago"):
-                self.ipc("test", "chalk", json.dumps({"asked": "is glass on?", "answer": "Yes.", "session": "thread-1",
+                self.ipc("test", "nova", json.dumps({"asked": "is glass on?", "answer": "Yes.", "session": "thread-1",
                                                       "at": now - age * 1000, "doneAt": now - age * 1000}))
                 self.ipc("assistant", "ask", "and a bit bigger")
                 st = self.wait(lambda st: st["assistant"]["turns"] == 2 and not st["assistant"]["working"] and st["assistant"]["answer"] != "",
@@ -400,7 +400,7 @@ class Chalk(LiveCase):
 
     def test_did_only_from_this_run(self):
         """What it did comes from Slate's server for the run in hand: anything else is ignored."""
-        self.ipc("test", "chalk", json.dumps({"asked": "x", "working": True}))
+        self.ipc("test", "nova", json.dumps({"asked": "x", "working": True}))
         self.ipc("assistant", "did", json.dumps({"run": "someone-else", "id": 1, "text": "Shut down", "state": "done"}))
         self.s.settle(0.3)
-        self.assertEqual(self.chalk()["actions"], [])
+        self.assertEqual(self.nova()["actions"], [])

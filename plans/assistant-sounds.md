@@ -1,5 +1,8 @@
 # Plan: sounds for Chalk
 
+> **The assistant is now called Nova** (renamed 2026-11-12). This plan was written when it
+> was Chalk: read "Chalk" as Nova; the sound's idea (chalk touching slate) may want rethinking.
+
 Status: **for later** (2026-11-10), nothing built. It follows the assistant
 ([assistant.md](assistant.md)), whose first version adds no sounds of its own. What's said
 about Slate's sounds was **checked** in this repository (`tools/make-sounds.py`,

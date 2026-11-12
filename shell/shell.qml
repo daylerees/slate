@@ -242,15 +242,15 @@ ShellRoot {
         // As saying yes to an agent that keeps its own tools (Settings → Assistant) leaves it
         function assistantAccepted(id: string): void { Config.s.assistantAgentsAccepted = id === "" ? [] : [id]; }
         // The prompt window as a run would leave it: {asked, answer, working, actions, error}
-        function chalk(json: string): void {
+        function nova(json: string): void {
             const st = JSON.parse(json);
             // (history: earlier exchanges, shown above this one)
             // (at / doneAt: when asked and answered, ms; left out, no time is shown)
             const turn = h => ({ asked: h.asked || "", answer: h.answer || "", actions: h.actions || [], error: h.error || null, at: h.at || 0, doneAt: h.doneAt || 0 });
-            chalk.turns = (st.history || []).map(turn).concat(st.asked ? [turn(st)] : []);
-            chalk.working = !!st.working;
-            if (st.session !== undefined) chalk.session = st.session;      // (the agent's thread, as a past answer left it)
-            if (st.agents) { chalk.agents = st.agents; chalk.looked = true; }
+            nova.turns = (st.history || []).map(turn).concat(st.asked ? [turn(st)] : []);
+            nova.working = !!st.working;
+            if (st.session !== undefined) nova.session = st.session;      // (the agent's thread, as a past answer left it)
+            if (st.agents) { nova.agents = st.agents; nova.looked = true; }
         }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
@@ -307,8 +307,8 @@ ShellRoot {
                 secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
-                assistant: { open: chalk.shown, working: chalk.working, turns: chalk.turns.length, asked: chalk.asked, answer: chalk.answer, actions: chalk.actions,
-                             error: chalk.error ? chalk.error.kind : "", errorText: chalk.error ? chalk.error.message : "", agent: chalk.agent ? chalk.agent.id : "", session: chalk.session,
+                assistant: { open: nova.shown, working: nova.working, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
+                             error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              button: Config.s.barShowAssistant && Config.assistantOn,
                              enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
@@ -372,11 +372,11 @@ ShellRoot {
         SecretEmpty { required property var modelData; screen: modelData; bar: topBar }
     }
     LockScreen { id: lockScreen }
-    AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: chalk }     // what AI agents may do (slate mcp)
+    AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: nova }     // what AI agents may do (slate mcp)
     // A bar panel opening takes the prompt window's place, like the other overlays
-    Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") chalk.closeWindow(); } }
+    Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") nova.closeWindow(); } }
     // The screen locks: the prompt window closes and a run stops
-    Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { chalk.closeWindow(); chalk.stop(); } } }
+    Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); } } }
     Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { lock: lockScreen }
 

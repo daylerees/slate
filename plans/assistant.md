@@ -1,5 +1,8 @@
 # Plan: an assistant for Slate (an MCP server, a prompt window, your own agent)
 
+> **Renamed Nova on 2026-11-12** (with a north star for its icon). This plan keeps the name
+> it was written with, Chalk, and the reasoning that chose it.
+
 Status: **the first version is built** (steps 1 to 5) (2026-11-11): the server, `slate mcp`, with its gate,
 its questions and the Look, Change and Always-asks tools, and Settings → Assistant with the
 risks question, and the runner with its Claude Code and custom-command adapters

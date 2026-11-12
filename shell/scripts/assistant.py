@@ -20,7 +20,7 @@ comes back in one form whichever agent it is (docs/ASSISTANT.md, plans/assistant
         what Slate adds to a prompt, as JSON {"briefing", "context"}: for Settings to show
 
 Slate adds two things to what the person typed, both written here and never by the agent:
-the briefing (data/assistant-prompt.md, its [chalk] and [shared] blocks: who the agent is
+the briefing (data/assistant-prompt.md, its [nova] and [shared] blocks: who the agent is
 here and how to behave) and "right now" (a few lines on the moment: the time, the focused
 window). Right now holds only what the status tool would answer anyway, under the same
 switches, and never the user's name, host name or home folder.
@@ -65,7 +65,7 @@ def server():
 
 
 def briefing():
-    """Who the agent is here: the [chalk] and [shared] blocks of data/assistant-prompt.md."""
+    """Who the agent is here: the [nova] and [shared] blocks of data/assistant-prompt.md."""
     try:
         with open(os.path.join(SLATE_DIR, "data", "assistant-prompt.md"), encoding="utf-8") as fh:
             text = fh.read()
@@ -75,7 +75,7 @@ def briefing():
     for line in text.splitlines() + ["[end]"]:
         m = re.match(r"\[(\w+)\]\s*$", line)
         if m:
-            if who in ("chalk", "shared") and "".join(lines).strip():
+            if who in ("nova", "shared") and "".join(lines).strip():
                 blocks.append(" ".join(l.strip() for l in lines if l.strip()))
             who, lines = m.group(1), []
         else:

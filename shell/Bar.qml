@@ -1299,18 +1299,18 @@ PanelWindow {
                 }
             }
 
-            // Chalk, the assistant (Assistant.qml), while it's switched on: opens its prompt
+            // Nova, the assistant (Assistant.qml), while it's switched on: opens its prompt
             // window, and shows a spinner while a prompt is out
             Segment {
-                id: chalkBtn
+                id: novaBtn
                 wanted: Config.s.barShowAssistant && Config.assistantOn
                 length: bar.capsuleHeight + 8
-                hoverCode: 0xF38A
-                hoverText: Config.assistantWorking ? "Chalk is working…" : "Ask Chalk"
+                hoverCode: 0xF014
+                hoverText: Config.assistantWorking ? "Nova is working…" : "Ask Nova"
                 onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
                 // One pastel in the Colourful look, as Apps and Spaces have (the Assistant page's
                 // colour); the text colour otherwise.
-                // While Chalk is thinking, Slate's loading spinner takes its place, turning (the
+                // While Nova is thinking, Slate's loading spinner takes its place, turning (the
                 // spinner Settings and the login screen use; still, with animations off or in
                 // game mode)
                 // (two items, so the icon is never the one that was turned: as one, it came back at
@@ -1318,7 +1318,7 @@ PanelWindow {
                 Text {
                     anchors.centerIn: parent
                     visible: !Config.assistantWorking
-                    text: bar.glyph(0xF38A)
+                    text: bar.glyph(0xF014)
                     color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
                     font.family: bar.iconFont
                     font.pixelSize: 17

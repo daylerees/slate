@@ -214,7 +214,7 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(root.info.code)
-                        color: root.info.danger ? root.danger : root.info.code === 0xF38A ? Config.pageColour("assistant") : root.accent
+                        color: root.info.danger ? root.danger : root.info.code === 0xF014 ? Config.pageColour("assistant") : root.accent
                         font.family: tabler.name
                         font.pixelSize: 26
                     }

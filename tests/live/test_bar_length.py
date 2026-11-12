@@ -149,7 +149,7 @@ class BarLength(LiveCase):
         self.assertEqual(self.layout()[at]["items"][-1], "tuck")
 
     # ---- overflow: things leave the bar for More ------------------------------------------------
-    ORDER = ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon", "chalk",
+    ORDER = ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon", "nova",
              "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
 
     def test_more_is_only_there_when_something_is_in_it(self):
