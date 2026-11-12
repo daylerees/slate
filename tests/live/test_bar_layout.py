@@ -271,11 +271,21 @@ class BarLayout(LiveCase):
 
     # ---- nothing left blank ---------------------------------------------------------------------
     def blanks(self, name):
-        """The things showing on the bar that have nothing drawn where they are."""
+        """The things showing on the bar that have nothing drawn where they are. (Pictured once
+        the bar has stopped moving: a thing still sliding into its place after a drag was looked
+        for where it was going, under a heavily loaded test run, and found blank.)"""
+        line = None
+        for _ in range(25):
+            now = self.bar()["line"]
+            if now == line:
+                break
+            line = now
+            self.s.settle(0.2)
         path = self.strip(name)
         img = Image.open(path).convert("RGB")
+        self.assertEqual(self.bar()["line"], line, "the bar moved while it was being pictured")
         out = []
-        for thing, t in self.bar()["line"].items():
+        for thing, t in line.items():
             if not t["visible"] or t["w"] < 4:
                 continue
             box = img.crop((t["x"] + 2, t["y"] + 2, t["x"] + t["w"] - 2, t["y"] + t["h"] - 2))
