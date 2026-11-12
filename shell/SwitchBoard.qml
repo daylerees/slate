@@ -1,5 +1,7 @@
 // Settings → Control Centre: choosing the control centre's quick switches. A small picture of
-// the panel, with its eight switches where they'll be; under it, any that aren't in it. The
+// the panel, with its eight switches where they'll be; beside them on the left, any that aren't
+// in it (the rest of the picture fades away behind those, so they sit right next to the
+// switches they'd swap with). The
 // panel always has eight, so nothing is added or taken away: drag one switch onto another and
 // the two change places, whether both are in the panel or one's waiting below. The tiles in
 // the picture are laid out by the same sums as the panel's (Config.controlSwitchRects), so
@@ -12,6 +14,7 @@ Item {
     property var all: []            // every switch there is: [{ id, label, icon }]
     property var chosen: []         // the ids in the panel, in order (Config.controlSwitches: always full)
     property int most: 8
+    property string label: ""       // (what Settings' search calls it: settings-index.py reads it)
     signal picked(var ids)
 
     // Settings' colours and fonts
@@ -21,11 +24,15 @@ Item {
     property color outline
     property color text
     property color dim
+    property color accent           // the switches in the panel: lit, as an on switch is there
+    property color accentText
     property string font
     property string iconFont
 
     // ---- The panel's own measures (Popouts.qml, the control centre) ------------------------
-    readonly property real k: Math.min(1, (width - 24) / (panelW + 24))     // (a narrow window: smaller)
+    // (a narrow window: smaller)
+    readonly property real k: side ? Math.max(0.6, Math.min(1, (width - 12 - (12 + 2 * trayPad + poolW + trayGap)) / (rightW + 12)))
+                                   : Math.min(1, (width - 24) / (panelW + 24))
     readonly property real panelW: 470
     readonly property real rightW: 208          // the switches' column
     readonly property real leftW: panelW - rightW - 12
@@ -37,6 +44,16 @@ Item {
     // Every switch in a line: the panel's first, then the ones waiting
     readonly property var line: order.concat(known.filter(id => order.indexOf(id) < 0))
     readonly property bool waiting: line.length > order.length          // (are there any that aren't in the panel?)
+    // The ones waiting go beside the panel's switches, on the left (with none, the picture's alone)
+    readonly property bool side: waiting
+    readonly property real poolW: pool.columns * (pool.tileW + gap) - gap
+    // They sit in a tray of their own (outlined, not the panel's colour), apart from the picture
+    readonly property real trayPad: 10
+    readonly property real trayGap: 28          // from the tray to the panel's switches
+    // The picture is gone behind the tray and fades back in across the gap: from nothing
+    // (fadeFrom) to full (fadeTo), across the board
+    readonly property real fadeFrom: 12 + 2 * trayPad + poolW + 2
+    readonly property real fadeTo: grid.x0 - 12 * k
 
     // ---- Dragging ---------------------------------------------------------------------------
     property string held: ""        // the switch being dragged
@@ -78,7 +95,7 @@ Item {
         if (JSON.stringify(next) !== JSON.stringify(order)) picked(next);
     }
 
-    implicitHeight: waiting ? spareCard.y + spareCard.height : panelCard.y + panelCard.height
+    implicitHeight: waiting && !side ? spareCard.y + spareCard.height : panelCard.y + panelCard.height
     height: implicitHeight
 
     component Heading: Text {
@@ -86,47 +103,84 @@ Item {
         font.family: board.font; font.pixelSize: 12; font.weight: Font.Medium
         topPadding: 14; bottomPadding: 6; leftPadding: 4
     }
+    // A shape in the picture, faded away towards the left behind the switches waiting there
+    // (`fill` is its colour; full wherever the picture isn't shared)
+    component Fading: Rectangle {
+        id: fr
+        property color fill
+        readonly property real bx: picture.x + (fr.parent === picture ? x : 0)    // its left, on the board
+        function alphaAt(p) {
+            const t = Math.max(0, Math.min(1, (bx + p * width - board.fadeFrom) / Math.max(1, board.fadeTo - board.fadeFrom)));
+            return Qt.rgba(fill.r, fill.g, fill.b, fill.a * t * t * (3 - 2 * t));
+        }
+        readonly property real s0: Math.max(0, Math.min(1, (board.fadeFrom - bx) / Math.max(1, width)))
+        readonly property real s1: Math.max(0, Math.min(1, (board.fadeTo - bx) / Math.max(1, width)))
+        color: fill
+        gradient: board.side ? fade : null
+        Gradient {
+            id: fade
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0; color: fr.alphaAt(0) }
+            GradientStop { position: fr.s0; color: fr.alphaAt(fr.s0) }
+            GradientStop { position: (fr.s0 + fr.s1) / 2; color: fr.alphaAt((fr.s0 + fr.s1) / 2) }
+            GradientStop { position: fr.s1; color: fr.alphaAt(fr.s1) }
+            GradientStop { position: 1; color: fr.alphaAt(1) }
+        }
+    }
     // Part of the panel that isn't a switch: there to show where the switches sit
-    component Ghost: Rectangle {
+    component Ghost: Fading {
         radius: Config.corner(12 * board.k)
-        color: board.outline
+        fill: board.outline
         opacity: 0.55
     }
 
     // ---- In the control centre ----------------------------------------------------------------
-    Heading { id: inHead; text: "In the control centre" }
+    // (beside them: over the switches' column, with the ones waiting headed on the left)
+    Heading { id: inHead; x: board.side ? Math.max(spareSide.width + 8, grid.x0 - 4) : 0; text: "In the control centre" }
+    Heading { id: spareSide; visible: board.side; x: 12; text: "More switches" }
     Rectangle {
         id: panelCard
         y: inHead.height
-        width: parent.width; height: picture.height + 28
+        width: parent.width
+        height: board.side ? Math.max(picture.height + 28, grid.y0 - y + pool.rows * (pool.tileH + board.gap) - board.gap + board.trayPad + 12)
+                           : picture.height + 28
         radius: Config.corner(12)
         color: board.card
         Gloss { radius: parent.radius }
     }
+    // (the picture, where it reaches past the card's left edge behind the ones waiting)
+    Item {
+        id: pictureClip
+        y: panelCard.y; width: board.width; height: panelCard.height
+        clip: true
     // The panel in small: your picture and name along the top; under it the clock and what's
     // playing on the left, and the switches on the right
-    Rectangle {
+    Fading {
         id: picture
-        x: Math.round((board.width - width) / 2); y: panelCard.y + 14
+        parent: pictureClip
+        x: board.side ? grid.x0 - (12 + board.leftW + 12) * board.k : Math.round((board.width - width) / 2)
+        y: 14
         width: (board.panelW + 24) * board.k
         height: (12 + 80 + 12 + board.bodyH + 12) * board.k
         radius: Config.corner(16 * board.k)
-        color: board.well
+        fill: board.well
         Ghost { x: 12 * board.k; y: 12 * board.k; width: board.panelW * board.k; height: 80 * board.k }
         Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: (board.bodyH - 104 - 12) * board.k }
         Ghost { x: 12 * board.k; y: (12 + 80 + 12 + board.bodyH - 104) * board.k; width: board.leftW * board.k; height: 104 * board.k }
     }
+    }
     QtObject {
         id: grid
-        readonly property real x0: picture.x + (12 + board.leftW + 12) * board.k
-        readonly property real y0: picture.y + (12 + 80 + 12) * board.k
+        readonly property real x0: board.side ? 12 + 2 * board.trayPad + board.poolW + board.trayGap : picture.x + (12 + board.leftW + 12) * board.k
+        readonly property real y0: panelCard.y + picture.y + (12 + 80 + 12) * board.k
     }
 
     // ---- The ones that aren't in it (none, while there are only eight) ----------------------
-    Heading { id: spareHead; visible: board.waiting; y: panelCard.y + panelCard.height; text: "More switches" }
+    // (only when they're not beside the picture)
+    Heading { id: spareHead; visible: board.waiting && !board.side; y: panelCard.y + panelCard.height; text: "More switches" }
     Rectangle {
         id: spareCard
-        visible: board.waiting
+        visible: board.waiting && !board.side
         y: spareHead.y + spareHead.height
         width: parent.width
         height: 24 + Math.max(1, pool.rows) * (pool.tileH + board.gap) - board.gap
@@ -138,10 +192,27 @@ Item {
         id: pool
         readonly property real tileW: 100
         readonly property real tileH: 56
-        readonly property int columns: Math.max(1, Math.floor((board.width - 24 + board.gap) / (tileW + board.gap)))
-        readonly property int rows: Math.ceil((board.line.length - board.order.length) / columns)
-        readonly property real x0: 12
-        readonly property real y0: spareCard.y + 12
+        readonly property int spare: board.line.length - board.order.length
+        // Beside the picture: as many columns as leave the switches' column its full size (at
+        // least one), no more than there are switches to fill
+        readonly property int columns: board.side
+            ? Math.max(1, Math.min(Math.max(1, spare), Math.floor((board.width - 12 - 2 * board.trayPad - board.trayGap - (board.rightW + 12) - 12 + board.gap) / (tileW + board.gap))))
+            : Math.max(1, Math.floor((board.width - 24 + board.gap) / (tileW + board.gap)))
+        readonly property int rows: Math.ceil(spare / columns)
+        readonly property real x0: board.side ? 12 + board.trayPad : 12
+        readonly property real y0: board.side ? grid.y0 : spareCard.y + 12
+    }
+
+    // The tray the ones waiting sit in, beside the picture
+    Rectangle {
+        visible: board.side
+        x: pool.x0 - board.trayPad; y: pool.y0 - board.trayPad
+        width: board.poolW + 2 * board.trayPad
+        height: pool.rows * (pool.tileH + board.gap) - board.gap + 2 * board.trayPad
+        radius: Config.corner(16)
+        color: "transparent"
+        border.width: 1
+        border.color: board.outline
     }
 
     // ---- The switches themselves, each wherever it belongs right now ------------------------
@@ -153,12 +224,17 @@ Item {
             readonly property bool carried: board.held === modelData.id
             readonly property bool target: board.over === modelData.id        // (the one the carried switch would swap with)
             readonly property rect home: board.place(modelData.id)
+            // In the panel (where it is now, or would land if let go): in the accent, lighter
+            // when pointed at or carried, as an on switch in the panel is when pointed at
+            readonly property bool inPanel: board.shown.indexOf(modelData.id) < board.order.length
+            readonly property bool lit: (grab.containsMouse && board.held === "") || target || carried
+            readonly property color fg: inPanel ? board.accentText : board.text
             x: carried ? board.holdX : home.x
             y: carried ? board.holdY : home.y
             width: home.width; height: home.height
             z: carried ? 3 : target ? 2 : 1
             radius: Config.corner(12)
-            color: (grab.containsMouse && board.held === "") || target ? Config.hover : board.tile
+            color: inPanel ? (lit ? Config.accentLit : board.accent) : lit ? Config.hover : board.tile
             scale: carried ? 1.05 : 1
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             Behavior on scale { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
@@ -174,7 +250,8 @@ Item {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: String.fromCodePoint(sw.modelData.icon)
-                    color: board.text
+                    color: sw.fg
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     font.family: board.iconFont; font.pixelSize: 18
                 }
                 Text {
@@ -182,7 +259,8 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
                     text: sw.modelData.label
-                    color: board.text
+                    color: sw.fg
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     font.family: board.font; font.pixelSize: 11; font.weight: Font.Medium
                 }
             }
