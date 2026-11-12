@@ -294,30 +294,36 @@ PanelWindow {
         const at = menuAnchor(item);
         trayMenuWin.openFor(menu, at.x, at.y);
     }
-    // The Slate button's right-click menu: quick access to useful things
+    // The Slate button's right-click menu: quick access to useful things. Slate's one menu
+    // (DesktopMenu.qml), pointing at the button from just off the bar, as the bar's own does
     function openSlateMenu(item) {
         if (bar.popouts) bar.popouts.close();
-        const slate = args => () => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args));
-        const notifs = bar.notifs;
-        const list = [
-            { text: "Settings", glyph: 0xEB20, action: slate(["settings", "open"]) },
-            { text: "Appearance", glyph: 0xEB01, action: slate(["settings", "page", "appearance"]) },
-            { text: "Next wallpaper", glyph: 0xEB0A, action: slate(["wallpaper", "next"]) },
-            { separator: true },
-            { text: "Do Not Disturb", glyph: 0xECE9, checked: !!(notifs && notifs.dnd), action: () => { if (notifs) notifs.dnd = !notifs.dnd; } },
-            { text: "Night Light", glyph: 0xEAF8, checked: Config.s.nightLight, action: slate(["nightlight", "toggle"]) },
-            { text: "Glass", glyph: 0xEB01, checked: Config.s.glass, action: () => { Config.s.glass = !Config.s.glass; } },
-            { separator: true },
-            { text: Updates.available ? "Update to " + Updates.latest : "Check for updates", glyph: 0xEA96, action: slate(["settings", "page", "updates"]) },
-            { text: "Restart Slate", glyph: 0xEB13, action: () => Config.restartSlate() },
-            { text: "Show the welcome", glyph: 0xEDBA, action: slate(["welcome", "open"]) },
-            { separator: true },
-            { text: "Lock screen", glyph: 0xEAE2, action: slate(["lock", "lock"]) },
-            { text: "Log out…", glyph: 0xEBA8, action: slate(["power", "confirm", "logout"]) },
-            { text: "About Slate", glyph: 0xEAC5, action: slate(["settings", "page", "about"]) }
-        ];
         const at = menuAnchor(item);
-        trayMenuWin.openList(list, at.x, at.y);
+        slateMenu.openFrom(at.x, at.y, bar.side, 14);
+    }
+    DesktopMenu {
+        id: slateMenu
+        screen: bar.screen
+        readonly property var call: args => () => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args))
+        items: [
+            { label: "Settings", icon: 0xEB20, run: call(["settings", "open"]) },
+            { label: "Appearance", icon: 0xEB01, run: call(["settings", "page", "appearance"]) },
+            { label: "Next wallpaper", icon: 0xEB0A, run: call(["wallpaper", "next"]) },
+            { separator: true },
+            // (ticked while on, as the menus' other switches are)
+            { label: "Do Not Disturb", icon: bar.notifs && bar.notifs.dnd ? 0xEA5E : 0, run: () => { if (bar.notifs) bar.notifs.dnd = !bar.notifs.dnd; } },
+            { label: "Night Light", icon: Config.s.nightLight ? 0xEA5E : 0, run: call(["nightlight", "toggle"]) },
+            { label: "Glass", icon: Config.s.glass ? 0xEA5E : 0, run: () => { Config.s.glass = !Config.s.glass; } },
+            { separator: true },
+            { label: Updates.available ? "Update to " + Updates.latest : "Check for updates", icon: 0xEA96, run: call(["settings", "page", "updates"]) },
+            { label: "Restart Slate", icon: 0xEB13, run: () => Config.restartSlate() },
+            { label: "Show the welcome", icon: 0xEF4C, run: call(["welcome", "open"]) },
+            { separator: true },
+            { label: "Session", icon: 0xEB0D, submenu: [
+                { label: "Lock screen", icon: 0xEAE2, run: call(["lock", "lock"]) },
+                { label: "Log out…", icon: 0xEBA8, run: call(["power", "confirm", "logout"]) }] },
+            { label: "About Slate", icon: 0xEAC5, run: call(["settings", "page", "about"]) }
+        ]
     }
     function focusedBar() { return Config.barFor(Config.focusedScreen) || bar; }
     IpcHandler {
@@ -363,7 +369,13 @@ PanelWindow {
                     const q = under.row.mapFromItem(null, w.x, w.y), cell = under.row.childAt(q.x, q.y);
                     if (cell !== winTitle && cell !== winIcon) return;
                 }
-                barMenu.openAt(w.x + bar.windowX, w.y + bar.windowY);
+                // Pointing at the bar from just off it, where it was clicked
+                const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
+                const x = w.x + bar.windowX, y = w.y + bar.windowY;
+                if (bar.side === "top") barMenu.openFrom(x, bar.barHeight, "top", 14);
+                else if (bar.side === "bottom") barMenu.openFrom(x, sh - bar.barHeight, "bottom", 14);
+                else if (bar.side === "left") barMenu.openFrom(bar.barHeight, y, "left", 14);
+                else barMenu.openFrom(sw - bar.barHeight, y, "right", 14);
             }
         }
     }
@@ -375,7 +387,12 @@ PanelWindow {
         screen: bar.screen
         items: [
             { label: "Auto-hide", icon: Config.s.barAutoHide ? 0xEA5E : 0, run: () => Config.s.barAutoHide = !Config.s.barAutoHide },
-            { label: "Edit layout", icon: 0xEB04, run: () => Config.barArranging = true }
+            { label: "Position", icon: 0xF22F, submenu: Config.edgeMenu(Config.barEdge, e => Config.moveBar(e)) },
+            { label: "Clock", icon: 0xEA70, submenu: Config.choiceMenu("barClockFormat", [["12h", "12-hour"], ["24h", "24-hour"]], "12h")
+                .concat([{ separator: true }, Config.tickItem("Seconds", "barClockSeconds")]) },
+            { label: "Edit layout", icon: 0xEB04, run: () => Config.barArranging = true },
+            { separator: true },
+            { label: "Menu bar settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "bar") }
         ]
     }
     property alias menu: barMenu

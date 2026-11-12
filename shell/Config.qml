@@ -634,6 +634,22 @@ Singleton {
         s.dockPosition = v;
     }
     // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
+    // The four edges, for a Position submenu (DesktopMenu.qml): the one in use ticked; `move`
+    // is moveBar or moveDock
+    function edgeMenu(current, move) {
+        return ["top", "bottom", "left", "right"].map(e => ({
+            label: e.charAt(0).toUpperCase() + e.slice(1), icon: e === current ? 0xEA5E : 0, run: () => move(e)
+        }));
+    }
+    // A menu item ticked while a setting is on, and switching it when picked
+    function tickItem(label, key) {
+        return { label: label, icon: s[key] ? 0xEA5E : 0, run: () => s[key] = !s[key] };
+    }
+    // A pick-one submenu for a setting: [[value, label], …], the value in use ticked
+    function choiceMenu(key, choices, fallback) {
+        const cur = s[key] !== undefined && choices.some(c => c[0] === s[key]) ? s[key] : fallback;
+        return choices.map(c => ({ label: c[1], icon: c[0] === cur ? 0xEA5E : 0, run: () => s[key] = c[0] }));
+    }
     function separateBarAndDock() { if (s.dockPosition === s.barPosition) s.dockPosition = opposite(s.barPosition); }
     Component.onCompleted: {
         chargeLimitRefresh();       // (whether the battery has a charging limit, and if it's on)

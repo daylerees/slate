@@ -67,17 +67,17 @@ ShellRoot {
     Launcher {
         id: appLauncher
         notifs: notifs
-        onShownChanged: if (shown) { winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); chalk.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
-    // Chalk, the assistant's prompt window (Super+K): one of the things only one of shows at a time
+    // Nova, the assistant's prompt window (Super+K): one of the things only one of shows at a time
     Assistant {
-        id: chalk
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        id: nova
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); chalk.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); nova.closeWindow(); }
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
@@ -628,12 +628,12 @@ ShellRoot {
     Switcher {
         id: winSwitcher
         bar: topBar
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); wsOverview.close(); popouts.close(); picker.close(); chalk.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     WorkspaceOverview {
         id: wsOverview
         bar: topBar
-        onShownChanged: if (shown) { appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); chalk.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)
@@ -1372,6 +1372,13 @@ ShellRoot {
         onGapAtChanged: if (gapAt >= 0) gapPos = gapAt
         Behavior on gapPos { enabled: !win.settling && win.gapOpen > 0.01; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
         // A window point (the dock's own window) as a point on the screen
+        // Where a menu points from, for something at x along the dock (strip coordinates): just
+        // past the icon under the pointer, magnified as it is (or the dock's inner side, for its
+        // empty space), leaving room for the menu's pointer (screen coordinates)
+        function menuPoint(x) {
+            const icon = hoveredIndex >= 0 && slotAt(hoveredIndex) && slotAt(hoveredIndex).kind !== "divider" ? base * scaleAt(hoveredIndex) : 0;
+            return toScreen(strip.mapToItem(win.contentItem, x, Math.min(bg.y - 16, row.y + row.height - icon - 14)));
+        }
         function toScreen(pt) {
             const sw = screen ? screen.width : 0, sh = screen ? screen.height : 0;
             return Qt.point(pt.x + (edge === "right" ? sw - width : 0), pt.y + (edge === "bottom" ? sh - height : 0));
@@ -1745,9 +1752,15 @@ ShellRoot {
             }
         }
 
-        PanelWindow {
+        DesktopMenu {
             id: appMenu
             screen: win.screen          // with the dock (which follows the focused screen)
+            // Slate's menu (DesktopMenu.qml), pointing at the icon from just off the dock: its
+            // rows as the menu's items, and Downloads' grid above them
+            items: rows.map(r => r.kind === "sep" ? { separator: true }
+                : { label: r.label, danger: !!r.danger, active: !!r.active, run: () => appMenu.run(r) })
+            menuWidth: app && app.downloadsGrid ? 4 * 88 + 16 : 240
+            extra: app && app.downloadsGrid ? downloadsGrid : null
             property var app: null
             property real menuX: 0      // just inside the dock's inner edge, by the icon (screen coordinates)
             property real menuY: 0
@@ -1758,14 +1771,11 @@ ShellRoot {
             // x: the icon's centre along the dock (strip coordinates)
             function openFor(a, x) {
                 app = a;
-                // A little off the dock: room for the menu's pointer
-                const p = strip.mapToItem(win.contentItem, x, bg.y - 16);
-                const sw = win.screen ? win.screen.width : 0, sh = win.screen ? win.screen.height : 0;
-                menuX = p.x + (win.edge === "right" ? sw - win.width : 0);
-                menuY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
-                visible = true;
+                const p = win.menuPoint(x);
+                menuX = p.x; menuY = p.y;
+                openFrom(p.x, p.y, win.edge, 0);
             }
-            function closeMenu() { visible = false; }
+            function closeMenu() { close(); }
 
             // Rows: open windows, the app's own actions, then New Window / Pin / Quit. For the
             // launcher button: Settings and a few of the places most often wanted in it
@@ -1857,59 +1867,16 @@ ShellRoot {
                 }
                 closeMenu();
             }
-
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            color: "transparent"
-            visible: false
-            WlrLayershell.namespace: "slate-dock-menu"
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.AllButtons
-                onPressed: appMenu.closeMenu()
-            }
-            Item {
-                focus: appMenu.visible
-                Keys.onEscapePressed: appMenu.closeMenu()
-            }
-
-            Rectangle {
-                // Wider for Downloads' grid (four across)
-                width: appMenu.app && appMenu.app.downloadsGrid ? 4 * 88 + 16 : 240
-                height: menuCol.implicitHeight + 16
-                // Opens away from the dock's edge
-                x: Math.max(8, Math.min(appMenu.width - width - 8,
-                    win.edge === "left" ? appMenu.menuX : win.edge === "right" ? appMenu.menuX - width : appMenu.menuX - width / 2))
-                y: Math.max(8, Math.min(appMenu.height - height - 8,
-                    win.edge === "bottom" ? appMenu.menuY - height : win.edge === "top" ? appMenu.menuY : appMenu.menuY - height / 2))
-                radius: Config.corner(12)
-                color: win.bgColor
-                Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
-                MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
-
-                // Pointer: a small triangle on the side facing the dock, at the icon (it slides along
-                // the edge to stay on the icon when the menu is held in from the screen's edge),
-                // kept clear of the rounded corners
-                MenuPointer {
-                    edge: win.edge
-                    along: win.edge === "left" || win.edge === "right"
-                        ? Math.max(18, Math.min(parent.height - 18, appMenu.menuY - parent.y))
-                        : Math.max(18, Math.min(parent.width - 18, appMenu.menuX - parent.x))
-                    color: parent.color
-                }
-
+            Component {
+                id: downloadsGrid
                 Column {
-                    id: menuCol
-                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                    id: dlCol
+                    width: appMenu.menuWidth - 16
                     spacing: 1
-
                     // Downloads: the newest, four across; click one to open it
                     Text {
                         visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length === 0
-                        width: menuCol.width; height: 40
+                        width: dlCol.width; height: 40
                         horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                         text: "No downloads just yet"
                         color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
@@ -1918,7 +1885,7 @@ ShellRoot {
                     Flickable {
                         id: dlScroll
                         visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length > 0
-                        width: menuCol.width
+                        width: dlCol.width
                         height: Math.min(dlGrid.height, 3 * 92)        // three rows; the rest scroll
                         contentHeight: dlGrid.height
                         interactive: contentHeight > height
@@ -1997,52 +1964,10 @@ ShellRoot {
                     }
                     Rectangle {
                         visible: !!appMenu.app && !!appMenu.app.downloadsGrid
-                        width: menuCol.width; height: 9; color: "transparent"
-                        Rectangle { anchors.centerIn: parent; width: parent.width - 16; height: 1; color: win.tileColor }
+                        width: dlCol.width; height: 9; color: "transparent"
+                        Rectangle { anchors.centerIn: parent; width: parent.width - 16; height: 1; color: appMenu.sepColor }
                     }
 
-                    Repeater {
-                        model: appMenu.rows
-                        delegate: Item {
-                            id: menuRow
-                            required property var modelData
-                            width: menuCol.width
-                            height: modelData.kind === "sep" ? 9 : 30
-
-                            Rectangle {
-                                visible: menuRow.modelData.kind === "sep"
-                                anchors.centerIn: parent
-                                width: parent.width - 16; height: 1
-                                color: win.tileColor
-                            }
-                            Rectangle {
-                                visible: menuRow.modelData.kind !== "sep"
-                                anchors.fill: parent
-                                radius: Config.corner(7)
-                                // Under the pointer: the muted hover, flat (the accent is for what stays selected)
-                                // (red for what's destructive: Force Quit, Empty Waste Basket)
-                                color: rowHover.hovered ? (menuRow.modelData.danger ? Config.hoverDanger : Config.hover) : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                                Rectangle {
-                                    visible: !!menuRow.modelData.active
-                                    width: 5; height: 5; radius: Config.corner(2.5)
-                                    color: win.activeDotColor
-                                    anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                }
-                                Text {
-                                    anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                                    text: menuRow.modelData.label || ""
-                                    color: menuRow.modelData.danger ? Config.tint("#f28b8b") : win.textColor
-                                    font.family: win.fontFamily
-                                    font.pixelSize: win.fontSize
-                                    font.weight: win.fontWeight
-                                    elide: Text.ElideRight
-                                }
-                                HoverHandler { id: rowHover }
-                                ClickTap { onTapped: appMenu.run(menuRow.modelData) }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -2157,7 +2082,9 @@ ShellRoot {
 
         function clickItem(i, right) {
             if (dragKey !== "") return;                     // (a right-click mid-drag opens no menu)
-            if (i < 0) return;
+            // The dock's empty space (its ends, between icons, a divider): right-click for the
+            // dock's own menu
+            if (i < 0 || (slotAt(i) && slotAt(i).kind === "divider")) { if (right) dockMenu.openHere(); return; }
             if (i === launcherIndex) {
                 // The launcher button: opens the launcher; right-click for shortcuts to Settings pages
                 if (right) appMenu.openFor({ settingsMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
@@ -2193,6 +2120,32 @@ ShellRoot {
             if (wins.length === 0) { if (item.entry) { startLaunch(item.key); item.entry.execute(); } return; }
             const cur = wins.findIndex(w => w.activated);
             wins[(cur + 1) % wins.length].activate();
+        }
+
+        // The dock's own menu, for a right-click on its empty space
+        DesktopMenu {
+            id: dockMenu
+            screen: win.screen
+            items: [
+                { label: "Auto-hide", icon: Config.s.dockAutoHide ? 0xEA5E : 0, run: () => Config.s.dockAutoHide = !Config.s.dockAutoHide },
+                { label: "Position", icon: 0xF22F, submenu: Config.edgeMenu(Config.dockEdge, e => Config.moveDock(e)) },
+                // (Settings → Dock's names and order)
+                { label: "Hover effect", icon: 0xF6D7, submenu: Config.choiceMenu("dockHoverEffect", [
+                    ["magnify", "Magnify"], ["tilt", "Tilt"], ["both", "Magnify and tilt"], ["fade", "Fade"],
+                    ["fademagnify", "Fade and magnify"], ["glow", "Glow"], ["glowmagnify", "Glow and magnify"],
+                    ["raise", "Raise"], ["none", "None"]], "magnify") },
+                { label: "Icon size", icon: 0xF6B1, submenu: Config.choiceMenu("dockIconSize", [[32, "Small"], [40, "Medium"], [52, "Large"]], -1) },
+                { label: "Show", icon: 0xEA9A, submenu: [
+                    Config.tickItem("Apps button", "dockShowLauncher"), Config.tickItem("What's playing", "dockShowMedia"),
+                    Config.tickItem("Downloads", "dockShowDownloads"), Config.tickItem("Waste Basket", "dockShowTrash")] },
+                { separator: true },
+                { label: "Dock settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "dock") }
+            ]
+            // Pointing at the dock where it was clicked, from just off it, as its apps' menus do
+            function openHere() {
+                const p = win.menuPoint(strip.mapFromItem(mouse, mouse.mouseX, mouse.mouseY).x);
+                openFrom(p.x, p.y, win.edge, 0);
+            }
         }
 
         // ---- The strip: dock, pointer area and label, turned to face the dock's edge ----

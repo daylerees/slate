@@ -78,6 +78,22 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 - The lock and login screens stay silent (the login screen has no `sounds/`).
 - New sounds are played for the user to approve before they're committed.
 
+## Menus
+
+Every right-click menu is `shell/DesktopMenu.qml`, one menu with one look: the desktop's, the
+menu bar's, the dock's empty space and the dock's app menus all use it. A new menu is a
+`DesktopMenu { items: … }`, never a menu window or row style of its own; anything a menu needs
+that it can't do yet is added to `DesktopMenu.qml`, for every menu. (`TrayMenu.qml`, for apps'
+own menus, is the one exception.)
+
+- Items: `{ label, icon, run }`, with `{ separator: true }` between groups. `danger: true` for
+  what's destructive (red hover), `active: true` for a dot (the window you're in),
+  `submenu: [items]` for a menu beside it (an arrow at its end; it closes with the menu). The
+  current choice is ticked with `icon: 0xEA5E`, as `Config.edgeMenu` does for Position.
+- It points at what it's for: `openFrom(x, y, edge, gap)` from just off the bar or the dock (the
+  dock's via `win.menuPoint`), `openAt(x, y)` with the pointer's tip on the cursor (the desktop).
+- Content above the items (the dock's Downloads grid): `extra` and `menuWidth`.
+
 ## Interface size
 
 Settings → Appearance → Interface size scales all of Slate by starting it with

@@ -29,6 +29,12 @@ PanelWindow {
         visible = true;
     }
     function close() { visible = false; stack = []; list = null; }
+    // Closes as every menu does: going to another workspace, or a launcher or switcher opening
+    Connections {
+        target: Config
+        function onCloseMenus() { if (tm.visible) tm.close(); }
+        function onFocusedWorkspaceIdChanged() { if (tm.visible) tm.close(); }
+    }
     // Slate's own menu: shaped like an app's menu entries, so the rows below draw it the same
     property var list: null
     function openList(items, x, y) {
