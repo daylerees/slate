@@ -669,7 +669,8 @@ PanelWindow {
                         { keys: "Super+Q", what: "Terminal", icon: 0xEBEF },
                         { keys: "Super+C", what: "Close a window", icon: 0xEB55 },
                         { keys: "Super+1", what: "Go to a workspace", icon: 0xEA1F },
-                        { keys: "Super+Tab", what: "Switch windows", icon: 0xEFE6 },
+                        // (Hyprland's own set has no window switcher: Super+Tab is Slate's)
+                        { keys: "Super+V", what: "Float or tile a window", icon: 0xEFE6 },
                         { keys: "Super+Z", what: "Settings", icon: 0xEB20 }
                     ] : [
                         { keys: "Super+R", what: "Open apps", icon: 0xEB1C },

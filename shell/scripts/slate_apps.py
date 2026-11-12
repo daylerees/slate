@@ -126,6 +126,12 @@ def gtk_css(c, version):
                 "    --success-fg-color: %s;" % c["secondary"],
                 "    --shade-color: rgba(0, 0, 0, %s);" % ("0.07" if c["light"] else "0.36"),
                 "}"]
+    if version == 3:
+        # Hyprland rounds and frames every window itself. GTK 3's message dialogs (an app asking
+        # whether to save, say) round their own corners too, more than Hyprland does, and the
+        # gap between the two curves showed what's behind the window at its bottom corners
+        out += ["", "/* Hyprland rounds the window: no rounding of GTK's own inside it */",
+                "messagedialog.csd.background, messagedialog.csd decoration { border-radius: 0; }"]
     return "\n".join(out) + "\n"
 
 @app("gtk", "GTK apps", "Files, Text Editor, Calculator and other GNOME and GTK apps", lambda: True)

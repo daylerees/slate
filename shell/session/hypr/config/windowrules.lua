@@ -345,6 +345,31 @@ function slateFitFloating(address)
     if nw ~= sw or nh ~= sh then hl.dispatch(hl.dsp.window.resize({ x = nw, y = nh, window = target })) end
     if nx ~= x or ny ~= y then hl.dispatch(hl.dsp.window.move({ x = nx, y = ny, window = target })) end
 end
+-- A floating window dropped with its top above or under the menu bar (or past the bottom of
+-- the screen's usable part) is moved back so its title bar is in view, below the bar: its own
+-- title bar (Slate's, or hyprbars') counted in. Run when a drag ends (binds.lua: the left
+-- button let go), whichever way it was moved: Super+drag, a title bar, an app's own.
+-- Only up and down: sideways, part of a window off the edge is fine.
+function slateKeepUnderBar(address)
+    local target = "address:" .. address
+    local w = hl.get_window(target)
+    local m = w and w.monitor
+    if not (w and w.mapped and w.floating and m) or (w.fullscreen or 0) ~= 0 then return end
+    local r = m.reserved or {}
+    local scale = m.scale or 1
+    local barH = SLATE_TITLEBARS and (SLATE_TITLEBAR_HEIGHT or 34) or 0
+    if not SLATE_TITLEBARS and HYPRBARS_LOADED then
+        local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
+        if ok and type(h) == "number" then barH = h end
+    end
+    -- (the top of the window itself, below its title bar; and the lowest it may go: its
+    -- title bar still in view above the bottom of the usable part, or a strip of it to grab)
+    local top = m.y + (r.top or 0) + barH
+    local bottom = m.y + math.floor(m.height / scale) - (r.bottom or 0) - math.max(barH, 40)
+    local y = w.at.y
+    local ny = math.max(top, math.min(y, bottom))
+    if ny ~= y then hl.dispatch(hl.dsp.window.move({ x = w.at.x, y = ny, window = target })) end
+end
 hl.on("window.open", function(win)
     local id = win and win.workspace and win.workspace.id
     if not (id and win.address) then return end

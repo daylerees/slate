@@ -815,6 +815,10 @@ Singleton {
             .map(a => /^[A-Za-z0-9_@%+=:,.\/-]+$/.test(a) ? a : "'" + a.replace(/'/g, "'\\''") + "'").join(" ");
     }
     readonly property string hyprSettings: {
+        // (worked out again once the apps' entries have loaded: the default apps below are
+        // looked up there, and before they'd loaded they came back empty and were left out,
+        // so Hyprland kept its own first guess: Dolphin for folders, though Nautilus was chosen)
+        DesktopEntries.applications.values;
         const t = [];
         const q = v => JSON.stringify(String(v));
         const onOff = v => v === "on" ? "true" : "false";

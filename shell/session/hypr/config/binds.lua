@@ -347,6 +347,15 @@ end
 -- Move & Resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag())
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize())
+-- A drag ended (the left button let go, however the window was moved): a floating window
+-- dropped above or under the menu bar goes back below it (windowrules.lua). Never takes the
+-- click from anything; looked at a moment later, once the move has settled
+hl.bind("mouse:272", function()
+    local w = hl.get_active_window()
+    if not (w and w.floating) then return end
+    local address = w.address
+    hl.timer(function() slateKeepUnderBar(address) end, { timeout = 60, type = "oneshot" })
+end, { release = true, non_consuming = true, ignore_mods = true })
 
 -- (Slate's set)
 if SLATE_KEYS then
