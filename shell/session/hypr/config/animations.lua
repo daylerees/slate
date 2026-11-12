@@ -18,7 +18,8 @@ hl.curve("easy",           { type = "spring", mass = 1, stiffness = 500, dampeni
 -- quicker) or "off". Every speed below goes through sp() so the setting scales them all.
 local ANIM_SCALE = 1
 local ANIM_OFF = false
-local function sp(x) return x * ANIM_SCALE end
+-- (SLATE_ANIM_SLOW: the tests slow every animation down by that much, to take pictures partway)
+local function sp(x) return x * ANIM_SCALE * (SLATE_ANIM_SLOW or 1) end
 
 -- The fixed animations (windows, workspaces, the special workspace), at the current speed
 local function defineLeaves()
@@ -114,6 +115,24 @@ function squareWhileSliding()
     if roundTimer then roundTimer:set_enabled(false) end
     roundTimer = hl.timer(function() roundTimer = nil; SLIDE_SQUARE_RULE:set_enabled(false) end,
                           { timeout = math.floor(sp(5) * 100 + 40), type = "oneshot" })
+end
+
+-- noteWorkspaceSwitch(): called as a slide starts. The workspace left behind holds, fully there,
+-- until the new one has arrived (holdFade), so the desktop never shows between them. But switching
+-- through several quickly, each held one stayed behind the next, and the first showed through every
+-- workspace passed (a bright window could be made out behind each). So a switch that starts while
+-- the last is still under way lets the old workspaces fade straight away; the hold comes back once
+-- things have settled
+local switching, switchTimer = false, nil
+function noteWorkspaceSwitch()
+    if ANIM_OFF or (WORKSPACE_ANIM ~= "slidefade" and WORKSPACE_ANIM ~= "slidefadevert") then return end
+    if switching then
+        hl.animation({ leaf = "workspacesOut", enabled = true, speed = sp(1.5), bezier = "quick", style = "fade" })
+    end
+    switching = true
+    if switchTimer then switchTimer:set_enabled(false) end
+    switchTimer = hl.timer(function() switchTimer = nil; switching = false; slideWorkspaces() end,
+                           { timeout = math.floor(sp(5) * 100 + 60), type = "oneshot" })
 end
 
 -- slideAwayTo(dispatcher): to an empty workspace, the windows slide away in the direction of

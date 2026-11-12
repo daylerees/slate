@@ -160,6 +160,7 @@ class NoStraySystemdCalls(Case):
         "shell/bin/slate-greeter-install": "systemd-cat only where systemd runs",
         "shell/scripts/printers.py": "systemctl only where it exists (CUPS itself is asked otherwise)",
         "shell/scripts/session-services.sh": "tells systemd the environment only where it runs",
+        "shell/scripts/private-capture.sh": "masks the portal's service only where systemd runs (stops it by hand otherwise, `keep`)",
         "shell/greeter/shell.qml": "the login screen runs from a root-owned copy without slate-init: the same choice inline",
         "shell/greeter/emergency/shell.qml": "as the login screen",
         "shell/session/slate-session": "uwsm only where systemd runs",
