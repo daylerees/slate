@@ -22,6 +22,9 @@ PanelWindow {
     id: pop
     required property var bar
     property var notifs: null
+    // (the test hook: press a control centre switch by its id, as a click on it does; the
+    // panel has to be open)
+    signal pressSwitchAsked(string id)
     property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
     property var dock: null              // the dock's window (shell.qml), left usable while a panel's open
 
@@ -2905,7 +2908,17 @@ PanelWindow {
                     readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
                         .map(id => Object.assign({ id: id }, every[id]))
                     readonly property var rects: Config.controlSwitchRects(toggles.length, width, height)
+                    Connections {
+                        target: pop
+                        function onPressSwitchAsked(id) {
+                            for (let i = 0; i < ccTileRep.count; i++) {
+                                const t = ccTileRep.itemAt(i);
+                                if (t && t.modelData.id === id) { t.clicked(); return; }
+                            }
+                        }
+                    }
                     Repeater {
+                        id: ccTileRep
                         model: ccTiles.toggles
                         delegate: RowButton {
                             id: controlTile

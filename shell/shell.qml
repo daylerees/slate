@@ -166,6 +166,11 @@ ShellRoot {
         function audioBusy(what: string): void { popouts.pretendAudioBusy(what); }
         // Weather for the clock panel and control centre, as if it had been fetched for a place
         // (tests have no network): mild rain now, then four days
+        // The control centre's quick switches: their order (ids, comma-separated; "" for none
+        // chosen), a press on one by id (the panel open), and which this computer can't use
+        function controlSwitches(ids: string): void { Config.s.controlSwitches = ids === "" ? [] : ids.split(","); }
+        function pressSwitch(id: string): void { popouts.pressSwitchAsked(id); }
+        function switchMissing(ids: string): void { Config.controlSwitchMissing = ids === "" ? [] : ids.split(","); }
         // Hardware the tests' computer hasn't got, pretended there or not: what = "wifi" or "audio"
         function hardware(what: string, on: bool): void {
             if (what === "wifi") Config.pretendWifi = on; else if (what === "audio") Config.pretendAudio = on;
@@ -285,6 +290,8 @@ ShellRoot {
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
+                control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,
+                           rects: Config.controlSwitchRects(Config.controlSwitches.length, 200, 300).map(q => [q.x, q.y, q.width, q.height]) },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
