@@ -351,6 +351,55 @@ class Wallpapers(Case):
                 self.assertLess(os.path.getsize(p), 4_000_000, "too big to ship")
 
 
+class Pointer(Case):
+    """Where the pointer turns into a hand: over buttons, switches and links in panels and
+    windows, not over the desktop, the dock or right-click menus (those keep the arrow)."""
+    def test_desktop_keeps_the_arrow(self):
+        src = slate.read("shell", "Wallpaper.qml")
+        self.assertNotIn("ClickArea {", src, "the desktop's right-click area turns the pointer into a hand: a MouseArea")
+
+    def test_menus_keep_the_arrow(self):
+        for f in ("DesktopMenu.qml", "TrayMenu.qml"):
+            with self.subTest(f):
+                src = slate.read("shell", f)
+                taps = len(re.findall(r"ClickTap \{", src))
+                arrows = len(re.findall(r"ClickTap \{[^}]*?hand: false", src, re.S))
+                self.assertEqual(taps, arrows, f"every ClickTap in {f} needs hand: false (menus keep the arrow)")
+
+    def test_dock_keeps_the_arrow(self):
+        src = slate.read("shell", "shell.qml")
+        m = re.search(r"ClickArea \{\s*id: mouse\b(.*?)\n        \}", src, re.S)
+        self.assertTrue(m, "the dock's pointer area (ClickArea id: mouse) has moved")
+        self.assertIn("cursorShape: Qt.ArrowCursor", m.group(1))
+        for card in ("liveCard", "titleCard"):
+            self.assertRegex(src, r"ClickTap \{ hand: false; onTapped: \{ %s\." % card)
+
+    def test_hand_is_the_default(self):
+        self.assertRegex(slate.read("shell", "ClickTap.qml"), r"property bool hand: true")
+
+
+class Shadows(Case):
+    """One shadow look everywhere (Settings → Appearance → Shadows)."""
+    def test_no_shadow_sets_its_own_look(self):
+        """A Shadow takes its softness and distance from Config: only a surface hanging off an
+        edge sets which way it falls (dropX/dropY to 0, with spread), never its own blur."""
+        bad = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).splitlines(), 1):
+                if re.search(r"\bShadow \{[^}]*\bblur:", line):
+                    bad.append(f"{f}:{n}")
+        self.assertFalse(bad, "a Shadow with a look of its own: " + ", ".join(bad))
+
+    def test_qt_shadows_follow_the_switch(self):
+        """Qt's own shadows (MultiEffect, RectangularShadow) are off when Slate's are."""
+        bad = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).splitlines(), 1):
+                if re.search(r"shadowEnabled:\s*true\b", line):
+                    bad.append(f"{f}:{n}")
+        self.assertFalse(bad, "shadowEnabled: true (use Config.shadowsOn): " + ", ".join(bad))
+
+
 class Shaders(Case):
     def test_built_from_source(self):
         """Every shaders/*.frag has its .qsb, built after the source last changed."""

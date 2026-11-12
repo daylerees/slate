@@ -98,6 +98,14 @@ class ApplyTheme(Case):
         self.assertIn("gtk-cursor-theme-name=Slate-Cursors", self.text(".config/gtk-3.0/settings.ini"))
         self.assertIn("Inherits=Slate-Cursors", self.text(".icons/default/index.theme"))
 
+    def test_gtk3_dialogs_leave_rounding_to_hyprland(self):
+        """GTK 3's message dialogs round their own corners more than Hyprland does, and the gap
+        showed what's behind the window: GTK 3's slate.css squares them (GTK 4's needn't)."""
+        self.apply(["gtk"])
+        self.assertIn("messagedialog.csd.background, messagedialog.csd decoration { border-radius: 0; }",
+                      self.text(".config/gtk-3.0/slate.css"))
+        self.assertNotIn("messagedialog.csd", self.text(".config/gtk-4.0/slate.css"))
+
     def test_writes_each_apps_theme(self):
         self.put(YOURS)
         out = self.apply(ALL)

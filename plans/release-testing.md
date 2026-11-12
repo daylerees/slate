@@ -104,11 +104,6 @@ to date and the suite passed whole. What's below was left over from that cycle.
   that a click on anything still works (the bind takes nothing). By hand: Super+drag, a Slate
   Bar drag and an app's own title bar drag.
 
-- **GTK 3 message dialogs square inside Hyprland's rounding** (`gtk_css`, slate_apps.py: adw-gtk3
-  rounds them 15 px, Hyprland 10 px, and the gap showed at the bottom corners). Owed: a line in
-  `test_apply_theme.py` that the GTK 3 slate.css has the rule (and GTK 4's doesn't). By eye: a
-  Code - OSS "save changes?" dialog, light and dark.
-
 - **Default apps reach Hyprland once the apps have loaded** (`hyprSettings` depends on
   `DesktopEntries`; before, Slate started before the entries loaded and FILE_MANAGER stayed
   Hyprland's first guess, Dolphin). Bug, owed a regression test: live, with
@@ -150,9 +145,8 @@ to date and the suite passed whole. What's below was left over from that cycle.
 - **One shadow look, closer and harder, and a Shadows switch** (an experiment: `Config.shadowReach`
   10, `shadowDrop` 2, `shadowEffectBlur`; Hyprland's range 10, render_power 4; `Config.shadowsOn`
   = `s.shadows` and not game mode). Every scene with a shadow needs re-approving (most of them).
-  Owed: a static test that no Shadow sets its own blur or dropY (only direction), and that every
-  MultiEffect/RectangularShadow shadow follows `Config.shadowsOn`; a live test that the switch
-  turns Hyprland's shadow off and back. Login screen: needs the greeter synced to show it.
+  Owed: a live test that the switch turns Hyprland's shadow off and back. (Static checks
+  written: no Shadow sets its own blur, no Qt shadow is always on: test_consistency Shadows.) Login screen: needs the greeter synced to show it.
 
 - **Workspace dots: a limit, and scrolling** (`WorkspaceDots.qml`, used by the bar (6), OSD,
   switcher and overview (10)). Owed: a live test with 13 workspaces that the bar's row is 6 dots
@@ -203,7 +197,3 @@ Most of these need a real pointer, or hardware the tests' computer hasn't got.
 ## Overview: moving a workspace keeps its layout and previews (2026-11-12)
 - Live: overview with live previews, lift a card (hold) and move it along. The two workspaces swap numbers (Config.swapWorkspaces, Hyprland's workspace.change_id) rather than their windows moving: each keeps its split as it was (it used to come out flipped) and its previews keep updating (they went blank). Their names and window modes go with them.
 - Unit/static: swapWorkspaces swaps workspaceNames and workspaceModes entries.
-
-## Desktop pointer (2026-11-12)
-- Static: Wallpaper.qml's desktop-wide right-click area is a MouseArea, not a ClickArea (a full-screen area turning the pointer into a hand). Maybe a consistency check: a ClickArea that fills a whole window is suspect.
-- Static: menus (DesktopMenu, TrayMenu) and the dock (its pointer ClickArea, preview cards, Downloads grid) keep the arrow: ClickTap `hand: false`, the dock's ClickArea `cursorShape: Qt.ArrowCursor`; ClickTap's `hand` defaults to true elsewhere.
