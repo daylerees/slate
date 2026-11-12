@@ -161,9 +161,9 @@ sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous
   reach apps when they start; already-open apps keep the old ones, and Slate itself picks
   them up after logging out and in (`slate restart` reloads Slate's code, not its
   environment).
-- **Folder colours need Papirus.** Settings → Appearance → Folder colour uses the coloured
-  folders in the Papirus icon theme (installed and set by default); other icon themes keep
-  their own folders.
+- **Folder colours need icons drawn in colours.** Settings → Icons → Folder colour uses the
+  coloured folders of Papirus (installed and set by default), Kora or Nordzy; other icon
+  themes keep their own folders.
 - **Quickshell built from source must be rebuilt after Qt updates** (Ubuntu, Debian and
   openSUSE, where the installer builds it): run `packaging/build-quickshell.sh` again, or
   Slate won't start.

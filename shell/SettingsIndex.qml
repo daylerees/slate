@@ -15,11 +15,15 @@ Singleton {
     id: root
 
     // Every Settings page, in order, each a tile on All Settings (the first page). The ones used
-    // most are also down the sidebar; the rest (more: true) are reached from All Settings.
+    // most are also down the sidebar; the rest (more: true) are reached from All Settings. A page
+    // that belongs to another (parent: its id, linked from the top of it) goes back there, and
+    // keeps that page lit in the sidebar.
     // SettingsWindow shows these; the launcher and search use the icons and names below.
     readonly property var pages: [
         { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
-        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, icons, fonts, size and wallpaper" },
+        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, fonts, size and motion; wallpaper and icons from here" },
+        { id: "wallpaper", label: "Wallpaper", icon: 0xEF56, more: true, parent: "appearance", about: "Your desktop picture: your own, Slate's, and changing by itself" },
+        { id: "icons", label: "Icons", icon: 0xF1D4, more: true, parent: "appearance", about: "The icon theme, folder colours, and how app icons look" },
         { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
         { id: "input", label: "Input", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
         { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
@@ -43,9 +47,9 @@ Singleton {
         { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
         { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
         { id: "datetime", label: "Region", icon: 0xEA70, more: true, about: "Time zone, the clock, and how dates and temperatures are written" },
-        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
+        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, parent: "appearance", about: "Other apps following Slate's colours: terminals, editors, GTK, Qt…" },
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, and marking up" },
-        { id: "assistant", label: "Assistant", icon: 0xF38A, more: true, about: "AI agents using Slate: what they may do and see" },
+        { id: "assistant", label: "Assistant", icon: 0xF014, more: true, about: "AI agents using Slate: what they may do and see" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
         { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
         // About is always last
@@ -129,6 +133,8 @@ Singleton {
         ["Acceleration", "input", "mouse acceleration flat adaptive"],
         ["Natural scrolling", "input", "reverse scroll direction"],
         ["Pointer size", "input", "cursor size mouse pointer big large"],
+        ["Pointer style", "input", "cursor theme pointer mouse arrow pack style look bibata adwaita"],
+        ["More pointer styles", "input", "install download cursor theme pack phinger apple macos bibata nordzy rose pine catppuccin get more pointers"],
         ["Tap to click", "input", "touchpad trackpad tap"],
         ["Ignore while typing", "input", "touchpad palm rejection disable while typing"],
         ["Power", "power", "battery lid power button suspend sleep performance"],
@@ -138,7 +144,7 @@ Singleton {
         ["On battery", "power", "power mode profile saver battery"],
         ["Plugged in", "power", "power mode profile performance charger"],
         ["Reopen apps after restarting", "power", "restart reboot reopen restore apps windows workspaces session"],
-        ["Tiles in the icon's colour", "appearance", "icon tile background colour colourful dock launcher plate match"],
+        ["Tiles in the icon's colour", "icons", "icon tile background colour colourful dock launcher plate match"],
         ["Game mode", "bar", "game gaming performance fps smooth effects glass blur animations shadows touchpad"],
         ["Windows show", "workspaces", "overview live previews app icons windows cards thumbnails screenshots"],
         ["Windows show", "windows", "switcher alt tab super tab live previews app icons thumbnails"],
@@ -157,9 +163,9 @@ Singleton {
         ["Title bars", "windows", "floating window title bar titlebar slate bars hyprbars decoration"],
         ["Hyprbars", "windows", "title bars plugin build rebuild retry remove reload hyprland update optional"],
         ["Title bar buttons", "windows", "close maximise maximize buttons left right side floating"],
-        ["Wallpaper", "appearance", "background picture image desktop"],
-        ["Slate's wallpapers", "appearance", "included bundled built in default backgrounds ember iris lagoon blossom fern cobalt ruby honey graphite mist gradient colourful colorful green blue red yellow black white grey gray plain logo mark"],
-        ["Change wallpaper", "appearance", "automatically rotate shuffle slideshow timer login cycle background theme"],
+        ["Wallpaper", "wallpaper", "background picture image desktop"],
+        ["Slate's wallpapers", "wallpaper", "included bundled built in default backgrounds ember iris lagoon blossom fern cobalt ruby honey graphite mist gradient colourful colorful green blue red yellow black white grey gray plain logo mark"],
+        ["Change wallpaper", "wallpaper", "automatically rotate shuffle slideshow timer login cycle background theme"],
         ["Menu Bar", "bar", "top bar panel status"],
         ["Panel blur", "bar", "menu bar panels popouts glass blur frosted clear see through"],
         ["Panel opacity", "bar", "menu bar panels popouts glass transparency transparent see-through opacity background"],
@@ -183,10 +189,12 @@ Singleton {
         ["Launcher settings", "launcher", "app search descriptions usage"],
         ["Window borders", "windows", "border outline frame width"],
         ["Dim inactive windows", "windows", "dimming darken focus unfocused"],
-        ["Folder colour", "appearance", "folders nautilus dolphin files papirus icon colour color"],
-        ["Shape", "appearance", "app icons icon shape tile squircle circle round square original rounded"],
-        ["Fill the shape", "appearance", "app icons crop border shadow grow zoom whole margins"],
-        ["Tint app icons", "appearance", "icon colour color accent theme tint monochrome themed icons"],
+        ["Folder colour", "icons", "folders nautilus dolphin files papirus icon colour color"],
+        ["Icons", "icons", "icon theme pack app icons papirus breeze adwaita look"],
+        ["More icon styles", "icons", "install download icon theme pack kora morewaita numix circle zafiro nordzy get more icons"],
+        ["Shape", "icons", "app icons icon shape tile squircle circle round square original rounded"],
+        ["Fill the shape", "icons", "app icons crop border shadow grow zoom whole margins"],
+        ["Tint app icons", "icons", "icon colour color accent theme tint monochrome themed icons"],
         ["Workspace indicators", "workspaces", "dots shape circles squares rounded workspace"],
         ["Displays", "displays", "monitors screens resolution refresh rate hz scale scaling rotate rotation arrange arrangement main primary external"],
         ["Default window mode (tiling, side stack, scrolling, stacking, floating or solo)", "windows", "layout floating stacking free move drag traditional desktop tile dwindle master stack scrolling columns strip monocle one window full solo per workspace maximised maximized"],

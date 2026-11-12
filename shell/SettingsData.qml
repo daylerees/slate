@@ -19,7 +19,7 @@ JsonAdapter {
     property bool wallpaperHideSmall: true   // Settings → Appearance: leave out images too small to be wallpapers
     property bool wallpaperShowSlate: true   // …and show the wallpapers that come with Slate (shell/wallpapers) beside your folder's
     property string wallpaperMinSize: "1280x720"   // the smallest size shown (width x height)
-    property string wallpaperChange: "off"   // Settings → Appearance → Change wallpaper: off, login, or every N minutes ("15", "60"…)
+    property string wallpaperChange: "off"   // Settings → Wallpaper → Change wallpaper: off, login, or every N minutes ("15", "60"…)
     // Slate's sounds (Settings → Sound), each at its own volume: % (0 = off). -1 = not set yet,
     // so it comes from the on/off switches and single effects volume of earlier versions (below)
     property int tickVolume: -1               // volume keys: a short tick at the new volume
@@ -59,7 +59,7 @@ JsonAdapter {
     property string logLevel: "normal"        // Settings → Debug → Log detail: normal, detailed or everything (applied when Slate starts)
     property real uiScale: 1                  // Settings → Appearance → Interface size: scales all of Slate (applied when Slate starts)
     property string workspaceShape: "square"  // workspace indicators: square (rounded) or circle
-    property string iconShape: "tile"          // Settings → Appearance → App icons: tile, squircle, circle, square or original
+    property string iconShape: "tile"          // Settings → Icons → App icons: tile, squircle, circle, square or original
     property bool iconFill: false             // icons crop their own borders and grow to fill the shape (off, the default: whole and smaller, on slate)
     property bool tintIcons: false            // tint app icons with the accent colour
     property int iconTintStrength: 60         // %, how strongly
@@ -92,6 +92,9 @@ JsonAdapter {
     property string touchpadTapToClick: ""    // on / off
     property string touchpadIgnoreWhileTyping: "" // on / off
     property int cursorSize: 0                // px (0 = not set here)
+    property string cursorTheme: ""           // the pointer's theme: "" = Slate's own (Slate-Cursors), or any installed cursor theme
+    property string iconTheme: ""             // apps' icon theme (and Slate's tiles): "" = as set on this computer, or any installed icon theme
+    property string iconThemeBefore: ""       // (the theme this computer had before one was chosen there: "" goes back to it)
     property string focusFollowsMouse: "on"   // on / off (Settings → Windows); "" leaves it to Hyprland's own config
     property string animations: ""            // normal, fast or off (Settings → Appearance)
     // How much colour the interface uses (Settings → Appearance → Colour): "monotone" (the

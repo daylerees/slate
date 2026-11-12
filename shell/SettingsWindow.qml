@@ -69,11 +69,10 @@ FloatingWindow {
         function toggle(): void { if (win.visible && !win.isHere()) win.show(); else win.visible = !win.visible; }
         function open(): void { win.show(); }
         function close(): void { win.visible = false; }
-        // Old page names still work: switchers → windows, wallpaper → appearance (at the wallpapers)
+        // Old page names still work: switchers → windows
         function page(name: string): void {
-            if (name === "wallpaper") win.scrollTo = "wallpaper";
             win.keepSection = !win.visible;
-            win.section = ({ switchers: "windows", wallpaper: "appearance" })[name] ?? name;
+            win.section = ({ switchers: "windows" })[name] ?? name;
             win.show();
         }
         // Open a page scrolled to one setting (or heading), lit up for a moment, e.g.
@@ -263,17 +262,17 @@ FloatingWindow {
         bar: win.bar
         onVisibleChanged: if (!visible) win.avatarPicking = false
     }
-    property string scrollTo: ""           // a part of the next page to scroll to ("wallpaper")
     // The settings each page can restore to their defaults. Left out on purpose: your
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
     readonly property var pageKeys: ({
         datetime: ["dateFormat", "weekStart", "temperatureUnit"],
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners", "roundedElements",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength", "folderColour", "fontFamily", "codeFontFamily", "uiScale",
-            "wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
+            "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "shadows", "shadowDarkness", "shadowSoftness", "shadowSpread", "shadowDistance", "shadowDirection", "fontFamily", "codeFontFamily", "uiScale"],
+        wallpaper: ["wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
+        icons: ["iconTheme", "folderColour", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength"],
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
-            "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
+            "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
         control: ["controlSwitches"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
@@ -283,7 +282,7 @@ FloatingWindow {
         debug: ["logLevel"],
         displays: ["mainDisplay"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
-            "mouseNaturalScroll", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
+            "mouseNaturalScroll", "cursorTheme", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
         sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume",
             "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
@@ -478,7 +477,9 @@ FloatingWindow {
     readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
     // A page opened from All Settings: the sidebar keeps All Settings lit, and the title gets a back arrow
-    readonly property bool onMorePage: moreSections.some(x => x.id === section)
+    // The page this one belongs to (Wallpaper, Icons and App Theming: Appearance), or ""
+    readonly property string parentSection: (sections.find(x => x.id === section) || {}).parent || ""
+    readonly property bool onMorePage: parentSection === "" && moreSections.some(x => x.id === section)
 
     Item {
         anchors.fill: parent
@@ -526,7 +527,7 @@ FloatingWindow {
                         model: win.sidebarSections
                         delegate: Rectangle {
                             required property var modelData
-                            readonly property bool current: win.section === modelData.id || (modelData.id === "overview" && win.onMorePage)
+                            readonly property bool current: win.section === modelData.id || win.parentSection === modelData.id || (modelData.id === "overview" && win.onMorePage)
                             width: parent.width; height: 38; radius: Config.corner(9)
                             color: current ? win.accent : navHover.hovered ? Config.hover : "transparent"
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -649,14 +650,14 @@ FloatingWindow {
                     id: titleRow
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: 66
-                    // Back to All Settings, from any other page (All Settings itself has nowhere to go
-                    // back to)
+                    // Back: to the page this one belongs to (Wallpaper and Icons: Appearance), else to
+                    // All Settings (which itself has nowhere to go back to)
                     IconButton {
                         id: backBtn
                         visible: win.section !== "overview"
                         anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                         icon: 0xEA19
-                        onClicked: win.section = "overview"
+                        onClicked: win.section = win.parentSection || "overview"
                     }
                     Text {
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 12 : 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
@@ -793,7 +794,7 @@ FloatingWindow {
                     active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, assistant: assistantPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -1489,6 +1490,74 @@ FloatingWindow {
         }
         HoverHandler { id: btnHover }
         ClickTap { onTapped: btn.clicked() }
+    }
+    // A few good pointer or icon themes, put in with a button each (scripts/theme-packs.py:
+    // downloaded from their makers' releases, checked, into ~/.local/share/icons; no password).
+    // kind: "cursors" or "icons"; installed(): when one's in, so the list above it can look again
+    component ThemePacks: Group {
+        id: packs
+        property string kind
+        property string chooseIn                // where to pick it once it's in ("Pointer style")
+        signal installed()
+        property var all: []
+        property string busy: ""                // the one being put in
+        readonly property var mine: all.filter(p => p.kind === kind)
+        readonly property string script: Quickshell.shellPath("scripts/theme-packs.py")
+        function look() { packList.running = false; packList.running = true; }
+        Process {
+            id: packList
+            running: true
+            command: [packs.script, "--list"]
+            stdout: StdioCollector { onStreamFinished: { try { packs.all = JSON.parse(text); } catch (e) {} } }
+        }
+        Process {
+            id: packRun
+            property var pack: null
+            stderr: StdioCollector { id: packErr }
+            onExited: code => {
+                const p = pack;
+                packs.busy = "";
+                packs.look();
+                if (!p) return;
+                const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
+                if (code === 0) {
+                    packs.installed();
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, p.name + " is ready",
+                        "Choose it in " + packs.chooseIn + " whenever you like."]);
+                } else {
+                    const why = packErr.text.replace(/^theme-packs: /, "").trim();
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Slate couldn't add " + p.name,
+                        (why !== "" && why.indexOf("fingerprint") >= 0 ? why.charAt(0).toUpperCase() + why.slice(1) + "."
+                            : "Check you're connected to the internet, then try again.")]);
+                }
+            }
+        }
+        Repeater {
+            model: packs.mine
+            delegate: Column {
+                required property var modelData
+                required property int index
+                width: parent ? parent.width : 0
+                Separator { visible: index > 0 }
+                SettingRow {
+                    label: modelData.name
+                    detail: modelData.about
+                    Button {
+                        readonly property bool here: modelData.installed
+                        enabled: !here && packs.busy === ""
+                        opacity: enabled || packs.busy === modelData.id ? 1 : 0.4
+                        icon: here ? 0xEA5E : packs.busy === modelData.id ? 0 : 0xEA96
+                        label: here ? "Installed" : packs.busy === modelData.id ? "Installing…" : "Install"
+                        onClicked: {
+                            packs.busy = modelData.id;
+                            packRun.pack = modelData;
+                            packRun.command = [packs.script, "--install", modelData.id];
+                            packRun.running = true;
+                        }
+                    }
+                }
+            }
+        }
     }
     // A font choice: a dropdown of the installed fonts with a search box, as Settings' other
     // long lists are (the time zone, keyboard layouts). key = Config.s property; monoOnly:
@@ -3267,6 +3336,28 @@ FloatingWindow {
                     }
                 }
                 Separator {}
+                // The pointer's look: Slate's own, or any cursor theme installed here
+                // (scripts/icon-themes.py lists them; Hyprland and apps all follow: slate.lua, apply-theme.py)
+                DropdownSetting {
+                    id: cursorThemeSet
+                    property var themes: []
+                    function look() { cursorThemeList.running = false; cursorThemeList.running = true; }
+                    Process {
+                        id: cursorThemeList
+                        running: true
+                        command: [Quickshell.shellPath("scripts/icon-themes.py"), "--cursors"]
+                        stdout: StdioCollector { onStreamFinished: { try { cursorThemeSet.themes = JSON.parse(text).filter(t => t.id !== "Slate-Cursors"); } catch (e) {} } }
+                    }
+                    label: "Pointer style"
+                    settingKey: "cursorTheme"
+                    detail: Config.s.cursorTheme !== "" && !themes.some(t => t.id === Config.s.cursorTheme) && themes.length > 0
+                        ? "The pointer chosen here isn't installed any more, so Slate's own is back. Choose another whenever you like"
+                        : "Slate's own, or any pointer theme installed. Apps opened from now on use it too"
+                    options: [{ value: "", label: "Slate (default)" }].concat(themes.map(t => ({ value: t.id, label: t.name.replace(/[-_]/g, " ") })))
+                    value: themes.some(t => t.id === Config.s.cursorTheme) ? Config.s.cursorTheme : ""
+                    onPicked: v => Config.s.cursorTheme = v
+                }
+                Separator {}
                 DropdownSetting {
                     label: "Pointer size"
                     settingKey: "cursorSize"
@@ -3276,6 +3367,9 @@ FloatingWindow {
                     onPicked: v => Config.s.cursorSize = v
                 }
             }
+
+            GroupLabel { text: "More pointer styles" }
+            ThemePacks { kind: "cursors"; chooseIn: "Pointer style"; onInstalled: cursorThemeSet.look() }
 
             GroupLabel { visible: inputPane.hasTouchpad; text: "Touchpad" }
             Group {
@@ -4876,14 +4970,30 @@ FloatingWindow {
         Column {
             id: appearancePane
             spacing: 4
-            readonly property string folder: Config.s.wallpaperFolder || (Quickshell.env("HOME") + "/Pictures")
-            function setWallpaper(path) { Config.s.wallpaper = path; }
-            // Choosing another wallpaper folder (a small folder browser under the Folder row)
-            property bool choosingFolder: false
-            property string browseDir: ""
-            function chooseFolder() { browseDir = folder; choosingFolder = true; }
-
             PageTitle { text: "Appearance" }
+            // The look's own pages, first: what's on them now, and a button to go there
+            GroupLabel { text: "Wallpaper, icons and apps" }
+            Group {
+                SettingRow {
+                    label: "Wallpaper"
+                    detail: "Your desktop picture, from your own folder or Slate's, and changing it by itself"
+                    Button { label: "Open"; onClicked: win.goTo("wallpaper", "") }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Icons"
+                    detail: "The icon theme, folder colours, the shape of app icons, and more icon styles to add"
+                    Button { label: "Open"; onClicked: win.goTo("icons", "") }
+                }
+                Separator {}
+                SettingRow {
+                    label: "App Theming"
+                    readonly property int count: (Config.s.themedApps || []).length
+                    detail: "Terminals, editors, GTK, Qt and more following Slate's colours and accent · "
+                        + (count === 0 ? "none switched on" : count + (count === 1 ? " app" : " apps") + " themed")
+                    Button { label: "Open"; onClicked: win.goTo("apptheming", "") }
+                }
+            }
             GroupLabel { text: "Preset" }
             // ---- Presets: theme, colour and glass in one go (asks first) --------------------
             Group {
@@ -5133,58 +5243,6 @@ FloatingWindow {
                         from: 0; to: 100; stepSize: 5; suffix: "%"
                         value: Math.round((Config.s.toneBoldness ?? 0.5) * 100)
                         onMoved: v => Config.s.toneBoldness = v / 100
-                    }
-                }
-                Separator {}
-                // Folder colour for file managers: Papirus's coloured folders (scripts/folder-colour.py)
-                Column {
-                    id: folderSet
-                    width: parent.width
-                    property var info: ({ supported: true, base: "", colours: [] })
-                    Process {
-                        running: true
-                        command: [Quickshell.shellPath("scripts/folder-colour.py"), "--list"]
-                        stdout: StdioCollector { onStreamFinished: { try { folderSet.info = JSON.parse(text); } catch (e) {} } }
-                    }
-                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
-                        darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
-                    function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
-                    readonly property var colours: folderSet.info.colours || []
-                    function hexOf(name) { const c = colours.find(x => x.name === name); return c ? c.hex : ""; }
-                    // Auto: the Papirus colour closest to the wallpaper's, picked as folder-colour.py
-                    // does (nearest()): by hue for colourful ones, else a grey
-                    readonly property string autoHex: {
-                        const a = Config.wallpaperAccent ? Qt.color(Config.wallpaperAccent) : null;
-                        if (!a || colours.length === 0) return hexOf("blue") || "#5294e2";
-                        const greys = ["black", "grey", "white", "bluegrey"];
-                        const hue = c => Math.max(0, c.hslHue);
-                        const grey = a.hslSaturation < 0.18;
-                        let best = "", d = 1e9;
-                        for (const c of colours) {
-                            if (c.name === "yaru" || greys.includes(c.name) !== grey) continue;
-                            const k = Qt.color(c.hex);
-                            const dh0 = Math.abs(hue(k) - hue(a)), dh = Math.min(dh0, 1 - dh0);
-                            const e = dh * 4 + Math.abs(k.hslLightness - a.hslLightness) + Math.abs(k.hslSaturation - a.hslSaturation) * 0.5;
-                            if (e < d) { d = e; best = c.hex; }
-                        }
-                        return best || hexOf("blue") || "#5294e2";
-                    }
-                    SettingRow {
-                        visible: !folderSet.info.supported
-                        label: "Folder colour"
-                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs the Papirus icon theme (this system uses " + folderSet.info.base + ")"
-                    }
-                    DropdownSetting {
-                        visible: folderSet.info.supported
-                        label: "Folder colour"
-                        settingKey: "folderColour"
-                        detail: Config.s.folderColour === "auto" ? "Folders in Nautilus, Dolphin and other file managers, in the Papirus colour closest to the wallpaper's"
-                            : "Folders in Nautilus, Dolphin and other file managers"
-                        options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
-                                  { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
-                            .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
-                        value: Config.s.folderColour === "" ? "default" : Config.s.folderColour
-                        onPicked: v => Config.s.folderColour = v
                     }
                 }
             }
@@ -5461,31 +5519,38 @@ FloatingWindow {
                     onPicked: v => Config.s.animations = v
                 }
             }
-            GroupLabel { text: "Other apps" }
-            Group {
-                SettingRow {
-                    label: "App Theming"
-                    readonly property int count: (Config.s.themedApps || []).length
-                    detail: "Terminals, editors, GTK, Qt and more following Slate's colours and accent · "
-                        + (count === 0 ? "none switched on" : count + (count === 1 ? " app" : " apps") + " themed")
-                    Button { label: "Open"; onClicked: win.goTo("apptheming", "") }
-                }
-            }
-            GroupLabel { id: wallLabel; text: "Wallpaper" }
+        }
+    }
+
+    // ---- Wallpaper (its own page, from Appearance and the desktop's menu) ----------------
+    Component {
+        id: wallpaperPage
+        Column {
+            id: wallpaperPane
+            spacing: 4
+            readonly property string folder: Config.s.wallpaperFolder || (Quickshell.env("HOME") + "/Pictures")
+            function setWallpaper(path) { Config.s.wallpaper = path; }
+            // Choosing another wallpaper folder (a small folder browser under the Folder row)
+            property bool choosingFolder: false
+            property string browseDir: ""
+            function chooseFolder() { browseDir = folder; choosingFolder = true; }
+
+            PageTitle { text: "Wallpaper" }
+            GroupLabel { text: "Your pictures" }
             Group {
                 SettingRow {
                     label: "Folder"
-                    detail: appearancePane.folder.replace(Quickshell.env("HOME"), "~")
+                    detail: wallpaperPane.folder.replace(Quickshell.env("HOME"), "~")
                     Row {
                         spacing: 8
-                        Button { icon: 0xFAF7; label: "Open"; onClicked: Quickshell.execDetached(["xdg-open", appearancePane.folder]) }
-                        Button { icon: 0xEAAD; label: "Change…"; onClicked: appearancePane.choosingFolder ? appearancePane.choosingFolder = false : appearancePane.chooseFolder() }
-                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: { const all = appearancePane.shown.concat(appearancePane.slateShown); if (all.length > 0) appearancePane.setWallpaper(all[Math.floor(Math.random() * all.length)]); } }
+                        Button { icon: 0xFAF7; label: "Open"; onClicked: Quickshell.execDetached(["xdg-open", wallpaperPane.folder]) }
+                        Button { icon: 0xEAAD; label: "Change…"; onClicked: wallpaperPane.choosingFolder ? wallpaperPane.choosingFolder = false : wallpaperPane.chooseFolder() }
+                        Button { icon: 0xF000; label: "Random"; primary: true; onClicked: { const all = wallpaperPane.shown.concat(wallpaperPane.slateShown); if (all.length > 0) wallpaperPane.setWallpaper(all[Math.floor(Math.random() * all.length)]); } }
                     }
                 }
                 // Folder browser: go into a folder, then use it
                 Column {
-                    visible: appearancePane.choosingFolder
+                    visible: wallpaperPane.choosingFolder
                     width: parent.width - 32; x: 16
                     spacing: 8
                     bottomPadding: 14
@@ -5495,15 +5560,15 @@ FloatingWindow {
                         Button {
                             id: upBtn
                             icon: 0xEA25; label: "Up"
-                            opacity: appearancePane.browseDir === "/" ? 0.45 : 1
-                            onClicked: if (appearancePane.browseDir !== "/") appearancePane.browseDir = appearancePane.browseDir.replace(/\/[^\/]*$/, "") || "/"
+                            opacity: wallpaperPane.browseDir === "/" ? 0.45 : 1
+                            onClicked: if (wallpaperPane.browseDir !== "/") wallpaperPane.browseDir = wallpaperPane.browseDir.replace(/\/[^\/]*$/, "") || "/"
                         }
-                        Button { id: homeBtn; icon: 0xEAC1; label: "Home"; onClicked: appearancePane.browseDir = Quickshell.env("HOME") }
+                        Button { id: homeBtn; icon: 0xEAC1; label: "Home"; onClicked: wallpaperPane.browseDir = Quickshell.env("HOME") }
                         Text {
                             width: parent.width - upBtn.width - homeBtn.width - 12
                             anchors.verticalCenter: parent.verticalCenter
                             leftPadding: 6
-                            text: appearancePane.browseDir.replace(Quickshell.env("HOME"), "~")
+                            text: wallpaperPane.browseDir.replace(Quickshell.env("HOME"), "~")
                             color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                             elide: Text.ElideMiddle
                         }
@@ -5520,7 +5585,7 @@ FloatingWindow {
                             SmoothWheel { flick: dirList }
                             model: FolderListModel {
                                 id: dirModel
-                                folder: appearancePane.choosingFolder ? "file://" + appearancePane.browseDir : ""
+                                folder: wallpaperPane.choosingFolder ? "file://" + wallpaperPane.browseDir : ""
                                 showFiles: false
                                 showDirs: true
                                 showDotAndDotDot: false
@@ -5545,7 +5610,7 @@ FloatingWindow {
                                     elide: Text.ElideRight
                                 }
                                 HoverHandler { id: dirHover }
-                                ClickTap { onTapped: appearancePane.browseDir = parent.filePath }
+                                ClickTap { onTapped: wallpaperPane.browseDir = parent.filePath }
                             }
                         }
                         Text {
@@ -5558,13 +5623,13 @@ FloatingWindow {
                     Row {
                         anchors.right: parent.right
                         spacing: 8
-                        Button { label: "Cancel"; onClicked: appearancePane.choosingFolder = false }
+                        Button { label: "Cancel"; onClicked: wallpaperPane.choosingFolder = false }
                         Button {
                             label: "Use this folder"; primary: true
                             onClicked: {
                                 const home = Quickshell.env("HOME") + "/Pictures";
-                                Config.s.wallpaperFolder = appearancePane.browseDir === home ? "" : appearancePane.browseDir;
-                                appearancePane.choosingFolder = false;
+                                Config.s.wallpaperFolder = wallpaperPane.browseDir === home ? "" : wallpaperPane.browseDir;
+                                wallpaperPane.choosingFolder = false;
                             }
                         }
                     }
@@ -5622,22 +5687,15 @@ FloatingWindow {
             }
             Process {
                 id: sizeReader
-                command: [Quickshell.shellPath("scripts/image-sizes.py"), appearancePane.folder]
-                stdout: StdioCollector { onStreamFinished: { try { appearancePane.sizes = JSON.parse(text); } catch (e) {} } }
+                command: [Quickshell.shellPath("scripts/image-sizes.py"), wallpaperPane.folder]
+                stdout: StdioCollector { onStreamFinished: { try { wallpaperPane.sizes = JSON.parse(text); } catch (e) {} } }
             }
             // Read the sizes when the page opens and when the folder's contents change. Both happen
             // together as the page opens (the folder's listing arrives just after), so they're
             // gathered into one read rather than starting the script and stopping it straight away.
             Timer { id: sizesSoon; interval: 250; onTriggered: { sizeReader.running = false; sizeReader.running = true; } }
             Connections { target: wallFiles; function onCountChanged() { sizesSoon.restart(); } }
-            Component.onCompleted: {
-                sizesSoon.restart();
-                // Opened for the wallpapers (Super+Shift+W): scroll down to them
-                if (win.scrollTo === "wallpaper") Qt.callLater(() => Qt.callLater(() => {
-                    win.scrollTo = "";
-                    scroller.contentY = Math.max(0, Math.min(wallLabel.y - 8, scroller.contentHeight - scroller.height));
-                }));
-            }
+            Component.onCompleted: sizesSoon.restart()
             readonly property var shown: {
                 const out = [];
                 for (let i = 0; i < wallFiles.count; i++) {
@@ -5649,12 +5707,12 @@ FloatingWindow {
             readonly property int hidden: wallFiles.count - shown.length
 
             GroupLabel {
-                text: appearancePane.shown.length + (appearancePane.shown.length === 1 ? " image" : " images")
-                    + (appearancePane.hidden > 0 ? " · " + appearancePane.hidden + " small " + (appearancePane.hidden === 1 ? "one" : "ones") + " hidden" : "")
+                text: wallpaperPane.shown.length + (wallpaperPane.shown.length === 1 ? " image" : " images")
+                    + (wallpaperPane.hidden > 0 ? " · " + wallpaperPane.hidden + " small " + (wallpaperPane.hidden === 1 ? "one" : "ones") + " hidden" : "")
             }
             FolderListModel {
                 id: wallFiles
-                folder: "file://" + appearancePane.folder
+                folder: "file://" + wallpaperPane.folder
                 nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.JPG", "*.JPEG", "*.PNG"]
                 showDirs: false
                 sortField: FolderListModel.Name
@@ -5676,13 +5734,13 @@ FloatingWindow {
                     model: wallFiles
                     delegate: WallTile {
                         tileW: wallGrid.tileW
-                        small: appearancePane.tooSmall(fileName)
-                        onPicked: appearancePane.setWallpaper(filePath)
+                        small: wallpaperPane.tooSmall(fileName)
+                        onPicked: wallpaperPane.setWallpaper(filePath)
                     }
                 }
             }
             // The wallpapers that come with Slate (shell/wallpapers, made by tools/make-wallpapers.py),
-            // below your own: Settings → Appearance → Slate's wallpapers switches them off
+            // below your own: Settings → Wallpaper → Slate's wallpapers switches them off
             FolderListModel {
                 id: slateFiles
                 folder: Config.s.wallpaperShowSlate ? "file://" + Quickshell.shellPath("wallpapers") : ""
@@ -5695,10 +5753,10 @@ FloatingWindow {
                 if (Config.s.wallpaperShowSlate) for (let i = 0; i < slateFiles.count; i++) out.push(slateFiles.get(i, "filePath"));
                 return out;
             }
-            GroupLabel { visible: appearancePane.slateShown.length > 0; text: "From Slate" }
+            GroupLabel { visible: wallpaperPane.slateShown.length > 0; text: "From Slate" }
             Grid {
                 id: slateGrid
-                visible: appearancePane.slateShown.length > 0
+                visible: wallpaperPane.slateShown.length > 0
                 width: parent.width
                 columns: 3
                 spacing: 12
@@ -5710,10 +5768,216 @@ FloatingWindow {
                         // "slate-ember.png" → "Ember"; "slate-ember-plain.png" (without Slate's
                         // mark) → "Ember (plain)"
                         title: fileName.replace(/^slate-/, "").replace(/\.[^.]*$/, "").replace(/-plain$/, " (plain)").replace(/^./, c => c.toUpperCase())
-                        onPicked: appearancePane.setWallpaper(filePath)
+                        onPicked: wallpaperPane.setWallpaper(filePath)
                     }
                 }
             }
+        }
+    }
+
+    // ---- Icons (its own page, from Appearance): the icon theme, folder colours, app icons ----
+    Component {
+        id: iconsPage
+        Column {
+            spacing: 4
+            PageTitle { text: "Icons" }
+            GroupLabel { text: "Icon theme" }
+            Group {
+                // The icon theme: every app's icons, and Slate's own tiles (scripts/icon-themes.py
+                // lists them; shell.qml sets the one chosen for GTK, Qt and KDE apps)
+                DropdownSetting {
+                    id: iconThemeSet
+                    property var themes: []
+                    function look() { iconThemeList.running = false; iconThemeList.running = true; }
+                    Process {
+                        id: iconThemeList
+                        running: true
+                        command: [Quickshell.shellPath("scripts/icon-themes.py"), "--icons"]
+                        stdout: StdioCollector { onStreamFinished: { try { iconThemeSet.themes = JSON.parse(text); } catch (e) {} } }
+                    }
+                    label: "Icons"
+                    settingKey: "iconTheme"
+                    detail: Config.s.iconTheme !== "" && !themes.some(t => t.id === Config.s.iconTheme) && themes.length > 0
+                        ? "The icon theme chosen here isn't installed any more, so apps use this computer's own. Choose another whenever you like"
+                        : "The icons in your apps, and on Slate's dock, launcher and bar. Apps already open pick them up as they can; Slate redraws its own in a moment"
+                    // ("This computer's": the theme it had before one was chosen here, put back)
+                    // The default: the theme this computer had before one was chosen here (put back
+                    // when it's picked), listed by its name, and not again among the rest
+                    readonly property string own: Config.s.iconThemeBefore || Config.gtkIconTheme
+                    readonly property var ownTheme: themes.find(t => t.id === own) ?? null
+                    options: [{ value: "", label: (ownTheme ? ownTheme.name : own !== "" ? own : "This computer's") + " (default)" }]
+                        .concat(themes.filter(t => t.id !== own).map(t => ({ value: t.id, label: t.name })))
+                    value: Config.s.iconTheme !== own && themes.some(t => t.id === Config.s.iconTheme) ? Config.s.iconTheme : ""
+                    onPicked: v => {
+                        // (the first choice remembers what this computer had, to go back to)
+                        if (Config.s.iconTheme === "" && v !== "" && Config.s.iconThemeBefore === "") Config.s.iconThemeBefore = Config.gtkIconTheme;
+                        Config.s.iconTheme = v;
+                    }
+                }
+                Separator {}
+                // Folder colour for file managers: Papirus's coloured folders (scripts/folder-colour.py)
+                Column {
+                    id: folderSet
+                    width: parent.width
+                    property var info: ({ supported: true, base: "", colours: [] })
+                    Process {
+                        id: folderList
+                        running: true
+                        command: [Quickshell.shellPath("scripts/folder-colour.py"), "--list"]
+                        stdout: StdioCollector { onStreamFinished: { try { folderSet.info = JSON.parse(text); } catch (e) {} } }
+                    }
+                    // (looked at again once a new icon theme is in: it decides whether there are coloured folders)
+                    Connections { target: Config.s; function onIconThemeChanged() { folderRelist.restart(); } }
+                    Timer { id: folderRelist; interval: 2500; onTriggered: { folderList.running = false; folderList.running = true; } }
+                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
+                        darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
+                    function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
+                    readonly property var colours: folderSet.info.colours || []
+                    function hexOf(name) { const c = colours.find(x => x.name === name); return c ? c.hex : ""; }
+                    // Auto: the Papirus colour closest to the wallpaper's, picked as folder-colour.py
+                    // does (nearest()): by hue for colourful ones, else a grey
+                    readonly property string autoHex: {
+                        const a = Config.wallpaperAccent ? Qt.color(Config.wallpaperAccent) : null;
+                        if (!a || colours.length === 0) return hexOf("blue") || "#5294e2";
+                        const greys = ["black", "grey", "white", "bluegrey"];
+                        const hue = c => Math.max(0, c.hslHue);
+                        const grey = a.hslSaturation < 0.18;
+                        let best = "", d = 1e9;
+                        for (const c of colours) {
+                            if (c.name === "yaru" || greys.includes(c.name) !== grey) continue;
+                            const k = Qt.color(c.hex);
+                            const dh0 = Math.abs(hue(k) - hue(a)), dh = Math.min(dh0, 1 - dh0);
+                            const e = dh * 4 + Math.abs(k.hslLightness - a.hslLightness) * 0.25 + Math.abs(k.hslSaturation - a.hslSaturation) * 0.15;
+                            if (e < d) { d = e; best = c.hex; }
+                        }
+                        return best || hexOf("blue") || "#5294e2";
+                    }
+                    SettingRow {
+                        visible: !folderSet.info.supported
+                        label: "Folder colour"
+                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs icons with folders in colours, like Papirus, Kora or Nordzy (yours are " + folderSet.info.base + ")"
+                    }
+                    DropdownSetting {
+                        visible: folderSet.info.supported
+                        label: "Folder colour"
+                        settingKey: "folderColour"
+                        detail: "Folders in Nautilus, Dolphin and other file managers" + (Config.s.folderColour === "auto" ? ", in the colour closest to the wallpaper's" : "")
+                        options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
+                                  { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
+                            .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
+                        value: Config.s.folderColour === "" ? "default" : Config.s.folderColour
+                        onPicked: v => Config.s.folderColour = v
+                    }
+                }
+            }
+            GroupLabel { text: "App icons" }
+            Group {
+                id: iconGroup
+                // One of your apps drawn in each shape, filled and whole (scripts/appicon.py --preview)
+                readonly property string previewDir: Quickshell.env("HOME") + "/.cache/slate/tiles/preview"
+                property int previewVersion: 0
+                Process {
+                    running: true
+                    command: [Config.tileScript, "--preview", iconGroup.previewDir, "96"]
+                    onExited: { iconGroup.previewVersion++; previewColourFile.reload(); }
+                }
+                // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too
+                FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false }
+                readonly property var previewShade: Config.iconTileShadeOf(previewColourFile.text().trim())
+                SettingRow {
+                    label: "Shape"
+                    detail: "For app icons in the dock, launcher, switcher, bar and notifications"
+                }
+                Flow {
+                    width: parent.width - 32; x: 16
+                    spacing: 8
+                    bottomPadding: 14
+                    Repeater {
+                        model: [{ value: "tile", label: "Tile" }, { value: "squircle", label: "Squircle" }, { value: "circle", label: "Circle" },
+                                { value: "square", label: "Square" }, { value: "original", label: "Original" }]
+                        delegate: Rectangle {
+                            id: shapeCard
+                            required property var modelData
+                            readonly property bool on: Config.s.iconShape === modelData.value
+                            width: 92; height: 96; radius: Config.corner(12)
+                            color: on ? win.accent : shapeHover.hovered ? Config.hover : win.well
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                            // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
+                            // in the icon's colour, and Tint app icons (and its strength); with glass,
+                            // see-through tiles and the sheen, as in the dock
+                            Image {
+                                anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 12 }
+                                width: 48; height: 48
+                                sourceSize: Qt.size(96, 96)
+                                cache: false
+                                source: iconGroup.previewVersion > 0
+                                    ? "file://" + iconGroup.previewDir + "/" + shapeCard.modelData.value + (Config.s.iconFill ? "-fill" : "-whole") + ".png?v=" + iconGroup.previewVersion
+                                    : ""
+                                layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
+                                IconPlate {
+                                    anchors.fill: parent; z: -1; shape: shapeCard.modelData.value
+                                    color: iconGroup.previewShade ?? Config.iconPlateColor
+                                    shaded: iconGroup.previewShade !== null
+                                }
+                                // Glass: the sheen the dock puts on its icons, rounded to this shape
+                                Gloss {
+                                    glassHint: true
+                                    visible: Config.glassGloss && shapeCard.modelData.value !== "original"
+                                    radius: { const v = shapeCard.modelData.value, w = parent.width;
+                                              return v === "circle" ? w / 2 : v === "square" ? 0 : v === "squircle" ? w * 0.3 : w * 0.225; }
+                                }
+                            }
+                            Text {
+                                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
+                                text: shapeCard.modelData.label
+                                color: shapeCard.on ? win.accentText : win.dim
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                            }
+                            HoverHandler { id: shapeHover }
+                            ClickTap { onTapped: Config.s.iconShape = shapeCard.modelData.value }
+                        }
+                    }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Fill the shape"
+                    settingKey: "iconFill"
+                    detail: Config.s.iconShape === "original"
+                        ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
+                        : "Crop each icon's own border and shadow and grow it to fill the shape, on its main colour. Off: the whole icon, smaller, on a plain tile"
+                    Toggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
+                }
+                Separator {}
+                SettingRow {
+                    // Only for icons on a tile: filled icons and original ones have none
+                    readonly property bool applies: !Config.s.iconFill && Config.s.iconShape !== "original"
+                    opacity: applies ? 1 : 0.4
+                    enabled: applies
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                    label: "Tiles in the icon's colour"
+                    settingKey: "iconTileColour"
+                    detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
+                        : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
+                    Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
+                }
+                Separator {}
+                ToggleSetting {
+                    label: "Tint app icons"
+                    detail: "Colour app icons in the dock, launcher, switcher, bar and notifications with the accent colour"
+                    key: "tintIcons"
+                }
+                Separator { visible: Config.s.tintIcons }
+                SettingRow {
+                    visible: Config.s.tintIcons
+                    label: "Tint strength"
+                    settingKey: "iconTintStrength"
+                    detail: "A light wash of colour, up to icons drawn entirely in the accent"
+                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Config.s.iconTintStrength; onMoved: v => Config.s.iconTintStrength = v }
+                }
+            }
+            GroupLabel { text: "More icon styles" }
+            ThemePacks { kind: "icons"; chooseIn: "Icon theme"; onInstalled: iconThemeSet.look() }
         }
     }
 

@@ -33,6 +33,7 @@ local function touchpads()
 end
 
 local appliedCursor = nil
+local appliedCursorTheme = nil
 function slateApply(t)
     -- Keyboard and pointer (input)
     local input = {}
@@ -56,15 +57,30 @@ function slateApply(t)
         end
     end
 
-    -- Cursor size: Hyprland, then apps started from now on (GTK apps follow gsettings)
+    -- Cursor theme and size (Settings → Input → Pointer style, Pointer size): Hyprland's own,
+    -- then apps started from now on (GTK apps follow gsettings; apply-theme.py does the rest)
+    -- ("" = the session's own, as variables.lua set it before Slate changed anything)
+    local cursorChanged = false
+    SESSION_CURSOR_THEME = SESSION_CURSOR_THEME or CURSOR_THEME
+    local wantTheme = t.cursor_theme
+    if wantTheme == "" then wantTheme = SESSION_CURSOR_THEME end
+    if wantTheme ~= nil and wantTheme ~= appliedCursorTheme and wantTheme:match("^[%w%._%+%-]+$") then
+        appliedCursorTheme = wantTheme
+        CURSOR_THEME = wantTheme
+        hl.env("XCURSOR_THEME", CURSOR_THEME)
+        hl.env("HYPRCURSOR_THEME", CURSOR_THEME)
+        hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. CURSOR_THEME)
+        cursorChanged = true
+    end
     if t.cursor_size ~= nil and t.cursor_size ~= appliedCursor then
         appliedCursor = t.cursor_size
         CURSOR_SIZE = t.cursor_size
         hl.env("XCURSOR_SIZE", tostring(CURSOR_SIZE))
         hl.env("HYPRCURSOR_SIZE", tostring(CURSOR_SIZE))
-        hl.exec_cmd("hyprctl setcursor " .. CURSOR_THEME .. " " .. CURSOR_SIZE)
         hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size " .. CURSOR_SIZE)
+        cursorChanged = true
     end
+    if cursorChanged then hl.exec_cmd("hyprctl setcursor " .. CURSOR_THEME .. " " .. CURSOR_SIZE) end
 
     -- Animations: "normal", "fast" or "off" (animations.lua)
     if t.animations ~= nil and setAnimationSpeed then setAnimationSpeed(t.animations) end

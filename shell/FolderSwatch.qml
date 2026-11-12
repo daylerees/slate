@@ -1,5 +1,5 @@
 // A small folder in a colour, the way Papirus draws its coloured folders: a darker back with
-// its tab, and the colour in front. Settings → Appearance → Folder colour.
+// its tab, and the colour in front. Settings → Icons → Folder colour.
 
 import QtQuick
 

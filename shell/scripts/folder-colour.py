@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Folder colour for file managers (Nautilus, Dolphin…), for the Papirus icon themes.
-Settings → Appearance → Folder colour.
+"""Folder colour for file managers (Nautilus, Dolphin…), for icon themes that draw their
+folders in several colours: Papirus (every kind of folder), and themes like Kora and Nordzy
+(only their plain folder comes in colours: Slate repaints the rest, Desktop, Home, Documents
+and so on, by swapping the plain folder's colours for the chosen colour's, see recolour).
+Settings → Icons → Folder colour.
 
   folder-colour.py --list          JSON: {"supported", "base", "current", "colours": [{"name", "hex"}]}
   folder-colour.py <colour>        use that colour (a Papirus folder colour, e.g. "teal")
@@ -28,6 +31,7 @@ HOME = os.path.expanduser("~")
 DATA = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
 CFG = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")
 NAME = "Slate-Icons"
+BUILD = "2"           # (made again when this changes: 2 repaints Kora's and Nordzy's other folders)
 OURS = os.path.join(DATA, "icons", NAME)
 # Icon themes: yours, then the system's (XDG_DATA_DIRS: NixOS keeps them outside /usr/share)
 ICON_DIRS = [os.path.join(DATA, "icons"), os.path.join(HOME, ".icons")] + [
@@ -75,6 +79,35 @@ def base_theme():
         return ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Base") or "Papirus-Dark"
     return cur
 
+def simple_places(d):
+    """In a theme like Kora or Nordzy, the folders of places icons that have the plain folder
+    in colours (folder.svg beside folder-<colour>.svg), relative to the theme."""
+    out = []
+    for top, dirs, files in os.walk(d):
+        if top[len(d):].count(os.sep) > 3:
+            dirs[:] = []
+            continue
+        if "places" in top.split(os.sep) and "folder.svg" in files and \
+                sum(1 for c in COLOURS if "folder-%s.svg" % c in files) >= 3:
+            out.append(os.path.relpath(top, d))
+    return sorted(out)
+
+def simple_root(base):
+    """A theme (the base, or one it builds on) whose plain folders come in colours, or None"""
+    seen, todo = set(), [base]
+    while todo:
+        name = todo.pop(0)
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        d = theme_dir(name)
+        if not d:
+            continue
+        if simple_places(d):
+            return os.path.realpath(d)
+        todo += [t.strip() for t in ini_value(os.path.join(d, "index.theme"), "Inherits").split(",")]
+    return None
+
 def papirus_root(base):
     """The folder holding the coloured folder icons (Papirus itself), or None"""
     seen, todo = set(), [base]
@@ -101,15 +134,41 @@ def face(svg):
         return fills[1] if len(fills) > 1 else "#ff7446"
     return fills[2] if len(fills) > 2 else (fills[0] if fills else "#888888")
 
+def vivid(svg):
+    """The colour a folder's drawn in, for a theme that isn't Papirus: its most colourful
+    fill (#rrggbb or rgb()), leaving out outlines and shading. Grey for a grey folder."""
+    try:
+        text = open(svg).read()
+    except OSError:
+        return "#888888"
+    found = re.findall(r"#([0-9a-fA-F]{6})\b", text)
+    found += ["%02x%02x%02x" % tuple(int(x) for x in m) for m in re.findall(r"rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)", text)]
+    best, score = None, -1.0
+    for h in found:
+        r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        _, l, sat = colorsys.rgb_to_hls(r, g, b)
+        k = sat * (1 - abs(l - 0.5) * 1.4) + 0.01 * (1 - abs(l - 0.5))     # (all grey: the mid-tone, not an outline)
+        if k > score:
+            best, score = h, k
+    return "#" + best.lower() if best else "#888888"
+
+def ref_places(root):
+    """The places folder whose icons stand for the theme's colours"""
+    if os.path.exists(os.path.join(root, "64x64", "places", "folder-teal.svg")):
+        return os.path.join(root, "64x64", "places")          # (Papirus)
+    rels = simple_places(root)
+    return os.path.join(root, max(rels, key=lambda r: len(os.listdir(os.path.join(root, r))))) if rels else root
+
 def colour_names(root):
-    """The folder colours this Papirus has (each a places/folder-<colour>.svg)."""
-    places = os.path.join(root, "64x64", "places")
+    """The folder colours this theme has (each a places/folder-<colour>.svg)."""
+    places = ref_places(root)
     return [c for c in COLOURS if os.path.exists(os.path.join(places, "folder-%s.svg" % c))]
 
 def colours(root):
     """Each folder colour with the colour it's drawn in (read from its SVG)."""
-    places = os.path.join(root, "64x64", "places")
-    return [{"name": c, "hex": face(os.path.join(places, "folder-%s.svg" % c))} for c in colour_names(root)]
+    places = ref_places(root)
+    paint = face if places.endswith(os.path.join("64x64", "places")) else vivid
+    return [{"name": c, "hex": paint(os.path.join(places, "folder-%s.svg" % c))} for c in colour_names(root)]
 
 
 # ---- Pointing apps at a theme ------------------------------------------------------------
@@ -154,6 +213,112 @@ def use_theme(name, refresh):
 
 
 # ---- Building our theme ------------------------------------------------------------------
+COLOUR_RE = re.compile(r"#[0-9a-fA-F]{6}\b|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)")
+
+def as_rgb(c):
+    if c.startswith("#"):
+        return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+    return tuple(int(x) for x in re.findall(r"\d+", c))
+
+def palette(svg):
+    """An SVG's colours, each once, in the order they're first used (#hex and rgb())"""
+    try:
+        text = open(svg).read()
+    except OSError:
+        return []
+    out = []
+    for m in COLOUR_RE.findall(text):
+        rgb = as_rgb(m)
+        if rgb not in out:
+            out.append(rgb)
+    return out
+
+def recolour(text, swap, shift):
+    """An SVG's text with the plain folder's colours swapped for the chosen colour's (swap),
+    and any other colourful one (an emblem's) moved the same way (shift: hue, lightness and
+    saturation, from the folder's main colour to the chosen one's)."""
+    dh, lk, sk = shift
+    def one(m):
+        c = m.group(0)
+        rgb = as_rgb(c)
+        new = swap.get(rgb)
+        if new is None:
+            h, l, sat = colorsys.rgb_to_hls(*(x / 255 for x in rgb))
+            if sat < 0.15:
+                return c                     # (greys and black stay)
+            r, g, b = colorsys.hls_to_rgb((h + dh) % 1, min(1, l * lk), min(1, sat * sk))
+            new = tuple(round(x * 255) for x in (r, g, b))
+        return "#%02x%02x%02x" % new if c.startswith("#") else "rgb(%d,%d,%d)" % new
+    return COLOUR_RE.sub(one, text)
+
+COLOURED = re.compile(r"^(folder-(%s)(-.*)?|(%s)-folder.*)\.svg$" % ("|".join(COLOURS), "|".join(COLOURS)))
+
+def build_simple(root, base, colour):
+    """~/.local/share/icons/Slate-Icons for a theme like Kora: the base theme, with its plain
+    folder (folder.svg) in this colour wherever it has one, and its other folders (Desktop,
+    Home, Documents…, drawn in the plain folder's colours) repainted to match. The rest is
+    left to the base."""
+    if os.path.isdir(OURS):
+        shutil.rmtree(OURS)
+    index = open(os.path.join(root, "index.theme")).read()
+    dirs = []
+    for rel in simple_places(root):
+        places = os.path.join(root, rel)
+        src = os.path.join(places, "folder-%s.svg" % colour)
+        if not os.path.exists(src):
+            continue
+        out = os.path.join(OURS, rel)
+        os.makedirs(out)
+        os.symlink(src, os.path.join(out, "folder.svg"))
+        dirs.append(rel)
+        # The plain folder's colours, and the chosen colour's, in the same order
+        was, now = palette(os.path.join(places, "folder.svg")), palette(os.path.realpath(src))
+        if not was or len(was) != len(now):
+            continue
+        swap = dict(zip(was, now))
+        def hls(c):
+            return colorsys.rgb_to_hls(*(x / 255 for x in c))
+        main = max(was, key=lambda c: hls(c)[2])          # (the most colourful: the folder's own)
+        (h0, l0, s0), (h1, l1, s1) = hls(main), hls(swap[main])
+        shift = (h1 - h0, l1 / l0 if l0 else 1, s1 / s0 if s0 else 1)
+        made = set()
+        for fn in sorted(os.listdir(places)):
+            path = os.path.join(places, fn)
+            if not fn.endswith(".svg") or fn == "folder.svg" or COLOURED.match(fn) or not \
+                    (fn.startswith("folder") or fn.startswith("user-")) or os.path.islink(path):
+                continue
+            try:
+                text = open(path).read()
+            except OSError:
+                continue
+            if as_rgb_in(text, main):
+                with open(os.path.join(out, fn), "w") as f:
+                    f.write(recolour(text, swap, shift))
+                made.add(fn)
+        # Other names for those (desktop.svg → user-desktop.svg): the same, in ours
+        for fn in os.listdir(places):
+            path = os.path.join(places, fn)
+            if os.path.islink(path) and os.path.basename(os.readlink(path)) in made and not os.path.exists(os.path.join(out, fn)):
+                os.symlink(os.path.basename(os.readlink(path)), os.path.join(out, fn))
+    write_index(index, base, colour, dirs)
+
+def as_rgb_in(text, rgb):
+    """Whether an SVG uses this colour (#hex or rgb())"""
+    return any(as_rgb(m) == rgb for m in COLOUR_RE.findall(text))
+
+
+def write_index(index, base, colour, dirs):
+    sections = []
+    for d in dirs:
+        m = re.search(r"(?ms)^\[%s\]\n(.*?)(?=^\[|\Z)" % re.escape(d), index)
+        if m:
+            sections.append("[%s]\n%s" % (d, m.group(1).strip()))
+    with open(os.path.join(OURS, "index.theme"), "w") as f:
+        f.write("[Icon Theme]\nName=%s\nComment=%s with %s folders (made by Slate)\n"
+                "Inherits=%s\nDirectories=%s\nX-Slate-Base=%s\nX-Slate-Colour=%s\nX-Slate-Build=%s\n\n%s\n"
+                % (NAME, base, colour, base, ",".join(dirs), base, colour, BUILD, "\n\n".join(sections)))
+
+
 def build(root, base, colour):
     """~/.local/share/icons/Slate-Icons: the base theme, with folders in this colour"""
     if os.path.isdir(OURS):
@@ -177,15 +342,7 @@ def build(root, base, colour):
             target = os.path.join(places, want if os.path.exists(os.path.join(places, want)) else os.readlink(path))
             os.symlink(target, os.path.join(out, fn))
         dirs.append(size + "/places")
-    sections = []
-    for d in dirs:
-        m = re.search(r"(?ms)^\[%s\]\n(.*?)(?=^\[|\Z)" % re.escape(d), index)
-        if m:
-            sections.append("[%s]\n%s" % (d, m.group(1).strip()))
-    with open(os.path.join(OURS, "index.theme"), "w") as f:
-        f.write("[Icon Theme]\nName=%s\nComment=%s with %s folders (made by Slate)\n"
-                "Inherits=%s\nDirectories=%s\nX-Slate-Base=%s\nX-Slate-Colour=%s\n\n%s\n"
-                % (NAME, base, colour, base, ",".join(dirs), base, colour, "\n\n".join(sections)))
+    write_index(index, base, colour, dirs)
 
 
 def nearest(hexc, options):
@@ -200,20 +357,29 @@ def nearest(hexc, options):
         pool = [o for o in pool if o["name"] in greys]
     else:
         pool = [o for o in pool if o["name"] not in greys]
+    # Mostly by hue: the colour Slate takes from the wallpaper has its lightness and saturation
+    # set for the theme (a soft, light shade), not the wallpaper's own, so those only break ties
+    # (weighed as much as hue, a light green wallpaper got Papirus's bluish dark cyan, which is
+    # nearer in lightness, rather than teal, which is nearer in colour)
     def dist(o):
         h, l, s = hls(o["hex"])
         dh = min(abs(h - h0), 1 - abs(h - h0))
-        return dh * 4 + abs(l - l0) + abs(s - s0) * 0.5
+        return dh * 4 + abs(l - l0) * 0.25 + abs(s - s0) * 0.15
     return min(pool, key=dist)["name"]
 
 
 def main():
     args = sys.argv[1:]
     base = base_theme()
+    # Papirus (every kind of folder in colour), else a theme like Kora (the plain folder)
     root = papirus_root(base)
+    kind = "papirus" if root else None
+    if not root:
+        root = simple_root(base)
+        kind = "plain" if root else None
     if args == ["--list"]:
         cur = ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Colour") if gsettings_get("icon-theme") == NAME else ""
-        print(json.dumps({"supported": bool(root), "base": base, "current": cur,
+        print(json.dumps({"supported": bool(root), "base": base, "current": cur, "kind": kind or "",
                           "colours": colours(root) if root else []}))
         return
     if not args:
@@ -230,7 +396,7 @@ def main():
             shutil.rmtree(OURS)
         return
     if not root:
-        sys.exit("folder-colour: the icon theme (%s) isn't Papirus, which has the coloured folders" % base)
+        sys.exit("folder-colour: the icon theme (%s) has no folders in colours" % base)
     if args[0] == "--auto":
         if len(args) < 2 or not re.fullmatch(r"#[0-9a-fA-F]{6}", args[1]):
             sys.exit("folder-colour: --auto needs a colour like #4a90d9")
@@ -240,10 +406,11 @@ def main():
     if colour not in colour_names(root):
         sys.exit("folder-colour: no '%s' folders in %s" % (colour, root))
     # Already like this: nothing to do (so apps don't flicker on every start)
-    if gsettings_get("icon-theme") == NAME and ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Colour") == colour:
+    if gsettings_get("icon-theme") == NAME and ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Colour") == colour \
+            and ini_value(os.path.join(OURS, "index.theme"), "X-Slate-Build") == BUILD:
         print(colour)
         return
-    build(root, base, colour)
+    (build if kind == "papirus" else build_simple)(root, base, colour)
     use_theme(NAME, True)
     print(colour)
 

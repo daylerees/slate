@@ -960,7 +960,7 @@ class SettingsTools(Base):
         self.assertEqual((d["name"], d["where"], d["default"], d["value"]), ("Icon size", "Settings → Dock", 40, 32.0))
         self.assertEqual(self.tool("settings_get", {"key": "uiScale"})[0]["value"], 1.25)
         self.assertEqual(self.tool("settings_get", {"key": "iconShape"})[0]["notes"],
-                         "Settings → Appearance → App icons: tile, squircle, circle, square or original")
+                         "Settings → Icons → App icons: tile, squircle, circle, square or original")
 
     def test_get_unknown(self):
         for key in ("nope", "", "lightMode", "welcomeShown", "__proto__", "assistantEnabled", "assistantAskChanges"):

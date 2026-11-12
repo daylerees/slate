@@ -83,6 +83,21 @@ class ApplyTheme(Case):
             return json.load(f)
 
     # ---- applying ----
+    def test_cursor_theme_from_settings(self):
+        """Pointer style (Settings → Input): the theme chosen reaches GTK, X11 and KDE apps,
+        whatever the session's environment says; with none chosen, the session's own."""
+        self.put({".config/kcminputrc": "[Mouse]\ncursorTheme=Old\n"})
+        self.env["XCURSOR_THEME"] = "Slate-Cursors"
+        self.apply([], cursorTheme="Bibata-Modern-Ice", cursorSize=24)
+        for v in ("gtk-3.0", "gtk-4.0"):
+            self.assertIn("gtk-cursor-theme-name=Bibata-Modern-Ice", self.text(".config/%s/settings.ini" % v))
+            self.assertIn("gtk-cursor-theme-size=24", self.text(".config/%s/settings.ini" % v))
+        self.assertIn("Inherits=Bibata-Modern-Ice", self.text(".icons/default/index.theme"))
+        self.assertIn("cursorTheme=Bibata-Modern-Ice", self.text(".config/kcminputrc"))
+        self.apply([], cursorTheme="")
+        self.assertIn("gtk-cursor-theme-name=Slate-Cursors", self.text(".config/gtk-3.0/settings.ini"))
+        self.assertIn("Inherits=Slate-Cursors", self.text(".icons/default/index.theme"))
+
     def test_writes_each_apps_theme(self):
         self.put(YOURS)
         out = self.apply(ALL)

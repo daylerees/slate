@@ -160,13 +160,25 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - Folder colour (Settings → Appearance): `scripts/folder-colour.py` makes
   `~/.local/share/icons/Slate-Icons`, a theme that inherits the user's Papirus theme and only
   links the folder icons to another of Papirus's colours (no root needed, unlike
-  papirus-folders), then sets it for GTK, qt5ct/qt6ct and KDE. "Auto" picks the colour
+  papirus-folders), then sets it for GTK, qt5ct/qt6ct and KDE. Themes that only have their
+  plain folder in colours (folder.svg beside folder-<colour>.svg: Kora, Nordzy, "kind":
+  "plain" in --list) get it swapped, and their other folders (Desktop, Home…, drawn in the
+  plain folder's colours) repainted: those colours swapped for the chosen one's, emblem colours
+  moved the same way (`recolour`). `X-Slate-Build` makes older builds be made again. "Auto" picks the colour
   nearest `Config.wallpaperAccent`; "default" switches back and removes it.
 - Mouse cursor: Slate Cursors (`shell/cursors/Slate-Cursors`, Bibata Modern Ice without
   colour, GPL-3.0; rebuilt with `tools/build-cursors.py`). The installer links it into
   `~/.local/share/icons`; the session's `variables.lua` sets `CURSOR_THEME`/`CURSOR_SIZE`
   (override them in `~/.config/slate/hypr/variables.lua`) as Hyprland's cursor and in the
   environment, and `scripts/apply-theme.py` points GTK, Qt/KDE and X11 apps at the same theme.
+  Settings → Input → Pointer style (`cursorTheme`, listed by `scripts/icon-themes.py`) changes
+  it while running: `slateApply` in `slate.lua` sets Hyprland's cursor, the environment and
+  gsettings ("" = the session's own), and apply-theme.py gets the name from Slate.
+- Icon theme: Settings → Icons → Icon theme (`iconTheme`, listed by `scripts/icon-themes.py`).
+  `shell.qml` sets it for GTK, Qt and KDE with `folder-colour.py --icon-theme`, then makes the
+  folder colour again on top of it. Slate's tiles follow: `Config.tileDir` is
+  `tiles/themes/<theme>/<style>`, and `appicon.py` draws from the theme, the themes it
+  inherits, then the usual ones, finding app icons where each theme's index.theme says.
 - Window borders (0–12 px, default 0, Settings → Windows; only when a workspace has more than one window) follow the
   theme: `shell.qml` sends the accent (active) and bar colour (inactive), at 60% and 85% (Hyprland cannot blur behind borders),
   to Hyprland with `hyprctl eval`, and again after a config reload. Fallbacks and
@@ -362,7 +374,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
-| `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Appearance → Folder colour |
+| `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Icons → Folder colour |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).
 

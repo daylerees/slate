@@ -513,6 +513,21 @@ ShellRoot {
     }
     Process { id: folderRun }
 
+    // The icon theme (Settings → Icons → Icon theme): set for GTK, Qt and KDE apps, then the
+    // folder colour made again on top of it (it's built on whichever theme is in use; a theme
+    // that isn't Papirus has no coloured folders, so that does nothing). Slate's own tiles
+    // follow by themselves (Config.tileDir has the theme in it)
+    // ("" goes back to the theme this computer had before one was chosen, Config.s.iconThemeBefore)
+    readonly property string iconThemeWanted: Config.iconThemeChosen !== "" ? Config.iconThemeChosen
+        : (/^[\w.+-]+$/.test(Config.s.iconThemeBefore) ? Config.s.iconThemeBefore : "")
+    onIconThemeWantedChanged: iconThemeTimer.restart()
+    Timer { id: iconThemeTimer; interval: 800; onTriggered: if (root.iconThemeWanted !== "" && !Config.testMode) { iconThemeRun.running = false; iconThemeRun.running = true; } }
+    Process {
+        id: iconThemeRun
+        command: [Quickshell.shellPath("scripts/folder-colour.py"), "--icon-theme", root.iconThemeWanted]
+        onExited: folderTimer.restart()
+    }
+
     // Apps switched on in Settings → Appearance → App Theming follow Slate's theme:
     // scripts/apply-theme.py writes their themes from these colours, a moment after a change
     readonly property string themeJson: JSON.stringify({
@@ -525,6 +540,8 @@ ShellRoot {
         // The cursor size set in Settings (0 = not set): Slate's own environment still has the
         // size from when it started, so apps would get the old one back without this
         cursorSize: Config.s.cursorSize,
+        // ...and its theme (Settings → Input → Pointer style; "" = as the session set it)
+        cursorTheme: Config.s.cursorTheme,
         on: Config.s.themedApps || []
     })
     onThemeJsonChanged: themeApply.restart()
@@ -800,7 +817,7 @@ ShellRoot {
         readonly property real spread: Config.s.dockSpread           // how many icons either side grow
         readonly property real spacing: 8
         readonly property real padding: 8        // inside the dock background
-        // How rounded the icons' corners are (Settings → Appearance → App icons), for the dock's own corners
+        // How rounded the icons' corners are (Settings → Icons → App icons), for the dock's own corners
         readonly property real iconCorner: {
             const shape = Config.s.iconShape;
             return shape === "circle" ? base / 2 : shape === "square" ? 0 : shape === "squircle" ? base * 0.3 : base * 0.225;
@@ -1783,7 +1800,7 @@ ShellRoot {
                     r.push({ label: "Settings", kind: "settings", target: "overview" });
                     r.push({ kind: "sep" });
                     r.push({ label: "Appearance", kind: "settings", target: "appearance" });
-                    r.push({ label: "Wallpaper", kind: "settings", target: "appearance", find: "Wallpaper" });
+                    r.push({ label: "Wallpaper", kind: "settings", target: "wallpaper" });
                     r.push({ label: "Displays", kind: "settings", target: "displays" });
                     r.push({ label: "Wi-Fi", kind: "settings", target: "wifi" });
                     r.push({ label: "Bluetooth", kind: "settings", target: "bluetooth" });

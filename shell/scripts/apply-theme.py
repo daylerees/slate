@@ -80,12 +80,12 @@ def code_font(name, live):
 
 
 # ---- Cursor theme: the session's (XCURSOR_THEME, set in the Slate session's variables.lua) --
-def cursor_theme(live, set_size=0):
+def cursor_theme(live, set_size=0, set_name=""):
     """Point GTK, Qt/KDE and X11 apps at the cursor theme Hyprland uses, and make sure
-    Slate's own (Slate-Cursors) can be found in ~/.local/share/icons. The size is the one set
-    in Settings (set_size) when there is one: this script's environment comes from when Slate
-    started, so its XCURSOR_SIZE can be out of date."""
-    name = os.environ.get("XCURSOR_THEME", "")
+    Slate's own (Slate-Cursors) can be found in ~/.local/share/icons. The theme and size are
+    the ones set in Settings (set_name, set_size) when there are: this script's environment
+    comes from when Slate started, so its XCURSOR_THEME and XCURSOR_SIZE can be out of date."""
+    name = set_name or os.environ.get("XCURSOR_THEME", "")
     size = str(set_size) if set_size and set_size > 0 else os.environ.get("XCURSOR_SIZE", "20")
     if not re.fullmatch(r"[\w.+-]+", name) or not size.isdigit():
         return
@@ -164,7 +164,7 @@ def main():
         except Exception as e:              # one app's trouble shouldn't stop the rest
             print("apply-theme: %s: %s" % (a["id"], e), file=sys.stderr)
     ctx.save()
-    cursor_theme(live, int(p.get("cursorSize") or 0))
+    cursor_theme(live, int(p.get("cursorSize") or 0), str(p.get("cursorTheme") or ""))
     font_changed = code_font(p.get("codeFont", ""), live)
     if live:
         for a in slate_apps.APPS:

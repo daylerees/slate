@@ -801,6 +801,8 @@ Singleton {
         if (clickToFocus) t.push(`follow_mouse = 2`);
         else if (s.focusFollowsMouse !== "") t.push(`follow_mouse = ${s.focusFollowsMouse === "on" ? 1 : 2}`);
         if (s.cursorSize > 0) t.push(`cursor_size = ${s.cursorSize}`);
+        // ("" = the session's own: Slate's, or yours from hypr/variables.lua)
+        t.push(`cursor_theme = ${q(/^[\w.+-]+$/.test(s.cursorTheme) ? s.cursorTheme : "")}`);
         if (gameMode) t.push(`animations = "off"`);          // game mode: no animations
         else if (s.animations !== "") t.push(`animations = ${q(s.animations)}`);
         const apps = { terminal: s.defaultTerminal, browser: s.defaultBrowser, file_manager: s.defaultFileManager,
@@ -1067,17 +1069,42 @@ Singleton {
         const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / A;
         return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), A);
     }
+    // The icon theme: the one chosen in Settings → Icons → Icon theme ("" = this computer's)
+    readonly property string iconThemeChosen: /^[\w.+-]+$/.test(s.iconTheme) ? s.iconTheme : ""
+    // ...and the one actually in use, which the tiles are drawn from: the chosen one, else what
+    // GTK apps use (read from gtk-3.0/settings.ini, so a theme set outside Slate counts too;
+    // Slate's folder-colour theme counts as the theme it's made from)
+    readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+    readonly property string dataHome: Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share"
+    FileView { id: gtkSettingsFile; path: root.isLoginScreen ? "" : root.configHome + "/gtk-3.0/settings.ini"; watchChanges: true; printErrors: false; onFileChanged: reload() }
+    FileView { id: slateIconsFile; path: root.isLoginScreen ? "" : root.dataHome + "/icons/Slate-Icons/index.theme"; watchChanges: true; printErrors: false; onFileChanged: reload() }
+    function iniValue(text, key) {
+        const m = String(text || "").match(new RegExp("^\\s*" + key + "\\s*=\\s*(.*?)\\s*$", "m"));
+        return m ? m[1] : "";
+    }
+    readonly property string gtkIconTheme: {
+        const t = iniValue(gtkSettingsFile.text(), "gtk-icon-theme-name");
+        return t === "Slate-Icons" ? (iniValue(slateIconsFile.text(), "X-Slate-Base") || "Papirus-Dark") : t;
+    }
+    readonly property string iconThemeInUse: iconThemeChosen !== "" ? iconThemeChosen
+        : (/^[\w.+-]+$/.test(gtkIconTheme) ? gtkIconTheme : "")
+    // Each theme's tiles have folders of their own, tiles/themes/<theme>/<style>: drawn from it
+    // alone (tiles from two themes never mix), and kept, so switching back is instant
     readonly property string tileDir: Quickshell.env("HOME") + "/.cache/slate/tiles"
-        + (s.iconShape === "tile" && s.iconFill ? "" : "/" + s.iconShape + (s.iconFill ? "" : "-whole"))
+        + (iconThemeInUse !== ""
+            ? "/themes/" + iconThemeInUse + "/" + s.iconShape + (s.iconFill ? "" : "-whole")
+            : (s.iconShape === "tile" && s.iconFill ? "" : "/" + s.iconShape + (s.iconFill ? "" : "-whole")))
     readonly property var tileStyle: ["--shape", s.iconShape, s.iconFill ? "--fill" : "--whole"]
+        .concat(iconThemeInUse !== "" ? ["--theme", iconThemeInUse] : [])
     // Command to draw one app's icon: tileCommand(app id or class, file). Built from the
     // settings themselves, not tileStyle: right after a change tileStyle can still hold the
     // old style while the file is already in the new style's folder (the script also goes
     // by the folder, so the two can't disagree)
     function tileCommand(app, path) {
-        return [tileScript, "--tile", app, path, "192", "--shape", s.iconShape, s.iconFill ? "--fill" : "--whole"];
+        return [tileScript, "--tile", app, path, "192", "--shape", s.iconShape, s.iconFill ? "--fill" : "--whole"]
+            .concat(iconThemeInUse !== "" ? ["--theme", iconThemeInUse] : []);
     }
-    // How rounded an app icon's corners are at a given size (Settings → Appearance → App icons),
+    // How rounded an app icon's corners are at a given size (Settings → Icons → App icons),
     // for things drawn to match it, like a sheen on the tile
     function iconCornerFor(size) {
         const shape = s.iconShape;
@@ -1165,7 +1192,7 @@ Singleton {
         onExited: { root.tileVersion++; if (root.iconColoursWanted) iconColoursSoon.restart(); }
     }
 
-    // ---- Tiles in each icon's colour (Settings → Appearance → App icons) ------------------
+    // ---- Tiles in each icon's colour (Settings → Icons → App icons) ------------------
     // appicon.py --colours notes each drawn icon's main colour (colours.json in the tiles
     // folder); the tile behind an icon (IconPlate.qml) then takes a deep shade of it
     readonly property string iconColoursPath: tileDir + "/colours.json"
@@ -1251,7 +1278,7 @@ Singleton {
         workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
-        apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
+        apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }

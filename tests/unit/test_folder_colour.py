@@ -118,7 +118,7 @@ class FolderColour(Case):
 
     def test_list_not_papirus(self):
         self.theme("Adwaita")
-        self.assertEqual(self.listing(), {"supported": False, "base": "Adwaita", "current": "", "colours": []})
+        self.assertEqual(self.listing(), {"supported": False, "base": "Adwaita", "current": "", "kind": "", "colours": []})
 
     def test_list_no_gsettings(self):
         """No gsettings at all (not a GNOME system): unsupported, not a crash."""
@@ -246,7 +246,7 @@ class FolderColour(Case):
         self.theme("Adwaita")
         code, out = self.folder("teal")
         self.assertEqual(code, 1)
-        self.assertIn("the icon theme (Adwaita) isn't Papirus", out)
+        self.assertIn("the icon theme (Adwaita) has no folders in colours", out)
         self.assertFalse(os.path.exists(self.ours))
 
     def test_default(self):
@@ -292,3 +292,83 @@ class FolderColour(Case):
         code, out = self.folder()
         self.assertEqual(code, 1)
         self.assertIn("folder-colour.py --list", out)
+
+    # --- themes like Kora and Nordzy: the plain folder in colours, nothing else ---
+    def make_kora(self):
+        """A Kora-like theme: places/scalable with folder.svg and folder-<colour>.svg (drawn in
+        rgb(), an outline plus the colour), and a Documents folder with no colours."""
+        kora = os.path.join(self.sys, "icons", "kora")
+        self.write(os.path.join(kora, "index.theme"),
+                   "[Icon Theme]\nName=Kora\nInherits=breeze,hicolor\nDirectories=places/scalable\n"
+                   "\n[places/scalable]\nContext=Places\nSize=48\nType=Scalable\n")
+        places = os.path.join(kora, "places", "scalable")
+        for c, rgb in (("blue", "1,41,180"), ("red", "200,30,30"), ("green", "40,160,60"), ("grey", "128,128,128")):
+            self.write(os.path.join(places, "folder-%s.svg" % c),
+                       '<svg><path style="fill:rgb(20,20,20)"/><path style="fill:rgb(%s)"/></svg>' % rgb)
+        # The plain folder in the theme's own blue; Desktop drawn in the same colours plus its
+        # emblem's; a folder drawn some other way (no shared colour) is left alone
+        self.write(os.path.join(places, "folder.svg"),
+                   '<svg><path style="fill:rgb(20,20,20)"/><path style="fill:rgb(0,131,213)"/></svg>')
+        self.write(os.path.join(places, "user-desktop.svg"),
+                   '<svg><path style="fill:rgb(20,20,20)"/><path style="fill:rgb(0,131,213)"/><path fill="#0b4e94"/></svg>')
+        os.symlink("user-desktop.svg", os.path.join(places, "desktop.svg"))
+        self.write(os.path.join(places, "folder-documents.svg"), '<svg><path fill="#ffaa00"/></svg>')
+        self.theme("kora")
+        return places
+
+    def test_list_plain_folders(self):
+        self.make_kora()
+        got = self.listing()
+        self.assertEqual((got["supported"], got["base"], got["kind"]), (True, "kora", "plain"))
+        self.assertEqual([(c["name"], c["hex"]) for c in got["colours"]],
+                         [("blue", "#0129b4"), ("green", "#28a03c"), ("grey", "#808080"), ("red", "#c81e1e")])
+
+    def test_set_plain_folder(self):
+        """folder.svg is the chosen colour, in every places folder that has the colours; other
+        folders drawn in the plain folder's colours (Desktop) are repainted, their emblems moved
+        the same way; the rest comes from the theme itself."""
+        places = self.make_kora()
+        code, out = self.folder("red")
+        self.assertEqual(code, 0, out)
+        link = os.path.join(self.ours, "places", "scalable", "folder.svg")
+        self.assertEqual(os.readlink(link), os.path.join(os.path.realpath(places), "folder-red.svg"))
+        self.assertEqual(sorted(os.listdir(os.path.dirname(link))), ["desktop.svg", "folder.svg", "user-desktop.svg"])
+        desk = open(os.path.join(self.ours, "places", "scalable", "user-desktop.svg")).read()
+        self.assertIn("rgb(200,30,30)", desk, "Desktop isn't in the chosen colour")
+        self.assertIn("rgb(20,20,20)", desk, "the outline changed")
+        self.assertNotIn("0,131,213", desk)
+        self.assertNotIn("#0b4e94", desk, "the emblem kept the old colour")
+        self.assertEqual(os.readlink(os.path.join(self.ours, "places", "scalable", "desktop.svg")), "user-desktop.svg")
+        index = open(os.path.join(self.ours, "index.theme")).read()
+        self.assertIn("Inherits=kora\n", index)
+        self.assertIn("X-Slate-Base=kora\nX-Slate-Colour=red", index)
+        self.assertIn("[places/scalable]\nContext=Places", index)
+        self.assertIn(["set", IFACE, "icon-theme", "Slate-Icons"], self.s.calls("gsettings"))
+
+    def test_auto_plain_folders(self):
+        """From the wallpaper: the colour nearest it, from the folders' own drawn colours."""
+        self.make_kora()
+        code, out = self.folder("--auto", "#2a40c0")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out.strip(), "blue")
+
+
+    def test_auto_goes_by_hue(self):
+        """The wallpaper's colour reaches here soft and light (set for the theme), so the match
+        goes mostly by hue. A bug: a mint-green wallpaper (#9cddba) got Papirus's bluish
+        darkcyan, nearer in lightness, instead of teal, nearer in colour."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("folder_colour", SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        old = sys.argv
+        try:
+            sys.argv = [SCRIPT]
+            spec.loader.exec_module(mod)
+        finally:
+            sys.argv = old
+        papirus = [{"name": n, "hex": h} for n, h in (
+            ("blue", "#5294e2"), ("cyan", "#00bcd4"), ("darkcyan", "#45abb7"), ("green", "#87b158"),
+            ("teal", "#16a085"), ("violet", "#7e57c2"), ("pink", "#f06292"), ("grey", "#8e8e8e"))]
+        for wall, want in (("#9cddba", "teal"), ("#8fb3e8", "blue"), ("#e8a6b4", "pink"), ("#a6d3a0", "green")):
+            with self.subTest(wall):
+                self.assertEqual(mod.nearest(wall, papirus), want)

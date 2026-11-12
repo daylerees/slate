@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Render an app icon as a "phone app" tile for Slate's dock, launcher and bar.
 
-Usage: appicon.py --tile <app-id-or-class> <out.png> <pixels> [--shape S] [--fill|--whole]
-       appicon.py --tile-all <dir> <pixels> [--shape S] [--fill|--whole]   (every installed app)
+Usage: appicon.py --tile <app-id-or-class> <out.png> <pixels> [--shape S] [--fill|--whole] [--theme T]
+       appicon.py --tile-all <dir> <pixels> [--shape S] [--fill|--whole] [--theme T]   (every installed app)
        appicon.py --preview <dir> <pixels>   (one app in every shape and style, for Settings)
        appicon.py --colours <dir> <out.json> (each drawn icon's main colour, for tiles in it)
 
-Settings → Appearance → App icons:
+Settings → Icons → App icons:
   --shape  tile (default: a rounded square), squircle, circle, square, or original
            (the icon as the app ships it, with no tile)
   --fill   cut away theme drop shadows and empty margins, enlarge square icons a
@@ -14,7 +14,10 @@ Settings → Appearance → App icons:
            their main colour (for original: just trimmed and grown to fill the image)
   --whole  the whole icon, smaller, with nothing behind it: Slate draws the tile behind in
            the theme's colour (IconPlate.qml), so it follows the theme. Original: untouched.
-           Slate's default (Settings → Appearance → App icons) is tile with --whole
+           Slate's default (Settings → Icons → App icons) is tile with --whole
+  --theme  the icon theme to draw from (Settings → Icons → Icon theme), then the themes it
+           builds on, then the usual ones. Without it: the one GTK apps use
+           (gtk-3.0/settings.ini). Slate keeps each theme's tiles in tiles/themes/<T>/<style>
 
 Each tile is drawn at 4× and scaled down for smooth edges (render_tile). Slate caches the
 tiles in ~/.cache/slate/tiles, a folder per style.
@@ -47,7 +50,87 @@ def data_dirs():
 
 APP_DIRS = [os.path.join(d, "applications") for d in data_dirs()]
 ICON_BASES = [os.path.join(d, "icons") for d in data_dirs()]
+# The usual themes, after the chosen one and those it builds on (see theme_chain)
 THEMES = ["Papirus-Dark", "Papirus", "hicolor", "breeze-dark", "breeze", "Adwaita"]
+
+
+def theme_index(theme):
+    """A theme's index.theme, as {section: {key: value}}, from the first place it's installed
+    (with that folder), or ({}, None)."""
+    for base in ICON_BASES:
+        path = os.path.join(base, theme, "index.theme")
+        if os.path.isfile(path):
+            out, section = {}, None
+            try:
+                with open(path, encoding="utf-8", errors="ignore") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if line.startswith("[") and line.endswith("]"):
+                            section = out.setdefault(line[1:-1], {})
+                        elif section is not None and "=" in line:
+                            k, v = line.split("=", 1)
+                            section.setdefault(k.strip(), v.strip())
+            except OSError:
+                continue
+            return out, os.path.join(base, theme)
+    return {}, None
+
+
+def gtk_icon_theme():
+    """The icon theme GTK apps use (Settings → Icons → Icon theme sets it), or ""."""
+    cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    try:
+        with open(os.path.join(cfg, "gtk-3.0", "settings.ini"), encoding="utf-8") as fh:
+            for line in fh:
+                k, _, v = line.partition("=")
+                if k.strip() == "gtk-icon-theme-name":
+                    return v.strip()
+    except OSError:
+        pass
+    return ""
+
+
+def theme_chain(first):
+    """The themes to look in, in order: the chosen one, every theme it builds on (Inherits,
+    breadth first: Slate's folder-colour theme builds on your Papirus, Papirus on breeze and
+    hicolor), then the usual ones."""
+    out, todo = [], [first] if first else []
+    while todo:
+        t = todo.pop(0)
+        if not t or t in out:
+            continue
+        out.append(t)
+        idx, _ = theme_index(t)
+        todo += [x.strip() for x in idx.get("Icon Theme", {}).get("Inherits", "").split(",")]
+    return out + [t for t in THEMES if t not in out]
+
+
+CHAIN = THEMES                 # (set in main: theme_chain of the theme asked for)
+
+
+@functools.lru_cache(maxsize=None)
+def app_dirs(theme):
+    """Where a theme keeps its app icons, biggest first: the folders its index.theme lists
+    for Applications (each theme lays them out its own way: 64x64/apps in Papirus,
+    apps/48 in Breeze, scalable/apps in Adwaita), in every place it's installed. Themes
+    with no index say nothing: the usual size/apps layout is tried for them."""
+    idx, _ = theme_index(theme)
+    head = idx.get("Icon Theme", {})
+    names = [d.strip() for d in (head.get("Directories", "") + "," + head.get("ScaledDirectories", "")).split(",") if d.strip()]
+    found = []
+    for d in names:
+        sec = idx.get(d, {})
+        if sec.get("Context", "").lower() not in ("applications", "apps"):
+            continue
+        try:
+            size = int(sec.get("Size", "0")) * int(sec.get("Scale", "1") or 1)
+        except ValueError:
+            size = 0
+        if sec.get("Type", "").lower() == "scalable":
+            size = max(size, 4096)
+        found.append((size, d))
+    rel = [d for _, d in sorted(found, key=lambda x: -x[0])] or [os.path.join(z, "apps") for z in SIZES]
+    return [os.path.join(base, theme, r) for base in ICON_BASES for r in rel if os.path.isdir(os.path.join(base, theme, r))]
 SIZES = ["scalable", "1024x1024", "512x512", "256x256", "128x128", "96x96", "64x64",
          "48x48", "32x32", "24x24", "22x22", "16x16"]
 
@@ -133,22 +216,19 @@ def entry_values(path):
 
 @functools.lru_cache(maxsize=None)
 def find_icon_file(name):
-    """The icon file for an icon name, from the themes in THEMES (in order), then pixmaps."""
+    """The icon file for an icon name, from the themes in CHAIN (in order), then pixmaps."""
     if os.path.isabs(name):
         if os.path.isfile(name):
             return name
         # Points at a file that isn't there (e.g. a theme that isn't installed):
         # look its name up in the themes instead
         name = os.path.splitext(os.path.basename(name))[0]
-    for base in ICON_BASES:
-        for theme in THEMES:
-            if not os.path.isdir(os.path.join(base, theme)):
-                continue                 # most themes aren't in most places: skip their 24 checks
-            for size in SIZES:
-                for ext in ("svg", "png"):
-                    p = os.path.join(base, theme, size, "apps", f"{name}.{ext}")
-                    if os.path.isfile(p):
-                        return p
+    for theme in CHAIN:
+        for d in app_dirs(theme):
+            for ext in ("svg", "png"):
+                p = os.path.join(d, f"{name}.{ext}")
+                if os.path.isfile(p):
+                    return p
     for ext in ("svg", "png"):
         for d in data_dirs():
             p = os.path.join(d, "pixmaps", f"{name}.{ext}")
@@ -474,9 +554,30 @@ def style_of_folder(folder):
     return None
 
 
+def theme_of_folder(folder):
+    """The icon theme a tiles folder is for (tiles/themes/<theme>/<style>), or None."""
+    parts = os.path.normpath(folder).split(os.sep)
+    if len(parts) >= 3 and parts[-3] == "themes":
+        return parts[-2]
+    return None
+
+
+def theme_arg(args):
+    """--theme T from the command line, or None."""
+    if "--theme" in args:
+        i = args.index("--theme")
+        if i + 1 < len(args):
+            return args[i + 1]
+    return None
+
+
 def main():
+    global CHAIN
     args = sys.argv[1:]
     shape, fill = style(args)
+    # The theme to draw from: the tiles folder's (as for the style), else --theme, else GTK's
+    folder = args[1] if len(args) >= 2 and args[0] == "--tile-all" else os.path.dirname(args[2]) if len(args) >= 3 and args[0] == "--tile" else ""
+    CHAIN = theme_chain((theme_of_folder(folder) if folder else None) or theme_arg(args) or gtk_icon_theme())
     if len(args) >= 3 and args[0] == "--preview":
         preview(args[1], int(args[2]))
         return
