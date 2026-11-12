@@ -196,8 +196,13 @@ PanelWindow {
     property bool settled: false
     Timer { id: settleIn; interval: 90; onTriggered: bar.settled = true }
     Timer { id: settleOut; interval: 260; onTriggered: bar.settled = false }
-    property real shadow: settled || popoutHere ? 1 : 0
-    Behavior on shadow { NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
+    // It fades in and out (with the band's flared corners, which cast it too), so it's seen to
+    // come and go rather than snap: in with a gentle ease-out, which answers the pointer at once
+    // (an ease-in-out lagged after the settling pause, and a sharp ease-out read as a snap), and
+    // out a little slower and evenly
+    readonly property bool shadowWanted: settled || popoutHere
+    property real shadow: shadowWanted ? 1 : 0
+    Behavior on shadow { NumberAnimation { duration: Config.ms(bar.shadowWanted ? 260 : 360); easing.type: bar.shadowWanted ? Easing.OutQuad : Easing.InOutSine } }
     // Text along a side bar is turned to read top to bottom on the right, bottom to top on the left
     readonly property real textRotation: vert ? (atRight ? 90 : -90) : 0
     anchors { top: side !== "bottom"; bottom: side !== "top"; left: side !== "right"; right: side !== "left" }
@@ -647,7 +652,7 @@ PanelWindow {
                 // (only with the bar's blur on: without it there's nothing to keep under)
                 strength: Config.barShadowShare
                 radius: 0
-                blur: 15
+                blur: 8
                 dropX: bar.vert ? (bar.atRight ? -3 : 3) : 0
                 dropY: bar.vert ? 0 : (bar.atBottom ? -3 : 3)
                 holeRadius: r

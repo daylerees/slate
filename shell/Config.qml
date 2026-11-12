@@ -1471,9 +1471,10 @@ Singleton {
         : Math.min(1, Math.max(0, toastGlassLow - 0.25) / Math.max(0.01, shadowStrength))
     readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
         : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
-    // ...and the bar's shadow, as a share of Slate's usual: always under that threshold
-    readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1
-        : Math.min(1, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
+    // ...and the bar's shadow, as a share of Slate's usual: darker than the rest (it's short,
+    // and has to show against the windows under the bar), but always under that threshold
+    readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1.4
+        : Math.min(1.4, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)
