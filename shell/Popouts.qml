@@ -224,14 +224,38 @@ PanelWindow {
             z: 0
             topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
             bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
-            dropX: pop.sideways ? (pop.side === "left" ? 3 : -3) : 0
-            dropY: pop.sideways ? 3 : (pop.fromBottom ? -3 : 3)
+            // Grown all round by the distance, not moved by it (as the bar's is): moved, it
+            // curled at the joins' ends where they meet the bar
+            dropX: 0
+            dropY: 0
+            spread: Config.shadowSpread + Config.shadowDrop
             // (fainter than where the blur behind the panel starts, as the bar's own is under its)
             strength: Config.panelShadowShare
-            // None where the panel leaves the bar: the curved joins beside it there would lie
-            // on it, and on glass showed darker than the panel
-            fadeEdge: pop.side
-            fadeFrom: bar.cornerRadius
+            // The curved joins either side of it, where it leaves the bar, as part of its shape:
+            // the shadow follows them out to the bar (and, kept from under them, nothing shows
+            // through them on glass). None where the panel's flush with the screen's edge, nor
+            // with Rounded UI elements off (Canvas joins below: the same shapes)
+            readonly property real jr: Config.s.roundedElements ? bar.cornerRadius : 0
+            readonly property bool joinStart: jr > 0 && !pop.atScreenStart
+            readonly property bool joinEnd: jr > 0 && !pop.atScreenEnd
+            joinRadius: jr
+            joinA: !joinStart ? Qt.rect(0, 0, 0, 0)
+                : pop.sideways ? Qt.rect(pop.side === "left" ? 0 : width - jr, -jr, jr, jr)
+                : Qt.rect(-jr, pop.fromBottom ? height - jr : 0, jr, jr)
+            joinB: !joinEnd ? Qt.rect(0, 0, 0, 0)
+                : pop.sideways ? Qt.rect(pop.side === "left" ? 0 : width - jr, height, jr, jr)
+                : Qt.rect(width, pop.fromBottom ? height - jr : 0, jr, jr)
+            joinCentreA: pop.sideways ? Qt.point(pop.side === "left" ? jr : width - jr, -jr)
+                : Qt.point(-jr, pop.fromBottom ? height - jr : jr)
+            joinCentreB: pop.sideways ? Qt.point(pop.side === "left" ? jr : width - jr, height + jr)
+                : Qt.point(width + jr, pop.fromBottom ? height - jr : jr)
+            // The bar's own shadow is under this one, beside the panel (Bar.qml: cast from its
+            // inner edge, which is this window's edge against the bar): only what the panel adds
+            // over it is drawn, or beside the joins the two came out darker than either
+            underNormal: pop.sideways ? Qt.point(pop.side === "left" ? 1 : -1, 0) : Qt.point(0, pop.fromBottom ? -1 : 1)
+            underLine: pop.sideways ? (pop.side === "left" ? -parent.x : pop.width - parent.x)
+                : (pop.fromBottom ? pop.height - parent.y : -parent.y)
+            underStrength: Config.shadowsOn ? Config.shadowStrength * Config.barShadowShare * bar.shadow : 0
         }
     }
 
@@ -1546,11 +1570,13 @@ PanelWindow {
                                                 width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
                                                 layer.enabled: wsLive.hasContent
                                                 layer.effect: MultiEffect {
-                                                    shadowEnabled: true
+                                                    shadowEnabled: Config.shadowsOn
                                                     shadowColor: Config.shadowColour
                                                     shadowOpacity: 0.55
-                                                    shadowBlur: 0.6
-                                                    shadowVerticalOffset: 1
+                                                    shadowBlur: Config.shadowEffectBlur
+                                                    blurMax: 32
+                                                    shadowHorizontalOffset: Config.shadowDX
+                                                    shadowVerticalOffset: Config.shadowDY
                                                 }
                                                 AppTile {
                                                     anchors.fill: parent

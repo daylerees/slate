@@ -199,7 +199,7 @@ PanelWindow {
         color: osd.bar.barColor
         opacity: osd.fade
         Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)
-        Shadow { blur: 16; dropY: 3 }      // raised: Slate's shadow, with glass too
+        Shadow {}      // raised: Slate's shadow, with glass too
 
         Text {
             id: osdIcon
@@ -302,7 +302,7 @@ PanelWindow {
         color: osd.bar.barColor
         opacity: osd.fade
         Gloss { radius: parent.radius }
-        Shadow { blur: 16; dropY: 3 }
+        Shadow {}
         Text {
             id: wsName
             anchors.centerIn: parent

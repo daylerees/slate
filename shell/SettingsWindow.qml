@@ -1167,7 +1167,7 @@ FloatingWindow {
     }
     // The shadow under a pop-up (dropdown menus, the place search's results): use it as
     // layer.effect: PopupShadow {}
-    component PopupShadow: MultiEffect { shadowEnabled: true; shadowColor: Config.shadowColour; shadowOpacity: 0.4; shadowBlur: 0.8; shadowVerticalOffset: 4; blurMax: 24 }
+    component PopupShadow: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: Config.shadowColour; shadowOpacity: 0.4; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
     // The box round a text field: the control colour with a sheen, an I-beam pointer, and a faint
     // accent outline under the pointer (solid while typing). field: the TextInput inside it
     component FieldFrame: Rectangle {
@@ -5265,110 +5265,139 @@ FloatingWindow {
                     key: "roundedElements"
                 }
             }
-            GroupLabel { text: "App icons" }
+            // ---- Shadows: one look for every shadow, with a preview that shows it as it changes
+            GroupLabel { text: "Shadows" }
             Group {
-                id: iconGroup
-                // One of your apps drawn in each shape, filled and whole (scripts/appicon.py --preview)
-                readonly property string previewDir: Quickshell.env("HOME") + "/.cache/slate/tiles/preview"
-                property int previewVersion: 0
-                Process {
-                    running: true
-                    command: [Config.tileScript, "--preview", iconGroup.previewDir, "96"]
-                    onExited: { iconGroup.previewVersion++; previewColourFile.reload(); }
-                }
-                // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too
-                FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false }
-                readonly property var previewShade: Config.iconTileShadeOf(previewColourFile.text().trim())
-                SettingRow {
-                    label: "Shape"
-                    detail: "For app icons in the dock, launcher, switcher, bar and notifications"
-                }
-                Flow {
-                    width: parent.width - 32; x: 16
-                    spacing: 8
-                    bottomPadding: 14
-                    Repeater {
-                        model: [{ value: "tile", label: "Tile" }, { value: "squircle", label: "Squircle" }, { value: "circle", label: "Circle" },
-                                { value: "square", label: "Square" }, { value: "original", label: "Original" }]
-                        delegate: Rectangle {
-                            id: shapeCard
-                            required property var modelData
-                            readonly property bool on: Config.s.iconShape === modelData.value
-                            width: 92; height: 96; radius: Config.corner(12)
-                            color: on ? win.accent : shapeHover.hovered ? Config.hover : win.well
-                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                            // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
-                            // in the icon's colour, and Tint app icons (and its strength); with glass,
-                            // see-through tiles and the sheen, as in the dock
-                            Image {
-                                anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 12 }
-                                width: 48; height: 48
-                                sourceSize: Qt.size(96, 96)
-                                cache: false
-                                source: iconGroup.previewVersion > 0
-                                    ? "file://" + iconGroup.previewDir + "/" + shapeCard.modelData.value + (Config.s.iconFill ? "-fill" : "-whole") + ".png?v=" + iconGroup.previewVersion
-                                    : ""
-                                layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                                IconPlate {
-                                    anchors.fill: parent; z: -1; shape: shapeCard.modelData.value
-                                    color: iconGroup.previewShade ?? Config.iconPlateColor
-                                    shaded: iconGroup.previewShade !== null
-                                }
-                                // Glass: the sheen the dock puts on its icons, rounded to this shape
-                                Gloss {
-                                    glassHint: true
-                                    visible: Config.glassGloss && shapeCard.modelData.value !== "original"
-                                    radius: { const v = shapeCard.modelData.value, w = parent.width;
-                                              return v === "circle" ? w / 2 : v === "square" ? 0 : v === "squircle" ? w * 0.3 : w * 0.225; }
+                // A sample of what Slate raises (a card, and a pill like the OSD's) on the window's
+                // well, each with Slate's own shadow: the sliders below change it, and every
+                // shadow on screen with it, as they move
+                Item {
+                    width: parent.width
+                    height: 150
+                    Rectangle {
+                        id: shadowStage
+                        anchors { fill: parent; margins: 8 }
+                        radius: Config.corner(10)
+                        // Seen on a dark background (the window's own) or a light one, to compare:
+                        // the cards and their text follow, as they'd be in a light app
+                        property bool light: false
+                        readonly property color cardColour: light ? "#f7f8fa" : win.card
+                        readonly property color inkColour: light ? "#2a313c" : win.text
+                        readonly property color dimColour: light ? "#8b94a3" : win.dim
+                        color: light ? "#dfe3e8" : win.well
+                        Behavior on color { ColorAnimation { duration: Config.ms(150) } }
+                        clip: true
+                        Rectangle {
+                            id: sampleCard
+                            width: Math.min(200, parent.width * 0.45); height: 86
+                            x: parent.width * 0.5 - width - 14; y: (parent.height - height) / 2
+                            radius: Config.corner(14)
+                            color: shadowStage.cardColour
+                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
+                            Shadow {}
+                            Column {
+                                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                spacing: 8
+                                Rectangle { width: sampleCard.width * 0.55; height: 9; radius: Config.corner(4.5); color: shadowStage.inkColour; opacity: 0.85 }
+                                Rectangle { width: sampleCard.width * 0.7; height: 7; radius: Config.corner(3.5); color: shadowStage.dimColour; opacity: 0.6 }
+                                Rectangle { width: sampleCard.width * 0.4; height: 7; radius: Config.corner(3.5); color: shadowStage.dimColour; opacity: 0.6 }
+                            }
+                        }
+                        Rectangle {
+                            width: Math.min(150, parent.width * 0.32); height: 40
+                            x: parent.width * 0.5 + 18; y: (parent.height - height) / 2
+                            radius: Config.corner(20)
+                            color: shadowStage.cardColour
+                            Behavior on color { ColorAnimation { duration: Config.ms(150) } }
+                            Shadow {}
+                            Rectangle {
+                                anchors { left: parent.left; leftMargin: 16; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                                height: 6; radius: Config.corner(3)
+                                color: win.control
+                                Rectangle { width: parent.width * 0.6; height: parent.height; radius: parent.radius; color: win.accent }
+                            }
+                        }
+                        Text {
+                            visible: !Config.shadowsOn
+                            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
+                            text: Config.gameMode ? "Shadows are off while game mode is on" : "Shadows are off"
+                            color: shadowStage.dimColour; font.family: win.font; font.pixelSize: 12
+                        }
+                        // Dark or light behind them: two small pills in the corner, the one showing lit
+                        Row {
+                            anchors { top: parent.top; right: parent.right; margins: 8 }
+                            spacing: 4
+                            Repeater {
+                                model: [{ label: "Dark", light: false }, { label: "Light", light: true }]
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    readonly property bool on: shadowStage.light === modelData.light
+                                    width: pillText.implicitWidth + 18; height: 24
+                                    radius: Config.corner(12)
+                                    color: on ? win.accent : pillHover.hovered ? Config.hover : Qt.rgba(0, 0, 0, shadowStage.light ? 0.08 : 0.25)
+                                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                    Text {
+                                        id: pillText
+                                        anchors.centerIn: parent
+                                        text: parent.modelData.label
+                                        color: parent.on ? win.accentText : shadowStage.inkColour
+                                        font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium
+                                    }
+                                    HoverHandler { id: pillHover }
+                                    ClickTap { onTapped: shadowStage.light = parent.modelData.light }
                                 }
                             }
-                            Text {
-                                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
-                                text: shapeCard.modelData.label
-                                color: shapeCard.on ? win.accentText : win.dim
-                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                                font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
-                            }
-                            HoverHandler { id: shapeHover }
-                            ClickTap { onTapped: Config.s.iconShape = shapeCard.modelData.value }
                         }
                     }
                 }
                 Separator {}
-                SettingRow {
-                    label: "Fill the shape"
-                    settingKey: "iconFill"
-                    detail: Config.s.iconShape === "original"
-                        ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
-                        : "Crop each icon's own border and shadow and grow it to fill the shape, on its main colour. Off: the whole icon, smaller, on a plain tile"
-                    Toggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
-                }
-                Separator {}
-                SettingRow {
-                    // Only for icons on a tile: filled icons and original ones have none
-                    readonly property bool applies: !Config.s.iconFill && Config.s.iconShape !== "original"
-                    opacity: applies ? 1 : 0.4
-                    enabled: applies
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                    label: "Tiles in the icon's colour"
-                    settingKey: "iconTileColour"
-                    detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
-                        : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
-                    Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
-                }
-                Separator {}
                 ToggleSetting {
-                    label: "Tint app icons"
-                    detail: "Colour app icons in the dock, launcher, switcher, bar and notifications with the accent colour"
-                    key: "tintIcons"
+                    label: "Shadows"
+                    detail: Config.gameMode ? "Off while game mode is on" : "A shadow under everything raised: panels, menus, the launcher, notifications and floating windows. Off, everything sits flat"
+                    key: "shadows"
                 }
-                Separator { visible: Config.s.tintIcons }
+                // How they look, for every shadow alike (Config.qml: shadowStrength, shadowReach…)
+                Separator { visible: Config.s.shadows }
                 SettingRow {
-                    visible: Config.s.tintIcons
-                    label: "Tint strength"
-                    settingKey: "iconTintStrength"
-                    detail: "A light wash of colour, up to icons drawn entirely in the accent"
-                    ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Config.s.iconTintStrength; onMoved: v => Config.s.iconTintStrength = v }
+                    visible: Config.s.shadows
+                    label: "Darkness"
+                    settingKey: "shadowDarkness"
+                    detail: Config.glass && Config.s.shadowDarkness * (Config.s.lightMode ? 0.5 : 1) > Config.shadowStrength + 0.005
+                        ? "How dark they are. With glass on they stay a little lighter than this, so the glass doesn't blur them"
+                        : "How dark they are at their darkest (half as dark in light mode)"
+                    ValueSlider { per: 100; from: 10; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.s.shadowDarkness * 100); onMoved: v => Config.s.shadowDarkness = v / 100 }
+                }
+                Separator { visible: Config.s.shadows }
+                SettingRow {
+                    visible: Config.s.shadows
+                    label: "Softness"
+                    settingKey: "shadowSoftness"
+                    detail: "How gently their edge fades away. 0 is a crisp edge"
+                    ValueSlider { from: 0; to: 24; stepSize: 1; suffix: " px"; value: Config.s.shadowSoftness; onMoved: v => Config.s.shadowSoftness = v }
+                }
+                Separator { visible: Config.s.shadows }
+                SettingRow {
+                    visible: Config.s.shadows
+                    label: "Spread"
+                    settingKey: "shadowSpread"
+                    detail: "How far their full darkness reaches past the edge, before it fades. Not on floating windows"
+                    ValueSlider { from: 0; to: 10; stepSize: 1; suffix: " px"; value: Config.s.shadowSpread; onMoved: v => Config.s.shadowSpread = v }
+                }
+                Separator { visible: Config.s.shadows }
+                SettingRow {
+                    visible: Config.s.shadows
+                    label: "Distance"
+                    settingKey: "shadowDistance"
+                    detail: "How far they sit from what casts them. 0 is all round, like a glow"
+                    ValueSlider { from: 0; to: 16; stepSize: 1; suffix: " px"; value: Config.s.shadowDistance; onMoved: v => Config.s.shadowDistance = v }
+                }
+                Separator { visible: Config.s.shadows }
+                SettingRow {
+                    visible: Config.s.shadows
+                    label: "Direction"
+                    settingKey: "shadowDirection"
+                    detail: "Which way they fall: 0° is straight down, 90° to the left, 180° up and 270° to the right. Panels from the bar always fall away from it"
+                    ValueSlider { from: 0; to: 345; stepSize: 15; suffix: "°"; value: Config.s.shadowDirection; onMoved: v => Config.s.shadowDirection = Math.round(v) }
                 }
             }
             GroupLabel { text: "Fonts" }

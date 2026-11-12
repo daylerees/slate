@@ -73,7 +73,7 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: Config.ms(inPanel ? 100 : 160) } }
     // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
     // of it, so nothing shows through), kept within the room their window leaves round them
-    Shadow { visible: !card.inPanel && !Config.gameMode; blur: 14; dropY: 3; strength: Config.toastShadowShare }
+    Shadow { visible: Config.shadowsOn && !card.inPanel; strength: Config.toastShadowShare }
 
     // A thick band across the top that wraps round the corners and tapers down the sides:
     // the space between the card's outline and its rounded content area, set `band` lower.

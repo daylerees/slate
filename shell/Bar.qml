@@ -645,16 +645,23 @@ PanelWindow {
             Shadow {
                 readonly property real far: 8000
                 readonly property real r: Config.s.roundedScreenCorners ? bar.cornerRadius : 0
-                visible: !Config.gameMode && opacity > 0.01
+                visible: Config.shadowsOn && opacity > 0.01
                 opacity: bar.shadow
                 // (kept fainter than where Hyprland starts blurring behind the bar, which is
                 // lower when the bar's background is made clearer)
                 // (only with the bar's blur on: without it there's nothing to keep under)
                 strength: Config.barShadowShare
                 radius: 0
-                blur: 8
-                dropX: bar.vert ? (bar.atRight ? -3 : 3) : 0
-                dropY: bar.vert ? 0 : (bar.atBottom ? -3 : 3)
+                // Cast by the band's inner edge alone, as if it carried on past the screen's
+                // sides, reaching the distance further away from it: the flared corners curve
+                // down into the screen's sides, and a shadow cast by the whole shape wrapped round
+                // their ends and curled back in. This way it tucks under the curves and fades
+                // out where they meet the screen's edge (they still keep it from under themselves)
+                dropX: 0
+                dropY: 0
+                spread: Config.shadowSpread + Config.shadowDrop
+                castNormal: bar.vert ? Qt.point(bar.atRight ? -1 : 1, 0) : Qt.point(0, bar.atBottom ? -1 : 1)
+                castLine: bar.vert ? (bar.atRight ? bar.bgX : bar.barHeight) : (bar.atBottom ? bar.bgY : bar.barHeight)
                 holeRadius: r
                 hole: bar.vert
                     ? (bar.atRight ? Qt.rect(-far, 0, far + bar.cornerRadius, height) : Qt.rect(bar.barHeight, 0, far, height))

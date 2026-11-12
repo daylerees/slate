@@ -396,7 +396,7 @@ PanelWindow {
         visible: opacity > 0
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        Shadow { blur: 22; dropY: 4 }      // raised: Slate's shadow, with glass too
+        Shadow {}      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         MouseArea { anchors.fill: parent }       // (a click on the panel itself does nothing)
         // (Escape ends the arranging, as Done does)
@@ -666,7 +666,7 @@ PanelWindow {
         visible: opacity > 0
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        Shadow { blur: 22; dropY: 4 }
+        Shadow {}
         Gloss { radius: parent.radius; strength: 0.6 }
         MouseArea { anchors.fill: parent }
         // (Escape goes back to the arranging)
@@ -830,7 +830,7 @@ PanelWindow {
                                 opacity: prioRow.lit && !prioRow.isHeld ? 1 : 0
                                 Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                             }
-                            Shadow { visible: prioRow.isHeld; blur: 14; dropY: 3 }
+                            Shadow { visible: Config.shadowsOn && prioRow.isHeld }
                             Row {
                                 anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                                 spacing: 10
@@ -952,7 +952,7 @@ PanelWindow {
             radius: Config.corner(12)
             color: Config.tint("#1d222a")
             border.width: 1; border.color: Config.tint("#2a313c")
-            Shadow { blur: 18; dropY: 4 }
+            Shadow {}
             MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
             Column {
                 anchors { fill: parent; margins: 6 }
@@ -1044,7 +1044,7 @@ PanelWindow {
             // (pulled well off the bar: fading, as it's about to go back to the pool)
             opacity: Config.barLeaving ? 0.45 : 0.95
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-            Shadow { blur: 14; dropY: 3 }
+            Shadow {}
             Row {
                 id: floatRow
                 anchors.centerIn: parent

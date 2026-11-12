@@ -38,7 +38,7 @@ PanelWindow {
         opacity: note.fade
         scale: 0.96 + 0.04 * note.fade
         Gloss { radius: parent.radius }   // glass: a sheen (with its own bright edge)
-        Shadow { blur: 16; dropY: 3 }      // raised: Slate's shadow, with glass too
+        Shadow {}      // raised: Slate's shadow, with glass too
 
         Column {
             id: words

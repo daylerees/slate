@@ -1596,7 +1596,7 @@ ShellRoot {
                 radius: Config.corner(12)
                 color: win.bgColor
                 opacity: previewPop.fade
-                Shadow { blur: 18 }                // raised: Slate's shadow, with glass too
+                Shadow {}                // raised: Slate's shadow, with glass too
                 // Grows out of the icon as it fades in, and back into it as it fades out
                 transform: Scale {
                     origin.x: Math.max(0, Math.min(previewBox.width, previewPop.atX - previewBox.x))

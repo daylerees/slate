@@ -67,6 +67,12 @@ JsonAdapter {
     property bool iconTileColour: true        // the tile behind an icon in a deep shade of the icon's own colour (icons not filling their shape)
     property string folderColour: "default"    // file manager folders: default, auto (from the wallpaper) or a Papirus colour
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
+    property bool shadows: true               // shadows under everything raised: Slate's surfaces and floating windows (Settings → Appearance → Shadows)
+    property real shadowDarkness: 0.7         // how dark at their darkest, 0–1 (light mode: half that; glass: kept below where Hyprland blurs)
+    property real shadowSoftness: 2           // px of soft edge (0: hard)
+    property real shadowSpread: 0             // px the full darkness reaches past the surface
+    property real shadowDistance: 3           // px from the surface
+    property int shadowDirection: 0           // degrees the shadow falls, clockwise from straight down
     property bool roundedElements: true       // rounded corners on everything Slate draws, and on windows (off: all hard squares; app icons and workspace dots keep their own shapes)
     property int windowBorderSize: 3          // px, around windows on workspaces with more than one (0 = none)
     property int inactiveDim: 50              // %, how much windows without focus are dimmed (0 = off)

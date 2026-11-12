@@ -528,9 +528,24 @@ Singleton {
         const sat = toned ? Math.min(0.5, Math.max(0.2, t.hslSaturation * 0.6)) : 0.25;
         return Qt.hsla(hue, sat, 0.06, 1);
     }
+    // ---- Shadows: one look everywhere -----------------------------------------------------
+    // Every shadow in Slate (Shadow.qml, the few drawn by Qt's own effects, and Hyprland's under
+    // floating windows) takes its look from here, so they're all alike. Settings → Appearance →
+    // Shadows: on or off (and off in game mode), darkness, softness, spread, distance, direction
+    readonly property bool shadowsOn: s.shadows && !gameMode
+    readonly property real shadowReach: Math.max(0, Math.min(24, Number(s.shadowSoftness) || 0))   // px of soft edge
+    readonly property real shadowSpread: Math.max(0, Math.min(10, Number(s.shadowSpread) || 0))    // px of full darkness past the surface
+    readonly property real shadowDrop: Math.max(0, Math.min(16, Number(s.shadowDistance) || 0))    // px from the surface
+    // Which way it falls (degrees clockwise from straight down), as an offset: what most
+    // surfaces use. (A surface hanging off an edge, like a panel under the bar, falls away from
+    // its edge by shadowDrop instead)
+    readonly property real shadowAngle: (Number(s.shadowDirection) || 0) * Math.PI / 180
+    readonly property real shadowDX: Math.round(-Math.sin(shadowAngle) * shadowDrop * 10) / 10
+    readonly property real shadowDY: Math.round(Math.cos(shadowAngle) * shadowDrop * 10) / 10
+    readonly property real shadowEffectBlur: Math.min(1, shadowReach / 32)   // the same, for Qt's MultiEffect (of a blurMax of 32 px)
     // How dark at its darkest: softer in light mode, and on glass always below the point where
     // Hyprland blurs behind Slate's surfaces (glassCut), or the shadow would be blurred glass too
-    readonly property real shadowStrength: Math.min(s.lightMode ? 0.26 : 0.5, glass ? glassCut - 0.04 : 1)
+    readonly property real shadowStrength: Math.min(Math.max(0.05, Math.min(1, Number(s.shadowDarkness) || 0.7)) * (s.lightMode ? 0.5 : 1), glass ? glassCut - 0.04 : 1)
     // The same colour at a given strength, for the shades at the ends of scrolling lists
     // (more that way) and anything else that's a shadow drawn by hand
     function shade(alpha) { return Qt.rgba(shadowColour.r, shadowColour.g, shadowColour.b, alpha); }
@@ -802,7 +817,7 @@ Singleton {
             + glassRules
             + `SLATE_GLASS_V = 3`
             // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
-            + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${s.lightMode ? "48" : "78"})" } } })`
+            + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${Math.round(Math.max(0.05, Math.min(1, Number(s.shadowDarkness) || 0.7)) * (s.lightMode ? 0.5 : 1) * 255).toString(16).padStart(2, "0")})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
             // Rounded UI elements off: windows are square too. (Put back to the config's own
             // rounding, 10, only if Slate was what squared them)
@@ -811,6 +826,9 @@ Singleton {
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
             + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`
             + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "")
+            // Floating windows' shadows: Slate's look (shadowReach, shadowDrop, a hard falloff), or
+            // none (Settings → Appearance → Shadows, game mode)
+            + `; hl.config({ decoration = { shadow = { enabled = ${shadowsOn ? "true" : "false"}, range = ${Math.max(1, Math.round(shadowReach + shadowSpread))}, render_power = ${shadowReach <= 4 ? 4 : 3}, offset = { ${shadowDX}, ${shadowDY} } } } })`
             // Game mode: no blur or shadows behind anything, and every window fully opaque
             + (gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
             // ...terminals too, which draw their own see-through background (kitty's
@@ -1476,10 +1494,12 @@ Singleton {
         : Math.min(1, Math.max(0, toastGlassLow - 0.25) / Math.max(0.01, shadowStrength))
     readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
         : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
-    // ...and the bar's shadow, as a share of Slate's usual: darker than the rest (it's short,
-    // and has to show against the windows under the bar), but always under that threshold
-    readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1.4
-        : Math.min(1.4, Math.max(0, barGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
+    // ...and the bar's shadow: as dark as every other (Settings → Appearance → Shadows), but
+    // always just under where Hyprland starts blurring behind the bar (barGlassCut, which can be
+    // lower than the bar's own opacity suggests): over it, Hyprland blurred behind the darkest
+    // part of the shadow, a hard-edged band of blurred window under the bar
+    readonly property real barShadowShare: !glass || !s.barBlur || barArranging ? 1
+        : Math.min(1, Math.max(0, Math.min(barGlassOpacity - 0.25, barGlassCut - 0.04)) / Math.max(0.01, shadowStrength))
     // Hyprland's rule that blurs behind the layers named `match`, where they're more solid than
     // `cut` (Lua, for hyprPush): kept in the global `v`, with what it was made for beside it.
     // `wanted` false: made, but off (the dock with its Blur switched off)

@@ -134,19 +134,20 @@ Item {
         id: centre
         visible: ls.interactive
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -30
+        // (lifted by half of what the avatar's border added, so the password frame stays put)
+        anchors.verticalCenterOffset: -34
         spacing: 18
 
-        // Round avatar with a border
+        // Round avatar with a border (8 px round a 124 px picture)
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 132; height: 132; radius: Config.corner(66)
+            width: 140; height: 140; radius: Config.corner(70)
             color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+            layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
             GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: parent.radius }
             Rectangle {
-                anchors { fill: parent; margins: 4 }
+                anchors { fill: parent; margins: 8 }
                 radius: Config.corner(width / 2)
                 color: Config.raised(ls.field)
                 Text {
@@ -159,7 +160,7 @@ Item {
             }
             Image { id: avatarImg; source: ls.avatar ? "file://" + ls.avatar : ""; visible: false; asynchronous: true }
             RoundImage {
-                anchors { fill: parent; margins: 4 }
+                anchors { fill: parent; margins: 8 }
                 radius: Config.corner(width / 2)
                 visible: avatarImg.status === Image.Ready
                 source: avatarImg.source
@@ -175,7 +176,7 @@ Item {
             radius: Config.corner(18)
             color: Config.glass ? "transparent" : ls.frame
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+            layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
             GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: box.radius }
             transform: Translate { id: shakeX }
             SequentialAnimation {
@@ -304,7 +305,7 @@ Item {
         color: Config.glass ? "transparent" : fill
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         layer.enabled: true
-        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: 0.7; shadowVerticalOffset: 4; blurMax: 32 }
+        layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
         GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }
         Row {
             id: pillRow
@@ -326,7 +327,7 @@ Item {
         radius: Config.corner(16)
         color: Config.glass ? "transparent" : ls.frame
         layer.enabled: true
-        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 0.9; shadowVerticalOffset: 6; blurMax: 40 }
+        layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
         GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: m.radius }
         Column {
             id: menuCol

@@ -105,7 +105,7 @@ PanelWindow {
         Gloss { radius: parent.radius; strength: 0.6 }                // glass: a sheen, as on Slate's panels
         opacity: w.fade
         scale: fit * (0.96 + 0.04 * w.fade)
-        Shadow { blur: 30; dropY: 6 }      // raised: Slate's shadow, with glass too
+        Shadow {}      // raised: Slate's shadow, with glass too
 
         focus: w.shown
         Keys.onEscapePressed: w.finish()

@@ -166,7 +166,7 @@ Item {
             Behavior on y { enabled: !sw.carried; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Behavior on width { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
-            Shadow { visible: sw.carried; blur: 14; dropY: 3 }
+            Shadow { visible: Config.shadowsOn && sw.carried }
             Column {
                 anchors.centerIn: parent
                 width: parent.width - 12

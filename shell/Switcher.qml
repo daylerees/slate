@@ -252,7 +252,7 @@ PanelWindow {
         // Glass: a thin light rim
         border.width: Config.glassShine ? 1 : 0
         border.color: Config.glassEdge
-        Shadow { blur: 26; dropY: 5 }      // raised: Slate's shadow, with glass too
+        Shadow {}      // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent }
 
         // Keyboard, for when the keys reach us directly
