@@ -2841,7 +2841,7 @@ PanelWindow {
                         dnd: { name: "Do Not Disturb", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9, state: pop.notifs && pop.notifs.dnd ? "On" : "Off" },
                         perf: { name: "Performance", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45,
                                 state: PowerProfiles.profile === PowerProfile.Performance ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power Saver" : "Balanced" },
-                        aeroplane: { name: "Aeroplane Mode", label: "Aeroplane Mode", on: Config.s.aeroplaneMode, code: 0xEB6F, state: Config.s.aeroplaneMode ? "Wi-Fi and Bluetooth off" : "Off" },
+                        airplane: { name: "Airplane Mode", label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F, state: Config.s.airplaneMode ? "Wi-Fi and Bluetooth off" : "Off" },
                         gamemode: { name: "Game Mode", label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2, state: Config.s.gameMode ? "Effects off" : "Off" }
                     })
                     readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
@@ -2871,7 +2871,7 @@ PanelWindow {
                                 case "night": Config.s.nightLight = !Config.s.nightLight; break;
                                 case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
                                 case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
-                                case "aeroplane": Config.s.aeroplaneMode = !Config.s.aeroplaneMode; break;
+                                case "airplane": Config.s.airplaneMode = !Config.s.airplaneMode; break;
                                 case "gamemode": Config.setGameMode(!Config.s.gameMode); break;
                                 }
                             }

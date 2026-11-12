@@ -1241,7 +1241,7 @@ Singleton {
         { id: "night", label: "Night Light", icon: 0xEAF8 },
         { id: "dnd", label: "Do Not Disturb", icon: 0xECE9 },
         { id: "perf", label: "Performance", icon: 0xEC45 },
-        { id: "aeroplane", label: "Aeroplane Mode", icon: 0xEB6F },
+        { id: "airplane", label: "Airplane Mode", icon: 0xEB6F },
         { id: "gamemode", label: "Game Mode", icon: 0xF1D2 }
     ]
     readonly property int controlSwitchesMost: 8
