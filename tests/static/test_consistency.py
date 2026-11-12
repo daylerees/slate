@@ -390,6 +390,19 @@ class Shadows(Case):
                     bad.append(f"{f}:{n}")
         self.assertFalse(bad, "a Shadow with a look of its own: " + ", ".join(bad))
 
+    def test_every_setting_reaches_the_look(self):
+        """The five Shadows settings each reach Config's one look (and from there Shadow.qml,
+        Qt's effects and Hyprland), and the spread reaches the shader."""
+        config = slate.read("shell", "Config.qml")
+        for key in ("shadowDarkness", "shadowSoftness", "shadowSpread", "shadowDistance", "shadowDirection"):
+            with self.subTest(key):
+                self.assertIn(f"s.{key}", config, f"{key} isn't read anywhere in Config.qml")
+        shadow = slate.read("shell", "Shadow.qml")
+        for prop in ("Config.shadowReach", "Config.shadowSpread", "Config.shadowDX", "Config.shadowDY"):
+            self.assertIn(prop, shadow)
+        self.assertIn("spread", slate.read("shell", "shaders", "shadow.frag"))
+        self.assertRegex(config, r"shadow = \{ enabled = \$\{shadowsOn", "Hyprland's shadows don't follow the switch")
+
     def test_qt_shadows_follow_the_switch(self):
         """Qt's own shadows (MultiEffect, RectangularShadow) are off when Slate's are."""
         bad = []

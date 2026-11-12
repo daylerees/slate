@@ -56,6 +56,18 @@ class BarLayout(LiveCase):
                          [["control"], ["apps", "nova"], ["spaces", "windowmode", "workspaces"],
                           ["windowicon", "windowtitle"], "space"])
 
+    def test_an_old_layout_with_chalk_shows_nova(self):
+        """An arrangement saved before the assistant was renamed names its button "chalk": it's
+        read as Nova's (Config.barId), so the button stays where it was put."""
+        import json as _json
+        old = [{"items": ["control"]}, {"items": ["apps", "chalk"]}, {"items": ["spaces", "windowmode", "workspaces"]},
+               "space", {"items": ["clock"]}, {"items": ["power"]}]
+        self.do("load", _json.dumps(old))
+        self.s.settle(0.5)
+        boxes = [e["items"] for e in self.layout() if not isinstance(e, str)]
+        self.assertIn(["apps", "nova"], boxes, boxes)
+        self.assertNotIn("chalk", [i for b in boxes for i in b])
+
     def test_an_item_joins_a_container(self):
         to = self.where("clock")
         self.do("moveItem", "wifi", to, 0)

@@ -127,6 +127,8 @@ ShellRoot {
             if (what === "start") Config.barArranging = true;
             else if (what === "done") Config.barArranging = false;
             else if (what === "reset") Config.barReset();
+            // (an arrangement as saved, JSON: one from an older Slate, say)
+            else if (what === "load") Config.s.barLayout = JSON.parse(a);
             else if (what === "moveItem") Config.barMoveItem(a, n(b), n(c));
             else if (what === "moveEntry") Config.barMoveEntry(n(a), n(b));
             else if (what === "moveTuck") Config.barMoveTuck(n(a), n(b), n(c));

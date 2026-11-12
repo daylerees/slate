@@ -1,6 +1,7 @@
 """Things Slate adapts to: the hardware a computer has (or hasn't), how dates are written, and
 whether anything is rounded."""
 import json
+import os
 
 from live import LiveCase
 
@@ -107,3 +108,48 @@ class Shadows(LiveCase):
         self.assertTrue(self.until(0), "Hyprland kept its shadows with Shadows off")
         self.config("shadows", "true")
         self.assertTrue(self.until(1), "Hyprland's shadows didn't come back")
+
+
+class HyprlandGetsSettings(LiveCase):
+    """Settings that Slate hands to Hyprland's own config (slateApply in slate.lua)."""
+    def lua(self, name):
+        """A global of Hyprland's Lua config, as it is now."""
+        out = os.path.join(self.s.h.runtime, "lua-value")
+        if os.path.exists(out):
+            os.remove(out)
+        self.s.hyprctl("dispatch", f'function() local f = io.open("{out}", "w"); f:write(tostring({name})); f:close() end')
+        for _ in range(20):
+            if os.path.exists(out):
+                return open(out).read()
+            self.s.settle(0.1)
+        self.fail(f"couldn't read {name} from Hyprland")
+
+    def until(self, name, want):
+        for _ in range(40):
+            if self.lua(name) == want:
+                return True
+            self.s.settle(0.2)
+        return False
+
+    def test_default_file_manager(self):
+        """Bug, 2026-11-12: Slate handed the default apps to Hyprland before the apps' entries
+        had loaded, so FILE_MANAGER stayed Hyprland's first guess. It's the chosen app's now,
+        and still after Hyprland reloads its config."""
+        self.keep_setting("defaultFileManager")
+        self.config("defaultFileManager", "foot")
+        self.assertTrue(self.until("FILE_MANAGER", "foot"), f"FILE_MANAGER is {self.lua('FILE_MANAGER')!r}")
+        self.s.hyprctl("reload")
+        self.s.settle(1.5)
+        self.assertTrue(self.until("FILE_MANAGER", "foot"), "FILE_MANAGER was lost when Hyprland reloaded")
+
+    def test_pointer_style(self):
+        """Settings → Input → Pointer style: Hyprland's cursor theme follows, and "" brings back
+        the session's own."""
+        self.keep_setting("cursorTheme")
+        self.config("cursorTheme", "")
+        self.s.settle(1.0)
+        own = self.lua("CURSOR_THEME")
+        self.config("cursorTheme", "Adwaita")
+        self.assertTrue(self.until("CURSOR_THEME", "Adwaita"), f"CURSOR_THEME is {self.lua('CURSOR_THEME')!r}")
+        self.config("cursorTheme", "")
+        self.assertTrue(self.until("CURSOR_THEME", own), "the session's own pointer didn't come back")

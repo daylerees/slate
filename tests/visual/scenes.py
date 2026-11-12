@@ -292,3 +292,26 @@ SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
 
 # The launcher's scrollbar: its length follows how many apps have loaded so far
 SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]
+
+# The camera: the note as an app starts using it, and the bar's camera item (off to start with)
+# lit while it's on (a test hook stands in for camera-watch.py)
+SCENES["osd-camera"] = {
+    "do": [("test", "camera", "true", "Firefox")],
+    "wait": lambda st: st["osd"]["shown"] and st["osd"]["mode"] == "note",
+    "settle": 0.4, "undo": [("test", "camera", "false", "")],
+}
+SCENES["bar-camera"] = {
+    "settings": {"barShowCamera": "true"},
+    "do": [("test", "camera", "true", "Firefox")],
+    "wait": lambda st: not st["osd"]["shown"],
+    "settle": 0.6, "undo": [("test", "camera", "false", "")],
+}
+# Private Mode on: the Sound page says so (the microphone held muted) and the Webcam page
+# shows only the note in place of the camera's settings
+for _p in ("sound", "webcam"):
+    SCENES[f"settings-{_p}-private"] = {
+        "settings": {"privateMode": "true"},
+        "do": [("settings", "page", _p)],
+        "wait": lambda st, _p=_p: st["settings"]["open"] and st["settings"]["section"] == _p,
+        "settle": 1.2, "undo": [("settings", "close")],
+    }

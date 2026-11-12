@@ -184,3 +184,25 @@ class TitleBars(LiveCase):
                 break
             self.s.settle(0.1)
         self.assertEqual(follow(), 1, "the setting didn't apply again")
+
+    def test_dropped_window_goes_back_under_the_bar(self):
+        """A floating window dropped with its top above the menu bar slides back below it, its
+        title bar in view (slateKeepUnderBar, run as the mouse button is let go)."""
+        self.config("titleBarStyle", "slate")
+        self.config("windowMode", "floating")
+        self.s.settle(1.0)
+        w = self.foot()
+        self.s.settle(0.8)
+        addr = w["address"]
+        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.window.move({{ x = 200, y = 0, window = 'address:{addr}' }})) end")
+        self.s.settle(0.5)
+        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr.replace('0x', '')}') end")
+        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr}') end")
+        self.s.settle(0.8)
+        mon = self.s.hyprctl("monitors", json_out=True)[0]
+        top = mon["reserved"][1]                     # (the bar's height, reserved at the top)
+        y = next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == addr)["at"][1]
+        self.assertGreater(top, 0)
+        self.assertGreaterEqual(y, top + 20, f"the window's top is at {y}, under the bar (bottom {top}) and its title bar")
+        # (and somewhere you can drag it: not pushed past the bottom)
+        self.assertLess(y, mon["height"] / mon["scale"] - 40)
