@@ -135,6 +135,23 @@ function noteWorkspaceSwitch()
                            { timeout = math.floor(sp(5) * 100 + 60), type = "oneshot" })
 end
 
+-- The arriving workspace is drawn on top. Hyprland draws windows in the order they were opened
+-- (the focused one last), not workspace by workspace, and the workspace left behind stays solid
+-- under the one coming in. So a window opened later on the workspace being left was drawn over the
+-- arriving ones opened before it: of two windows side by side, one slid in and the other only
+-- showed once the switch was over. As each switch starts (however it's made: shortcuts, the bar's
+-- dots, the overview), the arriving workspace's windows are raised, in the order they're in, so
+-- they keep it among themselves
+hl.on("workspace.active", function()
+    local ws = hl.get_active_workspace()
+    if not ws then return end
+    for _, w in ipairs(hl.get_windows()) do
+        if w.mapped and w.workspace and w.workspace.id == ws.id then
+            hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = "address:" .. w.address }))
+        end
+    end
+end)
+
 -- slideAwayTo(dispatcher): to an empty workspace, the windows slide away in the direction of
 -- travel. (With Slide Fade the new workspace slides in over the old, which fades underneath;
 -- with nothing coming in, the windows would just fade out where they are.) The other styles

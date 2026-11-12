@@ -2,7 +2,6 @@
 workspace leaving and the one arriving, and windows are square while they move."""
 import os
 import tempfile
-import unittest
 
 from PIL import Image
 
@@ -124,7 +123,7 @@ class SplitSlides(switching.SwitcherAnimations):
     test_window_switcher_every_move_and_pick = None
     test_overview_grid_arrows = None
 
-    COLOURS = {"left": (230, 30, 30), "right": (30, 200, 60), "alone": (40, 90, 230)}
+    COLOURS = {"left": (230, 30, 30), "right": (30, 200, 60), "alone": (220, 200, 40)}
     ALPHA = {}
 
     def coloured(self, ws, name):
@@ -152,23 +151,16 @@ class SplitSlides(switching.SwitcherAnimations):
                 hits += 1
         return hits
 
-    def slide(self, frm, to):
+    def slide(self, frm, to, how="keys"):
         self.go_to_workspace(frm)
         self.s.settle(1.0)
-        a = {}
-        leaf = None
-        for line in self.s.hyprctl("animations").splitlines():
-            line = line.strip()
-            if line.startswith("name:"):
-                leaf = line.split(":", 1)[1].strip(); a[leaf] = {}
-            elif leaf and ":" in line:
-                k, v = line.split(":", 1); a[leaf][k.strip()] = v.strip()
-        slow = lambda leaf: ('hl.animation({ leaf = "%s", enabled = true, speed = %s, bezier = "%s", style = "%s" })'
-                             % (leaf, float(a[leaf]["speed"]) * 10, a[leaf]["bezier"], a[leaf]["style"]))
-        self.s.hyprctl("eval", "hl.config({ animations = { enabled = true } }); " + slow("workspacesIn") + "; " + slow("workspacesOut"))
+        self.s.hyprctl("eval", 'hl.config({ animations = { enabled = true } }); SLATE_ANIM_SLOW = 10; setWorkspaceAnimation("slidefade")')
         self.s.settle(0.3)
         d = tempfile.mkdtemp()
-        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {to} }})) end")
+        if how == "keys":     # as Super+Left/Right do it: with the windows squared for the slide, and so on
+            self.s.hyprctl("dispatch", f"function() cycleWorkspace({1 if to > frm else -1}) end")
+        else:                 # straight there, as the number keys and the bar's dots do
+            self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {to} }})) end")
         shots = []
         for i in range(3):
             self.s.settle(0.7)
@@ -176,22 +168,21 @@ class SplitSlides(switching.SwitcherAnimations):
         self.s.settle(3.0)
         return shots
 
-    # Known, being fixed (2026-11-12): from the right (3 to 2), the arriving left window isn't
-    # there at all partway through
-    @unittest.expectedFailure
     def test_both_windows_slide_in(self):
-        self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); setWorkspaceAnimation("slidefade")'))
+        self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); SLATE_ANIM_SLOW = nil; setWorkspaceAnimation("slidefade")'))
+        self.keep_setting("glass")
+        self.config("glass", "true")
         self.close_windows()
         self.coloured(1, "alone")
         self.coloured(2, "left")
         self.coloured(2, "right")
         self.s.settle(1.5)
-        for frm, to in ((1, 2), (3, 2)):
-            if frm == 3:
-                self.coloured(3, "alone")
-                self.s.settle(1.0)
-            with self.subTest(f"{frm} to {to}"):
-                shots = self.slide(frm, to)
+        # (3's window is opened last, so it's newer than both arriving ones: the case that went wrong)
+        self.coloured(3, "alone")
+        self.s.settle(1.0)
+        for frm, to, how in ((1, 2, "keys"), (3, 2, "keys"), (3, 2, "straight")):
+            with self.subTest(f"{frm} to {to} ({how})"):
+                shots = self.slide(frm, to, how)
                 mid = shots[1]
                 left, right = self.share(mid, self.COLOURS["left"]), self.share(mid, self.COLOURS["right"])
                 if not (left and right):
