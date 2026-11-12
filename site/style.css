@@ -145,20 +145,23 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
 /* Spaces: four 5.5px squares, 2px apart */
 .bar-demo .quad { display: grid; grid-template-columns: 5.5px 5.5px; gap: 2px; }
 .bar-demo .quad i { display: block; width: 5.5px; height: 5.5px; border-radius: 1.5px; }
-/* The workspace's window mode (in the accent) and a line, before the dots */
-.bar-demo .ws .mode { font-size: 17px; margin: 0 -1px 0 -2px; }
-.bar-demo .ws b { width: 1px; height: 13.5px; margin: 0 2px; }
+/* A container of several things: each 35 px wide, short lines between them */
+.bar-demo .group { padding: 0; }
+.bar-demo .group .item { display: grid; place-items: center; width: 35px; height: 27px; }
+.bar-demo .group b { width: 1px; height: 13.5px; }
+.bar-demo .nova { font-size: 15px; }
+.bar-demo .ws .mode { font-size: 17px; }
 /* Workspace dots: 14px rounded squares, 5px apart; the active one in the accent */
-.bar-demo .ws { gap: 5px; padding: 0 8px; }
-.bar-demo .ws span { width: 14px; height: 14px; border-radius: 3.9px; }
-/* The focused window's app, on its tile, then its title */
-.bar-demo .app { width: 27px; }
+.bar-demo .ws .dots { display: flex; gap: 5px; padding: 0 9px 0 9px; }
+.bar-demo .ws .dots span { width: 14px; height: 14px; border-radius: 3.9px; }
+/* The focused window's app, on its tile, then its title, in one container */
+.bar-demo .app { gap: 7px; padding: 0 10px 0 4px; }
 .bar-demo .tile {
   display: grid; place-items: center;
   width: 21px; height: 21px; border-radius: 4.7px;
 }
 .bar-demo .tile .ti { font-size: 14px; }
-.bar-demo .title { padding: 0 4px; white-space: nowrap; }
+.bar-demo .title { white-space: nowrap; }
 .bar-demo .spacer { flex: 1; }
 .bar-demo .tray { gap: 2px; padding: 0 5px; }
 .bar-demo .tray .ti { display: grid; place-items: center; width: 26px; height: 22px; font-size: 18px; }
@@ -251,13 +254,16 @@ h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
   -webkit-mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
   mask: linear-gradient(to bottom, #000 0%, #000 20%, transparent 45%);
 }
-.bar-demo .burger i { background: var(--d-ink); }
-.bar-demo .quad i { background: var(--d-ink); }
-.bar-demo .ws .mode { color: var(--d-accent); }
-.bar-demo .ws b { background: var(--d-sep); }
-.bar-demo .ws span { background: var(--d-empty); }
-.bar-demo .ws span.occ { background: var(--d-occ); }
-.bar-demo .ws span.on {
+/* The Colourful look's pastels (Config.qml: appsPastels, spacesPastels, statusPastels, the
+   Assistant page's colour) */
+.bar-demo .burger i { background: #e8a6c8; }
+.bar-demo .nova { color: #b9a6e8; }
+.bar-demo .quad i { background: #8fb3e8; }
+.bar-demo .ws .mode { color: #9ed6b4; }
+.bar-demo .group b { background: var(--d-sep); }
+.bar-demo .ws .dots span { background: var(--d-empty); }
+.bar-demo .ws .dots span.occ { background: var(--d-occ); }
+.bar-demo .ws .dots span.on {
   background-color: var(--d-accent);
   /* Glass: the sheen a coloured fill gets (Gloss.qml on the workspace marker): a strong shine
      over the top half, mostly white with a hint of the accent, a soft shade along the bottom,

@@ -9,7 +9,7 @@
 <meta property="og:description" content="Aesthetically pleasing yet understated, opinionated yet configurable, desktop environment for Linux.">
 <meta property="og:image" content="assets/icon.png">
 <link rel="icon" href="assets/icon.png">
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
 
@@ -56,16 +56,21 @@
         <path class="mark-accent" d="M3.3 4.1 L14.7 4.1" stroke="#8fb3e8" stroke-width="2.4" stroke-linecap="round"/>
       </svg>
     </div>
-    <!-- Apps: three soft rounded bars -->
-    <div class="cap btn apps"><span class="burger"><i></i><i></i><i></i></span></div>
-    <!-- Spaces: four small squares -->
-    <div class="cap btn spaces"><span class="quad"><i></i><i></i><i></i><i></i></span></div>
-    <!-- Workspaces: this workspace's window mode (tiling), a line, then the dots: occupied,
-         active (accent), occupied, empty -->
-    <div class="cap ws"><i class="ti mode">&#xEF94;</i><b></b><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></div>
-    <!-- The focused window: its app tile, then its title -->
-    <div class="cap app"><span class="tile"><i class="ti">&#xEBEF;</i></span></div>
-    <div class="title">Terminal</div>
+    <!-- Apps and Nova, in one container: Apps' three soft rounded bars (a pink pastel, as the
+         Colourful look draws it) and Nova's spark (lilac), a line between -->
+    <div class="cap group">
+      <span class="item"><span class="burger"><i></i><i></i><i></i></span></span><b></b>
+      <span class="item"><i class="ti nova">&#xF014;</i></span>
+    </div>
+    <!-- Spaces (four small squares, blue), this workspace's window mode (tiling, mint), then the
+         dots: occupied, active (accent), occupied, empty -->
+    <div class="cap group ws">
+      <span class="item"><span class="quad"><i></i><i></i><i></i><i></i></span></span><b></b>
+      <span class="item"><i class="ti mode">&#xEF94;</i></span><b></b>
+      <span class="dots"><span class="occ"></span><span class="on"></span><span class="occ"></span><span></span></span>
+    </div>
+    <!-- The focused window: its app tile and its title, together -->
+    <div class="cap group app"><span class="tile"><i class="ti">&#xEBEF;</i></span><span class="title">Terminal</span></div>
     <div class="spacer"></div>
     <!-- Tray -->
     <div class="cap tray"><i class="ti">&#xEA76;</i><i class="ti">&#xEAFC;</i></div>
