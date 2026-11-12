@@ -97,7 +97,8 @@ you add a window, a helper process or anything that reads a position from Hyprla
 ## Tests
 
 `tests/run` (docs/TESTING.md) runs every test in a container, so nothing touches the desktop.
-`tests/run -q` prints only failures and a summary line.
+`tests/run -q` prints only failures and a summary line. It runs in parts side by side
+(`--jobs`, docs/TESTING.md): a full run is five to eight minutes.
 
 - **While features are being shaped, don't run the tests.** Lint the QML you touched
   (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple"`), install, reload and

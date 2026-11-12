@@ -20,7 +20,7 @@ Written 2026-11-11, rewritten 2026-11-12 after the first parallel run.
 - **Sessions side by side don't slow each other much** on this 8-core machine: the files'
   times added up to about the same with four at once as one after another.
 
-## Done (not yet committed)
+## Done
 
 `tests/run` runs in parts: static and unit in one container, and the live and visual files
 shared out over `--jobs` containers, each with its own session (`tests/lib/parallel.py`; the
@@ -28,19 +28,23 @@ runner's `--only` and `--part`). Files are never split. They're shared out by ho
 took last time (`tests/out/durations.json`). Default: half the processors, four at most; one
 on CI, when re-shooting screenshots, and for static/unit alone.
 
-First full run, four at once, with nothing known about durations: **7 min 58 s** (24 before),
-3881 of 3883 passing. With the durations it left behind, the parts should even out at about
-five and a half minutes.
+| Run | Time | Result |
+|---|---|---|
+| One after another (before) | about 24 min | |
+| Four at once, nothing known about durations | 7 min 58 s | 3881 of 3883 |
+| Four at once, shared out by the first run's durations | 5 min 42 s | 3883 of 3883 |
 
-Open from that run:
+The four parts of the second run finished within 26 seconds of each other. (3883, where the
+release run counted 3943: the 60 are the switcher checks that were collected twice until the
+last commit of v0.28.0, 36 + 24 of them.)
 
-- `live/settings › back_on_its_page_after_a_reload` timed out (Settings wasn't back 14 seconds
-  after a reload). Passes on its own. Either the reload is slow with four sessions drawing, or
-  it's a real race: find out with repeated runs under load, don't just lengthen the wait.
-- The run counted 3883 checks, the last release run 3943. Find the 60 before trusting it (most
-  likely the duplicate collection fixed late in the v0.28.0 cycle; confirm with `--jobs 1`).
-- `unit/runner_latest` failed because a static-only run went through the parallel path; such
-  runs now take the old path. Fixed, passing.
+Still open:
+
+- `live/settings › back_on_its_page_after_a_reload` timed out once in the first run (Settings
+  wasn't back 14 seconds after a reload) and passed in the second, and on its own. Either the
+  reload is slow with four sessions drawing, or it's a real race: find out with repeated runs
+  under load (`--repeat`, below), don't just lengthen the wait.
+- A third run, and `--jobs 6`, not tried yet.
 
 ## Next, in order
 
@@ -48,7 +52,7 @@ Times are how long the building takes me; what really takes time is in the last 
 
 | # | What | Build | What takes the time |
 |---|---|---|---|
-| 1 | Finish parallel running: the two open points above, a second and third full run, try `--jobs 6`, unit tests for `parallel.py` (sharing out, a part that dies, the summary), `docs/TESTING.md`, CLAUDE.md | 30 min | three full runs, about 6 min each |
+| 1 | Finish parallel running: a third full run, try `--jobs 6`, the Settings reload test | 10 min | two full runs, about 6 min each |
 | 2 | **No per-boot `modprobe`.** `tests/run` says how to make it permanent when the module's missing: `echo vkms \| sudo tee /etc/modules-load.d/slate-tests.conf` (once, ever). In `docs/TESTING.md` too | 5 min | Dayle running one command |
 | 3 | **`tests/run --failed`**: run again only what failed last time (the runner keeps the names in `tests/out/failed.txt`), in parallel | 15 min | one small run |
 | 4 | **The short path after a late fix**, in CLAUDE.md → Releases: after one clean full run, a fix to one area needs that area's tests plus static and unit, not another full run | 5 min | nothing |

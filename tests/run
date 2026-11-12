@@ -7,6 +7,8 @@
 #   tests/run --tier static,unit   just these tiers (static, unit, live, visual, all)
 #   tests/run --no-container       static + unit straight on this machine (fast)
 #   tests/run --filter dock        only tests whose name contains "dock"
+#   tests/run --jobs 3             how many Slate sessions run side by side (default: half
+#                                  this machine's processors, 4 at most; 1 = one after another)
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
 #                                  (once a day: run again the same day, it shows that result)
 #   tests/run --deps latest --fresh   run it again anyway
@@ -22,7 +24,7 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
-tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0
+tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""
 pass=()
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -34,6 +36,8 @@ while [ $# -gt 0 ]; do
         --filter) pass+=(--filter "$2"); filtered=1; shift ;;
         --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
         --fresh) fresh=1 ;;
+        --jobs) jobs=$2; shift ;;
+        --jobs=*) jobs=${1#*=} ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
         --approve) shift; exec python3 "$ROOT/tests/visual/approve.py" "$@" ;;
         --update-baselines)
@@ -44,6 +48,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+case "$jobs" in ""|[1-9]|[1-9][0-9]) ;; *) echo "tests/run: --jobs is a number, 1 or more" >&2; exit 2 ;; esac
 case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest" >&2; exit 2 ;; esac
 if [ "$updating" = 1 ]; then
     [ "$tier" = all ] && tier=visual
@@ -123,12 +128,30 @@ if [ "$updating" = 1 ]; then
 fi
 status=0
 [ -n "$cache" ] && exec 3>&1 && exec > >(tee "$cache.part" >&3)
-docker run --rm --init --hostname slate-test \
-    -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
-    -e SLATE_UPDATE_BASELINES="${SLATE_UPDATE_BASELINES:-}" \
-    -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -w /slate \
-    "${run_args[@]+"${run_args[@]}"}" \
-    "$image" python3 /slate/tests/lib/runner.py --tier "$tier" --label "$label" "${pass[@]+"${pass[@]}"}" || status=$?
+# How many sessions at once: half the processors (each session draws in software, which is
+# heavy on them), four at most. One after another on CI, and when re-shooting screenshots
+if [ -z "$jobs" ]; then
+    jobs=$(( $(nproc 2>/dev/null || echo 2) / 2 ))
+    [ "$jobs" -gt 4 ] && jobs=4
+    [ "$jobs" -lt 1 ] && jobs=1
+    [ -n "${CI:-}" ] && jobs=1
+fi
+[ "$updating" = 1 ] && jobs=1
+# (static and unit are one part however many jobs there are, so they run as they always did)
+case ",$tier," in *,live,*|*,visual,*|*,all,*) ;; *) jobs=1 ;; esac
+runner=(docker run --rm --init --hostname slate-test
+    -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)"
+    -e SLATE_UPDATE_BASELINES="${SLATE_UPDATE_BASELINES:-}"
+    -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -w /slate
+    "${run_args[@]+"${run_args[@]}"}"
+    "$image" python3 /slate/tests/lib/runner.py)
+if [ "$jobs" = 1 ]; then
+    "${runner[@]}" --tier "$tier" --label "$label" "${pass[@]+"${pass[@]}"}" || status=$?
+else
+    # Side by side: tests/lib/parallel.py starts a container per part and adds up the results
+    SLATE_TEST_OUT="$OUT" python3 "$ROOT/tests/lib/parallel.py" --jobs "$jobs" --tier "$tier" --label "$label" \
+        "${pass[@]+"${pass[@]}"}" -- "${runner[@]}" || status=$?
+fi
 if [ -n "$cache" ]; then
     exec >&3 3>&-; wait $! 2>/dev/null || true
     { echo "$(date +%F) $status"; cat "$cache.part"; } > "$cache"; rm -f "$cache.part"

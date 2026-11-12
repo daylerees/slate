@@ -13,9 +13,9 @@ tests/run -q           # only failures, and one summary line: PASS 1010/1010 or 
 | Tier | Time | What |
 |---|---|---|
 | `static` | seconds | every QML file lints (`qmllint`: syntax errors, missing types and imports); Lua, Python and shell scripts parse (`shellcheck` errors too); Slate's Hyprland config loads (`Hyprland --verify-config`, with and without your own files); the login screen's file list matches its code and it loads; things that must agree do (every `Config.s.<key>` is a setting, every Settings page has a page, `pageKeys`, `KEEP` in `install.sh` and `update.py`, package lists, the site's links, shaders built from their sources, no other shells named) |
-| `unit` | seconds | every script in `shell/scripts` (and `install.sh --help`, `slate-greeter-sync`), in a scratch home with fake `hyprctl`, `nmcli`, `lpstat`… (`tests/lib/stubs.py`) |
-| `live` | ~2 min | a real Hyprland and Slate, headless: it loads and reloads without errors; every bar panel, Settings page and full-screen part opens and closes; every setting changes and changes back; the dock's slots, badges and Waste Basket; game mode; a small (853×480) screen; the login screen logging in through a fake greetd. After every test, Slate's log must have no new errors (`Binding loop`, `TypeError`…) |
-| `visual` | ~2 min | screenshots of ~60 scenes (`tests/visual/scenes.py`: the bar in each look, every panel and Settings page, the launcher, lock screen, dock menus…) compared with the approved ones in `tests/visual/baselines/` |
+| `unit` | ~2 min | every script in `shell/scripts` (and `install.sh --help`, `slate-greeter-sync`), in a scratch home with fake `hyprctl`, `nmcli`, `lpstat`… (`tests/lib/stubs.py`) |
+| `live` | most of a run | a real Hyprland and Slate, headless: it loads and reloads without errors; every bar panel, Settings page and full-screen part opens and closes; every setting changes and changes back; the dock's slots, badges and Waste Basket; game mode; a small (853×480) screen; the login screen logging in through a fake greetd. After every test, Slate's log must have no new errors (`Binding loop`, `TypeError`…) |
+| `visual` | ~3 min | screenshots of ~100 scenes (`tests/visual/scenes.py`: the bar in each look, every panel and Settings page, the launcher, lock screen, dock menus…) compared with the approved ones in `tests/visual/baselines/` |
 
 The exit code is 0 only when everything ran and passed.
 
@@ -25,6 +25,7 @@ The exit code is 0 only when everything ran and passed.
 tests/run --tier static,unit        # just these tiers (static, unit, live, visual, all)
 tests/run --no-container            # static + unit straight on this machine (fast; no Docker)
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
+tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
 tests/run --deps latest             # today's Arch packages instead of the pinned snapshot (once a day)
@@ -34,6 +35,26 @@ tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, 
 
 Logs, failed screenshots and their diffs go in `tests/out/` (not committed): a failure line
 names the file to look at.
+
+## Side by side
+
+A run is split into parts that go at the same time, each in a container of its own: `static`
+and `unit` are one part, and the `live` and `visual` test files are shared out over several
+more, each with its own Hyprland and Slate. A whole run is about five to eight minutes this
+way on an 8-core machine, where one after another it's about 24.
+
+- `--jobs N` says how many sessions: by default half the machine's processors, four at most
+  (each session draws in software, which is heavy on them). On CI, and when re-shooting
+  screenshots, it's one.
+- A file is never split, so its tests keep their order; which files share a session changes
+  from run to run. They're shared out by how long each took last time
+  (`tests/out/durations.json`), so the parts finish together.
+- Failures print as they happen, from whichever part; the tier lines and the summary add all
+  the parts up. Each session's logs are in `tests/out/live/<part>/`.
+- A test that only fails side by side has found something (a race, or something left behind
+  by another file): `--jobs 1` runs the old way for comparing, but isn't the fix.
+
+The code is `tests/lib/parallel.py`, which starts `tests/lib/runner.py` once per part.
 
 ## The live and visual tiers need vkms
 
@@ -47,7 +68,8 @@ sudo modprobe vkms
 It isn't used as a screen: Hyprland draws in software (llvmpipe) to a headless output inside
 the container, which is why screenshots are the same on every machine. Your own Hyprland may
 notice the virtual card appear; it doesn't put anything on it. `sudo modprobe -r vkms` takes
-it away again. GitHub's runners load it the same way.
+it away again. GitHub's runners load it the same way. One card is enough for every session
+of a run: none of them needs it to itself.
 
 ## When a screenshot changes
 

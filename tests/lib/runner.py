@@ -11,6 +11,10 @@ check, so "every QML file lints" is one check per file. Output:
     -v        every check, passes included
     --json    one JSON object per failure, then {"summary": …}
 Exit code 0 only when everything that ran passed (skips are reported, and don't fail).
+
+tests/lib/parallel.py runs several of these side by side, each with some of the test files
+(--only) and a name (--part): a part prints its failures as they happen and leaves its
+totals in tests/out/parts/<name>.json for parallel.py to add up.
 """
 import argparse
 import importlib.util
@@ -65,6 +69,7 @@ class Result(unittest.TestResult):
         self.skipped_names = []
         self._had_sub = set()
         self._t0 = {}
+        self.seconds = {}           # "live/test_dock" → how long its tests took
 
     def _fail(self, name, err):
         line, full = reason(err)
@@ -91,6 +96,14 @@ class Result(unittest.TestResult):
     def startTest(self, test):
         super().startTest(test)
         self._t0[test.id()] = time.monotonic()
+
+    def stopTest(self, test):
+        super().stopTest(test)
+        t0 = self._t0.pop(test.id(), None)
+        parts = test.id().split(".")
+        if t0 is not None and len(parts) > 2:
+            unit = f"{parts[1]}/{parts[2]}"
+            self.seconds[unit] = self.seconds.get(unit, 0) + time.monotonic() - t0
 
     def addSubTest(self, test, subtest, err):
         super().addSubTest(test, subtest, err)
@@ -138,8 +151,9 @@ class Result(unittest.TestResult):
         return self.passed + len(self.failed)
 
 
-def load_tier(tier):
-    """A suite of every tests/<tier>/test_*.py."""
+def load_tier(tier, only=None):
+    """A suite of every tests/<tier>/test_*.py (or just the files in `only`, as
+    "<tier>/test_<file>")."""
     d = os.path.join(slate.TESTS, tier)
     suite = unittest.TestSuite()
     if not os.path.isdir(d):
@@ -147,6 +161,8 @@ def load_tier(tier):
     sys.path.insert(0, d)
     for f in sorted(os.listdir(d)):
         if not (f.startswith("test_") and f.endswith(".py")):
+            continue
+        if only is not None and f"{tier}/{f[:-3]}" not in only:
             continue
         modname = f"tests.{tier}.{f[:-3]}"
         spec = importlib.util.spec_from_file_location(modname, os.path.join(d, f))
@@ -187,6 +203,19 @@ def filtered(suite, text):
     return keep
 
 
+def remember_seconds(seconds):
+    """How long each file took, kept for next time: a parallel run shares the files out by it."""
+    path = os.path.join(slate.OUT, "durations.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            known = json.load(f)
+    except (OSError, ValueError):
+        known = {}
+    known.update(seconds)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(known, f, indent=1, sort_keys=True)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Run Slate's tests")
     ap.add_argument("--tier", default="static,unit", help="static, unit, live, visual, all (comma list)")
@@ -195,7 +224,12 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--filter", default="")
     ap.add_argument("--label", default="", help="added to the summary line, e.g. [latest deps]")
+    ap.add_argument("--only", default="", help="just these files: live/test_dock,visual/test_visual (comma list)")
+    ap.add_argument("--part", default="", help="one part of a parallel run (tests/lib/parallel.py): its name")
     a = ap.parse_args(argv)
+    only = {u.strip() for u in a.only.split(",") if u.strip()} or None
+    if a.part:
+        os.environ["SLATE_TEST_PART"] = a.part      # (a session keeps its logs under this name)
 
     tiers = TIERS if a.tier == "all" else [t.strip() for t in a.tier.split(",") if t.strip()]
     bad = [t for t in tiers if t not in TIERS]
@@ -207,8 +241,11 @@ def main(argv=None):
     out = sys.stdout
     result = Result(mode, out)
     t0 = time.monotonic()
+    per_tier = {}
     for tier in tiers:
-        suite = load_tier(tier)
+        if only is not None and not any(u.startswith(tier + "/") for u in only):
+            continue
+        suite = load_tier(tier, only)
         if a.filter:
             suite = filtered(suite, a.filter)
         n_before, f_before = result.total, len(result.failed)
@@ -220,14 +257,26 @@ def main(argv=None):
             suite.run(result)
         finally:
             sys.stdout, sys.stderr = real_out, real_err
-        if mode == "normal":
-            ran = result.total - n_before
-            failed = len(result.failed) - f_before
+        ran = result.total - n_before
+        failed = len(result.failed) - f_before
+        per_tier[tier] = {"ran": ran, "failed": failed, "seconds": round(time.monotonic() - tt, 1)}
+        if mode == "normal" and not a.part:
             out.write(f"{tier:7} {ran - failed}/{ran} passed ({time.monotonic() - tt:.1f}s)\n")
 
     took = time.monotonic() - t0
     label = f" {a.label}" if a.label else ""
     skips = len(result.skipped_names)
+    seconds = {u: round(t, 1) for u, t in result.seconds.items()}
+    if a.part:
+        d = os.path.join(slate.OUT, "parts")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, a.part + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"passed": result.passed, "failed": len(result.failed), "seconds": round(took, 1),
+                       "skipped": result.skipped_names, "tiers": per_tier, "files": seconds}, f)
+        out.flush()
+        return 1 if result.failed else 0
+    if not a.filter and only is None:
+        remember_seconds(seconds)
     if mode == "json":
         out.write(json.dumps({"summary": {"passed": result.passed, "failed": len(result.failed),
                                           "total": result.total, "skipped": skips, "seconds": round(took, 1),

@@ -95,7 +95,8 @@ class Session:
     def __init__(self, width=WIDTH, height=HEIGHT, settings=None):
         self.width, self.height = width, height
         self.h = slate.ScratchHome()
-        self.out = os.path.join(slate.OUT, "live")
+        # (each part of a parallel run keeps its own logs: tests/out/live/<part>/)
+        self.out = os.path.join(slate.OUT, "live", os.environ.get("SLATE_TEST_PART", ""))
         os.makedirs(self.out, exist_ok=True)
         self.settings = settings
         self.procs = []
