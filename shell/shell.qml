@@ -271,6 +271,8 @@ ShellRoot {
                 picker: { open: picker.shown, mode: picker.mode },
                 switcher: { open: winSwitcher.shown },
                 overview: { open: wsOverview.shown, selected: wsOverview.selected, grid: wsOverview.isGrid,
+                            workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
+                            zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing },
                 screensaver: { open: screensaver.shown },

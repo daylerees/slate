@@ -33,6 +33,24 @@ class SwitcherAnimations(LiveCase):
         # the workspaces Slate knows of as it opens, so wait until it knows both
         self.s.settle(1.5)
 
+    def open_overview_on(self, ws):
+        """Open the overview once Slate knows where things stand: the overview shows the
+        workspaces Slate knows of as it opens, with the one it believes is in front chosen, and
+        Slate hears of both a moment after Hyprland. Opened a moment too soon (it happened now
+        and then in a whole run) it had one workspace, or the wrong one chosen, and "next" had
+        nowhere to go. Returns which card is chosen."""
+        for _ in range(8):
+            self.ipc("overview", "open")
+            st = self.wait(lambda st: st["overview"]["open"], "the overview")["overview"]
+            ids = st["workspaces"]
+            if len(ids) >= 2 and ws in ids and ids[st["selected"]] == ws and st["selected"] < len(ids) - 1:
+                self.s.settle(0.4)
+                return st["selected"]
+            self.ipc("overview", "close")
+            self.wait(lambda st: not st["overview"]["open"], "the overview to close")
+            self.s.settle(0.5)
+        self.fail(f"the overview never opened on workspace {ws} with one after it: {st}")
+
     def test_overview_every_move_and_pick(self):
         self.keep_setting("overviewMoveAnimation")
         self.keep_setting("overviewPickAnimation")
@@ -43,18 +61,23 @@ class SwitcherAnimations(LiveCase):
                     self.config("overviewMoveAnimation", move)
                     self.config("overviewPickAnimation", pick)
                     start = self.workspace()
-                    self.ipc("overview", "open")
-                    self.wait(lambda st: st["overview"]["open"], "the overview")
-                    self.s.settle(0.4)
+                    was = self.open_overview_on(start)
                     self.ipc("overview", "next")
-                    self.s.settle(0.4)
+                    self.wait(lambda st: st["overview"]["selected"] != was, "the selection to move to the next workspace")
+                    self.s.settle(0.3)
                     self.ipc("overview", "go")
                     self.wait(lambda st: not st["overview"]["open"], "the overview to close")
-                    for _ in range(30):
-                        if self.workspace() != start:
+                    # There, and still there a moment later. (Hyprland sometimes hands focus back
+                    # to the window from before just after the overview lets go of the keyboard,
+                    # and Slate goes again: for an instant in between it reads as the old
+                    # workspace, which isn't "didn't go")
+                    held = 0
+                    for _ in range(40):
+                        held = held + 1 if self.workspace() != start else 0
+                        if held >= 3:
                             break
                         self.s.settle(0.1)
-                    self.assertNotEqual(self.workspace(), start, "didn't go to the next workspace")
+                    self.assertGreaterEqual(held, 3, "didn't go to the next workspace")
                     self.s.settle(1.0)          # (a lost switch is retried for a moment)
                     self.assertNotEqual(self.workspace(), start, "went back to the old workspace")
                     self.go_to_workspace(1)

@@ -5,10 +5,10 @@ import tempfile
 
 from PIL import Image
 
-from test_switcher_animations import SwitcherAnimations
+import test_switcher_animations as switching     # (the module, so its tests aren't collected again here)
 
 
-class WorkspaceSwitch(SwitcherAnimations):
+class WorkspaceSwitch(switching.SwitcherAnimations):
     # (only this file's tests: the ones it borrows its helpers from run in their own)
     test_overview_every_move_and_pick = None
     test_window_switcher_every_move_and_pick = None

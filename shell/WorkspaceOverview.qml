@@ -306,7 +306,7 @@ PanelWindow {
         duration: Config.ms(300); easing.type: Easing.OutCubic
         // Once it's there (and Hyprland is on that workspace), the real workspace is exactly
         // underneath: fade quickly
-        onFinished: if (ov.arrived) ov.shown = false
+        onFinished: if (ov.arrived) ov.landed()
     }
     // Hyprland has switched to the chosen workspace. Until then the backdrop stays solid,
     // so the old workspace never shows through
@@ -325,6 +325,11 @@ PanelWindow {
     // overview just goes, and for a moment, as with the zoom, a switch that's lost or undone
     // is tried again
     property bool leaving: false
+    // The zoom has arrived: the overview goes, and the same watch is kept for a moment after.
+    // (Without it the watch ended as the overview faded, which with animations off is at once:
+    // Hyprland handing focus back to the window from before, a moment after the keyboard is let
+    // go, then undid the switch with nothing left to put it right)
+    function landed() { leaving = true; leaveEnd.restart(); shown = false; }
     Timer {
         id: leaveEnd
         interval: 800
@@ -337,7 +342,7 @@ PanelWindow {
             const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
             if (id === ov.pendingId) {
                 ov.arrived = true;
-                if (ov.zooming && !zoomAnim.running) ov.shown = false;      // the zoom's already done
+                if (ov.zooming && !zoomAnim.running) ov.landed();      // the zoom's already done
             } else if (ov.arrived) {
                 // Hyprland went back (giving focus back to the window from before, after we let
                 // go of the keyboard): go again, while it's still covered
@@ -353,7 +358,7 @@ PanelWindow {
         onTriggered: {
             if (!ov.zooming && !ov.leaving) return;
             const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
-            if (id === ov.pendingId) { ov.arrived = true; if (ov.zooming && !zoomAnim.running) ov.shown = false; }
+            if (id === ov.pendingId) { ov.arrived = true; if (ov.zooming && !zoomAnim.running) ov.landed(); }
             else { ov.goNow(); restart(); }
         }
     }
