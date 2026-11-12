@@ -36,6 +36,12 @@ to date and the suite passed whole. What's below was left over from that cycle.
   "More switches" into the panel. The charging limit moved from the Power page into Config
   (`chargeLimit…`, `askChargeLimit`): the Power page's row still works, by hand on a laptop
   that has it. Scene `settings-control` with "More switches" showing.
+- **Menu bar shadow fade and the dock under an open panel.** The bar's shadow is darker
+  (`barShadowShare` up to 1.4), tighter (blur 8) and fades (260 ms in, 360 ms out): re-approve
+  the bar scenes that show it. Live: with a panel open, the dock still magnifies and opens
+  apps, and a press on it closes the panel (`dockHole` in Popouts.qml, the PointHandler on the
+  dock's `maskBox`); test with the dock at each edge and at 125%. Going to another workspace
+  closes an open panel.
 
 ## Not covered yet
 

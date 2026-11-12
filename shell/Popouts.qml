@@ -23,6 +23,7 @@ PanelWindow {
     required property var bar
     property var notifs: null
     property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
+    property var dock: null              // the dock's window (shell.qml), left usable while a panel's open
 
     // ---- State -------------------------------------------------------------
     property string current: ""          // panel being shown ("" = closed)
@@ -149,9 +150,26 @@ PanelWindow {
     readonly property bool engaged: shown || pending !== ""
     WlrLayershell.keyboardFocus: engaged ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // While closing, let clicks through so the desktop is usable straight away
-    mask: Region { item: pop.engaged ? catcher : pop.active ? panelArea : null }
+    // (less the dock, which stays in use: pressing on it closes the panel, from the dock's side)
+    mask: Region {
+        item: pop.engaged ? catcher : pop.active ? panelArea : null
+        Region { item: dockHole; intersection: Intersection.Subtract }
+    }
 
     Item { id: catcher; anchors.fill: parent }
+    // Where the dock takes the pointer, in this window (both windows reach the screen's edges,
+    // this one less the bar)
+    Item {
+        id: dockHole
+        readonly property var d: pop.dock
+        readonly property bool here: !!d && d.visible && d.screen === pop.screen
+        readonly property real screenW: pop.width + pop.margins.left + pop.margins.right
+        readonly property real screenH: pop.height + pop.margins.top + pop.margins.bottom
+        x: !here ? 0 : (d.edge === "right" ? screenW - d.width : 0) + d.inputRect.x - pop.margins.left
+        y: !here ? 0 : (d.edge === "bottom" ? screenH - d.height : 0) + d.inputRect.y - pop.margins.top
+        width: here ? d.inputRect.width : 0
+        height: here ? d.inputRect.height : 0
+    }
 
     // Click outside the panel to close
     MouseArea {

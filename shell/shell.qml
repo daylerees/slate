@@ -96,7 +96,7 @@ ShellRoot {
         model: Quickshell.screens.filter(s => s !== Config.primaryScreen)
         Bar { required property var modelData; screen: modelData; primary: false; popouts: popouts; notifs: notifs }
     }
-    Popouts { id: popouts; bar: topBar; notifs: notifs; powerConfirm: powerConfirm }
+    Popouts { id: popouts; bar: topBar; notifs: notifs; powerConfirm: powerConfirm; dock: win }
     PowerConfirm { id: powerConfirm }
     // slate restart / stop (bin/slate): reload in place rather than restarting the process,
     // since Quickshell can crash while shutting down and then relaunch itself
@@ -893,7 +893,16 @@ ShellRoot {
                 return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
             }
             x: box.x; y: box.y; width: box.w; height: box.h
+            // A press on the dock closes an open bar panel, as a press anywhere else outside it
+            // does (the panel leaves the dock to take the pointer: Popouts.qml). Only watches:
+            // the press still goes on to what's under it
+            PointHandler {
+                acceptedButtons: Qt.AllButtons
+                onActiveChanged: if (active && popouts.engaged) popouts.close()
+            }
         }
+        // The same, for the bar's panels to leave a hole for
+        readonly property rect inputRect: Qt.rect(maskBox.x, maskBox.y, maskBox.width, maskBox.height)
 
         // ---- Apps: pinned first, then anything else that's running ---------
         function belongsTo(t, id, e) {
