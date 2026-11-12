@@ -1,7 +1,6 @@
 <img alt="Slate" src="shell/assets/logo.png" height="80">
 
-**Aesthetically pleasing yet understated, opinionated yet configurable, desktop environment
-for Linux.**
+**A calm desktop for Linux, with a premium feel.**
 
 **[daylerees.github.io/slate](https://daylerees.github.io/slate/)**: an overview of Slate, with
 screenshots.
@@ -12,9 +11,17 @@ and workspace switchers, drop-down panels, notifications, on-screen indicators, 
 settings app, clipboard history, an emoji picker, night light, and its own lock and login
 screens.
 
-Slate is inspired by the best parts of macOS, Windows and Linux, and blends them together
-into something fresh. Things work the way you'd expect, so it's a welcoming place for
-people new to Linux and experienced users alike.
+We wanted Linux to feel as polished as macOS. Slate has everything you'd expect from a
+desktop, and a few things more, each where you'd expect to find it:
+
+- **Ready from the start.** Sensible defaults that work out of the box, and a Welcome window
+  for the few choices worth making.
+- **Every setting in one place.** One searchable Settings app. Prefer your own Hyprland
+  config and overrides? Keep them: Slate never overwrites them.
+- **Yours, automatically.** Colours from your wallpaper, dark at sunset, your other apps
+  themed to match. As much as possible just happens.
+- **The best of everything.** Inspired by macOS, Windows, GNOME, KDE and tiling window
+  managers: familiar whichever you're coming from, and still Hyprland underneath.
 
 ## Install
 

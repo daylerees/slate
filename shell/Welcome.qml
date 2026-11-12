@@ -151,7 +151,7 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         lineHeight: 1.25
-                        text: "It's lovely to have you here. Slate is a calm, good-looking desktop for Linux: a bar, a dock, a launcher, switchers, panels and notifications that all feel like one thing.\n\nLet's set a few things up together. Each choice comes with our recommendation, and nothing here is final: you can change any of it later in Settings (Super+Z)."
+                        text: "It's lovely to have you here. Slate is a calm desktop for Linux with a premium feel, and everything you'd expect where you'd expect to find it.\n\nIt works well just as it is, and a lot of it takes care of itself. Let's set a few things up together: each choice comes with our recommendation, and nothing here is final. Everything can be changed later, all in one place: Settings (Super+Z)."
                         color: w.dim; font.family: w.font; font.pixelSize: 14
                     }
                 }

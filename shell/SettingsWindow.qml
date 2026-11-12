@@ -7650,7 +7650,7 @@ FloatingWindow {
             PageTitle { text: "About Slate" }
             SlateLogo { size: 64; x: 4; textColor: win.text }
             Item { width: 1; height: 10 }
-            IntroText { text: "Slate is this desktop's shell: the bar, dock, launcher, window and workspace switchers, panels, notifications and these settings. It runs on Quickshell and Hyprland, from ~/.config/slate." }
+            IntroText { text: "Slate is a calm desktop for Linux with a premium feel: the bar, dock, launcher, window and workspace switchers, panels, notifications and these settings, all in one place. It runs on Quickshell and Hyprland, from ~/.config/slate." }
             // As in LICENSE
             Text {
                 text: "© 2026 Dayle Rees · MIT License"
