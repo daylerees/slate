@@ -34,7 +34,7 @@ waiting on something. The plans themselves are in the repository's history
 
 ## Still listed elsewhere
 
-- What the next release's test cycle owes: [release-testing.md](release-testing.md).
+- What only a person can check (no pointer, hardware or network in the tests): "Checked by hand" below.
 - The assistant beyond its first version (Codex, Markdown, sounds, the rest of its "later"
   list): [assistant.md](assistant.md).
 - Slate without systemd on a real Artix, Void or Gentoo install: [without-systemd.md](without-systemd.md).
@@ -51,3 +51,61 @@ something in New Space still holds (wsWin.toplevel from Hyprland.toplevels, its 
 or the destroyed workspace. Next: reproduce with New Space's cards stripped down (no
 ScreencopyView, no WallBlur, no toplevel lookup) to find which part; check the overview and
 the switcher the same way; report upstream if it's Quickshell.
+
+## Checked by hand, not by the tests (moved from the old release-testing list, 2026-11-12)
+
+Tests are now written with each change (CLAUDE.md, Tests). These are what the test machine
+can't do: no pointer, no radios, cameras, battery or network, and the real login screen.
+
+- Quick switches on real hardware: Wi-Fi, Bluetooth, the power modes, mute and mic mute, the
+  charging limit (and the Power page's row); airplane mode turning radios off and back (a
+  Bluetooth already off staying off, Slate started with it on).
+- Private Mode: the camera helper's install (pkexec, polkit rule), the camera really off and
+  back (udev rule), microphones muted and restored, screen sharing refused in a browser, on
+  Arch, Debian, Fedora, openSUSE (NixOS gets the note); the first-time question; Nova's window
+  saying it's off. The camera indicator with a real camera (a browser, OBS via PipeWire).
+- The pointer: menus at each bar edge, the desktop's flipping near the bottom, a submenu
+  flipping left near the right edge, the menu pointer's shadow; the dock still magnifying and
+  opening apps under an open panel (each edge, at 125%); a drag from the Control Centre page's
+  pool onto a switch, and a narrow Settings window; the launcher's slow pointer (1 px steps)
+  selecting a row, a resting pointer not taking it, and held Up/Down keeping the selection in
+  view in a long list and the grid.
+- Floating windows below the bar: a real Super+drag, a Slate title bar drag and an app's own.
+- Pointer and icon themes in Nautilus, Dolphin and the dock; a theme uninstalled after it's
+  chosen; Kora and Nordzy folder colours (a colour, and from the wallpaper); once per release,
+  every one-click pack still downloads and matches its fingerprint (re-pin if one changed).
+- GTK 3 "save changes?" dialogs (Code - OSS), light and dark.
+- Spotify's tray icon (a folder-named icon) and the tray's sizing, in colour and mono.
+- The lock and login arrow after a wrong password, on the real login screen once synced.
+- The docs site on a phone width.
+
+### Not covered yet
+
+Most of these need a real pointer, or hardware the tests' computer hasn't got.
+
+- Hovering: the cross on close buttons fading with its fill; the position pickers' edges; the
+  lighter hover on tiles that are on; destructive things hovering red; the hand pointer.
+- The volume panel: the in-use stripes on the sliders and the muted stripes (the `test
+  audioBusy` hook is there; it needs audio devices or a stand-in).
+- The bar's network item on a cable, and Settings → Network with real connection details.
+- Settings → Power → Charging limit, and battery health in the power panel.
+- Launcher → Glass, Assistant → Glass and Notifications → Glass: each window's colour and its
+  own blur rule (only a static check of the rules so far).
+- Interface size at anything but 100%: the reload cover, a drag from the pool in the arranging
+  panel, the hot corner check after unlocking.
+- The priority window: a row dragged with the pointer (only the move hook is tested).
+- Squared corners during a switch from the real Super+Left/Right keys (the function is tested).
+- The week's first day and the temperature unit (the date format is tested).
+- Notification fallbacks: no name, no title, a picture that can't be loaded.
+
+### To look into
+
+- Tests that pass alone and fail in a whole run have each turned out to be real: keep running
+  the live tier several times over before a release, rather than finding them one full run at
+  a time ([faster-tests.md](faster-tests.md)).
+- `panel-battery` differs by a few pixels on the bar when its scene is run by itself rather
+  than in sequence.
+- A scene that switches glass on in the same instant as `arrange start` can show items undrawn.
+- Without glass, controls whose solid fill is swapped for the muted hover animate through a
+  brighter colour. `HoverFill.qml` fixes it for the three placement pickers.
+
