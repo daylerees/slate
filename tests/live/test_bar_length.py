@@ -55,7 +55,13 @@ class BarLength(LiveCase):
         """With a window to name: its title is the first thing to go, and its icon stays."""
         self.ipc("settings", "open")
         self.s.wait(lambda st: st["settings"]["open"], what="Settings")
-        self.s.settle(0.8)
+        # (the title comes once Hyprland says Settings is focused: a fixed 0.8 s was too little
+        # under a busy full run)
+        for _ in range(50):
+            if self.bar()["line"]["windowtitle"]["visible"]:
+                break
+            self.s.settle(0.1)
+        self.s.settle(0.3)
         self.assertTrue(self.bar()["line"]["windowtitle"]["visible"], "no window title to begin with")
         self.first_squeeze_giving(1)
         st = self.bar()
