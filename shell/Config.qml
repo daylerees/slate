@@ -618,6 +618,7 @@ Singleton {
     // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
     function separateBarAndDock() { if (s.dockPosition === s.barPosition) s.dockPosition = opposite(s.barPosition); }
     Component.onCompleted: {
+        chargeLimitRefresh();       // (whether the battery has a charging limit, and if it's on)
         // Settings and the wallpaper's colours are in place before anything is drawn, so a
         // reload starts in the right colours rather than the defaults (see loadColourCache)
         const saved = file.text();
@@ -1242,13 +1243,28 @@ Singleton {
         { id: "dnd", label: "Do Not Disturb", icon: 0xECE9 },
         { id: "perf", label: "Performance", icon: 0xEC45 },
         { id: "airplane", label: "Airplane Mode", icon: 0xEB6F },
-        { id: "gamemode", label: "Game Mode", icon: 0xF1D2 }
+        { id: "gamemode", label: "Game Mode", icon: 0xF1D2 },
+        { id: "light", label: "Light Mode", icon: 0xEB30 },
+        { id: "mute", label: "Mute", icon: 0xF1C3 },
+        { id: "micmute", label: "Mute Mic", icon: 0xED16 },
+        { id: "saver", label: "Power Saver", icon: 0xED4F },
+        { id: "glass", label: "Glass", icon: 0xEF8C },
+        { id: "chargelimit", label: "Charging Limit", icon: 0xEF3C },
+        { id: "dockhide", label: "Hide Dock", icon: 0xEAD3 },
+        { id: "barhide", label: "Hide Menu Bar", icon: 0xEAD7 },
+        { id: "floating", label: "Floating", icon: 0xEE17 },
+        { id: "clipboard", label: "Clipboard", icon: 0xEA6F }
     ]
+    // The ones this computer can't use (SwitchHardware.qml), and the list without them: what
+    // the panel and Settings choose from
+    property var controlSwitchMissing: []
+    readonly property var controlSwitchesHere: controlSwitchList.filter(x => controlSwitchMissing.indexOf(x.id) < 0)
     // The panel always has eight (or every one there is, if that's fewer): yours in your order,
-    // only ones that exist, each once; any places left over are filled from the list above
+    // only ones that exist here, each once; any places left over are filled from the list above
+    // (so a switch whose hardware is missing gives its place up, and has it back when it returns)
     readonly property int controlSwitchesMost: 8
     readonly property var controlSwitches: {
-        const known = controlSwitchList.map(x => x.id), saved = s.controlSwitches;
+        const known = controlSwitchesHere.map(x => x.id), saved = s.controlSwitches;
         const mine = (saved && saved.length !== undefined ? Array.from(saved) : []).map(String)
             .filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i);
         return mine.concat(known.filter(id => mine.indexOf(id) < 0)).slice(0, controlSwitchesMost);
@@ -1263,6 +1279,51 @@ Singleton {
         const out = [];
         for (let i = 0; i < n; i++) out.push(Qt.rect((i % 2) * (cw + gap), Math.floor(i / 2) * (ch + gap), cw, ch));
         return out;
+    }
+
+    // ---- The battery's charging limit (Settings → Power, and a quick switch) ----------------
+    // Where the laptop can stop charging short of full (UPower's charge threshold), Slate can
+    // switch that on and off
+    readonly property var laptopBattery: UPower.devices.values.find(d => d.isLaptopBattery) ?? null
+    readonly property string batteryPath: laptopBattery && laptopBattery.nativePath
+        ? "/org/freedesktop/UPower/devices/battery_" + String(laptopBattery.nativePath).split("/").pop().replace(/[^A-Za-z0-9]/g, "_") : ""
+    property bool chargeLimitSupported: false
+    property bool chargeLimitOn: false
+    property int chargeLimitAt: 80
+    function chargeLimitRefresh() { if (batteryPath !== "" && !isLoginScreen) chargeLimitAsk.running = true; }
+    onBatteryPathChanged: chargeLimitRefresh()
+    Process {
+        id: chargeLimitAsk
+        command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", root.batteryPath,
+                  "--method", "org.freedesktop.DBus.Properties.GetAll", "org.freedesktop.UPower.Device"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const end = /'ChargeEndThreshold': <uint32 (\d+)>/.exec(text);
+                root.chargeLimitSupported = /'ChargeThresholdSupported': <true>/.test(text) && !!end && Number(end[1]) > 0 && Number(end[1]) < 100;
+                root.chargeLimitOn = /'ChargeThresholdEnabled': <true>/.test(text);
+                if (end) root.chargeLimitAt = Number(end[1]);
+            }
+        }
+    }
+    Process {
+        id: chargeLimitSet
+        property bool to: true
+        command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", root.batteryPath,
+                  "--method", "org.freedesktop.UPower.Device.EnableChargeThreshold", to ? "true" : "false"]
+        onExited: chargeLimitAsk.running = true
+    }
+    function setChargeLimit(on) { chargeLimitOn = on; chargeLimitSet.to = on; chargeLimitSet.running = true; }
+    // (charging past the limit is asked about first, in `confirmer` (PowerConfirm): it's the
+    // battery's life at stake)
+    function askChargeLimit(on, confirmer) {
+        if (on || !confirmer) { setChargeLimit(on); return; }
+        confirmer.confirmWith({
+            title: "Charge all the way to full?",
+            body: "Keeping a battery full wears it out sooner, most of all when your laptop spends its days plugged in. "
+                + "Stopping at " + chargeLimitAt + "% helps it hold its charge for years longer. Charging to full is worth it when "
+                + "you need every hour away from a socket. You can switch the limit back on at any time.",
+            button: "Charge to full", code: 0xEA33, danger: false
+        }, () => root.setChargeLimit(false));
     }
 
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel

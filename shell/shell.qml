@@ -331,6 +331,7 @@ ShellRoot {
     Wallpaper {}
     NightLight {}
     AirplaneMode {}
+    SwitchHardware {}
     PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
     Notifications { id: notifs; bar: topBar }
     // Settings, built afresh whenever it's closed from outside Slate (Super+Q, a title bar's close

@@ -28,6 +28,14 @@ to date and the suite passed whole. What's below was left over from that cycle.
   tests' computer has no radios, so what was on and comes back needs real hardware: check by
   hand, including Bluetooth that was already off staying off, and starting Slate with it on).
   The launcher's Airplane Mode toggle. Game mode and airplane mode as control centre tiles.
+- **Ten more quick switches** (light, mute, micmute, saver, glass, chargelimit, dockhide,
+  barhide, floating, clipboard) and **missing hardware** (`SwitchHardware.qml`,
+  `Config.controlSwitchMissing`, `controlSwitchesHere`): a live test that pressing each tile
+  (a `test` hook that presses a switch by id) changes what it should and back; that a switch
+  in `controlSwitchMissing` leaves the panel and Settings and its place is filled; a swap from
+  "More switches" into the panel. The charging limit moved from the Power page into Config
+  (`chargeLimit…`, `askChargeLimit`): the Power page's row still works, by hand on a laptop
+  that has it. Scene `settings-control` with "More switches" showing.
 
 ## Not covered yet
 

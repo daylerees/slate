@@ -2833,8 +2833,22 @@ PanelWindow {
                         dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
                         perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 },
                         airplane: { label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F },
-                        gamemode: { label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2 }
+                        gamemode: { label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2 },
+                        light: { label: "Light Mode", on: Config.s.lightMode, code: 0xEB30 },
+                        mute: { label: "Mute", on: !!ccSink && !!ccSink.audio && ccSink.audio.muted, code: 0xF1C3 },
+                        micmute: { label: "Mute Mic", on: !!ccSource && !!ccSource.audio && ccSource.audio.muted, code: 0xED16 },
+                        saver: { label: "Power Saver", on: PowerProfiles.profile === PowerProfile.PowerSaver, code: 0xED4F },
+                        glass: { label: "Glass", on: Config.s.glass, code: 0xEF8C },
+                        chargelimit: { label: "Charging Limit", on: Config.chargeLimitOn, code: 0xEF3C },
+                        dockhide: { label: "Hide Dock", on: Config.s.dockAutoHide, code: 0xEAD3 },
+                        barhide: { label: "Hide Menu Bar", on: Config.s.barAutoHide, code: 0xEAD7 },
+                        floating: { label: "Floating", on: Config.focusedMode === "floating", code: 0xEE17 },
+                        clipboard: { label: "Clipboard", on: Config.s.clipboardHistory, code: 0xEA6F }
                     })
+                    // (the speakers and microphone in use, watched so their mutes can be read and set)
+                    readonly property var ccSink: Pipewire.defaultAudioSink
+                    readonly property var ccSource: Pipewire.defaultAudioSource
+                    PwObjectTracker { objects: [ccTiles.ccSink, ccTiles.ccSource].filter(o => !!o) }
                     readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
                         .map(id => Object.assign({ id: id }, every[id]))
                     readonly property var rects: Config.controlSwitchRects(toggles.length, width, height)
@@ -2863,6 +2877,24 @@ PanelWindow {
                                 case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
                                 case "airplane": Config.s.airplaneMode = !Config.s.airplaneMode; break;
                                 case "gamemode": Config.setGameMode(!Config.s.gameMode); break;
+                                case "light": Config.setThemeMode(modelData.on ? "dark" : "light"); break;
+                                case "mute": if (ccTiles.ccSink && ccTiles.ccSink.audio) ccTiles.ccSink.audio.muted = !modelData.on; break;
+                                case "micmute": if (ccTiles.ccSource && ccTiles.ccSource.audio) ccTiles.ccSource.audio.muted = !modelData.on; break;
+                                case "saver": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.PowerSaver; break;
+                                case "glass": Config.s.glass = !Config.s.glass; break;
+                                case "chargelimit":
+                                    // (charging to full is asked about first, in the usual window: the panel makes way for it)
+                                    if (modelData.on) pop.close();
+                                    Config.askChargeLimit(!modelData.on, pop.powerConfirm);
+                                    break;
+                                case "dockhide": Config.s.dockAutoHide = !Config.s.dockAutoHide; break;
+                                case "barhide": Config.s.barAutoHide = !Config.s.barAutoHide; break;
+                                // (this workspace: floating, or back to how it was. Where floating's the
+                                // default, off means tiled)
+                                case "floating":
+                                    Config.setWorkspaceMode(Config.focusedWorkspaceId, modelData.on ? (Config.windowMode === "floating" ? "tiling" : "") : "floating");
+                                    break;
+                                case "clipboard": Config.s.clipboardHistory = !Config.s.clipboardHistory; break;
                                 }
                             }
                             Column {

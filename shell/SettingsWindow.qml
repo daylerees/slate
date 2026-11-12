@@ -2676,10 +2676,10 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Control Centre" }
-            IntroText { text: "The control centre has eight quick switches. Drag one onto another and the two change places. You can change this at any time." }
+            IntroText { text: "The control centre has eight quick switches. Drag one onto another and the two change places; drag one up from More switches to put it in. You can change this at any time." }
             SwitchBoard {
                 width: parent.width
-                all: Config.controlSwitchList
+                all: Config.controlSwitchesHere
                 chosen: Config.controlSwitches
                 most: Config.controlSwitchesMost
                 onPicked: ids => Config.s.controlSwitches = ids
@@ -3493,46 +3493,12 @@ FloatingWindow {
             // kinder to a battery that's mostly plugged in. The system's power service (UPower)
             // keeps it, with the level the laptop's maker set, and lets whoever's at the laptop
             // switch it on and off. The row only shows where it's there to switch
-            property var battery: UPower.devices.values.find(d => d.isLaptopBattery) ?? null
-            readonly property string batteryPath: battery && battery.nativePath
-                ? "/org/freedesktop/UPower/devices/battery_" + String(battery.nativePath).split("/").pop().replace(/[^A-Za-z0-9]/g, "_") : ""
-            property bool limitSupported: false
-            property bool limitOn: false
-            property int limitAt: 80
-            onBatteryPathChanged: if (batteryPath !== "") limitAsk.running = true
-            Component.onCompleted: if (batteryPath !== "") limitAsk.running = true
-            Process {
-                id: limitAsk
-                command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", powerPane.batteryPath,
-                          "--method", "org.freedesktop.DBus.Properties.GetAll", "org.freedesktop.UPower.Device"]
-                stdout: StdioCollector {
-                    onStreamFinished: {
-                        const end = /'ChargeEndThreshold': <uint32 (\d+)>/.exec(text);
-                        powerPane.limitSupported = /'ChargeThresholdSupported': <true>/.test(text) && !!end && Number(end[1]) > 0 && Number(end[1]) < 100;
-                        powerPane.limitOn = /'ChargeThresholdEnabled': <true>/.test(text);
-                        if (end) powerPane.limitAt = Number(end[1]);
-                    }
-                }
-            }
-            Process {
-                id: limitSet
-                property bool to: true
-                command: ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower", "--object-path", powerPane.batteryPath,
-                          "--method", "org.freedesktop.UPower.Device.EnableChargeThreshold", to ? "true" : "false"]
-                onExited: limitAsk.running = true
-            }
-            function setLimit(on) { limitOn = on; limitSet.to = on; limitSet.running = true; }
-            // (charging past the limit is asked about first: it's the battery's life at stake)
-            function askLimit(on) {
-                if (on || !win.confirmer) { setLimit(on); return; }
-                win.confirmer.confirmWith({
-                    title: "Charge all the way to full?",
-                    body: "Keeping a battery full wears it out sooner, most of all when your laptop spends its days plugged in. "
-                        + "Stopping at " + limitAt + "% helps it hold its charge for years longer. Charging to full is worth it when "
-                        + "you need every hour away from a socket. You can switch the limit back on at any time.",
-                    button: "Charge to full", code: 0xEA33, danger: false
-                }, () => powerPane.setLimit(false));
-            }
+            // (Config keeps it, as the control centre's Charging Limit switch uses it too)
+            readonly property bool limitSupported: Config.chargeLimitSupported
+            readonly property bool limitOn: Config.chargeLimitOn
+            readonly property int limitAt: Config.chargeLimitAt
+            Component.onCompleted: Config.chargeLimitRefresh()
+            function askLimit(on) { Config.askChargeLimit(on, win.confirmer); }
             GroupLabel { text: "Power mode" }
             Group {
                 DropdownSetting {
