@@ -7,6 +7,16 @@ things off as they're done.
 v0.28.0 (2026-11-12) cleared the list as it stood: the tests and screenshots were brought up
 to date and the suite passed whole. What's below was left over from that cycle.
 
+## For changes since v0.28.0
+
+- **Settings → Control Centre** (the quick switches: `controlSwitches`, `SwitchBoard.qml`): a
+  live test that the page opens, that changing `controlSwitches` changes the panel's tiles and
+  their order (none, one, eight; unknown ids and repeats dropped), and that Restore defaults
+  puts the six back; a hook in the `test` IPC target to move a switch as a drag would; scenes
+  `settings-control` (new) and `panel-control` with eight; `settings-overview` re-approved (a
+  new tile). The static page checks (pageKeys, pastel, index) should pick the page up by
+  themselves. A unit test that `slate mcp` names the setting and refuses to change it (a list).
+
 ## Not covered yet
 
 Most of these need a real pointer, or hardware the tests' computer hasn't got.

@@ -1225,12 +1225,31 @@ Singleton {
         overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
         input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
         workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0",
-        bar: "#a6c8e8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
+        bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6",
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
+    // ---- The control centre's quick switches (Settings → Control Centre) --------------------
+    // Every switch there is: its name and icon as Settings shows them. What each one does, and
+    // whether it's on, is in Popouts.qml (the control centre), by the same id
+    readonly property var controlSwitchList: [
+        { id: "wifi", label: "Wi-Fi", icon: 0xEB52 },
+        { id: "bt", label: "Bluetooth", icon: 0xEA37 },
+        { id: "caffeine", label: "Caffeine", icon: 0xEF0E },
+        { id: "night", label: "Night Light", icon: 0xEAF8 },
+        { id: "dnd", label: "Do Not Disturb", icon: 0xECE9 },
+        { id: "perf", label: "Performance", icon: 0xEC45 }
+    ]
+    readonly property int controlSwitchesMost: 8
+    // The ones you've chosen, in your order: only ones that exist, each once, eight at most
+    readonly property var controlSwitches: {
+        const known = controlSwitchList.map(x => x.id), saved = s.controlSwitches;
+        return (saved && saved.length !== undefined ? Array.from(saved) : []).map(String)
+            .filter((id, i, a) => known.indexOf(id) >= 0 && a.indexOf(id) === i).slice(0, controlSwitchesMost);
+    }
+
     // The menu bar's status icons (notifications, Wi-Fi, volume…), each its own pastel
     readonly property var statusPastels: ({
         notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",

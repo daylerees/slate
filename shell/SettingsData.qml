@@ -38,6 +38,9 @@ JsonAdapter {
     property bool goodbyeSound: true
     property int soundEffectsVolume: 100
     property bool nightLight: false          // warm the screen colours (control centre toggle)
+    // The control centre's quick switches, in order (Settings → Control Centre): up to eight of
+    // Config.controlSwitchList
+    property var controlSwitches: ["wifi", "bt", "caffeine", "night", "dnd", "perf"]
     property int nightLightTemperature: 4000 // kelvin: lower is warmer
     property string nightLightSchedule: "manual"   // manual, sun (sunset to sunrise) or custom
     property string nightLightFrom: "20:00"  // custom schedule

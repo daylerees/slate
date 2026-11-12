@@ -2688,7 +2688,7 @@ PanelWindow {
                 // Left: media, then clock & weather
                 Column {
                     id: ccLeft
-                    width: 262
+                    width: ccTiles.visible ? 262 : controlView.width      // (no switches chosen: the whole width)
                     spacing: 12
 
                     Rectangle {
@@ -2796,22 +2796,26 @@ PanelWindow {
                     }
                 }
 
-                // Right: quick toggles, as tall as the column beside them
+                // Right: quick toggles, as tall as the column beside them. Which ones, and in what
+                // order, is yours to choose (Settings → Control Centre: Config.controlSwitches)
                 Grid {
                     id: ccTiles
                     columns: 2
                     spacing: 8
+                    visible: toggles.length > 0
                     readonly property real tileW: (controlView.width - 262 - 12 - 8) / 2
-                    // The toggles, each lit while it's on
-                    readonly property var toggles: [
-                        { id: "wifi", label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
-                        { id: "bt", label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
-                        { id: "caffeine", label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
-                        { id: "night", label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
-                        { id: "dnd", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
-                        { id: "perf", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
-                    ]
-                    readonly property int rowCount: Math.ceil(toggles.length / columns)
+                    // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
+                    readonly property var every: ({
+                        wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                        bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                        caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                        night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                        dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                        perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
+                    })
+                    readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
+                        .map(id => ({ id: id, label: every[id].label, on: every[id].on, code: every[id].code }))
+                    readonly property int rowCount: Math.max(1, Math.ceil(toggles.length / columns))
                     readonly property real tileH: (ccLeft.height - spacing * (rowCount - 1)) / rowCount
                     Repeater {
                         model: ccTiles.toggles

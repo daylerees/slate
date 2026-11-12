@@ -275,6 +275,7 @@ FloatingWindow {
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
             "barShowTray", "barTrayMono", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode", "barShowWifi", "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard", "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barStatusCollapsed",
             "barShowPower", "barClockFormat", "barClockSeconds", "barClockDate"],
+        control: ["controlSwitches"],
         dock: ["dockPosition", "dockAutoHide", "dockShowLauncher", "dockPreviews", "dockPreviewDelay", "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads", "dockShowTrash", "dockIconSize", "dockHoverEffect", "dockMagnification", "dockSpread", "dockBlur", "dockOpacity", "dockTileOpacity", "dockIconOpacity"],
         launcher: ["launcherBlur", "launcherOpacity", "launcherLayout", "launcherColumns", "launcherRows", "launcherDescriptions", "launcherSortByUsage",
             "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
@@ -790,7 +791,7 @@ FloatingWindow {
                     // Only while Settings shows: closed, the page (its wallpaper thumbnails, folder
                     // watching, device lists…) is let go, and built again on opening
                     active: win.visible
-                    sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
+                    sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
                         apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, assistant: assistantPage })[win.section]
                     onLoaded: {
@@ -2666,6 +2667,25 @@ FloatingWindow {
                     // still here when the preview ends
                     Button { label: "Preview"; onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "screensaver", "start"]) }
                 }
+            }
+        }
+    }
+
+    Component {
+        id: controlPage
+        Column {
+            spacing: 4
+            PageTitle { text: "Control Centre" }
+            IntroText { text: "Choose the quick switches the control centre shows, and their order. Drag up to eight into the picture of it, and drag one out to take it away. You can change this at any time." }
+            SwitchBoard {
+                width: parent.width
+                all: Config.controlSwitchList
+                chosen: Config.controlSwitches
+                most: Config.controlSwitchesMost
+                onPicked: ids => Config.s.controlSwitches = ids
+                card: win.card; well: win.well; tile: win.control; outline: win.outline
+                text: win.text; dim: win.dim
+                font: win.font; iconFont: win.bar.iconFont
             }
         }
     }
