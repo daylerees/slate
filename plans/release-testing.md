@@ -4,72 +4,35 @@ Testing is done in one test/fix cycle before a release (CLAUDE.md, Tests), not a
 shaped. This is the list of what that cycle has to cover. Add to it with each change; take
 things off as they're done.
 
-## Runs
+v0.28.0 (2026-11-12) cleared the list as it stood: the tests and screenshots were brought up
+to date and the suite passed whole. What's below was left over from that cycle.
 
-- One full `tests/run -q`, fixing what fails (none has been run since the menu bar work began).
-- Re-approve screenshots from one whole visual run, looking at each that changed: the glass,
-  colour and gloss changes, the bar's containers, the panels, Settings and the dock all moved.
-- New scenes with no approved picture yet: `panel-calendar-glass`, `panel-calendar-weather`.
-- `tests/run -q --deps latest`, for the release notes.
+## Not covered yet
+
+Most of these need a real pointer, or hardware the tests' computer hasn't got.
+
+- Hovering: the cross on close buttons fading with its fill; the position pickers' edges; the
+  lighter hover on tiles that are on; destructive things hovering red; the hand pointer.
+- The volume panel: the in-use stripes on the sliders and the muted stripes (the `test
+  audioBusy` hook is there; it needs audio devices or a stand-in).
+- The bar's network item on a cable, and Settings → Network with real connection details.
+- Settings → Power → Charging limit, and battery health in the power panel.
+- Launcher → Glass, Assistant → Glass and Notifications → Glass: each window's colour and its
+  own blur rule (only a static check of the rules so far).
+- Interface size at anything but 100%: the reload cover, a drag from the pool in the arranging
+  panel, the hot corner check after unlocking.
+- The priority window: a row dragged with the pointer (only the move hook is tested).
+- Squared corners during a switch from the real Super+Left/Right keys (the function is tested).
+- The week's first day and the temperature unit (the date format is tested).
+- Notification fallbacks: no name, no title, a picture that can't be loaded.
 
 ## To look into
 
-- `title_bars › maximise_keeps_room_for_the_bar` fails now and then in a whole run, and passes
-  alone.
-- The volume panel is an empty nub in the test container (no audio devices), so nothing in
-  it can be pictured or driven there.
+- Tests that pass alone and fail in a whole run have each turned out to be real: keep running
+  the live tier several times over before a release, rather than finding them one full run at
+  a time ([faster-tests.md](faster-tests.md)).
+- `panel-battery` differs by a few pixels on the bar when its scene is run by itself rather
+  than in sequence.
 - A scene that switches glass on in the same instant as `arrange start` can show items undrawn.
-
-## Tests to write
-
-- Volume panel: the in-use stripes on the sliders (`test audioBusy` hook is there), the muted
-  stripes and their cross-fade. Needs audio devices in the container, or a stand-in.
-- Dock window previews are blurred behind with glass (only a static check of the rule so far).
-- Control centre tiles and a connected Bluetooth device lighten under the pointer when on.
-- Close buttons: the cross fades with its fill.
-- Notification cards are flat in the bell panel, glossy as pop-ups.
-- The priority window: a row dragged with the pointer (only the move hook is tested), the
-  list scrolling under a held row.
-- The squared corners during a switch from the real Super+Left/Right keys (the function is
-  tested, the key isn't).
-- An assistant tool for arranging the bar (items, containers, collapse, priority) and its tests.
-- Power panel: battery health and the charging limit show only where reported; the resource
-  bars go yellow above 70% and red above 90%.
-- Settings → Power → Charging limit: shown only where UPower supports it, asks before
-  charging to full. Not yet reachable from the assistant (no tool or setting for it).
-- A notification from an app that sends no name shows its launcher's name (ZapZap did this).
-- A notification whose picture can't be loaded falls back to the app's tile or the bell (it left a blank).
-- Notification fallbacks: no app name (launcher's name, then one from its id, then "An app"), no title or body ("New notification"), no icon (tile, then bell).
-- The bar's Apps, Spaces and Chalk icons are one pastel each in Colourful (screenshots of the bar will differ).
-- The bar's default arrangement changed (Apps with Chalk in one container; Spaces, window mode and workspaces in another): `test_bar_layout.py`, `test_bar_length.py` and every bar screenshot assume the old one.
-- Visual scenes assistant-empty and others wait for agent == claude, but the default agent is now none: update them.
-- To look into: without glass, every control whose solid fill is swapped for the muted hover (buttons, tiles, cards: `Config.hoverOn`) animates through a brighter colour as the pointer comes and goes. `HoverFill.qml` fixes it for the three placement pickers; the rest could use it too.
-- Position pickers (menu bar, dock): hovering and clicking an edge, including just beside it; needs a pointer in the test session.
-- The hand pointer over everything clickable (Config.handCursor) is kept (2026-11-11): tests for it; the lock and login screens don't have it.
-- All Settings: the search box stays put while the tiles or results scroll under it (needs a window short enough to scroll).
-- Destructive controls hover red (Config.hoverDanger): Settings buttons, list rows' Remove, the arranging panel, dock menu rows, panels' Clear history / delete space / Shut down, the clipboard picker's Clear all. Settings separators are a faint text-colour line with glass.
-- Menu Bar → Monochrome tray icons (barTrayMono, off by default): a live test and the settings/MCP unit tests.
-- The bar's hover shadow waits 90 ms and lingers 260 ms (bar.settled): no test; needs a pointer.
-- Date format, Week starts on, Temperature (Settings → Region → Formats): unit tests for the settings/MCP lists, a live test that the bar's date and the calendar's first column follow them, weather in Fahrenheit.
-- Hardware fallbacks: no battery (the bar's item is a bolt, the panel starts at Power mode), no Wi-Fi adapter (item hidden, panel says so), no audio (item hidden, panel says so). The test container has none of the three, so every bar screenshot there changes, and tests that expect "Offline" or "0%" on the bar need updating.
-- The bar's network item on a cable (wired icon, "Wired"; panel's wired line and details; netinfo.sh's wired output): needs a stand-in for a wired device.
-- Gloss slider is 0–100% over the setting's 0–2 (default 1.0, shown 50%): the default-hint test, and docs/ASSISTANT if it quotes the range.
-- iconTileColour defaults to on: app icon tiles in every screenshot change.
-- The Shine setting (glassShine) is gone; the rim is always on with glass. Remove it from any test that lists settings; the settings-index count drops by one.
-- Rounded UI elements (roundedElements): a static test that no `radius:` in shell/*.qml is a bare number outside the allowed exceptions; visual scenes with it off (bar, a panel, Settings, launcher, dock, a window); Hyprland's rounding goes to 0 and back. Every radius in the UI now goes through Config.corner, so check a few screenshots with it on are pixel-identical to before.
-- Interface size: the reload cover and the arranging panel's drag from the pool at a size other than 100%. Fonts are type-to-search dropdowns now (FontSetting is a DropdownSetting).
-- titleButtons defaults to left: title bar tests and screenshots assume right.
-- focusFollowsMouse defaults to on (was unset, left to Hyprland): any test that expects it unset.
-- wrapWorkspaces defaults to off and keepEmptyWorkspace to on: workspace tests and any screenshot with the workspace dots (an extra empty one) change.
-- Settings → Workspaces no longer has the "On the menu bar" switch (the dots are added and removed in Edit layout): any test that uses it.
-- Settings → Network (was Wi-Fi; the page id is still "wifi"): the page's scene, a test with a wired device and with details from netinfo.sh; the settings-index count.
-- Hover descriptions are gone from the bar (and barHoverDescriptions): remove tests for them. The per-item description strings (hoverText, hoverCode, hoverTile, hoverImage in Bar.qml) are left in place, mostly unused now: tidy away what nothing reads.
-- Settings → Spaces no longer has the "Spaces button" switch (Edit layout does it): any test that uses it.
-- Settings → Assistant no longer has "Show on the menu bar" (Edit layout does it): any test that uses it.
-- screensaverStyle defaults to black (was drift): screensaver tests and scenes that assume drift.
-- Default Apps: the five choosers are searchable dropdowns (DropdownSetting), with the changed-from-default dot: update the page's scene and any test that used the old picker there.
-- The Date & Time page is called Region now (id still "datetime"): tests and scenes that look for its title.
-- Pages renamed: Keyboard & Mouse → Input, Printers & Scanners → Printers, Lock & Idle → Security (ids unchanged): scenes/tests that look for the titles; a search test that "keyboard", "mouse", "scanner", "lock", "idle" and the old names still find them.
-- slate-greeter-sync --prompt drops the Later snooze once the login screen is up to date: a unit test in test_greeter_sync.py.
-- Notifications → Glass (notificationBlur, notificationOpacity, notificationHoverOpacity): the default-hint test covers the sliders; a live test of the card's colour and the blur rule (SLATE_GLASS_TOAST); notifications left the general SLATE_GLASS rule (update test_glass_blurs_every_popup).
-- Launcher → Glass and Assistant → Glass (launcherBlur/Opacity, assistantBlur/Opacity; -1 = Appearance's): a live test of each window's colour and rule; defaults to be chosen by Dayle after trying them.
+- Without glass, controls whose solid fill is swapped for the muted hover animate through a
+  brighter colour. `HoverFill.qml` fixes it for the three placement pickers.
