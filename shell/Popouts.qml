@@ -2840,7 +2840,9 @@ PanelWindow {
                         night: { name: "Night Light", label: "Night Light", on: pop.nightLight, code: 0xEAF8, state: pop.nightLight ? "On" : "Off" },
                         dnd: { name: "Do Not Disturb", label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9, state: pop.notifs && pop.notifs.dnd ? "On" : "Off" },
                         perf: { name: "Performance", label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45,
-                                state: PowerProfiles.profile === PowerProfile.Performance ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power Saver" : "Balanced" }
+                                state: PowerProfiles.profile === PowerProfile.Performance ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power Saver" : "Balanced" },
+                        aeroplane: { name: "Aeroplane Mode", label: "Aeroplane Mode", on: Config.s.aeroplaneMode, code: 0xEB6F, state: Config.s.aeroplaneMode ? "Wi-Fi and Bluetooth off" : "Off" },
+                        gamemode: { name: "Game Mode", label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2, state: Config.s.gameMode ? "Effects off" : "Off" }
                     })
                     readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
                         .map(id => Object.assign({ id: id }, every[id]))
@@ -2869,6 +2871,8 @@ PanelWindow {
                                 case "night": Config.s.nightLight = !Config.s.nightLight; break;
                                 case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
                                 case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
+                                case "aeroplane": Config.s.aeroplaneMode = !Config.s.aeroplaneMode; break;
+                                case "gamemode": Config.setGameMode(!Config.s.gameMode); break;
                                 }
                             }
                             // Wide: its icon, then its name over what it's doing

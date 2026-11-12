@@ -194,7 +194,7 @@ Singleton {
         ["Workspace switching", "workspaces", "animation slide fade crossfade vertical transition effect"],
         ["Workspaces wrap around", "workspaces", "circular loop cycle last first ends"],
         ["Hot Corners", "hotcorners", "screen corners actions"],
-        ["Quick switches", "control", "control centre center panel toggles tiles wi-fi bluetooth caffeine night light do not disturb performance order arrange drag"],
+        ["Quick switches", "control", "control centre center panel toggles tiles wi-fi bluetooth caffeine night light do not disturb performance aeroplane airplane flight game mode order arrange drag"],
         ["Notifications", "notifications", "pop-ups toasts position do not disturb history"],
         ["Launcher glass", "launcher", "blur opacity transparency see-through frosted app launcher window"],
         ["Chalk's window glass", "assistant", "blur opacity transparency see-through frosted chalk assistant window"],

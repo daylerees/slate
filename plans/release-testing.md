@@ -22,6 +22,11 @@ to date and the suite passed whole. What's below was left over from that cycle.
   something playing, with no weather, with one, two, five and eight switches, at 853×480, and
   in light mode and glass. A unit-style check of `Config.controlSwitchRects` (through the
   `test` IPC target): no overlaps, all inside the column, for 0 to 8.
+- **Aeroplane mode** (`AeroplaneMode.qml`, `aeroplaneMode`, `aeroplaneRestore`): a live test
+  through `slate ipc call aeroplane on/off` that the setting changes and nothing errors (the
+  tests' computer has no radios, so what was on and comes back needs real hardware: check by
+  hand, including Bluetooth that was already off staying off, and starting Slate with it on).
+  The launcher's Aeroplane Mode toggle. Game mode and aeroplane mode as control centre tiles.
 
 ## Not covered yet
 

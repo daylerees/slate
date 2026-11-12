@@ -41,6 +41,10 @@ JsonAdapter {
     // The control centre's quick switches, in order (Settings → Control Centre): up to eight of
     // Config.controlSwitchList
     property var controlSwitches: ["wifi", "bt", "caffeine", "night", "dnd", "perf"]
+    // Aeroplane mode (AeroplaneMode.qml): Wi-Fi, Bluetooth and mobile broadband off together;
+    // aeroplaneRestore: which of "wifi" and "bt" it turned off, to turn back on after
+    property bool aeroplaneMode: false
+    property var aeroplaneRestore: []
     property int nightLightTemperature: 4000 // kelvin: lower is warmer
     property string nightLightSchedule: "manual"   // manual, sun (sunset to sunrise) or custom
     property string nightLightFrom: "20:00"  // custom schedule

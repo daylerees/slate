@@ -345,13 +345,15 @@ PanelWindow {
     }
 
     // ---- Quick toggles (Settings → Launcher → Quick toggles) ---------------------------
-    // Wi-Fi, Bluetooth, Do Not Disturb, night light and game mode, switched from the results
+    // Wi-Fi, Bluetooth, aeroplane mode, Do Not Disturb, night light and game mode, switched from the results
     readonly property var toggles: [
         { name: "Wi-Fi", words: "wifi wi-fi wireless network internet", icon: 0xEB52,
           on: () => Networking.wifiEnabled, set: v => Networking.wifiEnabled = v, can: () => true },
         { name: "Bluetooth", words: "bluetooth bt wireless", icon: 0xEA37,
           on: () => !!Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled,
           set: v => { if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = v; }, can: () => !!Bluetooth.defaultAdapter },
+        { name: "Aeroplane Mode", words: "aeroplane airplane flight mode plane radios offline", icon: 0xEB6F,
+          on: () => Config.s.aeroplaneMode, set: v => Config.s.aeroplaneMode = v, can: () => true },
         { name: "Do Not Disturb", words: "dnd do not disturb notifications quiet silence focus", icon: 0xECE9,
           on: () => !!root.notifs && root.notifs.dnd, set: v => { if (root.notifs) root.notifs.dnd = v; }, can: () => !!root.notifs },
         { name: "Night Light", words: "night light nightlight warm blue light", icon: 0xEAF8,

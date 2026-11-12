@@ -171,6 +171,7 @@ NAMED = {
     "kbVariants": ("input", "Keyboard layout variants"),
     "touchpadNaturalScroll": ("input", "Natural scrolling (touchpad)"),
     "windowMode": ("windows", "Default window mode"),
+    "aeroplaneMode": ("control", "Aeroplane mode (on or off): Wi-Fi, Bluetooth and mobile broadband off together"),
     "controlSwitches": ("control", "Control centre: its quick switches and their order"),
     "barPosition": ("bar", "Menu bar position"),
     "barLayout": ("bar", "Menu bar arrangement"),
