@@ -403,8 +403,8 @@ PanelWindow {
 
     // ---- Control centre state ----------------------------------------------
     // Caffeine: keeps the session awake (Slate's idle lock and other idle watchers respect it)
-    property bool caffeine: false
-    IdleInhibitor { window: pop.bar; enabled: pop.caffeine }
+    // Caffeine (Config.caffeine): also asked of the compositor, for apps and tools that listen
+    IdleInhibitor { window: pop.bar; enabled: Config.caffeine }
     readonly property bool nightLight: Config.s.nightLight   // NightLight.qml applies it
     onCurrentChanged: {
         if (current === "control") uptimeFile.reload();
@@ -2878,7 +2878,7 @@ PanelWindow {
                     readonly property var every: ({
                         wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
                         bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
-                        caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                        caffeine: { label: "Caffeine", on: Config.caffeine, code: 0xEF0E },
                         night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
                         dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
                         perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 },
@@ -2921,7 +2921,7 @@ PanelWindow {
                                 switch (modelData.id) {
                                 case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
                                 case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
-                                case "caffeine": pop.caffeine = !pop.caffeine; break;
+                                case "caffeine": Config.caffeine = !Config.caffeine; break;
                                 case "night": Config.s.nightLight = !Config.s.nightLight; break;
                                 case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
                                 case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;

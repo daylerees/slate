@@ -50,7 +50,7 @@ Scope {
     Timer { id: lockFallback; interval: 3000; onTriggered: if (root.locking) root.stop() }
 
     IdleMonitor {
-        enabled: root.minutes > 0 && !root.locked
+        enabled: root.minutes > 0 && !root.locked && !Config.caffeine
         timeout: root.minutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: if (isIdle) root.start(true); else root.wake()

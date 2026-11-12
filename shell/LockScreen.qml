@@ -315,19 +315,19 @@ Scope {
 
     // ---- Idle: lock, screen off, suspend ----------------------------------------------
     IdleMonitor {
-        enabled: Config.s.idleLockMinutes > 0 && !root.locked
+        enabled: Config.s.idleLockMinutes > 0 && !root.locked && !Config.caffeine
         timeout: Config.s.idleLockMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: if (isIdle) root.lockNow()
     }
     IdleMonitor {
-        enabled: Config.s.idleScreenOffMinutes > 0
+        enabled: Config.s.idleScreenOffMinutes > 0 && !Config.caffeine
         timeout: Config.s.idleScreenOffMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.dpms({ action = "${isIdle ? "off" : "on"}" })`])
     }
     IdleMonitor {
-        enabled: Config.s.idleSuspendMinutes > 0 && Config.canSuspend
+        enabled: Config.s.idleSuspendMinutes > 0 && Config.canSuspend && !Config.caffeine
         timeout: Config.s.idleSuspendMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: {
