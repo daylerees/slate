@@ -903,6 +903,10 @@ PanelWindow {
             readonly property bool listFits: !root.gridMode && root.chromeHeight + root.results.length * root.rowHeight <= root.panelHeight
             anchors.bottomMargin: root.gridMode ? 4 : 14
             clip: true
+            // While it scrolls, its corners are rounded like the rows and the shades at its ends,
+            // so the selection (and anything else) passing them is cut round too, not square
+            layer.enabled: contentHeight > height + 1
+            layer.effect: MultiEffect { maskEnabled: true; maskSource: listMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
             // The results' keys (see syncResults), emptied and filled again when the layout
             // changes, so every item is made again for it (items made for the list don't lay
             // themselves out again properly as grid cells)
@@ -1209,6 +1213,15 @@ PanelWindow {
             }
         }
 
+        // (the list's rounded shape, for its mask)
+        Item {
+            id: listMask
+            anchors.fill: list
+            visible: false
+            layer.enabled: true
+            Rectangle { anchors.fill: parent; radius: Config.corner(10) }
+        }
+
         // Scrollbar (ThinScrollbar, as everywhere), only when the list overflows
         ThinScrollbar {
             id: scrollbar
@@ -1217,10 +1230,23 @@ PanelWindow {
             anchors { top: list.top; bottom: list.bottom; left: list.right; leftMargin: 8 }
         }
 
-        // Shadow at the bottom while there's more to scroll to
+        // Shades at the top and bottom while there's more to scroll to, rounded like the rows
+        // (square, they showed as hard-cornered blocks, most of all with glass)
+        Rectangle {
+            anchors { left: list.left; right: list.right; top: list.top }
+            height: 36
+            topLeftRadius: Config.corner(10); topRightRadius: Config.corner(10)
+            // Fades with the distance from the start, gone just as you reach it
+            opacity: Math.max(0, Math.min(1, (list.contentY - list.originY) / 24))
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: root.barColor }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
         Rectangle {
             anchors { left: list.left; right: list.right; bottom: list.bottom }
             height: 36
+            bottomLeftRadius: Config.corner(10); bottomRightRadius: Config.corner(10)
             // Fades with the distance from the end, gone just as you reach it
             opacity: Math.max(0, Math.min(1, (list.originY + list.contentHeight - list.height - list.contentY) / 24))
             gradient: Gradient {

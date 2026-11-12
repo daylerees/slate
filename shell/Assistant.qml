@@ -420,6 +420,10 @@ PanelWindow {
                 anchors { fill: parent; rightMargin: talkBox.overflows ? 18 : 0 }
                 contentHeight: talkCol.implicitHeight
                 clip: true
+                // While it scrolls, its corners are rounded like its cards and the shades at its
+                // ends, so what passes them is cut round too (square, the cards showed past them)
+                layer.enabled: talkBox.overflows
+                layer.effect: MultiEffect { maskEnabled: true; maskSource: talkMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                 boundsBehavior: Flickable.StopAtBounds
                 SmoothWheel { flick: talk }
                 // Follows the newest words as they arrive
@@ -671,10 +675,28 @@ PanelWindow {
                     color: root.textColor
                     anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                 }
+                // (the conversation's shape, for its mask: rounded only at an end with more past
+                // it, and rounding in as it's scrolled, with that end's shade; at the very top or
+                // bottom it's square, so the cards there, angled corners and all, show whole)
+                Item {
+                    id: talkMask
+                    anchors.fill: talk
+                    visible: false
+                    layer.enabled: true
+                    readonly property real above: Math.max(0, Math.min(14, talk.contentY))
+                    readonly property real below: Math.max(0, Math.min(14, talk.contentHeight - talk.height - talk.contentY))
+                    Rectangle {
+                        anchors.fill: parent
+                        topLeftRadius: Config.corner(talkMask.above); topRightRadius: Config.corner(talkMask.above)
+                        bottomLeftRadius: Config.corner(talkMask.below); bottomRightRadius: Config.corner(talkMask.below)
+                    }
+                }
                 // Shades while there's more above or below: fading out just as you reach the end
+                // (rounded like the cards they're over: square, they showed as hard-cornered blocks)
                 Rectangle {
                     anchors { left: talk.left; right: talk.right; top: parent.top }
                     height: 28
+                    topLeftRadius: Config.corner(14); topRightRadius: Config.corner(14)
                     opacity: Math.max(0, Math.min(1, talk.contentY / 24))
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: root.barColor }
@@ -684,6 +706,7 @@ PanelWindow {
                 Rectangle {
                     anchors { left: talk.left; right: talk.right; bottom: parent.bottom }
                     height: 28
+                    bottomLeftRadius: Config.corner(14); bottomRightRadius: Config.corner(14)
                     opacity: Math.max(0, Math.min(1, (talk.contentHeight - talk.height - talk.contentY) / 24))
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: "transparent" }
