@@ -210,6 +210,8 @@ ShellRoot {
             dockMenu.close();
             if (row && row.run) row.run();
         }
+        // The pointer on the bar menu's item `index` (its row's top at y), as hovering it does
+        function menuPoint(index: int, y: real): void { topBar.menu.want(index, y); }
         function menuKey(key: string): void {
             const k = ({ Up: Qt.Key_Up, Down: Qt.Key_Down, Enter: Qt.Key_Return, Space: Qt.Key_Space, Left: Qt.Key_Left,
                          Right: Qt.Key_Right, Home: Qt.Key_Home, End: Qt.Key_End, Escape: Qt.Key_Escape })[key];
@@ -304,7 +306,7 @@ ShellRoot {
                 control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,
                            rects: Config.controlSwitchRects(Config.controlSwitches.length, 200, 300).map(q => [q.x, q.y, q.width, q.height]) },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
-                           inSub: topBar.menu.inSub, subHot: topBar.menu.subHot,
+                           inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
                 switcher: { open: winSwitcher.shown },
                 overview: { open: wsOverview.shown, selected: wsOverview.selected, grid: wsOverview.isGrid,

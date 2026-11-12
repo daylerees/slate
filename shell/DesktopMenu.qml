@@ -117,14 +117,17 @@ PanelWindow {
     function close() { visible = false; subIndex = -1; subWanted = -1; hot = -1; subHot = -1; subWait.stop(); }
     // The pointer on an item: its submenu (or none) wanted; opening one when none shows is
     // quick, changing or closing one waits a little longer
+    // (the submenu moves beside its item as it changes, not before: moved at once, the one
+    // showing sat beside the next item, its own items in it, until the wait was over)
+    property real subWantedY: 0
     function want(index, rowY) {
         subWanted = index;
-        if (index >= 0) subRowY = rowY;
+        if (index >= 0) subWantedY = rowY;
         if (subWanted === subIndex) { subWait.stop(); return; }
         subWait.interval = subIndex < 0 ? 120 : 300;
         subWait.restart();
     }
-    Timer { id: subWait; onTriggered: dm.subIndex = dm.subWanted }
+    Timer { id: subWait; onTriggered: { if (dm.subWanted >= 0) dm.subRowY = dm.subWantedY; dm.subIndex = dm.subWanted; } }
     // Going to another workspace, or opening the launcher, Nova, a picker or a switcher
     // (Config.closeMenus), closes it
     Connections {

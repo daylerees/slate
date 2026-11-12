@@ -97,6 +97,24 @@ class BarMenu(LiveCase):
             self.key("Escape")
             self.wait(lambda st: not st["barMenu"]["open"], "Escape to close the menu")
 
+    def test_submenu_moves_with_its_items(self):
+        """Pointing from one item with a submenu to another: the submenu showing changes after a
+        moment, and stays beside its own item till then (it moved at once, so the last one's
+        items showed beside the next item for a moment: seen by Dayle, 2026-11-12)."""
+        self.addCleanup(lambda: self.ipc("test", "menuKey", "Escape"))
+        self.ipc("test", "barMenu", "open")
+        self.wait(lambda st: st["barMenu"]["open"], "the bar's menu to open")
+        items = self.menu()["items"]
+        first, second = items.index("Position"), items.index("Clock")
+        self.ipc("test", "menuPoint", str(first), "30")
+        self.wait(lambda st: st["barMenu"]["sub"] == first, "Position's submenu")
+        self.ipc("test", "menuPoint", str(second), "60")
+        m = self.menu()
+        self.assertEqual(m["sub"], first, "the submenu changed without the wait")
+        self.assertEqual(m["subRowY"], 30, "the submenu moved to the next item with the last one's items in it")
+        self.wait(lambda st: st["barMenu"]["sub"] == second, "Clock's submenu")
+        self.assertEqual(self.menu()["subRowY"], 60, "the submenu didn't move beside its item")
+
     def test_enter_chooses(self):
         self.keep_setting("barAutoHide")
         self.config("barAutoHide", "false")
