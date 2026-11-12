@@ -2683,74 +2683,7 @@ PanelWindow {
                 }
             }
 
-            // Quick toggles, four to a row: one row or two. Which ones, and in what order, is
-            // yours to choose (Settings → Control Centre: Config.controlSwitches; SwitchBoard.qml
-            // draws this same grid, so keep the two alike)
-            Grid {
-                id: ccTiles
-                columns: 4
-                spacing: 8
-                visible: toggles.length > 0
-                readonly property real tileW: (controlView.width - spacing * (columns - 1)) / columns
-                // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
-                readonly property var every: ({
-                    wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
-                    bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
-                    caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
-                    night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
-                    dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
-                    perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
-                })
-                readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
-                    .map(id => ({ id: id, label: every[id].label, on: every[id].on, code: every[id].code }))
-                readonly property real tileH: 64
-                Repeater {
-                    model: ccTiles.toggles
-                    delegate: RowButton {
-                        id: controlTile
-                        required property var modelData
-                        width: ccTiles.tileW
-                        height: ccTiles.tileH
-                        radius: Config.corner(12)
-                        selected: modelData.on
-                        // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                        color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
-                            : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                        HoverHandler { id: tileHover }
-                        onClicked: {
-                            switch (modelData.id) {
-                            case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
-                            case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
-                            case "caffeine": pop.caffeine = !pop.caffeine; break;
-                            case "night": Config.s.nightLight = !Config.s.nightLight; break;
-                            case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
-                            case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
-                            }
-                        }
-                        Column {
-                            anchors.centerIn: parent
-                            width: parent.width - 12
-                            spacing: 3
-                            Icon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                code: controlTile.modelData.code
-                                color: controlTile.selected ? pop.accentText : pop.text
-                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            }
-                            Label {
-                                width: parent.width
-                                horizontalAlignment: Text.AlignHCenter
-                                text: controlTile.modelData.label
-                                font.pixelSize: 11
-                                color: controlTile.selected ? pop.accentText : pop.text
-                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Under them: what's playing, then the clock and weather (the whole width when nothing is)
+            // What's playing, then the clock and weather (the whole width when nothing is)
             Row {
                 spacing: 12
                 Rectangle {
@@ -2852,6 +2785,73 @@ PanelWindow {
                                 // vanished, a shade darker
                                 color: Config.s.lightMode ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.03)
                                 gap: 4; iconSize: 18; tempSize: 12
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Quick toggles along the bottom, four to a row: one row or two. Which ones, and in what order, is
+            // yours to choose (Settings → Control Centre: Config.controlSwitches; SwitchBoard.qml
+            // draws this same grid, so keep the two alike)
+            Grid {
+                id: ccTiles
+                columns: 4
+                spacing: 8
+                visible: toggles.length > 0
+                readonly property real tileW: (controlView.width - spacing * (columns - 1)) / columns
+                // Every toggle there is, each lit while it's on (the same ids as Config.controlSwitchList)
+                readonly property var every: ({
+                    wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
+                    bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
+                    caffeine: { label: "Caffeine", on: pop.caffeine, code: 0xEF0E },
+                    night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                    dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                    perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 }
+                })
+                readonly property var toggles: Config.controlSwitches.filter(id => every[id] !== undefined)
+                    .map(id => ({ id: id, label: every[id].label, on: every[id].on, code: every[id].code }))
+                readonly property real tileH: 64
+                Repeater {
+                    model: ccTiles.toggles
+                    delegate: RowButton {
+                        id: controlTile
+                        required property var modelData
+                        width: ccTiles.tileW
+                        height: ccTiles.tileH
+                        radius: Config.corner(12)
+                        selected: modelData.on
+                        // On ones light up too when pointed at (a lighter accent), as they can be turned off
+                        color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
+                            : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                        HoverHandler { id: tileHover }
+                        onClicked: {
+                            switch (modelData.id) {
+                            case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
+                            case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
+                            case "caffeine": pop.caffeine = !pop.caffeine; break;
+                            case "night": Config.s.nightLight = !Config.s.nightLight; break;
+                            case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
+                            case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
+                            }
+                        }
+                        Column {
+                            anchors.centerIn: parent
+                            width: parent.width - 12
+                            spacing: 3
+                            Icon {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                code: controlTile.modelData.code
+                                color: controlTile.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                            }
+                            Label {
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                text: controlTile.modelData.label
+                                font.pixelSize: 11
+                                color: controlTile.selected ? pop.accentText : pop.text
+                                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             }
                         }
                     }

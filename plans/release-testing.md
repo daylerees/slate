@@ -16,7 +16,7 @@ to date and the suite passed whole. What's below was left over from that cycle.
   `settings-control` (new) and `panel-control` with eight; `settings-overview` re-approved (a
   new tile). The static page checks (pageKeys, pastel, index) should pick the page up by
   themselves. A unit test that `slate mcp` names the setting and refuses to change it (a list).
-- **The control centre's new shape** (switches four to a row above what's playing and the
+- **The control centre's new shape** (switches four to a row along the bottom, under what's playing and the
   clock): re-approve `panel-control` and any scene with the panel open; look at it with and
   without something playing, with no weather, at 853×480, and in light mode and glass.
 

@@ -99,8 +99,8 @@ Item {
         color: board.card
         Gloss { radius: parent.radius }
     }
-    // The panel in small: your picture and name along the top, the switches, then what's
-    // playing and the clock
+    // The panel in small: your picture and name along the top, what's playing and the clock,
+    // then the switches along the bottom
     Rectangle {
         id: picture
         x: Math.round((board.width - width) / 2); y: panelCard.y + 14
@@ -110,8 +110,8 @@ Item {
         radius: Config.corner(16 * board.k)
         color: board.well
         Ghost { x: 12 * board.k; y: 12 * board.k; width: board.panelW * board.k; height: 80 * board.k }
-        Ghost { x: 12 * board.k; y: parent.height - (104 + 12) * board.k; width: board.leftW * board.k; height: 104 * board.k }
-        Ghost { x: (12 + board.leftW + 12) * board.k; y: parent.height - (104 + 12) * board.k; width: (board.panelW - board.leftW - 12) * board.k; height: 104 * board.k }
+        Ghost { x: 12 * board.k; y: (12 + 80 + 12) * board.k; width: board.leftW * board.k; height: 104 * board.k }
+        Ghost { x: (12 + board.leftW + 12) * board.k; y: (12 + 80 + 12) * board.k; width: (board.panelW - board.leftW - 12) * board.k; height: 104 * board.k }
         Text {
             visible: board.showing.length === 0
             x: grid.x0 - picture.x; y: grid.y0 - picture.y
@@ -125,7 +125,7 @@ Item {
     QtObject {
         id: grid
         readonly property real x0: picture.x + 12 * board.k
-        readonly property real y0: picture.y + (12 + 80 + 12) * board.k
+        readonly property real y0: picture.y + (12 + 80 + 12 + 104 + 12) * board.k
     }
 
     // ---- The ones left over -------------------------------------------------------------------
