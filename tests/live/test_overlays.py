@@ -22,6 +22,32 @@ class Overlays(LiveCase):
         self.wait(lambda st: st["launcher"]["query"] == "2+3*4")
         self.s.settle(0.3)
 
+    def test_launcher_keeps_the_top_result(self):
+        """Typing a sum a character at a time, quickly: the selection stays on the top result
+        (the answer) as later results come in. The list used to carry it along with its row,
+        so it ended on "Search the web" under the answer. Bug, 2026-11-12."""
+        self.addCleanup(lambda: self.ipc("launcher", "close"))
+        self.ipc("launcher", "open")
+        self.wait(lambda st: st["launcher"]["open"], "the launcher")
+        for q in ("c", "ca", "cal", "", "2", "24", "24*", "24*7"):
+            self.ipc("launcher", "search", q)
+            self.s.settle(0.08)
+        st = self.wait(lambda st: st["launcher"]["query"] == "24*7" and st["launcher"]["results"], "the sum's results")
+        self.s.settle(0.6)                 # (any late results)
+        st = self.s.state()["launcher"]
+        self.assertEqual(st["current"], 0, f"the selection left the top result: {st['results'][:3]}")
+        self.assertTrue(st["results"][0].startswith("= 168") or "168" in st["results"][0], st["results"][:3])
+
+    def test_launcher_search_keeps_it_open(self):
+        """Searching while it's open changes the text, as typing does, rather than opening it
+        afresh (which put the selection back and cleared the search on each call)."""
+        self.addCleanup(lambda: self.ipc("launcher", "close"))
+        self.ipc("launcher", "search", "f")
+        self.wait(lambda st: st["launcher"]["open"] and st["launcher"]["query"] == "f")
+        self.ipc("launcher", "search", "fo")
+        st = self.wait(lambda st: st["launcher"]["query"] == "fo", "the search to become fo")
+        self.assertTrue(st["launcher"]["open"])
+
     def test_picker(self):
         for mode in ("clipboard", "emoji"):
             with self.subTest(mode):

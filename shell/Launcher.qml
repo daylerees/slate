@@ -60,6 +60,7 @@ PanelWindow {
     // changes, and as they're reordered the list carries the selection along with its row (so
     // typing "c" left it on Files at the bottom, and 24*7 on "Search the web" under the answer)
     property bool picked: false
+    readonly property int currentIndex: list.currentIndex     // (the test hook's state)
     // Wrapping round to the other end jumps there, highlight and list both, as opening does: a
     // slide the length of the list took longer than a held key takes to repeat, so the
     // selection was already a few items on before it was ever seen at the end
@@ -105,7 +106,8 @@ PanelWindow {
         function toggle(): void { if (root.shown) root.closeLauncher(); else root.openLauncher(); }
         function open(): void { root.openLauncher(); }
         function close(): void { root.closeLauncher(); }
-        function search(query: string): void { root.openLauncher(); search.text = query; }
+        // (opened if it isn't; if it is, the text is just changed, as typing does)
+        function search(query: string): void { if (!root.shown) root.openLauncher(); search.text = query; }
         // Launch whatever is selected (Hyprland's Super+Enter uses this after
         // switching to an empty workspace, so the app opens there)
         function launchSelected(): void { root.launch(root.results[list.currentIndex]); }

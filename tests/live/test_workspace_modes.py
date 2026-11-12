@@ -402,6 +402,49 @@ class OpeningWindows(WorkspaceModes):
                 self.assertLessEqual(c["at"][1] + c["size"][1], ay + ah)
 
 
+
+class OverviewReorder(WorkspaceModes):
+    """Moving a workspace along in the overview (a lifted card) swaps the two workspaces'
+    numbers in Hyprland: each keeps its windows laid out as they were, and its name and window
+    mode go with it. It used to move the windows across, which re-tiled them (the split came out
+    flipped) and blanked their previews. Bug, 2026-11-12."""
+    def test_moving_a_card_keeps_its_layout_name_and_mode(self):
+        self.addCleanup(lambda: [self.ipc("workspacename", "set", str(i), "") for i in (1, 2)])
+        self.addCleanup(lambda: self.ipc("overview", "close"))
+        left = self.foot_on(1)
+        right = self.foot_on(1)
+        lone = self.foot_on(2)
+        self.ipc("workspacename", "set", "1", "Alpha")
+        self.ipc("workspacemode", "set", "1", "master")
+        self.s.settle(0.5)
+        clients = {c["address"]: c for c in self.s.hyprctl("clients", json_out=True)}
+        before = sorted((clients[a]["at"][0], a) for a in (left["address"], right["address"]))
+        self.go(1)
+        self.ipc("overview", "open")
+        self.wait(lambda st: st["overview"]["open"], "the overview")
+        self.s.settle(0.6)
+        self.ipc("overview", "hold", "true")
+        self.ipc("overview", "moveRight")
+        self.s.settle(0.8)
+        self.ipc("overview", "hold", "false")
+        self.ipc("overview", "close")
+        self.s.settle(1.0)
+        clients = {c["address"]: c for c in self.s.hyprctl("clients", json_out=True)}
+        with self.subTest("the windows went together, laid out as they were"):
+            self.assertEqual(clients[left["address"]]["workspace"]["id"], 2)
+            self.assertEqual(clients[right["address"]]["workspace"]["id"], 2)
+            self.assertEqual(clients[lone["address"]]["workspace"]["id"], 1)
+            after = sorted((clients[a]["at"][0], a) for a in (left["address"], right["address"]))
+            self.assertEqual([a for _, a in before], [a for _, a in after], "the two windows swapped sides")
+            self.assertEqual([x for x, _ in before], [x for x, _ in after], "the split changed")
+        with self.subTest("its name and mode went with it"):
+            self.wait(lambda st: st["workspaceNames"].get("2") == "Alpha" and "1" not in st["workspaceNames"],
+                      "the name to move to workspace 2")
+            self.assertEqual(self.ipc("workspacemode", "get", "2"), "master")
+            self.assertEqual(self.ipc("workspacemode", "get", "1"), "")
+
+
 # (only this class's own tests: the ones it borrows its helpers from run in their own)
 for _n in [n for n in dir(WorkspaceModes) if n.startswith("test_")]:
     setattr(OpeningWindows, _n, None)
+    setattr(OverviewReorder, _n, None)

@@ -178,11 +178,21 @@ ShellRoot {
                                       temperature_2m_max: [15, 12, 9, 3, 7], temperature_2m_min: [8, 6, 1, -2, 2] } : null;
         }
         // The bar's right-click menu: open it, or choose one of its rows by its label
+        // The bar's right-click menu: "open", or an item to choose ("Position/Bottom": one in a
+        // submenu); menuKey sends a key to it, as pressing it there does (Up, Down, Enter, Space,
+        // Left, Right, Home, End, Escape)
         function barMenu(what: string): void {
             if (what === "open") { topBar.menu.openAt(600, 20); return; }
-            const row = topBar.menu.items.find(i => i.label === what);
+            const path = what.split("/");
+            let row = topBar.menu.items.find(i => i.label === path[0]);
+            if (row && path.length > 1 && row.submenu) row = row.submenu.find(i => i.label === path[1]);
             topBar.menu.close();
             if (row && row.run) row.run();
+        }
+        function menuKey(key: string): void {
+            const k = ({ Up: Qt.Key_Up, Down: Qt.Key_Down, Enter: Qt.Key_Return, Space: Qt.Key_Space, Left: Qt.Key_Left,
+                         Right: Qt.Key_Right, Home: Qt.Key_Home, End: Qt.Key_End, Escape: Qt.Key_Escape })[key];
+            if (k !== undefined) topBar.menu.key({ key: k, accepted: false });
         }
         function hyprbars(what: string): void {
             if (what === "choose") Config.hyprbarsChoose();
@@ -266,9 +276,12 @@ ShellRoot {
                 settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
                             ownCard: !!settings && settings.confirming,
                             scroll: settings ? settings.scrolledTo : 0 },
-                launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode,
+                launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
+                barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
+                           inSub: topBar.menu.inSub, subHot: topBar.menu.subHot,
+                           items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
                 switcher: { open: winSwitcher.shown },
                 overview: { open: wsOverview.shown, selected: wsOverview.selected, grid: wsOverview.isGrid,
                             workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
@@ -314,7 +327,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [] },
+                       line: topBar.lineState(), gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge
             });
         }

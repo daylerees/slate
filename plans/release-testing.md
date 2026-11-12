@@ -197,3 +197,6 @@ Most of these need a real pointer, or hardware the tests' computer hasn't got.
 ## Overview: moving a workspace keeps its layout and previews (2026-11-12)
 - Live: overview with live previews, lift a card (hold) and move it along. The two workspaces swap numbers (Config.swapWorkspaces, Hyprland's workspace.change_id) rather than their windows moving: each keeps its split as it was (it used to come out flipped) and its previews keep updating (they went blank). Their names and window modes go with them.
 - Unit/static: swapWorkspaces swaps workspaceNames and workspaceModes entries.
+
+## Lock/login arrow after a wrong password (2026-11-12)
+- Live: lock, submit a wrong password (test hook), and check the go button's arrow is upright (rotation 0) once it fails; the spinner shows only while checking. By eye on the real login screen once the greeter's synced.

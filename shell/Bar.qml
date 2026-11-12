@@ -396,6 +396,9 @@ PanelWindow {
         ]
     }
     property alias menu: barMenu
+    // The workspace dots, for the test hook: how many are in view, the first, and the one in use
+    readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
+                                              firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width } : null
 
     // ---- The active window's icon and title, cross-faded as the window changes -------------
     // (Each thing on the bar still says what it is in words, its hoverText: the bar once showed

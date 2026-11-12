@@ -53,7 +53,7 @@ class Assistant(LiveCase):
 
     def test_off_to_start_with(self):
         st = self.status()
-        self.assertEqual(set(st), {"enabled", "risksChanged", "locked", "gameMode", "askChanges", "seeTitles", "seeNotifications"})
+        self.assertEqual(set(st), {"enabled", "risksChanged", "locked", "gameMode", "askChanges", "seeTitles", "seeNotifications", "private"})
         self.assertEqual((st["enabled"], st["locked"], st["seeTitles"], st["seeNotifications"]), (False, False, True, False))
         # Setting the switch some other way switches nothing on: the risks have to be accepted too
         self.config("assistantEnabled", "true")

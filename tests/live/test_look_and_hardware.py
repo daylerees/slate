@@ -82,3 +82,28 @@ class Rounding(LiveCase):
                 break
             self.s.settle(0.2)
         self.assertEqual(self.rounding(), usual, "windows didn't get their corners back")
+
+
+class Shadows(LiveCase):
+    """Settings → Appearance → Shadows: off takes Hyprland's shadows under floating windows away
+    too, and on puts them back."""
+    def shadow(self):
+        o = self.s.hyprctl("getoption", "decoration:shadow:enabled", json_out=True)
+        return int(o.get("bool", o.get("int", 0)))      # (a bool option, reported as "bool")
+
+    def until(self, want):
+        for _ in range(30):
+            if self.shadow() == want:
+                return True
+            self.s.settle(0.2)
+        return False
+
+    def test_the_switch_reaches_hyprland(self):
+        self.keep_setting("shadows")
+        self.addCleanup(lambda: self.s.settle(1.2))
+        self.config("shadows", "true")
+        self.assertTrue(self.until(1), "Hyprland's shadows aren't on with Shadows on")
+        self.config("shadows", "false")
+        self.assertTrue(self.until(0), "Hyprland kept its shadows with Shadows off")
+        self.config("shadows", "true")
+        self.assertTrue(self.until(1), "Hyprland's shadows didn't come back")

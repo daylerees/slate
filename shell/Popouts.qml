@@ -488,7 +488,9 @@ PanelWindow {
         stdout: StdioCollector { onStreamFinished: { try { pop.hyprVersion = JSON.parse(text).tag.replace(/^v/, ""); } catch (e) {} } }
     }
     function uptimeText() {
-        const sec = parseFloat((uptimeFile.text() || "0").split(" ")[0]);
+        // (the same every time under the test suite, so its screenshots don't change with the
+        // test machine's uptime)
+        const sec = Config.testMode ? 121320 : parseFloat((uptimeFile.text() || "0").split(" ")[0]);
         const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
         return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + h + " h " + m + " min";
     }
