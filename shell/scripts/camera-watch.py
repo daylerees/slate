@@ -124,7 +124,21 @@ def say(on, apps):
     print(json.dumps({"on": on, "apps": apps}), flush=True)
 
 
+def end_with_slate():
+    """Stop when the Slate that started this stops. It's only told so when it next writes a line,
+    and it only writes when a camera's opened or closed: without this, one left by a Slate that
+    had stopped or restarted waited on for good (and held the test runner's output open)."""
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6", use_errno=True)
+        libc.prctl(1, 15, 0, 0, 0)          # PR_SET_PDEATHSIG: SIGTERM when the parent goes
+    except (OSError, AttributeError):
+        pass
+    if os.getppid() == 1:                   # (it went before that was set)
+        sys.exit(0)
+
+
 def watch():
+    end_with_slate()
     ino = Inotify()
     ino.add(DEV, IN_CREATE | IN_DELETE | IN_ATTRIB)
 

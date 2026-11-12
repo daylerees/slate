@@ -81,6 +81,31 @@ class CameraWatch(Case):
         self.addCleanup(app.kill)
         self.assertTrue(self.line(p)["on"])
 
+    def test_ends_with_slate(self):
+        """It stops when the process that started it (Slate) stops, with no camera doing anything.
+        It used to wait on until it next had something to say, so every restart left one behind
+        (and one held the test runner's output open). Bug, 2026-11-12."""
+        pidfile = os.path.join(self.h.dir, "pid")
+        # A stand-in for Slate: starts the watcher, notes its pid, and goes after a moment
+        parent = subprocess.Popen([sys.executable, "-c",
+            "import subprocess, sys, time\n"
+            f"p = subprocess.Popen([sys.executable, {SCRIPT!r}], stdout=subprocess.DEVNULL)\n"
+            f"open({pidfile!r}, 'w').write(str(p.pid))\n"
+            "time.sleep(0.8)\n"], env=self.env)
+        parent.wait(timeout=10)
+        pid = int(open(pidfile).read())
+        for _ in range(50):
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return
+            with open(f"/proc/{pid}/stat") as f:
+                if f.read().split(")")[-1].split()[0] == "Z":     # (gone, not yet reaped)
+                    return
+            time.sleep(0.1)
+        os.kill(pid, 9)
+        self.fail("the watcher kept running after the Slate that started it had gone")
+
     def test_once(self):
         out = subprocess.run([sys.executable, SCRIPT, "--once"], env=self.env, capture_output=True, text=True, timeout=10)
         self.assertEqual(json.loads(out.stdout), {"on": False, "apps": []})
