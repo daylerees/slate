@@ -252,13 +252,9 @@ PanelWindow {
         contents = c;
         swapA = -1; swapB = -1; swapProg = 0;
         Qt.callLater(() => ov.handover = false);
-        // Now actually move the windows in Hyprland
-        const mv = (addr, ws) => {
-            const ad = addr.startsWith("0x") ? addr : "0x" + addr;
-            return `hl.dispatch(hl.dsp.window.move({ workspace = ${ws}, window = "address:${ad}", follow = false }))`;
-        };
-        const cmds = (c[b] || []).map(x => mv(x, b)).concat((c[a] || []).map(x => mv(x, a)));
-        if (cmds.length) Quickshell.execDetached(["hyprctl", "dispatch", "function() " + cmds.join("; ") + " end"]);
+        // Now swap them in Hyprland: their numbers trade, so the windows stay where they are,
+        // laid out as they were, and their previews keep going (Config.swapWorkspaces)
+        Config.swapWorkspaces(a, b);
         refreshTimer.restart();
     }
     // Hyprland answers refreshToplevels() a moment later; keep the fresh positions

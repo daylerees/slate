@@ -1853,6 +1853,25 @@ Singleton {
         Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceNamesPath]);
         workspaceNamesFile.setText(JSON.stringify(m));
     }
+    // Swap two workspaces' places (the overview's reorder): their numbers trade through a
+    // spare one, so each keeps its windows, their layout and their live pictures (moving the
+    // windows across instead re-tiled them, and the overview's previews of them went blank);
+    // their names and window modes go with them
+    function swapWorkspaces(a, b) {
+        if (!(a > 0) || !(b > 0) || a === b) return;
+        const spare = 90000 + a;
+        Quickshell.execDetached(["hyprctl", "dispatch", "function() "
+            + `hl.dispatch(hl.dsp.workspace.change_id({ workspace = ${a}, id = ${spare} })); `
+            + `hl.dispatch(hl.dsp.workspace.change_id({ workspace = ${b}, id = ${a} })); `
+            + `hl.dispatch(hl.dsp.workspace.change_id({ workspace = ${spare}, id = ${b} })) end`]);
+        const n = Object.assign({}, workspaceNames), na = n[String(a)], nb = n[String(b)];
+        delete n[String(a)]; delete n[String(b)];
+        if (nb !== undefined) n[String(a)] = nb;
+        if (na !== undefined) n[String(b)] = na;
+        saveWorkspaceNames(n);
+        const ma = workspaceModes[String(a)] || "", mb = workspaceModes[String(b)] || "";
+        if (ma !== mb) { setWorkspaceMode(a, mb); setWorkspaceMode(b, ma); }
+    }
     // Name it (an empty name: back to its number)
     function setWorkspaceName(id, name) {
         if (!(id > 0)) return;
