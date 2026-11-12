@@ -246,7 +246,7 @@ Singleton {
     // which end the button sits at, the rest sliding out from it): `tuck` and `tuckFrom` say
     // the same for the bar. Saved the old way (tuck: true), the button goes at the end
     function barBox(items, saved) {
-        // How it collapses (plans/menubar-length.md): "never", "always" (tucked behind its button
+        // How it collapses: "never", "always" (tucked behind its button
         // until that's clicked) or "needed" (only when the bar's short of room), which is how
         // a container starts. From before there were modes: one with a button is "always"
         const legacy = !!saved && ((saved.items && saved.items.indexOf("tuck") >= 0) || !!saved.tuck);
@@ -468,7 +468,7 @@ Singleton {
         barSave(list);
     }
     // The order things leave a bar that's short of room, first to go first (Slate's own; the
-    // last three stay). plans/menubar-length.md
+    // last three stay)
     readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
         "chalk", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
     // The order in use: yours (Settings → Menu Bar → Edit layout → If it doesn't fit), with

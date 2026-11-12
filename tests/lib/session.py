@@ -1,7 +1,7 @@
 """A real Slate session for the live and visual tiers: Hyprland on a headless output, with
 Slate (a copy of shell/, SLATE_TEST=1) in a scratch home. Only runs in the test container,
-where tests/run passes in the vkms card it renders through (see plans/test-suite.md,
-"Spike result"); it never touches the desktop you're running.
+where tests/run passes in the vkms card it renders through (see docs/TESTING.md,
+"The live and visual tiers need vkms"); it never touches the desktop you're running.
 
     s = Session.shared()          # started once per run, reused by every live/visual test
     s.ipc("settings", "page", "dock")

@@ -423,7 +423,7 @@ PanelWindow {
     function scrollBy(d) { scroll = Math.max(0, Math.min(scrollMax, scroll + d)); }
     Connections { target: Config; function onBarShowAllChanged() { bar.scroll = 0; } }
 
-    // ---- When it doesn't all fit: slimming (plans/menubar-length.md) --------------------------
+    // ---- When it doesn't all fit: slimming (docs/ARCHITECTURE.md, "When the bar's contents don't fit") ----
     // The line gives up the cheapest things first, each only if it still doesn't fit after the
     // one before: the window's title goes (its icon stays; before that it has already
     // shortened, and the flexible spaces have closed up), then the text beside icons, longest

@@ -484,7 +484,7 @@ PanelWindow {
             }
             Line {}
 
-            // If it doesn't fit (plans/menubar-length.md): menu item priority, which has a window
+            // If it doesn't fit: menu item priority, which has a window
             // of its own (below), and a way to see it happen: the bar tried shorter
             Item {
                 width: parent.width; height: 32
@@ -642,7 +642,7 @@ PanelWindow {
     }
 
     // ---- Menu item priority -------------------------------------------------------------
-    // What the bar does when it's short of room (plans/menubar-length.md), explained, beside the
+    // What the bar does when it's short of room, explained, beside the
     // one part of it that's yours to set: the order things leave for More. Shown highest
     // priority first (the last to leave), so it's Config.barOverflowOrder backwards, without
     // what always stays, which never leaves and so has no place in it

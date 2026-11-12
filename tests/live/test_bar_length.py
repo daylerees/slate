@@ -1,4 +1,4 @@
-"""When the menu bar's contents don't fit (plans/menubar-length.md): the line slims itself,
+"""When the menu bar's contents don't fit: the line slims itself,
 cheapest thing first, and takes it back when there's room to spare. Driven by squeezing the
 line (the test hook), since the screen can't change size mid-session."""
 import json
