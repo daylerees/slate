@@ -59,6 +59,7 @@ Scope {
         function status(): string {
             return JSON.stringify({
                 enabled: Config.assistantOn,
+                private: Config.s.privateMode,
                 risksChanged: Config.assistantRisksChanged,
                 locked: root.lockScreen.locked,
                 gameMode: Config.gameMode,

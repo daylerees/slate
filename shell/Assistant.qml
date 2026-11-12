@@ -397,12 +397,13 @@ PanelWindow {
                 topPadding: 6
                 Text {
                     width: parent.width
-                    text: Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
+                    text: Config.s.privateMode ? "Nova is off while Private Mode is on. You can turn Private Mode off in the control centre."
+                        : Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
                         : "The assistant isn't switched on yet. You can switch it on in Settings, which says what that means first."
                     textFormat: Text.PlainText; wrapMode: Text.WordWrap
                     color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
                 }
-                PillButton { label: "Open Settings"; primary: true; onPressed: root.openSettings() }
+                PillButton { visible: !Config.s.privateMode; label: "Open Settings"; primary: true; onPressed: root.openSettings() }
             }
 
             // ---- The conversation: what you asked, what came back, what it did ----

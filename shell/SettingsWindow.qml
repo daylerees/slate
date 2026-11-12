@@ -2876,7 +2876,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Quick toggles"
-                    detail: "Wi-Fi, Bluetooth, Do Not Disturb, night light and game mode, switched from the results"
+                    detail: "Wi-Fi, Bluetooth, Airplane Mode, Private Mode, Do Not Disturb, night light and game mode, switched from the results"
                     key: "launcherToggles"
                 }
                 Separator {}
@@ -3432,6 +3432,18 @@ FloatingWindow {
             PwObjectTracker { objects: [soundPane.sink, soundPane.source] }
             function nodeName(n) { return n ? (n.description || n.nickname || n.name) : ""; }
 
+            // Private Mode keeps every microphone muted (PrivateMode.qml): said here, so the
+            // microphone's mute staying on makes sense
+            GroupLabel { visible: Config.s.privateMode; text: "Private Mode" }
+            Group {
+                visible: Config.s.privateMode
+                SettingRow {
+                    label: "Private Mode is on"
+                    detail: "Your microphones are muted and stay that way until you turn it off. Your speakers and Slate's sounds work as usual."
+                    Button { label: "Turn off"; icon: 0xF227; onClicked: Config.setPrivateMode(false) }
+                }
+            }
+
             GroupLabel { text: "Output" }
             Group {
                 DropdownSetting {
@@ -3480,7 +3492,9 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Mute the microphone"
+                    detail: Config.s.privateMode ? "Muted while Private Mode is on" : ""
                     Toggle {
+                        enabled: !Config.s.privateMode
                         checked: !!(soundPane.source && soundPane.source.audio && soundPane.source.audio.muted)
                         onToggled: v => { if (soundPane.source && soundPane.source.audio) soundPane.source.audio.muted = v; }
                     }
@@ -4152,12 +4166,14 @@ FloatingWindow {
                 SettingRow {
                     label: "Let assistants use Slate"
                     settingKey: "assistantEnabled"
-                    detail: Config.assistantRisksChanged
+                    detail: Config.s.privateMode && Config.s.assistantEnabled
+                        ? "Off while Private Mode is on, and back when you turn Private Mode off in the control centre."
+                        : Config.assistantRisksChanged
                         ? "Something's changed about the assistant, so it's paused. Switch it on again to read what's new."
                         : "What Slate tells an assistant about your desktop (your settings, your open windows and their titles) is sent to the service behind the agent you use, "
                         + "under your own account with them. Slate itself sends nothing anywhere. Slate does its best to keep an assistant within these limits, "
                         + "but it can't promise what one will do, so using it is your choice and your responsibility."
-                    Toggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
+                    Toggle { checked: Config.assistantOn; enabled: !Config.s.privateMode; onToggled: v => win.assistantSwitch(v) }
                     below: [Button { visible: Config.assistantOn; label: "Read the risks again"; onClicked: win.assistantReadRisks() }]
                 }
             }
@@ -7303,10 +7319,26 @@ FloatingWindow {
             PageTitle { text: "Webcam" }
             IntroText { text: "Your camera's picture. Changes apply straight away, to every app that uses the camera, and are kept when it's unplugged or the computer restarts." }
 
-            GroupLabel { visible: camPane.looked; text: "Camera" }
+            // Private Mode turns the camera off for every app, this page included (PrivateMode.qml):
+            // said instead of the camera's settings, which can't be reached until it's off. Looked
+            // at again once it's turned off (the camera takes a moment to come back)
+            readonly property bool privateOn: Config.s.privateMode
+            onPrivateOnChanged: { if (!privateOn) lookAgain.restart(); else preview = false; }
+            Timer { id: lookAgain; interval: 1500; onTriggered: camPane.refresh() }
+            GroupLabel { visible: camPane.privateOn; text: "Private Mode" }
+            Group {
+                visible: camPane.privateOn
+                SettingRow {
+                    label: "Private Mode is on"
+                    detail: "Your camera is off for every app until you turn it off, so its picture and settings aren't here for now."
+                    Button { label: "Turn off"; icon: 0xF227; onClicked: Config.setPrivateMode(false) }
+                }
+            }
+
+            GroupLabel { visible: camPane.looked && !camPane.privateOn; text: "Camera" }
             // Nothing to show
             Group {
-                visible: camPane.looked && (camPane.error !== "" || camPane.cams.length === 0)
+                visible: camPane.looked && !camPane.privateOn && (camPane.error !== "" || camPane.cams.length === 0)
                 SettingRow {
                     label: camPane.error !== "" ? "Can't reach the camera" : "No webcam found"
                     detail: camPane.error !== "" ? camPane.error : "Plug one in, or check it isn't switched off (some laptops have a key or a slider for it)"
@@ -7316,7 +7348,7 @@ FloatingWindow {
 
             // ---- Preview -------------------------------------------------------------
             Group {
-                visible: !!camPane.cam
+                visible: !!camPane.cam && !camPane.privateOn
                 Item {
                     width: parent.width
                     height: Math.round(Math.min(width * 9 / 16, 320)) + 16
@@ -7370,9 +7402,9 @@ FloatingWindow {
             }
 
             // ---- Picture -------------------------------------------------------------
-            GroupLabel { visible: !!camPane.cam; text: "Picture" }
+            GroupLabel { visible: !!camPane.cam && !camPane.privateOn; text: "Picture" }
             Group {
-                visible: !!camPane.cam
+                visible: !!camPane.cam && !camPane.privateOn
                 Repeater {
                     model: ["brightness", "contrast", "saturation", "sharpness", "gain", "gamma"].filter(n => !!camPane.ctrl(n))
                     delegate: Column {
@@ -7395,9 +7427,9 @@ FloatingWindow {
             }
 
             // ---- Light -------------------------------------------------------------
-            GroupLabel { visible: !!camPane.cam; text: "Light" }
+            GroupLabel { visible: !!camPane.cam && !camPane.privateOn; text: "Light" }
             Group {
-                visible: !!camPane.cam
+                visible: !!camPane.cam && !camPane.privateOn
                 SettingRow {
                     visible: !!camPane.ctrl("white_balance_automatic")
                     label: "Automatic white balance"

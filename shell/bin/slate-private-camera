@@ -1,0 +1,80 @@
+#!/bin/sh
+# Private Mode's camera switch (PrivateMode.qml): turns the camera off for every app, and back
+# on. Apps open cameras directly (/dev/video*, /dev/media*), so only root can take them away.
+#
+#   slate-private-camera install   (as root, by pkexec, once) put this helper where only root
+#                                  can change it, and let the person at the computer run it
+#                                  without a password. Asked for, and explained, by Slate
+#   slate-private-camera off | on  (as root, by pkexec) the camera off for every app, or back
+#   slate-private-camera status    "off" while it's turned off, "on" otherwise
+#
+# Off: a udev rule (in /run, so a restart always brings the camera back) gives camera devices
+# no permissions and not the seat's access list, now and for any plugged in while it's off.
+# On: the rule goes, and udev puts their usual permissions back. Apps already using the camera
+# keep it until they let it go.
+#
+# Exits 3 on NixOS, where the system is set by its configuration (nothing is installed).
+set -u
+
+TARGET=/usr/local/libexec/slate-private-camera
+POLKIT=/etc/polkit-1/rules.d/49-slate-private-camera.rules
+RULES=/run/udev/rules.d/72-slate-private-camera.rules    # before 73-seat-late, which gives access
+
+as_root() { [ "$(id -u)" -eq 0 ] || { echo "slate-private-camera: $1 is run as root (by pkexec)" >&2; exit 1; }; }
+
+devices() { ls /dev/video* /dev/media* 2>/dev/null; }
+
+reload() {
+    udevadm control --reload 2>/dev/null
+    udevadm trigger --action=change --subsystem-match=video4linux --subsystem-match=media 2>/dev/null
+    udevadm settle --timeout=5 2>/dev/null
+}
+
+case "${1:-}" in
+    install)
+        as_root install
+        [ -e /etc/NIXOS ] && { echo "slate-private-camera: on NixOS, add it to your configuration instead" >&2; exit 3; }
+        self=$(readlink -f "$0")
+        mkdir -p "$(dirname "$TARGET")" "$(dirname "$POLKIT")" || exit 1
+        # A copy of its own, owned by root: the one in your home folder could be changed by anything you run
+        install -m 0755 -o root -g root "$self" "$TARGET" || exit 1
+        cat > "$POLKIT" <<EOF || exit 1
+// Slate's Private Mode: the person at the computer may turn the camera off and on without a
+// password (slate-private-camera, which can do nothing else). Remove this file to take it away.
+polkit.addRule(function (action, subject) {
+    if (action.id == "org.freedesktop.policykit.exec" &&
+        action.lookup("program") == "$TARGET" &&
+        subject.local && subject.active)
+        return polkit.Result.YES;
+});
+EOF
+        chmod 0644 "$POLKIT"
+        ;;
+    off)
+        as_root off
+        mkdir -p "$(dirname "$RULES")" || exit 1
+        cat > "$RULES" <<'EOF' || exit 1
+# Slate's Private Mode: the camera is off for every app (slate-private-camera). Gone on restart.
+SUBSYSTEM=="video4linux|media", MODE="0000", TAG-="uaccess"
+EOF
+        reload
+        # (and now, whatever udev leaves: no permissions, no access list)
+        for d in $(devices); do
+            chmod 0000 "$d" 2>/dev/null
+            command -v setfacl >/dev/null 2>&1 && setfacl -b "$d" 2>/dev/null
+        done
+        ;;
+    on)
+        as_root on
+        rm -f "$RULES"
+        for d in $(devices); do chmod 0660 "$d" 2>/dev/null; done
+        reload
+        ;;
+    status)
+        [ -e "$RULES" ] && echo off || echo on
+        ;;
+    *)
+        echo "usage: slate-private-camera install | off | on | status" >&2
+        exit 2
+        ;;
+esac

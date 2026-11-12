@@ -9,6 +9,13 @@
 # never asks where to save. Or Slate just shows a notification.
 set -u
 here=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+
+# Private Mode (PrivateMode.qml) leaves this mark while it's on: no screenshots then
+if [ -e "${XDG_RUNTIME_DIR:-/tmp}/slate-private" ]; then
+    notify-send -a Slate -i "$here/../assets/icon/icon-64.png" -h string:x-slate-page:control "Screenshots are off" \
+        "Private Mode is on, so Slate isn't taking screenshots. Turn it off in the control centre when you're ready." 2>/dev/null
+    exit 0
+fi
 settings=$(python3 -c '
 import json, sys
 try: d = json.load(open(sys.argv[1]))

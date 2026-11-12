@@ -163,12 +163,12 @@ Singleton {
     }
 
     // ---- The menu bar's arrangement (Bar.qml draws it; Settings → Menu Bar changes it) -------
-    // Slate's own: the control centre; Apps with Chalk; Spaces with the window mode and the
+    // Slate's own: the control centre; Apps with Nova; Spaces with the window mode and the
     // workspace dots; the active window; a flexible space; then the tray, the status icons,
     // More, the clock and the power button
-    readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
+    readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
     readonly property var barLayoutDefault: [
-        barBox(["control"]), barBox(["apps", "chalk"]),
+        barBox(["control"]), barBox(["apps", "nova"]),
         barBox(["spaces", "windowmode", "workspaces"]),
         barBox(["windowicon", "windowtitle"]), "space",
         barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["more"]), barBox(["clock"]), barBox(["power"])
@@ -188,6 +188,7 @@ Singleton {
         { id: "notifications", label: "Notifications", icon: 0xEA35, key: "barShowNotifications" },
         { id: "clipboard", label: "Clipboard", icon: 0xEA6F, key: "barShowClipboard" },
         { id: "screenshot", label: "Screenshot", icon: 0xF201, key: "barShowScreenshot" },
+        { id: "camera", label: "Camera", icon: 0xEA9A, key: "barShowCamera" },
         { id: "gamemode", label: "Game mode", icon: 0xF1D2, key: "barShowGameMode" },
         { id: "keyboard", label: "Keyboard layout", icon: 0xEBD6, key: "barShowKeyboard" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, key: "barShowBluetooth" },
@@ -472,8 +473,8 @@ Singleton {
     }
     // The order things leave a bar that's short of room, first to go first (Slate's own; the
     // last three stay)
-    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
-        "chalk", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
+    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
+        "nova", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
     // The order in use: yours (Settings → Menu Bar → Edit layout → If it doesn't fit), with
     // anything it leaves out put in from Slate's own, so every thing has a place; and the
     // things that stay on the bar whatever happens. More isn't one of them: it's what the
@@ -559,8 +560,33 @@ Singleton {
     // setting assistantEnabled some other way switches nothing on. The number goes up when a
     // release changes what the risks are, and Slate asks again
     readonly property int assistantRisksVersion: 1
-    readonly property bool assistantOn: s.assistantEnabled && s.assistantRisksAccepted === assistantRisksVersion && !isLoginScreen
-    property bool assistantWorking: false       // Chalk has a prompt out (Assistant.qml): the bar's button shows it
+    readonly property bool assistantOn: s.assistantEnabled && s.assistantRisksAccepted === assistantRisksVersion && !isLoginScreen && !s.privateMode
+    // Caffeine (a control centre quick switch): the screen stays on and unlocked while it's on.
+    // Slate's own idle timers (lock, screen off, suspend, the screensaver) stand still for it
+    // whatever Settings → Security → Wait while media plays says, since you asked; apps and
+    // other tools hear it as a usual "stay awake" request too (Popouts.qml). Not kept over a
+    // restart, so it can't be left on by mistake for days
+    property bool caffeine: false
+    property bool assistantWorking: false       // Nova has a prompt out (Assistant.qml): the bar's button shows it
+
+    // ---- The camera in use (scripts/camera-watch.py) -----------------------------------------
+    // Whether any app has a camera open, and which (by name, where Slate can see them): the
+    // pop-up says so as it changes (OSD.qml), and the menu bar's camera indicator shows it
+    property bool cameraOn: false
+    property var cameraApps: []
+    Process {
+        running: !root.isLoginScreen
+        command: [Quickshell.shellPath("scripts/camera-watch.py")]
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const e = JSON.parse(line);
+                    root.cameraApps = e.apps || [];
+                    root.cameraOn = !!e.on;
+                } catch (err) {}
+            }
+        }
+    }
     // Switched on under an earlier version of the risks: paused until they're read again
     readonly property bool assistantRisksChanged: s.assistantEnabled && s.assistantRisksAccepted > 0 && s.assistantRisksAccepted !== assistantRisksVersion
 
@@ -1319,8 +1345,16 @@ Singleton {
         { id: "dockhide", label: "Hide Dock", icon: 0xEAD3 },
         { id: "barhide", label: "Hide Menu Bar", icon: 0xEAD7 },
         { id: "floating", label: "Floating", icon: 0xEE17 },
-        { id: "clipboard", label: "Clipboard", icon: 0xEA6F }
+        { id: "clipboard", label: "Clipboard", icon: 0xEA6F },
+        { id: "private", label: "Private Mode", icon: 0xF227 }
     ]
+    // Private Mode on or off, from wherever it's switched (PrivateMode.qml does it: the first
+    // time, it asks first)
+    signal privateModeAsked(bool on)
+    // Every right-click menu closes (DesktopMenu.qml, TrayMenu.qml): sent as the launcher, Nova,
+    // the pickers, the window switcher or the overview opens (shell.qml)
+    signal closeMenus()
+    function setPrivateMode(on) { privateModeAsked(on); }
     // The ones this computer can't use (SwitchHardware.qml), and the list without them: what
     // the panel and Settings choose from
     property var controlSwitchMissing: []
@@ -1396,7 +1430,7 @@ Singleton {
     readonly property var statusPastels: ({
         notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",
         keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0",
-        gamemode: "#e8a6b4",
+        gamemode: "#e8a6b4", camera: "#c0dc9a",
         windowmode: "#9ed6b4"       // (the workspace's window mode, by the dots: a mint green)
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }

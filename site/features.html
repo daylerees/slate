@@ -122,9 +122,10 @@
     <article>
       <h3>Right side</h3>
       <ul>
-        <li>App tray icons, with menus styled like the dock's; optionally tucked behind one button, and optionally drawn in one colour like the rest of the bar. They stay put when Slate restarts or updates</li>
+        <li>App tray icons, with menus styled like the dock's; optionally tucked behind one button, and optionally drawn in one colour like the rest of the bar. Icons drawn with a wide empty margin (like Spotify's) are evened up to the same size as the rest. They stay put when Slate restarts or updates</li>
         <li>Notifications, keyboard layout, Bluetooth, volume, Wi-Fi and battery, each optional; optionally tucked behind one button</li>
         <li>Clipboard (with how many items it holds) and screenshot buttons, off until you switch them on</li>
+        <li>A camera indicator, off until you put it on the bar: an open eye, lit, while an app is using your camera (hover for which), a closed one otherwise</li>
         <li>Game mode button (off until you switch it on): its panel turns off glass, blur, see-through windows, shadows, animations, live window previews (the switcher and overview show each window's shape and app icon instead), notification pop-ups (they still go to the list) and ignoring the touchpad while you type, for smoother games, and puts them all back as you had them after</li>
         <li>Optional values beside them: clipboard items, game mode on or off, layout code, connected devices, volume percentage, network name and battery percentage</li>
         <li>Clock: 12 or 24 hour, seconds, the date (12 hour with the date, no seconds, to start with)</li>
@@ -143,7 +144,8 @@
         <li>Your profile: name, picture over the wallpaper, user and host, uptime; click the picture to change it, in a picker of its own with your picture folders, a thumbnail grid and a round preview</li>
         <li>Media controls for whatever's playing</li>
         <li>The time and date, with the weather beneath the calendar: today as it is now, standing out, and the next three days</li>
-        <li>Quick toggles: Wi-Fi, Bluetooth, Caffeine (stay awake), Night light, Do not disturb, Performance mode, Airplane mode (Wi-Fi, Bluetooth and mobile broadband off together, and back as they were after), Game mode, Light mode, Mute, Mute microphone, Power saver, Glass, Charging limit, Hide the dock, Hide the menu bar, Floating windows and Clipboard history. Switches for hardware your computer hasn't got are left out. The panel shows eight, all the same size; put them in your own order in Settings → Control Centre, by dragging one onto another in a picture of the panel to swap them</li>
+        <li>Quick toggles: Wi-Fi, Bluetooth, Caffeine (stay awake), Night light, Do not disturb, Performance mode, Airplane mode (Wi-Fi, Bluetooth and mobile broadband off together, and back as they were after), Game mode, Light mode, Mute, Mute microphone, Power saver, Glass, Charging limit, Hide the dock, Hide the menu bar, Floating windows, Clipboard history and Private Mode. Switches for hardware your computer hasn't got are left out. The panel shows eight, all the same size; put them in your own order in Settings → Control Centre, by dragging one onto another in a picture of the panel to swap them, with the ones that aren't in it waiting right beside</li>
+        <li>Private Mode: your microphones muted, your camera off for every app, Nova and assistants off, and screenshots and screen sharing stopped, all back as they were when you turn it off. The first time, Slate asks before adding the small helper that turns the camera off (your password, once)</li>
         <li>Shortcuts to Settings and the power menu</li>
       </ul>
     </article>
@@ -223,7 +225,7 @@
         <li>Does sums as you type, and conversions: "5 km in miles", "72 f to c", "today + 30 days"</li>
         <li>Forgiving: initials and small slips still find apps ("vsc", "fierfox")</li>
         <li>Open windows by title, apps' own actions (New Private Window…), recent files and folders</li>
-        <li>Quick toggles: Wi-Fi, Bluetooth, airplane mode, Do Not Disturb, night light and game mode</li>
+        <li>Quick toggles: Wi-Fi, Bluetooth, airplane mode, Private Mode, Do Not Disturb, night light and game mode</li>
         <li>"&gt; command" runs a command; ":name" finds an emoji; a last result searches the web</li>
         <li>The apps you opened most recently first, before you type</li>
         <li>Each of these can be switched off in Settings → Launcher</li>
@@ -340,6 +342,7 @@
       <h3>On-screen indicators</h3>
       <ul>
         <li>Volume, microphone, brightness and keyboard backlight</li>
+        <li>The camera: "Camera on", with the app using it, the moment one starts, and "Camera off" when it's let go</li>
         <li>The workspace dots when you switch</li>
       </ul>
     </article>

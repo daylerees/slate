@@ -10,7 +10,7 @@ import slate
 from live import LiveCase
 
 SHOWN = ["barShowControl", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWindowMode", "barShowWorkspaces",
-         "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowGameMode",
+         "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowGameMode",
          "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowWifi", "barShowBattery", "barShowClock",
          "barShowPower", "barShowTitle", "barShowTitleIcon", "barStatusCollapsed"]
 

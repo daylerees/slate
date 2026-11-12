@@ -818,8 +818,8 @@ PanelWindow {
 
             // Everything that can go in a container, by its name in the arrangement
             readonly property var things: ({
-                control: flameBtn, apps: appsBtn, spaces: spacesBtn, chalk: chalkBtn, windowmode: wsMode, workspaces: wsCap,
-                tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, gamemode: gameSeg,
+                control: flameBtn, apps: appsBtn, spaces: spacesBtn, nova: novaBtn, windowmode: wsMode, workspaces: wsCap,
+                tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, camera: camSeg, gamemode: gameSeg,
                 keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn,
                 windowicon: winIcon, windowtitle: winTitle, more: moreBtn })
             property var made: []              // the containers and flexible spaces made for this arrangement
@@ -1593,6 +1593,19 @@ PanelWindow {
                         hoverText: "Screenshot"
                         onClicked: bar.openPopout("screenshot", shotSeg)
                     }
+                    // The camera: an open eye, lit, while an app is using it (Config.cameraOn); a
+                    // closed one otherwise. Only shows: nothing to click
+                    Segment {
+                        id: camSeg
+                        wanted: Config.s.barShowCamera
+                        pastel: "camera"              // its colour when the look is Colourful
+                        iconCode: Config.cameraOn ? 0xEA9A : 0xECF0
+                        tint: Config.cameraOn ? bar.accent : bar.textColor
+                        readonly property var apps: Config.cameraApps.filter(a => a !== "Slate")
+                        hoverText: Config.cameraOn ? (apps.length > 0 ? "Camera on · " + apps.join(", ") : "Camera on")
+                            : Config.s.privateMode ? "Camera off · Private Mode is on" : "Camera not in use"
+                        clickable: false
+                    }
                     // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
                     Segment {
                         id: gameSeg
@@ -1816,6 +1829,7 @@ PanelWindow {
         property bool wanted: true
         property bool isToggle: false           // a container's open/close button (it doesn't fade with the rest)
         property bool hover: true               // false: its parts have hover fills of their own
+        property bool clickable: true           // false: it only shows something (no click, no hand pointer)
         property real length: -1
         default property alias inside: custom.data
         readonly property bool plain: custom.children.length === 0
@@ -1925,8 +1939,8 @@ PanelWindow {
             }
         }
         HoverHandler { id: segHover }
-        ClickTap { onTapped: seg.clicked() }
-        ClickTap { acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
+        ClickTap { enabled: seg.clickable; onTapped: seg.clicked() }
+        ClickTap { enabled: seg.clickable; acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
         WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
     }
 

@@ -611,6 +611,23 @@ class Gate(Base):
         self.assertEqual([t["name"] for t in tools if t["tier"] == "ask"], ASKS)
         self.assertTrue(all(t["title"] for t in tools))
 
+    def test_private_mode(self):
+        """Private Mode turns assistants off: every tool is refused, saying why and where."""
+        self.put_state(enabled=False, private=True)
+        for name in ("status", "windows_list", "settings_set", "session"):
+            with self.subTest(name):
+                text, err = self.tool(name)
+                self.assertTrue(err)
+                self.assertIn("Private Mode is on", text)
+                self.assertIn("control centre", text)
+        self.assertEqual(self.qs_calls("config"), [])
+
+    def test_private_mode_is_the_persons(self):
+        """An assistant can't turn Private Mode on or off: only the person can."""
+        for key in ("privateMode", "privateRestore"):
+            with self.subTest(key):
+                self.assertIn(key, self.module().REFUSE)
+
     def test_locked(self):
         self.put_state(locked=True)
         for name in ("status", "windows_list", "settings_set", "session"):

@@ -181,6 +181,9 @@ NAMED = {
     "touchpadNaturalScroll": ("input", "Natural scrolling (touchpad)"),
     "windowMode": ("windows", "Default window mode"),
     "airplaneMode": ("control", "Airplane mode (on or off): Wi-Fi, Bluetooth and mobile broadband off together"),
+    "airplaneRestore": ("control", "Airplane mode: which radios it turned off, to turn back on after"),
+    "privateMode": ("control", "Private Mode (on or off): microphones muted, camera off, screenshots and screen sharing stopped"),
+    "privateRestore": ("control", "Private Mode: which microphones it muted, to unmute after"),
     "controlSwitches": ("control", "Control centre: its quick switches and their order"),
     "barPosition": ("bar", "Menu bar position"),
     "barLayout": ("bar", "Menu bar arrangement"),
@@ -200,6 +203,7 @@ NAMED = {
     "barShowNotifications": ("bar", "Notifications"),
     "barShowClipboard": ("bar", "Clipboard"),
     "barShowScreenshot": ("bar", "Screenshot"),
+    "barShowCamera": ("bar", "Camera in use (an eye while an app is using the camera)"),
     "barShowGameMode": ("bar", "Game mode"),
     "barShowKeyboard": ("bar", "Keyboard layout"),
     "barShowBluetooth": ("bar", "Bluetooth"),
@@ -418,6 +422,9 @@ def gate():
     except ValueError:
         raise Sorry("Slate needs restarting before assistants can use it. The person can run: slate restart") from None
     STATUS.update(st)
+    if st.get("private"):
+        raise Refused("Private Mode is on in Slate, so assistants can't use it just now. Only the person can turn it "
+                      "off, from the control centre.")
     if st.get("risksChanged"):
         raise Refused("Something's changed about the assistant in Slate, so its tools are paused until the person has "
                       "read what's new. Tell them to have a look in Settings → Assistant.")
@@ -874,8 +881,10 @@ REFUSE = {
     "locationName", "latitude", "longitude",
     # needs something built or chosen by hand (Hyprbars; which screen)
     "titleBarStyle", "mainDisplay",
-    # the assistant's own button
-    "barShowAssistant",
+    # the assistant's own button; and Private Mode, which turns assistants off (only the person turns it on or off)
+    "barShowAssistant", "privateMode", "privateRestore",
+    # Slate's own bookkeeping: the icon theme to go back to
+    "iconThemeBefore",
 }
 ON_OFF = ["", "on", "off"]
 CORNERS = ["none", "lock", "launcher", "overview", "control", "notifications", "screenoff"]

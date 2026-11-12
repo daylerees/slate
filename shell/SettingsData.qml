@@ -45,6 +45,10 @@ JsonAdapter {
     // airplaneRestore: which of "wifi" and "bt" it turned off, to turn back on after
     property bool airplaneMode: false
     property var airplaneRestore: []
+    // Private Mode (PrivateMode.qml): microphones muted, the camera off, Nova off, screenshots
+    // and screen sharing stopped; privateRestore: the microphones it muted, to unmute after
+    property bool privateMode: false
+    property var privateRestore: []
     property int nightLightTemperature: 4000 // kelvin: lower is warmer
     property string nightLightSchedule: "manual"   // manual, sun (sunset to sunrise) or custom
     property string nightLightFrom: "20:00"  // custom schedule
@@ -166,6 +170,7 @@ JsonAdapter {
     property bool barShowNotifications: true
     property bool barShowClipboard: false     // clipboard history, with how many items it holds
     property bool barShowScreenshot: false    // screenshot buttons (area, window, screen)
+    property bool barShowCamera: false        // the camera: an open eye while an app is using it (off to start with)
     property bool barShowWifi: true
     property bool barShowKeyboard: true       // keyboard layout switcher (when there's more than one layout)
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)

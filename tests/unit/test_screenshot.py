@@ -80,3 +80,35 @@ class OneChooser(Case):
         self.assertEqual(code, 0, out)
         self.assertEqual(len(self.s.calls("grim")), 1)
         first.wait(timeout=10)
+
+
+class PrivateMode(Case):
+    """Private Mode (PrivateMode.qml) leaves a mark in the runtime folder while it's on: no
+    screenshot is taken then, and a notification says why."""
+    scratch = True
+
+    def setUp(self):
+        super().setUp()
+        self.s = Stubs(self.h)
+        for name in ("slurp", "grim", "wl-copy", "notify-send"):
+            self.s.add(name, stdout="10,10 100x80\n" if name == "slurp" else "")
+        self.s.add("hyprctl", stdout="[]")
+        self.s.add("hyprpicker", missing=True)
+        self.s.add("swash", missing=True)
+
+    def test_no_screenshots_while_private(self):
+        open(os.path.join(self.h.runtime, "slate-private"), "w").close()
+        for mode in ("region", "window", "screen"):
+            with self.subTest(mode):
+                code, out = run(["/bin/sh", SCRIPT, mode], env=self.s.env, timeout=10)
+                self.assertEqual(code, 0, out)
+        self.assertEqual(self.s.calls("grim"), [], "a screenshot was taken in Private Mode")
+        self.assertEqual(self.s.calls("slurp"), [], "the chooser opened in Private Mode")
+        said = self.s.calls("notify-send")
+        self.assertEqual(len(said), 3)
+        self.assertTrue(all("Screenshots are off" in c for c in said), said)
+
+    def test_back_when_it_is_off(self):
+        code, out = run(["/bin/sh", SCRIPT, "screen"], env=self.s.env, timeout=10)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.s.calls("grim")), 1)

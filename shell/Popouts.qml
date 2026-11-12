@@ -2893,7 +2893,8 @@ PanelWindow {
                         dockhide: { label: "Hide Dock", on: Config.s.dockAutoHide, code: 0xEAD3 },
                         barhide: { label: "Hide Menu Bar", on: Config.s.barAutoHide, code: 0xEAD7 },
                         floating: { label: "Floating", on: Config.focusedMode === "floating", code: 0xEE17 },
-                        clipboard: { label: "Clipboard", on: Config.s.clipboardHistory, code: 0xEA6F }
+                        clipboard: { label: "Clipboard", on: Config.s.clipboardHistory, code: 0xEA6F },
+                        private: { label: "Private Mode", on: Config.s.privateMode, code: 0xF227 }
                     })
                     // (the speakers and microphone in use, watched so their mutes can be read and set)
                     readonly property var ccSink: Pipewire.defaultAudioSink
@@ -2945,6 +2946,11 @@ PanelWindow {
                                     Config.setWorkspaceMode(Config.focusedWorkspaceId, modelData.on ? (Config.windowMode === "floating" ? "tiling" : "") : "floating");
                                     break;
                                 case "clipboard": Config.s.clipboardHistory = !Config.s.clipboardHistory; break;
+                                // (the first time, Slate asks before turning it on: the panel makes way)
+                                case "private":
+                                    if (!modelData.on) pop.close();
+                                    Config.setPrivateMode(!modelData.on);
+                                    break;
                                 }
                             }
                             Column {

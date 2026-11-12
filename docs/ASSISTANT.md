@@ -67,7 +67,9 @@ Setting `assistantEnabled` some other way switches nothing on. If a later versio
 changes what the risks are, the assistant pauses until you've read the new ones there.
 **Read the risks again** shows them at any time, with a button to switch off.
 
-While it's off, every tool answers that assistants aren't switched on, and does nothing.
+While it's off, every tool answers that assistants aren't switched on, and does nothing. The same
+goes while Private Mode is on (a quick switch in the control centre): every tool says so, and
+only you can turn it off. An assistant can't change Private Mode either.
 
 The same page has:
 

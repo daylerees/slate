@@ -331,6 +331,7 @@ ShellRoot {
     Wallpaper {}
     NightLight {}
     AirplaneMode {}
+    PrivateMode { id: privateMode; confirm: powerConfirm }
     SwitchHardware {}
     PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
     Notifications { id: notifs; bar: topBar }

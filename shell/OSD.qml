@@ -10,6 +10,8 @@
 // Media keys:   slate ipc call media toggle|next|previous   (the playing player, else the first)
 // Workspaces (Super+Left/Right):  slate ipc call osd workspace
 //   a larger copy of the bar's workspace dots, with the accent marker gliding across
+// The camera: "Camera on" (with the app using it) as one starts using it, and "Camera off"
+//   once nothing is (Config.cameraOn: scripts/camera-watch.py)
 
 import QtQuick
 import QtQuick.Effects
@@ -31,7 +33,7 @@ PanelWindow {
     property string label: ""         // shown instead of a percentage (e.g. "Muted")
     property bool dimmed: false       // muted: grey bar
     property bool shown: false
-    property string mode: "level"     // "level" (volume, brightness…) or "workspace"
+    property string mode: "level"     // "level" (volume, brightness…), "workspace" or "note" (an icon and words)
 
     function show(icon, value, label, dimmed) {
         screen = Config.focusedScreen;     // open on the focused screen
@@ -44,6 +46,17 @@ PanelWindow {
         hideTimer.restart();
     }
     Timer { id: hideTimer; interval: 1400; onTriggered: osd.shown = false }
+
+    // An icon and a few words, no level (the camera)
+    function showNote(icon, label, dimmed) {
+        screen = Config.focusedScreen;
+        osd.mode = "note";
+        osd.icon = icon;
+        osd.label = label;
+        osd.dimmed = !!dimmed;
+        shown = true;
+        hideTimer.restart();
+    }
 
     function showWorkspace() {
         screen = Config.focusedScreen;     // open on the focused screen
@@ -81,6 +94,19 @@ PanelWindow {
     Connections {
         target: osd.source ? osd.source.audio : null
         function onMutedChanged() { osd.showMic(); }
+    }
+
+    // ---- The camera ------------------------------------------------------------
+    // (not for what was already on as Slate started: ready, above)
+    Connections {
+        target: Config
+        function onCameraOnChanged() {
+            if (!osd.ready) return;
+            if (Config.cameraOn) {
+                const apps = Config.cameraApps.filter(a => a !== "Slate");
+                osd.showNote(0xEA9A, apps.length > 0 ? "Camera on · " + apps.join(", ") : "Camera on", false);
+            } else osd.showNote(0xECF0, "Camera off", true);
+        }
     }
 
     // A short tick on volume key presses, at the new volume (Settings → General → Sound).
@@ -180,7 +206,7 @@ PanelWindow {
     anchors.bottom: true
     // Clear of the dock (or the bar, when either is at the bottom)
     margins.bottom: Config.dockEdge === "bottom" ? 96 : Config.barAtBottom ? osd.bar.barHeight + 28 : 48
-    implicitWidth: Math.max(340, pill.width + 40, namePill.width + 40)
+    implicitWidth: Math.max(340, pill.width + 40, namePill.width + 40, noteRow.width + 84)
     implicitHeight: 124 + (namePill.visible ? namePill.height + 10 : 0)
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -192,7 +218,7 @@ PanelWindow {
         id: pill
         anchors.horizontalCenter: parent.horizontalCenter
         y: 16 + (1 - osd.fade) * 12
-        width: osd.mode === "workspace" ? ws.width + 40 : 300
+        width: osd.mode === "workspace" ? ws.width + 40 : osd.mode === "note" ? noteRow.width + 44 : 300
         height: osd.mode === "workspace" ? ws.height + 28 : 52
         // (the workspace dots': a pill round circles, a rounded rectangle round squares)
         radius: osd.mode === "workspace" ? Config.dotHolderRadius(52) : 26
@@ -232,6 +258,28 @@ PanelWindow {
             text: osd.label || Math.round(osd.value * 100) + "%"
             color: osd.dimmed ? osd.bar.errorColor : osd.bar.textColor
             font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+        }
+
+        // ---- A note: an icon and a few words -----------------------------------
+        Row {
+            id: noteRow
+            visible: osd.mode === "note"
+            anchors.centerIn: parent
+            spacing: 12
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: String.fromCodePoint(osd.icon)
+                color: osd.dimmed ? osd.bar.dimTextColor : osd.bar.textColor
+                font.family: osd.bar.iconFont; font.pixelSize: 20
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, 420)
+                elide: Text.ElideRight
+                text: osd.label
+                color: osd.dimmed ? osd.bar.dimTextColor : osd.bar.textColor
+                font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+            }
         }
 
         // ---- Workspaces: the bar's dots, larger --------------------------------

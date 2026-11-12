@@ -37,6 +37,7 @@ emergency/Box.qml            greeter/emergency/Box.qml
 -  scripts/session.sh  # log out, restart, shut down: the login screen has its own
 -  scripts/spaces.py  # reopening apps after a restart: the login screen has no apps
 -  scripts/webcam.py  # your webcam settings, put back at login: the login screen leaves the camera alone
+-  scripts/camera-watch.py  # whether an app is using the camera (Private Mode, the bar, the pop-up): not on the login screen
 -  bin/slate  # restarts Slate when the interface size changes
 -  bin/slate-init  # what this computer can do (suspend, lock before sleep…): the login screen doesn't ask
 -  fonts/tabler.ttf  # the login screen passes the copy in /var/lib/slate-greeter
