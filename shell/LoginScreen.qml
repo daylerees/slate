@@ -234,13 +234,23 @@ Item {
                         width: 34; height: 34; radius: Config.corner(9)
                         color: password.text !== "" ? ls.accent : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                        // The arrow, and the spinner in its place while the password's checked: two
+                        // items, so the arrow is never the one that was turned (as one, it came back
+                        // at whatever angle the spinner had stopped at)
                         Text {
                             anchors.centerIn: parent
-                            text: ls.glyph(ls.busy ? 0xF226 : 0xEA1F)
+                            visible: !ls.busy
+                            text: ls.glyph(0xEA1F)
+                            color: password.text !== "" ? ls.accentText : ls.dim
+                            font.family: tabler.name; font.pixelSize: 17
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            visible: ls.busy
+                            text: ls.glyph(0xF226)
                             color: password.text !== "" ? ls.accentText : ls.dim
                             font.family: tabler.name; font.pixelSize: 17
                             RotationAnimation on rotation { running: ls.busy; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-                            onRotationChanged: if (!ls.busy) rotation = 0
                         }
                         TapHandler { onTapped: ls.submit() }
                     }
