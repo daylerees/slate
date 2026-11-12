@@ -15,6 +15,9 @@ import Qt.labs.folderlistmodel
 
 FloatingWindow {
     id: win
+    // Wallpaper thumbnails still loading (the tests wait for none before a picture)
+    property int thumbsLoading: 0
+    property bool wallsListing: false
     required property var bar
     property var notifs: null
     // Slate's confirmation window (PowerConfirm: confirmWith), for questions asked as the rest
@@ -4959,6 +4962,15 @@ FloatingWindow {
                     cache: true
                     opacity: status === Image.Ready ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                    // (counted while loading, for the tests: win.thumbsLoading)
+                    property bool counted: false
+                    function count() {
+                        const l = status === Image.Loading;
+                        if (l !== counted) { win.thumbsLoading += l ? 1 : -1; counted = l; }
+                    }
+                    onStatusChanged: count()
+                    Component.onCompleted: count()
+                    Component.onDestruction: if (counted) win.thumbsLoading -= 1
                 }
                 Item {
                     id: thumbMask
@@ -5771,6 +5783,11 @@ FloatingWindow {
                 nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp"]
                 showDirs: false
                 sortField: FolderListModel.Name
+            }
+            // (for the tests: the folders still being read count as loading, their tiles to come)
+            Binding {
+                target: win; property: "wallsListing"
+                value: wallFiles.status === FolderListModel.Loading || slateFiles.status === FolderListModel.Loading
             }
             readonly property var slateShown: {
                 const out = [];

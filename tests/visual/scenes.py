@@ -88,7 +88,9 @@ SCENES["panel-battery"]["mask"] = [(1080, 172, 350, 130)]
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],
-        "wait": (lambda p: lambda st: st["settings"]["open"] and st["settings"]["section"] == p)(_p),
+        # (and its wallpaper thumbnails loaded: one still loading was pictured blank under a busy run)
+        "wait": (lambda p: lambda st: st["settings"]["open"] and st["settings"]["section"] == p
+                 and st["settings"].get("thumbsLoading", 0) == 0)(_p),
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
