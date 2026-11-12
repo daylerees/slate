@@ -317,7 +317,7 @@ ShellRoot {
                 polkit: { open: polkitAgent.shown },
                 welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
-                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd,
+                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "" },
                 dock: {
                     pinned: win.pinned,

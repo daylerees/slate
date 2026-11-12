@@ -62,6 +62,10 @@ Scope {
     function clearAll() {
         for (const k in live) live[k].dismiss();
         live = {};
+        // ...and their pop-ups go too, fading out as usual (left, each showed as an empty card
+        // until its time ran out: its words were in the history being cleared)
+        pendingToasts = [];
+        for (let i = 0; i < toastModel.count; i++) toastModel.setProperty(i, "leaving", true);
         history = [];
         unread = 0;
         readUpTo = nextKey - 1;
@@ -208,6 +212,7 @@ Scope {
 
     // ---- Toasts ------------------------------------------------------------
     ListModel { id: toastModel }
+    readonly property int toastsShowing: { toastModel.count; let n = 0; for (let i = 0; i < toastModel.count; i++) if (!toastModel.get(i).leaving) n++; return n; }
     // A new toast waits until its window is on screen: a window takes a moment to appear,
     // and a toast added before then would be most of the way through fading in (and its
     // first frame drawn rough) by the time it's seen

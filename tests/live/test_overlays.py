@@ -137,6 +137,16 @@ class Overlays(LiveCase):
         self.s.run(["notify-send", "-a", "Tests", "Hello", "From the test suite"])
         self.wait(lambda st: st["notifications"]["history"] == before + 1, "the notification")
 
+    def test_clear_all_takes_the_pop_ups_too(self):
+        """Clear all also sends the pop-ups showing on their way. They stayed, each an empty
+        card (its words were in the history being cleared) until its time ran out. Bug,
+        2026-11-12."""
+        self.s.run(["notify-send", "-a", "Tests", "-t", "20000", "Hello", "Still here?"])
+        self.wait(lambda st: st["notifications"]["toasts"] >= 1, "the pop-up")
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0 and st["notifications"]["history"] == 0,
+                  "the pop-up to go with the history", timeout=4)
+
     def test_fade_in(self):
         """The login cover (with the logo) shows, then fades away by itself as at login."""
         self.ipc("test", "fadeIn")

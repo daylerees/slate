@@ -296,13 +296,13 @@ SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]
 # The camera: the note as an app starts using it, and the bar's camera item (off to start with)
 # lit while it's on (a test hook stands in for camera-watch.py)
 SCENES["osd-camera"] = {
-    "do": [("test", "camera", "true", "Firefox")],
+    "do": [("notifications", "clear"), ("test", "camera", "true", "Firefox")],
     "wait": lambda st: st["osd"]["shown"] and st["osd"]["mode"] == "note",
     "settle": 0.4, "undo": [("test", "camera", "false", "")],
 }
 SCENES["bar-camera"] = {
     "settings": {"barShowCamera": "true"},
-    "do": [("test", "camera", "true", "Firefox")],
+    "do": [("notifications", "clear"), ("test", "camera", "true", "Firefox")],
     "wait": lambda st: not st["osd"]["shown"],
     "settle": 0.6, "undo": [("test", "camera", "false", "")],
 }
@@ -311,7 +311,7 @@ SCENES["bar-camera"] = {
 for _p in ("sound", "webcam"):
     SCENES[f"settings-{_p}-private"] = {
         "settings": {"privateMode": "true"},
-        "do": [("settings", "page", _p)],
+        "do": [("notifications", "clear"), ("settings", "page", _p)],
         "wait": lambda st, _p=_p: st["settings"]["open"] and st["settings"]["section"] == _p,
         "settle": 1.2, "undo": [("settings", "close")],
     }
