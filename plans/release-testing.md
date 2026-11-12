@@ -42,24 +42,21 @@ to date and the suite passed whole. What's below was left over from that cycle.
   apps, and a press on it closes the panel (`dockHole` in Popouts.qml, the PointHandler on the
   dock's `maskBox`); test with the dock at each edge and at 125%. Going to another workspace
   closes an open panel.
-- **Lock and login avatar border** widened to 8 px (circle 140, picture 124), the middle
-  lifted 4 px: re-approve `lock-preview` and `login-preview`.
 - **Control Centre page: More switches beside the panel's switches**, the picture fading away
   behind them (`SwitchBoard.qml`, `side`): re-approve `settings-control`; live: a drag from the
   pool onto a switch still swaps them, and a narrow window still fits (k down to 0.6).
 - **Private Mode** (`PrivateMode.qml`). Written and passing: `test_private_mode.py` (portal
   capture off/on/keep, the camera helper refusing without root), `test_screenshot.py`
-  PrivateMode, `test_slate_mcp.py` Gate private mode. Owed: a live test (`private on` over
-  IPC in test mode: the assistant's status says private, Nova's window says it's off, the
-  control centre tile lit, the launcher toggle), and a scene of the first-time question.
+  PrivateMode, `test_slate_mcp.py` Gate private mode. Written: a live test (`private on`/`off` over IPC: the setting and the assistant's status).
+  Owed: Nova's window saying it's off, the control centre tile lit, the launcher toggle, and a
+  scene of the first-time question.
   By hand only: the camera helper's install (pkexec, polkit rule), the camera really off
   and back (udev rule), microphones muted and restored, screen sharing refused in a browser,
   on Arch, Debian, Fedora, openSUSE; NixOS gets the "add it to your configuration" note.
 - **Camera in use** (`scripts/camera-watch.py`, `Config.cameraOn`). Written: `test_camera_watch.py`.
-  Owed: a live test that the OSD's "Camera on · <app>" / "Camera off" note shows (a test hook
-  setting `Config.cameraOn`, or SLATE_DEV in the session), the bar's camera item (`barShowCamera`:
-  its icon and hover both ways, no click, placing it in edit mode), and
-  scenes for the note and the item. By hand: a real camera in a browser and in OBS (via
+  Written: the OSD note, both ways (`test camera` hook). Owed: the bar's camera item
+  (`barShowCamera`: its icon and hover both ways, no click, placing it in edit mode), and scenes
+  for the note and the item. By hand: a real camera in a browser and in OBS (via
   PipeWire: shows as PipeWire).
 - **Sound and Webcam pages in Private Mode**: a "Private Mode is on" card with Turn off at the
   top of each; the microphone's mute switch held on; the Webcam page's camera groups hidden and
@@ -131,11 +128,10 @@ to date and the suite passed whole. What's below was left over from that cycle.
   "From the wallpaper", in Nautilus. Also the Icons default listed by name ("Papirus (default)").
 
 - **Wallpaper and Icons as pages of their own** (from Appearance's top section; `wallpaperPage`,
-  `iconsPage`; "settings page wallpaper" is the page now, not Appearance scrolled). New scenes
-  `settings-wallpaper` and `settings-icons` need first baselines; re-approve `settings-appearance`
-  and `square-settings-appearance` (and any scene of the dock's launcher menu). Live: the
-  desktop's "Change wallpaper…", the dock launcher menu's Wallpaper and `slate ipc call settings
-  page wallpaper` open the Wallpaper page; Restore defaults on each new page. Also fixed:
+  `iconsPage`; "settings page wallpaper" is the page now, not Appearance scrolled). Done: first
+  baselines, re-approved Appearance, `settings page wallpaper/icons` open them (live). Owed:
+  the desktop's "Change wallpaper…" and the dock launcher menu's Wallpaper; Restore defaults on
+  each new page. Also fixed:
   search found nothing on Control Centre (the switch board has a label now).
 
 - **One shadow look, set in Settings → Appearance** (darkness, softness, spread, distance,
@@ -187,16 +183,10 @@ Most of these need a real pointer, or hardware the tests' computer hasn't got.
   brighter colour. `HoverFill.qml` fixes it for the three placement pickers.
 
 ## Menu keys and tray icon sizing (2026-11-12)
-- Live: open a DesktopMenu (bar right-click), Down/Down/Enter runs the second item; separators skipped; Right enters a submenu (Session), Left/Escape back out, Escape again closes; Home/End.
 - Live: a tray item whose icon has a wide transparent margin is grown (trayBox.grow > 1) and one that fills its square stays at 1; needs a test tray item (StatusNotifierItem) with a padded icon.
 - By eye: Spotify's tray icon (Kora panel icon) matches the others, in colour and in mono.
 
-## Launcher keeps the top result selected as results arrive (2026-11-12)
-- Live: search "24*7" a character at a time, quickly; the "= 168" answer row is selected (it used to end on "Search the web", the answer arriving after and going in above). Moving the selection by key or pointer, then a late result, keeps your choice.
 
-## Overview: moving a workspace keeps its layout and previews (2026-11-12)
-- Live: overview with live previews, lift a card (hold) and move it along. The two workspaces swap numbers (Config.swapWorkspaces, Hyprland's workspace.change_id) rather than their windows moving: each keeps its split as it was (it used to come out flipped) and its previews keep updating (they went blank). Their names and window modes go with them.
-- Unit/static: swapWorkspaces swaps workspaceNames and workspaceModes entries.
 
 ## Lock/login arrow after a wrong password (2026-11-12)
 - Live: lock, submit a wrong password (test hook), and check the go button's arrow is upright (rotation 0) once it fails; the spinner shows only while checking. By eye on the real login screen once the greeter's synced.

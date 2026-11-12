@@ -404,3 +404,38 @@ class Nova(LiveCase):
         self.ipc("assistant", "did", json.dumps({"run": "someone-else", "id": 1, "text": "Shut down", "state": "done"}))
         self.s.settle(0.3)
         self.assertEqual(self.nova()["actions"], [])
+
+
+class PrivateModeLive(LiveCase):
+    """Private Mode (PrivateMode.qml), switched over IPC as the control centre does: the setting
+    follows, and assistants are off while it's on (the status says so)."""
+    def test_on_and_off(self):
+        self.keep_setting("privateMode")
+        self.addCleanup(lambda: self.ipc("private", "off"))
+        self.ipc("private", "on")
+        for _ in range(30):
+            if self.setting("privateMode") == "true":
+                break
+            self.s.settle(0.1)
+        self.assertEqual(self.setting("privateMode"), "true")
+        st = json.loads(self.ipc("assistant", "status"))
+        self.assertTrue(st["private"], "the assistant's status doesn't say Private Mode is on")
+        self.assertFalse(st["enabled"])
+        self.ipc("private", "off")
+        for _ in range(30):
+            if self.setting("privateMode") == "false":
+                break
+            self.s.settle(0.1)
+        self.assertFalse(json.loads(self.ipc("assistant", "status"))["private"])
+
+
+class CameraNote(LiveCase):
+    """The note that shows as a camera starts and stops being used (OSD.qml), and the bar's
+    camera item (barShowCamera): open eye and its hover while it's on, closed one after."""
+    def test_note_on_and_off(self):
+        self.addCleanup(lambda: self.ipc("test", "camera", "false", ""))
+        self.ipc("test", "camera", "true", "Firefox")
+        self.wait(lambda st: st["osd"]["shown"] and st["osd"]["mode"] == "note", "the camera note")
+        self.assertEqual(self.s.state()["osd"]["label"], "Camera on · Firefox")
+        self.ipc("test", "camera", "false", "")
+        self.wait(lambda st: st["osd"]["label"] == "Camera off", "the note to say the camera's off")

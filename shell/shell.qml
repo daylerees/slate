@@ -189,6 +189,11 @@ ShellRoot {
             topBar.menu.close();
             if (row && row.run) row.run();
         }
+        // The camera in use, as camera-watch.py would say (the test machine has none)
+        function camera(on: bool, apps: string): void {
+            Config.cameraApps = apps === "" ? [] : apps.split(",");
+            Config.cameraOn = on;
+        }
         function menuKey(key: string): void {
             const k = ({ Up: Qt.Key_Up, Down: Qt.Key_Down, Enter: Qt.Key_Return, Space: Qt.Key_Space, Left: Qt.Key_Left,
                          Right: Qt.Key_Right, Home: Qt.Key_Home, End: Qt.Key_End, Escape: Qt.Key_Escape })[key];
@@ -279,6 +284,7 @@ ShellRoot {
                 launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
+                osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
@@ -378,7 +384,7 @@ ShellRoot {
         model: Config.leaving ? Quickshell.screens : []
         FadeOut { required property var modelData; screen: modelData }
     }
-    OSD { bar: topBar; popouts: popouts }
+    OSD { id: osdPop; bar: topBar; popouts: popouts }
     BarEditor { id: barEditor; bar: topBar; confirmer: powerConfirm }       // the panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout)
     // The secret workspace showing with nothing on it: a note saying so, on that screen
     Variants {

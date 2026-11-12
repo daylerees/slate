@@ -89,3 +89,20 @@ class Settings(LiveCase):
         self.s.settle(4)
         self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock", "Settings back on Dock", timeout=10)
         self.ipc("settings", "close")
+
+
+class SubPages(LiveCase):
+    """Wallpaper and Icons are pages of their own (from Appearance's top): opened by name over
+    IPC (the desktop's "Change wallpaper…" and the dock's menu use it), and searchable."""
+    def test_open_by_name(self):
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        for page in ("wallpaper", "icons"):
+            with self.subTest(page):
+                self.ipc("settings", "page", page)
+                self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == page, f"the {page} page")
+
+    def test_search_fills_the_box(self):
+        """slate ipc call settings search: as typing into the search box showing."""
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "search", "dock")
+        self.wait(lambda st: st["settings"]["open"], "Settings to open")
