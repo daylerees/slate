@@ -1,7 +1,7 @@
 // The desktop wallpaper: one background layer per screen, filling it (cropped to fit).
 // Changing it cross-fades from the old image to the new one.
 // Set it from Settings → Appearance, or:  slate ipc call wallpaper set <path>
-// It can also change by itself (Settings → Appearance → Change wallpaper): at each login
+// It can also change by itself (Settings → Wallpaper → Change wallpaper): at each login
 // or every so often, to another image from the wallpaper folder. The accent and tint follow
 // the new image when they're set to come from the wallpaper.
 //   slate ipc call wallpaper next      change to another one now
@@ -102,8 +102,9 @@ Scope {
             WlrLayershell.layer: WlrLayer.Background
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-            // Right-click the desktop: a menu of things to do from here
-            ClickArea {
+            // Right-click the desktop: a menu of things to do from here. (A plain MouseArea: the
+            // desktop isn't a button, so the pointer stays an arrow over it)
+            MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: m => desktopMenu.openAt(m.x, m.y)
