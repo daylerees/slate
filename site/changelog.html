@@ -29,11 +29,66 @@
   <p class="lead">What's new in each release of Slate, newest first. Slate lets you know when
     there's a new version, and <strong>Settings → Updates</strong> shows what's in it and updates in one click.</p>
   <nav class="jump" aria-label="Releases">
-    <a href="#v0.27.0">v0.27.0</a><a href="#v0.26.0">v0.26.0</a><a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
+    <a href="#v0.28.0">v0.28.0</a><a href="#v0.27.0">v0.27.0</a><a href="#v0.26.0">v0.26.0</a><a href="#v0.25.0">v0.25.0</a><a href="#v0.24.0">v0.24.0</a><a href="#v0.23.0">v0.23.0</a><a href="#v0.22.0">v0.22.0</a><a href="#v0.21.1">v0.21.1</a><a href="#v0.21.0">v0.21.0</a><a href="#v0.20.0">v0.20.0</a><a href="#v0.19.0">v0.19.0</a><a href="#v0.18.0">v0.18.0</a><a href="#v0.17.0">v0.17.0</a><a href="#v0.16.0">v0.16.0</a><a href="#v0.15.0">v0.15.0</a><a href="#v0.14.0">v0.14.0</a><a href="#v0.13.0">v0.13.0</a><a href="#v0.12.0">v0.12.0</a><a href="#v0.11.0">v0.11.0</a><a href="#v0.10.1">v0.10.1</a><a href="#v0.10.0">v0.10.0</a><a href="#v0.9.0">v0.9.0</a><a href="#v0.8.0">v0.8.0</a><a href="#v0.7.0">v0.7.0</a><a href="#v0.6.0">v0.6.0</a><a href="#v0.5.0">v0.5.0</a><a href="#v0.4.2">v0.4.2</a><a href="#v0.4.1">v0.4.1</a><a href="#v0.4.0">v0.4.0</a><a href="#v0.3.0">v0.3.0</a><a href="#v0.2.0">v0.2.0</a><a href="#v0.1.0">v0.1.0</a>
   </nav>
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.28.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.28.0 <time datetime="2026-11-12">12 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Arrange the menu bar by dragging.</strong> Settings → Menu Bar → Edit layout (or right-click the bar) opens a panel under the bar. Drag things along the bar, into and out of containers, and to and from the pool of what isn't on it. Add containers and flexible spaces, split a container up, choose whether each thing shows its text, and put it all back with Defaults. Click anything for its options: the clock's format, date and seconds; whether a container collapses Never, When needed or Always, and its button's icon. Windows are dimmed and shortcuts stand down while you arrange.</li>
+        <li><strong>A bar that copes when it doesn't fit.</strong> On a small screen, a bigger Interface size or with long names, the bar slims itself: the window's title shortens, text beside icons goes (longest first), the clock sheds its date and seconds, and "When needed" containers tuck behind their button. What still doesn't fit waits behind a new More button. Set priority chooses what stays longest, "Always keep on the bar" pins a thing, and "Try it shorter" shows what your bar would do.</li>
+        <li><strong>A new default bar.</strong> Apps sits with Chalk, and Spaces with the window mode and the workspace dots. The window's icon and its title are separate things you can place. The Apps, Spaces, Chalk and window mode icons each take one pastel in the Colourful look.</li>
+        <li><strong>Chalk, an assistant for your desktop (an experiment).</strong> Ask an AI agent you already use to change a setting, move a window or tell you what's where. It works through Slate's own tools (<code>slate mcp</code>), and Slate asks before anything that can't be undone. It's off until you switch it on in Settings → Assistant, which shows the risks first, and no agent is chosen until you choose one. Super+K opens it.</li>
+        <li><strong>Glass you can tune.</strong> With glass on, the menu bar, its panels, the dock, notifications, the launcher and Chalk's window each have a Blur switch and their own opacity sliders. The bar's containers can fade, and firm up under the pointer. The bright edge round glass windows takes a tint of your accent.</li>
+        <li><strong>One language for colour.</strong> What stays selected wears the accent; what the pointer is over gets a quieter highlight; anything destructive (Remove, Clear, Force Quit, Shut down) hovers red. The sheen is gone from buttons, switches, text boxes, dropdowns, selections and the bell panel's cards, so it's left for surfaces and app icons.</li>
+        <li><strong>Rounded UI elements.</strong> Settings → Appearance has a switch that makes everything hard-edged and square: the bar's containers and panels, the dock, menus, buttons, switches and your windows. App icons and workspace dots keep the shapes chosen for them.</li>
+        <li><strong>A gentle reload.</strong> When Slate restarts, the screen fades to "Reloading Slate" in your theme's colours and back, where it used to flash.</li>
+        <li><strong>A Network page.</strong> The Wi-Fi page is now Network: how you're connected, each network socket and whether a cable's in, Wi-Fi and its networks, and the connection's details. On a cable the bar shows a wired icon.</li>
+        <li><strong>Power.</strong> The power panel shows your battery's health and where charging stops, where the laptop reports them, and Settings → Power has a Charging limit switch. The processor, memory and disk bars turn yellow above 70% and red above 90%.</li>
+        <li><strong>Slate fits the computer it's on.</strong> With no battery, the bar's battery item becomes a power button into the same panel. With no Wi-Fi or no speakers, that item leaves the bar and its panel says what's missing.</li>
+        <li><strong>Region.</strong> The Date &amp; Time page is now Region, with a date format (day, month or year first), the week's first day, and Celsius or Fahrenheit.</li>
+        <li><strong>The clock's panel</strong> has the weather under the calendar: today as it is now, standing out, then the next three days.</li>
+        <li><strong>Sound.</strong> The volume and microphone sliders show stripes drifting along them while they're in use, and red stripes while muted.</li>
+        <li><strong>Workspaces.</strong> The indicator shown as you switch names the workspace. To start with, Super+Left/Right stop at the first and last workspace and there's always a spare empty one.</li>
+        <li><strong>A hand pointer</strong> over everything in Slate you can click.</li>
+        <li><strong>Settings.</strong> A back button on every page; fonts and default apps chosen from type-to-search dropdowns (fonts in their own typefaces); the All Settings search box stays put as the tiles scroll; Monochrome tray icons; shorter page names (Input, Printers, Security).</li>
+        <li><strong>New defaults</strong> (your own settings are kept): title bar buttons on the left, focus follows the pointer, tiles in the icon's colour, a black screensaver, Gloss at 50% on a 0–100% slider.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>No desktop showing between workspaces</strong> as they slide, and no echo of the windows when sliding to an empty one. Windows go square at the corners while a switch slides.</li>
+        <li><strong>A window opens in its own workspace's mode.</strong> One arriving from a tiled workspace while a floating one was in front used to float over the tiled windows, and the other way round.</li>
+        <li><strong>Floating windows fit the screen.</strong> One that opens larger than nine tenths of the usable screen is made that size, and one hanging off an edge is moved in.</li>
+        <li><strong>Clicks just under the menu bar get through.</strong> A hidden strip there swallowed them, so a floating window pushed up against the bar couldn't be grabbed by its title.</li>
+        <li><strong>Picking a workspace from the overview sticks.</strong> With the zoom, Slate stopped watching for Hyprland handing focus back as soon as the overview had gone, so now and then the switch was undone.</li>
+        <li><strong>Maximising twice in quick succession</strong> puts the window back, where it maximised twice over.</li>
+        <li><strong>Notifications from apps that leave things out</strong> (no name, no icon, a picture that can't be loaded) show sensible stand-ins.</li>
+        <li><strong>The dock's window previews</strong> are blurred behind with glass; the symbols on the dock's own buttons no longer wobble as they magnify.</li>
+        <li><strong>The loading cursor</strong> no longer shifts left and right as it turns.</li>
+        <li><strong>Interface size</strong> reaches the reload cover and the bar's arranging panel, and the hot corner check after unlocking works at any size.</li>
+        <li><strong>Updating the login screen</strong> ends a "Later" from before, so the next change is asked about.</li>
+        <li>Settings: a slider's changed-from-default hint says the real default; the position pickers' edges are easier to point at; pointing at a search result no longer looks like choosing it; "None found" where a missing sound device showed -1.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>Removed:</strong> the bar's hover descriptions and their setting; the Shine setting (the rim is always on with glass); the "show on the menu bar" switches on the Workspaces, Spaces and Assistant pages, and the left-side, right-side and clock rows on the Menu Bar page. All of that is done in Edit layout now.</li>
+        <li>Wi-Fi sits next to the battery on the bar; the clock's text changes without a fade.</li>
+        <li>Testing is now one test and fix cycle before each release.</li>
+        <li>The whole test suite passed (3,943 tests) one commit before this release; the last change, to the workspace overview, was checked by running its tests repeatedly.</li>
+        <li>Tested with Hyprland 0.57.1 and Quickshell 0.3.2 (the pinned test image); built and used day to day on Hyprland 0.57.2. The tests weren't run again with today's Arch packages for this release, as neither Hyprland nor Quickshell has had a release since they last were (10 November, one small difference in the emoji picker's screenshot).</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.27.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.27.0 <time datetime="2026-11-10">10 November 2026</time></h2>
   <div class="cl-grid">
