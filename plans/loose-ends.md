@@ -39,10 +39,15 @@ waiting on something. The plans themselves are in the repository's history
   list): [assistant.md](assistant.md).
 - Slate without systemd on a real Artix, Void or Gentoo install: [without-systemd.md](without-systemd.md).
 
-## Closing a window while New Space shows it crashes Slate (2026-11-12)
-Seen while recording the Spaces clip: with Spaces → New Space open (live previews of each
-workspace's windows), demo windows were closed and Slate died with "The Wayland connection
-experienced a fatal error: Invalid argument" (Quickshell's own log, /run/user/1000/quickshell/
-by-id/ups198keot). Likely a live ScreencopyView of a toplevel that goes away. Reproduce: open
-New Space, close an app on a previewed workspace. Fix: drop the capture (captureSource null)
-as the toplevel closes, or before; check the overview and the switcher, which capture too.
+## Closing windows while New Space shows them crashes Slate (2026-11-12)
+Reproducible: windows on two new workspaces (two terminals side by side, a photo in mpv),
+Spaces → New Space open, all three closed at once → Slate dies with "The Wayland connection
+experienced a fatal error: Invalid argument". One window closing on its own doesn't do it.
+The log ends: closewindow, destroyworkspace (the closed windows' workspace), then
+`ToplevelHandle(…) closed`, then the crash.
+Not the live previews: pausing every capture on Hyprland's closewindow (all capture buffers
+destroyed first) still crashed. Likely Quickshell's handling of a closed wlr toplevel handle
+something in New Space still holds (wsWin.toplevel from Hyprland.toplevels, its .wayland),
+or the destroyed workspace. Next: reproduce with New Space's cards stripped down (no
+ScreencopyView, no WallBlur, no toplevel lookup) to find which part; check the overview and
+the switcher the same way; report upstream if it's Quickshell.
