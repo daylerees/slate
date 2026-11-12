@@ -241,12 +241,27 @@ class Lists(Case):
 
 
 class Links(html.parser.HTMLParser):
-    def __init__(self):
+    """A page's anchors and links. A docs page's h2/h3 are anchors too: docs.js gives each an id
+    from its text, as slug() does here."""
+    def __init__(self, docs=False):
         super().__init__()
         self.ids, self.refs = set(), []
+        self._head = None
+        self.docs = docs
+
+    def handle_endtag(self, tag):
+        if tag in ("h2", "h3") and self._head is not None:
+            self.ids.add(re.sub(r"^-|-$", "", re.sub(r"[^a-z0-9]+", "-", "".join(self._head).lower())))
+            self._head = None
+
+    def handle_data(self, data):
+        if self._head is not None:
+            self._head.append(data)
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag in ("h2", "h3") and self.docs:
+            self._head = []
         for k in ("id", "name"):
             if a.get(k):
                 self.ids.add(a[k])
@@ -260,7 +275,7 @@ class Site(Case):
         """Every link and image on the site points at a file (and an anchor) that exists."""
         pages = {}
         for f in slate.files("site", ".html"):
-            p = Links()
+            p = Links(docs=os.sep + "docs" + os.sep in f)
             p.feed(slate.read(f))
             pages[f] = p
         for f, p in pages.items():
