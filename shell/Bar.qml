@@ -1377,9 +1377,10 @@ PanelWindow {
                     // Closer in than a status icon: its glyph is drawn larger to match its
                     // neighbours' height, so it carries blank space of its own at the sides
                     pad: 12
-                    // A green pastel in the Colourful look, the accent otherwise; its own mode or
-                    // the default alike (the panel and the description say which)
-                    tint: Config.statusColour("windowmode", bar.accent)
+                    // A green pastel in the Colourful look; otherwise the bar's text colour, like
+                    // every other icon on it. Its own mode or the default alike (the panel and
+                    // the description say which)
+                    tint: Config.statusColour("windowmode", bar.textColor)
                     hoverText: Config.workspaceLabel(Config.focusedWorkspaceId) + " · " + mode.label
                         + (own ? "" : " (the default)") + " · click to change"
                     onClicked: bar.openPopout("windowmode", wsMode)
