@@ -966,10 +966,21 @@ Singleton {
     Timer {
         id: hyprPush; interval: 400; running: true
         onTriggered: {
-            Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings]);
+            // (under the tests, each push is counted and Hyprland keeps the count, so a test can
+            // tell the settings have arrived: testHypr())
+            if (root.testMode) root.testPushes++;
+            Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings + (root.testMode ? `; SLATE_TEST_PUSHES = ${root.testPushes}` : "")]);
             if (root.blurOverride) root.blurOverridden = true;
             blurLater.restart();          // the blur may have changed: read it again
         }
+    }
+    // Test mode: Slate's settings on their way to Hyprland (busy: a push or a reading back of
+    // Hyprland's blur or rounding still to come), how many pushes have gone (Hyprland's
+    // SLATE_TEST_PUSHES matches once the last has arrived), and the rounding Slate read back
+    property int testPushes: 0
+    function testHypr() {
+        return { busy: hyprPush.running || blurLater.running || blurProc.running || roundingLater.running || roundingProc.running,
+                 pushes: testPushes, rounding: windowRounding };
     }
     // ---- Hyprland's events -------------------------------------------------------------
     // One handler for all of Config's (Hyprland sends many events a second while windows move),

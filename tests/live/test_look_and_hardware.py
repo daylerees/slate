@@ -2,8 +2,36 @@
 whether anything is rounded."""
 import json
 import os
+import re
 
 from live import LiveCase
+
+
+def lua(case, name):
+    """A global of Hyprland's Lua config, as it is now."""
+    out = os.path.join(case.s.h.runtime, "lua-value")
+    if os.path.exists(out):
+        os.remove(out)
+    case.s.hyprctl("dispatch", f'function() local f = io.open("{out}", "w"); f:write(tostring({name})); f:close() end')
+    for _ in range(20):
+        if os.path.exists(out):
+            return open(out).read()
+        case.s.settle(0.1)
+    case.fail(f"couldn't read {name} from Hyprland")
+
+
+def settings_in_hyprland(case, after=-1):
+    """Wait until Slate's settings are in Hyprland: no push or reading back still to come (and
+    at least one push after `after`, a count from the state), and Hyprland has run the last push
+    (it keeps the count, Config.testHypr)."""
+    st = case.wait(lambda st: not st["hypr"]["busy"] and st["hypr"]["pushes"] > after,
+                   "Slate's settings to go to Hyprland", timeout=15)
+    want = str(st["hypr"]["pushes"])
+    for _ in range(50):
+        if lua(case, "SLATE_TEST_PUSHES") == want:
+            return st
+        case.s.settle(0.2)
+    case.fail(f"Hyprland didn't get Slate's settings (push {want}; it has {lua(case, 'SLATE_TEST_PUSHES')})")
 
 
 class Hardware(LiveCase):
@@ -18,18 +46,17 @@ class Hardware(LiveCase):
         self.addCleanup(lambda: self.ipc("test", "hardware", "wifi", "true"))
         self.assertTrue(self.line()["wifi"]["visible"])
         self.ipc("test", "hardware", "wifi", "false")
-        self.s.settle(0.6)
-        self.assertFalse(self.line()["wifi"]["visible"], "the Wi-Fi item shows on a computer with no network hardware")
+        self.wait(lambda st: not st["bar"]["line"]["wifi"]["visible"],
+                  "the Wi-Fi item to go (it shows on a computer with no network hardware)")
         self.ipc("test", "hardware", "wifi", "true")
-        self.s.settle(0.6)
-        self.assertTrue(self.line()["wifi"]["visible"])
+        self.wait(lambda st: st["bar"]["line"]["wifi"]["visible"], "the Wi-Fi item to come back")
 
     def test_no_sound_no_volume_item(self):
         self.addCleanup(lambda: self.ipc("test", "hardware", "audio", "true"))
         self.assertTrue(self.line()["volume"]["visible"])
         self.ipc("test", "hardware", "audio", "false")
-        self.s.settle(0.6)
-        self.assertFalse(self.line()["volume"]["visible"], "the volume item shows with nothing to turn up or down")
+        self.wait(lambda st: not st["bar"]["line"]["volume"]["visible"],
+                  "the volume item to go (it shows with nothing to turn up or down)")
 
     def test_no_battery_still_a_way_into_the_power_panel(self):
         # (no battery here: the item stays, as a power button with no percentage)
@@ -42,22 +69,15 @@ class Hardware(LiveCase):
 
 
 class Formats(LiveCase):
-    def clock(self):
-        return json.loads(self.ipc("test", "state"))["bar"]["clock"]
-
     def test_the_bars_date_follows_the_date_format(self):
         self.keep_setting("dateFormat")
         self.keep_setting("barClockDate")
         self.config("barClockDate", "true")
-        self.config("dateFormat", "dmy")
-        self.s.settle(0.4)
-        self.assertRegex(self.clock(), r"^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}  ")       # Mon 5 Jan
-        self.config("dateFormat", "mdy")
-        self.s.settle(0.4)
-        self.assertRegex(self.clock(), r"^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}  ")      # Mon, Jan 5
-        self.config("dateFormat", "ymd")
-        self.s.settle(0.4)
-        self.assertRegex(self.clock(), r"^\d{4}-\d{2}-\d{2}  ")                         # 2026-01-05
+        for fmt, shape in (("dmy", r"^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}  "),         # Mon 5 Jan
+                           ("mdy", r"^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}  "),        # Mon, Jan 5
+                           ("ymd", r"^\d{4}-\d{2}-\d{2}  ")):                          # 2026-01-05
+            self.config("dateFormat", fmt)
+            self.wait(lambda st: re.search(shape, st["bar"]["clock"]), f"the bar's date written {fmt}")
 
 
 class Rounding(LiveCase):
@@ -66,9 +86,11 @@ class Rounding(LiveCase):
 
     def test_rounded_elements_off_squares_the_windows_too(self):
         self.keep_setting("roundedElements")
-        self.addCleanup(lambda: self.s.settle(1.2))
+        # (before the next test: Slate has read the rounding back from Hyprland, Config.windowRounding)
+        self.addCleanup(lambda: self.wait(lambda st: not st["hypr"]["busy"] and st["hypr"]["rounding"] == self.rounding(),
+                                          "Slate to read the rounding back", timeout=15))
         self.config("roundedElements", "true")
-        self.s.settle(1.2)
+        settings_in_hyprland(self)
         usual = self.rounding()
         self.assertGreater(usual, 0)
         self.config("roundedElements", "false")
@@ -101,7 +123,8 @@ class Shadows(LiveCase):
 
     def test_the_switch_reaches_hyprland(self):
         self.keep_setting("shadows")
-        self.addCleanup(lambda: self.s.settle(1.2))
+        # (before the next test: Slate's settings, and its reading back of them, are done with)
+        self.addCleanup(lambda: settings_in_hyprland(self))
         self.config("shadows", "true")
         self.assertTrue(self.until(1), "Hyprland's shadows aren't on with Shadows on")
         self.config("shadows", "false")
@@ -113,16 +136,7 @@ class Shadows(LiveCase):
 class HyprlandGetsSettings(LiveCase):
     """Settings that Slate hands to Hyprland's own config (slateApply in slate.lua)."""
     def lua(self, name):
-        """A global of Hyprland's Lua config, as it is now."""
-        out = os.path.join(self.s.h.runtime, "lua-value")
-        if os.path.exists(out):
-            os.remove(out)
-        self.s.hyprctl("dispatch", f'function() local f = io.open("{out}", "w"); f:write(tostring({name})); f:close() end')
-        for _ in range(20):
-            if os.path.exists(out):
-                return open(out).read()
-            self.s.settle(0.1)
-        self.fail(f"couldn't read {name} from Hyprland")
+        return lua(self, name)
 
     def until(self, name, want):
         for _ in range(40):
@@ -138,8 +152,10 @@ class HyprlandGetsSettings(LiveCase):
         self.keep_setting("defaultFileManager")
         self.config("defaultFileManager", "foot")
         self.assertTrue(self.until("FILE_MANAGER", "foot"), f"FILE_MANAGER is {self.lua('FILE_MANAGER')!r}")
+        pushes = self.s.state()["hypr"]["pushes"]
         self.s.hyprctl("reload")
-        self.s.settle(1.5)
+        # (Slate hears of the reload and sends its settings again: wait for them to arrive)
+        settings_in_hyprland(self, after=pushes)
         self.assertTrue(self.until("FILE_MANAGER", "foot"), "FILE_MANAGER was lost when Hyprland reloaded")
 
     def test_pointer_style(self):
@@ -147,7 +163,7 @@ class HyprlandGetsSettings(LiveCase):
         the session's own."""
         self.keep_setting("cursorTheme")
         self.config("cursorTheme", "")
-        self.s.settle(1.0)
+        settings_in_hyprland(self)
         own = self.lua("CURSOR_THEME")
         self.config("cursorTheme", "Adwaita")
         self.assertTrue(self.until("CURSOR_THEME", "Adwaita"), f"CURSOR_THEME is {self.lua('CURSOR_THEME')!r}")

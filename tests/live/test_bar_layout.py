@@ -2,6 +2,7 @@
 or a button on the panel comes to, through the test hook (the session has no pointer)."""
 import json
 import os
+import time
 
 from PIL import Image
 
@@ -13,6 +14,9 @@ SHOWN = ["barShowControl", "barShowApps", "barShowSpaces", "barShowAssistant", "
          "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowGameMode",
          "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowWifi", "barShowBattery", "barShowClock",
          "barShowPower", "barShowTitle", "barShowTitleIcon", "barStatusCollapsed"]
+# Things that never show here, on the bar or not: the tests' computer has no tray apps, one
+# keyboard layout and no Bluetooth
+NEVER_HERE = ("tray", "keyboard", "bluetooth")
 
 
 class BarLayout(LiveCase):
@@ -22,7 +26,16 @@ class BarLayout(LiveCase):
             self.keep_setting(key)
         self.addCleanup(lambda: (self.ipc("test", "arrange", "done", "", "", ""), self.ipc("test", "arrange", "reset", "", "", "")))
         self.do("reset")
-        self.s.settle(0.5)
+        self.wait(lambda st: st["bar"]["isDefault"] and not st["bar"]["arranging"], "the bar as Slate's own")
+
+    def until(self, read, check, timeout=10):
+        """read() once check() is true of it (a Hyprland query, say), or as it is at `timeout`."""
+        end = time.monotonic() + timeout
+        while True:
+            now = read()
+            if check(now) or time.monotonic() > end:
+                return now
+            self.s.settle(0.1)
 
     def do(self, what, a="", b="", c=""):
         self.ipc("test", "arrange", what, str(a), str(b), str(c))
@@ -119,12 +132,10 @@ class BarLayout(LiveCase):
         back after."""
         self.assertIn("default", self.s.hyprctl("submap"))
         self.do("start")
-        self.s.settle(0.5)
-        self.assertIn("slate-arranging", self.s.hyprctl("submap"))
+        self.assertIn("slate-arranging", self.until(lambda: self.s.hyprctl("submap"), lambda v: "slate-arranging" in v))
         self.ipc("bar", "edit", "done")             # (what Escape runs there)
         self.s.wait(lambda st: not st["bar"]["arranging"], what="arranging to end")
-        self.s.settle(0.5)
-        self.assertIn("default", self.s.hyprctl("submap"))
+        self.assertIn("default", self.until(lambda: self.s.hyprctl("submap"), lambda v: "default" in v))
 
     def test_an_empty_container_stays_only_while_arranging(self):
         self.do("start")
@@ -216,16 +227,17 @@ class BarLayout(LiveCase):
                         return int(lvl)
             return -1
         self.assertEqual((level("slate-wallpaper"), level("slate-bar"), level("slate-bar-dim")), (0, 2, -1))
+        def levels():
+            return (level("slate-wallpaper"), level("slate-bar"), level("slate-bar-dim"))
         self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
-        self.s.settle(1.5)
+        self.until(lambda: [c for c in self.s.hyprctl("clients", json_out=True) if c.get("mapped") and c.get("class") == "foot"],
+                   bool, timeout=20)
         self.do("start")
         self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel")
-        self.s.settle(0.8)
-        self.assertEqual((level("slate-wallpaper"), level("slate-bar"), level("slate-bar-dim")), (0, 3, 2))
+        self.assertEqual(self.until(levels, lambda v: v == (0, 3, 2)), (0, 3, 2))
         self.screenshot("bar-arranging-over-a-window")
         self.do("done")
-        self.s.settle(0.8)
-        self.assertEqual((level("slate-wallpaper"), level("slate-bar"), level("slate-bar-dim")), (0, 2, -1))
+        self.assertEqual(self.until(levels, lambda v: v == (0, 2, -1)), (0, 2, -1))
         self.close_windows()
 
     def test_settings_steps_aside(self):
@@ -243,7 +255,8 @@ class BarLayout(LiveCase):
         self.assertEqual(self.bar()["edge"], "end")
         self.ipc("popout", "close")
         self.do("moveEntry", self.where("clock"), len(self.layout()))     # the clock last now
-        self.s.settle(0.5)
+        self.wait(lambda st: max((t for t in st["bar"]["line"].values() if t["visible"]), key=lambda t: t["x"])
+                  == st["bar"]["line"]["clock"], "the clock to be the bar's last")
         self.ipc("bar", "panel", "calendar")
         self.s.wait(lambda st: st["popout"] == "calendar")
         self.assertEqual(self.bar()["edge"], "end")
@@ -300,21 +313,23 @@ class BarLayout(LiveCase):
         for item in ("control", "apps", "spaces", "windowmode", "workspaces", "tray", "notifications", "clipboard", "screenshot",
                      "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery", "clock", "power"):
             with self.subTest(item):
+                usual = self.bar()["line"][item]["visible"]     # (as Slate has it, before it's shown)
                 self.do("shown", item, "true")
-                self.s.settle(0.4)
+                self.wait(lambda st: st["bar"]["line"][item]["visible"] or item in NEVER_HERE, f"{item} on the bar")
                 self.do("shown", item, "false")
-                self.s.settle(0.5)
+                self.wait(lambda st: not st["bar"]["line"][item]["visible"], f"{item} to leave the bar")
                 self.assertEqual(self.blanks("bar-off-" + item), [], f"with {item} off the bar")
                 self.assertFalse(self.bar()["line"][item]["visible"], f"{item} still has a place on the bar")
                 self.do("reset")
-                self.s.settle(0.8)
+                self.wait(lambda st: st["bar"]["isDefault"] and st["bar"]["line"][item]["visible"] == usual,
+                          f"{item} back as Slate has it")
                 self.assertEqual(self.blanks("bar-back-" + item), [], f"after Defaults, having taken {item} off")
         self.do("done")
 
     def test_dragging_each_thing_off_leaves_nothing_blank(self):
         """The same with a real drag: picked up where it is and let go well below the bar."""
         self.do("start")
-        self.s.settle(0.6)
+        self.wait(lambda st: st["bar"]["editor"], "the arranging panel")
         for item in ("control", "apps", "spaces", "windowmode", "workspaces", "notifications", "volume", "wifi", "clock", "power"):
             with self.subTest(item):
                 t = self.bar()["line"][item]
@@ -351,7 +366,9 @@ class BarLayout(LiveCase):
         self.do("shown", "power", "false")
         self.do("moveItem", "clock", 0, -1)
         self.do("moveItem", "notifications", self.where("apps"), 0)
-        self.s.settle(0.5)
+        self.wait(lambda st: st["bar"]["layout"][0]["items"] == ["clock"]
+                  and not any(st["bar"]["line"][t]["visible"] for t in ("wifi", "volume", "power")),
+                  "the bar rearranged")
         self.do("reset")
         self.steady(self.bar, floor=1)
         self.assertTrue(self.bar()["isDefault"])
