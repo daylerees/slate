@@ -50,6 +50,11 @@ class Visual(LiveCase):
 
     def shoot(self, name, scene):
         old = {}
+        # Every scene starts with no notifications: one left from an earlier scene (its pop-up,
+        # the bell's count) made a scene's picture depend on what ran before it, so it differed
+        # when run on its own. Scenes that show one send it themselves
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "the pop-ups to go")
         try:
             for k, v in scene.get("settings", {}).items():
                 old[k] = self.setting(k)

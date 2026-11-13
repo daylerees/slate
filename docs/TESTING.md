@@ -95,6 +95,15 @@ the same pixels every time, where a real GPU wouldn't. Small anti-aliasing shift
 (`tests/lib/imgdiff.py`); a scene can also mask a part that changes by itself (the control
 centre's uptime).
 
+The scenes run one after another in one Slate session, and each starts with no notifications
+(a pop-up or the bell's count from an earlier scene once showed up in later pictures). One thing
+does carry over: Qt's text smoothing depends on what it has drawn before, so a scene run on its
+own (`--filter`) can differ from the same scene in a whole visual run by faint edges on text and
+icons (a "16×16 area" or a fraction of a percent, on text). The approved pictures come from whole
+runs: approve from a whole visual run (`tests/run --tier visual`), not from a filtered one, and
+a faint text-edge difference in a filtered run alone isn't a change. Slate sets nothing that
+would pin it (Qt here ignores fontconfig's rgba and `QT_SUBPIXEL_AA_TYPE`).
+
 ## Pinned and latest packages
 
 The image is built from a dated snapshot of the Arch archive (`tests/container/deps.lock`), so
