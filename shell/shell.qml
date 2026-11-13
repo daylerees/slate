@@ -172,6 +172,7 @@ ShellRoot {
         // chosen), a press on one by id (the panel open), and which this computer can't use
         function controlSwitches(ids: string): void { Config.s.controlSwitches = ids === "" ? [] : ids.split(","); }
         function pressSwitch(id: string): void { popouts.pressSwitchAsked(id); }
+        function newSpace(): void { popouts.newSpaceAsked(); }
         function switchMissing(ids: string): void { Config.controlSwitchMissing = ids === "" ? [] : ids.split(","); }
         // Hardware the tests' computer hasn't got, pretended there or not: what = "wifi" or "audio"
         function hardware(what: string, on: bool): void {
@@ -1700,14 +1701,14 @@ ShellRoot {
                                 color: liveHover.hovered ? Config.hover : "transparent"
                                 Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                                 Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
-                                ScreencopyView {
+                                WindowPreview {
                                     id: liveShot
                                     readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
                                     anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
                                     width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
                                     height: width / ratio
-                                    captureSource: previewPop.visible ? liveCard.modelData : null
-                                    live: previewPop.wanted          // (still while it fades out)
+                                    window: previewPop.visible ? liveCard.modelData : null
+                                    running: previewPop.wanted          // (still while it fades out)
                                     // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                                     layer.enabled: true
                                     layer.effect: PreviewShape { radius: Config.corner(6); gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }

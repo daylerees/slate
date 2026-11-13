@@ -190,15 +190,15 @@ PanelWindow {
         Repeater {
             id: shotRepeater
             model: sw.windows
-            delegate: ScreencopyView {
+            delegate: WindowPreview {
                 required property var modelData
                 readonly property var win: modelData
                 // Fitted to a card's preview area, keeping the window's shape
                 readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
                 width: Math.min(sw.cardW - 20, sw.previewH * ratio)
                 height: width / ratio
-                captureSource: sw.livePreviews && sw.shown && modelData.wayland ? modelData.wayland : null
-                live: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
+                window: sw.livePreviews && sw.shown && modelData.wayland ? modelData.wayland : null
+                running: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
             }
         }
     }

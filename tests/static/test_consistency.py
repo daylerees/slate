@@ -401,6 +401,26 @@ class Hover(Case):
         self.assertIn("Qt.tint(", m.group(1), "hoverOn doesn't give a solid fill a solid hover")
 
 
+class WindowPreviews(Case):
+    """Every live window preview (the overview, the window switcher, the dock's previews, New
+    Space) is a WindowPreview. In Quickshell's live mode, a capture that failed as its window
+    closed was asked for again from the window's closed handle, and Slate died ("The Wayland
+    connection experienced a fatal error: Invalid argument"; closing several windows at once
+    while New Space or the overview showed them, 2026-11-12). WindowPreview asks for frames
+    itself and never uses live mode."""
+    def test_only_window_preview_captures_windows(self):
+        bad = [f for f in slate.files("shell", ".qml")
+               if not f.endswith("WindowPreview.qml") and re.search(r"\bScreencopyView\s*\{", slate.read(f))]
+        self.assertFalse(bad, "a ScreencopyView of its own (use WindowPreview): " + ", ".join(bad))
+
+    def test_never_live(self):
+        src = slate.read("shell", "WindowPreview.qml")
+        self.assertRegex(src, r"\n    live: false\n")
+        self.assertIn("captureFrame()", src)
+        # (the first frame comes by itself: asked for again before it's here, it started over)
+        self.assertRegex(src, r"running: .*wp\.hasContent")
+
+
 class Shadows(Case):
     """One shadow look everywhere (Settings → Appearance → Shadows)."""
     def test_no_shadow_sets_its_own_look(self):

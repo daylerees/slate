@@ -25,6 +25,8 @@ PanelWindow {
     // (the test hook: press a control centre switch by its id, as a click on it does; the
     // panel has to be open)
     signal pressSwitchAsked(string id)
+    // (the test hook: Spaces → New Space, as clicking it does; the Spaces panel has to be open)
+    signal newSpaceAsked()
     property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
     property var dock: null              // the dock's window (shell.qml), left usable while a panel's open
 
@@ -1263,6 +1265,7 @@ PanelWindow {
                     spacesView.autoPick = -1;
                 }
             }
+            Connections { target: pop; function onNewSpaceAsked() { spacesView.startNew(); } }
             function startNew() {
                 const ws = Hyprland.focusedWorkspace;
                 picked = [];
@@ -1552,13 +1555,13 @@ PanelWindow {
                                                 radius: Config.corner(Math.max(0, wsWin.radius - 1))
                                                 opacity: wsCard.on ? 1 : 0.6
                                             }
-                                            ScreencopyView {
+                                            WindowPreview {
                                                 id: wsLive
                                                 anchors.fill: parent
                                                 anchors.margins: 1
                                                 // Not in game mode: just the window's outline and app icon
-                                                captureSource: !Config.gameMode && pop.shown && spacesView.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
-                                                live: pop.shown && spacesView.mode === "new"
+                                                window: !Config.gameMode && pop.shown && spacesView.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
+                                                running: pop.shown && spacesView.mode === "new"
                                                 smooth: true
                                                 // Clipped to the window's rounded corners, and brightened
                                                 // back if Hyprland dims it (it isn't focused)

@@ -52,18 +52,21 @@ own too ("the note when it's shown again, empty"), after the window on the secre
 closed and the workspace shown again; six instrumented runs didn't catch it. Also seen once in a
 full run: `live/wallpaper › no_banding_on_screen` (19 colour steps out), passing three times alone.
 
-## Closing windows while New Space shows them crashes Slate (2026-11-12)
-Reproducible: windows on two new workspaces (two terminals side by side, a photo in mpv),
-Spaces → New Space open, all three closed at once → Slate dies with "The Wayland connection
-experienced a fatal error: Invalid argument". One window closing on its own doesn't do it.
-The log ends: closewindow, destroyworkspace (the closed windows' workspace), then
-`ToplevelHandle(…) closed`, then the crash.
-Not the live previews: pausing every capture on Hyprland's closewindow (all capture buffers
-destroyed first) still crashed. Likely Quickshell's handling of a closed wlr toplevel handle
-something in New Space still holds (wsWin.toplevel from Hyprland.toplevels, its .wayland),
-or the destroyed workspace. Next: reproduce with New Space's cards stripped down (no
-ScreencopyView, no WallBlur, no toplevel lookup) to find which part; check the overview and
-the switcher the same way; report upstream if it's Quickshell.
+## Live capture of a closing window crashed Slate: fixed in Slate, a Quickshell bug to report (2026-11-13)
+Closing several windows at once while New Space (or, less often, the overview) showed them live
+killed Slate: "The Wayland connection experienced a fatal error: Invalid argument", 14 ms after
+`ToplevelHandle(…) closed`. On Dayle's machine (Intel, dmabuf captures) it happened one time in
+two; never in the test container. Previews off, or captured once (not live): no crash. So in
+Quickshell's live mode a capture that failed as its window closed was asked for again from the
+closed handle. Fixed in Slate with WindowPreview.qml (every live preview: live off, frames asked
+for on a timer once the first is in): 5 of 5 runs survived (New Space 3, overview 2).
+Confirmed in Quickshell itself: a 30-line config with nothing of Slate's (a panel of live
+ScreencopyViews of Hyprland.toplevels, the views going with their windows) died the same way in
+3 of 4 runs. Still to do: report it to Quickshell; a draft is in Dayle's Downloads
+(quickshell-screencopy-issue.md).
+Also: the dock's visual baselines (dock-drag, dock-drag-glass, dock-magnified-glass) were
+approved with a stray "Backup finished" toast from an earlier scene in the full run, so run on
+their own they differ; re-shoot them with notifications cleared first.
 
 ## Checked by hand, not by the tests (moved from the old release-testing list, 2026-11-12)
 

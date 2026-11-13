@@ -432,7 +432,7 @@ PanelWindow {
         Repeater {
             id: shotRepeater
             model: ov.shotAddrs
-            delegate: ScreencopyView {
+            delegate: WindowPreview {
                 required property string modelData
                 readonly property string addr: modelData
                 // Drawn at twice its size on a card (capped at the window's own size), then
@@ -444,8 +444,8 @@ PanelWindow {
                 height: g ? Math.max(1, g.size[1] * k) : 120
                 // Kept until the overview has completely gone (not just closing): dropped as it
                 // started fading, the window vanished from its card and came back as the real one
-                captureSource: ov.visible && ov.byAddr[modelData] && ov.byAddr[modelData].wayland ? ov.byAddr[modelData].wayland : null
-                live: ov.shown && !ov.releasing     // stop updating once chosen: less work during the fade
+                window: ov.visible && ov.byAddr[modelData] && ov.byAddr[modelData].wayland ? ov.byAddr[modelData].wayland : null
+                running: ov.shown && !ov.releasing     // stop updating once chosen: less work during the fade
             }
         }
     }
