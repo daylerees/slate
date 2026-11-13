@@ -338,7 +338,8 @@ how to check whether a new release fixed it, and how to take the workaround out 
   Hyprland 0.56.2, with a trace pointing at Wayland object ids reused during a burst of captures,
   and also set off by many windows opening at once). Watch both. On the same path but not the
   same: quickshell-mirror/quickshell#1418 (window captures failing outright on Hyprland 0.57.0).
-  Tested here: windows closing; a burst of windows opening hasn't been tried with WindowPreview.
+  With WindowPreview, both held here: three windows closing at once under New Space and the
+  overview (5 of 5), and ten opening at once, then closing at once, with the overview showing (4 of 4).
 - **What Slate does instead:** every live preview is a `WindowPreview` (`shell/WindowPreview.qml`):
   `live: false`, and Slate asks for frames itself with `captureFrame()` on a timer (30 a second,
   starting once the first frame is in, which comes by itself). Previews update at 30 frames a

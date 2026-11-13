@@ -63,8 +63,9 @@ for on a timer once the first is in): 5 of 5 runs survived (New Space 3, overvie
 Confirmed in Quickshell itself: a 30-line config with nothing of Slate's (a panel of live
 ScreencopyViews of Hyprland.toplevels, the views going with their windows) died the same way in
 3 of 4 runs. Reported as quickshell-mirror/quickshell#1481; very likely the same as
-#1123 (open since September). Still to do: try a burst of windows opening (#1123's other trigger)
-with WindowPreview. docs/ARCHITECTURE.md, "Workarounds for bugs elsewhere", says how to check a new
+#1123 (open since September). A burst of windows opening (#1123's other trigger) held too: ten at
+once, then all closed at once, with the overview showing, 4 of 4. Nothing left to do here until
+Quickshell fixes it. docs/ARCHITECTURE.md, "Workarounds for bugs elsewhere", says how to check a new
 Quickshell and take the workaround out.
 Also: the dock's visual baselines (dock-drag, dock-drag-glass, dock-magnified-glass) were
 approved with a stray "Backup finished" toast from an earlier scene in the full run, so run on
