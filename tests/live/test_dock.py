@@ -1,9 +1,12 @@
 """The dock: its slots in order for each setting, app badges, the Waste Basket's count."""
+import atexit
 import json
 import os
 import time
+import unittest
 
 from live import LiveCase
+from session import Session, in_container
 
 
 def kinds(st):
@@ -436,10 +439,8 @@ class Fits(LiveCase):
         self.assertTrue(self.fits(st))
 
 
-class More(LiveCase):
-    """When the dock is too long for its edge even with the icons at 24px: what's playing goes to
-    one icon, then the apps you haven't pinned go into More, the oldest first, and come back as
-    room returns. The room is made short with `test dockRoom`, so a few windows fill it."""
+class MoreCase(LiveCase):
+    """A dock along the bottom with everything on it, ready to be filled until apps go to More."""
     APPS = ["slate-more-%d" % i for i in range(1, 6)]
 
     def setUp(self):
@@ -477,6 +478,12 @@ class More(LiveCase):
         d = st["dock"]
         self.assertLessEqual(d["length"] + 48, d["room"] + 1, f"the dock is {d['length']}px in {d['room']}px")
         self.assertGreaterEqual(d["base"], 24, "icons no smaller than 24px")
+
+
+class More(MoreCase):
+    """When the dock is too long for its edge even with the icons at 24px: what's playing goes to
+    one icon, then the apps you haven't pinned go into More, the oldest first, and come back as
+    room returns. The room is made short with `test dockRoom`, so a few windows fill it."""
 
     def test_oldest_unpinned_fold_first_and_come_back(self):
         self.ipc("test", "dockRoom", 360)
@@ -523,3 +530,136 @@ class More(LiveCase):
         kinds = [x["kind"] for x in st["dock"]["slots"]]
         for kept in ("launcher", "downloads", "trash"):
             self.assertIn(kept, kinds, f"the {kept} stays")
+
+
+class DraggingFromMore(MoreCase):
+    """An app dragged out of More's grid onto the dock is pinned where it's let go, through the
+    dock's own drag (the gap opening there); let go anywhere else, nothing changes. The grid
+    hands the dock the pointer's place on the screen (test dockMoreDrag), as its tiles do."""
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(self.unpin_test_apps)
+        self.ipc("test", "dockRoom", 360)
+        self.open_apps()
+        st = self.settled()
+        self.assertTrue(st["dock"]["more"], "some apps went into More")
+
+    def unpin_test_apps(self):
+        # (room again, so each is on the dock, then pulled well up off it)
+        self.ipc("dock", "closeMenu")
+        self.ipc("test", "dockRoom", 0)
+        for key in self.APPS:
+            if key in self.s.state()["dock"]["pinned"]:
+                self.wait(lambda st: key in self.on_dock(st), f"{key} on the dock")
+                self.ipc("test", "dockDrag", key, 0, 400)
+                self.ipc("test", "dockDrop")
+                self.wait(lambda st: key not in st["dock"]["pinned"] and st["dock"]["dragging"] == "", f"{key} unpinned")
+
+    def open_more(self):
+        self.ipc("dock", "more")
+        self.wait(lambda st: st["dock"]["moreOpen"], "More's grid open")
+
+    def at(self, st, key):
+        return next(i for i, x in enumerate(st["dock"]["slots"]) if x.get("key") == key)
+
+    def test_dropped_on_the_dock_pins_it_there(self):
+        st = self.s.state()
+        key = st["dock"]["more"][0]
+        pinned = list(st["dock"]["pinned"])
+        self.assertNotIn(key, pinned)
+        self.open_more()
+        # Held over foot (before its middle): the dock's own drag, a gap where it'd go, first
+        self.ipc("test", "dockMoreDrag", key, self.at(st, "foot"), 0)
+        st = self.wait(lambda st: st["dock"]["dragging"] == key and st["dock"]["dropIndex"] == 0, "a place among the pinned apps")
+        self.assertTrue(st["dock"]["dragFromMore"])
+        self.assertGreaterEqual(st["dock"]["gapAt"], 0, "a gap where it'd land")
+        self.assertTrue(st["dock"]["moreOpen"] and st["dock"]["menuLifted"], "the grid out of sight, still open (it has the pointer)")
+        self.assertFalse(st["dock"]["dragAway"])
+        # (the grid's tiles held as they were, the one being dragged among them: remade, the
+        # tile under the pointer would let go of it)
+        self.assertIn(key, st["dock"]["moreGrid"])
+        self.assertNotIn(key, st["dock"]["more"], "the dock's own list goes on without it")
+        self.ipc("test", "dockMoreDrop")
+        st = self.wait(lambda st: st["dock"]["dragging"] == "" and st["dock"]["pinned"][:1] == [key], "it pinned, first")
+        self.assertEqual(st["dock"]["pinned"], [key] + pinned, "the rest as they were")
+        self.assertFalse(st["dock"]["moreOpen"], "the grid closed")
+        st = self.settled()
+        self.assertIn(key, self.on_dock(st), "on the dock now")
+        self.assertNotIn(key, st["dock"]["more"])
+        # Whatever doesn't fit now goes to More by the same rule: the oldest you haven't pinned
+        more = st["dock"]["more"]
+        self.assertEqual(more, [k for k in self.APPS if k != key][:len(more)])
+        self.assertEqual(st["dock"]["moreGrid"], more, "the grid follows the dock again")
+        self.assert_fits(st)
+
+    def test_dropped_after_the_pinned_apps(self):
+        st = self.s.state()
+        key = st["dock"]["more"][-1]
+        self.open_more()
+        # Past foot's middle: after it
+        self.ipc("test", "dockMoreDrag", key, self.at(st, "foot") + 1, 0)
+        self.wait(lambda st: st["dock"]["dragging"] == key and st["dock"]["dropIndex"] == 1, "a place after foot")
+        self.ipc("test", "dockMoreDrop")
+        st = self.wait(lambda st: st["dock"]["dragging"] == "" and key in st["dock"]["pinned"], "it pinned")
+        self.assertEqual(st["dock"]["pinned"][:2], ["foot", key])
+
+    def test_dropped_off_the_dock_changes_nothing(self):
+        st = self.settled()
+        key = st["dock"]["more"][0]
+        before = (st["dock"]["pinned"], st["dock"]["more"])
+        self.open_more()
+        # Well up off the dock: nowhere to go (and not an unpin, as for a pinned app)
+        self.ipc("test", "dockMoreDrag", key, self.at(st, "foot"), 400)
+        st = self.wait(lambda st: st["dock"]["dragging"] == key)
+        self.assertEqual(st["dock"]["dropIndex"], -1)
+        self.assertEqual(st["dock"]["gapAt"], -1)
+        self.assertFalse(st["dock"]["dragAway"])
+        self.ipc("test", "dockMoreDrop")
+        self.wait(lambda st: st["dock"]["dragging"] == "" and not st["dock"]["moreOpen"], "let go, the grid closed")
+        st = self.settled()
+        self.assertEqual((st["dock"]["pinned"], st["dock"]["more"]), before, "it stays in More")
+        # Off the dock's start, level with it: nowhere either
+        self.open_more()
+        self.ipc("test", "dockMoreDrag", key, -1, 0)
+        st = self.wait(lambda st: st["dock"]["dragging"] == key)
+        self.assertEqual(st["dock"]["dropIndex"], -1)
+        self.ipc("test", "dockMoreDrop")
+        self.wait(lambda st: st["dock"]["dragging"] == "")
+        st = self.settled()
+        self.assertEqual((st["dock"]["pinned"], st["dock"]["more"]), before, "it stays in More")
+
+    def test_grid_closed_mid_drag_changes_nothing(self):
+        """The grid closed while an app's carried out of it (Escape, another workspace): the drag
+        ends as if let go off the dock, never left hanging."""
+        st = self.settled()
+        key = st["dock"]["more"][0]
+        before = (st["dock"]["pinned"], st["dock"]["more"])
+        self.open_more()
+        self.ipc("test", "dockMoreDrag", key, self.at(st, "foot"), 0)
+        self.wait(lambda st: st["dock"]["dropIndex"] == 0, "over the dock")
+        self.ipc("dock", "closeMenu")
+        self.wait(lambda st: st["dock"]["dragging"] == "" and not st["dock"]["dragFromMore"], "the drag over")
+        st = self.settled()
+        self.assertEqual((st["dock"]["pinned"], st["dock"]["more"]), before)
+
+
+class DraggingFromMoreAt125(DraggingFromMore):
+    """The same at 125% Interface size, in a Slate of its own: the grid's window and the dock's
+    both count in Slate's units, so it lands where it's let go just the same."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not in_container():
+            raise unittest.SkipTest("live tests run in the test container")
+        Session.stop_shared()
+        cls.s = Session(settings={"uiScale": 1.25})
+        atexit.register(cls.s.stop)
+        cls.s.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.s.stop()
+
+    def test_at_125(self):
+        self.assertEqual(float(self.ipc("config", "get", "uiScale")), 1.25)

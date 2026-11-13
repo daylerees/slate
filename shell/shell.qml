@@ -312,6 +312,20 @@ ShellRoot {
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
+        // Drag an app out of More's grid (open: dock more) as the pointer would, held over slot i
+        // of the dock (as the slots are now; -1: off its start), `up` pixels up from its middle:
+        // handed to the grid's own carrying (win.carryFromMore) as a place on the screen (the
+        // menu's window covers it), as the grid's tile does. Then let go, as releasing the tile does
+        function dockMoreDrag(key: string, i: int, up: real): void {
+            if (win.dragKey === "") {
+                if (!(appMenu.visible && appMenu.app && appMenu.app.moreGrid)) return;
+                win.pickFromMore(key);
+            }
+            const x = (strip.width - win.restWidth) / 2 + win.slotStart(Math.max(0, i)) + (i < 0 ? -win.base * 2 : win.base * 0.25);
+            const sp = win.toScreen(strip.mapToItem(win.contentItem, x, bg.y + bg.height / 2 - up));
+            win.carryFromMore(sp);
+        }
+        function dockMoreDrop(): void { win.dropFromMore(); }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
             if (i >= 0) win.setPointer((strip.width - win.restWidth) / 2 + win.slotStart(i) + win.slotWidth(i) * win.base / 2);
@@ -376,6 +390,7 @@ ShellRoot {
                 dock: {
                     pinned: win.pinned, screen: win.screen ? win.screen.name : "",
                     dragging: win.dragKey, dropIndex: win.dropIndex, dragAway: win.dragAway, gapAt: win.gapAt,
+                    dragFromMore: win.dragFromMore, menuLifted: appMenu.lifted, moreGrid: appMenu.moreList.map(it => it.key),
                     slots: win.slots.map(x => x.kind === "app"
                         ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
                         : { kind: x.kind }),
@@ -1555,10 +1570,53 @@ ShellRoot {
             dragPinned = it.pinned;
             dragKey = key;
             previewApp = null;
-            appMenu.closeMenu();                 // nothing else open over the dock while dragging
+            // nothing else open over the dock while dragging (More's grid stays, out of sight:
+            // the drag began in it)
+            if (!dragFromMore) appMenu.closeMenu();
             Qt.callLater(() => { settling = false; });
         }
+        // An app dragged out of More's grid (appMenu) onto the dock: the grid's window keeps the
+        // pointer (it was pressed there), so the grid hands the dock the pointer's place (on the
+        // screen, in Slate's units: the menu covers the screen) and the dock's own drag does the
+        // rest, the gap opening where it'd land. Let go over the dock: pinned at that place;
+        // anywhere else, nothing changes and it stays in More. The menu stays open (its cards
+        // faded away, appMenu.lifted) until it's let go, or the pointer would go with it
+        property bool dragFromMore: false
+        readonly property real dragThreshold: 8      // how far the pointer moves before a press is a drag
+        function pickFromMore(key) {
+            if (dragKey !== "" || !moreItems.some(it => it.key === key)) return;
+            dragFromMore = true;
+            appMenu.lifted = true;
+            startDrag(key);
+        }
+        // The pointer at sp (in the menu's window: the screen, in Slate's units)
+        function carryFromMore(sp) {
+            if (!dragFromMore || landing) return;
+            dragScreen = sp;
+            const sw = screen ? screen.width : 0, sh = screen ? screen.height : 0;
+            const p = win.contentItem.mapToItem(strip, sp.x - (edge === "right" ? sw - width : 0), sp.y - (edge === "bottom" ? sh - height : 0));
+            setPointer(p.x);
+            dragTo(p);
+        }
+        function dropFromMore() {
+            if (!dragFromMore) return;
+            dragFromMore = false;
+            endDrag();
+            appMenu.closeMenu();
+        }
         function dragTo(stripPoint) {
+            if (dragFromMore) {
+                // Over the dock (its icons as they'd grow, and not off either end), it'd be pinned
+                // at the place among the pinned apps it's nearest; anywhere else, nowhere
+                dragAway = false;
+                const x = stripPoint.x - (strip.width - restWidth) / 2;
+                const over = stripPoint.y >= bg.y - base * maxScale && x >= -base && x <= restWidth + base;
+                const ps = pinnedSlots;
+                let i = 0;
+                while (i < ps.length && x > slotStart(ps[i].at) + base / 2) i++;
+                dropIndex = over ? i : -1;
+                return;
+            }
             dragAway = dragPinned && stripPoint.y < bg.y - removeDistance;
             const offDock = stripPoint.y < bg.y - base * maxScale;
             if (dragAway || (!dragPinned && offDock)) { dropIndex = -1; return; }
@@ -1653,7 +1711,15 @@ ShellRoot {
             previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
         }
-        Connections { target: appMenu; function onVisibleChanged() { if (appMenu.visible) win.previewApp = null; } }
+        Connections {
+            target: appMenu
+            function onVisibleChanged() {
+                if (appMenu.visible) win.previewApp = null;
+                // (More's grid closed mid-drag, by Escape or going to another workspace: let go
+                // where it isn't over the dock, so nothing changes)
+                else if (win.dragFromMore) { win.dropIndex = -1; win.dropFromMore(); }
+            }
+        }
 
         PanelWindow {
             id: dragPop
@@ -1933,6 +1999,17 @@ ShellRoot {
             readonly property var entry: app ? app.entry : null
             readonly property var wins: app ? app.windows : []
             readonly property bool isPinned: app && app.key ? win.pinned.includes(app.key) : false
+            // More's grid: the apps in it, held as they are while one's dragged out of it (the
+            // dock's list changes as it goes, and a new list would remake the tiles, the one
+            // being dragged among them, dropping the pointer)
+            // (set, never bound: a binding would follow the dock's list mid-drag too)
+            property var moreList: []
+            Component.onCompleted: moreList = win.moreItems
+            Connections {
+                target: win
+                function onMoreItemsChanged() { if (!win.dragFromMore) appMenu.moreList = win.moreItems; }
+                function onDragFromMoreChanged() { if (!win.dragFromMore) appMenu.moreList = win.moreItems; }
+            }
 
             // x: the icon's centre along the dock (strip coordinates)
             function openFor(a, x) {
@@ -2037,7 +2114,8 @@ ShellRoot {
             }
             // More: the apps that don't fit on the dock (win.foldPlan), four across as Downloads'
             // grid is, three rows and then it scrolls. Click one to go to it (or start it), as on
-            // the dock; right-click for its own menu (Pin, Quit and the rest)
+            // the dock; right-click for its own menu (Pin, Quit and the rest); drag one onto the
+            // dock to pin it there (win.pickFromMore)
             Component {
                 id: moreGrid
                 Flickable {
@@ -2057,7 +2135,7 @@ ShellRoot {
                         id: moreGridItems
                         columns: 4
                         Repeater {
-                            model: win.moreItems
+                            model: appMenu.moreList
                             delegate: Item {
                                 id: moreApp
                                 required property var modelData
@@ -2110,9 +2188,31 @@ ShellRoot {
                                     color: focusedApp ? win.activeDotColor : win.dotColor
                                 }
                                 HoverHandler { id: moreHover }
-                                ClickTap {
-                                    hand: false
-                                    onTapped: { const it = moreApp.modelData; appMenu.closeMenu(); win.openApp(it); }
+                                // A click opens it; moved as far as starts a drag on the dock, it's
+                                // the dock's drag from then on. (A MouseArea, as the bar's pool
+                                // chips are: the click plays for a click, never at the end of a drag)
+                                MouseArea {
+                                    anchors.fill: parent
+                                    preventStealing: true          // (the grid doesn't scroll instead)
+                                    property point pressedAt
+                                    property bool dragged: false
+                                    onPressed: m => { pressedAt = Qt.point(m.x, m.y); dragged = false; }
+                                    onPositionChanged: m => {
+                                        if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > win.dragThreshold) {
+                                            dragged = true;
+                                            win.pickFromMore(moreApp.modelData.key);
+                                        }
+                                        if (dragged) win.carryFromMore(mapToItem(null, m.x, m.y));
+                                    }
+                                    onReleased: if (dragged) win.dropFromMore()
+                                    onCanceled: if (dragged) win.dropFromMore()
+                                    onClicked: {
+                                        if (dragged) return;
+                                        const it = moreApp.modelData;
+                                        Config.click();
+                                        appMenu.closeMenu();
+                                        win.openApp(it);
+                                    }
                                 }
                                 ClickTap {
                                     hand: false
@@ -2260,7 +2360,7 @@ ShellRoot {
             onPositionChanged: m => {
                 win.setPointer(stripX(m));
                 if (!pressed || win.dragCandidate === "" || win.landing) return;
-                if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > 8) {
+                if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > win.dragThreshold) {
                     dragged = true;
                     win.startDrag(win.dragCandidate);
                 }
