@@ -165,6 +165,16 @@ ShellRoot {
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
+        // Hot corners: is this point (Hyprland's pixels, as `hyprctl cursorpos` says) in that
+        // corner ("topLeft", "bottomRight"…) of the main display? (what unlocking asks)
+        function hotCorner(corner: string, x: real, y: real): bool { return hotCorners.pointIn(corner, x, y); }
+        // Arranging the bar: a chip in the pool pressed with the pointer at x, y (Hyprland's
+        // pixels, as `hyprctl cursorpos` says): where that is on the desktop, as the bar counts it
+        function barPointer(x: real, y: real): string {
+            barEditor.pointer = Qt.point(0, 0);
+            barEditor.locate(x, y);
+            return JSON.stringify({ x: barEditor.origin.x, y: barEditor.origin.y });
+        }
         // The speakers or the microphone in use, or neither, as if PipeWire had said so:
         // what = "output", "input", "both" or "none" (the volume panel's sliders show it)
         function audioBusy(what: string): void { popouts.pretendAudioBusy(what); }
@@ -452,7 +462,7 @@ ShellRoot {
     // The screen locks: the prompt window closes and a run stops
     Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); } } }
     Screensaver { id: screensaver; lock: lockScreen }
-    HotCorners { lock: lockScreen }
+    HotCorners { id: hotCorners; lock: lockScreen }
 
     // Keep the login screen (/var/lib/slate-greeter) in step with the wallpaper and
     // settings. Does nothing until it's been set up with: sudo slate-greeter-install

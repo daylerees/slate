@@ -93,16 +93,18 @@ PanelWindow {
         command: ["hyprctl", "-j", "cursorpos"]
         stdout: StdioCollector {
             onStreamFinished: {
-                try {
-                    const p = JSON.parse(text);
-                    // (Hyprland's position is in its own pixels; Slate's are those over the
-                    // Interface size: Config.uiScale)
-                    const k = Config.uiScale || 1;
-                    root.origin = Qt.point(p.x / k - root.pointer.x, p.y / k - root.pointer.y);
-                    root.placed = true;
-                } catch (e) {}
+                try { const p = JSON.parse(text); root.locate(p.x, p.y); } catch (e) {}
             }
         }
+    }
+    // The pointer's at x, y in Hyprland's pixels: where's this window's corner on the desktop?
+    // (On the desktop as the bar counts it: a screen's top-left as Qt keeps it, in Hyprland's
+    // pixels, plus Slate's own units across the screen, Interface size: Config.uiScale. So the
+    // pointer's made relative to this screen first, then brought to Slate's scale)
+    function locate(x, y) {
+        const k = Config.uiScale || 1, sx = root.screen ? root.screen.x : 0, sy = root.screen ? root.screen.y : 0;
+        root.origin = Qt.point(sx + (x - sx) / k - root.pointer.x, sy + (y - sy) / k - root.pointer.y);
+        root.placed = true;
     }
     function pressed(x, y) { pointer = Qt.point(x, y); placed = false; whereAmI.running = true; }
     function carryTo(chip, x, y) {

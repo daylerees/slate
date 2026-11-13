@@ -8,6 +8,7 @@ notifications. Hyprland's side is checked too (`hyprctl layers`: which monitor e
 windows is really on, and where), and again at 125% Interface size, where a position taken
 from Hyprland is easiest to get wrong."""
 import atexit
+import json
 import unittest
 
 from live import LiveCase
@@ -105,6 +106,28 @@ class TwoScreensCase(LiveCase):
         self.config("mainDisplay", name)
         return self.wait(lambda st: st["mainScreen"] == name and len(st["bars"]) == 2
                          and [b["screen"] for b in st["bars"] if b["primary"]] == [name], f"the main bar on {name}")
+
+    def check_hot_corners(self):
+        """With the main display on TEST2, what unlocking asks (HotCorners.qml: is the pointer,
+        as `hyprctl cursorpos` gives it in Hyprland's pixels, still in this corner?) says yes in
+        each of TEST2's corners and no anywhere else. It once took the pointer over the scale
+        but TEST2's x as Hyprland has it, so at 125% the pointer resting in the corner it had
+        just locked from read as elsewhere, and the corner fired again straight after unlocking."""
+        (x, y), (w, h) = AT[SECOND], SIZES[SECOND]
+        right, bottom = x + w - 1, y + h - 1        # (the pointer's last pixel on the screen)
+        def asked(corner, px, py):
+            return self.ipc("test", "hotCorner", corner, px, py) == "true"
+        for corner, at in (("topLeft", (x, y)), ("topRight", (right, y)),
+                           ("bottomLeft", (x, bottom)), ("bottomRight", (right, bottom))):
+            with self.subTest(corner):
+                self.assertTrue(asked(corner, *at), f"{at} isn't in TEST2's {corner} corner")
+                self.assertTrue(asked(corner, at[0] + (1 if corner.endswith("Left") else -1), at[1]), "a pixel in")
+                self.assertFalse(asked(corner, x + w // 2, y + h // 2), "the middle of TEST2 is in a corner")
+                self.assertFalse(asked(corner, at[0] + (40 if corner.endswith("Left") else -40), at[1]), "40 px along")
+        # TEST's corners aren't the main display's; nor is a point along TEST2's top edge that,
+        # divided by the scale, lands on TEST2's x as Qt keeps it
+        self.assertFalse(asked("topLeft", 0, 0), "TEST's corner counted as the main display's")
+        self.assertFalse(asked("topLeft", round(x * 1.25), y), "a point along the top counted as the corner")
 
 
 class TwoScreens(TwoScreensCase):
@@ -236,6 +259,11 @@ class TwoScreens(TwoScreensCase):
         self.main_display(OUTPUT)
         self.assertEqual([b[0] for b in self.layers("slate-bar")], sorted(SIZES))
 
+    def test_hot_corners_on_the_second_screen(self):
+        """Hot corners on a main display that isn't at the top left, at 100%."""
+        self.main_display(SECOND)
+        self.check_hot_corners()
+
 
 class TwoScreensAt125(TwoScreensCase):
     """The same two screens at 125% Interface size, with the main display on the right-hand
@@ -252,6 +280,20 @@ class TwoScreensAt125(TwoScreensCase):
         got = {s["name"]: (s["width"], s["height"]) for s in st["screens"]}
         self.assertEqual(got, {n: (round(w / 1.25), round(h / 1.25)) for n, (w, h) in SIZES.items()})
         self.assertEqual(st["mainScreen"], SECOND)
+
+    def test_hot_corners_on_the_second_screen(self):
+        """Hot corners on the main display, TEST2, at 125%."""
+        self.check_hot_corners()
+
+    def test_carrying_from_the_pool_to_the_second_screen(self):
+        """Arranging the bar on TEST2: a chip pressed in the pool, with the pointer at a place
+        `hyprctl cursorpos` gives in Hyprland's pixels, is at TEST2's x as Qt keeps it plus the
+        rest over the scale, as the bar counts places on the desktop (Bar.qml: carried). It
+        once took the whole position over the scale, 288 short of where the pointer was."""
+        (x, y) = AT[SECOND]
+        got = json.loads(self.ipc("test", "barPointer", x + 560, y + 20))
+        self.assertAlmostEqual(got["x"], x + 560 / 1.25, places=2)
+        self.assertAlmostEqual(got["y"], y + 20 / 1.25, places=2)
 
     def test_bars_dock_and_panels_cover_their_screens(self):
         """Each bar spans its whole monitor; the dock and every panel opened on TEST2 are inside it."""

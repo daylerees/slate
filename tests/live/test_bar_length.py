@@ -286,9 +286,17 @@ class BarLength(LiveCase):
     def test_trying_it_shorter_sits_in_the_middle(self):
         """Tried shorter, the line sits in the middle of the bar's edge, half of what it gives up
         at each end, at every edge (it once stayed against the start, all of it given up at the
-        far end). What's on it is drawn there too, from one end of that room to the other."""
+        far end). What's on it is drawn there too, from one end of that room to the other, at
+        every length (it once ran a little past the far end: the slimming counted the flexible
+        spaces as nothing, where while it's arranged each is kept wide enough to pick up)."""
         self.keep_setting("barPosition")
         self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
+
+        def drawn(st, vert):
+            """Where the things on the line start and end, along the bar (the bar window's coordinates)."""
+            shown = [t for t in st["line"].values() if t["visible"] and t["parentVisible"] and t["opacity"] > 0 and (t["h"] if vert else t["w"]) > 0]
+            return (min(t["y"] if vert else t["x"] for t in shown),
+                    max((t["y"] + t["h"]) if vert else (t["x"] + t["w"]) for t in shown))
         for edge in ("top", "bottom", "left", "right"):
             with self.subTest(edge):
                 self.ipc("test", "arrange", "done", "", "", "")     # (from the edge before, should it have failed)
@@ -297,22 +305,21 @@ class BarLength(LiveCase):
                 self.ipc("test", "arrange", "start", "", "", "")
                 st = self.steady(self.bar, floor=0.6)
                 self.assertAlmostEqual(st["span"]["start"], st["span"]["length"] - st["span"]["end"], delta=0.5, msg=st["span"])
-                self.ipc("test", "arrange", "preview", "0.5", "", "")
-                st = self.steady(self.bar, floor=0.6)
-                span = st["span"]
-                self.assertEqual(span["preview"], 0.5)
+                vert = edge in ("left", "right")
+                for preview in (0.25, 0.67, 0.5):      # (Three quarters, A third, Half: BarEditor.qml's lengths)
+                    # (each from full length: what one length gave up would otherwise stay given up)
+                    self.ipc("test", "arrange", "preview", "0", "", "")
+                    self.steady(self.bar, floor=0.6)
+                    self.ipc("test", "arrange", "preview", str(preview), "", "")
+                    st = self.steady(self.bar, floor=0.6)
+                    span = st["span"]
+                    self.assertEqual(span["preview"], preview)
+                    first, last = drawn(st, vert)
+                    self.assertGreaterEqual(first, span["start"] - 1, f"drawn before the line's room at {preview}: {first} < {span}")
+                    self.assertLessEqual(last, span["end"] + 1, f"drawn past the line's room at {preview}: {last} > {span}")
                 before, after = span["start"], span["length"] - span["end"]
                 self.assertGreater(before, span["length"] / 5, f"the line stayed at the start: {span}")
                 self.assertLessEqual(abs(before - after), 1, f"not in the middle: {span}")
-                # (the things on it, along the bar, in the bar window's coordinates)
-                vert = edge in ("left", "right")
-                shown = [t for t in st["line"].values() if t["visible"] and t["parentVisible"] and t["opacity"] > 0 and (t["h"] if vert else t["w"]) > 0]
-                first = min(t["y"] if vert else t["x"] for t in shown)
-                last = max((t["y"] + t["h"]) if vert else (t["x"] + t["w"]) for t in shown)
-                self.assertGreaterEqual(first, span["start"] - 1, f"drawn before the line's room: {first} < {span}")
-                # (a little past, at most: while it's arranged a flexible space is kept 26 px wide to be
-                # picked up, which the slimming doesn't count, so the line can run over by up to that)
-                self.assertLessEqual(last, span["end"] + 26, f"drawn past the line's room: {last} > {span}")
                 self.assertLessEqual(abs(first - before - (span["length"] - last - after)), 24,
                                      f"what's on it isn't in the middle: {first}..{last} of {span['length']}")
                 self.ipc("test", "arrange", "done", "", "", "")
