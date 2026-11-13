@@ -38,6 +38,27 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.29.1" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.29.1 <time datetime="2026-11-13">13 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Closing windows while live previews show them no longer crashes Slate.</strong> Closing several windows at once while Spaces → New Space or the overview was showing them could make Slate restart (your apps and windows stayed open). It's a Quickshell bug (<a href="https://github.com/quickshell-mirror/quickshell/issues/1481">quickshell#1481</a>); Slate now works around it, so this is no longer a known issue.</li>
+        <li>The weather no longer disappears from the control centre, leaving an empty space, after a reply from the weather service that isn't a forecast (as can happen while a VPN reconnects after sleep). Slate keeps the weather it had, and if a check doesn't bring the weather, tries again in two minutes rather than half an hour.</li>
+        <li>In the window switcher, the blur behind see-through windows comes in with the preview, not after it.</li>
+        <li>When your own assistant command fails, Slate always shows why. The reason could come up empty before.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Testing: the tests now wait for what they check rather than pausing a set time, which was behind the races of the last release. The whole suite (4,680 tests) passed in one run for this release, and the lock and login screenshots no longer change with the Caps Lock key of the computer running them.</li>
+        <li>Tested with Hyprland 0.57.1 and Quickshell 0.3.2 (the pinned test image), and the whole suite passed on today's Arch packages too; built and used day to day on Hyprland 0.57.2.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.29.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.29.0 <time datetime="2026-11-13">13 November 2026</time></h2>
   <div class="cl-grid">
