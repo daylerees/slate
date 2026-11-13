@@ -78,14 +78,18 @@ SCENES = {
 
 # The dock too full for its room (test dockRoom), so apps go into More: windows opened on a
 # workspace out of sight (their contents vary), closed again after
-def _more_open(n):
-    return [("!hyprctl", "dispatch", 'function() hl.exec_cmd("foot --app-id slate-more-%d", { workspace = "9 silent" }) end' % i)
-            for i in range(1, n + 1)]
-
-
 def _more_there(n):
     return lambda st: sum(1 for x in st["dock"]["slots"] if x.get("key", "").startswith("slate-more-")) \
         + sum(1 for k in st["dock"]["more"] if k.startswith("slate-more-")) == n
+
+
+def _more_open(n):
+    # (one at a time, each on the dock before the next: opened together, they came in any order)
+    steps = []
+    for i in range(1, n + 1):
+        steps.append(("!hyprctl", "dispatch", 'function() hl.exec_cmd("foot --app-id slate-more-%d", { workspace = "9 silent" }) end' % i))
+        steps.append(_more_there(i))
+    return steps
 
 
 _MORE_CLOSE = [("test", "dockRoom", 0), ("dock", "closeMenu"),

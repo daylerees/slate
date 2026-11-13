@@ -115,7 +115,11 @@ class Session:
         self.slate_dir = h.install_slate()
         hypr = os.path.join(self.slate_dir, "hypr")
         # Slate and the apps it starts: software GL, test mode, and a fixed time on the clocks
-        envs = {"LIBGL_ALWAYS_SOFTWARE": "1", "SLATE_TEST": "1", "SLATE_TEST_TIME": FAKE_TIME, "TZ": "UTC"}
+        # Text smoothed in grey: Qt Quick smooths text in colour (subpixel) on an opaque window and
+        # in grey on a see-through one, so the bar's text changed with whatever an earlier scene
+        # had done to it, and screenshots depended on the order they were taken in
+        envs = {"LIBGL_ALWAYS_SOFTWARE": "1", "SLATE_TEST": "1", "SLATE_TEST_TIME": FAKE_TIME, "TZ": "UTC",
+                "QSG_DISTANCEFIELD_ANTIALIASING": "gray"}
         self._write(os.path.join(hypr, "env.lua"),
                     "".join(f'hl.env("{k}", "{v}")\n' for k, v in envs.items() if v))
         # One headless output, the size under test; the vkms screen itself is switched off

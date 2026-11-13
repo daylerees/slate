@@ -7703,7 +7703,11 @@ FloatingWindow {
                 Timer {
                     interval: 2000; repeat: true; triggeredOnStart: true
                     running: win.visible
-                    onTriggered: { usageProc.running = false; usageProc.running = true; }
+                    onTriggered: {
+                        // (in tests, the same every time: Slate's own use varies from run to run)
+                        if (Config.testMode) { usage.mem = 420; usage.cores = 8; usage.memTotal = 16384; usage.cpu = 3; usage.history = [2, 3, 4, 3, 2, 3]; return; }
+                        usageProc.running = false; usageProc.running = true;
+                    }
                 }
                 Column {
                     x: 16; width: parent.width - 32

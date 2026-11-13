@@ -2403,7 +2403,14 @@ PanelWindow {
                 }
             }
             function sample() {
-                statFile.reload(); memFile.reload(); if (bat.cellName !== "") limitFile.reload();
+                if (bat.cellName !== "") limitFile.reload();
+                // (in tests, the same readings every time: the test container sees the computer
+                // running it, so its screenshots changed with what that was doing)
+                if (Config.testMode) {
+                    cpu = 0.12; memTotal = 16 * 1024 ** 3; memUsed = 6.4 * 1024 ** 3; diskTotal = 512e9; diskUsed = 180e9;
+                    return;
+                }
+                statFile.reload(); memFile.reload();
                 const c = (statFile.text().split("\n")[0] || "").trim().split(/\s+/).slice(1).map(Number);
                 if (c.length >= 4) {
                     const idle = c[3] + (c[4] || 0), total = c.reduce((a, b) => a + b, 0);

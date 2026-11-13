@@ -1,9 +1,24 @@
 # Loose ends
 
-**Clearing them (from 2026-11-13):** after the dock's More (`dock-overflow.md`), every loose end
-here gets done, including multi-monitor tests, the rest of `faster-tests.md` and the assistant's
-later list. "Checked by hand" becomes a checklist for Dayle. Slate without systemd stays his to
-try on a real install.
+**Clearing them (from 2026-11-13):** every loose end here gets done, including multi-monitor
+tests, the rest of `faster-tests.md` and the assistant's later list. "Checked by hand" becomes a
+checklist for Dayle. Slate without systemd stays his to try on a real install.
+
+**Where it stands (paused 2026-11-13):** done so far: the dock's More (ed6b36a), the host's
+keyboard lights hidden from tests, the fake MPRIS player, and screenshots that no longer depend
+on run order or the host (text smoothing, `panel-battery`, the dock re-shoots). **Next, in
+order:**
+1. Quick tidy-ups: the undrawn-items scene (glass on as arranging starts); the unused per-item
+   hover descriptions in `Bar.qml`.
+2. The bar: centre the shortened bar in "Try it shorter"; the slimming refinements; the More
+   panel's list (ask Dayle how it's been in use).
+3. Hover fills that flash brighter without glass: `HoverFill` everywhere, not only the pickers.
+4. Test gaps: the dock's media controls in a scene; the switcher and overview with windows;
+   restoring a Settings page's defaults from a test.
+5. Nova's one tool for arranging the bar.
+6. The bigger three: multi-monitor tests, `faster-tests.md`, the assistant's later list
+   (`assistant.md`: Codex, Markdown, sounds).
+7. The "checked by hand" list below, turned into a grouped checklist for Dayle.
 
 What was left open by plans that are now built and gone from this folder. Each is small, or
 waiting on something. The plans themselves are in the repository's history
@@ -38,16 +53,6 @@ waiting on something. The plans themselves are in the repository's history
 
 ## The test suite
 
-- **Text smoothing differs by run order (2026-11-13):** the dock scenes (`dock-menu`,
-  `dock-downloads`, `settings-dock`, `dock-drag`, `dock-drag-glass`, `dock-magnified-glass`)
-  pass in a full run but fail run on their own (`--filter dock`), on master too: the bar's
-  text comes out with coloured (subpixel) edges instead of the approved grey. Not fontconfig:
-  `rgba none` in the session's `fonts.conf` is applied (`fc-match -v`) but makes no difference,
-  because Qt on Wayland takes subpixel smoothing from the screen (`wl_output` subpixel, via
-  `QWaylandScreen::subpixelAntialiasingTypeHint`) before it asks fontconfig.
-  `QT_SUBPIXEL_AA_TYPE` can force a layout but not "none". Next: what Hyprland reports for the
-  test output in each case, and pin that (or the font engine's hint) so scenes don't depend on
-  order.
 - The dock's media controls in a scene (the pretend player is there now: `self.play()`,
   `tests/lib/fake_mpris.py`).
 - The switcher and overview with windows in screenshots (terminal contents vary).
@@ -90,9 +95,6 @@ ScreencopyViews of Hyprland.toplevels, the views going with their windows) died 
 once, then all closed at once, with the overview showing, 4 of 4. Nothing left to do here until
 Quickshell fixes it. docs/ARCHITECTURE.md, "Workarounds for bugs elsewhere", says how to check a new
 Quickshell and take the workaround out.
-Also: the dock's visual baselines (dock-drag, dock-drag-glass, dock-magnified-glass) were
-approved with a stray "Backup finished" toast from an earlier scene in the full run, so run on
-their own they differ; re-shoot them with notifications cleared first.
 
 ## Checked by hand, not by the tests (moved from the old release-testing list, 2026-11-12)
 
@@ -145,8 +147,10 @@ Most of these need a real pointer, or hardware the tests' computer hasn't got.
 - Tests that pass alone and fail in a whole run have each turned out to be real: keep running
   the live tier several times over before a release, rather than finding them one full run at
   a time ([faster-tests.md](faster-tests.md)).
-- `panel-battery` differs by a few pixels on the bar when its scene is run by itself rather
-  than in sequence.
+- **The launcher's scrollbar thumb** (`launcher`, `square-launcher`) is a few pixels longer or
+  shorter depending on how the scene is run: the list's height is estimated from the rows built
+  so far (rows with and without a subtitle differ). Re-approved 2026-11-13; if it flips again,
+  give the list an exact height in tests, or mask the thumb.
 - A scene that switches glass on in the same instant as `arrange start` can show items undrawn.
 - Without glass, controls whose solid fill is swapped for the muted hover animate through a
   brighter colour. `HoverFill.qml` fixes it for the three placement pickers.
