@@ -131,6 +131,7 @@ to ask about every change.
 | `settings_show` | Opens Settings at a setting or a page, for you to look at or change |
 | `look_apply` | Switches to one of Slate's finished looks |
 | `panel_open` | Opens one of the menu bar's panels |
+| `bar_arrange` | Shows how the menu bar is arranged, or arranges it: what's on it and in which containers, how each collapses, the order things leave when it's short of room, what always stays, or Slate's own arrangement again. Nova's button keeps its place and its switch |
 | `app_open` | Starts an installed app. Only an app: no file, address or command |
 | `window_focus`, `window_move`, `window_state` | Goes to a window, moves it to a workspace, floats, tiles, maximises or full-screens it |
 | `workspace_go`, `workspace_mode`, `workspace_rename` | Switches workspace, changes how one lays out its windows, names it |

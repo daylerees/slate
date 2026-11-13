@@ -502,6 +502,63 @@ Singleton {
         if (on) stay.push(id);
         s.barStay = stay;
     }
+    // ---- The whole arrangement at once (the assistant's bar_arrange, over `slate ipc call bar …`) ----
+    // As it is: containers with what's on the bar in them (things in the pool left out), how
+    // each collapses and which end its button sits at, what's in the pool, the order things
+    // leave a bar short of room and what always stays. Nova's button is the person's own: an
+    // assistant isn't told whether it's on, and never switches it
+    function barArrangement() {
+        return {
+            layout: barLayout.map(e => typeof e === "string" ? e
+                : { items: e.items.filter(id => id !== "tuck" && (id === "more" || barShown(id))),
+                    collapse: e.collapse || "needed", collapseAt: e.tuckFrom || "end" })
+                .filter(e => typeof e === "string" || e.items.length > 0),
+            offBar: barItems.filter(i => i.key !== "" && i.id !== "nova" && !barShown(i.id)).map(i => i.id),
+            leaveFirst: barOverflowOrder.filter(id => !barStays(id)),
+            alwaysStay: barStay,
+            slatesOwn: barIsDefault
+        };
+    }
+    // Set it: { reset } puts Slate's own back; otherwise any of { layout, leaveFirst, alwaysStay }.
+    // A layout says everything that's on the bar: what it leaves out goes to the pool (keeping
+    // its place for later), except Nova's button, which keeps its place and its switch. The
+    // server checks the names first; the tidying of barLayout drops anything else
+    function barArrange(spec) {
+        if (spec.reset) { barReset(); return; }
+        if (spec.layout) {
+            const old = barCopy();
+            const list = spec.layout.map(e => e === "space" ? "space"
+                : { items: e.items.map(barId), collapse: ["never", "always", "needed"].indexOf(e.collapse) >= 0 ? e.collapse : "needed",
+                    tuckFrom: e.collapseAt === "start" ? "start" : "end", tuckIcon: "" });
+            // (a container keeps the icon its collapse button had, found by its first thing)
+            for (const e of list) {
+                if (typeof e === "string" || e.items.length === 0) continue;
+                const was = barWhere(old, e.items[0]);
+                if (was && old[was.box].tuckIcon) e.tuckIcon = old[was.box].tuckIcon;
+            }
+            const on = {};
+            for (const e of list) if (typeof e !== "string") for (const id of e.items) on[id] = true;
+            if (!on["nova"]) {
+                // Nova's button where it was: beside the thing it was next to, else in a container
+                // of its own at the same place
+                const was = barWhere(old, "nova");
+                const box = was ? old[was.box].items : [];
+                const near = was ? (box[was.slot - 1] || box[was.slot + 1]) : "";
+                const at = near ? barWhere(list, near) : null;
+                if (at) list[at.box].items.splice(box[was.slot - 1] === near ? at.slot + 1 : at.slot, 0, "nova");
+                else list.splice(was ? Math.min(was.box, list.length) : list.length, 0, { items: ["nova"], collapse: "needed", tuckFrom: "end", tuckIcon: "" });
+            }
+            for (const i of barItems) if (i.key !== "" && i.id !== "nova" && !!on[i.id] !== barShown(i.id)) barSetShown(i.id, !!on[i.id]);
+            barSelected = -1;
+            barSave(list);
+        }
+        if (spec.leaveFirst || spec.alwaysStay) {
+            const stay = (spec.alwaysStay || barStay).map(barId);
+            const order = (spec.leaveFirst || barOverflowOrder).map(barId).filter(id => stay.indexOf(id) < 0);
+            barSetOverflow(order, stay);
+        }
+    }
+
     // Trying the bar shorter while it's arranged (the panel's "Try it shorter"): the share of its
     // length taken off, 0 for none. While it's tried, the bar slims, tucks and overflows as it
     // would; otherwise, arranged, everything's there to be picked up

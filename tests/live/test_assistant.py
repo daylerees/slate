@@ -209,6 +209,68 @@ class Assistant(LiveCase):
         time.sleep(0.2)
 
 
+    def test_arranging_the_bar(self):
+        """bar_arrange: with nothing it only looks; a whole arrangement is checked, then set
+        (what it leaves out goes to the pool, Nova's button stays where it was); and Slate's
+        own comes back with reset. With "ask before changing anything", a no changes nothing."""
+        self.addCleanup(lambda: self.ipc("bar", "arrange", json.dumps({"reset": True})))
+        self.switch_on()
+        text, err = self.tool("bar_arrange", {})
+        self.assertFalse(err, text)
+        now = json.loads(text)
+        self.assertTrue(now["slatesOwn"])
+        self.assertEqual(now["layout"][0]["items"], ["control"])
+        self.assertEqual(now["names"]["wifi"], "Wi-Fi")
+
+        layout = [{"items": ["clock"]}, {"items": ["control", "apps"]}, {"items": ["spaces", "workspaces"]},
+                  {"items": ["windowtitle"]}, "space", {"items": ["wifi", "volume"], "collapse": "always", "collapseAt": "start"},
+                  {"items": ["more"]}, {"items": ["power"]}]
+        for bad, says in ((layout + [{"items": ["clock"]}], "two places"), ([{"items": ["kettle"]}], "nothing called"),
+                          ([{"items": []}], "at least one"), ([{"items": ["clock"], "collapse": "sometimes"}], "collapse is one of")):
+            with self.subTest(says):
+                text, err = self.tool("bar_arrange", {"layout": bad})
+                self.assertTrue(err, text)
+                self.assertIn(says, text)
+        self.assertTrue(json.loads(self.tool("bar_arrange", {})[0])["slatesOwn"], "a refused arrangement changed the bar")
+
+        text, err = self.tool("bar_arrange", {"layout": layout, "leaveFirst": ["windowtitle", "wifi"], "alwaysStay": ["clock", "power"]})
+        self.assertFalse(err, text)
+        now = json.loads(text)
+        boxes = [e for e in now["layout"] if e != "space"]
+        self.assertEqual(boxes[0]["items"], ["clock"])
+        self.assertEqual(boxes[1]["items"], ["control", "apps", "nova"], "Nova's button didn't stay beside Apps")
+        tucked = next(e for e in boxes if "wifi" in e["items"])
+        self.assertEqual((tucked["items"], tucked["collapse"], tucked["collapseAt"]), (["wifi", "volume"], "always", "start"))
+        for gone in ("battery", "tray", "notifications", "windowmode", "windowicon"):
+            self.assertIn(gone, now["offBar"])
+        self.assertEqual(self.setting("barShowBattery"), "false")
+        self.assertEqual(self.setting("barShowAssistant"), "true", "the assistant switched Nova's button")
+        self.assertEqual(now["alwaysStay"], ["clock", "power"])
+        self.assertEqual(now["leaveFirst"][:2], ["windowtitle", "wifi"])
+        self.assertFalse(now["slatesOwn"])
+
+        # Asked first, and a no leaves it
+        self.config("assistantAskChanges", "true")
+        p = subprocess.Popen(self.server(), env=self.s.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        self.addCleanup(p.kill)
+        p.stdin.write(json.dumps(call("bar_arrange", {"reset": True})) + "\n")
+        p.stdin.flush()
+        st = self.wait(lambda st: st["asking"] == "Put the menu bar back as Slate starts out?", "the server's question")
+        self.assertIn("Your assistant (Tester) is asking to put the menu bar back", st["askingBody"])
+        self.ipc("test", "answer", "false")
+        reply = json.loads(p.stdout.readline())
+        self.assertTrue(reply["result"]["isError"], reply)
+        p.stdin.close()
+        p.wait(timeout=10)
+        self.assertFalse(json.loads(self.tool("bar_arrange", {})[0])["slatesOwn"], "a no reset the bar")
+
+        self.config("assistantAskChanges", "false")
+        text, err = self.tool("bar_arrange", {"reset": True})
+        self.assertFalse(err, text)
+        self.assertTrue(json.loads(text)["slatesOwn"])
+        self.assertEqual(self.setting("barShowBattery"), "true")
+
+
 # A stand-in agent for "a command of your own": it speaks MCP to Slate's server (found in its
 # environment, as a real one would), changes one setting through it and says so. No network
 AGENT = r"""

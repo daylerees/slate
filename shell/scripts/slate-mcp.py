@@ -1110,6 +1110,116 @@ def panel_open(name):
     return {"opened": name}
 
 
+# What can be on the menu bar, by the names its arrangement uses (Config.barItems). "more" holds
+# whatever there isn't room for: it's always on the bar
+BAR_ITEMS = {
+    "control": "Control centre", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
+    "workspaces": "Workspaces", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
+    "notifications": "Notifications", "clipboard": "Clipboard", "screenshot": "Screenshot", "camera": "Camera",
+    "gamemode": "Game mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
+    "wifi": "Wi-Fi", "battery": "Battery", "clock": "Clock", "power": "Power", "more": "More",
+}
+COLLAPSE = ["needed", "always", "never"]
+
+
+def bar_names(value, what, allow_more=True):
+    """A list of things on the bar, checked: each one Slate knows, each once."""
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise Sorry("%s is a list of names, e.g. [\"clock\", \"power\"]." % what)
+    known = [k for k in BAR_ITEMS if allow_more or k != "more"]
+    for v in value:
+        if v not in known:
+            raise Sorry("Slate has nothing called \"%s\" for the menu bar. %s takes: %s." % (clean(v, 30), what, ", ".join(known)))
+    if len(set(value)) != len(value):
+        raise Sorry("%s names something twice: each thing can only be in one place." % what)
+    return list(value)
+
+
+def bar_layout_checked(layout):
+    out, seen = [], []
+    for e in layout:
+        if e == "space":
+            out.append("space")
+            continue
+        if not isinstance(e, dict) or set(e) - {"items", "collapse", "collapseAt"} or "items" not in e:
+            raise Sorry("Each thing in layout is \"space\" (a flexible space) or a container: "
+                        "{\"items\": [names], \"collapse\": needed|always|never, \"collapseAt\": start|end}.")
+        items = bar_names(e["items"], "A container's items")
+        if not items:
+            raise Sorry("A container needs at least one thing in it.")
+        collapse = e.get("collapse", "needed")
+        if collapse not in COLLAPSE:
+            raise Sorry("A container's collapse is one of: %s." % ", ".join(COLLAPSE))
+        at = e.get("collapseAt", "end")
+        if at not in ("start", "end"):
+            raise Sorry("A container's collapseAt is start or end.")
+        seen += items
+        out.append({"items": items, "collapse": collapse, "collapseAt": at})
+    if len(set(seen)) != len(seen):
+        raise Sorry("The layout puts something in two places: each thing can only be in one.")
+    return out
+
+
+def bar_now():
+    try:
+        return json.loads(ipc("bar", "arrangement"))
+    except ValueError:
+        raise Sorry("Slate needs restarting before assistants can arrange the menu bar. The person can run: slate restart") from None
+
+
+@tool("bar_arrange", "Arrange the menu bar",
+      "See or change what's on Slate's menu bar and how it's arranged. With no arguments it changes nothing "
+      "and says how the bar is now, and what each name is. layout lists the whole bar, left to right (or top "
+      "to bottom): \"space\" (a flexible space; there's always at least one) or a container {items, collapse: "
+      "needed (only when the bar is short of room) | always (behind a button until clicked) | never, "
+      "collapseAt: start | end, the button's end}. Things it leaves out are taken off the bar (\"more\" always "
+      "stays; Nova's button keeps its place). leaveFirst: the order things leave a bar that's short of room, "
+      "first to go first. alwaysStay: the things that never leave it. reset: Slate's own arrangement again. "
+      "Answers with the bar as it is afterwards.",
+      {"layout": {"type": "array", "description": "The whole bar, in order", "items": {"type": ["string", "object"]}},
+       "leaveFirst": {"type": "array", "description": "Names, first to leave first", "items": {"type": "string"}},
+       "alwaysStay": {"type": "array", "description": "Names that never leave the bar", "items": {"type": "string"}},
+       "reset": {"type": "boolean", "description": "true: Slate's own arrangement (the rest is ignored)"}},
+      tier="change")
+def bar_arrange(layout=None, leaveFirst=None, alwaysStay=None, reset=False):
+    before = bar_now()
+    if not reset and layout is None and leaveFirst is None and alwaysStay is None:
+        CALL["tier"] = "look"           # (only looking: not listed as a change in the prompt window)
+        return dict(before, names=BAR_ITEMS)
+    spec, parts = {}, []
+    if reset:
+        if before.get("slatesOwn"):
+            return dict(before, note="The menu bar is already Slate's own arrangement; nothing changed.")
+        spec["reset"] = True
+        doing("Put the menu bar back to Slate's own arrangement")
+        changing("Put the menu bar back as Slate starts out?",
+                 "%s is asking to put the menu bar back to Slate's own arrangement, with what Slate starts with on it. "
+                 "You can arrange it again at any time in Settings → Menu Bar → Edit layout." % asker(), "Put back")
+    else:
+        if layout is not None:
+            spec["layout"] = bar_layout_checked(layout)
+            on = [i for e in spec["layout"] if e != "space" for i in e["items"]]
+            was = [i for e in before.get("layout", []) if e != "space" for i in e["items"]]
+            gone = [BAR_ITEMS[k] for k in was if k not in on and k not in ("more", "nova")]
+            new = [BAR_ITEMS[k] for k in on if k not in was and k != "nova"]
+            parts.append("arrange what's on it" + ("".join([", adding %s" % ", ".join(new) if new else "",
+                                                            ", taking off %s" % ", ".join(gone) if gone else ""])))
+        if leaveFirst is not None:
+            spec["leaveFirst"] = bar_names(leaveFirst, "leaveFirst", allow_more=False)
+            parts.append("change the order things leave it when it's short of room")
+        if alwaysStay is not None:
+            spec["alwaysStay"] = bar_names(alwaysStay, "alwaysStay", allow_more=False)
+            parts.append("change what always stays on it (%s)" % (", ".join(BAR_ITEMS[k] for k in spec["alwaysStay"]) or "nothing"))
+        doing("Rearrange the menu bar")
+        changing("Rearrange the menu bar?",
+                 "%s is asking to %s. You can change it back at any time in Settings → Menu Bar → Edit layout."
+                 % (asker(), "; and to ".join(parts)), "Rearrange")
+    CALL["before"] = before
+    ipc("bar", "arrange", json.dumps(spec))
+    time.sleep(0.2)
+    return bar_now()
+
+
 @tool("app_open", "Open an app",
       "Start an installed app, by its id from apps_list. Only an app: it can't be given a file, an address "
       "or a command to run.",
@@ -1414,7 +1524,7 @@ BY_NAME = {t["name"]: t for t in TOOLS}
 
 # ---- Calling a tool --------------------------------------------------------------------
 
-JSON_TYPES = {"string": (str,), "integer": (int,), "boolean": (bool,), "number": (int, float)}
+JSON_TYPES = {"string": (str,), "integer": (int,), "boolean": (bool,), "number": (int, float), "array": (list,)}
 
 
 def check_arguments(t, args):

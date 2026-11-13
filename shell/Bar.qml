@@ -344,6 +344,10 @@ PanelWindow {
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
         // keyboard, bluetooth, battery, gamemode, calendar, windowmode
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
+        // The whole arrangement, read and set as JSON (the assistant's bar_arrange; see
+        // Config.barArrangement / barArrange)
+        function arrangement(): string { return JSON.stringify(Config.barArrangement()); }
+        function arrange(spec: string): void { Config.barArrange(JSON.parse(spec)); }
     }
 
     // Takes pointer input: the bar while shown, a thin strip at the top edge while hidden

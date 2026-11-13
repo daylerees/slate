@@ -71,6 +71,9 @@ elif a[:2] == ["media", "info"]:
     out = state.get("media", "")
 elif a[:2] == ["launcher", "launch"]:
     out = "ok"
+elif a[:2] == ["bar", "arrangement"]:
+    out = json.dumps(state.get("bar", {{"layout": [{{"items": ["clock"], "collapse": "needed", "collapseAt": "end"}}, "space"],
+                                       "offBar": [], "leaveFirst": [], "alwaysStay": ["clock"], "slatesOwn": True}}))
 print(out)
 """
 
@@ -92,7 +95,7 @@ ENTRIES = {
 
 LOOKS = ["status", "settings_search", "settings_get", "windows_list", "workspaces_list", "spaces_list",
          "apps_list", "wallpapers_list", "media_info"]
-CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "app_open", "window_focus", "window_move",
+CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arrange", "app_open", "window_focus", "window_move",
            "window_state", "workspace_go", "workspace_mode", "workspace_rename", "space_restore", "space_save",
            "wallpaper_set", "wallpaper_next", "volume_set", "brightness_set", "media_control", "do_not_disturb",
            "screenshot", "lock_screen", "screensaver_start"]
@@ -104,7 +107,7 @@ READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"]
 ARGS = {
     "settings_search": {"query": "glass"}, "settings_get": {"key": "glass"},
     "settings_set": {"key": "glass", "value": False}, "settings_show": {"key": "glass"},
-    "look_apply": {"name": "Metro Flat"}, "panel_open": {"name": "control"}, "app_open": {"id": "com.example.Editor"},
+    "look_apply": {"name": "Metro Flat"}, "panel_open": {"name": "control"}, "bar_arrange": {"alwaysStay": ["clock", "power"]}, "app_open": {"id": "com.example.Editor"},
     "window_focus": {"address": "0xa1"}, "window_move": {"address": "0xa1", "workspace": 2},
     "window_state": {"address": "0xa1", "state": "float"}, "workspace_go": {"id": 2},
     "workspace_mode": {"id": 2, "mode": "floating"}, "workspace_rename": {"id": 2, "name": "Code"},
@@ -1145,6 +1148,8 @@ class SettingsTools(Base):
         bar = slate.read("shell", "Bar.qml")
         names = re.sub(r"\s*//\s*", " ", bar.split("// names:")[1].split("function panel")[0])
         self.assertEqual(mcp.PANELS, [n.strip() for n in names.split(",")])
+        items = re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', config.split("readonly property var barItems")[1].split("\n    ]")[0])
+        self.assertEqual(list(mcp.BAR_ITEMS.items()), items, "bar_arrange's names aren't the bar's (Config.barItems)")
 
     def test_every_setting_has_a_name(self):
         """Each setting in SettingsData.qml is linked to what Settings calls it (by
