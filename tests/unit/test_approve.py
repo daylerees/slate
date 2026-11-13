@@ -27,6 +27,7 @@ class Approve(Case):
         for d in (self.visual, self.out, os.path.join(self.root, "shell")):
             os.makedirs(d)
         shutil.copy(SCRIPT, self.visual)
+        shutil.copy(slate.path("tests", "visual", "review.py"), self.visual)    # (approving updates its page)
         self.touch(os.path.join(self.visual, "scenes.py"), -100)
         self.touch(os.path.join(self.root, "shell", "Bar.qml"), -100)
         self.env = {k: v for k, v in self.h.env.items() if k != "SLATE_TEST_OUT"}
@@ -68,7 +69,11 @@ class Approve(Case):
         code, out = self.approve("launcher")
         self.assertEqual((code, out), (0, "New: launcher\n"))
         self.assertEqual(os.listdir(self.baselines), ["launcher.png"])
-        self.assertEqual(os.listdir(self.out), ["desktop.actual.png"])
+        self.assertEqual(sorted(os.listdir(self.out)), ["desktop.actual.png", "review.html"])
+        with open(os.path.join(self.out, "review.html")) as f:
+            page = f.read()
+        self.assertIn("tests/run --approve desktop<", page, "the review page shows what's left to approve")
+        self.assertNotIn("launcher", page)
 
     def test_pictures_from_before_the_code_changed_are_left(self):
         """Slate's code changed after the picture was taken: it may not be what Slate draws now."""

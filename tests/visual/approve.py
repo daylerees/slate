@@ -12,11 +12,12 @@ Only pictures that are still current are approved: one taken before Slate's code
 the scenes (tests/visual/scenes.py) last changed is left alone and named, as it may no longer
 be what Slate draws. Run the visual tests again for those (tests/run --tier visual), or re-shoot
 them (tests/run --update-baselines <scene>).
+
+The page to look at them on, and pick which to approve, is tests/out/visual/review.html
+(review.py); approving brings it up to date.
 """
 import os
 import sys
-
-from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(os.environ.get("SLATE_TEST_OUT") or os.path.join(ROOT, "tests", "out"), "visual")
@@ -35,6 +36,7 @@ def newest_change():
 
 
 def main(argv):
+    from PIL import Image       # (here: review.py uses the rest, and needs no Pillow)
     force = "--stale" in argv
     wanted = [a for a in argv if not a.startswith("-")]
     taken = sorted(n[:-len(SUFFIX)] for n in os.listdir(OUT) if n.endswith(SUFFIX)) if os.path.isdir(OUT) else []
@@ -67,6 +69,9 @@ def main(argv):
         print("New: " + ", ".join(added))
     if stale:
         print("Left alone, taken before Slate's code last changed (run the visual tests again): " + ", ".join(stale))
+    # The review page (review.py) shows only what's left to approve, or goes
+    import review
+    review.build(OUT, BASELINES)
     return 1 if stale else 0
 
 

@@ -31,7 +31,8 @@ tests/run --jobs 3                  # how many Slate sessions run side by side (
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
 tests/run --deps latest             # today's Arch packages instead of the pinned snapshot (once a day)
-tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these)
+tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these;
+                                    # tests/out/visual/review.html shows them, to pick from)
 tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, or these)
 ```
 
@@ -108,11 +109,21 @@ of a run: none of them needs it to itself.
 ## When a screenshot changes
 
 A visual failure prints the scene and its diff (`tests/out/visual/<scene>.diff.png`, the
-changes in red; `.actual.png` beside it). If the change is meant (you changed how something
-looks), approve it:
+changes in red; `.actual.png` beside it). A visual run with changes also writes one page to look
+at them all on, and `tests/run` prints its path: `tests/out/visual/review.html`. Open it in a
+browser: each changed scene has its approved picture, the new one and the difference side by
+side (click one for full size), with a tick box. A scene with no approved picture yet says so,
+and one taken before Slate's code last changed starts unticked (`--approve` would leave it
+alone). At the top is the `tests/run --approve …` line for the ticked scenes, with a Copy
+button. It's a plain file (no network; the approved pictures are copied beside the others as
+`<scene>.approved.png`), dark unless your browser is set to light, and approving brings it up to
+date. `python3 tests/visual/review.py` builds it again from what's in `tests/out/visual`
+(the code is next to `approve.py`).
+
+If the change is meant (you changed how something looks), approve it:
 
 ```sh
-# look at tests/out/visual/<scene>.actual.png first, then:
+# look at tests/out/visual/review.html (or <scene>.actual.png) first, then:
 tests/run --approve panel-control settings-dock             # or no names: every changed scene
 git diff --stat tests/visual/baselines
 ```

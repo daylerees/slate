@@ -17,7 +17,10 @@
 #                                  (once a day: run again the same day, it shows that result)
 #   tests/run --deps latest --fresh   run it again anyway
 #   tests/run --approve [scene…]   approve the changed screenshots the last run took (all, or
-#                                  these), once you've looked at them: nothing is run again
+#                                  these), once you've looked at them: nothing is run again.
+#                                  A visual run with changes writes tests/out/visual/review.html
+#                                  to look at them on: each scene's approved picture, the new one
+#                                  and the difference, with tick boxes for the --approve line
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
@@ -195,6 +198,12 @@ if [ -n "$cache" ]; then
     exec >&3 3>&-; wait $! 2>/dev/null || true
     { echo "$(date +%F) $status"; cat "$cache.part"; } > "$cache"; rm -f "$cache.part"
 fi
+# Changed screenshots: one page to look at them all and pick the ones to approve
+case ",$tier," in *,visual,*|*,all,*)
+    if [ "$updating" = 0 ] && page=$(SLATE_TEST_OUT="$OUT" python3 "$ROOT/tests/visual/review.py") && [ -n "$page" ]; then
+        echo "Changed screenshots, to look at and approve: $page" >&2
+    fi ;;
+esac
 if [ "$updating" = 1 ]; then
     if [ -s "$OUT/visual/updated.txt" ]; then
         echo "Approved screenshots updated (review them with git diff before committing):"
