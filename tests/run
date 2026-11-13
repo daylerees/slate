@@ -7,26 +7,40 @@
 #   tests/run --tier static,unit   just these tiers (static, unit, live, visual, all)
 #   tests/run --no-container       static + unit straight on this machine (fast)
 #   tests/run --filter dock        only tests whose name contains "dock"
+#   tests/run --failed             only the tests that failed last time (tests/out/failed.txt;
+#                                  a failed subtest runs its whole test again)
+#   tests/run --repeat 5           run the chosen tests 5 times over, then list only what didn't
+#                                  pass every time (each run's logs: tests/out/repeat/<run>/)
 #   tests/run --jobs 3             how many Slate sessions run side by side (default: half
 #                                  this machine's processors, 4 at most; 1 = one after another)
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
 #                                  (once a day: run again the same day, it shows that result)
 #   tests/run --deps latest --fresh   run it again anyway
 #   tests/run --approve [scene…]   approve the changed screenshots the last run took (all, or
-#                                  these), once you've looked at them: nothing is run again
+#                                  these), once you've looked at them: nothing is run again.
+#                                  A visual run with changes writes tests/out/visual/review.html
+#                                  to look at them on: each scene's approved picture, the new one
+#                                  and the difference, with tick boxes for the --approve line
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
 #
 # Exit code 0 only when everything ran and passed. Logs, failure screenshots and diffs go
-# in tests/out/. The live and visual tiers need the vkms kernel module (sudo modprobe vkms).
+# in tests/out/. The live and visual tiers need the vkms kernel module: sudo modprobe vkms
+# loads it until the next boot; echo vkms | sudo tee /etc/modules-load.d/slate-tests.conf
+# (once, ever) loads it at every boot.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
-tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""
-pass=()
+tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""; failed=0
+repeat=""; pass=(); again=()      # (again: the options for each run of a --repeat)
 while [ $# -gt 0 ]; do
+    case "$1" in
+        --repeat|--repeat=*|-q|--quiet|-v|--verbose|--json) ;;
+        --tier|--deps|--filter|--jobs) again+=("$1" "${2-}") ;;
+        *) again+=("$1") ;;
+    esac
     case "$1" in
         --tier) tier=$2; shift ;;
         --tier=*) tier=${1#*=} ;;
@@ -36,8 +50,11 @@ while [ $# -gt 0 ]; do
         --filter) pass+=(--filter "$2"); filtered=1; shift ;;
         --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
         --fresh) fresh=1 ;;
+        --failed) failed=1 ;;
         --jobs) jobs=$2; shift ;;
         --jobs=*) jobs=${1#*=} ;;
+        --repeat) repeat=$2; shift ;;
+        --repeat=*) repeat=${1#*=} ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
         --approve) shift; exec python3 "$ROOT/tests/visual/approve.py" "$@" ;;
         --update-baselines)
@@ -50,10 +67,34 @@ while [ $# -gt 0 ]; do
 done
 case "$jobs" in ""|[1-9]|[1-9][0-9]) ;; *) echo "tests/run: --jobs is a number, 1 or more" >&2; exit 2 ;; esac
 case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest" >&2; exit 2 ;; esac
+case "$repeat" in ""|[1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) echo "tests/run: --repeat is a number, 1 or more" >&2; exit 2 ;; esac
+if [ -n "$repeat" ] && [ "$updating" = 1 ]; then
+    echo "tests/run: --repeat doesn't go with --update-baselines" >&2; exit 2
+fi
 if [ "$updating" = 1 ]; then
     [ "$tier" = all ] && tier=visual
     export SLATE_UPDATE_BASELINES="${update# }"
     [ -n "$SLATE_UPDATE_BASELINES" ] || SLATE_UPDATE_BASELINES=all
+fi
+# Only what failed last time: its tiers, and the runner picks its tests from tests/out/failed.txt
+if [ "$failed" = 1 ]; then
+    if ! grep -q '^tests\.' "$OUT/failed.txt" 2>/dev/null; then
+        echo "Nothing to run again: the last run had no failures."
+        exit 0
+    fi
+    tier=""
+    for t in static unit live visual; do
+        grep -q "^tests\.$t\." "$OUT/failed.txt" && tier="$tier${tier:+,}$t"
+    done
+    pass+=(--failed); filtered=1
+fi
+# Several runs: tests/lib/repeat.py starts this again for each (with a tests/out of its own,
+# reporting in --json) and adds them up
+if [ -n "$repeat" ]; then
+    modes=(); for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|-v|--verbose|--json) modes+=("$a") ;; esac; done
+    mkdir -p "$OUT"
+    exec python3 "$ROOT/tests/lib/repeat.py" --times "$repeat" --out "$OUT" "${modes[@]+"${modes[@]}"}" \
+        -- "$0" "${again[@]+"${again[@]}"}"
 fi
 quiet=0; for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|--json) quiet=1 ;; esac; done
 say() { [ "$quiet" = 1 ] || echo "$@" >&2; }
@@ -106,13 +147,16 @@ fi
 run_args=()
 case ",$tier," in *,live,*|*,visual,*|*,all,*)
     card=""
-    for c in /sys/class/drm/card[0-9]*; do
+    # (SLATE_TEST_DRM: somewhere else to look, for its own test)
+    for c in "${SLATE_TEST_DRM:-/sys/class/drm}"/card[0-9]*; do
         [ -e "$c/device/driver" ] || continue
         case "$(readlink -f "$c/device/driver")" in *vkms*|*faux*) card=/dev/dri/$(basename "$c"); break ;; esac
     done
     if [ -z "$card" ]; then
         echo "tests/run: the live and visual tiers need the vkms kernel module. Load it with:" >&2
         echo "    sudo modprobe vkms" >&2
+        echo "That lasts until you restart. To have it load at every boot (once, ever):" >&2
+        echo "    echo vkms | sudo tee /etc/modules-load.d/slate-tests.conf" >&2
         echo "(or run only --tier static,unit)" >&2
         exit 2
     fi
@@ -159,6 +203,12 @@ if [ -n "$cache" ]; then
     exec >&3 3>&-; wait $! 2>/dev/null || true
     { echo "$(date +%F) $status"; cat "$cache.part"; } > "$cache"; rm -f "$cache.part"
 fi
+# Changed screenshots: one page to look at them all and pick the ones to approve
+case ",$tier," in *,visual,*|*,all,*)
+    if [ "$updating" = 0 ] && page=$(SLATE_TEST_OUT="$OUT" python3 "$ROOT/tests/visual/review.py") && [ -n "$page" ]; then
+        echo "Changed screenshots, to look at and approve: $page" >&2
+    fi ;;
+esac
 if [ "$updating" = 1 ]; then
     if [ -s "$OUT/visual/updated.txt" ]; then
         echo "Approved screenshots updated (review them with git diff before committing):"

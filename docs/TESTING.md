@@ -25,16 +25,49 @@ The exit code is 0 only when everything ran and passed.
 tests/run --tier static,unit        # just these tiers (static, unit, live, visual, all)
 tests/run --no-container            # static + unit straight on this machine (fast; no Docker)
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
+tests/run --failed                  # only the tests that failed last time
+tests/run --repeat 5                # the chosen tests 5 times over: only what didn't pass every time
 tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
 tests/run --deps latest             # today's Arch packages instead of the pinned snapshot (once a day)
-tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these)
+tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these;
+                                    # tests/out/visual/review.html shows them, to pick from)
 tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, or these)
 ```
 
 Logs, failed screenshots and their diffs go in `tests/out/` (not committed): a failure line
 names the file to look at.
+
+## Running what failed again
+
+Every run, side by side or not, keeps the ids of the tests that failed in
+`tests/out/failed.txt`, one a line (`tests.live.test_dock.Dock.test_badges`), and a run with no
+failures empties it. `tests/run --failed` runs just those again, in their own tiers, side by
+side as usual and with `-q`, `--json`, `--jobs` and `--filter` as ever; what still fails is
+kept for the next `--failed`. A failed subtest (one screenshot scene, one QML file) runs its
+whole test again: `--filter` narrows it. A failure outside any test (a class's `setUpClass`, a
+file that wouldn't load, a part of a side-by-side run that never finished) runs that whole
+class or file again. With nothing recorded, `--failed` says so and exits 0.
+
+## Finding a test that fails now and then
+
+`tests/run --repeat N` runs the chosen tests (any `--tier`, `--filter`, `--failed`, `--jobs`) N
+times over, then lists only what didn't pass every time, and in how many runs it failed:
+
+```
+FLAKY live/bar › clock_opens_panel failed 2 of 5 (runs 2, 4)
+FAIL live/dock › badges failed 5 of 5
+FAIL 2 didn't pass every time (1 failed every time), 5 runs of 412 checks (41m02s)
+```
+
+It's meant for a quiet day in the background: `-q` prints just those lines (`PASS 412/412 every
+time, 5 runs (40m11s)` when nothing failed), the default adds a line as each run ends, `--json`
+gives a JSON line per test and a summary. Each run keeps its logs, screenshots and everything it
+printed apart, in `tests/out/repeat/<run>/` (`output.txt`), and `tests/out/failed.txt` is left
+naming every test that failed in any run, so `--failed` runs them again. The exit code is 0 only
+when everything passed every time. The timings carry from run to run, so a side-by-side run
+shares its files out the same way each time.
 
 ## Side by side
 
@@ -65,6 +98,15 @@ virtual one, `vkms`. Load it once per boot:
 sudo modprobe vkms
 ```
 
+Or have it load at every boot, so you never have to think about it again (once, ever; `tests/run`
+says the same when it's missing):
+
+```sh
+echo vkms | sudo tee /etc/modules-load.d/slate-tests.conf
+```
+
+`sudo rm /etc/modules-load.d/slate-tests.conf` stops that.
+
 It isn't used as a screen: Hyprland draws in software (llvmpipe) to a headless output inside
 the container, which is why screenshots are the same on every machine. (The container shares
 your `/sys`, so `tests/run` hides `/sys/class/leds` from it: your keyboard's lights, Caps Lock
@@ -76,11 +118,21 @@ of a run: none of them needs it to itself.
 ## When a screenshot changes
 
 A visual failure prints the scene and its diff (`tests/out/visual/<scene>.diff.png`, the
-changes in red; `.actual.png` beside it). If the change is meant (you changed how something
-looks), approve it:
+changes in red; `.actual.png` beside it). A visual run with changes also writes one page to look
+at them all on, and `tests/run` prints its path: `tests/out/visual/review.html`. Open it in a
+browser: each changed scene has its approved picture, the new one and the difference side by
+side (click one for full size), with a tick box. A scene with no approved picture yet says so,
+and one taken before Slate's code last changed starts unticked (`--approve` would leave it
+alone). At the top is the `tests/run --approve …` line for the ticked scenes, with a Copy
+button. It's a plain file (no network; the approved pictures are copied beside the others as
+`<scene>.approved.png`), dark unless your browser is set to light, and approving brings it up to
+date. `python3 tests/visual/review.py` builds it again from what's in `tests/out/visual`
+(the code is next to `approve.py`).
+
+If the change is meant (you changed how something looks), approve it:
 
 ```sh
-# look at tests/out/visual/<scene>.actual.png first, then:
+# look at tests/out/visual/review.html (or <scene>.actual.png) first, then:
 tests/run --approve panel-control settings-dock             # or no names: every changed scene
 git diff --stat tests/visual/baselines
 ```

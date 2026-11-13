@@ -32,7 +32,8 @@ tiers[only[0].split("/")[0]]["failed"] = failed
 os.makedirs(os.path.join(out, "parts"), exist_ok=True)
 with open(os.path.join(out, "parts", part + ".json"), "w") as f:
     json.dump({"passed": 10 * len(only) - failed, "failed": failed, "seconds": 2.0,
-               "skipped": [], "tiers": tiers, "files": {u: 7.5 for u in only}}, f)
+               "skipped": [], "tiers": tiers, "files": {u: 7.5 for u in only},
+               "failed_ids": ["tests." + only[0].replace("/", ".") + ".Case.test_something"] if failed else []}, f)
 sys.exit(failed)
 """
 
@@ -61,7 +62,8 @@ class SharingOut(Case):
         self.assertEqual(module().weight("live/test_dock", {"live/test_dock": 44}), 44)
 
 
-class Parts(Case):
+class Standin(Case):
+    """Runs parallel.py with the stand-in runner in a scratch tests/out."""
     scratch = True
 
     def setUp(self):
@@ -81,6 +83,8 @@ class Parts(Case):
         with open(os.path.join(self.out, "asked.txt")) as f:
             return {l.split()[0]: l for l in f}
 
+
+class Parts(Standin):
     def test_every_file_runs_once_and_the_parts_add_up(self):
         code, out = self.go("--jobs", "3", "--tier", "all")
         asked = self.asked()
@@ -127,3 +131,39 @@ class Parts(Case):
         summary = json.loads(out.strip().splitlines()[-1])["summary"]
         self.assertEqual((summary["failed"], summary["parts"], summary["tiers"]), (1, 2, ["live"]))
         self.assertEqual(summary["total"], 10 * len(module().units("live")))
+
+
+class Failed(Standin):
+    """What the parts failed is kept in tests/out/failed.txt, and --failed runs just that."""
+
+    def failed(self):
+        with open(os.path.join(self.out, "failed.txt")) as f:
+            return f.read().splitlines()
+
+    def test_the_parts_failures_are_kept_together(self):
+        self.go("--jobs", "2", "--tier", "live", display_1="fail", display_2="fail")
+        ids = self.failed()
+        self.assertEqual(len(ids), 2, ids)
+        self.assertTrue(all(i.startswith("tests.live.test_") and i.endswith(".Case.test_something") for i in ids), ids)
+
+    def test_a_lost_part_runs_its_files_again(self):
+        self.go("--jobs", "2", "--tier", "live", display_1="die")
+        files = self.asked()["display-1"].split("--only ")[1].split()[0].split(",")
+        self.assertEqual(self.failed(), sorted("tests." + u.replace("/", ".") for u in files))
+
+    def test_no_failures_empties_it(self):
+        self.go("--jobs", "2", "--tier", "live", display_1="fail")
+        self.go("--jobs", "2", "--tier", "live")
+        self.assertEqual(self.failed(), [])
+
+    def test_failed_shares_out_only_their_files(self):
+        with open(os.path.join(self.out, "failed.txt"), "w") as f:
+            f.write("tests.live.test_dock.Dock.test_badges\ntests.live.test_bar\ntests.unit.test_spaces.S.test_x\n")
+        code, out = self.go("--jobs", "3", "--tier", "unit,live", "--failed", "-q")
+        self.assertEqual(code, 0, out)
+        asked = self.asked()
+        self.assertEqual(sorted(asked), ["display-1", "display-2", "quick"], "a part for each file, and no more")
+        only = sorted(f for line in asked.values() for f in line.split("--only ")[1].split()[0].split(","))
+        self.assertEqual(only, ["live/test_bar", "live/test_dock", "unit/test_spaces"])
+        self.assertTrue(all("--failed" in line for line in asked.values()), "each part runs just the failed tests")
+        self.assertFalse(os.path.exists(os.path.join(self.out, "durations.json")), "timings kept from a partial run")
