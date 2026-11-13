@@ -13,7 +13,7 @@ import time
 
 import slate
 from live import LiveCase
-from session import log_errors
+from session import in_container, log_errors
 
 PASSWORD = "correct horse"
 
@@ -148,3 +148,13 @@ class LoginScreen(LiveCase):
             log.flush()
             errors = log_errors(open(log.name, encoding="utf-8", errors="replace").read())
             self.assertFalse(errors, errors[0][:200] if errors else "")
+
+
+class HostLights(LiveCase):
+    def test_the_hosts_keyboard_lights_arent_seen(self):
+        """The container shares the host's /sys, and the lock and login screens read the Caps
+        Lock light from it: turning Caps Lock on during a run changed their screenshots. The
+        lights are hidden (tests/run), so nothing on the host can show through."""
+        if not in_container():
+            self.skipTest("only in the test container")
+        self.assertEqual(os.listdir("/sys/class/leds"), [])

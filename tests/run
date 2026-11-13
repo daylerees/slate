@@ -143,6 +143,9 @@ runner=(docker run --rm --init --hostname slate-test
     -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)"
     -e SLATE_UPDATE_BASELINES="${SLATE_UPDATE_BASELINES:-}"
     -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -w /slate
+    # (the container shares the host's /sys: without this, the host's keyboard lights, Caps Lock
+    # among them, showed up on the lock and login screens and changed their screenshots)
+    --mount type=tmpfs,destination=/sys/class/leds
     "${run_args[@]+"${run_args[@]}"}"
     "$image" python3 /slate/tests/lib/runner.py)
 if [ "$jobs" = 1 ]; then

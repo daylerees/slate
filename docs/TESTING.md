@@ -66,7 +66,9 @@ sudo modprobe vkms
 ```
 
 It isn't used as a screen: Hyprland draws in software (llvmpipe) to a headless output inside
-the container, which is why screenshots are the same on every machine. Your own Hyprland may
+the container, which is why screenshots are the same on every machine. (The container shares
+your `/sys`, so `tests/run` hides `/sys/class/leds` from it: your keyboard's lights, Caps Lock
+among them, would otherwise show on the lock and login screens.) Your own Hyprland may
 notice the virtual card appear; it doesn't put anything on it. `sudo modprobe -r vkms` takes
 it away again. GitHub's runners load it the same way. One card is enough for every session
 of a run: none of them needs it to itself.
