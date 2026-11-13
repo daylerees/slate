@@ -340,6 +340,8 @@ Scope {
     // ---- Preview (an ordinary overlay; nothing is locked) ---------------------------
     property bool previewing: false
     property string previewMode: "lock"
+    // Tests: Caps Lock as the preview shows it (the test session never reads the keyboard's light)
+    property bool testCaps: false
     Timer { id: previewCloseTimer; interval: 900; onTriggered: root.previewing = false }
 
     PanelWindow {
@@ -365,6 +367,7 @@ Scope {
             message: root.message
             messageIsError: root.messageIsError
             lockedOut: root.lockedOut
+            capsLock: root.testCaps
             showPowerMenu: root.previewMode === "login" || Config.s.lockScreenPowerMenu
             onSubmitted: pw => root.check(pw)
             onPowerAction: a => root.power(a)
@@ -394,6 +397,7 @@ Scope {
             root.previewing = true;
             root.startFresh();
         }
-        function closePreview(): void { root.previewing = false; }
+        function closePreview(): void { root.previewing = false; root.testCaps = false; }
+        function previewCaps(on: bool): void { if (Config.testMode) root.testCaps = on; }
     }
 }

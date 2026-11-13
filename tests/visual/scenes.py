@@ -53,6 +53,11 @@ SCENES = {
                      "undo": [("lock", "closePreview")]},
     "login-preview": {"do": [("lock", "preview", "login")], "wait": lambda st: st["lock"]["previewing"], "settle": 1.5,
                       "undo": [("lock", "closePreview")]},
+    # Caps Lock on: the warning sits as close under the password as the frame's own edge
+    "lock-preview-caps": {"do": [("lock", "preview", "lock"), ("lock", "previewCaps", "true")],
+                          "wait": lambda st: st["lock"]["previewing"], "settle": 1.5, "undo": [("lock", "closePreview")]},
+    "login-preview-caps": {"do": [("lock", "preview", "login"), ("lock", "previewCaps", "true")],
+                           "wait": lambda st: st["lock"]["previewing"], "settle": 1.5, "undo": [("lock", "closePreview")]},
     "power-confirm": {"do": [("power", "confirm", "logout")], "wait": lambda st: st["power"]["open"],
                       "undo": [("power", "cancel")]},
     "polkit": {"do": [("polkit", "preview")], "wait": lambda st: st["polkit"]["open"], "undo": [("polkit", "close")]},

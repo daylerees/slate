@@ -265,7 +265,9 @@ Item {
                     readonly property bool isError: ls.messageIsError && ls.message !== ""
                     readonly property bool caps: ls.message === "" && ls.capsLock
                     width: parent.width
-                    height: Math.max(30, noteRow.implicitHeight + 12)
+                    // Only an error's strip needs room round it: a plain line (Caps Lock, a status)
+                    // takes its own height, so the frame's edge is as close under it as above the field
+                    height: isError ? Math.max(30, noteRow.implicitHeight + 12) : noteRow.implicitHeight
                     radius: Config.corner(10)
                     visible: ls.capsLock || ls.message !== ""
                     color: isError ? Qt.rgba(ls.error.r, ls.error.g, ls.error.b, 0.14) : "transparent"
