@@ -26,6 +26,10 @@ waiting on something. The plans themselves are in the repository's history
 
 ## The test suite
 
+- **Hide the host's keyboard lights from the test container:** it shares the host's `/sys`, so
+  `/sys/class/leds` is your real keyboard (Caps Lock on during a run changed the lock and login
+  screenshots, v0.29.1). The lock screen no longer reads it under test mode; an empty mount over
+  it in `tests/run` would close it for anything else too.
 - A fake MPRIS player, for the dock's media controls and a scene of them.
 - The switcher and overview with windows in screenshots (terminal contents vary).
 - Restoring a Settings page's defaults from a test (it's a button only).
