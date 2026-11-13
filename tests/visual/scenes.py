@@ -131,9 +131,11 @@ SCENES["panel-battery"]["mask"] = [(1080, 172, 350, 130)]
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],
-        # (and its wallpaper thumbnails loaded: one still loading was pictured blank under a busy run)
+        # (and its wallpaper thumbnails loaded: one still loading was pictured blank under a busy run;
+        # and its first looks at the system done: Printers, Webcam and Security's status rows
+        # were sometimes pictured missing, their script not back yet: SettingsWindow's FirstLook)
         "wait": (lambda p: lambda st: st["settings"]["open"] and st["settings"]["section"] == p
-                 and st["settings"].get("thumbsLoading", 0) == 0)(_p),
+                 and st["settings"].get("thumbsLoading", 0) == 0 and st["settings"].get("checking", 0) == 0)(_p),
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
@@ -423,3 +425,14 @@ for _name, _edge in (("bar-shorter", "top"), ("bar-shorter-left", "left")):
         "wait": lambda st, _edge=_edge: st["bar"]["arranging"] and st["bar"]["editor"] and st["barEdge"] == _edge,
         "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
     }
+
+# The bar being arranged (Settings → Menu Bar → Edit layout) with glass switched on in the same
+# instant: every item on it drawn (three were once left undrawn when the two came together).
+# Both are sent at once, two IPC calls side by side, not one after the other as "settings" and
+# "do" would; glass goes back off after (it's off to start with)
+_SLATE_IPC = 'qs -p "$XDG_CONFIG_HOME/slate" ipc call '
+SCENES["bar-arranging-glass"] = {
+    "do": [("!sh", "-c", _SLATE_IPC + "config set glass true & " + _SLATE_IPC + "bar edit start & wait")],
+    "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"], "settle": 5,     # (glass: its blur is made the first time)
+    "undo": [("bar", "edit", "done"), ("config", "set", "glass", "false")],
+}
