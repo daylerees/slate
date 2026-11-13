@@ -830,7 +830,8 @@ PanelWindow {
         readonly property color control: Config.raised(Config.tint("#2a313c"))
         readonly property color fg: primary ? root.accentText : root.textColor
         width: pillRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-        color: primary ? root.accent : pillHover.hovered ? Config.hoverOn(control) : control
+        color: primary ? root.accent : "transparent"
+        HoverFill { base: control; hovered: pillHover.hovered; gone: primary; radius: parent.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Row {
             id: pillRow

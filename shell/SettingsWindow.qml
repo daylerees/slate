@@ -101,19 +101,14 @@ FloatingWindow {
     // Buttons, switches, fields and other controls: solid grey, or with glass the frosted fill the
     // bar's containers have (a hint of the wallpaper's colour), so their sheen picks it up too
     readonly property color control: Config.raised(Config.tint("#2a313c"))
-    // (a button or a field under the pointer: the muted hover, as everywhere, with glass or without)
-    function controlHover(solid) { return Config.hover; }
     // The theme's greys, named for what they're used for (each worked out once, not per item)
     readonly property color well: Config.tint("#151920")           // sunken areas: the content pane, search wells, segmented tracks
     readonly property color divider: Config.tint("#262c35")        // separators, chosen rows, meter tracks
     readonly property color outline: Config.tint("#2a313c")        // borders, idle icon tiles
     readonly property color popupFill: Config.tint("#1d222a")      // dropdown menus and other pop-ups
     readonly property color controlHoverSolid: Config.tint("#323a46")  // a button under the pointer (without glass)
-    readonly property color knobHover: Config.tint("#38414e")      // a switch or slider track under the pointer (without glass)
     readonly property color ring: Config.tint("#3a424e")           // the outline round a swatch or picture
     readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)   // a whisper of the text colour, for flat fills
-    // A text field or dropdown under the pointer
-    function fieldHover() { return controlHover(Config.hoverOn(outline)); }
     readonly property string font: bar.fontFamily
     function glyph(code) { return String.fromCodePoint(code); }
     // Dropdown choices every half hour, from one hour to another (halfHours(16, 23.5): 16:00,
@@ -1324,8 +1319,8 @@ FloatingWindow {
         property bool checked: false
         signal toggled(bool value)
         width: 42; height: 24; radius: Config.corner(12)
-        color: checked ? win.accent
-            : (tgHover.hovered ? win.controlHover(win.knobHover) : win.control)
+        color: checked ? win.accent : "transparent"
+        HoverFill { base: win.control; hovered: tgHover.hovered; gone: toggleSwitch.checked; radius: toggleSwitch.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
         Rectangle {
@@ -1379,8 +1374,8 @@ FloatingWindow {
                 id: trk
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: Config.corner(3)
-                color: sliderBox.hot ? win.controlHover(win.knobHover) : win.control
-                Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                color: "transparent"
+                HoverFill { base: win.control; hovered: sliderBox.hot; radius: trk.radius }
                 Rectangle {
                     width: Math.max(6, trk.width * parent.parent.frac); height: parent.height; radius: Config.corner(3); color: win.accent
                 }
@@ -1437,8 +1432,8 @@ FloatingWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 28; height: 28; radius: Config.corner(14)
                 opacity: soundSetting.audible ? 1 : 0.4
-                color: playHover.hovered && soundSetting.audible ? win.controlHover(win.controlHoverSolid) : win.control
-                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                color: "transparent"
+                HoverFill { base: win.control; hovered: playHover.hovered && soundSetting.audible; radius: parent.radius }
                 Text {
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 1      // the triangle looks centred a touch right
@@ -1469,8 +1464,8 @@ FloatingWindow {
         property bool compactLabel: false   // with an icon: show just the icon (narrow window)
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-        color: primary ? win.accent
-            : btnHover.hovered ? (destructive ? Config.hoverDanger : win.controlHover(win.controlHoverSolid)) : win.control
+        color: primary ? win.accent : "transparent"
+        HoverFill { base: win.control; hover: parent.destructive ? Config.hoverDanger : Config.hover; hovered: btnHover.hovered; gone: parent.primary; radius: parent.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
         Row {
@@ -1630,7 +1625,9 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool on: modelData.value === choiceSetting.value
                     width: optText.implicitWidth + 26; height: 32; radius: Config.corner(8)
-                    color: on ? win.accent : optHover.hovered ? win.fieldHover() : win.control
+                    color: on ? win.accent : "transparent"
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                    HoverFill { base: win.control; hovered: optHover.hovered; gone: parent.on; radius: parent.radius }
                     Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
                     HoverHandler { id: optHover }
                     ClickTap { onTapped: { choiceSetting.picked(parent.modelData.value); choiceSetting.open = false; } }
@@ -1672,7 +1669,8 @@ FloatingWindow {
             readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
                 + (ddIcon.visible ? ddIcon.width + 8 : 0)
             width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: Config.corner(8)
-            color: open || ddHover.hovered ? win.fieldHover() : win.control
+            color: "transparent"
+            HoverFill { base: win.control; hovered: ddButton.open || ddHover.hovered; radius: ddButton.radius }
             border.width: open ? 1 : 0; border.color: win.accent
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
@@ -1971,8 +1969,8 @@ FloatingWindow {
                                     width: tiles.tileW
                                     height: 112
                                     radius: Config.corner(12)
-                                    color: tileHover.hovered ? Config.hoverOn(win.card) : win.card
-                                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                    color: "transparent"
+                                    HoverFill { base: win.card; hovered: tileHover.hovered; radius: parent.radius }
                                     Rectangle {
                                         x: 14; y: 14
                                         width: 34; height: 34; radius: Config.corner(10)
@@ -5938,7 +5936,8 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool on: Config.s.iconShape === modelData.value
                             width: 92; height: 96; radius: Config.corner(12)
-                            color: on ? win.accent : shapeHover.hovered ? Config.hoverOn(win.well) : win.well
+                            color: on ? win.accent : "transparent"
+                            HoverFill { base: win.well; hovered: shapeHover.hovered; gone: on; radius: parent.radius }
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             // Shown as every App icons setting has it: the shape, Fill the shape, Tiles
                             // in the icon's colour, and Tint app icons (and its strength); with glass,

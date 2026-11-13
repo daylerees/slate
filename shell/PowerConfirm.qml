@@ -291,8 +291,8 @@ PanelWindow {
                     height: reopenText.implicitHeight + 24
                     radius: Config.corner(12)
                     readonly property bool on: root.optionOn
-                    color: reopenHover.hovered ? Config.hoverOn(root.buttonColor) : root.buttonColor
-                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                    color: "transparent"
+                    HoverFill { base: root.buttonColor; hovered: reopenHover.hovered; radius: parent.radius }
                     HoverHandler { id: reopenHover; onHoveredChanged: if (hovered) root.focusedButton = 2 }
                     ClickTap { onTapped: root.flipOption() }
                     // Keyboard focus ring, as on the buttons
@@ -372,7 +372,8 @@ PanelWindow {
         height: 40
         radius: Config.corner(10)
         readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
-        color: primary ? base : (hh.hovered ? Config.hoverOn(base) : base)
+        color: primary ? base : "transparent"
+        HoverFill { base: btn.base; hovered: hh.hovered; gone: btn.primary; radius: btn.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         HoverHandler { id: hh; onHoveredChanged: if (hovered) root.focusedButton = btn.primary ? 1 : 0 }
         // Keyboard focus ring, just outside the button

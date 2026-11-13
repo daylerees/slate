@@ -10,6 +10,7 @@ import QtQuick
 Item {
     id: hf
     property color base
+    property color hover: Config.hover          // (Config.hoverDanger for something destructive)
     property bool hovered: false
     property bool gone: false
     property real radius: 0
@@ -31,7 +32,7 @@ Item {
         anchors.fill: parent
         topLeftRadius: hf.topLeftRadius; topRightRadius: hf.topRightRadius
         bottomLeftRadius: hf.bottomLeftRadius; bottomRightRadius: hf.bottomRightRadius
-        color: Config.hover
+        color: hf.hover
         opacity: !hf.gone && hf.hovered ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
     }

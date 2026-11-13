@@ -213,7 +213,8 @@ PanelWindow {
                             required property var modelData
                             readonly property bool current: root.selected === modelData
                             width: chipText.implicitWidth + 24; height: 30; radius: Config.corner(15)
-                            color: current ? root.accent : chipHover.hovered ? Config.hoverOn(root.fieldColor) : root.fieldColor
+                            color: current ? root.accent : "transparent"
+                            HoverFill { base: root.fieldColor; hovered: chipHover.hovered; gone: current; radius: parent.radius }
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             HoverHandler { id: chipHover }
                             ClickTap {
@@ -315,7 +316,8 @@ PanelWindow {
         height: 40
         radius: Config.corner(10)
         readonly property color base: primary ? root.accent : root.fieldColor
-        color: primary ? base : (hh.hovered ? Config.hoverOn(base) : base)
+        color: primary ? base : "transparent"
+        HoverFill { base: btn.base; hovered: hh.hovered; gone: btn.primary; radius: btn.radius }
         opacity: dimmed ? 0.55 : 1
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }

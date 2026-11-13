@@ -1096,8 +1096,8 @@ PanelWindow {
                         width: (wifiView.width - 6) / 2
                         height: 46
                         radius: Config.corner(9)
-                        color: tileHover.hovered && modelData.copy ? Config.hoverOn(pop.card) : pop.card
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                        color: "transparent"
+                        HoverFill { base: pop.card; hovered: tileHover.hovered && modelData.copy; radius: parent.radius }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
                         Column {
@@ -1874,8 +1874,8 @@ PanelWindow {
                         required property var modelData
                         width: (shotView.width - 16) / 3; height: 76
                         radius: Config.corner(10)
-                        color: shotHover.hovered ? Config.hoverOn(pop.card) : pop.card
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                        color: "transparent"
+                        HoverFill { base: pop.card; hovered: shotHover.hovered; radius: parent.radius }
                         Column {
                             anchors.centerIn: parent
                             spacing: 6
@@ -2952,8 +2952,8 @@ PanelWindow {
                             radius: Config.corner(12)
                             selected: modelData.on
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                            color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent)
-                                : tileHover.hovered ? Config.hoverOn(pop.card) : pop.card
+                            color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent) : "transparent"
+                            HoverFill { base: pop.card; hovered: tileHover.hovered; gone: controlTile.selected; radius: controlTile.radius }
                             HoverHandler { id: tileHover }
                             onClicked: {
                                 switch (modelData.id) {

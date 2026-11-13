@@ -234,7 +234,8 @@ Item {
             width: home.width; height: home.height
             z: carried ? 3 : target ? 2 : 1
             radius: Config.corner(12)
-            color: inPanel ? (lit ? Config.accentLit : board.accent) : lit ? Config.hoverOn(board.tile) : board.tile
+            color: inPanel ? (lit ? Config.accentLit : board.accent) : "transparent"
+            HoverFill { base: board.tile; hovered: parent.lit; gone: parent.inPanel; radius: parent.radius }
             scale: carried ? 1.05 : 1
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             Behavior on scale { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }

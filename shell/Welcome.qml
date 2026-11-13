@@ -189,7 +189,8 @@ PanelWindow {
                                 readonly property bool on: modelData.key === "floating" ? Config.windowMode === "floating" : Config.windowMode !== "floating"
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: Config.corner(14)
-                                color: modeHover.hovered && usable ? Config.hoverOn(w.card) : w.card
+                                color: "transparent"
+                                HoverFill { base: w.card; hovered: modeHover.hovered && usable; radius: parent.radius }
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 opacity: usable ? 1 : 0.5
@@ -272,7 +273,8 @@ PanelWindow {
                                 required property var modelData
                                 readonly property bool on: (Config.s.themeMode || (Config.s.lightMode ? "light" : "dark")) === modelData.mode
                                 width: themeRow.implicitWidth + 28; height: 38; radius: Config.corner(10)
-                                color: on ? w.accent : themeHover.hovered ? Config.hoverOn(w.card) : w.card
+                                color: on ? w.accent : "transparent"
+                                HoverFill { base: w.card; hovered: themeHover.hovered; gone: on; radius: parent.radius }
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Row {
                                     id: themeRow
@@ -300,7 +302,8 @@ PanelWindow {
                                 required property var modelData
                                 readonly property bool on: Config.s.accentFromWallpaper === modelData.wall
                                 width: (parent.width - 12) / 2; height: 112; radius: Config.corner(12)
-                                color: accHover.hovered ? Config.hoverOn(w.card) : w.card
+                                color: "transparent"
+                                HoverFill { base: w.card; hovered: accHover.hovered; radius: parent.radius }
                                 border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 Column {
@@ -434,7 +437,8 @@ PanelWindow {
                                 readonly property bool on: Config.s.glass === modelData.glass
                                 width: (parent.width - 16) / 2; height: 290
                                 radius: Config.corner(14)
-                                color: lookHover.hovered ? Config.hoverOn(w.card) : w.card
+                                color: "transparent"
+                                HoverFill { base: w.card; hovered: lookHover.hovered; radius: parent.radius }
                                 border.width: on ? 2 : 1
                                 border.color: on ? w.accent : w.line
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -615,7 +619,8 @@ PanelWindow {
                             required property var modelData
                             readonly property bool on: Config.s.keyset === modelData.key
                             width: parent.width; height: 70; radius: Config.corner(12)
-                            color: keyHover.hovered ? Config.hoverOn(w.card) : w.card
+                            color: "transparent"
+                            HoverFill { base: w.card; hovered: keyHover.hovered; radius: parent.radius }
                             border.width: on ? 2 : 1; border.color: on ? w.accent : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             Column {

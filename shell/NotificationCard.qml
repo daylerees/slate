@@ -65,8 +65,8 @@ Rectangle {
     radius: Config.corner(9)
     // (a pop-up: the bar's colour at the notifications' own opacity with glass, and their hover
     // opacity while the pointer's on it: Settings → Notifications → Glass)
-    color: inPanel ? (cardHover.hovered ? Config.hoverOn(bar.capsuleColor) : bar.capsuleColor)
-        : Config.toastSurface(Config.tint("#0f1216"), cardHover.hovered)
+    color: inPanel ? "transparent" : Config.toastSurface(Config.tint("#0f1216"), cardHover.hovered)
+    HoverFill { visible: card.inPanel; base: bar.capsuleColor; hovered: cardHover.hovered; radius: card.radius }
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
     Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 0.7 }       // (flat in the bell panel)
