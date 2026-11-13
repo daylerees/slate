@@ -285,6 +285,15 @@ run. Do it efficiently:
 3. When everything that failed passes on its own, run the full suite one final time.
 4. If that fails, go back to step 2. Tag only after a full run with no failures; a test that
    fails now and then is a failure (find out why: it has been a real race more than once).
+5. A small fix after the clean run (the short path): its own tests, run a few times, plus static
+   and unit, not another full run. Offer the author that choice and say it plainly in the
+   release notes; don't assume it (docs/CONVENTIONS.md, Keeping a release's test cycle short).
+
+Between releases, CI runs static and unit on every push (`.github/workflows/checks.yml`). After
+pushing, look at its result a few minutes later (`gh run list -L 3`) and fix a failure then, as
+part of the change that caused it, so release day starts from a known list rather than a
+surprise. The weekly run against today's Arch packages opens an issue when an update would break
+Slate: read it at the next release.
 
 Then run
 `tests/run -q --deps latest` (once a day: a second run that day shows the first's result;
