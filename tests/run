@@ -9,6 +9,8 @@
 #   tests/run --filter dock        only tests whose name contains "dock"
 #   tests/run --failed             only the tests that failed last time (tests/out/failed.txt;
 #                                  a failed subtest runs its whole test again)
+#   tests/run --repeat 5           run the chosen tests 5 times over, then list only what didn't
+#                                  pass every time (each run's logs: tests/out/repeat/<run>/)
 #   tests/run --jobs 3             how many Slate sessions run side by side (default: half
 #                                  this machine's processors, 4 at most; 1 = one after another)
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
@@ -27,8 +29,13 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
 tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""; failed=0
-pass=()
+repeat=""; pass=(); again=()      # (again: the options for each run of a --repeat)
 while [ $# -gt 0 ]; do
+    case "$1" in
+        --repeat|--repeat=*|-q|--quiet|-v|--verbose|--json) ;;
+        --tier|--deps|--filter|--jobs) again+=("$1" "${2-}") ;;
+        *) again+=("$1") ;;
+    esac
     case "$1" in
         --tier) tier=$2; shift ;;
         --tier=*) tier=${1#*=} ;;
@@ -41,6 +48,8 @@ while [ $# -gt 0 ]; do
         --failed) failed=1 ;;
         --jobs) jobs=$2; shift ;;
         --jobs=*) jobs=${1#*=} ;;
+        --repeat) repeat=$2; shift ;;
+        --repeat=*) repeat=${1#*=} ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
         --approve) shift; exec python3 "$ROOT/tests/visual/approve.py" "$@" ;;
         --update-baselines)
@@ -53,6 +62,10 @@ while [ $# -gt 0 ]; do
 done
 case "$jobs" in ""|[1-9]|[1-9][0-9]) ;; *) echo "tests/run: --jobs is a number, 1 or more" >&2; exit 2 ;; esac
 case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest" >&2; exit 2 ;; esac
+case "$repeat" in ""|[1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) echo "tests/run: --repeat is a number, 1 or more" >&2; exit 2 ;; esac
+if [ -n "$repeat" ] && [ "$updating" = 1 ]; then
+    echo "tests/run: --repeat doesn't go with --update-baselines" >&2; exit 2
+fi
 if [ "$updating" = 1 ]; then
     [ "$tier" = all ] && tier=visual
     export SLATE_UPDATE_BASELINES="${update# }"
@@ -69,6 +82,14 @@ if [ "$failed" = 1 ]; then
         grep -q "^tests\.$t\." "$OUT/failed.txt" && tier="$tier${tier:+,}$t"
     done
     pass+=(--failed); filtered=1
+fi
+# Several runs: tests/lib/repeat.py starts this again for each (with a tests/out of its own,
+# reporting in --json) and adds them up
+if [ -n "$repeat" ]; then
+    modes=(); for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|-v|--verbose|--json) modes+=("$a") ;; esac; done
+    mkdir -p "$OUT"
+    exec python3 "$ROOT/tests/lib/repeat.py" --times "$repeat" --out "$OUT" "${modes[@]+"${modes[@]}"}" \
+        -- "$0" "${again[@]+"${again[@]}"}"
 fi
 quiet=0; for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|--json) quiet=1 ;; esac; done
 say() { [ "$quiet" = 1 ] || echo "$@" >&2; }

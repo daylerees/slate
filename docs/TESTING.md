@@ -26,6 +26,7 @@ tests/run --tier static,unit        # just these tiers (static, unit, live, visu
 tests/run --no-container            # static + unit straight on this machine (fast; no Docker)
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
 tests/run --failed                  # only the tests that failed last time
+tests/run --repeat 5                # the chosen tests 5 times over: only what didn't pass every time
 tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
@@ -47,6 +48,25 @@ kept for the next `--failed`. A failed subtest (one screenshot scene, one QML fi
 whole test again: `--filter` narrows it. A failure outside any test (a class's `setUpClass`, a
 file that wouldn't load, a part of a side-by-side run that never finished) runs that whole
 class or file again. With nothing recorded, `--failed` says so and exits 0.
+
+## Finding a test that fails now and then
+
+`tests/run --repeat N` runs the chosen tests (any `--tier`, `--filter`, `--failed`, `--jobs`) N
+times over, then lists only what didn't pass every time, and in how many runs it failed:
+
+```
+FLAKY live/bar › clock_opens_panel failed 2 of 5 (runs 2, 4)
+FAIL live/dock › badges failed 5 of 5
+FAIL 2 didn't pass every time (1 failed every time), 5 runs of 412 checks (41m02s)
+```
+
+It's meant for a quiet day in the background: `-q` prints just those lines (`PASS 412/412 every
+time, 5 runs (40m11s)` when nothing failed), the default adds a line as each run ends, `--json`
+gives a JSON line per test and a summary. Each run keeps its logs, screenshots and everything it
+printed apart, in `tests/out/repeat/<run>/` (`output.txt`), and `tests/out/failed.txt` is left
+naming every test that failed in any run, so `--failed` runs them again. The exit code is 0 only
+when everything passed every time. The timings carry from run to run, so a side-by-side run
+shares its files out the same way each time.
 
 ## Side by side
 
