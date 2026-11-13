@@ -330,14 +330,15 @@ how to check whether a new release fixed it, and how to take the workaround out 
 
 - **The bug:** a `ScreencopyView` with `live: true` showing a window can kill the whole process
   when that window closes ("The Wayland connection experienced a fatal error: Invalid argument",
-  a frame after `ToplevelHandle(…) closed`), most often when several close at once. It looks like
-  live mode asking for another frame from the closed window's handle. Seen with Quickshell 0.3.2
+  a frame after `ToplevelHandle(…) closed`), most often when several close at once: live mode's
+  stream of captures racing windows coming and going. Seen with Quickshell 0.3.2
   and Hyprland 0.57.2, on an Intel graphics card; never in the test container.
-- **Reported:** not yet (a draft with the log and the repro is ready to file). Put the issue's
-  link here once it's filed. Possibly related, not the same: quickshell-mirror/quickshell#1418
-  (window captures failing outright on Hyprland 0.57.0; here they work, and only closing windows
-  crashes). Both are on the window capture path Hyprland reworked in 0.57, so a fix for that one
-  is worth checking this against.
+- **Reported:** quickshell-mirror/quickshell#1123 (open; seen there on Quickshell 0.3.1 and
+  Hyprland 0.56.2, with a trace pointing at Wayland object ids reused during a burst of
+  captures; also set off by many windows opening at once). Our repro and workaround are to be
+  added there as a comment. Not the same, though on the same path:
+  quickshell-mirror/quickshell#1418 (window captures failing outright on Hyprland 0.57.0).
+  Tested here: windows closing; a burst of windows opening hasn't been tried with WindowPreview.
 - **What Slate does instead:** every live preview is a `WindowPreview` (`shell/WindowPreview.qml`):
   `live: false`, and Slate asks for frames itself with `captureFrame()` on a timer (30 a second,
   starting once the first frame is in, which comes by itself). Previews update at 30 frames a

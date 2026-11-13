@@ -62,9 +62,11 @@ closed handle. Fixed in Slate with WindowPreview.qml (every live preview: live o
 for on a timer once the first is in): 5 of 5 runs survived (New Space 3, overview 2).
 Confirmed in Quickshell itself: a 30-line config with nothing of Slate's (a panel of live
 ScreencopyViews of Hyprland.toplevels, the views going with their windows) died the same way in
-3 of 4 runs. Still to do: report it to Quickshell (a draft is in Dayle's Downloads,
-quickshell-screencopy-issue.md) and put the link in docs/ARCHITECTURE.md, "Workarounds for bugs
-elsewhere", which says how to check a new Quickshell and take the workaround out.
+3 of 4 runs. It's quickshell-mirror/quickshell#1123 (open since September);
+still to do: add our repro and workaround there as a comment (draft in Dayle's Downloads,
+quickshell-screencopy-issue.md), and try a burst of windows opening (#1123's other trigger) with
+WindowPreview. docs/ARCHITECTURE.md, "Workarounds for bugs elsewhere", says how to check a new
+Quickshell and take the workaround out.
 Also: the dock's visual baselines (dock-drag, dock-drag-glass, dock-magnified-glass) were
 approved with a stray "Backup finished" toast from an earlier scene in the full run, so run on
 their own they differ; re-shoot them with notifications cleared first.

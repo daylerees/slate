@@ -4,11 +4,11 @@
 // window: the window's Wayland handle (a HyprlandToplevel's .wayland, or a Toplevel); running:
 // keep it moving (otherwise it holds its last frame).
 //
-// Frames are asked for by Slate, one at a time, not with Quickshell's live mode: in live mode a
-// capture that failed (its window closing) was asked for again by itself, from a window handle
-// already closed, and Slate died ("The Wayland connection experienced a fatal error: Invalid
-// argument"; closing several windows at once while New Space or the overview showed them).
-// Asked for here, a failed frame is simply the last, and none is asked of a window that's gone.
+// Frames are asked for by Slate, one at a time, not with Quickshell's live mode: live captures of
+// windows coming and going killed Slate ("The Wayland connection experienced a fatal error:
+// Invalid argument"; closing several windows at once while New Space or the overview showed them).
+// It's Quickshell's (quickshell-mirror/quickshell#1123; docs/ARCHITECTURE.md, "Workarounds for bugs
+// elsewhere", says how to check a new Quickshell and go back to live mode).
 
 import QtQuick
 import Quickshell.Wayland
