@@ -523,6 +523,9 @@ PanelWindow {
     // How much too long the line is as it stands (below 0: that much to spare), allowing the
     // title, where it shows, the least room worth having
     // (by the lengths things will have once settled: a container opening or closing is eased)
+    // (tests: a container's collapse button clicked, and which containers are open)
+    function testOpenBox(at, open) { for (const c of left.children) if (c.isBox && c.index === at) { c.expanded = open; if (!open) return; } }
+    function openBoxes() { const out = []; for (const c of left.children) if (c.isBox && c.tuck && c.expanded) out.push(c.index); return out; }
     function slimOver() {
         let sum = 0, n = 0;
         for (const c of left.children) {

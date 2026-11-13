@@ -50,6 +50,41 @@ class BarLength(LiveCase):
         self.assertNotRegex(st["clock"], r"[A-Za-z]{3} \d", "the clock still shows its date")
         self.assertRegex(st["clock"], r"\d{1,2}:\d\d")
 
+    def test_text_goes_one_at_a_time_longest_first(self):
+        """Short of room, the text beside icons goes one thing at a time, the longest (as it is
+        now) first, and only as much as the line needs."""
+        self.config("barClockDate", "false")
+        self.config("barClockSeconds", "false")
+        start = self.bar()["line"]
+        with_text = sorted((n for n, t in start.items() if t["visible"] and t["text"]), key=lambda n: -start[n]["w"])
+        self.assertGreaterEqual(len(with_text), 2, start)
+        seen, px = [], 0
+        while len(seen) < len(with_text) and px < 1500:
+            px += 10
+            texts = [g[5:] for g in self.squeeze(px)["gives"] if g.startswith("text:")]
+            if texts == seen:
+                continue
+            self.assertEqual(texts[:len(seen)], seen, "text that had gone came back as the line got shorter")
+            self.assertEqual(len(texts), len(seen) + 1, f"more than one thing's text went at once: {texts} after {seen}")
+            seen = texts
+        self.assertEqual(seen, with_text, "the text didn't go longest first")
+
+    def test_an_open_always_container_stays_open_when_room_runs_short(self):
+        """A container set to Always that you've opened isn't closed under you when the bar
+        runs short of room: it closes as it always does, once you've moved away."""
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        at = self.where("wifi")
+        self.ipc("test", "arrange", "collapse", str(at), "always", "")
+        self.wait(lambda st: st["bar"]["layout"][at]["collapse"] == "always", "the container set to Always")
+        self.ipc("test", "arrange", "open", str(at), "true", "")
+        self.wait(lambda st: at in st["bar"]["opened"], "the container opened")
+        st = self.squeeze(1400)
+        self.assertIn(at, st["opened"], "running short of room closed the open container")
+        self.s.settle(1)                    # (a "nothing happens for this long" check)
+        self.assertIn(at, self.bar()["opened"], "the open container closed a moment later")
+        self.ipc("test", "arrange", "open", str(at), "false", "")
+        self.wait(lambda st: at not in st["bar"]["opened"], "the container closed again")
+
     def test_the_window_title_goes_first(self):
         """With a window to name: its title is the first thing to go, and its icon stays."""
         self.ipc("settings", "open")

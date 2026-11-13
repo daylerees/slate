@@ -152,6 +152,8 @@ ShellRoot {
             }
             else if (what === "drag") { const p = c.split(","); topBar.testDrag(n(a), n(b), Number(p[0]), Number(p[1])); }
             else if (what === "squeeze") topBar.squeeze = Number(a);
+            // (a container's collapse button clicked: open, or closed again)
+            else if (what === "open") topBar.testOpenBox(n(a), b !== "false");
             else if (what === "collapse") Config.barSetCollapse(n(a), b);
             else if (what === "overflow") Config.barSetOverflow(a === "" ? [] : a.split(","), b === "" ? [] : b.split(","));
             else if (what === "stay") Config.barSetStay(a, b === "true");
@@ -411,7 +413,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState },
+                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
                 // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
                 dockMenu: { open: dockMenu.visible, items: dockMenu.items.map(i => i.separator ? null
