@@ -113,14 +113,24 @@ Settings → Appearance → Interface size scales all of Slate by starting it wi
 itself. `Config.uiScale` is the factor in use. Two things escape it, and both have happened:
 
 - **Another process that draws** (a second `qs -p …`, like the reload cover): start it with the
-  scale too, as `start()` and `cover_up()` in `bin/slate` do.
+  scale too, as `start()` and `cover_up()` in `bin/slate` do (`ui_scale`); the login screen does
+  it in `greeter/run-greeter.sh`.
 - **Hyprland's pixels used as Slate's** (`hyprctl cursorpos`, a window's `at`/`size`, a
   monitor's geometry): divide by `Config.uiScale` before using them with Slate's own
-  positions, and multiply what Slate hands to Hyprland in pixels.
+  positions, and multiply what Slate hands to Hyprland in pixels. `TitleBar.qml`,
+  `SpaceBadges.qml` and `WorkspaceOverview.qml` do it. Comparing Hyprland's numbers only with
+  each other needs nothing; missing it once let a hot corner fire again straight after unlocking
+  at any size but 100%.
 
-`tests/static/test_consistency.py::test_interface_size_reaches_everything` checks both. When
-you add a window, a helper process or anything that reads a position from Hyprland, think of
-125%.
+Fixed pixel sizes inside QML are fine: Qt scales them.
+
+`tests/static/test_consistency.py::test_interface_size_reaches_everything` checks both (quick:
+`tests/run -q --tier static --no-container --filter interface_size`). When you add a window, a
+helper process or anything that reads a position from Hyprland, think of 125%: before calling
+it done, `grep -n '"cursorpos"\|\.at\[\|lastIpcObject' shell/*.qml` (every file listed uses
+`Config.uiScale`, or compares Hyprland's numbers only with each other) and
+`grep -n 'setsid qs' shell/bin/*` (every line carries `QT_SCALE_FACTOR`), and look at it once at
+another Interface size.
 
 ## Tests
 
@@ -135,8 +145,16 @@ you add a window, a helper process or anything that reads a position from Hyprla
   <name>`, a minute or so), fixing what they find before moving on. A change is done when its
   tests are in and passing, and they go in the same commit. Nothing is saved up for later.
 - **The full suite runs once, before a release** (see Releases), to catch what the change's
-  own tests didn't. Live and visual need `sudo modprobe vkms` once per boot: ask the user to
-  run it if `tests/run` says so.
+  own tests didn't.
+- **Live and visual need the `vkms` kernel module** (Hyprland renders through it in the
+  container). It's gone after every reboot, and containers share the host's kernel, so it's
+  loaded on the host: `sudo modprobe vkms`. As soon as a full run or a release is asked for or
+  clearly coming, check `lsmod | grep vkms` before anything else; if it isn't loaded, ask the
+  author to run it straight away (sudo may not work in an agent's shell: suggest
+  `! sudo modprobe vkms`, or another terminal), so it's ready by the time the tests are reached.
+  Carry on with static and unit (`--tier static,unit` or `--no-container`) and other prep
+  meanwhile. To load it at every boot: `echo vkms | sudo tee /etc/modules-load.d/vkms.conf`.
+- The suite runs in a container and never touches the desktop, so running it needs no asking.
 - A visual difference you meant: look at the picture the failing run took
   (`tests/out/visual/<scene>.actual.png`, with a `.diff.png` beside it), then
   `tests/run --approve <scene>` makes it the approved one without running anything again (it
@@ -150,7 +168,9 @@ you add a window, a helper process or anything that reads a position from Hyprla
 - A changed feature gets its tests changed with it: new expectations, re-approved
   screenshots, tests for removed things removed. Never loosen a test just to make it pass.
 - A bug gets a test that reproduces it, written before the fix where possible, so it can't
-  come back.
+  come back: check it fails without the fix and passes with it. If a test really isn't
+  practical, say why.
+- Say in the summary which tests were added or changed.
 - A bug a test finds but you don't fix: `@unittest.expectedFailure` (unit) or `KNOWN_ISSUES`
   in `tests/lib/session.py` (live), with a comment, and tell the user.
 
@@ -279,6 +299,8 @@ for people using Slate rather than a list of commit subjects. Leave out site- an
 docs-only changes unless they matter to users.
 
 Each release also gets a section at the top of `site/changelog.html` (newest first, below the
-`<!-- New releases go here -->` marker) with the same notes as the GitHub release: the tag
-as its heading with the date, and Features / Fixes / Other as cards (the release picker at the
-top builds itself from the sections, so it needs nothing). Commit it as `docs(site): add <tag> to the changelog`.
+`<!-- New releases go here, newest first. -->` marker) with the same notes as the GitHub
+release: `<section id="<tag>" class="fp-section cl-release">`, an `<h2>` with the tag icon
+(`<i class="ti">&#xEB34;</i>`), the tag and a `<time>` date, then a `.cl-grid` with one
+`<article>` per Features / Fixes / Other. Copy the previous section's markup. The release
+picker at the top builds itself from the sections, so it needs nothing. Commit it as `docs(site): add <tag> to the changelog`.
