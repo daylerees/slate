@@ -998,11 +998,24 @@ Singleton {
                 const o = Object.assign({}, root.specialOpen);
                 o[event.data.slice(i + 1)] = event.data.slice(0, i);
                 root.specialOpen = o;
-                // (and the windows read again: a window closed as its secret workspace was put
-                // away could stay in Quickshell's list, and the note never said it was empty)
-                if (event.data.slice(0, i) !== "") Hyprland.refreshToplevels();
+                // (and where the windows are, read again from Hyprland, should an event ever be missed)
+                if (event.data.slice(0, i) !== "") { secretWindowsRead.running = false; secretWindowsRead.running = true; }
                 break;
             }
+            // Which window is on which secret workspace (see secretWindows below)
+            case "openwindow": {                 // "address,workspace name,class,title"
+                const p = event.data.split(",");
+                root.secretWindowMoved(p[0], p[1]);
+                break;
+            }
+            case "movewindowv2": {               // "address,workspace id,workspace name"
+                const p = event.data.split(",");
+                root.secretWindowMoved(p[0], p.slice(2).join(","));
+                break;
+            }
+            case "closewindow":                  // "address"
+                root.secretWindowMoved(event.data, "");
+                break;
             case "destroyworkspacev2": {         // a workspace is gone ("id,name"): so is its name
                 const gone = event.data.split(",")[0];
                 if (root.workspaceNames[gone] !== undefined) {
@@ -1027,10 +1040,46 @@ Singleton {
     // From Hyprland's events (above); for the launcher (apps open there while it shows) and
     // the note that says it's empty (SecretEmpty.qml)
     property var specialOpen: ({})
+    // The windows on secret workspaces, by address: kept from Hyprland's own events, not from
+    // Quickshell's list of windows, which could keep a window closed just as its secret workspace
+    // was put away, so the note never said it was empty
+    property var secretWindows: ({})
+    function secretWindowMoved(address, workspace) {
+        const a = String(address).replace(/^0x/, "");
+        const on = String(workspace).startsWith("special");
+        if (on === (secretWindows[a] !== undefined) && (!on || secretWindows[a] === workspace)) return;
+        const m = Object.assign({}, secretWindows);
+        if (on) m[a] = workspace; else delete m[a];
+        secretWindows = m;
+        if (secretWindowsRead.running) secretTouched[a] = true;
+    }
+    property var secretTouched: ({})        // (windows an event moved while the list was being read)
+    Process {
+        id: secretWindowsRead
+        running: true
+        command: ["hyprctl", "clients", "-j"]
+        onRunningChanged: if (running) root.secretTouched = ({})
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const m = {};
+                    for (const c of JSON.parse(text))
+                        if (c.workspace && String(c.workspace.name).startsWith("special")) m[String(c.address).replace(/^0x/, "")] = c.workspace.name;
+                    // (what an event said while this was being read is newer than the list)
+                    for (const a in root.secretTouched) {
+                        if (root.secretWindows[a] !== undefined) m[a] = root.secretWindows[a]; else delete m[a];
+                    }
+                    root.secretWindows = m;
+                } catch (e) {}
+            }
+        }
+    }
     // Showing on this monitor, with no windows on it
     function secretEmpty(monitor) {
         const name = specialOpen[monitor] || "";
-        return name !== "" && !Hyprland.toplevels.values.some(t => t.workspace && t.workspace.name === name);
+        if (name === "") return false;
+        for (const a in secretWindows) if (secretWindows[a] === name) return false;
+        return true;
     }
     Process {
         // Already showing when Slate starts
