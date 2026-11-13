@@ -106,3 +106,68 @@ class SubPages(LiveCase):
         self.addCleanup(lambda: self.ipc("settings", "close"))
         self.ipc("settings", "search", "dock")
         self.wait(lambda st: st["settings"]["open"], "Settings to open")
+
+
+class RestoreDefaults(LiveCase):
+    """A page's Restore defaults (the button by its title), the way you use it: it asks in
+    Slate's confirmation window, and yes puts every setting on that page back to how Slate
+    starts out, leaving the other pages alone."""
+
+    # Settings on each page to change, and what to change them to. Dock's position goes through
+    # its own path (moving the dock), so it's one of them
+    CHANGES = {
+        "dock": {"dockAutoHide": "false", "dockIconSize": "52", "dockBadges": "false", "dockPosition": "left"},
+        "launcher": {"launcherLayout": "grid", "launcherColumns": "4", "launcherFuzzy": "false"},
+    }
+    # A setting on another page, which a page's Restore defaults must leave as it is
+    ELSEWHERE = ("notificationSeconds", "9")
+
+    def open_page(self, page):
+        self.ipc("settings", "page", page)
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == page, f"the {page} page")
+
+    def restore(self, page):
+        """Press Restore defaults on the page and say yes; returns what the question asked about."""
+        self.ipc("test", "settingsRestoreDefaults")
+        st = self.wait(lambda st: st["power"]["open"], "the Restore defaults question")
+        self.assertFalse(st["settings"]["ownCard"], "asked on Settings' own card, not Slate's confirmation window")
+        self.ipc("test", "answer", "true")
+        self.wait(lambda st: not st["power"]["open"], "the question to close")
+        return self.wait(lambda st: st["settings"]["changed"] == 0, f"{page}'s settings to be back at their defaults")
+
+    def test_restore_defaults(self):
+        for page, changes in self.CHANGES.items():
+            with self.subTest(page):
+                for key in changes:
+                    self.keep_setting(key)
+                key, value = self.ELSEWHERE
+                self.keep_setting(key)
+                self.addCleanup(lambda: self.ipc("settings", "close"))
+
+                # From the defaults (another test may have left something changed here)
+                self.open_page(page)
+                if self.s.state()["settings"]["changed"]:
+                    self.restore(page)
+                defaults = {k: self.setting(k) for k in changes}
+                self.assertTrue(all(defaults[k] != v for k, v in changes.items()),
+                                f"a change is the default already: {defaults}")
+
+                for k, v in changes.items():
+                    self.config(k, v)
+                self.config(key, value)
+                self.wait(lambda st: st["settings"]["changed"] == len(changes),
+                          f"{len(changes)} settings changed on {page}")
+
+                # No: nothing changes
+                self.ipc("test", "settingsRestoreDefaults")
+                self.wait(lambda st: st["power"]["open"], "the Restore defaults question")
+                self.ipc("test", "answer", "false")
+                self.wait(lambda st: not st["power"]["open"], "the question to close")
+                self.s.settle(0.3)
+                self.assertEqual(self.s.state()["settings"]["changed"], len(changes), "No restored the defaults anyway")
+
+                # Yes: back to the defaults, and the other page's setting stays
+                self.restore(page)
+                for k in changes:
+                    self.assertEqual(self.setting(k), defaults[k], f"{k} didn't go back")
+                self.assertEqual(self.setting(key), value, f"{key} (another page) was put back too")

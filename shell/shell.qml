@@ -271,6 +271,12 @@ ShellRoot {
             if (w) w.ask = { title: "Test question?", body: "From the tests", button: "Yes",
                              option: { label: "Also this", detail: "A switch" }, run: v => {}, cancel: () => {} };
         }
+        // The page title's Restore defaults, as clicking it does: it asks in Slate's confirmation
+        // window first (answered with answer())
+        function settingsRestoreDefaults(): void {
+            const w = settingsLoader.item;
+            if (w) w.askRestoreDefaults();
+        }
         // Settings → Assistant's switch and its "Read the risks again", as clicking them does
         function assistant(what: string): void {
             const w = settingsLoader.item;
@@ -304,6 +310,7 @@ ShellRoot {
                 popout: popouts.current,
                 settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
                             ownCard: !!settings && settings.confirming,
+                            changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0 },
                 launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
