@@ -399,6 +399,8 @@ PanelWindow {
     // The workspace dots, for the test hook: how many are in view, the first, and the one in use
     readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
                                               firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width } : null
+    // (and the bell's unread count beside it, "" for none)
+    readonly property string bellText: bellBtn.label
 
     // ---- The active window's icon and title, cross-faded as the window changes -------------
     // (Each thing on the bar still says what it is in words, its hoverText: the bar once showed

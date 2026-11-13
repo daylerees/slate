@@ -300,12 +300,20 @@ ShellRoot {
             const settings = settingsLoader.item;
             const opt = v => v === undefined || v === null ? null : v;
             return JSON.stringify({
-                screens: Quickshell.screens.map(s => ({ name: s.name, width: s.width, height: s.height })),
+                screens: Quickshell.screens.map(s => ({ name: s.name, x: s.x, y: s.y, width: s.width, height: s.height })),
+                // With more than one screen: the focused one and the main display (Settings → Displays),
+                // each screen's bar, and where the panels and the dock are
+                focusedScreen: Config.focusedScreen ? Config.focusedScreen.name : "",
+                mainScreen: Config.primaryScreen ? Config.primaryScreen.name : "",
+                bars: Config.bars.map(b => ({ screen: b.screen ? b.screen.name : "", primary: b.primary, dimmed: b.dimmed,
+                                              popoutHere: b.popoutHere, width: Math.round(b.width), height: Math.round(b.height),
+                                              dots: b.dotsState, bell: b.bellText })),
                 popout: popouts.current,
+                popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
                             ownCard: !!settings && settings.confirming,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0 },
-                launcher: { open: appLauncher.shown, query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
+                launcher: { open: appLauncher.shown, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
@@ -316,7 +324,7 @@ ShellRoot {
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
                 switcher: { open: winSwitcher.shown },
-                overview: { open: wsOverview.shown, selected: wsOverview.selected, grid: wsOverview.isGrid,
+                overview: { open: wsOverview.shown, screen: wsOverview.screen ? wsOverview.screen.name : "", selected: wsOverview.selected, grid: wsOverview.isGrid,
                             workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
@@ -329,7 +337,7 @@ ShellRoot {
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "" },
                 dock: {
-                    pinned: win.pinned,
+                    pinned: win.pinned, screen: win.screen ? win.screen.name : "",
                     dragging: win.dragKey, dropIndex: win.dropIndex, dragAway: win.dragAway, gapAt: win.gapAt,
                     slots: win.slots.map(x => x.kind === "app"
                         ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }

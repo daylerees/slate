@@ -14,7 +14,7 @@ tests/run -q           # only failures, and one summary line: PASS 1010/1010 or 
 |---|---|---|
 | `static` | seconds | every QML file lints (`qmllint`: syntax errors, missing types and imports); Lua, Python and shell scripts parse (`shellcheck` errors too); Slate's Hyprland config loads (`Hyprland --verify-config`, with and without your own files); the login screen's file list matches its code and it loads; things that must agree do (every `Config.s.<key>` is a setting, every Settings page has a page, `pageKeys`, `KEEP` in `install.sh` and `update.py`, package lists, the site's links, shaders built from their sources, no other shells named) |
 | `unit` | ~2 min | every script in `shell/scripts` (and `install.sh --help`, `slate-greeter-sync`), in a scratch home with fake `hyprctl`, `nmcli`, `lpstat`… (`tests/lib/stubs.py`) |
-| `live` | most of a run | a real Hyprland and Slate, headless: it loads and reloads without errors; every bar panel, Settings page and full-screen part opens and closes; every setting changes and changes back; the dock's slots, badges and Waste Basket; game mode; a small (853×480) screen; the login screen logging in through a fake greetd. After every test, Slate's log must have no new errors (`Binding loop`, `TypeError`…) |
+| `live` | most of a run | a real Hyprland and Slate, headless: it loads and reloads without errors; every bar panel, Settings page and full-screen part opens and closes; every setting changes and changes back; the dock's slots, badges and Waste Basket; game mode; a small (853×480) screen; two screens side by side; the login screen logging in through a fake greetd. After every test, Slate's log must have no new errors (`Binding loop`, `TypeError`…) |
 | `visual` | ~3 min | screenshots of ~100 scenes (`tests/visual/scenes.py`: the bar in each look, every panel and Settings page, the launcher, lock screen, dock menus…) compared with the approved ones in `tests/visual/baselines/` |
 
 The exit code is 0 only when everything ran and passed.
@@ -142,6 +142,18 @@ as its own check.
   side it's sometimes too short. Wait for what you expect with `self.wait(…)`, or, when you
   read the state to check it, `self.steady(read, floor=…)` (at least `floor` seconds, then
   until two reads agree). A check that something *doesn't* happen keeps its pause as `floor`.
+- **Kinds of session.** Most live tests and every screenshot share one session: one headless
+  output, `TEST`, 1440×900. A test file that needs another kind starts its own in
+  `setUpClass` (after `Session.stop_shared()`) and stops it in `tearDownClass`, so the shared
+  one stays as it is for the rest: `test_small_screen.py` (853×480) and `test_two_screens.py`
+  (`Session(second=(1280, 800))`: `TEST`, and `TEST2` to its right at 1440,0, made one after
+  the other so `TEST` is always the first screen and the main display). The two-screen tests
+  check what's per screen: a bar on each, the panels, the dock, launcher and overview on the
+  focused screen, each screen's workspace, the main display, and all of it again at 125%
+  Interface size. They read Slate's side from the `test` state (`bars`, `focusedScreen`,
+  `mainScreen`, `popoutScreen`, `dock.screen`…) and Hyprland's from `hyprctl layers`
+  (which monitor each of Slate's windows is on, and where); `s.screenshot(path, output=SECOND)`
+  takes the second screen.
 - **visual**: add a scene to `tests/visual/scenes.py`, then
   `tests/run --tier visual --filter <scene>` (it fails: no approved picture yet), check
   `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`.
