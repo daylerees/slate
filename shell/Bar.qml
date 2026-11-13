@@ -527,7 +527,7 @@ PanelWindow {
         let sum = 0, n = 0;
         for (const c of left.children) {
             if (!c.visible) continue;
-            if (c.isSpace) { n++; continue; }
+            if (c.isSpace) { n++; if (Config.barArranging) sum += spaceLeast; continue; }
             const len = c.isBox ? c.settledLength : (vert ? c.height : c.width);
             if (c.isBox || len > 0) { n++; sum += len; }
         }
@@ -583,6 +583,11 @@ PanelWindow {
         return n;
     }
     readonly property int lineSpaces: { let n = 0; for (const c of left.children) if (c.isSpace && c.visible) n++; return n; }
+    // While it's arranged a flexible space is kept wide enough to pick up, however little room
+    // there is: so then the spaces take that much before the title has its room (and
+    // slimming, tried shorter, counts them so: slimOver), or the line runs past its end
+    readonly property real spaceLeast: 26
+    readonly property real spacesLeast: Config.barArranging ? spaceLeast * lineSpaces : 0
     // What the title could have: everything the others don't need, a gap between each two
     readonly property real lineFixed: lineOthers + gap * Math.max(0, lineOthersCount - 1)
     // What each flexible space gets: an equal share of what's left once the title has its own
@@ -791,7 +796,7 @@ PanelWindow {
                 property int index: -1
                 property bool carried: false    // being dragged: off the line till it lands
                 visible: !carried
-                readonly property real len: Math.max(Config.barArranging ? 26 : 0.01, bar.flex)
+                readonly property real len: Math.max(Config.barArranging ? bar.spaceLeast : 0.01, bar.flex)
                 width: bar.vert ? (Config.barArranging ? bar.capsuleHeight : 1) : len
                 height: bar.vert ? len : (Config.barArranging ? bar.capsuleHeight : 1)
                 Rectangle {
@@ -1195,7 +1200,7 @@ PanelWindow {
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
                 // (all it likes while the bar's arranged: the line scrolls then, if it has to)
-                readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed)
+                readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed - bar.spacesLeast)
                 length: (bar.vert ? titleBody.height : titleBody.width) + pad
                 // The title (turned to run down a side bar)
                 Item {
