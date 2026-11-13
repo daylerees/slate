@@ -101,6 +101,69 @@ PanelWindow {
     }
     function closeLauncher() { shown = false; }
 
+    // ---- Test mode: how it opens and scrolls (tests/live/test_launcher_scroll.py) ----------
+    // How long from openLauncher to the end of the first frame after it (ms); then, during a
+    // steady scroll to the bottom (testScroll): the time between frames, the time spent moving
+    // the list each frame (making the rows coming into view), each app row that was drawn in
+    // view with whether its tile was there the first time, and any row drawn out of its place
+    property real testOpenMs: -1
+    property var testFrames: []
+    property var testWork: []
+    property var testSeen: ({})          // row key → its tile was loaded when it first showed
+    property var testMisplaced: ({})     // row key → drawn where another result belongs
+    property real testFrameAt: 0
+    property real testScrollFrom: 0
+    property real testScrollStart: 0
+    property real testScrollMs: 0
+    property bool testScrollEnd: false
+    readonly property bool testScrolling: testScrollMs > 0
+    onShownChanged: if (shown && Config.testMode) { testOpenMs = -1; testFrameAt = 0; }
+    function testScroll(ms) {
+        testFrames = [];
+        testWork = [];
+        testSeen = {};
+        testMisplaced = {};
+        testFrameAt = 0;
+        testScrollFrom = list.contentY;
+        testScrollStart = 0;            // (from its first frame)
+        testScrollEnd = false;
+        testScrollMs = Math.max(1, ms);
+    }
+    function testScrolled() {
+        const seen = Object.keys(testSeen);
+        return { seen: seen.length, ready: seen.filter(k => testSeen[k]).length, misplaced: Object.keys(testMisplaced).length };
+    }
+    FrameAnimation {
+        running: Config.testMode && root.visible && (root.testOpenMs < 0 || root.testScrolling)
+        onTriggered: {
+            const now = Date.now();
+            if (root.testOpenMs < 0) {
+                // (the first tick comes as the first frame starts; the second once it's drawn)
+                if (root.testFrameAt > 0) root.testOpenMs = now - root.openedAt;
+                root.testFrameAt = now;
+                return;
+            }
+            if (root.testFrameAt > 0) root.testFrames.push(now - root.testFrameAt);
+            root.testFrameAt = now;
+            // The rows the frame just drawn showed
+            const kids = list.contentItem.children;
+            for (let i = 0; i < kids.length; i++) {
+                const k = kids[i];
+                if (k.rid === undefined || k.y + k.height <= list.contentY || k.y >= list.contentY + list.height) continue;
+                const at = Math.round((k.y - list.originY) / list.cellHeight) * list.columns + Math.round(k.x / list.cellWidth);
+                if (root.resultKeys[at] !== k.rid) root.testMisplaced[k.rid] = true;
+                if (k.appTile && !(k.rid in root.testSeen)) root.testSeen[k.rid] = k.tileReady;
+            }
+            if (root.testScrollEnd) { root.testScrollMs = 0; return; }
+            if (root.testScrollStart === 0) root.testScrollStart = now;
+            const t = Math.min(1, (now - root.testScrollStart) / root.testScrollMs);
+            const before = Date.now();
+            list.contentY = root.testScrollFrom + (list.originY + Math.max(0, list.contentHeight - list.height) - root.testScrollFrom) * t;
+            root.testWork.push(Date.now() - before);
+            root.testScrollEnd = t >= 1;
+        }
+    }
+
     IpcHandler {
         target: "launcher"
         function toggle(): void { if (root.shown) root.closeLauncher(); else root.openLauncher(); }
@@ -311,7 +374,20 @@ PanelWindow {
     onResultKeysChanged: syncResults()
     onGridModeChanged: { resultModel.clear(); syncResults(); }     // a layout's rows are made for it
     function syncResults() {
-        const keys = resultKeys, wanted = new Set(keys);
+        const keys = resultKeys;
+        // Closed, the rows are simply made again in order. The apps arrive in several goes as
+        // Slate starts, and the list, handed all those inserts and moves while it wasn't being
+        // drawn, laid its rows out wrongly the first time it opened: rows were skipped and the
+        // rest sat out of place, so the first scroll down jumped (tests/live/test_launcher_scroll.py)
+        if (!root.visible) {
+            resultModel.clear();
+            if (keys.length) resultModel.append(keys.map(k => ({ rid: k })));
+            syncedQuery = search.text;
+            list.currentIndex = 0;
+            list.positionViewAtBeginning();
+            return;
+        }
+        const wanted = new Set(keys);
         for (let i = resultModel.count - 1; i >= 0; i--)
             if (!wanted.has(resultModel.get(i).rid)) resultModel.remove(i);
         for (let i = 0; i < keys.length; i++) {
@@ -1011,6 +1087,7 @@ PanelWindow {
                 readonly property int fadeMs: root.slideHighlight ? root.moveMs : 0
                 property int version: 0
                 property string tried: ""          // drawn once per icon file (a new icon style is a new file)
+                readonly property bool tileReady: tile.status === Image.Ready     // (the test hook's state)
                 width: list.cellWidth
                 height: list.cellHeight
 
@@ -1062,8 +1139,12 @@ PanelWindow {
                     visible: row.setting && !!row.modelData.app
                     anchors.fill: tile
                     source: visible ? "file://" + Quickshell.shellPath("assets/icon/settings-128.png") : ""
-                    sourceSize: Qt.size(128, 128)
-                    smooth: true; mipmap: true
+                    // Shrunk once to the size it's drawn at, rather than mipmapped: drawing it
+                    // mipmapped held up a frame the first time it scrolled into view, at the
+                    // bottom of the list (tests/live/test_launcher_scroll.py)
+                    readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
+                    sourceSize: width > 0 ? Qt.size(Math.ceil(width * dpr), Math.ceil(height * dpr)) : Qt.size(128, 128)
+                    smooth: true
                 }
                 // Settings / session action tile: an icon glyph
                 Rectangle {
