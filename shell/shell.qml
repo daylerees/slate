@@ -94,7 +94,9 @@ ShellRoot {
     Bar { id: topBar; screen: Config.primaryScreen; popouts: popouts; notifs: notifs }
     Variants {
         model: Quickshell.screens.filter(s => s !== Config.primaryScreen)
-        Bar { required property var modelData; screen: modelData; primary: false; popouts: popouts; notifs: notifs }
+        // (topBar's: inside the Bar, plain `popouts` and `notifs` are its own empty properties,
+        // so the bars on other screens had no panels and no notifications)
+        Bar { required property var modelData; screen: modelData; primary: false; popouts: topBar.popouts; notifs: topBar.notifs }
     }
     Popouts { id: popouts; bar: topBar; notifs: notifs; powerConfirm: powerConfirm; dock: win }
     PowerConfirm { id: powerConfirm }

@@ -161,12 +161,6 @@ class TwoScreens(TwoScreensCase):
                 self.open_panel(panel, SECOND)
                 self.close_panel()
 
-    # Known issue: the bars on screens other than the main display are made in shell.qml's
-    # Variants with `popouts: popouts; notifs: notifs`, and inside that delegate the names
-    # find the Bar's own (empty) properties before shell.qml's ids: those bars have no panels
-    # and no notifications. Their buttons open nothing, and asked by name the panel stays shut
-    # (popout "", still on the main display's screen). Take this off when it's fixed
-    @unittest.expectedFailure
     def test_panels_from_another_screens_bar(self):
         """A panel asked for from the bar of a screen that isn't the main display opens there;
         asked for again from the other screen's bar, it moves over and stays open."""
@@ -176,8 +170,6 @@ class TwoScreens(TwoScreensCase):
         self.open_panel("control", OUTPUT)
         self.close_panel()
 
-    # Known issue: the same as above (that screen's bar has no notifications to count)
-    @unittest.expectedFailure
     def test_unread_count_on_every_bar(self):
         """Every screen's bar shows the unread count beside its bell."""
         self.addCleanup(lambda: self.ipc("notifications", "clear"))
