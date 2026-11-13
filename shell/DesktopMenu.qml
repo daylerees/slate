@@ -20,6 +20,8 @@
 //                     there's no room), and it closes with the menu. Pointing at another item
 //                     closes it again, after a moment, so the pointer can cross to it
 //   extra: a Component shown above the items (the dock's Downloads grid); menuWidth: wider for it
+//   lifted: something carried out of it (an app dragged from the dock's More onto the dock): its
+//           cards fade away, but it stays open, keeping the pointer, until it's let go
 
 import QtQuick
 import Quickshell
@@ -30,6 +32,7 @@ PanelWindow {
     property var items: []
     property Component extra: null
     property real menuWidth: 230
+    property bool lifted: false
 
     // Where it points, and from which of its sides
     property real atX: 0
@@ -109,12 +112,12 @@ PanelWindow {
     }
 
     function openFrom(x, y, side, off) {
-        subIndex = -1; subWanted = -1; hot = -1; subHot = -1; inSub = false;
+        subIndex = -1; subWanted = -1; hot = -1; subHot = -1; inSub = false; lifted = false;
         atX = x; atY = y; edge = side || "top"; gap = off || 0;
         visible = true;
     }
     function openAt(x, y) { openFrom(x, y, "top", 10); }
-    function close() { visible = false; subIndex = -1; subWanted = -1; hot = -1; subHot = -1; subWait.stop(); }
+    function close() { visible = false; lifted = false; subIndex = -1; subWanted = -1; hot = -1; subHot = -1; subWait.stop(); }
     // The pointer on an item: its submenu (or none) wanted; opening one when none shows is
     // quick, changing or closing one waits a little longer
     // (the submenu moves beside its item as it changes, not before: moved at once, the one
@@ -170,6 +173,10 @@ PanelWindow {
         height: col.implicitHeight + 16
         radius: Config.corner(12)
         color: dm.bgColor
+        // (faded away, not hidden, while something's carried out of it: hidden, what it was
+        // pressed on would let go of the pointer)
+        opacity: dm.lifted ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
         // (its pointer, if it has one: part of its shape, for the shadow; centre and side)
         property point pointAt: Qt.point(0, 0)
         property real pointSize: 0

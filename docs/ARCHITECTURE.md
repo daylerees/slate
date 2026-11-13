@@ -249,7 +249,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge); only with `SLATE_TEST=1`, for the test suite |
+| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockMoreDrag <app> <slot> <up>` and `dockMoreDrop` (the same for an app dragged out of More's grid, open with `dock more`), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 
