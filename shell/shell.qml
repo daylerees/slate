@@ -388,6 +388,7 @@ ShellRoot {
                 tray: SystemTray.items.values.map(i => i.id),
                 gameMode: Config.gameMode,
                 titleBar: Config.titleBarOn, titleBarAway: Config.titleBarAway,
+                titleBarLooks: Config.titleBarLooks, titleBarSeen: Config.titleBarSeen,
                 titleBars: Config.slateTitleBars ? "slate" : "hyprbars", titleBarStyle: Config.s.titleBarStyle,
                 hyprbars: Config.hyprbarsState, hyprbarsFallback: Config.hyprbarsFallback,
                 system: Config.system,

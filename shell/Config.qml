@@ -1826,6 +1826,10 @@ Singleton {
     function checkTitleBars() { hyprbarsCheck(); }
     property string titleBarOn: ""          // the window Slate's title bar is showing on (its address; for the tests)
     property bool titleBarAway: false       // ...and it's stepped away while the window's moved by something else (tests)
+    // (test mode only) how many times the title bar has looked at the windows, and the window in
+    // front as it last saw it ("address,x,y,w,h"): tests wait for Slate to have caught up
+    property int titleBarLooks: 0
+    property string titleBarSeen: ""
     // Floating windows with Slate's own title bars: a window takes focus when it's clicked, not
     // when the pointer passes over it (focus moving on its own would leave the bar on a window
     // that isn't the one you're using). Overrides the setting without changing it; when it
