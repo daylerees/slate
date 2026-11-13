@@ -987,6 +987,9 @@ Singleton {
                 const o = Object.assign({}, root.specialOpen);
                 o[event.data.slice(i + 1)] = event.data.slice(0, i);
                 root.specialOpen = o;
+                // (and the windows read again: a window closed as its secret workspace was put
+                // away could stay in Quickshell's list, and the note never said it was empty)
+                if (event.data.slice(0, i) !== "") Hyprland.refreshToplevels();
                 break;
             }
             case "destroyworkspacev2": {         // a workspace is gone ("id,name"): so is its name
