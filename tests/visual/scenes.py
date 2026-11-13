@@ -5,11 +5,12 @@ a check (on the "test" IPC's state) that it's there, and what to undo afterwards
         "settings": {key: value},        # set first (put back afterwards)
         "do": [(target, function, *args), …],    # or ("!command", *args), run in the session,
                                          # or ("&command", *args), left running in the session
-                                         # until the scene ends (stopped before "undo"),
+                                         # until the scene ends (see "undo"),
                                          # or lambda st: … to wait for something between steps
         "wait": lambda st: …,            # true once the scene is on screen
         "settle": seconds,               # extra time for images and loaders (default 0.8)
-        "undo": [(target, function, *args), …],  # ("!command" and lambda st: … too, as in "do")
+        "undo": [(target, function, *args), …],  # and "!command"s; then the "&" commands are
+                                         # stopped, then its lambda st: … waits (what they showed gone)
         "mask": [(x, y, w, h), …],       # parts that change by themselves, left out of the comparison
     }
 
@@ -305,6 +306,51 @@ SCENES["dock-media"] = {
             "--art", os.path.join(slate.FIXTURES, "live", "album-art.png"))],
     "wait": lambda st: st["dock"]["media"], "settle": 1.5,
     "undo": [lambda st: not st["dock"]["media"]],
+}
+
+# The window switcher and the overview with windows in them: terminals whose contents never
+# change (a fixed text, the cursor hidden, no prompt), two on workspace 1 and one on workspace 2,
+# opened one after another so the most recently used order is always the same. They're the
+# scene's own ("&"), so they close as it ends
+_STILL = [
+    ("Shopping list", "Shopping list\n\n  - oat milk\n  - two lemons\n  - bread\n  - basil\n"),
+    ("Notes", "Notes\n\n  Call the garage about the MOT.\n  Book the train for Friday.\n"),
+    ("Packing", "Packing\n\n  [x] passport\n  [x] chargers\n  [ ] walking boots\n"),
+]
+
+
+def _still_window(title, text):
+    # (\033[?25l hides the cursor; nothing runs after the text, so it stays as it is)
+    return ("&foot", "--title", title, "sh", "-c", "printf '\\033[?25l%s' \"$0\"; exec sleep infinity", text)
+
+
+def _on(title, ws):
+    return lambda st: any(w["title"] == title and w["workspace"] == ws for w in st["windows"])
+
+
+def _to_workspace(ws):
+    return [("!hyprctl", "dispatch", "function() instantTo(hl.dsp.focus({ workspace = %d })) end" % ws),
+            lambda st: st["overview"]["focused"] == ws]
+
+
+# (and the empty workspace Slate keeps after the last one in use, Settings → Workspaces, made a
+# moment after the window on workspace 2 opens: workspace 3, a third dot)
+_STILL_OPEN = (_to_workspace(1)
+               + [_still_window(*_STILL[0]), _on(_STILL[0][0], 1), _still_window(*_STILL[1]), _on(_STILL[1][0], 1)]
+               + _to_workspace(2) + [_still_window(*_STILL[2]), _on(_STILL[2][0], 2)]
+               + _to_workspace(1) + [lambda st: st["bars"][0]["dots"]["count"] == 3])
+# (closed, and back to the one workspace: the spare is workspace 1 again)
+_STILL_GONE = lambda st: not any(w["title"] in [t for t, _ in _STILL] for w in st["windows"]) \
+    and st["bars"][0]["dots"]["count"] == 1
+SCENES["switcher-windows"] = {
+    "do": _STILL_OPEN + [("switcher", "next")],
+    "wait": lambda st: st["switcher"]["open"] and st["switcher"]["windows"] == 3 and st["switcher"]["previews"] == 3,
+    "settle": 1.5, "undo": [("switcher", "cancel"), _STILL_GONE],
+}
+SCENES["overview-windows"] = {
+    "do": _STILL_OPEN + [("overview", "open")],
+    "wait": lambda st: st["overview"]["open"] and st["overview"]["workspaces"] == [1, 2, 3] and st["overview"]["previews"] == 3,
+    "settle": 1.5, "undo": [("overview", "close"), _STILL_GONE],
 }
 
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)

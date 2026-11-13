@@ -133,6 +133,15 @@ PanelWindow {
         }
         return null;
     }
+    // How many of the live captures have a picture yet (the test IPC's state)
+    function previewsReady() {
+        let n = 0;
+        for (let i = 0; i < shotRepeater.count; i++) {
+            const it = shotRepeater.itemAt(i);
+            if (it && it.hasContent) n++;
+        }
+        return n;
+    }
 
     // Holding Shift "lifts" the selected card; arrows then swap it along the row
     property bool shiftHeld: false

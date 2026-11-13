@@ -75,16 +75,9 @@ class Visual(LiveCase):
             self.s.settle(scene.get("settle", 0.8))
             return self.s.screenshot(os.path.join(OUT, name + ".actual.png"))
         finally:
-            # (stopped before the undo steps, so they can wait for what it showed to go)
-            for p in background:
-                p.terminate()
-                try:
-                    p.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    p.kill()
-            for step in scene.get("undo", []):
-                if callable(step):                   # a wait, as in "do"
-                    self.wait(step, f"the {name} scene to be undone")
+            undo = scene.get("undo", [])
+            for step in undo:
+                if callable(step):
                     continue
                 try:
                     if step[0].startswith("!"):
@@ -93,6 +86,17 @@ class Visual(LiveCase):
                         self.ipc(*step)
                 except SessionError:
                     pass
+            # Then what the scene left running is stopped, and the undo's waits (what it showed
+            # gone) come last
+            for p in background:
+                p.terminate()
+                try:
+                    p.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+            for step in undo:
+                if callable(step):
+                    self.wait(step, f"the {name} scene to be undone")
             for k, v in old.items():
                 self.ipc("config", "set", k, v)
             if old:
