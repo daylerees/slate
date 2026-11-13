@@ -3,10 +3,13 @@
 track playing, so the dock and the control centre have something to show (the test session
 has no real player). Runs until it's stopped.
 
-    fake_mpris.py [--title T] [--artist A] [--paused]
+    fake_mpris.py [--title T] [--artist A] [--paused] [--art FILE] [--still]
 
-Prints "ready" once its name is on the bus."""
+--art gives the track a cover (a picture file); --still keeps its position where it is
+(a Rate of 0, so nothing works out that time has passed), for a screenshot that's the same
+every time. Prints "ready" once its name is on the bus."""
 import argparse
+import os
 import sys
 
 from gi.repository import Gio, GLib
@@ -61,6 +64,8 @@ def main():
     ap.add_argument("--title", default="Slow Tide")
     ap.add_argument("--artist", default="The Quiet Hours")
     ap.add_argument("--paused", action="store_true")
+    ap.add_argument("--art", help="a picture file for the track's cover")
+    ap.add_argument("--still", action="store_true", help="the position doesn't move (Rate 0)")
     args = ap.parse_args()
 
     state = {"status": "Paused" if args.paused else "Playing"}
@@ -71,6 +76,9 @@ def main():
         "xesam:artist": GLib.Variant("as", [args.artist]),
         "xesam:album": GLib.Variant("s", "Test Pressing"),
     }
+    if args.art:
+        metadata["mpris:artUrl"] = GLib.Variant("s", "file://" + os.path.abspath(args.art))
+    rate = 0.0 if args.still else 1.0
     props = {
         "org.mpris.MediaPlayer2": {
             "CanQuit": GLib.Variant("b", False), "CanRaise": GLib.Variant("b", False),
@@ -79,9 +87,9 @@ def main():
             "SupportedMimeTypes": GLib.Variant("as", []),
         },
         "org.mpris.MediaPlayer2.Player": {
-            "Rate": GLib.Variant("d", 1.0), "Metadata": GLib.Variant("a{sv}", metadata),
+            "Rate": GLib.Variant("d", rate), "Metadata": GLib.Variant("a{sv}", metadata),
             "Volume": GLib.Variant("d", 1.0), "Position": GLib.Variant("x", 30_000_000),
-            "MinimumRate": GLib.Variant("d", 1.0), "MaximumRate": GLib.Variant("d", 1.0),
+            "MinimumRate": GLib.Variant("d", rate), "MaximumRate": GLib.Variant("d", 1.0),
             "CanGoNext": GLib.Variant("b", True), "CanGoPrevious": GLib.Variant("b", True),
             "CanPlay": GLib.Variant("b", True), "CanPause": GLib.Variant("b", True),
             "CanSeek": GLib.Variant("b", False), "CanControl": GLib.Variant("b", True),

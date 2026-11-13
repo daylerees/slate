@@ -3,6 +3,7 @@ tests/visual/baselines/. On a difference: tests/out/visual/<scene>.actual.png an
 (changes in red). Approve new looks with: tests/run --update-baselines [scene…]"""
 import atexit
 import os
+import subprocess
 import unittest
 
 import imgdiff
@@ -55,6 +56,7 @@ class Visual(LiveCase):
         # when run on its own. Scenes that show one send it themselves
         self.ipc("notifications", "clear")
         self.wait(lambda st: st["notifications"]["toasts"] == 0, "the pop-ups to go")
+        background = []
         try:
             for k, v in scene.get("settings", {}).items():
                 old[k] = self.setting(k)
@@ -64,13 +66,26 @@ class Visual(LiveCase):
                     self.wait(step, f"the {name} scene, part way")
                 elif step[0].startswith("!"):        # a command, in the session (notify-send…)
                     self.s.run([step[0][1:]] + list(step[1:]), check=True)
+                elif step[0].startswith("&"):        # one left running until the scene ends (a pretend player…)
+                    background.append(subprocess.Popen([step[0][1:]] + list(step[1:]), env=self.s.env,
+                                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                 else:
                     self.ipc(*step)
             self.wait(scene["wait"], f"the {name} scene")
             self.s.settle(scene.get("settle", 0.8))
             return self.s.screenshot(os.path.join(OUT, name + ".actual.png"))
         finally:
+            # (stopped before the undo steps, so they can wait for what it showed to go)
+            for p in background:
+                p.terminate()
+                try:
+                    p.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    p.kill()
             for step in scene.get("undo", []):
+                if callable(step):                   # a wait, as in "do"
+                    self.wait(step, f"the {name} scene to be undone")
+                    continue
                 try:
                     if step[0].startswith("!"):
                         self.s.run([step[0][1:]] + list(step[1:]))

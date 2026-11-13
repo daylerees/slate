@@ -4,17 +4,21 @@ a check (on the "test" IPC's state) that it's there, and what to undo afterwards
     "name": {
         "settings": {key: value},        # set first (put back afterwards)
         "do": [(target, function, *args), …],    # or ("!command", *args), run in the session,
+                                         # or ("&command", *args), left running in the session
+                                         # until the scene ends (stopped before "undo"),
                                          # or lambda st: … to wait for something between steps
         "wait": lambda st: …,            # true once the scene is on screen
         "settle": seconds,               # extra time for images and loaders (default 0.8)
-        "undo": [(target, function, *args), …],
+        "undo": [(target, function, *args), …],  # ("!command" and lambda st: … too, as in "do")
         "mask": [(x, y, w, h), …],       # parts that change by themselves, left out of the comparison
     }
 
 Approved screenshots are tests/visual/baselines/<name>.png, made in the container only
 (tests/run --update-baselines [name…]).
 """
+import os
 import re
+import sys
 
 import slate
 
@@ -292,6 +296,16 @@ SCENES["square-panel-control"] = dict(SCENES["panel-control"], settings=_SQUARE)
 SCENES["square-settings-appearance"] = dict(SCENES["settings-appearance"], settings=_SQUARE)
 SCENES["square-launcher"] = dict(SCENES["launcher"], settings=_SQUARE)
 # (before the notification scene below: its pop-up stays for the scenes after it)
+
+# Something playing: the dock's media controls, with the track's cover, Previous / Pause / Next
+# and how far through it is (tests/lib/fake_mpris.py: a fixed cover, and --still so the
+# position doesn't move with the time the scene takes)
+SCENES["dock-media"] = {
+    "do": [("&" + sys.executable, os.path.join(slate.TESTS, "lib", "fake_mpris.py"), "--still",
+            "--art", os.path.join(slate.FIXTURES, "live", "album-art.png"))],
+    "wait": lambda st: st["dock"]["media"], "settle": 1.5,
+    "undo": [lambda st: not st["dock"]["media"]],
+}
 
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)
 SCENES["notification-glass"] = {
