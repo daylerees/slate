@@ -4,6 +4,13 @@ Slate is a desktop shell for Hyprland, built with Quickshell (QML). `shell/` is 
 (installed to `~/.config/slate`), `site/` is the project website, and `docs/` holds the
 install, architecture and session notes. See README.md for the layout.
 
+"The author" below is Slate's author and maintainer, who decides what's built and approves it.
+
+The conventions for Slate's look, the assistant, copy about Slate and shipping are in
+docs/CONVENTIONS.md, and apply to every change:
+
+@docs/CONVENTIONS.md
+
 ## Commits
 
 Every change is committed with a [Conventional Commits](https://www.conventionalcommits.org/)
@@ -123,7 +130,7 @@ you add a window, a helper process or anything that reads a position from Hyprla
 
 - **Tests are written with the change, and run on their own.** As a feature is shaped, lint
   the QML you touched (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple"`),
-  install, reload and check the log, so Dayle can try it; alongside, write or update its tests
+  install, reload and check the log, so the author can try it; alongside, write or update its tests
   (the rules below) and run just those, in the background (`tests/run -q --tier live --filter
   <name>`, a minute or so), fixing what they find before moving on. A change is done when its
   tests are in and passing, and they go in the same commit. Nothing is saved up for later.
@@ -156,7 +163,7 @@ history, `git show d5db9bc^:plans/<name>.md`). Don't recreate it to track work.
 
 Linear structures the work, it doesn't replace the conversation: questions, approvals (asking
 before every screen takeover included), progress and results still happen in the session. When
-something needs Dayle, ask there, not only on the board.
+something needs the author, ask there, not only on the board.
 
 **Linear stays out of the GitHub side.** It's fine that Linear exists, but no issue ids, links
 or titles in commit messages, branch names, PRs, release notes, tags, the changelog, the site,
@@ -168,7 +175,7 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Status | Means |
 |---|---|
 | Backlog | Where new issues go. Claude creates issues here. |
-| Todo | Dayle has prioritised it for Claude. Only Dayle moves things here (one exception below). |
+| Todo | The author has prioritised it for Claude. Only the author moves things here (one exception below). |
 | In Progress | Claude is working on it. Move it when starting, not after. |
 | In Review | Done and committed, not yet released. |
 | Done | Released: move In Review issues here when tagging a release, with the version in the comment. Work with nothing to release (questions, checks, Linear-only tasks) goes straight here. |
@@ -176,18 +183,18 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Duplicate | Same as another issue (comment which, and mark it a duplicate of it). |
 
 - **Every move gets a short comment** saying what happened (what was done, what's left, commit
-  hashes). **Every comment Claude writes starts with `(Claude)`**: the MCP acts as Dayle.
-- The **In Review comment** is Dayle's pre-release checklist: what changed, how to try it, the
+  hashes). **Every comment Claude writes starts with `(Claude)`**: the MCP acts as the author.
+- The **In Review comment** is the author's pre-release checklist: what changed, how to try it, the
   commits, and which tests ran and passed.
-- **Picking up work:** Dayle names the issue. The MCP can't read the board's order, so never guess
-  one: if several are in Todo and none is named, ask. When Dayle says to work through Todo, pick
+- **Picking up work:** the author names the issue. The MCP can't read the board's order, so never guess
+  one: if several are in Todo and none is named, ask. When the author says to work through Todo, pick
   the order yourself (blockers, quick wins, related work together) and pause after each. One
-  issue at a time unless Dayle says otherwise (suggesting parallel work is fine).
+  issue at a time unless the author says otherwise (suggesting parallel work is fine).
 - **"Watch Linear"** means poll Todo for new work and pick it up (/loop, self-paced). Otherwise
   only look at Linear when asked.
 - **Relations** (blocks, related, duplicate) are Claude's call. Don't start an issue blocked by an
   unfinished one.
-- **The `Blocked` label** means a problem stops progress (needs Dayle's decision, can't
+- **The `Blocked` label** means a problem stops progress (needs the author's decision, can't
   reproduce, something outside Slate broken, a manual step like `sudo modprobe vkms`). Add it,
   leave the issue in its column, comment what's needed; remove it with a comment when sorted,
   and move on to other work meanwhile.
@@ -197,21 +204,21 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 - **Bugs found along the way** get their own issue (Bug, Area, Claude labels, related to the
   current one), not a fix inside the current one. If it breaks things for users (crash, something
   unusable, data or settings lost, a visible glitch on a common path), set its priority, put it
-  straight in Todo, pick it up next and tell Dayle. Anything less goes in Backlog, mentioned in
+  straight in Todo, pick it up next and tell the author. Anything less goes in Backlog, mentioned in
   the session.
 
 ### Issues and labels
 
 - **Descriptions:** Claude's issues have a short plain summary on top (what's wrong or wanted, and
   "Done when: …"), then the implementation detail (files, plan, repro, logs) in a collapsible
-  `+++ Agent notes` … `+++` section (Linear stores it as `>>>`). Dayle's issues are written as
+  `+++ Agent notes` … `+++` section (Linear stores it as `>>>`). The author's issues are written as
   prompts: read them as the brief.
 - **Labels, sparingly:** exactly one **Work** label, every **Area** it really touches, and
   `Claude` on issues Claude creates. Nothing else, and no new labels without asking. Change labels
-  with `addLabels`/`removeLabels`, never `labels` (it replaces the whole set). If Dayle's issue has
+  with `addLabels`/`removeLabels`, never `labels` (it replaces the whole set). If the author's issue has
   no Work label, add the one that fits when picking it up and say so.
 - **Work** (one): `Feature` (new or changed for users), `Bug` (broken), `Experiment`. An
-  experiment never goes into a release without Dayle's approval: it's built on its own branch
+  experiment never goes into a release without the author's approval: it's built on its own branch
   (`experiment/<short-name>`) from master and merged only once approved, kept contained (new
   files or one clearly marked place) with what it touches listed on the issue, and goes to In
   Review with the branch named when it's ready to judge.

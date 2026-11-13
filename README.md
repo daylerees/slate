@@ -51,7 +51,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
 | `tests/` | the test suite: `tests/run` (in Docker, never touches your desktop); see [docs/TESTING.md](docs/TESTING.md) |
 | `.githooks/` | pre-commit checks (the quick tests, and the login screen); turn on with `git config core.hooksPath .githooks` |
-| `docs/` | install, architecture, session, lock/login, testing, redistribution notes |
+| `docs/` | install, architecture, session, lock/login, testing, redistribution notes, conventions |
 
 ## What's in it
 
@@ -93,6 +93,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 - [docs/ASSISTANT.md](docs/ASSISTANT.md) — Slate's MCP server for AI agents: what it means to switch it on, its tools, what Slate asks you first
 - [docs/TESTING.md](docs/TESTING.md) — the test suite: what it checks, running it, approving new screenshots
 - [docs/REDISTRIBUTION.md](docs/REDISTRIBUTION.md) — packaging status and what's left
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — the rules Slate's code and copy follow: colours, corners, animations, game mode, panels, Settings pages, the assistant, dependencies
 
 ## Where things live
 
