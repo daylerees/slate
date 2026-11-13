@@ -352,11 +352,15 @@ ShellRoot {
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
-                switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady() },
+                switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(),
+                            fade: Math.round(winSwitcher.fade * 100) / 100, animate: winSwitcher.animate },
                 // Every window Hyprland has, with where it is
                 windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1 })),
                 overview: { open: wsOverview.shown, screen: wsOverview.screen ? wsOverview.screen.name : "", selected: wsOverview.selected, grid: wsOverview.isGrid,
                             previews: wsOverview.previewsReady(),
+                            fade: Math.round(wsOverview.fade * 100) / 100, animate: wsOverview.animate, strip: Math.round(wsOverview.stripAt() * 10000) / 10000,
+                            // (the workspaces Slate knows of now: the overview shows these as it opens)
+                            known: Hyprland.workspaces.values.filter(w => w.id > 0).map(w => w.id).sort((a, b) => a - b),
                             workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
