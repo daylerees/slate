@@ -89,7 +89,11 @@ class SwitcherAnimations(LiveCase):
                     # A lost switch is retried for a moment after: once that watch is over
                     self.wait(lambda st: not st["overview"]["leaving"] and not st["overview"]["zooming"],
                               "the overview to stop watching for a lost switch", timeout=10)
-                    self.assertNotEqual(self.workspace(), start, "went back to the old workspace")
+                    # ...and for a moment after it, nothing takes it back (kept on purpose: a
+                    # "nothing happens for this long" check, which no state can say is over)
+                    for _ in range(5):
+                        self.assertNotEqual(self.workspace(), start, "went back to the old workspace")
+                        self.s.settle(0.1)
                     self.go_to_workspace(1)
 
     def test_window_switcher_every_move_and_pick(self):
