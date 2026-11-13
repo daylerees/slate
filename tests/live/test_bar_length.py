@@ -75,7 +75,11 @@ class BarLength(LiveCase):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
         at = self.where("wifi")
         self.ipc("test", "arrange", "collapse", str(at), "always", "")
-        self.wait(lambda st: st["bar"]["layout"][at]["collapse"] == "always", "the container set to Always")
+        # (once the bar has made it again as Always, tucked behind its button: made again, a
+        # container starts closed, so one opened before that would close)
+        self.wait(lambda st: st["bar"]["layout"][at]["collapse"] == "always" and not st["bar"]["line"]["wifi"]["visible"],
+                  "the container set to Always, tucked away")
+        self.steady(self.bar, floor=0.3)
         self.ipc("test", "arrange", "open", str(at), "true", "")
         self.wait(lambda st: at in st["bar"]["opened"], "the container opened")
         st = self.squeeze(1400)
