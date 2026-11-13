@@ -29,6 +29,7 @@ JsonAdapter {
     property int welcomeVolume: -1            // logging in (once per session)
     property int goodbyeVolume: -1            // logging out, restarting, shutting down
     property int attentionVolume: -1          // confirmations, password prompts and warnings
+    property int answeredVolume: -1           // Nova's answer arriving while you wait
     // Earlier versions' sound settings: only read to fill in the volumes above
     property bool volumeSound: true
     property bool notificationSound: true

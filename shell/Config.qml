@@ -2202,7 +2202,8 @@ Singleton {
         tick: ["tickVolume", "volumeSound"], notification: ["notificationVolume", "notificationSound"],
         click: ["clickVolume", "clickSound"], swish: ["swishVolume", "swishSound"],
         welcome: ["welcomeVolume", "welcomeSound"], goodbye: ["goodbyeVolume", "goodbyeSound"],
-        attention: ["attentionVolume", ""]       // newer than the switches: on, at the effects volume
+        attention: ["attentionVolume", ""],      // newer than the switches: on, at the effects volume
+        answered: ["answeredVolume", ""]         // (Nova's answer: the same)
     })
     function soundVolume(which) {
         const k = soundSettings[which];
@@ -2211,11 +2212,14 @@ Singleton {
         if (v >= 0) return Math.min(100, v);
         return !k[1] || s[k[1]] ? Math.max(0, Math.min(100, s.soundEffectsVolume)) : 0;
     }
-    // Play sounds/<name>.wav at the volume set for `which` (Settings → Sound)
+    // Play sounds/<name>.wav at the volume set for `which` (Settings → Sound). The tests'
+    // Slate never plays one: it notes the name in testSounds instead (the last 20), for a
+    // test to check what would have played
+    property var testSounds: []
     function playSound(name, which) {
-        if (testMode) return;
         const v = soundVolume(which) / 100;
         if (v <= 0) return;
+        if (testMode) { testSounds = testSounds.concat([name]).slice(-20); return; }
         const e = effect(name);
         if (e) { e.volume = v; e.play(); return; }
         Quickshell.execDetached(["sh", "-c", "pw-play --volume=\"$1\" \"$0\" 2>/dev/null || paplay --volume=\"$2\" \"$0\"",

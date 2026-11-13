@@ -15,6 +15,9 @@
   attention.wav     for confirmations, password prompts and warnings: a soft question, two of
                     the notification's tones stepping up a whole tone (D5, E5), unresolved,
                     the second lifting a touch at its end, about 0.7 s
+  answered.wav      Nova's answer arriving while you wait: a star's glint, one soft, rounded
+                    tone (G5) with a faint shimmer an octave up that twinkles as it fades,
+                    quieter than the notification and settled, not questioning, about 0.4 s
 
 Run it from anywhere; it writes next to the other sounds.
 
@@ -193,6 +196,28 @@ def attention():
     write("attention.wav", out, peak=0.3, tail=0.12)
 
 
+def answered(name="answered.wav", notes=((0.0, 783.99, 1.0),), attack=14, decay=0.12, shimmer=0.22,
+             twinkle=6.0, length=0.42, peak=0.22):
+    # Nova's answer arriving while you wait. Nova is a star, so: a glint. One soft, rounded tone
+    # (G5: lower than the notification, and a single settled note where attention asks with two
+    # rising ones) with a faint shimmer an octave up, two partials `twinkle` Hz either side of
+    # it, so it twinkles gently as it fades. A slower onset than the notification's, so there's
+    # no tap to it, and quiet, so it isn't tiring when it plays several times in a conversation.
+    # (start s, Hz, level) notes; the defaults are the sound itself, the others were tried
+    def tone(t, f):
+        if t < 0:
+            return 0.0
+        w = 2 * math.pi * f * t
+        body = onset(t, attack) * math.exp(-t / decay) * (math.sin(w) + 0.06 * math.sin(2 * w))
+        glint = onset(t, attack * 2) * math.exp(-t / (decay * 0.75)) * 0.5 * (
+            math.sin(2 * math.pi * (2 * f - twinkle) * t) + math.sin(2 * math.pi * (2 * f + twinkle) * t))
+        return body + shimmer * glint
+
+    n = int(RATE * length)
+    out = [sum(lv * tone(i / RATE - st, f) for st, f, lv in notes) for i in range(n)]
+    write(name, out, peak=peak, tail=0.1)
+
+
 if __name__ == "__main__":
     notification()
     click()
@@ -200,3 +225,4 @@ if __name__ == "__main__":
     goodbye()
     swish()
     attention()
+    answered()

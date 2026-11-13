@@ -945,6 +945,7 @@ RANGES = {
     "accentBoldness": (0, 1), "toneBoldness": (0, 1),
     "tickVolume": (0, 100), "notificationVolume": (0, 100), "clickVolume": (0, 100), "swishVolume": (0, 100),
     "welcomeVolume": (0, 100), "goodbyeVolume": (0, 100), "attentionVolume": (0, 100),
+    "answeredVolume": (0, 100),
     "nightLightTemperature": (2500, 6000), "uiScale": (0.75, 1.5), "iconTintStrength": (20, 100),
     "windowBorderSize": (0, 12), "inactiveDim": (0, 80), "keyRepeatDelay": (150, 1000), "keyRepeatRate": (10, 80),
     "mouseSpeed": (-1, 1), "touchpadScrollSpeed": (0.1, 2), "cursorSize": (16, 64),

@@ -78,6 +78,7 @@ kind of moment. Anything new that fits one of these moments uses its sound, the 
 | Moving between workspaces or through a switcher | swish | `Config.swish(step)`, with step < 0 for left/back; nothing when there's only one item, since nothing moves |
 | A notification popping up | notification | handled in `Notifications.qml` |
 | Volume keys | volume-tick | handled in `OSD.qml` |
+| Nova answering while you wait | answered | `Config.playSound("answered", "answered")` in `Assistant.qml`, only with the window showing (away, it's a notification) and not in game mode |
 | Logging in / out, restarting, shutting down | welcome / goodbye | welcome is once per session in `Config.qml`; session actions go through `Config.sessionAction()` so goodbye plays first |
 
 - Always play through `Config.playSound(name, which)` (or the helpers above), never `pw-play`

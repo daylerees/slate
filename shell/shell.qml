@@ -309,6 +309,8 @@ ShellRoot {
             if (st.session !== undefined) nova.session = st.session;      // (the agent's thread, as a past answer left it)
             if (st.agents) { nova.agents = st.agents; nova.looked = true; }
         }
+        // Forget the sounds noted so far (state().sounds: what would have played, Config.testSounds)
+        function sounds(): void { Config.testSounds = []; }
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
@@ -400,6 +402,8 @@ ShellRoot {
                 workspaceNames: Config.workspaceNames,
                 // (the screens where the note saying the secret workspace is empty shows)
                 secretEmpty: Quickshell.screens.filter(s => Config.secretEmpty(s.name)).map(s => s.name),
+                // The sounds that would have played, oldest first (the tests' Slate plays none)
+                sounds: Config.testSounds,
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
                 assistant: { open: nova.shown, working: nova.working, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,

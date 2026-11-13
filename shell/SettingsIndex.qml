@@ -116,6 +116,7 @@ Singleton {
         ["Volume keys sound", "sound", "tick click audio feedback volume"],
         ["Notifications sound", "sound", "chime alert ding audio notifications volume"],
         ["Questions and warnings sound", "sound", "attention alert confirm confirmation password prompt warning critical urgent audio volume"],
+        ["Nova's answer sound", "sound", "nova assistant answer answered reply glint chime audio volume"],
         ["Clicks sound", "sound", "click tap button feedback audio ui volume"],
         ["Switching sound", "sound", "swish whoosh workspace window switcher overview audio volume"],
         ["Welcome sound", "sound", "login startup chime audio session start volume"],

@@ -30,6 +30,10 @@ agent you chose does it through the same tools.
 - **Closing it.** Escape or a click outside hides the window and the work carries on: the
   bar button shows it, and a notification brings the answer when it's done. **Stop** ends it.
   Locking the screen stops it too.
+- **Its sound.** An answer you waited for with the window open plays Nova's own sound, a soft
+  glint (`answered`, Settings → Sound → Nova's answer), once as the whole answer arrives. Not
+  for one back within a second, with the window closed (the notification carries it), for an
+  error or Stop, for the history, or in game mode.
 - **Which agent answers** is in Settings → Assistant → Agent. Claude Code is the
   recommended one: for each prompt Slate switches off its own tools (shell, files, web) and
   every other MCP server, so it works through Slate's alone, and nothing in your own Claude
