@@ -9,6 +9,9 @@ where tests/run passes in the vkms card it renders through (see docs/TESTING.md,
     s.state()                     # the "test" IPC target's JSON
     s.screenshot(path)            # grim, of the TEST output
     s.new_log_errors()            # error lines Slate logged since the last call
+
+    Session(second=(1280, 800))   # two screens: TEST, and TEST2 to its right. A kind of its own
+                                  # (tests/live/test_two_screens.py), so the shared one stays as it is
 """
 import atexit
 import glob
@@ -25,6 +28,8 @@ import slate
 
 WIDTH, HEIGHT = 1440, 900
 OUTPUT = "TEST"
+# A two-screen session's second output: to the right of TEST, their top edges level
+SECOND = "TEST2"
 # The time Slate's clocks show (Config.clockDate, test mode only). Not libfaketime: Quickshell
 # hangs at start with it preloaded
 FAKE_TIME = "2026-01-05T09:41:00"
@@ -90,8 +95,11 @@ class Session:
             raise SessionError("the Slate session died earlier in this run (see tests/out/live/)")
         return cls._shared
 
-    def __init__(self, width=WIDTH, height=HEIGHT, settings=None):
+    def __init__(self, width=WIDTH, height=HEIGHT, settings=None, second=None):
         self.width, self.height = width, height
+        # (width, height) of a second screen, to the right of the first; None: one screen
+        self.second = second
+        self.outputs = [OUTPUT] + ([SECOND] if second else [])
         self.h = slate.ScratchHome()
         # (each part of a parallel run keeps its own logs: tests/out/live/<part>/)
         self.out = os.path.join(slate.OUT, "live", os.environ.get("SLATE_TEST_PART", ""))
@@ -120,14 +128,22 @@ class Session:
                 "QSG_DISTANCEFIELD_ANTIALIASING": "gray"}
         self._write(os.path.join(hypr, "env.lua"),
                     "".join(f'hl.env("{k}", "{v}")\n' for k, v in envs.items() if v))
-        # One headless output, the size under test; the vkms screen itself is switched off
-        # (Virtual-1 here, Virtual-2 on GitHub's runners: every number it might have)
+        # One headless output, the size under test (and a second to its right, when asked for);
+        # the vkms screen itself is switched off (Virtual-1 here, Virtual-2 on GitHub's
+        # runners: every number it might have)
+        monitors = [(OUTPUT, self.width, self.height, "0x0")]
+        if self.second:
+            monitors.append((SECOND, self.second[0], self.second[1], f"{self.width}x0"))
         self._write(os.path.join(hypr, "monitors.lua"),
                     "".join(f'hl.monitor({{ output = "Virtual-{n}", disabled = true }})\n' for n in range(1, 9)) +
-                    f'hl.monitor({{ output = "{OUTPUT}", mode = "{self.width}x{self.height}@60", position = "0x0", scale = 1 }})\n')
+                    "".join(f'hl.monitor({{ output = "{name}", mode = "{w}x{h}@60", position = "{at}", scale = 1 }})\n'
+                            for name, w, h, at in monitors))
+        # (one after the other: made at once, either could come first, and the first is the one
+        # Slate takes as the main display and Hyprland gives workspace 1)
         self._write(os.path.join(hypr, "autostart.lua"),
-                    'hl.on("hyprland.start", function () hl.exec_cmd("hyprctl output create headless '
-                    + OUTPUT + '") end)\n')
+                    'hl.on("hyprland.start", function () hl.exec_cmd("'
+                    + " && ".join(f"hyprctl output create headless {name}" for name in self.outputs)
+                    + '") end)\n')
         # No animations or pointer, so a screenshot is the same every time
         self._write(os.path.join(hypr, "hyprland.lua"),
                     "hl.config({ animations = { enabled = false }, cursor = { invisible = true },\n"
@@ -171,7 +187,8 @@ class Session:
         self.env["WAYLAND_DISPLAY"] = self._until(
             lambda: next((os.path.basename(x) for x in sorted(glob.glob(os.path.join(self.h.runtime, "wayland-*")))
                           if not x.endswith(".lock")), None), 15, "no Wayland socket")
-        self._until(lambda: any(m["name"] == OUTPUT for m in self.monitors()), 20, f"no {OUTPUT} output")
+        self._until(lambda: set(self.outputs) <= {m["name"] for m in self.monitors()}, 20,
+                    f"no {' and '.join(self.outputs)} output")
         self.only_test_output()
         self._until(lambda: os.path.exists(os.path.join(self.h.runtime, "slate-ready")), 90,
                     "Slate didn't load (tests/out/live/slate.log)", on_fail=self.save_logs)
@@ -180,9 +197,9 @@ class Session:
         self.startup_errors = self.new_log_errors()
 
     def only_test_output(self):
-        """Switch off every output but the test one (on CI the vkms screen comes up too)."""
+        """Switch off every output but the test ones (on CI the vkms screen comes up too)."""
         for m in self.monitors():
-            if m["name"] != OUTPUT:
+            if m["name"] not in self.outputs:
                 self.hyprctl("eval", f'hl.monitor({{ output = "{m["name"]}", disabled = true }})')
 
     def _session_bus(self):
@@ -273,9 +290,9 @@ class Session:
             except SessionError:
                 pass
 
-    def screenshot(self, path):
+    def screenshot(self, path, output=OUTPUT):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        self.run(["grim", "-o", OUTPUT, path], check=True)
+        self.run(["grim", "-o", output, path], check=True)
         return path
 
     # ---- the log ------------------------------------------------------------------------
