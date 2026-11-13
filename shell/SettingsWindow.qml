@@ -3528,7 +3528,7 @@ FloatingWindow {
                 Separator {}
                 SoundSetting {
                     label: "Nova's answer"
-                    detail: "A soft glint when an answer arrives while Nova's window is open (if you've closed it, a notification tells you instead)"
+                    detail: "A soft, warm tone when an answer arrives while Nova's window is open (if you've closed it, a notification tells you instead)"
                     which: "answered"; sample: "answered"
                 }
                 Separator {}

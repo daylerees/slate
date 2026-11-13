@@ -31,7 +31,7 @@ agent you chose does it through the same tools.
   bar button shows it, and a notification brings the answer when it's done. **Stop** ends it.
   Locking the screen stops it too.
 - **Its sound.** An answer you waited for with the window open plays Nova's own sound, a soft
-  glint (`answered`, Settings → Sound → Nova's answer), once as the whole answer arrives. Not
+  bloom (`answered`, Settings → Sound → Nova's answer), once as the whole answer arrives. Not
   for one back within a second, with the window closed (the notification carries it), for an
   error or Stop, for the history, or in game mode.
 - **Which agent answers** is in Settings → Assistant → Agent. Claude Code is the

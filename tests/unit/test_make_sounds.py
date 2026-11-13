@@ -61,7 +61,7 @@ class MakeSounds(Case):
     def test_novas_answer(self):
         fmt, s = samples(os.path.join(self.dir, "answered.wav"))
         self.assertEqual(fmt, (1, 2, 48000))
-        self.assertLess(len(s) / 48000, 0.6, "longer than a short glint")
+        self.assertLess(len(s) / 48000, 0.6, "longer than a short, soft tone")
         self.assertEqual((s[0], s[-1]), (0, 0), "doesn't start and end at silence")
         # A rounded onset: nothing close to full in the first few milliseconds
         top = max(abs(x) for x in s)
