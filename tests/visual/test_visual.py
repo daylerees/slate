@@ -60,7 +60,9 @@ class Visual(LiveCase):
                 old[k] = self.setting(k)
                 self.ipc("config", "set", k, v)
             for step in scene.get("do", []):
-                if step[0].startswith("!"):          # a command, in the session (notify-send…)
+                if callable(step):                   # a wait between steps, on the state
+                    self.wait(step, f"the {name} scene, part way")
+                elif step[0].startswith("!"):        # a command, in the session (notify-send…)
                     self.s.run([step[0][1:]] + list(step[1:]), check=True)
                 else:
                     self.ipc(*step)

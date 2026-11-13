@@ -234,7 +234,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight`, `launch <desktop-id>` (an app only; answers `ok` or `unknown`) |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
 | `overview` | `open`, `close`, `toggle`, `next`, `prev`, `go`, `moveLeft`, `moveRight`, `hold <bool>` |
-| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `preview <app>`, `closePreview` |
+| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `more` (More's grid, when apps don't fit), `preview <app>`, `closePreview` |
 | `settings` | `toggle`, `open`, `close`, `page <id>` |
 | `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right), `volumeGet` (JSON), `volumeSet <0-100>`, `brightnessSet <1-100>` |
 | `lock` | `lock`, `preview <lock\|login>`, `closePreview` |
@@ -249,7 +249,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go); only with `SLATE_TEST=1`, for the test suite |
+| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 

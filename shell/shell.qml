@@ -173,6 +173,9 @@ ShellRoot {
         function controlSwitches(ids: string): void { Config.s.controlSwitches = ids === "" ? [] : ids.split(","); }
         function pressSwitch(id: string): void { popouts.pressSwitchAsked(id); }
         function newSpace(): void { popouts.newSpaceAsked(); }
+        // Less room for the dock's things than its edge has (px; 0: the whole edge), to fill it
+        // with a few windows rather than dozens
+        function dockRoom(px: real): void { win.testRoom = px; }
         function switchMissing(ids: string): void { Config.controlSwitchMissing = ids === "" ? [] : ids.split(","); }
         // Hardware the tests' computer hasn't got, pretended there or not: what = "wifi" or "audio"
         function hardware(what: string, on: bool): void {
@@ -331,9 +334,11 @@ ShellRoot {
                     slots: win.slots.map(x => x.kind === "app"
                         ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
                         : { kind: x.kind }),
-                    menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : "other") : "",
+                    menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : appMenu.app && appMenu.app.moreGrid ? "more" : "other") : "",
                     preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
-                    base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.stripLength),
+                    base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.roomLength),
+                    more: win.moreItems.map(it => it.key), mediaCompact: win.foldPlan.compact,
+                    moreOpen: appMenu.visible && !!appMenu.app && !!appMenu.app.moreGrid,
                     hoverEffect: win.hoverEffect,
                     fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
                     glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
@@ -823,7 +828,7 @@ ShellRoot {
             return n;
         }
         readonly property real base: Math.max(16, Math.min(Config.s.dockIconSize,
-            (stripLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)))
+            (roomLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)))
         // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
         // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
         // magnify ("glowmagnify"), or none
@@ -933,6 +938,10 @@ ShellRoot {
         implicitHeight: vertical ? 0 : thickness
         implicitWidth: vertical ? thickness : 0
         readonly property real stripLength: vertical ? height : width
+        // The room the dock's things have to fit in: the edge's length, or less in tests
+        // (test dockRoom), so a few windows are enough to see what happens when it's full
+        property real testRoom: 0
+        readonly property real roomLength: testRoom > 0 ? Math.min(testRoom, stripLength) : stripLength
         // strip coordinates → window coordinates
         readonly property matrix4x4 stripMatrix: {
             const T = thickness;
@@ -1012,28 +1021,75 @@ ShellRoot {
         // The Apps button, what's playing (while something is) and a divider, the pinned apps, a
         // divider, the other running apps, a divider, Downloads and the Waste Basket. Each slot knows its
         // place (at); everything that finds or places one goes through this list
-        readonly property var slots: {
+        readonly property var slots: slotsFor(foldPlan.folded)
+        // The slots with the apps named in `folded` (keys) gathered into More, after the other apps
+        function slotsFor(folded) {
             const s = [];
             const add = o => { o.at = s.length; s.push(o); };
             if (Config.s.dockShowLauncher) add({ kind: "launcher" });
             if (mediaShown) add({ kind: "media" });
             const dividers = Config.s.dockDivider;
-            // after the Apps button and what's playing (while either is there)
-            if (dividers && s.length > 0 && items.some(it => it.key !== dragKey)) add({ kind: "divider" });
             // (the app being dragged is held by the pointer, not in the dock, until it's let go)
-            const shown = items.filter(it => it.key !== dragKey);
+            const all = items.filter(it => it.key !== dragKey);
+            const away = new Set(folded);
+            const shown = all.filter(it => !away.has(it.key));
+            const more = all.filter(it => away.has(it.key));
+            // after the Apps button and what's playing (while either is there)
+            if (dividers && s.length > 0 && all.length > 0) add({ kind: "divider" });
             shown.forEach((it, i) => {
                 // between the pinned apps and the others (when there are both)
                 if (dividers && i > 0 && !it.pinned && shown[i - 1].pinned) add({ kind: "divider" });
                 add({ kind: "app", item: it });
             });
-            if (dividers && items.some(it => it.key !== dragKey) && (downloadsShown || trashShown)) add({ kind: "divider" });
+            if (more.length > 0) add({ kind: "more", items: more });
+            if (dividers && all.length > 0 && (downloadsShown || trashShown)) add({ kind: "divider" });
             if (downloadsShown) add({ kind: "downloads" });
             if (trashShown) add({ kind: "trash" });
             return s;
         }
+
+        // ---- When the dock doesn't fit (plans/dock-overflow.md) -----------------------
+        // The icons shrink to fit the edge (base), but no smaller than foldFloor: 24 px, the
+        // smallest a thing you click should be (WCAG 2.2, 2.5.8), or your own size if that's
+        // smaller. Past that, things fold away, least wanted first, until it fits: what's
+        // playing goes to one icon, then the apps you haven't pinned go into More (the oldest
+        // first: the dock lists them in the order they opened), and only then, as a last
+        // resort, your pinned apps (the first pinned first). The Apps button, Downloads and the
+        // Waste Basket stay. Worked out from the apps and the room, never from base or slots
+        readonly property real foldFloor: Math.min(24, Config.s.dockIconSize)
+        function iconsIn(list, compact) {
+            let n = 0;
+            for (const o of list) n += o.kind === "media" ? (vertical || compact ? 1 : mediaArt ? 3.2 : 2.4) : o.kind === "divider" ? dividerWide : 1;
+            return n;
+        }
+        function sizeFor(list, compact) {
+            return (roomLength - 48 - padding * 2 - (list.length - 1) * spacing) / Math.max(1, iconsIn(list, compact));
+        }
+        readonly property var foldPlan: {
+            if (roomLength <= 0) return { compact: false, folded: [] };
+            const fits = (compact, folded) => sizeFor(slotsFor(folded), compact) >= foldFloor;
+            if (fits(false, [])) return { compact: false, folded: [] };
+            const compact = mediaShown && !vertical;
+            if (fits(compact, [])) return { compact: compact, folded: [] };
+            const all = items.filter(it => it.key !== dragKey);
+            const order = all.filter(it => !it.pinned).concat(all.filter(it => it.pinned));
+            const folded = [];
+            for (const it of order) {
+                folded.push(it.key);
+                if (fits(compact, folded)) break;
+            }
+            return { compact: compact, folded: folded };
+        }
+        readonly property var moreItems: { const m = slots.find(o => o.kind === "more"); return m ? m.items : []; }
+        readonly property int moreIndex: indexOfKind("more")
+        // More's badge: the folded apps' counts added up ("!" if any asks for attention)
+        readonly property var moreBadge: {
+            let count = 0, urgent = false;
+            for (const it of moreItems) { const b = badgeFor(it); count += b.count; urgent = urgent || b.urgent; }
+            return { count: count, progress: -1, urgent: urgent };
+        }
         // The slots drawn by the apps' Repeater: the apps and the dividers between them
-        readonly property var middleSlots: slots.filter(x => x.kind === "app" || x.kind === "divider")
+        readonly property var middleSlots: slots.filter(x => x.kind === "app" || x.kind === "divider" || x.kind === "more")
         function slotAt(i) { return i >= 0 && i < slots.length ? slots[i] : null; }
         function indexOfKind(kind) { const x = slots.find(o => o.kind === kind); return x ? x.at : -1; }
         readonly property int count: slots.length
@@ -1135,7 +1191,8 @@ ShellRoot {
         // and the controls beside it; on a side dock, one icon (the controls show over the art
         // under the pointer), as a wide tile doesn't fit there
         readonly property bool mediaArt: Config.s.dockMediaArt     // Settings → Dock → Album art
-        readonly property real mediaWide: vertical ? 1 : mediaArt ? 3.2 : 2.4
+        // (one icon, too, when the dock is too long for the edge: foldPlan)
+        readonly property real mediaWide: vertical || foldPlan.compact ? 1 : mediaArt ? 3.2 : 2.4
         // Where the track is (for the progress bar): players don't announce it as it moves, so
         // it's asked for each second while the bar can be seen
         Timer {
@@ -1369,6 +1426,12 @@ ShellRoot {
                 if (!win.downloadsShown) return;
                 const i = win.downloadsIndex;
                 appMenu.openFor({ downloadsGrid: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
+            }
+            // More's grid (the apps that don't fit), as clicking it does:  slate ipc call dock more
+            function more(): void {
+                const i = win.moreIndex;
+                if (i < 0) return;
+                appMenu.openFor({ moreGrid: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
             }
         }
 
@@ -1813,9 +1876,10 @@ ShellRoot {
             // rows as the menu's items, and Downloads' grid above them
             items: rows.map(r => r.kind === "sep" ? { separator: true }
                 : { label: r.label, danger: !!r.danger, active: !!r.active, run: () => appMenu.run(r) })
-            menuWidth: app && app.downloadsGrid ? 4 * 88 + 16 : 240
-            extra: app && app.downloadsGrid ? downloadsGrid : null
+            menuWidth: app && (app.downloadsGrid || app.moreGrid) ? 4 * 88 + 16 : 240
+            extra: app && app.downloadsGrid ? downloadsGrid : app && app.moreGrid ? moreGrid : null
             property var app: null
+            property real alongX: 0     // where it was opened from along the dock (strip coordinates)
             property real menuX: 0      // just inside the dock's inner edge, by the icon (screen coordinates)
             property real menuY: 0
             readonly property var entry: app ? app.entry : null
@@ -1825,6 +1889,7 @@ ShellRoot {
             // x: the icon's centre along the dock (strip coordinates)
             function openFor(a, x) {
                 app = a;
+                alongX = x;
                 const p = win.menuPoint(x);
                 menuX = p.x; menuY = p.y;
                 openFrom(p.x, p.y, win.edge, 0);
@@ -1848,6 +1913,7 @@ ShellRoot {
                     }
                     return r;
                 }
+                if (app.moreGrid) return r;                  // (the grid is all there is)
                 if (app.downloadsGrid || app.downloadsMenu) {
                     r.push({ label: "Open Downloads", kind: "downloads-open" });
                     return r;
@@ -1921,6 +1987,95 @@ ShellRoot {
                 }
                 closeMenu();
             }
+            // More: the apps that don't fit on the dock (win.foldPlan), four across as Downloads'
+            // grid is, three rows and then it scrolls. Click one to go to it (or start it), as on
+            // the dock; right-click for its own menu (Pin, Quit and the rest)
+            Component {
+                id: moreGrid
+                Flickable {
+                    id: moreScroll
+                    width: appMenu.menuWidth - 16
+                    height: Math.min(moreGridItems.height, 3 * 92)
+                    contentHeight: moreGridItems.height
+                    interactive: contentHeight > height
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    SmoothWheel { flick: moreScroll }
+                    ScrollShade { z: 3; y: moreScroll.contentY; width: moreScroll.width; cornerRadius: 8; distance: moreScroll.contentY }
+                    ScrollShade { z: 3; atBottom: true; y: moreScroll.contentY + moreScroll.height - height; width: moreScroll.width; cornerRadius: 8
+                                  distance: moreScroll.contentHeight - moreScroll.height - moreScroll.contentY }
+                    ThinScrollbar { z: 3; flick: moreScroll; color: win.textColor; x: moreScroll.width - width; y: moreScroll.contentY; height: moreScroll.height }
+                    Grid {
+                        id: moreGridItems
+                        columns: 4
+                        Repeater {
+                            model: win.moreItems
+                            delegate: Item {
+                                id: moreApp
+                                required property var modelData
+                                width: 88; height: 92
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: Config.corner(8)
+                                    color: moreHover.hovered ? Config.hover : "transparent"
+                                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                }
+                                AppTile {
+                                    id: moreIcon
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    y: 8; width: 52; height: 52
+                                    app: moreApp.modelData.key
+                                }
+                                // Its count, as on the dock
+                                Rectangle {
+                                    readonly property var badge: win.badgeFor(moreApp.modelData)
+                                    readonly property string text: badge.count > 99 ? "99+" : badge.count > 0 ? String(badge.count) : badge.urgent ? "!" : ""
+                                    visible: text !== ""
+                                    height: 18; width: Math.max(height, moreAppBadge.implicitWidth + 9)
+                                    radius: Config.corner(height / 2)
+                                    x: moreIcon.x + moreIcon.width - width * 0.75; y: moreIcon.y - height * 0.25
+                                    color: win.activeDotColor
+                                    Text {
+                                        id: moreAppBadge
+                                        anchors.centerIn: parent
+                                        text: parent.text
+                                        color: Config.tint("#12151a")
+                                        font.family: Config.s.fontFamily; font.weight: Font.DemiBold; font.pixelSize: 11
+                                    }
+                                }
+                                Text {
+                                    id: moreName
+                                    anchors { top: moreIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: moreApp.modelData.entry?.name ?? moreApp.modelData.key
+                                    elide: Text.ElideRight
+                                    color: win.textColor
+                                    font.family: Config.s.fontFamily; font.pixelSize: 11
+                                }
+                                // Running: the dock's short bar under the name (the accent for the one you're in)
+                                Rectangle {
+                                    readonly property bool focusedApp: moreApp.modelData.windows.some(w => w.activated)
+                                    visible: moreApp.modelData.windows.length > 0
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    y: parent.height - 6
+                                    width: 12; height: 3; radius: Config.corner(1.5)
+                                    color: focusedApp ? win.activeDotColor : win.dotColor
+                                }
+                                HoverHandler { id: moreHover }
+                                ClickTap {
+                                    hand: false
+                                    onTapped: { const it = moreApp.modelData; appMenu.closeMenu(); win.openApp(it); }
+                                }
+                                ClickTap {
+                                    hand: false
+                                    acceptedButtons: Qt.RightButton
+                                    onTapped: { const it = moreApp.modelData, x = appMenu.alongX; appMenu.closeMenu(); appMenu.openFor(it, x); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Component {
                 id: downloadsGrid
                 Column {
@@ -1946,6 +2101,10 @@ ShellRoot {
                         boundsBehavior: Flickable.StopAtBounds
                         clip: true
                         SmoothWheel { flick: dlScroll }
+                        ScrollShade { z: 3; y: dlScroll.contentY; width: dlScroll.width; cornerRadius: 8; distance: dlScroll.contentY }
+                        ScrollShade { z: 3; atBottom: true; y: dlScroll.contentY + dlScroll.height - height; width: dlScroll.width; cornerRadius: 8
+                                      distance: dlScroll.contentHeight - dlScroll.height - dlScroll.contentY }
+                        ThinScrollbar { z: 3; flick: dlScroll; color: win.textColor; x: dlScroll.width - width; y: dlScroll.contentY; height: dlScroll.height }
                         Grid {
                         id: dlGrid
                         columns: 4
@@ -2167,6 +2326,11 @@ ShellRoot {
                 else openTrash();
                 return;
             }
+            if (moreIndex >= 0 && i === moreIndex) {
+                // More: the grid of the apps that don't fit, either button
+                appMenu.openFor({ moreGrid: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+                return;
+            }
             const sl = slotAt(i);
             if (!sl || sl.kind !== "app") return;          // (a divider does nothing)
             const item = sl.item;
@@ -2174,6 +2338,10 @@ ShellRoot {
                 appMenu.openFor(item, row.x + cellX(i) + base * scaleAt(i) / 2);
                 return;
             }
+            openApp(item);
+        }
+        // An app's click on the dock (or in More): its next window, or start it
+        function openApp(item) {
             const wins = item.windows;
             if (wins.length === 0) { if (item.entry) { startLaunch(item.key); item.entry.execute(); } return; }
             const cur = wins.findIndex(w => w.activated);
@@ -2619,11 +2787,15 @@ ShellRoot {
                             id: cell
                             required property var modelData
                             readonly property bool isApp: modelData.kind === "app"
-                            // The app in this slot ({ key, entry, windows, pinned }; none for a divider)
-                            readonly property var app: isApp ? modelData.item : ({ key: "", entry: null, windows: [], pinned: false })
+                            readonly property bool isMore: modelData.kind === "more"
+                            // The app in this slot ({ key, entry, windows, pinned }; none for a divider;
+                            // for More, the windows of the apps in it, so its running dot shows)
+                            readonly property var app: isApp ? modelData.item
+                                : ({ key: "", entry: null, pinned: false,
+                                     windows: isMore ? modelData.items.reduce((w, it) => w.concat(it.windows), []) : [] })
                             readonly property real s: win.scaleAt(modelData.at)
                             opacity: win.fadeAt(modelData.at)
-                            readonly property var badge: win.badgeFor(isApp ? app : null)
+                            readonly property var badge: isMore ? win.moreBadge : win.badgeFor(isApp ? app : null)
                             readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
                             property int version: 0
                             property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
@@ -2649,13 +2821,71 @@ ShellRoot {
                             // A divider: a faint line across the dock, between the pinned apps and
                             // the others (and before Downloads and the Waste Basket)
                             Rectangle {
-                                visible: !cell.isApp
+                                visible: cell.modelData.kind === "divider"
                                 opacity: Config.dockIconOpacity
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: win.base * 0.12
                                 width: 1; height: win.base * 0.76
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.2)
+                            }
+
+                            // More: the apps that don't fit (foldPlan), as a stack like Downloads',
+                            // with three dots on it, as the menu bar's More has; a badge when any app
+                            // in it has one
+                            DockBacking {
+                                visible: cell.isMore
+                                dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            }
+                            Item {
+                                id: moreTile
+                                visible: cell.isMore
+                                anchors.bottom: parent.bottom
+                                width: parent.width; height: width
+                                transform: Matrix4x4 { matrix: win.upright(moreTile.width, moreTile.height) }
+                                DockGlow {
+                                    strength: win.glowAt(cell.modelData.at)
+                                    radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                                }
+                                IconPlate {
+                                    anchors.fill: parent
+                                    drawSize: win.base * win.maxScale
+                                    shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
+                                    fill: false
+                                    color: win.tileColor
+                                    opacity: Config.dockTileOpacity
+                                }
+                                Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
+                                Text {
+                                    opacity: Config.dockIconOpacity
+                                    anchors.centerIn: parent
+                                    text: String.fromCodePoint(0xEA95)       // dots
+                                    color: win.textColor
+                                    font.family: "slate-tabler-icons"
+                                    font.pixelSize: Math.round(win.symbolRef * 0.5)
+                                    scale: parent.width / win.symbolRef
+                                    anchors.alignWhenCentered: false
+                                }
+                                Rectangle {
+                                    readonly property string text: cell.badge.count > 99 ? "99+" : cell.badge.count > 0 ? String(cell.badge.count)
+                                        : cell.badge.urgent ? "!" : ""
+                                    visible: cell.isMore && text !== ""
+                                    z: 2
+                                    height: Math.round(parent.height * 0.38)
+                                    width: Math.max(height, moreBadgeText.implicitWidth + height * 0.5)
+                                    radius: Config.corner(height / 2)
+                                    x: parent.width - width * 0.75; y: -height * 0.25
+                                    color: win.activeDotColor
+                                    Gloss { radius: parent.radius }
+                                    Text {
+                                        id: moreBadgeText
+                                        anchors.centerIn: parent
+                                        text: parent.text
+                                        color: Config.tint("#12151a")
+                                        font.family: Config.s.fontFamily; font.weight: Font.DemiBold
+                                        font.pixelSize: Math.round(parent.height * 0.62)
+                                    }
+                                }
                             }
 
                             DockBacking {
@@ -2882,6 +3112,8 @@ ShellRoot {
                     id: label
                     readonly property string text: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                         : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
+                        : win.moreIndex >= 0 && win.hoveredIndex === win.moreIndex
+                            ? "More · " + win.moreItems.length + (win.moreItems.length === 1 ? " app" : " apps")
                         : win.trashShown && win.hoveredIndex === win.trashIndex
                             ? (win.trashCount > 0 ? "Waste Basket · " + win.trashCount + (win.trashCount === 1 ? " item" : " items") : "Waste Basket")
                         : win.mediaShown && win.hoveredIndex === win.mediaIndex

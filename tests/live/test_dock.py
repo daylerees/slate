@@ -1,4 +1,5 @@
 """The dock: its slots in order for each setting, app badges, the Waste Basket's count."""
+import json
 import os
 import time
 
@@ -433,3 +434,92 @@ class Fits(LiveCase):
         st = self.steady(lambda: self.s.state()["dock"]["base"]) and self.s.state()
         self.assertEqual(st["dock"]["base"], 40)
         self.assertTrue(self.fits(st))
+
+
+class More(LiveCase):
+    """When the dock is too long for its edge even with the icons at 24px: what's playing goes to
+    one icon, then the apps you haven't pinned go into More, the oldest first, and come back as
+    room returns. The room is made short with `test dockRoom`, so a few windows fill it."""
+    APPS = ["slate-more-%d" % i for i in range(1, 6)]
+
+    def setUp(self):
+        super().setUp()
+        for key in ("dockPosition", "dockIconSize", "dockShowMedia", "dockMediaArt", "dockShowLauncher",
+                    "dockShowDownloads", "dockShowTrash", "dockDivider"):
+            self.keep_setting(key)
+        for key in ("dockShowMedia", "dockMediaArt", "dockShowLauncher", "dockShowDownloads", "dockShowTrash", "dockDivider"):
+            self.config(key, "true")
+        self.config("dockIconSize", 40)
+        self.config("dockPosition", "bottom")
+        self.wait(lambda st: st["dockEdge"] == "bottom", "the dock along the bottom")
+        self.addCleanup(lambda: self.ipc("test", "dockRoom", 0))
+        self.addCleanup(self.close_apps)
+
+    def open_apps(self):
+        # one after another, so the dock has them in this order (oldest first)
+        for key in self.APPS:
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id %s")' % key)
+            self.wait(lambda st: key in self.on_dock(st) or key in st["dock"]["more"], f"{key} on the dock", timeout=10)
+
+    def close_apps(self):
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c["class"] in self.APPS:
+                self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.close({ window = [=[address:%s]=] }))" % c["address"])
+        self.wait(lambda st: not any(k in self.on_dock(st) or k in st["dock"]["more"] for k in self.APPS), "the test apps gone")
+
+    def on_dock(self, st):
+        return [x["key"] for x in st["dock"]["slots"] if x["kind"] == "app"]
+
+    def settled(self):
+        return self.steady(lambda: json.dumps(self.s.state()["dock"], sort_keys=True)) and self.s.state()
+
+    def assert_fits(self, st):
+        d = st["dock"]
+        self.assertLessEqual(d["length"] + 48, d["room"] + 1, f"the dock is {d['length']}px in {d['room']}px")
+        self.assertGreaterEqual(d["base"], 24, "icons no smaller than 24px")
+
+    def test_oldest_unpinned_fold_first_and_come_back(self):
+        self.ipc("test", "dockRoom", 360)
+        self.open_apps()
+        st = self.settled()
+        more = st["dock"]["more"]
+        self.assertTrue(more, "some apps went into More")
+        self.assertEqual(more, self.APPS[:len(more)], "the oldest first, in their order")
+        self.assertIn("foot", self.on_dock(st), "pinned apps stay")
+        self.assertEqual([x["kind"] for x in st["dock"]["slots"]].count("more"), 1)
+        self.assert_fits(st)
+        # More's grid
+        self.ipc("dock", "more")
+        self.wait(lambda st: st["dock"]["menu"] == "more", "More's grid open")
+        self.ipc("dock", "closeMenu")
+        # Room again: they come back
+        self.ipc("test", "dockRoom", 0)
+        st = self.wait(lambda st: st["dock"]["more"] == [], "every app back on the dock")
+        self.assertNotIn("more", [x["kind"] for x in st["dock"]["slots"]])
+        self.assertEqual([k for k in self.on_dock(st) if k in self.APPS], self.APPS)
+
+    def test_whats_playing_goes_compact_first(self):
+        """With something playing and too little room: it goes to one icon before any app folds."""
+        self.play()
+        self.wait(lambda st: st["dock"]["media"], "what's playing on the dock")
+        self.ipc("test", "dockRoom", 280)
+        st = self.wait(lambda st: st["dock"]["mediaCompact"], "what's playing as one icon")
+        self.assertEqual(st["dock"]["more"], [], "nothing folded while that was enough")
+        self.assert_fits(self.settled())
+
+    def test_plenty_of_room_folds_nothing(self):
+        self.open_apps()
+        st = self.settled()
+        self.assertEqual(st["dock"]["more"], [])
+        self.assertFalse(st["dock"]["mediaCompact"])
+
+    def test_pinned_apps_fold_last(self):
+        """Room for hardly anything: every app you haven't pinned goes first, then the pinned."""
+        self.ipc("test", "dockRoom", 200)
+        self.open_apps()
+        st = self.settled()
+        # (all of them, listed in More in the dock's own order: pinned first)
+        self.assertEqual(st["dock"]["more"], ["foot"] + self.APPS)
+        kinds = [x["kind"] for x in st["dock"]["slots"]]
+        for kept in ("launcher", "downloads", "trash"):
+            self.assertIn(kept, kinds, f"the {kept} stays")

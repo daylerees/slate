@@ -34,7 +34,8 @@ Not Disturb.
 Words people use: Glass: translucent, blurred surfaces. A look: a preset of appearance
 settings. A Space: a saved arrangement of workspaces and their windows. Window mode: how a
 workspace lays out windows (tiled, floating and so on). Game mode: switches off effects and
-interruptions. Night light: warmer colours in the evening.
+interruptions. Night light: warmer colours in the evening. More (on the dock): apps that
+don't fit.
 
 [shared]
 Find a setting with settings_search before you change it or say anything about it. Never

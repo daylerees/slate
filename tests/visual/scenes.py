@@ -3,7 +3,8 @@ a check (on the "test" IPC's state) that it's there, and what to undo afterwards
 
     "name": {
         "settings": {key: value},        # set first (put back afterwards)
-        "do": [(target, function, *args), …],    # or ("!command", *args), run in the session
+        "do": [(target, function, *args), …],    # or ("!command", *args), run in the session,
+                                         # or lambda st: … to wait for something between steps
         "wait": lambda st: …,            # true once the scene is on screen
         "settle": seconds,               # extra time for images and loaders (default 0.8)
         "undo": [(target, function, *args), …],
@@ -73,6 +74,34 @@ SCENES = {
     "dock-downloads": {"do": [("dock", "downloads")], "wait": lambda st: st["dock"]["menu"] == "other",
                        "undo": [("dock", "closeMenu")]},
 }
+
+
+# The dock too full for its room (test dockRoom), so apps go into More: windows opened on a
+# workspace out of sight (their contents vary), closed again after
+def _more_open(n):
+    return [("!hyprctl", "dispatch", 'function() hl.exec_cmd("foot --app-id slate-more-%d", { workspace = "9 silent" }) end' % i)
+            for i in range(1, n + 1)]
+
+
+def _more_there(n):
+    return lambda st: sum(1 for x in st["dock"]["slots"] if x.get("key", "").startswith("slate-more-")) \
+        + sum(1 for k in st["dock"]["more"] if k.startswith("slate-more-")) == n
+
+
+_MORE_CLOSE = [("test", "dockRoom", 0), ("dock", "closeMenu"),
+               ("!sh", "-c", "hyprctl clients -j | jq -r '.[] | select(.class | startswith(\"slate-more-\")) | .address' | "
+                             "while read -r a; do hyprctl dispatch \"function() hl.dispatch(hl.dsp.window.close({ window = [=[address:$a]=] })) end\"; done; "
+                             "for i in $(seq 50); do hyprctl clients -j | grep -q slate-more- || exit 0; sleep 0.1; done")]
+SCENES["dock-more"] = {"do": _more_open(5) + [("test", "dockRoom", 360)],
+                       "wait": lambda st: _more_there(5)(st) and len(st["dock"]["more"]) > 0, "settle": 1.2,
+                       "undo": _MORE_CLOSE}
+SCENES["dock-more-open"] = {"do": _more_open(5) + [("test", "dockRoom", 360),
+                                                   lambda st: _more_there(5)(st) and len(st["dock"]["more"]) > 0, ("dock", "more")],
+                            "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
+# More than twelve in More: three rows, and the shadow at the bottom saying there's more
+SCENES["dock-more-many"] = {"do": _more_open(14) + [("test", "dockRoom", 200),
+                                                   lambda st: _more_there(14)(st) and len(st["dock"]["more"]) > 12, ("dock", "more")],
+                            "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
 
 for _p in PANELS:
     SCENES[f"panel-{_p}"] = {

@@ -29,6 +29,13 @@ waiting on something. The plans themselves are in the repository's history
 - **Per-item descriptions** (`hoverText`, `hoverCode`, `hoverTile`, `hoverImage` in `Bar.qml`)
   are mostly unused since hover descriptions went: tidy away what nothing reads.
 
+## The dock's More (built 2026-11-13)
+
+- **Dragging an app out of More's grid** onto the dock to pin it (the plan had it). For now an
+  app in More is pinned from its right-click menu, Pin to Dock.
+- **Seen only in the test container:** More at 125% Interface size, and on a side dock with a
+  real pointer.
+
 ## The test suite
 
 - **Text smoothing differs by run order (2026-11-13):** the dock scenes (`dock-menu`,
