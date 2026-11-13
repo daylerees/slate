@@ -216,7 +216,8 @@ def run(args):
             errors.append(raw.decode("utf-8", errors="replace").strip())
             del errors[:-5]
     threading.Thread(target=read_out, daemon=True).start()
-    threading.Thread(target=read_err, daemon=True).start()
+    err_reader = threading.Thread(target=read_err, daemon=True)
+    err_reader.start()
     try:
         proc.stdin.write(text.encode("utf-8"))
         proc.stdin.close()
@@ -246,6 +247,7 @@ def run(args):
                 if event["type"] == "error":
                     stop()
     code = proc.wait()
+    err_reader.join(timeout=2)  # stdout can close before the last of stderr has been read
     if finished:
         return
     if agent.id == "custom" and code == 0:
