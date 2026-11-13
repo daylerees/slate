@@ -407,9 +407,6 @@ PanelWindow {
     readonly property string bellText: bellBtn.label
 
     // ---- The active window's icon and title, cross-faded as the window changes -------------
-    // (Each thing on the bar still says what it is in words, its hoverText: the bar once showed
-    // that in the title area under the pointer, and the More panel and containers' buttons
-    // still read it)
     SequentialAnimation {
         id: titleSwap
         NumberAnimation { target: bar; property: "titleFade"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
@@ -424,15 +421,6 @@ PanelWindow {
         target: ToplevelManager
         Component.onCompleted: bar.shownTop = ToplevelManager.activeToplevel
         function onActiveToplevelChanged() { if (ToplevelManager.activeToplevel !== bar.shownTop) titleSwap.restart(); }
-    }
-
-    // Uptime, for the power button's hover text: read again as the pointer comes onto the button
-    // (rather than every minute, on every bar, whether anyone looked or not)
-    FileView { id: uptimeFile; path: "/proc/uptime" }
-    function uptimeText() {
-        const sec = parseFloat((uptimeFile.text() || "0").split(" ")[0]);
-        const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
-        return "Up " + (d > 0 ? d + (d === 1 ? " day " : " days ") : "") + (h > 0 || d > 0 ? h + " h " : "") + m + " min";
     }
 
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
@@ -1251,8 +1239,6 @@ PanelWindow {
                 id: flameBtn
                 wanted: Config.s.barShowControl
                 length: bar.capsuleHeight + 8
-                hoverText: "Control centre"
-                hoverImage: "file://" + Quickshell.shellPath("assets/icon/icon-64.png")
                 onClicked: bar.openPopout("control", flameBtn)
                 onRightClicked: bar.openSlateMenu(flameBtn)
                 // Turns white (the text colour) while the control centre is open
@@ -1272,8 +1258,6 @@ PanelWindow {
                 id: appsBtn
                 wanted: Config.s.barShowApps
                 length: bar.capsuleHeight + 8
-                hoverText: "Apps"
-                hoverCode: 0xEC42
                 onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"])
                 // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
                 // little thinner: optically matched to the line icons round it)
@@ -1298,8 +1282,6 @@ PanelWindow {
                 id: spacesBtn
                 wanted: Config.s.barShowSpaces
                 length: bar.capsuleHeight + 8
-                hoverText: Spaces.restoringSpace ? "Opening " + Spaces.restoringSpace.name + "…" : "Spaces"
-                hoverCode: 0xEDBA
                 onClicked: bar.openPopout("spaces", spacesBtn)
                 property int beat: 0
                 Timer { interval: 220; repeat: true; running: Spaces.restoring !== ""; onTriggered: spacesBtn.beat = (spacesBtn.beat + 1) % 4 }
@@ -1338,8 +1320,6 @@ PanelWindow {
                 id: novaBtn
                 wanted: Config.s.barShowAssistant && Config.assistantOn
                 length: bar.capsuleHeight + 8
-                hoverCode: 0xF014
-                hoverText: Config.assistantWorking ? "Nova is working…" : "Ask Nova"
                 onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
                 // One pastel in the Colourful look, as Apps and Spaces have (the Assistant page's
                 // colour); the text colour otherwise.
@@ -1378,7 +1358,6 @@ PanelWindow {
                     // (with the dots, as it always was: no dots, no icon)
                     wanted: Config.s.barShowWindowMode && Config.s.barShowWorkspaces
                     readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
-                    readonly property bool own: !!Config.workspaceModes[String(Config.focusedWorkspaceId)]
                     iconCode: mode.icon
                     // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
                     // each mode's icon fills a different share of its height)
@@ -1387,11 +1366,9 @@ PanelWindow {
                     // neighbours' height, so it carries blank space of its own at the sides
                     pad: 12
                     // A green pastel in the Colourful look; otherwise the bar's text colour, like
-                    // every other icon on it. Its own mode or the default alike (the panel and
-                    // the description say which)
+                    // every other icon on it. Its own mode or the default alike (the panel says
+                    // which)
                     tint: Config.statusColour("windowmode", bar.textColor)
-                    hoverText: Config.workspaceLabel(Config.focusedWorkspaceId) + " · " + mode.label
-                        + (own ? "" : " (the default)") + " · click to change"
                     onClicked: bar.openPopout("windowmode", wsMode)
                   }
                   // The dots (each with its own hover highlight, behind it)
@@ -1455,10 +1432,6 @@ PanelWindow {
                             required property var modelData
                             opacity: trayCapsule.openness
                             width: bar.vert ? 22 : 26; height: bar.vert ? 26 : 22
-                            readonly property string hoverText: modelData.tooltipTitle || modelData.title || modelData.id || ""
-                            readonly property int hoverCode: 0
-                            readonly property string hoverTile: ""
-                            readonly property url hoverImage: modelData.icon
                             required property int index
                             // Hover highlight: the whole of its part of the container, as the status icons'
                             TrayFill {
@@ -1598,10 +1571,6 @@ PanelWindow {
                         id: trayToggle
                         visible: trayCapsule.collapsible
                         width: 22; height: 22
-                        readonly property string hoverText: trayCapsule.expanded ? "Hide the tray" : SystemTray.items.values.length + " tray " + (SystemTray.items.values.length === 1 ? "app" : "apps")
-                        readonly property int hoverCode: 0
-                        readonly property string hoverTile: ""
-                        readonly property url hoverImage: ""
                         TrayFill { lit: toggleHover.hovered; atStart: SystemTray.items.values.length === 0 || !trayCapsule.showIcons; atEnd: true }
                         HoverHandler { id: toggleHover }
                         Text {
@@ -1627,10 +1596,6 @@ PanelWindow {
                         wanted: Config.s.barShowNotifications
                         pastel: "notifications"            // its colour when the look is Colourful
                         iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
-                        hoverText: !bar.notifs ? "Notifications"
-                            : bar.notifs.dnd ? "Do not disturb is on"
-                            : bar.notifs.unread > 0 ? bar.notifs.unread + (bar.notifs.unread === 1 ? " unread notification" : " unread notifications")
-                            : "Notifications"
                         // Unread count beside the bell (hidden during Do Not Disturb)
                         sample: "50"
                         label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.dnd
@@ -1645,9 +1610,6 @@ PanelWindow {
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
                         sample: "12"; textOn: Config.s.barValueClipboard
                         label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
-                        hoverText: !Config.s.clipboardHistory ? "Clipboard history is off"
-                            : Config.clipCount === 0 ? "Clipboard · empty"
-                            : "Clipboard · " + Config.clipCount + (Config.clipCount === 1 ? " item" : " items")
                         onClicked: bar.openPopout("clipboard", clipSeg)
                     }
                     // Screenshots: click for area / window / screen
@@ -1656,7 +1618,6 @@ PanelWindow {
                         wanted: Config.s.barShowScreenshot
                         pastel: "screenshot"            // its colour when the look is Colourful
                         iconCode: 0xF201
-                        hoverText: "Screenshot"
                         onClicked: bar.openPopout("screenshot", shotSeg)
                     }
                     // The camera: an open eye, lit, while an app is using it (Config.cameraOn); a
@@ -1667,9 +1628,6 @@ PanelWindow {
                         pastel: "camera"              // its colour when the look is Colourful
                         iconCode: Config.cameraOn ? 0xEA9A : 0xECF0
                         tint: Config.cameraOn ? bar.accent : bar.textColor
-                        readonly property var apps: Config.cameraApps.filter(a => a !== "Slate")
-                        hoverText: Config.cameraOn ? (apps.length > 0 ? "Camera on · " + apps.join(", ") : "Camera on")
-                            : Config.s.privateMode ? "Camera off · Private Mode is on" : "Camera not in use"
                         clickable: false
                     }
                     // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
@@ -1681,7 +1639,6 @@ PanelWindow {
                         sample: "Off"; textOn: Config.s.barValueGameMode
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
-                        hoverText: Config.gameMode ? "Game mode is on" : "Game mode"
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
@@ -1693,7 +1650,6 @@ PanelWindow {
                         iconCode: 0xEBD6
                         sample: "GB"; textOn: Config.s.barValueKeyboard
                         label: Config.s.barValueKeyboard && current ? current.code : ""
-                        hoverText: current ? "Keyboard · " + current.name : "Keyboard"
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
@@ -1708,9 +1664,6 @@ PanelWindow {
                         iconCode: !on ? 0xECEB : connected.length > 0 ? 0xECEA : 0xEA37
                         sample: "5"; textOn: Config.s.barValueBluetooth
                         label: Config.s.barValueBluetooth && connected.length > 0 ? String(connected.length) : ""
-                        hoverText: !on ? "Bluetooth is off"
-                            : connected.length === 0 ? "Bluetooth · nothing connected"
-                            : "Bluetooth · " + connected.map(d => d.name || d.deviceName || d.address).join(", ")
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
                     Segment {
@@ -1725,8 +1678,6 @@ PanelWindow {
                         iconCode: muted || vol === 0 ? 0xF1C3 : vol > 0.5 ? 0xEB51 : 0xEB4F
                         sample: "50%"; textOn: Config.s.barValueVolume
                         label: Config.s.barValueVolume ? Math.round(vol * 100) + "%" : ""
-                        hoverText: "Volume " + Math.round(vol * 100) + "%" + (muted ? " · muted" : "")
-                            + (sink && sink.properties && sink.properties["device.profile.description"] ? " · " + sink.properties["device.profile.description"] : "")
                         onClicked: bar.openPopout("volume", volSeg)
                         onWheel: delta => {
                             if (!sink || !sink.audio) return;
@@ -1750,8 +1701,6 @@ PanelWindow {
                         iconCode: onWire ? 0xF09F : !wifi && !Config.pretendWifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
                         sample: "Wi-Fi"; textOn: Config.s.barValueWifi
                         label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
-                        hoverText: onWire ? "Wired connection" : !wifi ? "No cable connected" : net ? "Wi-Fi · " + net.name + " · " + Math.round(signal * 100) + "% signal"
-                            : Networking.wifiEnabled ? "Wi-Fi · not connected" : "Wi-Fi is off"
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
                     Segment {
@@ -1767,7 +1716,6 @@ PanelWindow {
                         iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
                         label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
-                        hoverText: !has ? "Power and system" : "Battery " + Math.round(pct * 100) + "% · " + (charging ? "charging" : UPower.onBattery ? "on battery" : "plugged in")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
 
@@ -1776,8 +1724,6 @@ PanelWindow {
                 id: clockCap
                 wanted: Config.s.barShowClock
                 length: clock.implicitWidth + 20
-                hoverText: Config.dateText(Config.clockDate(sysClock.date), "long")
-                hoverCode: 0xEA53
                 SystemClock { id: sysClock; precision: Config.s.barClockSeconds ? SystemClock.Seconds : SystemClock.Minutes }
                 Text {
                     id: clock
@@ -1808,16 +1754,13 @@ PanelWindow {
                 wanted: bar.overflowed.length > 0 || Config.barShowAll
                 iconCode: 0xEA95
                 length: bar.capsuleHeight + 8
-                hoverText: bar.overflowed.length === 1 ? "1 more thing" : bar.overflowed.length + " more things"
                 onClicked: { if (bar.popouts) bar.popouts.moreBar = bar; bar.openPopout("more", moreBtn); }
             }
             Segment {       // power
                 id: powerBtn
                 wanted: Config.s.barShowPower; iconCode: 0xEB0D; iconSize: 17; tint: bar.errorColor
                 length: bar.capsuleHeight + 8
-                hoverText: bar.uptimeText()
                 onClicked: bar.openPopout("session", powerBtn)
-                HoverHandler { onHoveredChanged: if (hovered) uptimeFile.reload() }
             }
         }
     }
@@ -1841,11 +1784,6 @@ PanelWindow {
     component Capsule: Rectangle {
         id: cap
         property bool hoverTint: true
-        // Description shown in the title area while hovered ("" = none)
-        property string hoverText: ""
-        property int hoverCode: 0
-        property string hoverTile: ""
-        property url hoverImage
         property real length: bar.capsuleHeight      // size along the bar
         signal clicked()
         signal rightClicked()
@@ -1937,10 +1875,6 @@ PanelWindow {
         // Colourful look: the icon in this pastel (Config.statusPastels), unless it's showing a
         // warning colour (tint other than the text colour)
         property string pastel: ""
-        property string hoverText: ""
-        property int hoverCode: iconCode
-        property string hoverTile: ""
-        property url hoverImage
         signal clicked()
         signal rightClicked()
         signal wheel(real delta)
@@ -2111,7 +2045,6 @@ PanelWindow {
             // up in the container's options)
             isToggle: true
             iconCode: box.tuckIcon
-            hoverText: box.expanded ? "Hide these" : box.cells.filter(c => c.wanted).map(c => c.hoverText.split(" · ")[0]).filter(t => t).slice(0, 3).join(", ") + (box.cells.length > 3 ? " and more" : "")
             onClicked: { box.expanded = !box.expanded; closing.stop(); }
         }
         // Take its things, in order, with a line before each but the first
