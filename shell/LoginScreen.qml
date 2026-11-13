@@ -63,13 +63,15 @@ Item {
     function glyph(c) { return String.fromCodePoint(c); }
 
     // ---- Caps lock (keyboard LED) ----------------------------------------------
+    // Not read in tests: the container sees the host's LEDs, so the screenshots would
+    // change with the Caps Lock key of whoever runs them.
     property bool capsLock: false
     Process {
         id: capsRead
         command: ["sh", "-c", "cat /sys/class/leds/*::capslock/brightness 2>/dev/null"]
         stdout: StdioCollector { onStreamFinished: ls.capsLock = text.split("\n").some(l => parseInt(l) > 0) }
     }
-    Timer { interval: 250; running: ls.visible; repeat: true; triggeredOnStart: true; onTriggered: if (!capsRead.running) capsRead.running = true }
+    Timer { interval: 250; running: ls.visible && !Config.testMode; repeat: true; triggeredOnStart: true; onTriggered: if (!capsRead.running) capsRead.running = true }
 
     // ---- Background: plain slate, then the wallpaper once it's there -----------
     Rectangle {
