@@ -98,6 +98,15 @@ virtual one, `vkms`. Load it once per boot:
 sudo modprobe vkms
 ```
 
+Or have it load at every boot, so you never have to think about it again (once, ever; `tests/run`
+says the same when it's missing):
+
+```sh
+echo vkms | sudo tee /etc/modules-load.d/slate-tests.conf
+```
+
+`sudo rm /etc/modules-load.d/slate-tests.conf` stops that.
+
 It isn't used as a screen: Hyprland draws in software (llvmpipe) to a headless output inside
 the container, which is why screenshots are the same on every machine. (The container shares
 your `/sys`, so `tests/run` hides `/sys/class/leds` from it: your keyboard's lights, Caps Lock
