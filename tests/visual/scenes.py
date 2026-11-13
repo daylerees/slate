@@ -330,9 +330,6 @@ SCENES["settings-displays-hdr"] = {
 # About → What Slate is using: its memory and processor right now
 SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
 
-# The launcher's scrollbar: its length follows how many apps have loaded so far
-SCENES["launcher"]["mask"] = [(978, 250, 14, 420)]
-
 # The camera: the note as an app starts using it, and the bar's camera item (off to start with)
 # lit while it's on (a test hook stands in for camera-watch.py)
 SCENES["osd-camera"] = {
