@@ -38,6 +38,42 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.30.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.30.0 <time datetime="2026-11-13">13 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Nova can arrange your menu bar.</strong> Ask it to "put the clock on the left" or "tuck Wi-Fi and volume behind one button": it can move things between containers, choose how each collapses, set what leaves first when the bar is short of room and what always stays, or put Slate's own arrangement back. It never shows or hides Nova's own button, and you can change anything it does in Edit layout.</li>
+        <li><strong>The dock keeps everything reachable.</strong> Apps that don't fit on the dock go into a More button at its end.</li>
+        <li><strong>"Try it shorter" sits in the middle.</strong> In Edit layout, the shortened bar now sits in the middle of its edge rather than against one end, so you can see how it would really look.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>With more than one screen, the menu bar on screens other than the main display now opens its panels, and its bell shows your unread notifications and Do Not Disturb. Before, its buttons did nothing.</li>
+        <li>Hover colours fade smoothly. With glass off, buttons, switches, dropdowns, tiles and cards no longer flash brighter as the pointer comes and goes.</li>
+        <li>The launcher's list scrolls smoothly the first time you open it. Its first scroll could skip rows or draw them out of place.</li>
+        <li>A wrong password on the login screen says so, rather than showing a message about a connection problem.</li>
+        <li>Less space under the Caps Lock warning on the lock and login screens.</li>
+        <li>The secret workspace always says it's empty when it is. After its last window closed, the note sometimes didn't come back.</li>
+        <li>In Edit layout, something dragged into another container is always drawn. Now and then it kept its room with nothing in it.</li>
+        <li>"Try it shorter" no longer lets the bar run a little past its room.</li>
+        <li>Hot corners no longer fire again straight after unlocking on a second screen at an Interface size other than 100%, and things dragged from the pool onto a second screen's bar land where you drop them.</li>
+        <li>The dock stays on screen while something's playing, and no longer shows an error when your music app closes.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Slate's test suite now runs in about five minutes rather than twenty-four, waits for things rather than for set times, and checks two screens, more screenshots and the Settings pages' Restore defaults. For anyone working on Slate there's <code>tests/run --failed</code>, <code>--repeat N</code> and one page for approving changed screenshots.</li>
+        <li>docs/CONVENTIONS.md writes down the rules Slate's code and words follow.</li>
+        <li>Tested against today's Arch packages too (Hyprland, Quickshell and Qt as they are now): everything passed.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.29.1" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.29.1 <time datetime="2026-11-13">13 November 2026</time></h2>
   <div class="cl-grid">
