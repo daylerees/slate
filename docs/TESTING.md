@@ -135,7 +135,11 @@ as its own check.
   `slate ipc call …`; `self.wait(lambda st: …)` waits for the `test` IPC's state (what's
   open, the dock's slots, Settings' page…; `Config.testMode` and `ipc call test state` in
   `shell.qml`); `self.config(key, value)` changes a setting, `self.keep_setting(key)` puts it
-  back after. Each test starts with everything closed.
+  back after. Each test starts with everything closed. Never a set pause before checking
+  something (`self.s.settle(0.5)` then an assert): under a full run's four sessions side by
+  side it's sometimes too short. Wait for what you expect with `self.wait(…)`, or, when you
+  read the state to check it, `self.steady(read, floor=…)` (at least `floor` seconds, then
+  until two reads agree). A check that something *doesn't* happen keeps its pause as `floor`.
 - **visual**: add a scene to `tests/visual/scenes.py`, then
   `tests/run --tier visual --filter <scene>` (it fails: no approved picture yet), check
   `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`.

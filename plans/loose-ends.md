@@ -42,15 +42,15 @@ waiting on something. The plans themselves are in the repository's history
 ## Full runs lose a race most times (2026-11-13)
 
 Before v0.29.0, five full runs each had one or two failures, a different test each time, every
-one passing again on its own: tests that pause a set time ("settle 0.8 s, then look") rather
-than waiting for what they check, losing under four sessions side by side. Fixed so far: the
-bar-layout blanks (wait for the bar to stop moving), Settings scenes (wait for wallpaper
-thumbnails), the bar's window title (wait for it). Next: go through the live tests for fixed
-settles before an assertion and wait for the condition instead.
-Not yet understood: `live/workspace_modes › no_note_with_a_window` failed once in three on its
-own too ("the note when it's shown again, empty"), after the window on the secret workspace is
-closed and the workspace shown again; six instrumented runs didn't catch it. Also seen once in a
-full run: `live/wallpaper › no_banding_on_screen` (19 colour steps out), passing three times alone.
+one passing again on its own: tests that paused a set time ("settle 0.8 s, then look") rather
+than waiting for what they check, losing under four sessions side by side. Fixed: the bar-layout
+blanks, Settings scenes (wallpaper thumbnails), the bar's window title, the secret workspace's
+note (settle whether it still shows before toggling), and 61 pauses before a read of the bar's
+or Slate's state, now LiveCase.steady (ed68a5f). Visual scenes start with no notifications.
+Still to do: one full run to see whether it's clean first time (the proof); pauses before a
+screenshot or a hyprctl query weren't converted (each needs a look) if anything still flakes.
+Seen once in a full run, never since: `live/wallpaper › no_banding_on_screen` (19 colour steps
+out), passing three times alone.
 
 ## Live capture of a closing window crashed Slate: fixed in Slate, a Quickshell bug to report (2026-11-13)
 Closing several windows at once while New Space (or, less often, the overview) showed them live
