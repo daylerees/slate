@@ -350,6 +350,24 @@ PanelWindow {
         : (calcResult ? [calcResult] : []).concat(convertResult ? [convertResult] : [], appResults, actionResults,
             windowResults, toggleResults, settingResults, fileResults, webResults)
 
+    // ---- Every app's tile, loaded while the launcher's hidden ---------------------------
+    // A row only loads its tile as it's made, while it scrolls into view, so on the first
+    // scroll a row could arrive a moment before its tile. These hold each tile, at the same
+    // address and size the rows ask for, so a row finds it there already. (The address
+    // changes when the tiles are made again, and these follow it)
+    Item {
+        visible: false
+        Repeater {
+            model: root.apps.filter(a => !a.setting)
+            delegate: Image {
+                required property var modelData
+                source: "file://" + Config.tilePath(modelData.id) + "?v=0." + Config.tileVersion
+                sourceSize: Qt.size(192, 192)
+                asynchronous: true
+            }
+        }
+    }
+
     // ---- The list's rows, kept in step with the results -------------------------------
     // Each result has a key that stays the same while it's in the results (its kind, id and
     // name), and the list holds just those keys: typing a letter adds, removes and moves rows,
