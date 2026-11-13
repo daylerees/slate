@@ -39,6 +39,19 @@ waiting on something. The plans themselves are in the repository's history
   list): [assistant.md](assistant.md).
 - Slate without systemd on a real Artix, Void or Gentoo install: [without-systemd.md](without-systemd.md).
 
+## Full runs lose a race most times (2026-11-13)
+
+Before v0.29.0, five full runs each had one or two failures, a different test each time, every
+one passing again on its own: tests that pause a set time ("settle 0.8 s, then look") rather
+than waiting for what they check, losing under four sessions side by side. Fixed so far: the
+bar-layout blanks (wait for the bar to stop moving), Settings scenes (wait for wallpaper
+thumbnails), the bar's window title (wait for it). Next: go through the live tests for fixed
+settles before an assertion and wait for the condition instead.
+Not yet understood: `live/workspace_modes › no_note_with_a_window` failed once in three on its
+own too ("the note when it's shown again, empty"), after the window on the secret workspace is
+closed and the workspace shown again; six instrumented runs didn't catch it. Also seen once in a
+full run: `live/wallpaper › no_banding_on_screen` (19 colour steps out), passing three times alone.
+
 ## Closing windows while New Space shows them crashes Slate (2026-11-12)
 Reproducible: windows on two new workspaces (two terminals side by side, a photo in mpv),
 Spaces → New Space open, all three closed at once → Slate dies with "The Wayland connection
