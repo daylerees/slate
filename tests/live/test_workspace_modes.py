@@ -191,10 +191,13 @@ class SecretWorkspace(LiveCase):
         self.wait(lambda st: st["secretEmpty"] == [], "the note to go once a window's there")
         new = [c for c in self.s.hyprctl("clients", json_out=True) if c["address"] not in before]
         self.assertTrue(new and new[0]["workspace"]["name"].startswith("special"), "the window isn't on the secret workspace")
-        # close it: the note's back, unless Hyprland has put the empty secret workspace away
+        # close it: the note's back, unless Hyprland has put the empty secret workspace away.
+        # (Which, it decides a moment after the window goes: asked once, straight away, the answer
+        # could be from before, and the toggle below then hid it instead of showing it again)
         self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.close({{ window = "address:{new[0]["address"]}" }})) end')
-        self.wait(lambda st: len(st["secretEmpty"]) == (1 if self.showing() else 0), "the note to match the workspace")
-        if not self.showing():
+        showing = self.steady(self.showing, floor=0.5)
+        self.wait(lambda st: len(st["secretEmpty"]) == (1 if showing else 0), "the note to match the workspace")
+        if not showing:
             self.toggle()
             self.wait(lambda st: len(st["secretEmpty"]) == 1, "the note when it's shown again, empty")
 
