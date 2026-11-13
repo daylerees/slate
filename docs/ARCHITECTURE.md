@@ -109,6 +109,8 @@ shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
 shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
+WindowPreview.qml             every live window preview (overview, switcher, dock, New Space): frames
+                              asked for by Slate, not Quickshell's live mode (see Workarounds below)
 reloading/              the "Reloading Slate" cover `slate restart` shows: a small Quickshell
                         setup of its own, so it outlives the Slate it covers for
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
@@ -318,6 +320,35 @@ Hovering the badge fades it across to the other top corner, inside the strip, so
 never animates it; a focus change puts it back. Hyprland gives no positions while a workspace
 switch slides, so borders and badges vanish when one starts and fade back in (220 ms) after the slide
 (500 ms, 300 ms with fast animations).
+
+## Workarounds for bugs elsewhere
+
+Bugs in Hyprland, Quickshell and the rest that Slate works around. Each says where it's reported,
+how to check whether a new release fixed it, and how to take the workaround out once it has.
+
+### Quickshell: a live ScreencopyView crashes when its window closes
+
+- **The bug:** a `ScreencopyView` with `live: true` showing a window can kill the whole process
+  when that window closes ("The Wayland connection experienced a fatal error: Invalid argument",
+  a frame after `ToplevelHandle(…) closed`), most often when several close at once. It looks like
+  live mode asking for another frame from the closed window's handle. Seen with Quickshell 0.3.2
+  and Hyprland 0.57.2, on an Intel graphics card; never in the test container.
+- **Reported:** not yet (a draft with the log and the repro is ready to file). Put the issue's
+  link here once it's filed. Possibly related, not the same: quickshell-mirror/quickshell#1418
+  (window captures failing outright on Hyprland 0.57.0; here they work, and only closing windows
+  crashes). Both are on the window capture path Hyprland reworked in 0.57, so a fix for that one
+  is worth checking this against.
+- **What Slate does instead:** every live preview is a `WindowPreview` (`shell/WindowPreview.qml`):
+  `live: false`, and Slate asks for frames itself with `captureFrame()` on a timer (30 a second,
+  starting once the first frame is in, which comes by itself). Previews update at 30 frames a
+  second rather than the window's own rate. Static checks in `tests/static/test_consistency.py`
+  (`WindowPreviews`) keep every preview on it.
+- **Checking a new Quickshell:** run `qs -n -p tools/repro/screencopy-close` beside Slate, open
+  three windows, and close them all at once (one `hyprctl dispatch` closing each). It died three
+  times in four on 0.3.2; if it survives ten tries, the bug is likely fixed.
+- **Taking it out:** in `WindowPreview.qml`, `live: running` in place of `live: false` and the
+  Timer removed (keep the component, so every preview stays in one place); change
+  `test_never_live` to match; then close windows under New Space and the overview a few times.
 
 ## Dependencies
 
