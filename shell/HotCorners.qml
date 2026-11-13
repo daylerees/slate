@@ -25,6 +25,20 @@ Scope {
         }
     }
 
+    // Is this point (Hyprland's pixels, as `hyprctl cursorpos` gives it) in that corner of the
+    // screen, give or take 4 px? (Qt keeps a screen's top-left in Hyprland's pixels and only
+    // its size in Slate's, Interface size: so the point's made relative to the screen first,
+    // in Hyprland's pixels, then brought to Slate's scale to meet its width and height)
+    function inCorner(sc, left, top, x, y) {
+        if (!sc) return false;
+        const k = Config.uiScale || 1, p = { x: (x - sc.x) / k, y: (y - sc.y) / k };
+        const cx = left ? 0 : sc.width;
+        const cy = top ? 0 : sc.height;
+        return Math.abs(p.x - cx) <= 4 && Math.abs(p.y - cy) <= 4;
+    }
+    // (the tests: that corner, "topLeft", "bottomRight"…, of the main display, where they are)
+    function pointIn(name, x, y) { return inCorner(Config.primaryScreen, name.endsWith("Left"), name.startsWith("top"), x, y); }
+
     // Screens turned off from a corner: back on at your next mouse movement or key press.
     // Hyprland won't wake them by itself (mouse_move/key_press_enables_dpms are off), and the
     // idle screen-off (LockScreen.qml) only wakes the screens it turned off. This waits for a
@@ -84,13 +98,8 @@ Scope {
                     onStreamFinished: {
                         let inCorner = false;
                         try {
-                            // (Hyprland's position, brought to Slate's own scale: Interface size)
-                            const q = JSON.parse(text), k = Config.uiScale || 1, p = { x: q.x / k, y: q.y / k }, sc = corner.screen;
-                            if (sc) {
-                                const cx = corner.modelData.left ? sc.x : sc.x + sc.width;
-                                const cy = corner.modelData.top ? sc.y : sc.y + sc.height;
-                                inCorner = Math.abs(p.x - cx) <= 4 && Math.abs(p.y - cy) <= 4;
-                            }
+                            const q = JSON.parse(text);
+                            inCorner = hc.inCorner(corner.screen, corner.modelData.left, corner.modelData.top, q.x, q.y);
                         } catch (e) {}
                         corner.armed = !inCorner;     // in it: armed again once the pointer leaves
                     }
