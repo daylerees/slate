@@ -38,6 +38,56 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.29.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.29.0 <time datetime="2026-11-13">13 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>A new control centre.</strong> A card with the time, today's weather and the days ahead, with what's playing beneath it, and eight quick switches beside it, always the same size. Choose and order them on Settings → Control Centre by dragging. There are more to pick from now (Light Mode, Mute, Mute Mic, Power Saver, Glass, Charging Limit, Hide Dock, Hide Menu Bar, Floating, Clipboard, Game Mode, Airplane Mode), and switches for hardware you haven't got are left out.</li>
+        <li><strong>Private Mode.</strong> One switch mutes your microphones, turns the camera off for every app, switches Nova and other assistants off, and stops screenshots and screen sharing. A note tells you when the camera comes on, and which app is using it, and the menu bar can show a camera indicator.</li>
+        <li><strong>Airplane Mode</strong> turns Wi-Fi, Bluetooth and mobile broadband off together, and puts back what was on when you turn it off.</li>
+        <li><strong>One right-click menu everywhere.</strong> The desktop, the menu bar, the dock and the Slate button share one menu, with submenus, a tick for the current choice, and the keyboard (arrows, Enter, Escape). The menu bar and dock menus have new items, like Position, Clock, Auto-hide and Icon size.</li>
+        <li><strong>Shadows.</strong> Every panel, menu, notification and floating window shares one soft, tinted shadow. Settings → Appearance → Shadows sets its darkness, softness, spread, distance and direction, or turns them off.</li>
+        <li><strong>Icon and pointer themes.</strong> Settings → Icons picks your icon theme and folder colour, with a few good themes a click away. Settings → Input → Pointer style picks your pointer, with one-click packs.</li>
+        <li><strong>Workspace dots that scroll.</strong> With lots of workspaces, the dots keep the one you're on in the middle and fade away at the ends.</li>
+        <li><strong>The assistant is now Nova</strong>, with a north star for its icon.</li>
+        <li>The menu bar's shadow fades in and out, and an open menu bar panel closes when you change workspace.</li>
+        <li>Settings can be searched from the command line: <code>slate ipc call settings search "dock"</code>.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>Switching through workspaces quickly no longer shows the first one behind the others.</li>
+        <li>Sliding into a workspace with two windows side by side, both now slide in together; one used to appear only once the slide was over.</li>
+        <li>Hover highlights on cards and buttons no longer flash brighter as they come in.</li>
+        <li>Moving between submenus no longer shows the last submenu's items for a moment.</li>
+        <li>Moving a workspace in the overview keeps its layout and live previews.</li>
+        <li>Clear all in notifications takes the pop-ups on screen with it.</li>
+        <li>Tray icons are evened out in size, whatever the app.</li>
+        <li>The launcher's highlight keeps up as you type and stays on the top result.</li>
+        <li>The password arrow on the lock screen comes back upright after a wrong password.</li>
+        <li>The desktop, the dock and menus keep the ordinary arrow pointer.</li>
+        <li>A floating window dropped over the menu bar slides back below it, and your default file manager is the one that opens folders.</li>
+        <li>Caffeine keeps working whatever "Wait while media plays" is set to.</li>
+        <li>The dock stays usable while a menu bar panel is open.</li>
+        <li>The camera watcher stops when Slate stops.</li>
+        <li>With Colourful off, the window mode icon in the bar matches the others.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>Breaking:</strong> the assistant is renamed from Chalk to Nova. If you have your own <code>assistant-prompt.md</code> with <code>[chalk]</code> blocks, rename them to <code>[nova]</code>.</li>
+        <li>Known issue: closing several windows at once while Spaces → New Space is showing them can make Slate restart. Your apps and windows stay open. It's being looked into.</li>
+        <li>Testing: tests are now written with each change and run on their own as it's made, with the whole suite run before a release.</li>
+        <li>The whole suite (4,664 tests) ran five times for this release. Each run had one or two failures, a different one each time, all timing races in the tests on a heavily loaded test machine and each passing when run again on its own; three are fixed. One known flaky test: the secret workspace's "empty" note sometimes isn't seen in time after the workspace is shown again. Making the tests wait for what they check, rather than for a set time, is next.</li>
+        <li>Tested with Hyprland 0.57.1 and Quickshell 0.3.2 (the pinned test image), and the whole suite passed with no failures on today's Arch packages; built and used day to day on Hyprland 0.57.2.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.28.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.28.0 <time datetime="2026-11-12">12 November 2026</time></h2>
   <div class="cl-grid">
