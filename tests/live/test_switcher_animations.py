@@ -131,7 +131,7 @@ class SwitcherAnimations(LiveCase):
         self.ipc("overview", "up")
         self.wait(lambda st: st["overview"]["selected"] == 1, "Up to go a row up")
         self.ipc("overview", "up")          # already on the top row: stays
-        self.s.settle(0.3)
+        self.steady(self.s.state, floor=0.3)
         self.assertEqual(self.s.state()["overview"]["selected"], 1)
         self.ipc("overview", "close")
         self.wait(lambda st: not st["overview"]["open"])

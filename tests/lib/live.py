@@ -43,6 +43,22 @@ class LiveCase(slate.Case):
     def wait(self, check, what="the expected state", timeout=8):
         return self.s.wait(check, timeout=timeout, what=what)
 
+    def steady(self, read, floor=0.2, step=0.1, timeout=6):
+        """read() once it has stopped changing: after `floor` seconds, read until two reads
+        `step` apart agree (or `timeout`). In place of settle(<a set time>) then read(): under a
+        heavily loaded full run, a set time was sometimes too short and the test read a state
+        still on its way."""
+        import time
+        self.s.settle(floor)
+        last, end = read(), time.time() + timeout
+        while time.time() < end:
+            self.s.settle(step)
+            now = read()
+            if now == last:
+                return now
+            last = now
+        return last
+
     def config(self, key, value):
         """Change a setting the way Settings does (config set), and wait for it to stick."""
         self.ipc("config", "set", key, value)

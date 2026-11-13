@@ -19,8 +19,7 @@ class BarLength(LiveCase):
 
     def squeeze(self, px):
         self.ipc("test", "arrange", "squeeze", str(px), "", "")
-        self.s.settle(0.35)
-        return self.bar()
+        return self.steady(self.bar, floor=0.15)   # (not a check that nothing happens: steady is enough)
 
     def first_squeeze_giving(self, n, start=0, stop=1500, step=20):
         """The least squeeze (to the step) at which at least n things have been given up."""
@@ -61,7 +60,7 @@ class BarLength(LiveCase):
             if self.bar()["line"]["windowtitle"]["visible"]:
                 break
             self.s.settle(0.1)
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
         self.assertTrue(self.bar()["line"]["windowtitle"]["visible"], "no window title to begin with")
         self.first_squeeze_giving(1)
         st = self.bar()
@@ -91,10 +90,10 @@ class BarLength(LiveCase):
         self.squeeze(1400)
         self.assertNotEqual(self.bar()["gives"], [])
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertEqual(self.bar()["gives"], [])
         self.ipc("test", "arrange", "done", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertNotEqual(self.bar()["gives"], [])
 
     # ---- collapse modes: Never, Always, When needed -------------------------------------------
@@ -122,17 +121,17 @@ class BarLength(LiveCase):
         self.assertIn(f"tuck:{at}", st["gives"])
         # (after the text and the clock's date: tucking is the last thing the line tries)
         self.assertGreater(st["gives"].index(f"tuck:{at}"), st["gives"].index("clock:date"))
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertFalse(self.bar()["line"]["wifi"]["visible"], "the status icons didn't tuck away")
         self.squeeze(0)
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertTrue(self.bar()["line"]["wifi"]["visible"], "they didn't come back with room to spare")
 
     def test_never_and_always(self):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
         at = self.where("wifi")
         self.ipc("test", "arrange", "collapse", str(at), "never", "")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         self.assertEqual(self.layout()[at]["collapse"], "never")
         st = self.squeeze(1400)
         self.assertNotIn(f"tuck:{at}", st["gives"])
@@ -140,7 +139,7 @@ class BarLength(LiveCase):
         self.assertTrue(st["line"]["wifi"]["visible"] or "wifi" in st["overflowed"], "a container set to Never tucked")
         self.squeeze(0)
         self.ipc("test", "arrange", "collapse", str(at), "always", "")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         self.assertEqual(self.layout()[at]["collapse"], "always")
         self.assertTrue(self.layout()[at]["tuck"])
         self.assertFalse(self.bar()["line"]["wifi"]["visible"], "a container set to Always shows its things with room to spare")
@@ -150,7 +149,7 @@ class BarLength(LiveCase):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
         at = self.where("wifi")
         self.ipc("test", "arrange", "tuck", str(at), "true", "")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         self.assertEqual(self.layout()[at]["collapse"], "always")
         self.assertEqual(self.layout()[at]["items"][-1], "tuck")
 
@@ -221,14 +220,14 @@ class BarLength(LiveCase):
     def test_more_cant_be_taken_off_the_bar(self):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertTrue(self.bar()["line"]["more"]["visible"], "More isn't there to be moved while the bar's arranged")
         self.ipc("test", "arrange", "shown", "more", "false", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         self.assertTrue(self.bar()["line"]["more"]["visible"])
         # (but it moves like anything else)
         self.ipc("test", "arrange", "moveItem", "more", "0", "-1")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         self.assertEqual(self.layout()[0]["items"], ["more"])
         self.ipc("test", "arrange", "done", "", "", "")
 
@@ -242,7 +241,7 @@ class BarLength(LiveCase):
     def test_your_own_order(self):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
         self.ipc("test", "arrange", "overflow", "volume,apps", "power,clock,control", "")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         st = self.bar()
         self.assertEqual(st["order"][:2], ["volume", "apps"])
         self.assertEqual(len(st["order"]), len(set(st["order"])), "a thing is in the order twice")
@@ -259,7 +258,7 @@ class BarLength(LiveCase):
         st = self.squeeze(1400)
         self.assertNotIn("volume", st["overflowed"])
         self.ipc("test", "arrange", "stay", "volume", "false", "")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         self.assertIn("volume", self.bar()["overflowed"])
 
     def test_trying_it_shorter_while_arranging(self):
@@ -267,21 +266,21 @@ class BarLength(LiveCase):
         # after this one that wait for a window to come to the front never see it)
         self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertEqual(self.bar()["gives"], [], "the bar slimmed while being arranged")
         self.ipc("test", "arrange", "preview", "0.67", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         st = self.bar()
         # (Slate's own arrangement fits a third of the screen once its text has gone and its
         # containers have tucked away, so nothing has to leave for More: it slims, as it would)
         self.assertTrue(any(g.startswith("tuck:") for g in st["gives"]), f"tried at a third of its length, nothing tucked away: {st['gives']}")
         self.assertTrue(any(g.startswith("text:") for g in st["gives"]), st["gives"])
         self.ipc("test", "arrange", "preview", "0", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertEqual(self.bar()["gives"], [])
         self.ipc("test", "arrange", "preview", "0.5", "", "")
         self.ipc("test", "arrange", "done", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertEqual(self.bar()["gives"], [], "the bar stayed shortened after arranging ended")
 
     # ---- menu item priority: its window, and its list ------------------------------------------
@@ -309,7 +308,7 @@ class BarLength(LiveCase):
         self.assertEqual(self.bar()["order"][0], last)
         # (the lowest dragged to the top: now it's the last of them to leave)
         self.ipc("test", "arrange", "priority", "move", last, "0")
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         st = self.bar()
         self.assertEqual(st["priority"]["list"], [last] + shown[:-1])
         self.assertEqual(st["order"][0], shown[-2])
@@ -319,10 +318,10 @@ class BarLength(LiveCase):
     def test_priority_leaves_out_what_is_set_to_stay(self):
         self.priority_window()
         self.ipc("test", "arrange", "stay", "volume", "true", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         self.assertNotIn("volume", self.bar()["priority"]["list"])
         self.ipc("test", "arrange", "stay", "volume", "false", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         self.assertIn("volume", self.bar()["priority"]["list"])
 
     def test_escape_goes_back_from_priority_then_ends_the_arranging(self):
@@ -347,10 +346,10 @@ class BarLength(LiveCase):
         st = self.bar()["priority"]
         self.assertGreater(st["scrollMax"], 0, "the list is longer than its window, and should scroll")
         self.ipc("test", "arrange", "priority", "scroll", "60", "")
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
         self.assertEqual(self.bar()["priority"]["scroll"], 60)
         self.ipc("test", "arrange", "priority", "scroll", "100000", "")
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
         self.assertEqual(self.bar()["priority"]["scroll"], st["scrollMax"], "it scrolled past its end")
 
     def test_try_it_shorter_is_a_dropdown_in_both_windows(self):
@@ -364,7 +363,7 @@ class BarLength(LiveCase):
             self.s.wait(lambda st: not st["bar"]["priority"]["lengthMenu"], what="the menu to close on a choice")
             self.assertEqual(self.bar()["priority"]["length"], "Half")
             self.ipc("test", "arrange", "length", "pick", "0", "")
-            self.s.settle(0.3)
+            self.steady(self.bar, floor=0.3)
             self.assertEqual(self.bar()["priority"]["length"], "Full length")
         # (and it doesn't outlive the window it's on)
         self.ipc("test", "arrange", "length", "open", "", "")
@@ -373,10 +372,10 @@ class BarLength(LiveCase):
 
     def test_defaults_put_the_order_back(self):
         self.ipc("test", "arrange", "overflow", "volume,apps", "clock", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         self.assertFalse(self.bar()["isDefault"])
         self.ipc("test", "arrange", "reset", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         st = self.bar()
         self.assertTrue(st["isDefault"])
         self.assertEqual(st["order"][:len(self.ORDER)], self.ORDER)
@@ -390,7 +389,7 @@ class BarLength(LiveCase):
         self.assertFalse(st["scroll"]["handle"])
         self.squeeze(0)
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         self.assertEqual(self.bar()["scroll"], {"at": 0, "max": 0, "handle": False}, "a bar that fits has a scroll handle while arranged")
         self.ipc("test", "arrange", "done", "", "", "")
 
@@ -398,7 +397,7 @@ class BarLength(LiveCase):
         self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
         self.squeeze(900)
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         st = self.bar()
         self.assertEqual(st["gives"], [], "it slimmed rather than scrolled")
         self.assertGreater(st["scroll"]["max"], 50)
@@ -406,16 +405,16 @@ class BarLength(LiveCase):
         self.assertEqual(st["scroll"]["at"], 0, "it didn't start from the beginning")
         x0 = st["line"]["control"]["x"]
         self.ipc("test", "arrange", "scroll", "60", "", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         st = self.bar()
         self.assertEqual(st["scroll"]["at"], 60)
         self.assertEqual(st["line"]["control"]["x"], x0 - 60, "the line didn't slide with it")
         # (no further than its end, nor back past its beginning)
         self.ipc("test", "arrange", "scroll", "100000", "", "")
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
         self.assertEqual(self.bar()["scroll"]["at"], self.bar()["scroll"]["max"])
         self.ipc("test", "arrange", "scroll", "-100000", "", "")
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
         self.assertEqual(self.bar()["scroll"]["at"], 0)
 
     def test_dragging_works_on_a_scrolled_line(self):
@@ -425,12 +424,12 @@ class BarLength(LiveCase):
         self.ipc("test", "arrange", "start", "", "", "")
         self.s.settle(0.8)
         self.ipc("test", "arrange", "scroll", "80", "", "")
-        self.s.settle(0.4)
+        self.steady(self.bar, floor=0.4)
         line = self.bar()["line"]
         a, b = line["apps"], line["spaces"]
         self.ipc("test", "arrange", "drag", str(a["x"] + a["w"] // 2), str(a["y"] + a["h"] // 2),
                  f"{b['x'] + b['w'] // 2 + 6},{b['y'] + b['h'] // 2}")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         self.assertIn("apps", self.layout()[self.where("spaces")]["items"], "dropped on Spaces' container, Apps didn't join it")
 
     def test_it_goes_back_to_the_beginning(self):
@@ -439,10 +438,10 @@ class BarLength(LiveCase):
         self.s.settle(0.8)
         self.ipc("test", "arrange", "scroll", "60", "", "")
         self.ipc("test", "arrange", "done", "", "", "")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         self.assertEqual(self.bar()["scroll"], {"at": 0, "max": 0, "handle": False})
         self.ipc("test", "arrange", "start", "", "", "")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         self.assertEqual(self.bar()["scroll"]["at"], 0)
         self.ipc("test", "arrange", "done", "", "", "")
 

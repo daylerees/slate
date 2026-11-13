@@ -123,7 +123,7 @@ class Assistant(LiveCase):
         self.ipc("assistant", "withdraw", "q4")
         self.ipc("assistant", "withdraw", "q3")
         self.wait(lambda st: not st["power"]["open"], "the question to go")
-        self.s.settle(0.8)
+        self.steady(self.s.state, floor=0.8)
         st = self.s.state()
         self.assertFalse(st["power"]["open"], "the withdrawn second question came up")
         self.assertEqual(st["assistant"]["waiting"], 0)

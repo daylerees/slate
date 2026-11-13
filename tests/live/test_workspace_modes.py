@@ -259,7 +259,7 @@ class WorkspaceNames(LiveCase):
         # cancelling leaves it alone
         self.ipc("test", "type", "Something else")
         self.ipc("test", "answer", "false")
-        self.s.settle(0.6)
+        self.steady(self.s.state, floor=0.6)
         self.assertEqual(self.s.state()["workspaceNames"].get("5"), "Music")
         # emptied: back to the number
         self.ipc("test", "renameWorkspace")
@@ -275,7 +275,7 @@ class WorkspaceNames(LiveCase):
         self.wait(lambda st: st["workspaceNames"].get("7") == "Scratch", "the name")
         # still there while the workspace is
         self.go(1)
-        self.s.settle(2.5)
+        self.steady(self.s.state, floor=2.5)
         self.assertEqual(self.s.state()["workspaceNames"].get("7"), "Scratch")
         # its last window closes: Hyprland removes the workspace, and the name goes with it
         self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.close({{ window = "address:{w["address"]}" }})) end')

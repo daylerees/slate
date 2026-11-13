@@ -33,7 +33,7 @@ class Overlays(LiveCase):
             self.ipc("launcher", "search", q)
             self.s.settle(0.08)
         st = self.wait(lambda st: st["launcher"]["query"] == "24*7" and st["launcher"]["results"], "the sum's results")
-        self.s.settle(0.6)                 # (any late results)
+        self.steady(self.s.state, floor=0.6)  # (any late results)
         st = self.s.state()["launcher"]
         self.assertEqual(st["current"], 0, f"the selection left the top result: {st['results'][:3]}")
         self.assertTrue(st["results"][0].startswith("= 168") or "168" in st["results"][0], st["results"][:3])

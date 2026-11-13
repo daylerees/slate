@@ -34,13 +34,13 @@ class ControlSwitches(LiveCase):
         self.order(["wifi", "glass"])
         self.assertIn("wifi", self.control()["switches"])
         self.ipc("test", "switchMissing", "wifi")
-        self.s.settle(0.3)
+        self.steady(self.control, floor=0.3)
         got = self.control()["switches"]
         self.assertNotIn("wifi", got)
         self.assertEqual(len(got), 8, "its place wasn't filled")
         self.assertEqual(got[0], "glass")
         self.ipc("test", "switchMissing", "")
-        self.s.settle(0.3)
+        self.steady(self.control, floor=0.3)
         self.assertEqual(self.control()["switches"][0], "wifi", "it didn't get its place back")
 
     def test_laid_out_without_overlaps(self):

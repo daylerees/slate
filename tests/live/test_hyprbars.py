@@ -101,7 +101,7 @@ class Hyprbars(LiveCase):
         self.ipc("test", "hyprbars", "choose")
         self.asking("Use Hyprbars?")
         self.answer(False)
-        self.s.settle(1.0)
+        self.steady(self.s.state, floor=1)
         st = self.s.state()
         self.assertEqual((st["titleBarStyle"], st["hyprbars"]), ("slate", "none"))
         self.assertEqual(self.calls(), [])
@@ -151,7 +151,7 @@ class Hyprbars(LiveCase):
         self.s.wait(lambda st: st["titleBarStyle"] == "hyprbars" and not st["hyprbarsFallback"], what="Hyprbars back")
         # asked once
         self.ipc("test", "hyprbars", "check")
-        self.s.settle(2.0)
+        self.steady(self.s.state, floor=2)
         self.assertEqual(self.s.state()["asking"], "")
 
     def test_keep_slates_after_rebuild(self):
@@ -166,7 +166,7 @@ class Hyprbars(LiveCase):
         self.answer(False)
         self.s.wait(lambda st: not st["hyprbarsFallback"], what="the fallback to be forgotten")
         self.ipc("test", "hyprbars", "check")
-        self.s.settle(2.0)
+        self.steady(self.s.state, floor=2)
         st = self.s.state()
         self.assertEqual((st["titleBarStyle"], st["asking"]), ("slate", ""))
 
@@ -179,7 +179,7 @@ class Hyprbars(LiveCase):
         # Hyprbars chosen again by hand (a restored Space, an edited file): Slate's are used,
         # and the question for this Hyprland isn't repeated
         self.ipc("config", "set", "titleBarStyle", "hyprbars")     # (switched straight back: it never sticks)
-        self.s.settle(2.5)
+        self.steady(self.s.state, floor=2.5)
         st = self.s.state()
         self.assertEqual((st["titleBars"], st["titleBarStyle"], st["asking"]), ("slate", "slate", ""))
 
@@ -188,7 +188,7 @@ class Hyprbars(LiveCase):
         self.ipc("test", "hyprbars", "choose")
         self.wait(lambda st: st["titleBarStyle"] == "hyprbars", "Hyprbars chosen")
         self.report(**STALE)
-        self.s.settle(2.0)
+        self.steady(self.s.state, floor=2)
         st = self.s.state()
         self.assertEqual((st["titleBarStyle"], st["asking"], st["hyprbarsFallback"]), ("hyprbars", "", False))
         self.assertEqual(self.calls(), [])
@@ -201,7 +201,7 @@ class Hyprbars(LiveCase):
         self.config("windowMode", "floating")
         self.ipc("config", "set", "titleBarStyle", "hyprbars")     # (switched straight back: it never sticks)
         self.s.wait(lambda st: st["titleBarStyle"] == "slate", what="Slate's title bars")
-        self.s.settle(2.0)
+        self.steady(self.s.state, floor=2)
         self.assertEqual(self.s.state()["asking"], "")
 
     def test_failed_build(self):
@@ -231,7 +231,7 @@ class Hyprbars(LiveCase):
         # offered once for that Hyprland
         before = st["notifications"]["history"]
         self.ipc("test", "hyprbars", "check")
-        self.s.settle(1.5)
+        self.steady(self.s.state, floor=1.5)
         self.assertEqual(self.s.state()["notifications"]["history"], before)
 
     def test_waits_for_game_mode(self):
@@ -254,7 +254,7 @@ class Hyprbars(LiveCase):
         self.ipc("test", "hyprbars", "choose")
         self.asking("Use Hyprbars?")
         self.ipc("test", "hyprbars", "remove")
-        self.s.settle(2.0)
+        self.steady(self.s.state, floor=2)
         self.assertEqual(self.s.state()["asking"], "Use Hyprbars?")
         self.answer(False)
         self.asking("Remove Hyprbars?")

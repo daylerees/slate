@@ -102,7 +102,7 @@ class Dock(LiveCase):
         self.config("dockPreviews", "true")
         self.config("dockPreviewDelay", "3")
         rest()
-        self.s.settle(1.2)
+        self.steady(self.s.state, floor=1.2)
         self.assertFalse(self.s.state()["dock"]["preview"], "the preview came before its 3 seconds")
         # Instant: there as the pointer arrives
         self.config("dockPreviewDelay", "0")
@@ -111,7 +111,7 @@ class Dock(LiveCase):
         # switched off: never, however short the wait
         self.config("dockPreviews", "false")
         rest()
-        self.s.settle(1.2)
+        self.steady(self.s.state, floor=1.2)
         self.assertFalse(self.s.state()["dock"]["preview"], "a preview with previews switched off")
 
     def test_preview_fades_away(self):
@@ -192,7 +192,7 @@ class Dock(LiveCase):
                 with self.subTest(dividers=effect):
                     self.config("dockHoverEffect", effect)
                     self.ipc("test", "dockHover", str(dividers[0]))
-                    self.s.settle(0.5)
+                    self.steady(self.s.state, floor=0.5)
                     d = self.s.state()["dock"]
                     for i in dividers:
                         self.assertEqual((d["lift"][i], d["tilt"][i], d["fade"][i], d["glow"][i]), (0, 0, 1, 0),
@@ -246,17 +246,17 @@ class Badges(LiveCase):
         self.ipc("bar", "panel", "notifications")
         self.wait(lambda st: st["popout"] == "notifications")
         self.ipc("popout", "close")
-        self.s.settle(0.5)
+        self.steady(self.s.state, floor=0.5)
         self.assertEqual(self.foot_badge(self.s.state()), before + 1, "opening the panel cleared the badge")
         # Going to the app does
         self.go("window = [=[address:%s]=]" % foot["address"])
         self.wait(lambda st: self.foot_badge(st) == 0, "the badge to clear when foot is in front")
         # And while you're in it, its notifications don't badge it
         self.s.run(["notify-send", "-a", "foot", "Another", "While you're in foot"])
-        self.s.settle(1)
+        self.steady(self.s.state, floor=1)
         self.assertEqual(self.foot_badge(self.s.state()), 0)
         self.go("workspace = 9")
-        self.s.settle(0.5)
+        self.steady(self.s.state, floor=0.5)
         self.assertEqual(self.foot_badge(self.s.state()), 0, "the one that came while you were there counts as seen")
 
 

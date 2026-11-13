@@ -26,7 +26,7 @@ class BarLayout(LiveCase):
 
     def do(self, what, a="", b="", c=""):
         self.ipc("test", "arrange", what, str(a), str(b), str(c))
-        self.s.settle(0.3)
+        self.steady(self.bar, floor=0.3)
 
     def bar(self):
         return json.loads(self.ipc("test", "state"))["bar"]
@@ -63,7 +63,7 @@ class BarLayout(LiveCase):
         old = [{"items": ["control"]}, {"items": ["apps", "chalk"]}, {"items": ["spaces", "windowmode", "workspaces"]},
                "space", {"items": ["clock"]}, {"items": ["power"]}]
         self.do("load", _json.dumps(old))
-        self.s.settle(0.5)
+        self.steady(self.bar, floor=0.5)
         boxes = [e["items"] for e in self.layout() if not isinstance(e, str)]
         self.assertIn(["apps", "nova"], boxes, boxes)
         self.assertNotIn("chalk", [i for b in boxes for i in b])
@@ -321,22 +321,22 @@ class BarLayout(LiveCase):
                 self.assertTrue(t["visible"], f"{item} isn't on the bar to drag")
                 x, y = t["x"] + t["w"] // 2, t["y"] + t["h"] // 2
                 self.do("drag", x, y, f"{x + 30},{y + 200}")
-                self.s.settle(0.8)
+                self.steady(self.bar, floor=0.8)
                 self.assertFalse(self.bar()["line"][item]["visible"], f"{item} is still on the bar")
                 self.assertEqual(self.blanks("bar-dragged-" + item), [], f"with {item} dragged off")
                 self.do("reset")
-                self.s.settle(0.8)
+                self.steady(self.bar, floor=0.8)
                 self.assertTrue(self.bar()["line"][item]["visible"], f"{item} didn't come back")
                 self.assertEqual(self.blanks("bar-undragged-" + item), [], f"after Defaults, having dragged {item} off")
         self.do("done")
 
     def test_dragging_a_thing_into_another_container(self):
         self.do("start")
-        self.s.settle(0.6)
+        self.steady(self.bar, floor=0.6)
         line = self.bar()["line"]
         a, b = line["wifi"], line["clock"]
         self.do("drag", a["x"] + a["w"] // 2, a["y"] + a["h"] // 2, f"{b['x'] + b['w'] // 2},{b['y'] + b['h'] // 2}")
-        self.s.settle(0.8)
+        self.steady(self.bar, floor=0.8)
         self.assertIn("wifi", self.layout()[self.where("clock")]["items"])
         self.assertEqual(self.blanks("bar-dragged-into"), [])
         self.do("done")
@@ -353,7 +353,7 @@ class BarLayout(LiveCase):
         self.do("moveItem", "notifications", self.where("apps"), 0)
         self.s.settle(0.5)
         self.do("reset")
-        self.s.settle(1.0)
+        self.steady(self.bar, floor=1)
         self.assertTrue(self.bar()["isDefault"])
         after = self.strip("bar-layout-after")
         # (and each thing that's showing has something drawn in its place)
