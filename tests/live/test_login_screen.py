@@ -16,11 +16,16 @@ from live import LiveCase
 from session import in_container, log_errors
 
 PASSWORD = "correct horse"
+BROKEN = "lose the connection"
+REFUSED = {"type": "error", "error_type": "error", "description": "unable to send message: Connection refused (os error 111)"}
 
 
 class FakeGreetd(threading.Thread):
     """greetd's IPC: a 4-byte native-endian length, then JSON. Asks for a password, accepts
-    PASSWORD, and records every request."""
+    PASSWORD, and records every request. Like the real greetd, a refused password ends the
+    attempt there and then, so cancelling it afterwards gets "Connection refused" (the login
+    screen used to show that instead of "Wrong password"). BROKEN plays greetd losing its
+    worker partway through an attempt: a real connection problem."""
 
     def __init__(self, path):
         super().__init__(daemon=True)
@@ -39,6 +44,7 @@ class FakeGreetd(threading.Thread):
             threading.Thread(target=self.serve, args=(conn,), daemon=True).start()
 
     def serve(self, conn):
+        ended = False       # the attempt was refused, so greetd's worker for it is gone
         with conn:
             while True:
                 head = conn.recv(4)
@@ -56,9 +62,15 @@ class FakeGreetd(threading.Thread):
                 t = req.get("type")
                 if t == "create_session":
                     reply = {"type": "auth_message", "auth_message_type": "secret", "auth_message": "Password:"}
+                elif t == "post_auth_message_response" and req.get("response") == PASSWORD:
+                    reply = {"type": "success"}
+                elif t == "post_auth_message_response" and req.get("response") == BROKEN:
+                    reply = REFUSED
                 elif t == "post_auth_message_response":
-                    reply = {"type": "success"} if req.get("response") == PASSWORD else \
-                        {"type": "error", "error_type": "auth_error", "description": "pam_authenticate: AUTH_ERR"}
+                    reply = {"type": "error", "error_type": "auth_error", "description": "pam_authenticate: AUTH_ERR"}
+                    ended = True
+                elif t == "cancel_session" and ended:
+                    reply, ended = REFUSED, False
                 else:
                     reply = {"type": "success"}
                 data = json.dumps(reply).encode()
@@ -128,6 +140,21 @@ class LoginScreen(LiveCase):
             self.assertEqual(greetd.of_type("post_auth_message_response")[0]["response"], "not it")
             self.assertFalse(greetd.of_type("start_session"), "started a session with the wrong password")
             self.assertIsNone(p.poll(), "the login screen quit after a wrong password")
+            # (greetd's reply to Quickshell's cancel comes after the refusal: give it time)
+            time.sleep(0.5)
+            self.assertEqual(ipc("message")[1].strip(), "Wrong password")
+
+        with self.subTest("a real connection problem"):
+            ipc("submit", BROKEN)
+            for _ in range(50):
+                if any(r.get("response") == BROKEN for r in greetd.of_type("post_auth_message_response")):
+                    break
+                time.sleep(0.1)
+            time.sleep(1)
+            shown = ipc("message")[1].strip()
+            self.assertTrue(shown.startswith("Slate couldn't reach the login service"), shown)
+            self.assertNotIn("os error", shown)
+            self.assertFalse(greetd.of_type("start_session"))
 
         with self.subTest("right password"):
             ipc("submit", PASSWORD)

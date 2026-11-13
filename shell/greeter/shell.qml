@@ -147,7 +147,14 @@ ShellRoot {
             Greetd.launch(root.splitExec(s.exec),
                 ["XDG_SESSION_TYPE=wayland", "XDG_SESSION_DESKTOP=" + s.id, "XDG_CURRENT_DESKTOP=" + s.desktops], true);
         }
-        function onError(error) { root.fail("Login error: " + error); }
+        // greetd's own problems. After a wrong password Quickshell cancels the attempt that
+        // greetd has already ended, and greetd answers "Connection refused": no attempt is under
+        // way by then, so it's only logged (shown, it replaced "Wrong password")
+        function onError(error) {
+            if (!root.busy) { console.info("slate-greeter: greetd after the attempt ended: " + error); return; }
+            console.warn("slate-greeter: greetd: " + error);
+            root.fail("Slate couldn't reach the login service. Try again, or restart your computer if it keeps happening.");
+        }
     }
 
     // Which version this is (written by the installer), and the last one that logged someone in
@@ -193,5 +200,6 @@ ShellRoot {
         target: "greeter"
         enabled: Quickshell.env("SLATE_GREETER_TEST") === "1"
         function submit(password: string): void { root.submit(password); }
+        function message(): string { return root.message; }
     }
 }
