@@ -147,6 +147,97 @@ you add a window, a helper process or anything that reads a position from Hyprla
 - A bug a test finds but you don't fix: `@unittest.expectedFailure` (unit) or `KNOWN_ISSUES`
   in `tests/lib/session.py` (live), with a comment, and tell the user.
 
+## Work tracking (Linear)
+
+Slate's work is tracked in Linear, team **Slate** (key `SLT`, issues `SLT-123`), through the
+`linear` MCP server. Every piece of work is an SLT issue; nothing is worked on without one. There
+are no Linear projects, and no `plans/` folder (removed in d5db9bc; old plans are in git
+history, `git show d5db9bc^:plans/<name>.md`). Don't recreate it to track work.
+
+Linear structures the work, it doesn't replace the conversation: questions, approvals (asking
+before every screen takeover included), progress and results still happen in the session. When
+something needs Dayle, ask there, not only on the board.
+
+**Linear stays out of the GitHub side.** It's fine that Linear exists, but no issue ids, links
+or titles in commit messages, branch names, PRs, release notes, tags, the changelog, the site,
+docs or code comments. Linear can point at the repo (commit hashes in issue comments are fine),
+never the other way round. Name branches yourself, never with Linear's `gitBranchName`.
+
+### The board
+
+| Status | Means |
+|---|---|
+| Backlog | Where new issues go. Claude creates issues here. |
+| Todo | Dayle has prioritised it for Claude. Only Dayle moves things here (one exception below). |
+| In Progress | Claude is working on it. Move it when starting, not after. |
+| In Review | Done and committed, not yet released. |
+| Done | Released: move In Review issues here when tagging a release, with the version in the comment. Work with nothing to release (questions, checks, Linear-only tasks) goes straight here. |
+| Canceled | Not doing it (comment why). |
+| Duplicate | Same as another issue (comment which, and mark it a duplicate of it). |
+
+- **Every move gets a short comment** saying what happened (what was done, what's left, commit
+  hashes). **Every comment Claude writes starts with `(Claude)`**: the MCP acts as Dayle.
+- The **In Review comment** is Dayle's pre-release checklist: what changed, how to try it, the
+  commits, and which tests ran and passed.
+- **Picking up work:** Dayle names the issue. The MCP can't read the board's order, so never guess
+  one: if several are in Todo and none is named, ask. When Dayle says to work through Todo, pick
+  the order yourself (blockers, quick wins, related work together) and pause after each. One
+  issue at a time unless Dayle says otherwise (suggesting parallel work is fine).
+- **"Watch Linear"** means poll Todo for new work and pick it up (/loop, self-paced). Otherwise
+  only look at Linear when asked.
+- **Relations** (blocks, related, duplicate) are Claude's call. Don't start an issue blocked by an
+  unfinished one.
+- **The `Blocked` label** means a problem stops progress (needs Dayle's decision, can't
+  reproduce, something outside Slate broken, a manual step like `sudo modprobe vkms`). Add it,
+  leave the issue in its column, comment what's needed; remove it with a comment when sorted,
+  and move on to other work meanwhile.
+- **Sub-issues** for bigger work (a plan becomes a parent with a sub-issue per step). The parent
+  goes In Progress with the first sub-issue, In Review when all are In Review/Done/Canceled, and
+  Done when all are.
+- **Bugs found along the way** get their own issue (Bug, Area, Claude labels, related to the
+  current one), not a fix inside the current one. If it breaks things for users (crash, something
+  unusable, data or settings lost, a visible glitch on a common path), set its priority, put it
+  straight in Todo, pick it up next and tell Dayle. Anything less goes in Backlog, mentioned in
+  the session.
+
+### Issues and labels
+
+- **Descriptions:** Claude's issues have a short plain summary on top (what's wrong or wanted, and
+  "Done when: …"), then the implementation detail (files, plan, repro, logs) in a collapsible
+  `+++ Agent notes` … `+++` section (Linear stores it as `>>>`). Dayle's issues are written as
+  prompts: read them as the brief.
+- **Labels, sparingly:** exactly one **Work** label, every **Area** it really touches, and
+  `Claude` on issues Claude creates. Nothing else, and no new labels without asking. Change labels
+  with `addLabels`/`removeLabels`, never `labels` (it replaces the whole set). If Dayle's issue has
+  no Work label, add the one that fits when picking it up and say so.
+- **Work** (one): `Feature` (new or changed for users), `Bug` (broken), `Experiment`. An
+  experiment never goes into a release without Dayle's approval: it's built on its own branch
+  (`experiment/<short-name>`) from master and merged only once approved, kept contained (new
+  files or one clearly marked place) with what it touches listed on the issue, and goes to In
+  Review with the branch named when it's ready to judge.
+- **Area** (one or more; a new setting goes under what it controls, plus Settings only if the
+  Settings window itself changes; if nothing fits, suggest a new label rather than make one):
+
+| Area | Covers |
+|---|---|
+| Menu bar | Bar.qml, BarEditor.qml, bar layout, tray |
+| Dock | the dock, its menus, More, Downloads, now playing |
+| Launcher | Launcher.qml, app search |
+| Control centre | the control centre and the bar's panels (Popouts.qml) |
+| Notifications | Notifications.qml, NotificationCard, OSD |
+| Menus | DesktopMenu.qml, TrayMenu.qml |
+| Windows & workspaces | windows, title bars, switcher, workspaces, overview, Spaces, hot corners |
+| Appearance | themes, glass, shadows, wallpaper, icons, pointers, app theming, interface size, animations |
+| Sound | Slate's sounds (make-sounds.py), audio settings |
+| Hardware | displays, input, power and battery, network and Bluetooth, printers, webcam |
+| Settings | the Settings window itself: pages, search, defaults |
+| Lock & login | lock screen, login screen and greeter, screensaver, privacy |
+| Session & install | bin/slate, session, reload, installer, packaging, updates |
+| Welcome | the Welcome window, first login |
+| Assistant | Nova, the MCP server (`slate mcp`) |
+| Tests | the test suite itself and tests/run (not a feature's own tests) |
+| Site & docs | site/, the site's docs, README, docs/ when they're the work itself |
+
 ## Releases
 
 Releases are tagged with [Semantic Versioning](https://semver.org/): annotated tags named
