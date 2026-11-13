@@ -156,7 +156,15 @@ as its own check.
   takes the second screen.
 - **visual**: add a scene to `tests/visual/scenes.py`, then
   `tests/run --tier visual --filter <scene>` (it fails: no approved picture yet), check
-  `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`.
+  `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`. A scene's steps
+  are IPC calls, `("!command", …)` (run in the session, waited for), `("&command", …)` (left
+  running in the session until the scene ends, like the pretend media player
+  `tests/lib/fake_mpris.py`, or a window) and `lambda st: …` (a wait on the state). The
+  undo runs its IPC calls and commands, then stops the `&` commands, then its waits (for what
+  they showed to be gone). Anything that changes by itself is made fixed rather than masked
+  where it can be: `fake_mpris.py --still --art <file>` keeps the track where it is, with a
+  fixed cover, and the windows in the switcher and overview scenes are terminals showing a
+  fixed text with the cursor hidden and no prompt (`_still_window` in scenes.py).
 
 A bug found by a test but not fixed yet: mark the test `@unittest.expectedFailure` (unit), or
 add the log line to `KNOWN_ISSUES` in `tests/lib/session.py` (live), with a comment. Take it

@@ -185,6 +185,15 @@ PanelWindow {
         }
         return null;
     }
+    // How many of the live captures have a picture yet (the test IPC's state)
+    function previewsReady() {
+        let n = 0;
+        for (let i = 0; i < shotRepeater.count; i++) {
+            const it = shotRepeater.itemAt(i);
+            if (it && it.hasContent) n++;
+        }
+        return n;
+    }
     // The wallpaper behind see-through windows' previews (WallBlur), decoded ahead of time at
     // WallBlur's size so it's in the image cache as the switcher opens
     Image {
