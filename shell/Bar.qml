@@ -128,9 +128,47 @@ PanelWindow {
         for (const name in left.things) {
             const t = left.things[name], p = t.mapToItem(null, 0, 0);
             out[name] = { visible: t.visible, text: t.plain ? (t.slimText ? "" : t.drawnLabel) : "", opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
-                          box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
+                          lit: t.lit, box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
         }
         return out;
+    }
+    // ---- The things on the bar take the pointer across its whole depth -----------------------
+    // Each thing (and each dot, and each of the tray's icons) is pressed and lit anywhere from
+    // the screen's edge to the bar's inner edge above or below it, not only on the container
+    // drawn in the middle (Reach, below), so it's easy to hit: flung against the screen's edge,
+    // the pointer still lands on it. Only across: along the bar, the gaps between containers
+    // are empty bar as ever. Not while the bar's being arranged, which goes by where things
+    // are along the line alone. `reachOut`: how far that is past the containers, each side
+    readonly property real reachOut: (barHeight - capsuleHeight) / 2
+    // What's on the line at a point in the bar's window, going by where it is along the line
+    // alone (anywhere across the bar counts as the line's middle): what a click there reaches
+    function lineAt(w) {
+        const p = left.mapFromItem(null, w.x, w.y);
+        return bar.vert ? Qt.point(left.width / 2, p.y) : Qt.point(p.x, left.height / 2);
+    }
+    // (tests: the session has no pointer) A pretend pointer at x, y in the bar window's own
+    // coordinates, lighting what it's over as the real one does; -1, -1: none
+    property point testPointer: Qt.point(-1, -1)
+    // (tests) The band of the bar itself in its window (less the room for the shadow and the
+    // flared corners): where a pointer counts as on the bar
+    readonly property var band: ({ x: Math.round(content.x + (vert ? bgX : 0)), y: Math.round(content.y + (vert ? 0 : bgY)),
+                                   w: Math.round(vert ? barHeight : content.width), h: Math.round(vert ? content.height : barHeight) })
+    // (tests) The pretend pointer at x, y ("hover"), taken away ("leave"), or pressed there
+    // ("click"): what it's over (the thing's name, and the dot for the workspaces), and whether
+    // that's lit
+    function testPoint(x, y, what) {
+        testPointer = what === "leave" ? Qt.point(-1, -1) : Qt.point(x, y);
+        let name = "";
+        for (const n in left.things) {
+            const t = left.things[n];
+            if (t.visible && t.reach.contains(t.reach.mapFromItem(null, x, y))) { name = n; break; }
+        }
+        const dot = name === "workspaces" ? wsRow.dotAt(x, y) : -1;
+        if (what === "click" && name !== "") {
+            if (name === "workspaces") { if (dot >= 0) wsRow.spaces[dot].activate(); }
+            else left.things[name].clicked();
+        }
+        return { thing: name, dot: dot, lit: name === "workspaces" ? dot >= 0 && wsRow.litDot === dot : name !== "" && left.things[name].lit };
     }
     function outermost(item) {
         const box = item ? item.shell : null;
@@ -368,10 +406,12 @@ PanelWindow {
             enabled: !Config.barArranging
             onTapped: at => {
                 const w = hitArea.mapToItem(null, at.position.x, at.position.y);
-                const p = left.mapFromItem(null, w.x, w.y);
+                // (by where it is along the line: the things on it take the pointer across the
+                // bar's whole depth)
+                const p = bar.lineAt(w);
                 const under = left.childAt(p.x, p.y);
                 if (under && under.isBox) {
-                    const q = under.row.mapFromItem(null, w.x, w.y), cell = under.row.childAt(q.x, q.y);
+                    const q = under.row.mapFromItem(left, p.x, p.y), cell = under.row.childAt(q.x, q.y);
                     if (cell !== winTitle && cell !== winIcon) return;
                 }
                 // Pointing at the bar from just off it, where it was clicked
@@ -702,15 +742,14 @@ PanelWindow {
                 y: bar.vert ? 0 : bar.bgY
                 color: bar.barBackground
                 // Clicking an empty part of the bar closes any open panel
+                // (by where it is along the line: above or below a thing is the thing)
                 MouseArea {
                     anchors.fill: parent
                     onClicked: m => {
-                        const onItem = row => {
-                            const p = mapToItem(row, m.x, m.y);
-                            const c = row.childAt(p.x, p.y);
-                            return row.contains(p) && c !== null && !c.isSpace;       // (a flexible space is empty bar)
-                        };
-                        if (!onItem(left) && bar.popouts) bar.popouts.close();
+                        const p = bar.lineAt(mapToItem(null, m.x, m.y));
+                        const c = left.childAt(p.x, p.y);
+                        const onItem = left.contains(p) && c !== null && !c.isSpace;       // (a flexible space is empty bar)
+                        if (!onItem && bar.popouts) bar.popouts.close();
                     }
                 }
             }
@@ -1431,6 +1470,9 @@ PanelWindow {
                     interactive: true
                     hoverFill: bar.hoverFill
                     hoverStrength: bar.hoverStrength
+                    // (each dot pressed and lit across the bar's whole depth, as everything on it)
+                    reachAcross: Config.barArranging ? 0 : bar.reachOut + (bar.capsuleHeight - wsCap.dot) / 2
+                    pretend: bar.testPointer
                 }
             }
 
@@ -1450,8 +1492,12 @@ PanelWindow {
                 readonly property real fullLength: (bar.vert ? trayRow.height : trayRow.width) + 10     // 5 px each side
                 readonly property real closedLength: 22 + 10
                 length: collapsible ? closedLength + (fullLength - closedLength) * openness : fullLength
-                clip: collapsible
-                HoverHandler { id: trayAreaHover; onHoveredChanged: if (hovered) trayClose.stop(); else if (trayCapsule.expanded) trayClose.restart() }
+                // (only while it slides: clipped, its icons' reach past it would be cut off.
+                // Open or closed, nothing's past its edges to clip)
+                clip: collapsible && openness > 0 && openness < 1
+                // (the pointer anywhere across the bar over it, as over its icons)
+                readonly property bool reached: reach.hovered
+                onReachedChanged: if (reached) trayClose.stop(); else if (trayCapsule.expanded) trayClose.restart()
                 // Stays open while one of its apps' menus is open
                 Timer { id: trayClose; interval: 4000; onTriggered: if (trayMenuWin.visible) restart(); else trayCapsule.expanded = false }
                 BarLine {
@@ -1470,11 +1516,10 @@ PanelWindow {
                             required property int index
                             // Hover highlight: the whole of its part of the container, as the status icons'
                             TrayFill {
-                                lit: trayHover.hovered
+                                lit: trayReach.hovered
                                 atStart: trayItem.index === 0
                                 atEnd: !trayCapsule.collapsible && trayItem.index === SystemTray.items.values.length - 1
                             }
-                            HoverHandler { id: trayHover }
                             // Icon drawn in high-contrast black and white (light parts white,
                             // dark/coloured parts black) to match the rest of the bar; in the
                             // Colourful look, in its own colours, unless Settings → Menu Bar →
@@ -1584,18 +1629,23 @@ PanelWindow {
                             }
                             // Right-click (or any click, for apps that only have a menu): the app's
                             // menu, drawn by Slate (TrayMenu.qml). Left-click: the app's own action;
-                            // middle-click: its other one
-                            ClickArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                                onClicked: m => {
-                                    const it = trayItem.modelData;
-                                    const menuOnly = it.onlyMenu || bar.indicatorIds.includes(it.id);
-                                    if (m.button === Qt.RightButton || (m.button === Qt.LeftButton && menuOnly)) {
-                                        if (it.hasMenu) bar.openTrayMenu(it.menu, trayItem);
+                            // middle-click: its other one. Across the bar's whole depth, as
+                            // everything on it
+                            Reach {
+                                id: trayReach
+                                extra: (bar.capsuleHeight - (bar.vert ? trayItem.width : trayItem.height)) / 2
+                                ClickArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                                    onClicked: m => {
+                                        const it = trayItem.modelData;
+                                        const menuOnly = it.onlyMenu || bar.indicatorIds.includes(it.id);
+                                        if (m.button === Qt.RightButton || (m.button === Qt.LeftButton && menuOnly)) {
+                                            if (it.hasMenu) bar.openTrayMenu(it.menu, trayItem);
+                                            else it.activate();
+                                        } else if (m.button === Qt.MiddleButton) it.secondaryActivate();
                                         else it.activate();
-                                    } else if (m.button === Qt.MiddleButton) it.secondaryActivate();
-                                    else it.activate();
+                                    }
                                 }
                             }
                         }
@@ -1606,8 +1656,7 @@ PanelWindow {
                         id: trayToggle
                         visible: trayCapsule.collapsible
                         width: 22; height: 22
-                        TrayFill { lit: toggleHover.hovered; atStart: SystemTray.items.values.length === 0 || !trayCapsule.showIcons; atEnd: true }
-                        HoverHandler { id: toggleHover }
+                        TrayFill { lit: toggleReach.hovered; atStart: SystemTray.items.values.length === 0 || !trayCapsule.showIcons; atEnd: true }
                         Text {
                             anchors.centerIn: parent
                             // Points the way the icons open (away from the rest of the bar), turning
@@ -1617,7 +1666,11 @@ PanelWindow {
                             color: bar.textColor
                             font.family: bar.iconFont; font.pixelSize: 16
                         }
-                        ClickTap { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
+                        Reach {
+                            id: toggleReach
+                            extra: (bar.capsuleHeight - 22) / 2
+                            ClickTap { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
+                        }
                     }
                 }
             }
@@ -1831,7 +1884,7 @@ PanelWindow {
         // one. While the bar's being arranged: solid and at full strength, there to be picked up
         // (`over`: the pointer's on it, or on what it goes with; `fades` false: what it's part of
         // does the fading. Both for the active window's icon, which goes with its title)
-        property bool over: capHover.hovered
+        property bool over: capReach.hovered
         property bool fades: true
         readonly property bool lifted: over && Config.barItemHoverSet
         readonly property bool own: !Config.barArranging && (lifted || Config.barItemSet)
@@ -1845,11 +1898,12 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: bar.hoverFill
-            opacity: cap.hoverTint && capHover.hovered ? bar.hoverStrength : 0
+            opacity: cap.hoverTint && capReach.hovered ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         Gloss { radius: cap.radius; }          // glass: a sheen
-        HoverHandler { id: capHover }
+        // (pointed at across the bar's whole depth, as the things in it are)
+        Reach { id: capReach }
         ClickTap { onTapped: cap.clicked() }
         ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
@@ -1919,6 +1973,16 @@ PanelWindow {
         width: bar.vert ? bar.capsuleHeight : length >= 0 ? length : segRow.width + pad
         height: bar.vert ? (length >= 0 ? length : segRow.height + 14) : bar.capsuleHeight
 
+        // What takes the pointer: the whole depth of the bar across it (Reach). (First, so
+        // whatever's put inside it, the dots or the tray's icons, has the pointer before it)
+        Reach {
+            id: segReach
+            ClickTap { enabled: seg.clickable; onTapped: seg.clicked() }
+            ClickTap { enabled: seg.clickable; acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
+            WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
+        }
+        property alias reach: segReach
+        readonly property bool lit: hover && segReach.hovered
         // Hover fill: solid at the group's rounded ends, fading out at the
         // square sides that meet a separator
         Rectangle {
@@ -1936,7 +2000,7 @@ PanelWindow {
             bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0)
             topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0)
             bottomRightRadius: Config.corner(seg.last ? bar.capsuleRadius : 0)
-            opacity: seg.hover && segHover.hovered ? bar.hoverStrength : 0
+            opacity: seg.lit ? bar.hoverStrength : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         }
         // Picked, while the bar's being arranged: lit in the accent colour, with an outline
@@ -1973,10 +2037,26 @@ PanelWindow {
                 font.weight: Font.Medium
             }
         }
-        HoverHandler { id: segHover }
-        ClickTap { enabled: seg.clickable; onTapped: seg.clicked() }
-        ClickTap { enabled: seg.clickable; acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
-        WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
+    }
+
+    // What takes the pointer for a thing on the bar (its parent): the whole depth of the bar
+    // across it, from the screen's edge to the bar's inner edge, rather than only the container
+    // drawn in the middle; along the bar, just the thing's own length. What it holds (tap and
+    // wheel handlers, a click area) works anywhere in it, and `hovered` is the pointer in it.
+    // `extra`: how far in from the container's edges the thing sits (a tray icon is smaller).
+    // (Nothing it's in may clip it: a container that tucks clips only while it slides)
+    component Reach: Item {
+        id: rc
+        property real extra: 0
+        readonly property real out: Config.barArranging ? 0 : bar.reachOut + extra
+        x: bar.vert ? -out : 0
+        y: bar.vert ? 0 : -out
+        width: parent ? parent.width + (bar.vert ? 2 * out : 0) : 0
+        height: parent ? parent.height + (bar.vert ? 0 : 2 * out) : 0
+        HoverHandler { id: rcHover }
+        // (or the tests' pretend pointer: bar.testPointer)
+        readonly property bool hovered: rcHover.hovered
+            || (bar.testPointer.x >= 0 && rc.contains(rc.mapFromItem(null, bar.testPointer.x, bar.testPointer.y)))
     }
 
     // A container on the bar: the rounded shape, holding one thing or several in a row with a
@@ -2061,8 +2141,10 @@ PanelWindow {
         readonly property real fullLength: hollow ? Math.max(30, bar.vert ? row.height : row.width) : bar.vert ? row.height : row.width
         readonly property real closedLength: bar.vert ? toggle.height : toggle.width
         length: (tuck ? closedLength + (fullLength - closedLength) * openness : fullLength) + grip
-        clip: tuck
-        HoverHandler { onHoveredChanged: if (hovered) closing.stop(); else if (box.expanded) closing.restart() }
+        // (only while it slides open or closed: clipped, its things' reach past it would be cut
+        // off. Open or closed, nothing's past its edges to clip)
+        clip: tuck && openness > 0 && openness < 1
+        onOverChanged: if (over) closing.stop(); else if (box.expanded) closing.restart()
         // Stays open while one of its panels is open
         Timer { id: closing; interval: 4000; onTriggered: if (bar.popoutHere) restart(); else box.expanded = false }
         BarLine {

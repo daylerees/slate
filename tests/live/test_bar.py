@@ -1,4 +1,6 @@
 """The bar's panels open under their buttons and close again."""
+import json
+
 from live import LiveCase
 
 # Each panel, and the setting that puts its button on the bar (None: always there)
@@ -170,3 +172,67 @@ class WorkspaceDots(LiveCase):
                     self.assertEqual(d["active"] - first, 2, "the one in use isn't held in the middle")
                 # (the regression: setting `first` once cut its binding, so the row never moved)
                 self.assertAlmostEqual(d["first"], first, delta=0.05, msg=d)
+
+
+class FullDepth(LiveCase):
+    """The bar's buttons take the pointer across the bar's whole depth (Bar.qml, Reach): just
+    inside the screen's edge and just inside the bar's inner edge, above or below a button, it
+    lights and a click opens its panel, at each edge of the screen. Along the bar nothing grows:
+    the gaps between containers are still empty bar. (The session has no pointer: a pretend one,
+    test barPoint, goes by the same areas the real one does.)"""
+    def point(self, x, y, what="hover"):
+        return json.loads(self.ipc("test", "barPoint", str(x), str(y), what))
+
+    def tearDown(self):
+        self.point(-1, -1, "leave")
+        super().tearDown()
+
+    def test_every_edge(self):
+        self.keep_setting("barPosition")
+        for edge in ("top", "bottom", "left", "right"):
+            with self.subTest(edge):
+                self.config("barPosition", edge)
+                self.wait(lambda st: st["barEdge"] == edge, f"the bar at the {edge}")
+                vert = edge in ("left", "right")
+                read = lambda: (self.s.state()["bar"]["band"], self.s.state()["bar"]["line"])
+                band, line = self.steady(read, floor=0.6)
+                # (along the bar, and the two ends across it: a pixel in from each)
+                along = lambda t: (t["y"] + t["h"] / 2) if vert else (t["x"] + t["w"] / 2)
+                ends = (band["x"] + 1, band["x"] + band["w"] - 1) if vert else (band["y"] + 1, band["y"] + band["h"] - 1)
+                at = lambda a, c: (c, a) if vert else (a, c)
+                for name in ("clock", "control"):
+                    t = line[name]
+                    self.assertTrue(t["visible"], f"{name} isn't on the bar")
+                    for c in ends:
+                        got = self.point(*at(along(t), c))
+                        self.assertEqual(got["thing"], name, f"{edge}: {c} across isn't on {name}: {got}")
+                        self.assertTrue(got["lit"], f"{edge}: {name} isn't lit with the pointer {c} across")
+                        self.assertTrue(self.s.state()["bar"]["line"][name]["lit"])
+                    self.point(-1, -1, "leave")
+                    self.assertFalse(self.s.state()["bar"]["line"][name]["lit"], f"{name} stayed lit")
+                # A click at the screen's edge opens the clock's panel, and one at the inner edge
+                # the control centre's
+                self.point(*at(along(line["clock"]), ends[0]), "click")
+                self.wait(lambda st: st["popout"] == "calendar", f"{edge}: the calendar from a click at the screen's edge")
+                self.point(*at(along(line["control"]), ends[1]), "click")
+                self.wait(lambda st: st["popout"] == "control", f"{edge}: the control centre from a click at the bar's inner edge")
+                self.ipc("popout", "close")
+                self.wait(lambda st: st["popout"] == "")
+                # The first workspace dot, the same (8 px in from its container's end, 14 across)
+                dots = line["workspaces"]
+                got = self.point(*at((dots["y"] if vert else dots["x"]) + 8 + 7, ends[0]))
+                self.assertEqual((got["thing"], got["dot"], got["lit"]), ("workspaces", 0, True), f"{edge}: the dot at the screen's edge: {got}")
+                # Between two containers, and before the first: still empty bar
+                shown = sorted((t for t in line.values() if t["visible"] and t["box"] >= 0 and (t["h"] if vert else t["w"]) > 0),
+                               key=lambda t: t["y"] if vert else t["x"])
+                gaps = [(a, b) for a, b in zip(shown, shown[1:]) if a["box"] != b["box"]]
+                self.assertTrue(gaps, "no two containers to look between")
+                a, b = gaps[0]
+                end_a = (a["y"] + a["h"]) if vert else (a["x"] + a["w"])
+                start_b = b["y"] if vert else b["x"]
+                for c in ends:
+                    got = self.point(*at((end_a + start_b) / 2, c))
+                    self.assertEqual(got["thing"], "", f"{edge}: the gap between containers took the pointer: {got}")
+                first = shown[0]["y"] if vert else shown[0]["x"]
+                got = self.point(*at(first - 3, ends[0]))
+                self.assertEqual(got["thing"], "", f"{edge}: the bar's end took the pointer: {got}")
