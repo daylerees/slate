@@ -857,6 +857,11 @@ PanelWindow {
                 // all of them when the bar goes into or out of being arranged, or back to Slate's
                 // own: should one ever have been left undrawn, that draws it again)
                 for (const name in things) { const t = things[name]; t.name = name; t.held = afresh || t.carried || !t.visible || t.opacity < 1; t.carried = false; }
+                // (where each one was: one that's showing and moves to another container is held a
+                // moment after the move as well, as a drop into another container was sometimes left
+                // with its room there and nothing drawn in it)
+                const was = {};
+                for (const name in things) was[name] = things[name].parent;
                 afresh = false;
                 showing.restart();
                 // (each with its place in the arrangement, which is what a change is made by)
@@ -883,6 +888,8 @@ PanelWindow {
                 if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
                 made = fresh;
                 for (const m of old) m.destroy();
+                for (const name in things) if (things[name].parent !== was[name] && was[name] !== null) things[name].held = true;
+                showing.restart();
                 fitLater.restart();
             }
             Component.onCompleted: place()
