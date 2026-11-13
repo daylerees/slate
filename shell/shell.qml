@@ -185,7 +185,9 @@ ShellRoot {
                                       weather_code: [61, 3, 0, 71, 2],
                                       temperature_2m_max: [15, 12, 9, 3, 7], temperature_2m_min: [8, 6, 1, -2, 2] } : null;
         }
-        // The bar's right-click menu: open it, or choose one of its rows by its label
+        // A reply from the weather service, as if a fetch had just brought it: the panels keep
+        // what they had unless it's a forecast. Returns whether it was taken.
+        function weatherReply(text: string): bool { return popouts.takeWeather(text); }
         // The bar's right-click menu: "open", or an item to choose ("Position/Bottom": one in a
         // submenu); menuKey sends a key to it, as pressing it there does (Up, Down, Enter, Space,
         // Left, Right, Home, End, Escape)
@@ -304,6 +306,7 @@ ShellRoot {
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
                 picker: { open: picker.shown, mode: picker.mode },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
+                weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },
                 control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,
                            rects: Config.controlSwitchRects(Config.controlSwitches.length, 200, 300).map(q => [q.x, q.y, q.width, q.height]) },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,

@@ -457,10 +457,22 @@ PanelWindow {
         id: weatherFetch
         command: ["curl", "-sf", "--max-time", "10",
             "https://api.open-meteo.com/v1/forecast?latitude=" + Config.s.latitude + "&longitude=" + Config.s.longitude + "&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto" + (Config.fahrenheit ? "&temperature_unit=fahrenheit" : "")]
-        stdout: StdioCollector {
-            onStreamFinished: { try { const j = JSON.parse(text); pop.weather = j.current; pop.forecast = j.daily; } catch (e) {} }
-        }
+        stdout: StdioCollector { onStreamFinished: if (!pop.takeWeather(text) && !Config.testMode) weatherRetry.restart() }
     }
+    // A reply is taken only when it's a forecast: anything else (nothing at all with no
+    // network, or something that isn't one, as can come while a VPN reconnects after sleep)
+    // leaves the weather there was, rather than an empty space where it goes. True if taken.
+    function takeWeather(text: string): bool {
+        let j = null;
+        try { j = JSON.parse(text); } catch (e) { return false; }
+        if (!j || typeof j.current !== "object" || !j.current || typeof j.current.temperature_2m !== "number"
+                || typeof j.daily !== "object" || !j.daily || !Array.isArray(j.daily.time)) return false;
+        pop.weather = j.current;
+        pop.forecast = j.daily;
+        return true;
+    }
+    // After a fetch that didn't bring the weather, another soon, not in half an hour
+    Timer { id: weatherRetry; interval: 2 * 60 * 1000; onTriggered: if (pop.weatherPlace !== "" && !weatherFetch.running) weatherFetch.running = true }
     // Only once a location is set (Settings → General → Location); again when it changes
     // (and when the temperature unit does: Settings → Region → Temperature)
     readonly property string weatherPlace: Config.s.locationName === "" ? "" : Config.s.latitude + "," + Config.s.longitude + (Config.fahrenheit ? ",f" : "")
