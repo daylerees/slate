@@ -134,7 +134,8 @@ PanelWindow {
     }
     function outermost(item) {
         const box = item ? item.shell : null;
-        if (!box) return "";
+        // (tried shorter: the line's ends are off in the middle of the edge, nowhere near its corners)
+        if (!box || previewShift > 0.5) return "";
         const shown = [];
         for (const c of left.children) if (c.visible && (bar.vert ? c.height : c.width) > 0.5) shown.push(c);
         if (shown.length === 0) return "";
@@ -426,6 +427,13 @@ PanelWindow {
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
     readonly property real lineFull: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
     readonly property real lineLength: Math.max(0, lineFull - squeeze - lineFull * Config.barPreview)
+    // Tried shorter while it's arranged (Config.barPreview, "Try it shorter"): the shorter line
+    // sits in the middle of the edge, half of what it gives up at each end, gliding there
+    property real previewShift: lineFull * Config.barPreview / 2
+    Behavior on previewShift { NumberAnimation { duration: Config.ms(240); easing.type: Easing.OutCubic } }
+    // (tests: where the line's room starts and ends along the bar, and the bar's length)
+    readonly property var lineSpan: ({ preview: Config.barPreview, start: sidePadding + previewShift,
+                                      end: sidePadding + previewShift + lineLength, length: vert ? content.height : content.width })
     // (tests, and the arranging panel's narrow preview: the line made this much shorter)
     property real squeeze: 0
 
@@ -597,8 +605,8 @@ PanelWindow {
         visible: Config.barArranging && bar.scrollMax > 0
         readonly property real thick: 14                    // (its hit area: the handle's drawn slimmer within it)
         readonly property real travel: Math.max(1, bar.lineLength - handle.length)
-        x: bar.vert ? (bar.atRight ? bar.width - bar.barHeight - thick - 2 : bar.barHeight + 2) : bar.sidePadding
-        y: bar.vert ? bar.sidePadding : (bar.atBottom ? bar.height - bar.barHeight - thick - 2 : bar.barHeight + 2)
+        x: bar.vert ? (bar.atRight ? bar.width - bar.barHeight - thick - 2 : bar.barHeight + 2) : bar.sidePadding + bar.previewShift
+        y: bar.vert ? bar.sidePadding + bar.previewShift : (bar.atBottom ? bar.height - bar.barHeight - thick - 2 : bar.barHeight + 2)
         width: !visible ? 0 : bar.vert ? thick : bar.lineLength
         height: !visible ? 0 : bar.vert ? bar.lineLength : thick
         Rectangle {
@@ -810,8 +818,8 @@ PanelWindow {
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
             // (slid along by bar.scroll while the bar's arranged and too long to show whole)
-            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding - bar.scroll
-            y: bar.vert ? bar.sidePadding - bar.scroll : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
+            x: bar.vert ? bar.bgX + (bar.barHeight - bar.capsuleHeight) / 2 : bar.sidePadding + bar.previewShift - bar.scroll
+            y: bar.vert ? bar.sidePadding + bar.previewShift - bar.scroll : bar.bgY + (bar.barHeight - bar.capsuleHeight) / 2
 
             // Everything that can go in a container, by its name in the arrangement
             readonly property var things: ({

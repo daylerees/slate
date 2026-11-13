@@ -352,3 +352,14 @@ for _p in ("sound", "webcam"):
         "wait": lambda st, _p=_p: st["settings"]["open"] and st["settings"]["section"] == _p,
         "settle": 1.2, "undo": [("settings", "close")],
     }
+
+# Edit layout's "Try it shorter": the bar at half its length, in the middle of its edge, at the
+# top and on a side
+for _name, _edge in (("bar-shorter", "top"), ("bar-shorter-left", "left")):
+    SCENES[_name] = {
+        "settings": {"barPosition": _edge},
+        "do": [("notifications", "clear"), ("test", "arrange", "start", "", "", ""),
+               lambda st: st["bar"]["editor"], ("test", "arrange", "preview", "0.5", "", "")],
+        "wait": lambda st, _edge=_edge: st["bar"]["arranging"] and st["bar"]["editor"] and st["barEdge"] == _edge,
+        "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
+    }
