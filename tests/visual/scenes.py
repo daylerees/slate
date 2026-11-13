@@ -389,6 +389,13 @@ SCENES["settings-displays-hdr"] = {
     "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.local/state/slate/displays.json"')],
 }
 
+# Settings → Sound scrolled to its sound effects, each with its slider (Nova's answer among them)
+SCENES["settings-sound-effects"] = {
+    "do": [("notifications", "clear"), ("settings", "find", "sound", "Sound effects")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "sound", "settle": 2,
+    "undo": [("settings", "close")],
+}
+
 # About → What Slate is using: its memory and processor right now
 SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
 

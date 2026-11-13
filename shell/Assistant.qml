@@ -232,13 +232,21 @@ PanelWindow {
         else if (e.type === "done") {
             patch({ answer: String(e.text || answer) });
             if (e.session) session = e.session;
+            const waited = working && shown && Date.now() - (cur ? cur.at : 0) >= quickAnswer;
             finished();
+            if (waited && !Config.gameMode) Config.playSound("answered", "answered");
         } else if (e.type === "error") {
             if (e.kind !== "stopped") patch({ error: { kind: e.kind || "failed", message: String(e.message || ""), detail: String(e.detail || "") } });
             else if (answer === "") patch({ answer: "Stopped." });
             finished();
         }
     }
+    // Nova's own sound (Settings → Sound → Nova's answer) is for an answer you were waiting
+    // for, with the window showing: once, as the whole answer arrives (not for each piece of
+    // it). Not for one that came straight back (you never looked away), not when the window is
+    // away (the notification carries it, with its own sound), not for errors or Stop, not for
+    // the history, and not in game mode. The window isn't on the lock or login screens
+    readonly property int quickAnswer: 1000
     function finished() {
         if (!working) return;
         working = false;

@@ -289,7 +289,7 @@ FloatingWindow {
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorTheme", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
-        sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume",
+        sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume", "answeredVolume",
             "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC", "reopenAppsAfterRestart"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"],
@@ -3524,6 +3524,12 @@ FloatingWindow {
                     label: "Questions and warnings"
                     detail: "A soft, questioning sound when Slate asks you to confirm something, an app asks for your password, or a notification is urgent"
                     which: "attention"; sample: "attention"
+                }
+                Separator {}
+                SoundSetting {
+                    label: "Nova's answer"
+                    detail: "A soft, warm tone when an answer arrives while Nova's window is open (if you've closed it, a notification tells you instead)"
+                    which: "answered"; sample: "answered"
                 }
                 Separator {}
                 SoundSetting {

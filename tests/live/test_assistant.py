@@ -467,6 +467,72 @@ class Nova(LiveCase):
         self.s.settle(0.3)
         self.assertEqual(self.nova()["actions"], [])
 
+    # ---- Nova's answer (Settings → Sound): what would have played is in state()["sounds"] ----
+    def answering_in(self, seconds, fail=False):
+        """A stand-in agent that answers in two pieces, after `seconds` (or says nothing and fails)."""
+        script = os.path.join(self.s.env["HOME"], "answering-agent.py")
+        with open(script, "w") as f:
+            f.write("import sys, time\nsys.stdin.read()\ntime.sleep(%s)\n" % seconds
+                    + ("sys.exit(3)\n" if fail else "print('Here', flush=True)\ntime.sleep(0.2)\nprint('you are.', flush=True)\n"))
+        self.config("assistantAgent", "custom")
+        self.config("assistantCommand", "%s %s" % (sys.executable, script))
+        self.ipc("test", "assistantAccepted", "custom")
+
+    def answer_sounds(self, prompt, close=False, stop=False):
+        """Ask (closing the window or pressing Stop as it works), wait for the end of the run,
+        and say how many times Nova's answer would have played."""
+        self.ipc("test", "sounds")
+        self.ipc("assistant", "ask", prompt)
+        self.wait(lambda st: st["assistant"]["asked"] == prompt and st["assistant"]["working"], "it to start", timeout=15)
+        if close:
+            self.ipc("assistant", "close")
+        if stop:
+            self.s.settle(1.3)
+            self.ipc("assistant", "stop")
+        self.wait(lambda st: st["assistant"]["asked"] == prompt and not st["assistant"]["working"], "the end of the run", timeout=30)
+        return self.steady(lambda: self.s.state()["sounds"], floor=0.3).count("answered")
+
+    def test_answer_sound(self):
+        """Once for an answer you waited for with the window open, however many pieces it came in."""
+        self.keep_setting("answeredVolume")
+        self.config("answeredVolume", "60")
+        self.answering_in(1.3)
+        self.assertEqual(self.answer_sounds("what's the time?"), 1)
+        self.assertEqual(self.nova()["answer"], "Here\nyou are.")
+        # 0 is off
+        self.config("answeredVolume", "0")
+        self.assertEqual(self.answer_sounds("and now?"), 0, "played with its volume at Off")
+
+    def test_no_answer_sound(self):
+        """Not for the history, an answer that came straight back, one that came with the window
+        closed (that's a notification), a run that failed or was stopped, or in game mode."""
+        self.keep_setting("answeredVolume")
+        self.keep_setting("gameMode")
+        self.config("answeredVolume", "60")
+        self.ipc("test", "sounds")
+        self.ipc("test", "nova", json.dumps({"history": [{"asked": "is glass on?", "answer": "Yes, glass is on."}],
+                                             "asked": "close the terminal", "answer": "I've left it open."}))
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["turns"] == 2)
+        self.assertEqual(self.steady(lambda: self.s.state()["sounds"], floor=0.3).count("answered"), 0, "played for the history")
+        self.answering_in(0)
+        self.assertEqual(self.answer_sounds("straight back?"), 0, "played for an answer that came straight back")
+        self.answering_in(1.3)
+        self.assertEqual(self.answer_sounds("while it's closed", close=True), 0, "played with the window closed")
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"])
+        self.answering_in(1.3, fail=True)
+        self.assertEqual(self.answer_sounds("this goes wrong"), 0, "played for a run that failed")
+        self.assertNotEqual(self.nova()["error"], "")
+        self.answering_in(30)
+        self.assertEqual(self.answer_sounds("stop this", stop=True), 0, "played when stopped")
+        self.config("gameMode", "true")
+        self.wait(lambda st: st["gameMode"], "game mode")
+        self.answering_in(1.3)
+        self.assertEqual(self.answer_sounds("in a game"), 0, "played in game mode")
+        self.config("gameMode", "false")
+        self.assertEqual(self.answer_sounds("after the game"), 1, "silent once game mode was off again")
+
 
 class PrivateModeLive(LiveCase):
     """Private Mode (PrivateMode.qml), switched over IPC as the control centre does: the setting
