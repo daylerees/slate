@@ -299,6 +299,8 @@ ShellRoot {
             if (st.session !== undefined) nova.session = st.session;      // (the agent's thread, as a past answer left it)
             if (st.agents) { nova.agents = st.agents; nova.looked = true; }
         }
+        // Scroll the launcher's list steadily from where it is to the bottom, over ms
+        function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
@@ -323,8 +325,15 @@ ShellRoot {
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
                             checking: settings ? settings.checking : 0 },
-                launcher: { open: appLauncher.shown, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
-                            results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || "") },
+                launcher: { open: appLauncher.shown, visible: appLauncher.visible, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
+                            results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || ""),
+                            // How it opened and scrolled (launcherScroll): frame times, the time spent moving
+                            // the list, the app rows seen, those whose tile was there when they were, and
+                            // rows drawn out of place
+                            frames: appLauncher.testFrames, work: appLauncher.testWork, scrolled: appLauncher.testScrolled(),
+                            openMs: appLauncher.testOpenMs, scrolling: appLauncher.testScrolling,
+                            apps: (appLauncher.results || []).filter(r => !r.kind && !r.calc && !r.setting && !r.action).length,
+                            tileVersion: Config.tileVersion },
                 picker: { open: picker.shown, mode: picker.mode },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },
