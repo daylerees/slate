@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Hand a prompt from Slate's prompt window to the agent the person chose, and say what
-comes back in one form whichever agent it is (docs/ASSISTANT.md, plans/assistant.md).
+comes back in one form whichever agent it is (docs/ASSISTANT.md).
 
     assistant.py detect
         the agents Slate knows (scripts/slate_agents.py), as JSON for Settings:

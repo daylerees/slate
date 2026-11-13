@@ -1048,7 +1048,7 @@ ShellRoot {
             return s;
         }
 
-        // ---- When the dock doesn't fit (plans/dock-overflow.md) -----------------------
+        // ---- When the dock doesn't fit ----------------------------------------------------
         // The icons shrink to fit the edge (base), but no smaller than foldFloor: 24 px, the
         // smallest a thing you click should be (WCAG 2.2, 2.5.8), or your own size if that's
         // smaller. Past that, things fold away, least wanted first, until it fits: what's

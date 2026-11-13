@@ -19,7 +19,7 @@ tool answers goes to the service behind that agent. Slate's tools answer in word
 apps and wallpapers): never a picture of the screen, a file or the clipboard. Slate asks
 you before anything that can't be undone. docs/ASSISTANT.md has the whole list.
 
-How it works (docs/ASSISTANT.md, plans/assistant.md): one JSON-RPC message per line, nothing
+How it works (docs/ASSISTANT.md): one JSON-RPC message per line, nothing
 else on stdout, gone when stdin closes. Both eras of the protocol are answered: 2026-07-28
 has no handshake (every request carries its version in _meta, and server/discover says what
 is spoken here); earlier versions open with initialize. Standard library only, like every
