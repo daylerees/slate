@@ -354,3 +354,14 @@ for _p in ("sound", "webcam"):
         "wait": lambda st, _p=_p: st["settings"]["open"] and st["settings"]["section"] == _p,
         "settle": 1.2, "undo": [("settings", "close")],
     }
+
+# The bar being arranged (Settings → Menu Bar → Edit layout) with glass switched on in the same
+# instant: every item on it drawn (three were once left undrawn when the two came together).
+# Both are sent at once, two IPC calls side by side, not one after the other as "settings" and
+# "do" would; glass goes back off after (it's off to start with)
+_SLATE_IPC = 'qs -p "$XDG_CONFIG_HOME/slate" ipc call '
+SCENES["bar-arranging-glass"] = {
+    "do": [("!sh", "-c", _SLATE_IPC + "config set glass true & " + _SLATE_IPC + "bar edit start & wait")],
+    "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"], "settle": 5,     # (glass: its blur is made the first time)
+    "undo": [("bar", "edit", "done"), ("config", "set", "glass", "false")],
+}
