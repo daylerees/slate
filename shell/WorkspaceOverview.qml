@@ -133,6 +133,8 @@ PanelWindow {
         }
         return null;
     }
+    // Where the strip (or the grid) has scrolled to, mid-move or at rest (the test IPC's state)
+    function stripAt() { return isGrid ? grid.contentY : list.offset; }
     // How many of the live captures have a picture yet (the test IPC's state)
     function previewsReady() {
         let n = 0;

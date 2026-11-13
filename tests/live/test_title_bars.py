@@ -1,5 +1,7 @@
 """Slate's own title bars (Settings → Windows → Title bars, the default): a bar on the
 focused floating window only, which can move it (TitleBar.qml, slateDragMove in animations.lua)."""
+import time
+
 from live import LiveCase
 
 
@@ -20,20 +22,50 @@ class TitleBars(LiveCase):
             self.s.settle(0.2)
         self.fail("no new window")
 
+    def client(self, address):
+        return next((c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == address), None)
+
+    def until(self, read, ok, timeout=8):
+        """read() once ok(it) holds, polling (a Hyprland query); the last read if it never does,
+        for the test's own check to say what's wrong."""
+        end = time.monotonic() + timeout
+        while True:
+            v = read()
+            if ok(v) or time.monotonic() > end:
+                return v
+            time.sleep(0.1)
+
+    def floating_foot(self):
+        """A new window, once Hyprland has mapped it, floating (the floating mode's rule), and
+        it's where it'll stay."""
+        w = self.foot()
+        c = self.until(lambda: self.client(w["address"]), lambda c: c and c["mapped"] and c["floating"])
+        self.assertTrue(c and c["mapped"] and c["floating"], f"the new window didn't open floating: {c}")
+        # A new floating window is fitted to the screen again 350 ms after it opens
+        # (slateFitFloating, windowrules.lua), as apps set their size just after they appear;
+        # nothing says when that's done, so the floor covers it, then its place has to stop changing
+        self.steady(lambda: (lambda c: (c["at"], c["size"]))(self.client(w["address"])), floor=0.5)
+        return self.client(w["address"])
+
+    def bar_on(self, w):
+        """Wait for Slate's title bar on window w, and for Slate to have looked at the window
+        where Hyprland says it is now (it looks a few times a second, and acts on what it saw)."""
+        def caught_up(st):
+            c = self.client(w["address"])
+            return st["titleBar"] == w["address"] and st["titleBarSeen"] == ",".join(map(str, [c["address"], *c["at"], *c["size"]]))
+        self.wait(caught_up, "the title bar on the new window, and Slate knowing where it is", timeout=10)
+
     def test_floating_without_hyprbars(self):
         """Slate's title bars: floating mode works with no plugin built."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
         w = self.foot()
-        self.s.settle(0.8)
-        w = next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == w["address"])
+        w = self.until(lambda: self.client(w["address"]), lambda c: c and c["mapped"] and c["floating"])
         self.assertTrue(w["floating"], "new windows should float")
 
     def test_bar_on_the_focused_window(self):
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
         w = self.foot()
         self.wait(lambda st: st["titleBar"] == w["address"], "the title bar on the new window")
         # back to tiling: no bar
@@ -46,7 +78,6 @@ class TitleBars(LiveCase):
         the workspace in Hyprland's list, which runs bottom to top."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
         first, second = self.foot(), self.foot()
         ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
 
@@ -57,7 +88,10 @@ class TitleBars(LiveCase):
         self.wait(lambda st: st["titleBar"] == topmost(), "the bar on the window in front")
         # focus the other one (whether that raises it or not, the bar follows what's in front)
         self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.focus({{ window = "address:{first["address"]}" }})) end')
-        self.s.settle(0.6)
+        # Slate looks again since (the second look started after the focus moved: the first
+        # may have been under way already), so a bar that wrongly followed focus would show
+        looks = self.s.state()["titleBarLooks"]
+        self.wait(lambda st: st["titleBarLooks"] >= looks + 2, "Slate to look at the windows since the focus moved")
         self.wait(lambda st: st["titleBar"] == topmost(), "the bar on the window in front")
 
     def test_drag_moves_the_window(self):
@@ -65,9 +99,7 @@ class TitleBars(LiveCase):
         animation comes back afterwards."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
-        w = self.foot()
-        self.s.settle(0.8)
+        w = self.floating_foot()
         self.s.hyprctl("dispatch", f'function() slateDragMove("{w["address"]}", 200, 300) end')
         self.s.hyprctl("dispatch", "function() slateDragEnd() end")
         for _ in range(30):
@@ -81,9 +113,7 @@ class TitleBars(LiveCase):
         """What dragging a bar's corner does: the window gets exactly the place and size asked for."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
-        w = self.foot()
-        self.s.settle(0.8)
+        w = self.floating_foot()
         self.s.hyprctl("dispatch", f'function() slateDragResize("{w["address"]}", 150, 200, 500, 320) end')
         self.s.hyprctl("dispatch", "function() slateDragEnd() end")
         for _ in range(30):
@@ -99,9 +129,8 @@ class TitleBars(LiveCase):
         again puts the window back."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
-        w = self.foot()
-        self.wait(lambda st: st["titleBar"] == w["address"], "the title bar on the new window")
+        w = self.floating_foot()
+        self.bar_on(w)
         get = lambda: next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == w["address"])
         before = get()
         mon = next(m for m in self.s.hyprctl("monitors", json_out=True) if m["id"] == before["monitor"])
@@ -135,10 +164,8 @@ class TitleBars(LiveCase):
         maximised. (It failed the test above now and then, for the same reason.)"""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
-        w = self.foot()
-        self.wait(lambda st: st["titleBar"] == w["address"], "the title bar on the new window")
-        self.s.settle(0.8)          # (where it opened is known)
+        w = self.floating_foot()
+        self.bar_on(w)              # (where it opened is known)
         get = lambda: next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == w["address"])
         before = get()
         self.ipc("titlebar", "maximise", w["address"])
@@ -155,12 +182,11 @@ class TitleBars(LiveCase):
         away until the window's been still a moment."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
         w = self.foot()
         self.wait(lambda st: st["titleBar"] == w["address"], "the title bar on the new window")
         for i in range(8):
             self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.move({{ x = {100 + i * 20}, y = 200, window = "address:{w["address"]}" }})) end')
-            self.s.settle(0.06)
+            self.s.settle(0.06)     # (stays: a drag's pace, a move every frame or so)
         self.wait(lambda st: st["titleBarAway"], "the bar to step away while the window moves", timeout=3)
         self.wait(lambda st: not st["titleBarAway"], "the bar back once it's still", timeout=3)
 
@@ -190,18 +216,16 @@ class TitleBars(LiveCase):
         title bar in view (slateKeepUnderBar, run as the mouse button is let go)."""
         self.config("titleBarStyle", "slate")
         self.config("windowMode", "floating")
-        self.s.settle(1.0)
-        w = self.foot()
-        self.s.settle(0.8)
+        w = self.floating_foot()
         addr = w["address"]
-        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.window.move({{ x = 200, y = 0, window = 'address:{addr}' }})) end")
-        self.s.settle(0.5)
-        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr.replace('0x', '')}') end")
-        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr}') end")
-        self.s.settle(0.8)
         mon = self.s.hyprctl("monitors", json_out=True)[0]
         top = mon["reserved"][1]                     # (the bar's height, reserved at the top)
-        y = next(c for c in self.s.hyprctl("clients", json_out=True) if c["address"] == addr)["at"][1]
+        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.window.move({{ x = 200, y = 0, window = 'address:{addr}' }})) end")
+        y = self.until(lambda: self.client(addr)["at"][1], lambda y: y < top)
+        self.assertLess(y, top, "the window wasn't moved up over the menu bar")
+        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr.replace('0x', '')}') end")
+        self.s.hyprctl("dispatch", f"function() slateKeepUnderBar('{addr}') end")
+        y = self.until(lambda: self.client(addr)["at"][1], lambda y: y >= top + 20)
         self.assertGreater(top, 0)
         self.assertGreaterEqual(y, top + 20, f"the window's top is at {y}, under the bar (bottom {top}) and its title bar")
         # (and somewhere you can drag it: not pushed past the bottom)

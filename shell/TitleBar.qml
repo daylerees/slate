@@ -67,6 +67,7 @@ PanelWindow {
         o = top;
         clients = list;
         if (placedLook) { placedLook = false; placing = false; }
+        if (Config.testMode) { if (top) Config.titleBarSeen = geo; Config.titleBarLooks++; }
     }
     Process {
         id: clientsQuery

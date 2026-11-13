@@ -30,8 +30,11 @@ class SwitcherAnimations(LiveCase):
                     self.s.settle(0.2)
         self.go_to_workspace(1)
         # Slate hears about a new workspace a moment after Hyprland makes it; the overview shows
-        # the workspaces Slate knows of as it opens, so wait until it knows both
-        self.s.settle(1.5)
+        # the workspaces Slate knows of as it opens, so wait until it knows both (and the
+        # switcher, the windows on them)
+        self.wait(lambda st: {1, 2} <= set(st["overview"]["known"]) and st["overview"]["focused"] == 1
+                  and {1, 2} <= {w["workspace"] for w in st["windows"]},
+                  "Slate to know both workspaces and their windows", timeout=10)
 
     def open_overview_on(self, ws):
         """Open the overview once Slate knows where things stand: the overview shows the
@@ -39,16 +42,20 @@ class SwitcherAnimations(LiveCase):
         Slate hears of both a moment after Hyprland. Opened a moment too soon (it happened now
         and then in a whole run) it had one workspace, or the wrong one chosen, and "next" had
         nowhere to go. Returns which card is chosen."""
+        def knows(st):
+            o = st["overview"]
+            return o["focused"] == ws and ws in o["known"] and max(o["known"]) > ws
         for _ in range(8):
+            self.wait(knows, f"Slate to know workspace {ws} is in front, with one after it", timeout=10)
             self.ipc("overview", "open")
             st = self.wait(lambda st: st["overview"]["open"], "the overview")["overview"]
             ids = st["workspaces"]
             if len(ids) >= 2 and ws in ids and ids[st["selected"]] == ws and st["selected"] < len(ids) - 1:
-                self.s.settle(0.4)
+                # (opened: faded in, and moves from here animate)
+                self.wait(lambda st: st["overview"]["fade"] == 1 and st["overview"]["animate"], "the overview to finish opening")
                 return st["selected"]
             self.ipc("overview", "close")
-            self.wait(lambda st: not st["overview"]["open"], "the overview to close")
-            self.s.settle(0.5)
+            self.wait(lambda st: not st["overview"]["open"] and st["overview"]["fade"] == 0, "the overview to close")
         self.fail(f"the overview never opened on workspace {ws} with one after it: {st}")
 
     def test_overview_every_move_and_pick(self):
@@ -64,7 +71,8 @@ class SwitcherAnimations(LiveCase):
                     was = self.open_overview_on(start)
                     self.ipc("overview", "next")
                     self.wait(lambda st: st["overview"]["selected"] != was, "the selection to move to the next workspace")
-                    self.s.settle(0.3)
+                    # The cards move to it (the animation being tried) before it's picked
+                    self.steady(lambda: self.s.state()["overview"]["strip"], floor=0.1, step=0.05)
                     self.ipc("overview", "go")
                     self.wait(lambda st: not st["overview"]["open"], "the overview to close")
                     # There, and still there a moment later. (Hyprland sometimes hands focus back
@@ -78,7 +86,9 @@ class SwitcherAnimations(LiveCase):
                             break
                         self.s.settle(0.1)
                     self.assertGreaterEqual(held, 3, "didn't go to the next workspace")
-                    self.s.settle(1.0)          # (a lost switch is retried for a moment)
+                    # A lost switch is retried for a moment after: once that watch is over
+                    self.wait(lambda st: not st["overview"]["leaving"] and not st["overview"]["zooming"],
+                              "the overview to stop watching for a lost switch", timeout=10)
                     self.assertNotEqual(self.workspace(), start, "went back to the old workspace")
                     self.go_to_workspace(1)
 
@@ -94,7 +104,8 @@ class SwitcherAnimations(LiveCase):
                     before = self.s.hyprctl("activewindow", json_out=True).get("address")
                     self.ipc("switcher", "next")
                     self.wait(lambda st: st["switcher"]["open"], "the window switcher")
-                    self.s.settle(0.4)
+                    # (opened: faded in, and moves from here animate)
+                    self.wait(lambda st: st["switcher"]["fade"] == 1 and st["switcher"]["animate"], "the window switcher to finish opening")
                     self.ipc("switcher", "commit")
                     self.wait(lambda st: not st["switcher"]["open"], "the window switcher to close")
                     for _ in range(30):
