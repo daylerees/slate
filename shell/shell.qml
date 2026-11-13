@@ -2505,7 +2505,8 @@ ShellRoot {
                                 height: Math.max(2, Math.round(parent.height * 0.05)); radius: Config.corner(height / 2)
                                 color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.15)
                                 Rectangle {
-                                    width: parent.known ? parent.width * Math.max(0, Math.min(1, win.player.position / win.player.length)) : 0
+                                    // (win.player itself: known can lag a moment behind the player going away)
+                                    width: parent.known && win.player ? parent.width * Math.max(0, Math.min(1, win.player.position / win.player.length)) : 0
                                     height: parent.height; radius: parent.radius
                                     color: win.activeDotColor
                                 }
