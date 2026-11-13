@@ -73,11 +73,13 @@ shares its files out the same way each time.
 
 A run is split into parts that go at the same time, each in a container of its own: `static`
 and `unit` are one part, and the `live` and `visual` test files are shared out over several
-more, each with its own Hyprland and Slate. A whole run is about five to eight minutes this
-way on an 8-core machine, where one after another it's about 24.
+more, each with its own Hyprland and Slate. A whole run is about five minutes this way on an
+8-core machine, where one after another it's about 24.
 
-- `--jobs N` says how many sessions: by default half the machine's processors, four at most
-  (each session draws in software, which is heavy on them). On CI, and when re-shooting
+- `--jobs N` says how many sessions: by default three quarters of the machine's processors, six
+  at most (each session draws in software, which is heavy on them). Six on 8 processors gives
+  the same results as one after another, now that the tests wait for things, not set times;
+  a full run takes about five minutes. On CI, and when re-shooting
   screenshots, it's one.
 - A file is never split, so its tests keep their order; which files share a session changes
   from run to run. They're shared out by how long each took last time

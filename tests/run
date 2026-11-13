@@ -11,8 +11,8 @@
 #                                  a failed subtest runs its whole test again)
 #   tests/run --repeat 5           run the chosen tests 5 times over, then list only what didn't
 #                                  pass every time (each run's logs: tests/out/repeat/<run>/)
-#   tests/run --jobs 3             how many Slate sessions run side by side (default: half
-#                                  this machine's processors, 4 at most; 1 = one after another)
+#   tests/run --jobs 3             how many Slate sessions run side by side (default: three
+#                                  quarters of this machine's processors, 6 at most; 1 = one after another)
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
 #                                  (once a day: run again the same day, it shows that result)
 #   tests/run --deps latest --fresh   run it again anyway
@@ -172,11 +172,12 @@ if [ "$updating" = 1 ]; then
 fi
 status=0
 [ -n "$cache" ] && exec 3>&1 && exec > >(tee "$cache.part" >&3)
-# How many sessions at once: half the processors (each session draws in software, which is
-# heavy on them), four at most. One after another on CI, and when re-shooting screenshots
+# How many sessions at once: three quarters of the processors (each session draws in software,
+# which is heavy on them), six at most: six on 8 processors gave the same results as one after
+# another, once the tests waited for things rather than for set times. One after another on CI, and when re-shooting screenshots
 if [ -z "$jobs" ]; then
-    jobs=$(( $(nproc 2>/dev/null || echo 2) / 2 ))
-    [ "$jobs" -gt 4 ] && jobs=4
+    jobs=$(( $(nproc 2>/dev/null || echo 2) * 3 / 4 ))
+    [ "$jobs" -gt 6 ] && jobs=6
     [ "$jobs" -lt 1 ] && jobs=1
     [ -n "${CI:-}" ] && jobs=1
 fi

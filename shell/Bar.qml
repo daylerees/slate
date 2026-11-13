@@ -844,7 +844,15 @@ PanelWindow {
             function arrange() { placing.restart(); }
             property bool afresh: false
             Timer { id: placing; interval: 34; onTriggered: left.place() }
-            Timer { id: showing; interval: 34; onTriggered: { for (const name in left.things) left.things[name].held = false; } }
+            // (shown again once two frames have been drawn with them held, not after a set time:
+            // under a heavy load a set time could pass before any frame was drawn, hidden and
+            // shown again came to nothing, and a moved thing was still never drawn)
+            FrameAnimation {
+                id: showing
+                property int frames: 0
+                function restart() { frames = 0; start(); }
+                onTriggered: if (++frames >= 2) { stop(); for (const name in left.things) left.things[name].held = false; }
+            }
             function place() {
                 // Each thing goes straight from the container it was in to its new one, never by way
                 // of somewhere unseen: one that went out of sight and came back in the same

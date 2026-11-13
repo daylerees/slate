@@ -136,7 +136,7 @@ another Interface size.
 
 `tests/run` (docs/TESTING.md) runs every test in a container, so nothing touches the desktop.
 `tests/run -q` prints only failures and a summary line. It runs in parts side by side
-(`--jobs`, docs/TESTING.md): a full run is five to eight minutes.
+(`--jobs`, docs/TESTING.md): a full run is about five minutes.
 
 - **Tests are written with the change, and run on their own.** As a feature is shaped, lint
   the QML you touched (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple"`),
