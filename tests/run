@@ -7,6 +7,8 @@
 #   tests/run --tier static,unit   just these tiers (static, unit, live, visual, all)
 #   tests/run --no-container       static + unit straight on this machine (fast)
 #   tests/run --filter dock        only tests whose name contains "dock"
+#   tests/run --failed             only the tests that failed last time (tests/out/failed.txt;
+#                                  a failed subtest runs its whole test again)
 #   tests/run --jobs 3             how many Slate sessions run side by side (default: half
 #                                  this machine's processors, 4 at most; 1 = one after another)
 #   tests/run --deps latest        build the image from today's Arch packages, not the pinned date
@@ -24,7 +26,7 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
-tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""
+tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""; failed=0
 pass=()
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -36,6 +38,7 @@ while [ $# -gt 0 ]; do
         --filter) pass+=(--filter "$2"); filtered=1; shift ;;
         --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
         --fresh) fresh=1 ;;
+        --failed) failed=1 ;;
         --jobs) jobs=$2; shift ;;
         --jobs=*) jobs=${1#*=} ;;
         -q|--quiet|-v|--verbose|--json) pass+=("$1") ;;
@@ -54,6 +57,18 @@ if [ "$updating" = 1 ]; then
     [ "$tier" = all ] && tier=visual
     export SLATE_UPDATE_BASELINES="${update# }"
     [ -n "$SLATE_UPDATE_BASELINES" ] || SLATE_UPDATE_BASELINES=all
+fi
+# Only what failed last time: its tiers, and the runner picks its tests from tests/out/failed.txt
+if [ "$failed" = 1 ]; then
+    if ! grep -q '^tests\.' "$OUT/failed.txt" 2>/dev/null; then
+        echo "Nothing to run again: the last run had no failures."
+        exit 0
+    fi
+    tier=""
+    for t in static unit live visual; do
+        grep -q "^tests\.$t\." "$OUT/failed.txt" && tier="$tier${tier:+,}$t"
+    done
+    pass+=(--failed); filtered=1
 fi
 quiet=0; for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|--json) quiet=1 ;; esac; done
 say() { [ "$quiet" = 1 ] || echo "$@" >&2; }

@@ -25,6 +25,7 @@ The exit code is 0 only when everything ran and passed.
 tests/run --tier static,unit        # just these tiers (static, unit, live, visual, all)
 tests/run --no-container            # static + unit straight on this machine (fast; no Docker)
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
+tests/run --failed                  # only the tests that failed last time
 tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
@@ -35,6 +36,17 @@ tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, 
 
 Logs, failed screenshots and their diffs go in `tests/out/` (not committed): a failure line
 names the file to look at.
+
+## Running what failed again
+
+Every run, side by side or not, keeps the ids of the tests that failed in
+`tests/out/failed.txt`, one a line (`tests.live.test_dock.Dock.test_badges`), and a run with no
+failures empties it. `tests/run --failed` runs just those again, in their own tiers, side by
+side as usual and with `-q`, `--json`, `--jobs` and `--filter` as ever; what still fails is
+kept for the next `--failed`. A failed subtest (one screenshot scene, one QML file) runs its
+whole test again: `--filter` narrows it. A failure outside any test (a class's `setUpClass`, a
+file that wouldn't load, a part of a side-by-side run that never finished) runs that whole
+class or file again. With nothing recorded, `--failed` says so and exits 0.
 
 ## Side by side
 

@@ -2,7 +2,7 @@
 """Runs Slate's tests as several parts side by side, and reports them as one run.
 
 Started by tests/run, which hands over the command that starts one runner in a container:
-    parallel.py --jobs 4 --tier all [-q|-v|--json] [--filter text] [--label text] -- <command…>
+    parallel.py --jobs 4 --tier all [-q|-v|--json] [--filter text] [--failed] [--label text] -- <command…>
 
 The parts:
   * the tiers that need no display (static, unit) are one part;
@@ -15,6 +15,10 @@ Each part is tests/lib/runner.py with --only and --part: it prints its failures 
 happen (they come through here untouched) and leaves its totals in tests/out/parts/, which
 are added up here into the usual tier lines and summary. Exit code 0 only when everything
 ran and passed.
+
+The parts' failed tests (and the files of a part that never reported) are kept together in
+tests/out/failed.txt, as runner.py does for a run in one part. --failed runs only those: just
+their files are shared out, and each part runs just their tests.
 """
 import argparse
 import json
@@ -78,6 +82,7 @@ def main(argv=None):
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--filter", default="")
+    ap.add_argument("--failed", action="store_true")
     ap.add_argument("--label", default="")
     a = ap.parse_args(argv[:cut])
     tiers = TIERS if a.tier == "all" else [t.strip() for t in a.tier.split(",") if t.strip()]
@@ -92,11 +97,23 @@ def main(argv=None):
     except (OSError, ValueError):
         known = {}
 
+    again = None
+    if a.failed:
+        # (the file runner.py reads and writes: tests.live.test_dock… → live/test_dock)
+        try:
+            with open(os.path.join(OUT, "failed.txt"), encoding="utf-8") as f:
+                again = {"/".join(l.strip().split(".")[1:3]) for l in f if l.startswith("tests.")}
+        except OSError:
+            again = set()
+
+    def chosen(t):
+        return [u for u in units(t) if again is None or u in again]
+
     parts = []                                   # (name, its files)
-    quick = [u for t in tiers if t not in DISPLAY for u in units(t)]
+    quick = [u for t in tiers if t not in DISPLAY for u in chosen(t)]
     if quick:
         parts.append(("quick", quick))
-    shown = [u for t in tiers if t in DISPLAY for u in units(t)]
+    shown = [u for t in tiers if t in DISPLAY for u in chosen(t)]
     for i, group in enumerate(share_out(shown, a.jobs, known) if shown else []):
         parts.append((f"display-{i + 1}", group))
     if not parts:
@@ -108,6 +125,8 @@ def main(argv=None):
     passthrough = [f for f, on in (("-q", a.quiet), ("-v", a.verbose), ("--json", a.json)) if on]
     if a.filter:
         passthrough += ["--filter", a.filter]
+    if a.failed:
+        passthrough += ["--failed"]
 
     lock = threading.Lock()
     procs, threads = {}, []
@@ -144,7 +163,7 @@ def main(argv=None):
     took = time.monotonic() - t0
 
     passed = failed = 0
-    skipped, per_tier, seconds, lost = [], {}, {}, []
+    skipped, per_tier, seconds, lost, failed_ids = [], {}, {}, [], set()
     for name, files in parts:
         try:
             with open(os.path.join(partdir, name + ".json"), encoding="utf-8") as f:
@@ -152,6 +171,7 @@ def main(argv=None):
         except (OSError, ValueError):
             # (a part that never reported: the container didn't start, or the runner died)
             lost.append(name)
+            failed_ids.update("tests." + u.replace("/", ".") for u in files)   # (its files run again)
             reason = f"this part of the run didn't finish (exit code {codes[name]}): {', '.join(files)}"
             if mode == "json":
                 print(json.dumps({"test": f"part {name}", "reason": reason, "log": None}))
@@ -161,6 +181,7 @@ def main(argv=None):
         passed += r["passed"]
         failed += r["failed"]
         skipped += r["skipped"]
+        failed_ids.update(r.get("failed_ids", []))
         seconds.update(r["files"])
         for tier, t in r["tiers"].items():
             s = per_tier.setdefault(tier, {"ran": 0, "failed": 0, "seconds": 0, "parts": 0})
@@ -171,7 +192,12 @@ def main(argv=None):
     failed += len(lost)
     total = passed + failed
 
-    if not a.filter and not lost:
+    # What failed, for tests/run --failed (empty when nothing did)
+    with open(os.path.join(OUT, "failed.txt.tmp"), "w", encoding="utf-8") as f:
+        f.write("".join(i + "\n" for i in sorted(failed_ids)))
+    os.replace(os.path.join(OUT, "failed.txt.tmp"), os.path.join(OUT, "failed.txt"))
+
+    if not a.filter and not a.failed and not lost:
         known.update(seconds)
         with open(os.path.join(OUT, "durations.json"), "w", encoding="utf-8") as f:
             json.dump(known, f, indent=1, sort_keys=True)
