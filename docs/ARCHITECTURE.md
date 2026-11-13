@@ -333,11 +333,11 @@ how to check whether a new release fixed it, and how to take the workaround out 
   a frame after `ToplevelHandle(…) closed`), most often when several close at once: live mode's
   stream of captures racing windows coming and going. Seen with Quickshell 0.3.2
   and Hyprland 0.57.2, on an Intel graphics card; never in the test container.
-- **Reported:** quickshell-mirror/quickshell#1123 (open; seen there on Quickshell 0.3.1 and
-  Hyprland 0.56.2, with a trace pointing at Wayland object ids reused during a burst of
-  captures; also set off by many windows opening at once). Our repro and workaround are to be
-  added there as a comment. Not the same, though on the same path:
-  quickshell-mirror/quickshell#1418 (window captures failing outright on Hyprland 0.57.0).
+- **Reported:** quickshell-mirror/quickshell#1481 (ours, with the repro below). Very likely the same
+  as quickshell-mirror/quickshell#1123 (open since September; seen there on Quickshell 0.3.1 and
+  Hyprland 0.56.2, with a trace pointing at Wayland object ids reused during a burst of captures,
+  and also set off by many windows opening at once). Watch both. On the same path but not the
+  same: quickshell-mirror/quickshell#1418 (window captures failing outright on Hyprland 0.57.0).
   Tested here: windows closing; a burst of windows opening hasn't been tried with WindowPreview.
 - **What Slate does instead:** every live preview is a `WindowPreview` (`shell/WindowPreview.qml`):
   `live: false`, and Slate asks for frames itself with `captureFrame()` on a timer (30 a second,

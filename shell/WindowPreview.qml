@@ -7,8 +7,8 @@
 // Frames are asked for by Slate, one at a time, not with Quickshell's live mode: live captures of
 // windows coming and going killed Slate ("The Wayland connection experienced a fatal error:
 // Invalid argument"; closing several windows at once while New Space or the overview showed them).
-// It's Quickshell's (quickshell-mirror/quickshell#1123; docs/ARCHITECTURE.md, "Workarounds for bugs
-// elsewhere", says how to check a new Quickshell and go back to live mode).
+// It's Quickshell's (quickshell-mirror/quickshell#1481, and #1123; docs/ARCHITECTURE.md, "Workarounds
+// for bugs elsewhere", says how to check a new Quickshell and go back to live mode).
 
 import QtQuick
 import Quickshell.Wayland
