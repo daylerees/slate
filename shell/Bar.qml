@@ -844,14 +844,21 @@ PanelWindow {
             function arrange() { placing.restart(); }
             property bool afresh: false
             Timer { id: placing; interval: 34; onTriggered: left.place() }
-            // (shown again once two frames have been drawn with them held, not after a set time:
-            // under a heavy load a set time could pass before any frame was drawn, hidden and
-            // shown again came to nothing, and a moved thing was still never drawn)
-            FrameAnimation {
+            // (shown again once the bar's own window has drawn two frames with them held, not
+            // after a set time or the app's animation clock: under a heavy load, or while glass
+            // remade the bar's window, those passed with nothing drawn, hidden and shown again
+            // came to nothing, and a moved thing was still never drawn)
+            QtObject {
                 id: showing
                 property int frames: 0
-                function restart() { frames = 0; start(); }
-                onTriggered: if (++frames >= 2) { stop(); for (const name in left.things) left.things[name].held = false; }
+                property bool waiting: false
+                function restart() { frames = 0; waiting = true; if (left.Window.window) left.Window.window.update(); }
+                function release() { waiting = false; for (const name in left.things) left.things[name].held = false; }
+            }
+            Connections {
+                target: left.Window.window
+                enabled: showing.waiting
+                function onFrameSwapped() { if (++showing.frames >= 2) showing.release(); else left.Window.window.update(); }
             }
             function place() {
                 // Each thing goes straight from the container it was in to its new one, never by way
