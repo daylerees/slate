@@ -18,6 +18,9 @@ FloatingWindow {
     // Wallpaper thumbnails still loading (the tests wait for none before a picture)
     property int thumbsLoading: 0
     property bool wallsListing: false
+    // A page's first looks at the system still running (printing, the webcam, the login
+    // screen…: FirstLook), for the same reason
+    property int checking: 0
     required property var bar
     property var notifs: null
     // Slate's confirmation window (PowerConfirm: confirmWith), for questions asked as the rest
@@ -1130,6 +1133,15 @@ FloatingWindow {
     }
 
     // ---- Building blocks ---------------------------------------------------
+    // A process a page runs to see how things stand (its status rows wait on it): counted
+    // while it runs, so the tests take their picture once the rows are there (win.checking)
+    component FirstLook: Process {
+        property bool counted: false
+        function count() { if (running !== counted) { win.checking += running ? 1 : -1; counted = running; } }
+        onRunningChanged: count()
+        Component.onCompleted: count()
+        Component.onDestruction: if (counted) win.checking -= 1
+    }
     // A page names itself; the title is drawn in the fixed header above the scrolling page
     component PageTitle: Item {
         property string text
@@ -6503,7 +6515,7 @@ FloatingWindow {
                         : state === "outdated" ? "Its design has changed since it was installed. Update asks for your password"
                         : "Installed; follows your wallpaper and theme automatically"
                     function refresh() { status = ""; greeterCheck.running = true; }
-                    Process {
+                    FirstLook {
                         id: greeterCheck
                         running: true
                         command: [Quickshell.shellPath("bin/slate-greeter-sync"), "--status"]
@@ -6815,7 +6827,7 @@ FloatingWindow {
                 actProc.command = [script].concat(args);
                 actProc.running = true;
             }
-            Process {
+            FirstLook {
                 id: listProc
                 running: true
                 command: [printersPane.script, "list"]
@@ -6829,7 +6841,7 @@ FloatingWindow {
                 command: [printersPane.script, "find"]
                 stdout: StdioCollector { onStreamFinished: { try { printersPane.found = JSON.parse(text); } catch (e) { printersPane.found = []; } printersPane.searched = true; } }
             }
-            Process {
+            FirstLook {
                 id: scanProc
                 running: true
                 command: [printersPane.script, "scanners"]
@@ -7293,7 +7305,7 @@ FloatingWindow {
             }
             // (switching automatic white balance or exposure off makes their manual setting usable)
             Timer { id: readBack; interval: 500; onTriggered: camPane.refresh() }
-            Process {
+            FirstLook {
                 id: listProc
                 running: true
                 command: [camPane.script, "list"]

@@ -126,9 +126,11 @@ SCENES["panel-battery"]["mask"] = [(1080, 172, 350, 130)]
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],
-        # (and its wallpaper thumbnails loaded: one still loading was pictured blank under a busy run)
+        # (and its wallpaper thumbnails loaded: one still loading was pictured blank under a busy run;
+        # and its first looks at the system done: Printers, Webcam and Security's status rows
+        # were sometimes pictured missing, their script not back yet: SettingsWindow's FirstLook)
         "wait": (lambda p: lambda st: st["settings"]["open"] and st["settings"]["section"] == p
-                 and st["settings"].get("thumbsLoading", 0) == 0)(_p),
+                 and st["settings"].get("thumbsLoading", 0) == 0 and st["settings"].get("checking", 0) == 0)(_p),
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
