@@ -110,3 +110,19 @@ class Review(Case):
         self.changed("a<b")
         self.review()
         self.assertIn('value="a&lt;b"', self.page())
+
+    def test_pictures_of_scenes_that_are_gone_are_left_out(self):
+        """A picture left in tests/out by a scene since renamed or removed doesn't stay on the
+        page for ever (it once kept the page coming back after runs where everything passed)."""
+        with open(os.path.join(self.visual, "scenes.py"), "w") as f:
+            f.write('SCENES = {"panel-control": {}}\n')
+        self.touch(os.path.join(self.visual, "scenes.py"), -100)
+        self.changed("panel-control")
+        self.changed("zz-old-experiment", approved=False)
+        self.review()
+        page = self.page()
+        self.assertIn('value="panel-control"', page)
+        self.assertNotIn("zz-old-experiment", page)
+        os.remove(os.path.join(self.out, "panel-control.actual.png"))
+        self.review()
+        self.assertFalse(os.path.exists(os.path.join(self.out, "review.html")), "a page with only gone scenes on it")

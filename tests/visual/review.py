@@ -95,11 +95,24 @@ update();
 """
 
 
+def known_scenes():
+    """The scenes there are now (scenes.py), or None if it can't be read here."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
+        import scenes as defined  # noqa: E402
+        return set(defined.SCENES)
+    except Exception:       # (the page still works, listing every picture)
+        return None
+
+
 def scenes(out):
-    """Every scene the last runs left a picture of, by name."""
+    """Every scene the last runs left a picture of, by name: only scenes that still exist (a
+    picture left by a scene since renamed or removed would otherwise stay on the page for good)."""
     if not os.path.isdir(out):
         return []
-    return sorted(n[:-len(SUFFIX)] for n in os.listdir(out) if n.endswith(SUFFIX))
+    known = known_scenes()
+    return sorted(n[:-len(SUFFIX)] for n in os.listdir(out)
+                  if n.endswith(SUFFIX) and (known is None or n[:-len(SUFFIX)] in known))
 
 
 def approve_line(names):
