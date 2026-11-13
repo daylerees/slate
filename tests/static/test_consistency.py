@@ -420,6 +420,17 @@ class WindowPreviews(Case):
         # (the first frame comes by itself: asked for again before it's here, it started over)
         self.assertRegex(src, r"running: .*wp\.hasContent")
 
+    def test_blur_decoded_once(self):
+        """The wallpaper behind see-through previews (WallBlur) is decoded at one size, so it's
+        shared through the image cache, and the switcher has it ready before it opens (each
+        preview decoding it again, the blur came in after the window)."""
+        blur = slate.read("shell", "WallBlur.qml")
+        m = re.search(r"decodeSize: Qt\.size\((\d+), (\d+)\)", blur)
+        self.assertTrue(m, "WallBlur's decodeSize has moved")
+        self.assertIn("sourceSize: wb.decodeSize", blur)
+        self.assertIn(f"sourceSize: Qt.size({m.group(1)}, {m.group(2)})", slate.read("shell", "Switcher.qml"),
+                      "the switcher's wallpaper, loaded ahead, isn't at WallBlur's decodeSize")
+
 
 class Shadows(Case):
     """One shadow look everywhere (Settings → Appearance → Shadows)."""

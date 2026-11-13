@@ -16,6 +16,8 @@ Item {
     property size screen: Qt.size(1, 1)
     property real pixelScale: 0.25          // for the blur's size
     property real radius: 0
+    // (the size the wallpaper's decoded at: keep any Image that loads it ahead of time the same)
+    readonly property size decodeSize: Qt.size(1600, 1000)
     visible: Config.hyprBlur.enabled && wallpaper !== ""
 
     // Preview pixels per unit of win/screen
@@ -42,7 +44,10 @@ Item {
         height: wb.drawn ? Math.min(wb.screen.height * wb.k, wb.height * 16) : 0
         source: wb.drawn ? wb.wallpaper : ""
         fillMode: Image.PreserveAspectCrop
-        sourceSize: Qt.size(Math.min(1600, width), Math.min(1000, height))
+        // One size for every WallBlur (decodeSize), so the wallpaper is decoded once and shared
+        // through the image cache: sized by each window, every preview decoded it again as it
+        // appeared, and the blur came in half a second after the window
+        sourceSize: wb.decodeSize
         asynchronous: true
     }
     MultiEffect {

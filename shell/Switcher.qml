@@ -185,6 +185,14 @@ PanelWindow {
         }
         return null;
     }
+    // The wallpaper behind see-through windows' previews (WallBlur), decoded ahead of time at
+    // WallBlur's size so it's in the image cache as the switcher opens
+    Image {
+        visible: false
+        source: Config.hyprBlur.enabled && Config.wallpaper ? "file://" + Config.wallpaper : ""
+        sourceSize: Qt.size(1600, 1000)     // (WallBlur's decodeSize)
+        asynchronous: true
+    }
     Item {
         x: -10000
         Repeater {
@@ -392,7 +400,10 @@ PanelWindow {
                     WallBlur {
                         readonly property var o: card.modelData.lastIpcObject
                         readonly property var m: o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null
-                        visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!m && shot.hasContent
+                        // (built as the switcher opens and shown with the window's first frame, so
+                        // it's ready by then: built only then, it flicked in just after)
+                        visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!m
+                        opacity: shot.hasContent ? 1 : 0
                         anchors.fill: shot
                         // The window's own place whenever it's known (a 1×1 stand-in only when it isn't)
                         win: o && o.at && o.size && m ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
