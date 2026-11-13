@@ -19,6 +19,7 @@ per test, then {"summary": …}. tests/out/failed.txt is left naming every test 
 any run. Exit code 0 only when every run ran and passed.
 """
 import argparse
+import fcntl
 import json
 import os
 import shutil
@@ -82,6 +83,15 @@ def main(argv=None):
     a = ap.parse_args(argv[:cut])
     mode = "json" if a.json else "quiet" if a.quiet else "verbose" if a.verbose else "normal"
 
+    # One at a time: a second would take over the first's run folders (and failed.txt) under it
+    os.makedirs(a.out, exist_ok=True)
+    lock = open(os.path.join(a.out, "repeat.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print("Another tests/run --repeat is running here: wait for it to finish, then run this again.",
+              file=sys.stderr)
+        return 2
     base = os.path.join(a.out, "repeat")
     shutil.rmtree(base, ignore_errors=True)
     carried = {}            # what each run starts with: last time's timings and failures

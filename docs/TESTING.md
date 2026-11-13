@@ -67,7 +67,8 @@ gives a JSON line per test and a summary. Each run keeps its logs, screenshots a
 printed apart, in `tests/out/repeat/<run>/` (`output.txt`), and `tests/out/failed.txt` is left
 naming every test that failed in any run, so `--failed` runs them again. The exit code is 0 only
 when everything passed every time. The timings carry from run to run, so a side-by-side run
-shares its files out the same way each time.
+shares its files out the same way each time. One `--repeat` runs at a time: a second says so and leaves the
+first alone (for load alongside one, start an ordinary run with its own `SLATE_TEST_OUT`).
 
 ## Side by side
 

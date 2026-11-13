@@ -132,3 +132,19 @@ class Repeat(Case):
         code, out = self.repeat("--repeat", "lots")
         self.assertEqual(code, 2)
         self.assertIn("--repeat is a number", out)
+
+    def test_one_at_a_time(self):
+        """A second --repeat while one is running says so and leaves the first's run folders
+        alone (it once crashed on them, after deleting them under the first)."""
+        import fcntl
+        os.makedirs(os.path.join(self.out, "repeat", "1"))
+        keep = os.path.join(self.out, "repeat", "1", "output.txt")
+        open(keep, "w").close()
+        with open(os.path.join(self.out, "repeat.lock"), "w") as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)        # (as a running --repeat holds it)
+            code, out = self.repeat("--repeat", "2", "-q")
+        self.assertEqual(code, 2, out)
+        self.assertIn("Another tests/run --repeat is running here", out)
+        self.assertTrue(os.path.exists(keep), "the running one's folders were taken away")
+        code, out = self.repeat("--repeat", "2", "-q")
+        self.assertEqual(code, 0, out)
