@@ -354,8 +354,9 @@ ShellRoot {
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
                 switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(),
                             fade: Math.round(winSwitcher.fade * 100) / 100, animate: winSwitcher.animate },
-                // Every window Hyprland has, with where it is
-                windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1 })),
+                // Every window Hyprland has, with where it is (address: Hyprland's, without the 0x)
+                windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1,
+                                                              address: (t.address || "").replace(/^0x/, "") })),
                 overview: { open: wsOverview.shown, screen: wsOverview.screen ? wsOverview.screen.name : "", selected: wsOverview.selected, grid: wsOverview.isGrid,
                             previews: wsOverview.previewsReady(),
                             fade: Math.round(wsOverview.fade * 100) / 100, animate: wsOverview.animate, strip: Math.round(wsOverview.stripAt() * 10000) / 10000,

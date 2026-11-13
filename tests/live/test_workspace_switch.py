@@ -2,17 +2,26 @@
 workspace leaving and the one arriving, and windows are square while they move."""
 import os
 import tempfile
+import time
 
 from PIL import Image
 
 import test_switcher_animations as switching     # (the module, so its tests aren't collected again here)
 
 
-class WorkspaceSwitch(switching.SwitcherAnimations):
-    # (only this file's tests: the ones it borrows its helpers from run in their own)
-    test_overview_every_move_and_pick = None
-    test_window_switcher_every_move_and_pick = None
-    test_overview_grid_arrows = None
+class Waits:
+    """Waiting for what Hyprland has done, in place of set pauses."""
+
+    def until(self, read, what, timeout=10, step=0.1):
+        """read()'s answer once it's true."""
+        end = time.monotonic() + timeout
+        while True:
+            got = read()
+            if got:
+                return got
+            if time.monotonic() >= end:
+                self.fail(f"timed out waiting for {what}")
+            time.sleep(step)
 
     def animations(self):
         out, leaf = {}, None
@@ -25,6 +34,44 @@ class WorkspaceSwitch(switching.SwitcherAnimations):
                 k, v = line.split(":", 1)
                 out[leaf][k.strip()] = v.strip()
         return out
+
+    def sliding_back(self):
+        """Once the workspace animation is back after go_to_workspace (its instantTo turns it off
+        for the switch, and a timer in Hyprland puts it back a moment later: animations.lua)."""
+        on = lambda: all(self.animations()[leaf].get("enabled") in ("1", "true") for leaf in ("workspacesIn", "workspacesOut"))
+        self.until(on, "the workspace animation to come back after an instant switch")
+
+    def slowed(self, speeds):
+        """Once Hyprland has the slowed workspace animation: `speeds` is what they were before, by
+        leaf, and slowed is ten times that."""
+        a = lambda: self.animations()
+        self.until(lambda: all(abs(float(a()[leaf]["speed"]) - 10 * v) < 0.05 * v for leaf, v in speeds.items()),
+                   "Hyprland to have the slowed workspace animation")
+
+    def lua(self, expr):
+        """Whether expr is true in Hyprland's Lua config (eval answers an error when the assert fails)."""
+        code, _ = self.s.run(["hyprctl", "eval", f"assert({expr})"])
+        return code == 0
+
+    def slow_slide(self):
+        """Once Hyprland has the slowed slide (SLATE_ANIM_SLOW, setWorkspaceAnimation("slidefade"))."""
+        on = lambda: self.lua('SLATE_ANIM_SLOW == 10 and WORKSPACE_ANIM == "slidefade"') and             self.animations()["workspacesIn"].get("enabled") in ("1", "true")
+        self.until(on, "Hyprland to have the slowed slide")
+
+    def laid_out(self):
+        """Every window, once they're all on screen and have stopped moving (tiled again as one
+        opens)."""
+        where = lambda: sorted((c["address"], c["mapped"], c["workspace"]["id"], c["at"], c["size"])
+                               for c in self.s.hyprctl("clients", json_out=True))
+        self.until(lambda: all(c["mapped"] for c in self.s.hyprctl("clients", json_out=True)), "every window to be on screen")
+        return self.steady(where)
+
+
+class WorkspaceSwitch(Waits, switching.SwitcherAnimations):
+    # (only this file's tests: the ones it borrows its helpers from run in their own)
+    test_overview_every_move_and_pick = None
+    test_window_switcher_every_move_and_pick = None
+    test_overview_grid_arrows = None
 
     def test_old_workspace_lasts_as_long_as_the_new_one_takes(self):
         a = self.animations()
@@ -47,7 +94,8 @@ class WorkspaceSwitch(switching.SwitcherAnimations):
         slow = lambda leaf: ('hl.animation({ leaf = "%s", enabled = true, speed = %s, bezier = "%s", style = "%s" })'
                              % (leaf, float(a[leaf]["speed"]) * 10, a[leaf]["bezier"], a[leaf]["style"]))
         self.s.hyprctl("eval", "hl.config({ animations = { enabled = true } }); " + slow("workspacesIn") + "; " + slow("workspacesOut"))
-        self.s.settle(0.3)
+        self.slowed({leaf: float(a[leaf]["speed"]) for leaf in ("workspacesIn", "workspacesOut")})
+        self.s.settle(0.3)                       # (a frame or two drawn that way, for the picture)
         before = os.path.join(tempfile.mkdtemp(), "before.png")
         self.s.screenshot(before)
         self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.focus({ workspace = "m+1" })) end')
@@ -55,6 +103,8 @@ class WorkspaceSwitch(switching.SwitcherAnimations):
         for i in range(3):                       # (about half way, and on towards the end)
             self.s.settle(1.0)
             shots.append(self.s.screenshot(os.path.join(os.path.dirname(before), f"mid{i}.png")))
+        # (the slowed slide's end, before the cleanup puts the animations back: Hyprland doesn't
+        # say when a slide is over)
         self.s.settle(3.0)
         # The window fills the screen under the bar on both workspaces, so across the middle
         # there's only ever a window: the one arriving, or the one leaving under it (dimmed, and
@@ -80,24 +130,27 @@ class WorkspaceSwitch(switching.SwitcherAnimations):
         self.windows_on_two_workspaces()
         self.addCleanup(lambda: self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(true)"))
         self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(false)")     # (a lone window is square anyway)
-        self.s.settle(0.4)
         rounding = lambda: self.s.hyprctl("getprop", "active", "rounding").strip()
-        usual = rounding()
+        self.until(lambda: rounding() != "0", "the lone window's corners to round")
+        usual = self.steady(rounding)
         self.assertNotEqual(usual, "0")
         self.s.hyprctl("eval", "squareWhileSliding()")
+        # (squared at once, for as long as a slide takes, a little over half a second: asked
+        # within that)
         self.s.settle(0.15)
         self.assertEqual(rounding(), "0", "windows kept their rounded corners during the switch")
-        self.s.settle(0.9)
+        self.until(lambda: rounding() == usual, "the corners to come back")
         self.assertEqual(rounding(), usual, "windows didn't get their corners back")
 
     def test_windows_keep_their_corners_when_nothing_slides(self):
         self.windows_on_two_workspaces()
         self.addCleanup(lambda: self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(true); setWorkspaceAnimation("slidefade")'))
         self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(false); setWorkspaceAnimation("crossfade")')
-        self.s.settle(0.4)
-        usual = self.s.hyprctl("getprop", "active", "rounding").strip()
+        rounding = lambda: self.s.hyprctl("getprop", "active", "rounding").strip()
+        self.until(lambda: rounding() != "0", "the lone window's corners to round")
+        usual = self.steady(rounding)
         self.s.hyprctl("eval", "squareWhileSliding()")
-        self.s.settle(0.15)
+        self.s.settle(0.15)                      # (nothing must happen: a crossfade moves nothing)
         self.assertEqual(self.s.hyprctl("getprop", "active", "rounding").strip(), usual)
 
     def test_slide_to_an_empty_workspace_isnt_cut_short(self):
@@ -107,14 +160,14 @@ class WorkspaceSwitch(switching.SwitcherAnimations):
         self.windows_on_two_workspaces()
         self.addCleanup(lambda: self.go_to_workspace(1))
         self.s.hyprctl("dispatch", "function() slideAwayTo(hl.dsp.focus({ workspace = 9 })) end")
-        self.s.settle(0.43)
+        self.s.settle(0.43)                      # (partway through the slide, which takes about 0.58s)
         self.assertTrue(self.animations()["workspacesOut"]["style"].startswith("slidefade"),
                         "the slide away was replaced while the windows were still leaving")
-        self.s.settle(0.5)
+        self.until(lambda: self.animations()["workspacesOut"]["style"] == "fade", "the usual animation to come back")
         self.assertEqual(self.animations()["workspacesOut"]["style"], "fade", "the usual animation never came back")
 
 
-class SplitSlides(switching.SwitcherAnimations):
+class SplitSlides(Waits, switching.SwitcherAnimations):
     """Every window on the workspace arriving slides in with it. Going from a workspace with one
     window to one with two side by side, only one slid; the other faded in once the slide was
     over (seen by Dayle, 2026-11-12). The windows are filled with colours of their own, and a
@@ -132,11 +185,7 @@ class SplitSlides(switching.SwitcherAnimations):
         r, g, b = self.COLOURS[name]
         alpha = self.ALPHA.get(name, 1.0)
         self.s.hyprctl("eval", f'hl.exec_cmd("foot -o colors-dark.background={r:02x}{g:02x}{b:02x} -o colors-dark.alpha={alpha}")')
-        for _ in range(50):
-            if {c["address"] for c in self.s.hyprctl("clients", json_out=True)} - before:
-                return
-            self.s.settle(0.2)
-        self.fail("no window")
+        self.until(lambda: {c["address"] for c in self.s.hyprctl("clients", json_out=True)} - before, "the window", timeout=15, step=0.2)
 
     def share(self, im, colour):
         """How much of the middle row is this window: by which colour leads, as a window that
@@ -153,18 +202,19 @@ class SplitSlides(switching.SwitcherAnimations):
 
     def slide(self, frm, to, how="keys"):
         self.go_to_workspace(frm)
-        self.s.settle(1.0)
+        self.sliding_back()
         self.s.hyprctl("eval", 'hl.config({ animations = { enabled = true } }); SLATE_ANIM_SLOW = 10; setWorkspaceAnimation("slidefade")')
-        self.s.settle(0.3)
+        self.slow_slide()
         d = tempfile.mkdtemp()
         if how == "keys":     # as Super+Left/Right do it: with the windows squared for the slide, and so on
             self.s.hyprctl("dispatch", f"function() cycleWorkspace({1 if to > frm else -1}) end")
         else:                 # straight there, as the number keys and the bar's dots do
             self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {to} }})) end")
         shots = []
-        for i in range(3):
+        for i in range(3):                       # (pictures at points through the slowed slide)
             self.s.settle(0.7)
             shots.append(Image.open(self.s.screenshot(os.path.join(d, f"s{i}.png"))).convert("RGB"))
+        # (the slowed slide's end, before the next: Hyprland doesn't say when a slide is over)
         self.s.settle(3.0)
         return shots
 
@@ -176,10 +226,10 @@ class SplitSlides(switching.SwitcherAnimations):
         self.coloured(1, "alone")
         self.coloured(2, "left")
         self.coloured(2, "right")
-        self.s.settle(1.5)
+        self.laid_out()
         # (3's window is opened last, so it's newer than both arriving ones: the case that went wrong)
         self.coloured(3, "alone")
-        self.s.settle(1.0)
+        self.laid_out()
         for frm, to, how in ((1, 2, "keys"), (3, 2, "keys"), (3, 2, "straight")):
             with self.subTest(f"{frm} to {to} ({how})"):
                 shots = self.slide(frm, to, how)
@@ -209,14 +259,15 @@ class FastSwitching(SplitSlides):
         self.coloured(1, "white")
         for ws in (2, 3, 4):
             self.coloured(ws, "black")
+        self.laid_out()
         self.go_to_workspace(1)
-        self.s.settle(1.0)
+        self.sliding_back()
         # Everything ten times slower, so "quickly" is easy to do and see
         self.s.hyprctl("eval", 'SLATE_ANIM_SLOW = 10; hl.config({ animations = { enabled = true } }); setWorkspaceAnimation("slidefade")')
-        self.s.settle(0.3)
+        self.slow_slide()
         for _ in range(3):
             self.s.hyprctl("dispatch", "function() cycleWorkspace(1) end")
-            self.s.settle(0.5)
+            self.s.settle(0.5)                   # ("quickly": the next before this slide's over)
         # (partway through the last slide: what isn't covered yet by the workspace arriving
         # should be the one just left, black, not the first)
         shot = Image.open(self.s.screenshot(os.path.join(tempfile.mkdtemp(), "fast.png"))).convert("RGB")
