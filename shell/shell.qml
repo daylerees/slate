@@ -333,6 +333,7 @@ ShellRoot {
                         : { kind: x.kind }),
                     menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : "other") : "",
                     preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
+                    base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.stripLength),
                     hoverEffect: win.hoverEffect,
                     fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
                     glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
@@ -814,9 +815,15 @@ ShellRoot {
         }
         // Icon size at rest (logical px): as set in Settings, shrunk only when that many icons
         // wouldn't fit along the screen's edge (a short screen, a side dock, lots of apps open),
-        // with room left at the ends for the dock's padding and the magnified icons
+        // with room left at the ends for the dock's padding and the magnified icons. Each slot
+        // counts at its real width in icons (what's playing is several, a divider a fraction)
+        readonly property real iconsLong: {
+            let n = 0;
+            for (let i = 0; i < count; i++) n += slotWidth(i);
+            return n;
+        }
         readonly property real base: Math.max(16, Math.min(Config.s.dockIconSize,
-            (stripLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, count)))
+            (stripLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)))
         // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
         // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
         // magnify ("glowmagnify"), or none

@@ -26,7 +26,18 @@ waiting on something. The plans themselves are in the repository's history
 
 ## The test suite
 
-- A fake MPRIS player, for the dock's media controls and a scene of them.
+- **Text smoothing differs by run order (2026-11-13):** the dock scenes (`dock-menu`,
+  `dock-downloads`, `settings-dock`, `dock-drag`, `dock-drag-glass`, `dock-magnified-glass`)
+  pass in a full run but fail run on their own (`--filter dock`), on master too: the bar's
+  text comes out with coloured (subpixel) edges instead of the approved grey. Not fontconfig:
+  `rgba none` in the session's `fonts.conf` is applied (`fc-match -v`) but makes no difference,
+  because Qt on Wayland takes subpixel smoothing from the screen (`wl_output` subpixel, via
+  `QWaylandScreen::subpixelAntialiasingTypeHint`) before it asks fontconfig.
+  `QT_SUBPIXEL_AA_TYPE` can force a layout but not "none". Next: what Hyprland reports for the
+  test output in each case, and pin that (or the font engine's hint) so scenes don't depend on
+  order.
+- The dock's media controls in a scene (the pretend player is there now: `self.play()`,
+  `tests/lib/fake_mpris.py`).
 - The switcher and overview with windows in screenshots (terminal contents vary).
 - Restoring a Settings page's defaults from a test (it's a button only).
 - More than one monitor.

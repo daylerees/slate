@@ -1,6 +1,7 @@
 """Base for the live tier's tests: the shared Slate session, reset before each test, and a
 check after each one that Slate logged no new errors."""
 import os
+import sys
 
 import slate
 from session import Session, SessionError
@@ -77,6 +78,28 @@ class LiveCase(slate.Case):
         old = self.setting(key)
         self.addCleanup(lambda: self.ipc("config", "set", key, old))
         return old
+
+    def play(self, *args):
+        """Something playing (tests/lib/fake_mpris.py), until the test ends: a pretend media
+        player on the session bus, for the dock's and the control centre's media controls."""
+        import subprocess
+        if not self.s.env.get("DBUS_SESSION_BUS_ADDRESS"):
+            self.skipTest("no session bus found")
+        p = subprocess.Popen([sys.executable, os.path.join(os.path.dirname(__file__), "fake_mpris.py"), *args],
+                             env=self.s.env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        def stop():
+            p.terminate()
+            try:
+                p.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            self.wait(lambda st: not st["dock"]["media"], "the pretend player to be gone")
+        self.addCleanup(stop)
+        line = p.stdout.readline().strip()
+        if line != "ready":
+            self.fail("the pretend media player didn't start: " + line)
+        return p
 
     def screenshot(self, name):
         return self.s.screenshot(os.path.join(slate.OUT, "live", name + ".png"))

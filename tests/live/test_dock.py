@@ -397,3 +397,39 @@ class MenusClose(LiveCase):
         self.addCleanup(lambda: self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws} }})) end"))
         self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws + 1} }})) end")
         self.wait(lambda st: not st["dockMenu"]["open"], "the dock's menu to close on going to another workspace")
+
+
+class Fits(LiveCase):
+    """However many things are on the dock, it stays on the screen: the icons shrink to fit
+    the edge, counting each thing at its real width (what's playing is several icons wide)."""
+    def setUp(self):
+        super().setUp()
+        for key in ("dockIconSize", "dockPosition", "dockShowMedia", "dockMediaArt", "dockShowLauncher",
+                    "dockShowDownloads", "dockShowTrash", "dockDivider"):
+            self.keep_setting(key)
+        for key in ("dockShowMedia", "dockMediaArt", "dockShowLauncher", "dockShowDownloads", "dockShowTrash", "dockDivider"):
+            self.config(key, "true")
+        self.config("dockPosition", "bottom")
+        self.wait(lambda st: st["dockEdge"] == "bottom", "the dock along the bottom")
+
+    def fits(self, st):
+        d = st["dock"]
+        # (48: the room the dock keeps at its ends for magnified icons)
+        return d["length"] + 48 <= d["room"] + 1
+
+    def test_with_something_playing(self):
+        """Icons too big for the edge (as many apps would make them), with something playing:
+        it used to count what's playing as one icon, and ran off the screen."""
+        self.config("dockIconSize", 200)
+        self.play()
+        st = self.wait(lambda st: st["dock"]["media"], "what's playing on the dock")
+        st = self.steady(lambda: self.s.state()["dock"]["length"]) and self.s.state()
+        d = st["dock"]
+        self.assertTrue(self.fits(st), f"the dock is {d['length']}px along an edge of {d['room']}px (icons {d['base']}px)")
+        self.assertLess(d["base"], 200, "the icons shrank")
+
+    def test_room_to_spare_keeps_your_size(self):
+        self.config("dockIconSize", 40)
+        st = self.steady(lambda: self.s.state()["dock"]["base"]) and self.s.state()
+        self.assertEqual(st["dock"]["base"], 40)
+        self.assertTrue(self.fits(st))
