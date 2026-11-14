@@ -1230,6 +1230,30 @@ class WhatItDid(Base):
                          [("r1", 2, "Turn Glass off", "done"), ("r1", 3, "Close Editor", "asking"), ("r1", 3, "Close Editor", "done"),
                           ("r1", 4, "Lock the screen", "done")], "looking isn't listed; everything else is, by Slate's name for it")
 
+    def test_a_setting_says_what_it_was(self):
+        """A setting changed carries its key, the value before and the value it was given, for
+        the window's Undo; nothing else does, and nor does a change that wasn't made."""
+        self.talk(call("settings_set", {"key": "glass", "value": False}, mid=1),
+                  call("settings_set", {"key": "dockIconSize", "value": 48}, mid=2),
+                  call("settings_set", {"key": "iconShape", "value": "tile"}, mid=3),
+                  call("settings_set", {"key": "assistantEnabled", "value": False}, mid=4),
+                  call("settings_set", {"key": "wallpaperFolder", "value": "/tmp"}, mid=5),
+                  call("window_close", {"address": "0xa1"}, mid=6), env=self.RUN)
+        rows = {d["id"]: d for d in self.did() if d["state"] != "asking"}
+        self.assertEqual({k: rows[1][k] for k in ("key", "before", "after", "state")},
+                         {"key": "glass", "before": True, "after": False, "state": "done"})
+        self.assertEqual((rows[2]["key"], rows[2]["before"], rows[2]["after"]), ("dockIconSize", 32, 48))
+        for i in (3, 4, 5, 6):          # already so, Slate's own, refused, not a setting
+            with self.subTest(i):
+                self.assertFalse({"key", "before", "after"} & set(rows.get(i, {})), rows.get(i))
+        # Asked about and refused: no Undo for what wasn't done
+        self.put_state(askChanges=True)
+        self.state["answer"] = "no"
+        self.put_state()
+        self.talk(call("settings_set", {"key": "barClockSeconds", "value": True}, mid=7), env=self.RUN)
+        self.assertEqual([("key" in d, d["state"]) for d in self.did() if d["id"] == 1 and d["text"] == "Turn Show seconds on"],
+                         [(False, "asking"), (False, "declined")])
+
     def test_a_no_is_listed(self):
         self.state["answer"] = "no"
         self.put_state()

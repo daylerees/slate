@@ -224,6 +224,18 @@ SCENES["assistant-answer"] = {
     "wait": lambda st: st["assistant"]["open"] and len(st["assistant"]["actions"]) == 3,
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
+# A setting it changed offers Undo at the end of its row; one already put back says so
+SCENES["assistant-answer-undo"] = {
+    "settings": dict(_NOVA_ON, barClockSeconds="true"),
+    "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS,
+            "asked": "show seconds on the clock, and turn glass on",
+            "answer": "The clock shows seconds now, and glass is on.",
+            "actions": [{"id": 1, "text": "Turn Show seconds on", "state": "done", "key": "barClockSeconds", "before": False, "after": True},
+                        {"id": 2, "text": "Turn Glass on", "state": "done", "key": "glass", "before": False, "after": True, "undone": True},
+                        {"id": 3, "text": "Move Firefox to workspace 2", "state": "done"}]})), ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["undo"] == [True, False, False],
+    "undo": [("assistant", "close"), ("test", "nova", "{}")],
+}
 SCENES["assistant-error"] = {
     "settings": _NOVA_ON,
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": "turn on glass",
