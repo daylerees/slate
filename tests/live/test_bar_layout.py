@@ -270,7 +270,7 @@ class BarLayout(LiveCase):
     def test_right_click_menu(self):
         self.keep_setting("barAutoHide")
         self.ipc("test", "barMenu", "open")
-        self.s.wait(lambda st: st["bar"]["menu"] == ["Auto-hide", "Position", "Clock", "Edit layout", None, "Menu bar settings"],
+        self.s.wait(lambda st: st["bar"]["menu"] == ["Auto-hide", "Position", "Clock", "Edit layout", None, "Menu Bar settings"],
                     what="the bar's menu")
         self.assertIn("namespace: slate-desktop-menu", self.s.hyprctl("layers"))
         was = self.setting("barAutoHide")

@@ -503,7 +503,7 @@ PanelWindow {
                 .concat([{ separator: true }, Config.tickItem("Seconds", "barClockSeconds")]) },
             { label: "Edit layout", icon: 0xEB04, run: () => Config.barArranging = true },
             { separator: true },
-            { label: "Menu bar settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "bar") }
+            { label: "Menu Bar settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "bar") }
         ]
     }
     property alias menu: barMenu
@@ -1862,7 +1862,7 @@ PanelWindow {
                         sample: "Off"; textOn: Config.s.barValueGameMode
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
-                        tipText: Config.gameMode ? "Game mode: on" : "Game mode: off"
+                        tipText: Config.gameMode ? "Game Mode: on" : "Game Mode: off"
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle

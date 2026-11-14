@@ -57,7 +57,7 @@ def act(cmd, timeout=60, report=True):
         print("error %s isn't installed" % cmd[0])
         return False
     except subprocess.SubprocessError:
-        print("error it took too long")
+        print("error The printer didn't answer. Check it's on and try again")
         return False
     if r.returncode == 0:
         if report:

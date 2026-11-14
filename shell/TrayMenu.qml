@@ -240,7 +240,7 @@ PanelWindow {
                     width: menuCol.width; height: 30
                     verticalAlignment: Text.AlignVCenter
                     leftPadding: 10
-                    text: "No menu items"
+                    text: "Nothing here just yet"
                     color: tm.dimColor
                     font.family: tm.bar.fontFamily; font.pixelSize: 13
                 }

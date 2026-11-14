@@ -1,7 +1,7 @@
 // Screensaver (Settings → Screensaver): after a while with no input it covers every screen,
-// before the lock and screen-off timers in Lock & idle (which carry on as before). Any key,
+// before the lock and screen-off timers in Security (which carry on as before). Any key,
 // click or pointer move puts it away; the key or click goes no further. Apps that keep the
-// screen awake (video) hold it off, as they do the lock, when Lock & idle says so. With
+// screen awake (video) hold it off, as they do the lock, when Security says so. With
 // "Lock on wake", waking it locks the screen first, and it goes once the lock is up, so the
 // desktop never shows unlocked (not for a preview).
 // Four styles (each can show the clock and date: Settings → Screensaver → Show the clock):
@@ -212,7 +212,7 @@ Scope {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 text: noPlayer ? "Videos need Qt Multimedia (the qt6-multimedia package)"
-                    : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " just yet. Pop some in, or get scenery videos in Settings → Screensaver"
+                    : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " yet. Add some, or get scenery videos in Settings → Screensaver"
                 color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: 15
             }
             ClockFace { visible: Config.s.screensaverClock; anchors.centerIn: parent; anchors.verticalCenterOffset: -parent.height * 0.06 }

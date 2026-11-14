@@ -819,7 +819,7 @@ PanelWindow {
                 wrapMode: Text.Wrap
                 font.weight: Font.Normal
                 color: pop.dim
-                text: "Slate can't find any speakers or a microphone. Plug in speakers, headphones or a headset and they'll show up here."
+                text: "Slate can't find any speakers or a microphone. Plug in speakers, headphones or a headset and they'll show up here"
             }
 
             Repeater {
@@ -973,7 +973,7 @@ PanelWindow {
                 wrapMode: Text.Wrap
                 font.weight: Font.Normal
                 color: pop.dim
-                text: "This computer has no Wi-Fi, and no cable is connected. Plug one in and it connects by itself."
+                text: "This computer has no Wi-Fi, and no cable is connected. Plug one in and it connects by itself"
             }
 
             // ---- Connection details (scripts/netinfo.sh), refreshed while the panel is open
@@ -1259,8 +1259,8 @@ PanelWindow {
             Label {
                 width: parent.width
                 visible: !Config.s.clipboardHistory || clipView.entries.length === 0
-                text: !Config.s.clipboardHistory ? "Clipboard history is off, so nothing you copy is kept."
-                    : "Nothing here yet. Things you copy will show up here."
+                text: !Config.s.clipboardHistory ? "Clipboard history is off, so nothing you copy is kept"
+                    : "Nothing here yet. Things you copy will show up here"
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
             Column {
@@ -1396,7 +1396,7 @@ PanelWindow {
             Label {
                 visible: spacesView.mode === "list" && Spaces.list.length === 0
                 width: parent.width
-                text: "Set up your apps across workspaces the way you like them, then save them as a space to bring them all back in one click."
+                text: "Set up your apps across workspaces the way you like them, then save them as a space to bring them all back in one click"
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
             // The saved spaces. Past five they scroll (about four and a half show, to say
@@ -1565,7 +1565,7 @@ PanelWindow {
             Label {
                 visible: spacesView.mode === "new" && Spaces.live.length === 0
                 width: parent.width
-                text: "There's nothing to save just yet. Open the apps you'd like, arrange them how you like, then come back here."
+                text: "There's nothing to save just yet. Open the apps you'd like, arrange them how you like, then come back here"
                 color: pop.dim; font.weight: Font.Normal; wrapMode: Text.Wrap
             }
             // Each workspace with apps, drawn small over the wallpaper; click to pick it.
@@ -2130,7 +2130,7 @@ PanelWindow {
             }
             Divider {}
             LinkRow {
-                code: 0xEB20; text: "Menu bar settings"
+                code: 0xEB20; text: "Menu Bar settings"
                 onClicked: pop.openSettingsPage("bar")
             }
         }
@@ -2176,7 +2176,7 @@ PanelWindow {
                 color: pop.dim
                 font.pixelSize: 12
                 font.weight: Font.Normal
-                text: !btView.adapter ? "No Bluetooth adapter found" : !btView.on ? "Bluetooth is off"
+                text: !btView.adapter ? "This computer has no Bluetooth" : !btView.on ? "Bluetooth is off"
                     : "No paired devices yet. You can pair one in Bluetooth settings"
             }
             Column {
@@ -2262,7 +2262,7 @@ PanelWindow {
                 wrapMode: Text.Wrap
                 color: pop.dim; font.pixelSize: 12; font.weight: Font.Normal
                 text: (wmView.own ? "This workspace has a window mode of its own." : "This workspace follows the default.")
-                    + " A mode picked here is for this workspace only; the others keep theirs."
+                    + " A mode picked here is for this workspace only; the others keep theirs"
             }
             Column {
                 width: parent.width
@@ -2318,7 +2318,7 @@ PanelWindow {
             width: 300
             spacing: 10
             PanelTitle {
-                text: "Game mode"
+                text: "Game Mode"
                 Switch {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     checked: Config.gameMode
@@ -3149,7 +3149,7 @@ PanelWindow {
                 Row {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 8
-                    Label { anchors.verticalCenter: parent.verticalCenter; text: "Do not disturb"; color: pop.dim; font.pixelSize: 12 }
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: "Do Not Disturb"; color: pop.dim; font.pixelSize: 12 }
                     Switch {
                         anchors.verticalCenter: parent.verticalCenter
                         checked: pop.notifs ? pop.notifs.dnd : false

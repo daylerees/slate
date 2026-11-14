@@ -465,8 +465,8 @@ PanelWindow {
         Text {
             anchors.centerIn: list
             visible: root.view().count === 0
-            text: root.mode === "emoji" ? "No emoji match"
-                : search.text !== "" ? "Nothing matches"
+            text: root.mode === "emoji" ? "Nothing matches that. Try another word"
+                : search.text !== "" ? "Nothing matches that. Try another word"
                 : !Config.s.clipboardHistory ? "Clipboard history is off (Settings → General)"
                 : "Nothing here yet. Things you copy will show up here"
             color: root.dimTextColor

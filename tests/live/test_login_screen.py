@@ -24,7 +24,7 @@ class FakeGreetd(threading.Thread):
     """greetd's IPC: a 4-byte native-endian length, then JSON. Asks for a password, accepts
     PASSWORD, and records every request. Like the real greetd, a refused password ends the
     attempt there and then, so cancelling it afterwards gets "Connection refused" (the login
-    screen used to show that instead of "Wrong password"). BROKEN plays greetd losing its
+    screen used to show that instead of "That password didn't match"). BROKEN plays greetd losing its
     worker partway through an attempt: a real connection problem."""
 
     def __init__(self, path):
@@ -142,7 +142,7 @@ class LoginScreen(LiveCase):
             self.assertIsNone(p.poll(), "the login screen quit after a wrong password")
             # (greetd's reply to Quickshell's cancel comes after the refusal: give it time)
             time.sleep(0.5)
-            self.assertEqual(ipc("message")[1].strip(), "Wrong password")
+            self.assertEqual(ipc("message")[1].strip(), "That password didn't match")
 
         with self.subTest("a real connection problem"):
             ipc("submit", BROKEN)

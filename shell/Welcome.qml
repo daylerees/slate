@@ -410,7 +410,7 @@ PanelWindow {
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
-                                text: "\u26A0 This changes those apps' own settings (their colour or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
+                                text: "This changes those apps' own settings (their colour or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
                                 color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: 12
                             }
                         }

@@ -97,7 +97,7 @@ ShellRoot {
     signal failed(string text)
 
     function submit(password) {
-        if (!Greetd.available) { fail("Not running under greetd"); return; }
+        if (!Greetd.available) { fail("Slate couldn't reach the login service (greetd). Restart your computer and try again"); return; }
         busy = true; message = ""; messageIsError = false;
         pending = password;
         if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
@@ -133,11 +133,11 @@ ShellRoot {
         }
         function onAuthFailure(message) {
             // (Quickshell has already ended the attempt with greetd)
-            root.fail(root.messageIsError && root.message ? root.message : "Wrong password");
+            root.fail(root.messageIsError && root.message ? root.message : "That password didn't match");
         }
         function onReadyToLaunch() {
             const s = root.sessions[root.sessionIndex];
-            if (!s) { root.fail("No session to start"); return; }
+            if (!s) { root.fail("Slate couldn't find a session to start"); return; }
             lastSession.setText(s.id + "\n");
             // This version works: the installer keeps it as the fallback (.good)
             const v = version.text().trim();
@@ -149,7 +149,7 @@ ShellRoot {
         }
         // greetd's own problems. After a wrong password Quickshell cancels the attempt that
         // greetd has already ended, and greetd answers "Connection refused": no attempt is under
-        // way by then, so it's only logged (shown, it replaced "Wrong password")
+        // way by then, so it's only logged (shown, it replaced "That password didn't match")
         function onError(error) {
             if (!root.busy) { console.info("slate-greeter: greetd after the attempt ended: " + error); return; }
             console.warn("slate-greeter: greetd: " + error);

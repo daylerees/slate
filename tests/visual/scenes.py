@@ -431,7 +431,7 @@ SCENES["bar-label"] = {
 }
 SCENES["bar-label-left"] = {
     "settings": {"barPosition": "left"},
-    "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control centre"), "settle": 1.0,
+    "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control Centre"), "settle": 1.0,
     "undo": [("test", "barHover", ""), _LABEL_GONE],
 }
 # The bar's More panel holding a long list (the line squeezed hard): it scrolls, with a thin

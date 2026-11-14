@@ -30,7 +30,7 @@ Item {
 
     function fail(text) {
         busy = false;
-        message = text || "Wrong password";
+        message = text || "That password didn't match";
         messageIsError = true;
         password.text = "";
         shake.restart();

@@ -54,8 +54,8 @@ ShellRoot {
     signal failed()
 
     function submit(name, password) {
-        if (!Greetd.available) { fail("Not running under greetd"); return; }
-        if (!name) { fail("Type your user name"); return; }
+        if (!Greetd.available) { fail("Slate couldn't reach the login service (greetd). Restart your computer and try again"); return; }
+        if (!name) { fail("Please type your user name"); return; }
         busy = true; message = ""; messageIsError = false;
         pending = password;
         if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
@@ -83,10 +83,10 @@ ShellRoot {
             if (responseRequired) { Greetd.respond(root.pending); root.pending = ""; }
             else if (error) { root.message = message; root.messageIsError = true; }
         }
-        function onAuthFailure(message) { root.fail(root.messageIsError && root.message ? root.message : "Wrong user name or password"); }
+        function onAuthFailure(message) { root.fail(root.messageIsError && root.message ? root.message : "That user name or password didn't match"); }
         function onReadyToLaunch() {
             const s = root.sessions[root.sessionIndex];
-            if (!s) { root.fail("No session to start"); return; }
+            if (!s) { root.fail("Slate couldn't find a session to start"); return; }
             lastSession.setText(s.id + "\n");
             root.message = "Starting " + s.name + "…"; root.messageIsError = false;
             Greetd.launch(root.splitExec(s.exec),
@@ -94,7 +94,7 @@ ShellRoot {
         }
         // greetd's own problems. After a wrong password Quickshell cancels the attempt that
         // greetd has already ended, and greetd answers "Connection refused": no attempt is under
-        // way by then, so it's only logged (shown, it replaced "Wrong password")
+        // way by then, so it's only logged (shown, it replaced "That password didn't match")
         function onError(error) {
             if (!root.busy) { console.info("slate-greeter: greetd after the attempt ended: " + error); return; }
             console.warn("slate-greeter: greetd: " + error);

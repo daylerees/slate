@@ -1155,10 +1155,10 @@ def panel_open(name):
 # What can be on the menu bar, by the names its arrangement uses (Config.barItems). "more" holds
 # whatever there isn't room for: it's always on the bar
 BAR_ITEMS = {
-    "control": "Control centre", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
+    "control": "Control Centre", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
     "workspaces": "Workspaces", "workspacename": "Workspace name", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
     "notifications": "Notifications", "clipboard": "Clipboard", "screenshot": "Screenshot", "camera": "Camera",
-    "gamemode": "Game mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
+    "gamemode": "Game Mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
     "wifi": "Wi-Fi", "battery": "Battery", "clock": "Clock", "power": "Power", "more": "More",
 }
 COLLAPSE = ["needed", "always", "never"]

@@ -63,10 +63,10 @@ Scope {
         const c = Qt.createComponent("file://" + userQml);
         const make = () => {
             if (c.status === Component.Error) {
-                notify("Your shell.qml has a mistake", c.errorString().slice(0, 600));
+                notify("Slate couldn't load your shell.qml", c.errorString().slice(0, 600) + "\n\nSlate keeps running without it; it'll load as soon as the file is saved again.");
             } else if (c.status === Component.Ready) {
                 userObject = c.createObject(root);
-                if (!userObject) notify("Your shell.qml has a mistake", "It couldn't be created; see `slate log`.");
+                if (!userObject) notify("Slate couldn't load your shell.qml", "It couldn't be created; see `slate log`. Slate keeps running without it; it'll load as soon as the file is saved again.");
             }
         };
         if (c.status === Component.Loading) c.statusChanged.connect(make);

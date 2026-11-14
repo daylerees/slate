@@ -188,7 +188,7 @@ Singleton {
     // Everything that can be in a container: its name in the arrangement, what it's called, its
     // icon (for the pool on Settings → Menu Bar), and the setting that says whether it shows
     readonly property var barItems: [
-        { id: "control", label: "Control centre", icon: 0xEAD7, key: "barShowControl" },
+        { id: "control", label: "Control Centre", icon: 0xEAD7, key: "barShowControl" },
         { id: "apps", label: "Apps", icon: 0xEC42, key: "barShowApps" },
         { id: "spaces", label: "Spaces", icon: 0xEDBA, key: "barShowSpaces" },
         { id: "nova", label: "Nova", icon: 0xF014, key: "barShowAssistant" },
@@ -202,7 +202,7 @@ Singleton {
         { id: "clipboard", label: "Clipboard", icon: 0xEA6F, key: "barShowClipboard" },
         { id: "screenshot", label: "Screenshot", icon: 0xF201, key: "barShowScreenshot" },
         { id: "camera", label: "Camera", icon: 0xEA9A, key: "barShowCamera" },
-        { id: "gamemode", label: "Game mode", icon: 0xF1D2, key: "barShowGameMode" },
+        { id: "gamemode", label: "Game Mode", icon: 0xF1D2, key: "barShowGameMode" },
         { id: "keyboard", label: "Keyboard layout", icon: 0xEBD6, key: "barShowKeyboard" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, key: "barShowBluetooth" },
         { id: "volume", label: "Volume", icon: 0xEB51, key: "barShowVolume" },
@@ -766,7 +766,7 @@ Singleton {
         onExited: code => {
             root.avatarBusy = false;
             if (code === 0) root.avatarVersion++;
-            else root.avatarError = avatarErr.text.trim().split("\n").pop() || "Couldn't change the picture";
+            else root.avatarError = avatarErr.text.trim().split("\n").pop() || "Slate couldn't change your picture";
         }
     }
 

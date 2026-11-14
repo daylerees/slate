@@ -346,7 +346,7 @@ class Label(LiveCase):
         self.point(cx, cy)
         lab = self.label()
         self.assertTrue(lab["shown"], "it went, going straight from one thing to the next")
-        self.assertEqual(lab["text"], "Control centre")
+        self.assertEqual(lab["text"], "Control Centre")
         self.assertTrue(abs(lab["x"] + lab["w"] / 2 - cx) <= 1.5 or lab["x"] <= 10, f"not under the control centre ({cx}): {lab}")
         # A workspace dot: which workspace it is, as the overview says it
         dots = self.s.state()["bar"]["line"]["workspaces"]
@@ -372,7 +372,7 @@ class Label(LiveCase):
         self.config("barShowGameMode", "true")
         self.wait(lambda st: st["bar"]["line"]["gamemode"]["visible"], "game mode on the bar")
         self.ipc("test", "barHover", "gamemode")
-        self.showing("Game mode: off", "game mode's state")
+        self.showing("Game Mode: off", "game mode's state")
 
     def test_beside_a_side_bar(self):
         self.at("left")

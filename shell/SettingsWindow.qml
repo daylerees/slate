@@ -2468,7 +2468,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Auto-hide"
-                    detail: "Slides the bar out of your way when a single window fills the screen; it comes back when you switch workspace or reach for the top edge"
+                    detail: "Slides the bar out of your way when a single window fills the screen; it comes back when you switch workspace or reach for the bar's edge"
                     key: "barAutoHide"
                 }
                 Separator {}
@@ -2543,7 +2543,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Auto-hide"
-                    detail: "Hide the dock while the workspace has tiled windows (floating ones leave it open, except in floating windows mode); push the pointer to the bottom edge to show it"
+                    detail: "Hide the dock while the workspace has tiled windows (floating ones leave it open, except in floating windows mode); push the pointer to the dock's edge to show it"
                     key: "dockAutoHide"
                 }
                 Separator {}
@@ -2731,14 +2731,14 @@ FloatingWindow {
             spacing: 4
             readonly property var minutes: win.minuteOptions([0, 1, 2, 3, 5, 10, 15, 20, 30])
             PageTitle { text: "Screensaver" }
-            IntroText { text: "Covers the screen while you're away, before the lock and screen-off times in Lock & idle. Any key, click or move of the pointer puts it away." }
+            IntroText { text: "Covers the screen while you're away, before the lock and screen-off times in Security. Any key, click or move of the pointer puts it away." }
             GroupLabel { text: "Style & timing" }
             Group {
                 DropdownSetting {
                     label: "Start after"
                     settingKey: "screensaverMinutes"
                     detail: Config.s.idleLockMinutes > 0 && Config.s.screensaverMinutes >= Config.s.idleLockMinutes
-                        ? "The screen locks at " + Config.s.idleLockMinutes + " minutes (Lock & idle), so it won't show"
+                        ? "The screen locks at " + Config.s.idleLockMinutes + " minutes (in Security), so it won't show"
                         : "Of no input. Video and apps that keep the screen awake hold it off"
                     options: ssCol.minutes
                     value: Config.s.screensaverMinutes
@@ -4149,7 +4149,7 @@ FloatingWindow {
                     }
                 }
             }
-            Footnote { text: "How the clock looks is under Menu bar. Changing these may ask for your password." }
+            Footnote { text: "How the clock looks is under Menu Bar. Changing these may ask for your password." }
             // How dates, the week and temperatures are written, everywhere Slate shows them
             GroupLabel { text: "Formats" }
             Group {
@@ -5060,10 +5060,10 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Notifications" }
-            GroupLabel { text: "Do not disturb & sound" }
+            GroupLabel { text: "Do Not Disturb & sound" }
             Group {
                 SettingRow {
-                    label: "Do not disturb"
+                    label: "Do Not Disturb"
                     detail: "Quietens pop-ups so you can focus (critical ones still show). Nothing's lost: everything still goes to history"
                     Toggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
                 }
@@ -6821,7 +6821,7 @@ FloatingWindow {
                             label: "Install"
                             onClicked: win.ask = Object.assign({
                                 run: () => greeterRow.run([], "Installing…",
-                                    "Installed; shows at your next logout or restart", "Not installed")
+                                    "Installed; shows at your next logout or restart", "Slate couldn't install it")
                             }, win.loginScreenInstallQuestion)
                         }
                         Button {
@@ -6830,7 +6830,7 @@ FloatingWindow {
                             label: "Update"
                             onClicked: win.ask = Object.assign({
                                 run: () => greeterRow.run(["--code-only"], "Updating…",
-                                    "Updated; shows at your next logout or restart", "Not updated")
+                                    "Updated; shows at your next logout or restart", "Slate couldn't update it")
                             }, win.loginScreenUpdateQuestion)
                         }
                         Button {
@@ -6843,7 +6843,7 @@ FloatingWindow {
                                     + "You're welcome to install Slate's again at any time.",
                                 button: "Switch back", code: 0xEAE2,
                                 run: () => greeterRow.run(["--revert"], "Switching back…",
-                                    "Switched back; your old login screen shows at your next logout or restart", "Not switched back")
+                                    "Switched back; your old login screen shows at your next logout or restart", "Slate couldn't switch it back")
                             }
                         }
                     }
@@ -6898,7 +6898,7 @@ FloatingWindow {
                 { value: "lock", label: "Lock screen" },
                 { value: "launcher", label: "App launcher" },
                 { value: "overview", label: "Workspace overview" },
-                { value: "control", label: "Control centre" },
+                { value: "control", label: "Control Centre" },
                 { value: "notifications", label: "Notifications" },
                 { value: "screenoff", label: "Turn screen off" }
             ]
@@ -6967,7 +6967,7 @@ FloatingWindow {
             Group {
                 SettingRow {
                     label: "Bluetooth"
-                    detail: bluetoothPane.adapter ? (bluetoothPane.adapter.enabled ? "On" : "Off") : "No Bluetooth adapter found"
+                    detail: bluetoothPane.adapter ? (bluetoothPane.adapter.enabled ? "On" : "Off") : "This computer has no Bluetooth"
                     Toggle { visible: !!bluetoothPane.adapter; checked: bluetoothPane.adapter ? bluetoothPane.adapter.enabled : false; onToggled: v => { if (bluetoothPane.adapter) bluetoothPane.adapter.enabled = v; } }
                 }
                 Separator { visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled }
@@ -7124,7 +7124,7 @@ FloatingWindow {
                     onStreamFinished: {
                         const line = text.trim();
                         printersPane.note = line === "ok" ? "" : line.startsWith("error ")
-                            ? (line === "error cancelled" ? "" : "That didn't work: " + line.slice(6)) : line;
+                            ? (line === "error cancelled" ? "" : "Slate couldn't do that: " + line.slice(6)) : line;
                         printersPane.refresh();
                         // A printer added: it's no longer one to add
                         if (findProc.command && printersPane.searched) { findProc.running = false; findProc.running = true; }
@@ -7166,7 +7166,7 @@ FloatingWindow {
                 width: parent.width; leftPadding: 4; bottomPadding: 4
                 textFormat: Text.PlainText        // never markup: it can quote what the printing service said
                 text: printersPane.note
-                color: printersPane.note.startsWith("That didn't") ? win.danger : win.dim
+                color: printersPane.note.startsWith("Slate couldn't do that") ? win.danger : win.dim
                 font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
             }
 
@@ -7643,7 +7643,7 @@ FloatingWindow {
             Group {
                 visible: camPane.looked && !camPane.privateOn && (camPane.error !== "" || camPane.cams.length === 0)
                 SettingRow {
-                    label: camPane.error !== "" ? "Can't reach the camera" : "No webcam found"
+                    label: camPane.error !== "" ? "Slate can't reach the camera" : "No webcam found"
                     detail: camPane.error !== "" ? camPane.error : "Plug one in, or check it isn't switched off (some laptops have a key or a slider for it)"
                     Button { label: "Look again"; icon: 0xEB13; onClicked: camPane.refresh() }
                 }
@@ -8113,7 +8113,7 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
-                    label: "Restart the shell"
+                    label: "Restart Slate"
                     detail: "Reloads the bar, dock, launcher, switchers and notifications"
                     Button { label: "Restart"; onClicked: Config.restartSlate() }
                 }
