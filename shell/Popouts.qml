@@ -1021,14 +1021,20 @@ PanelWindow {
                 // each time any network's signal changed, which is every few seconds while the
                 // panel scans: a password half typed went with its row
                 model: ScriptModel { values: wifiView.nets }
+                readonly property bool overflowing: contentHeight > height
                 SmoothWheel { flick: netList }
+                // Shades and scrollbar, parented to the list itself so they stay put
+                ScrollShade { parent: netList; z: 3; width: netList.width; cornerRadius: 8; distance: netList.contentY - netList.originY }
+                ScrollShade { parent: netList; z: 3; atBottom: true; y: netList.height - height; width: netList.width; cornerRadius: 8
+                              distance: netList.originY + netList.contentHeight - netList.height - netList.contentY }
+                ThinScrollbar { parent: netList; z: 3; flick: netList; color: pop.text; anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
                 delegate: Column {
                     id: netRow
                     required property var modelData
                     Component.onCompleted: pop.rowMade("wifi")
                     readonly property alias field: psk
                     readonly property bool secure: modelData.security !== undefined && modelData.security !== WifiSecurityType.Open
-                    width: netList.width
+                    width: netList.width - (netList.overflowing ? 18 : 0)   // room for the scrollbar and a gap before it
                     spacing: 4
                     RowButton {
                         width: parent.width
@@ -1499,27 +1505,12 @@ PanelWindow {
                         }
                     }
                 }
-                // Scroll shadows, as in Settings: at the top once scrolled down, and at the
-                // bottom while there's more below
-                Rectangle {
-                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 18 : 0; top: parent.top }
-                    height: 18
-                    // Fades with the distance from the edge, gone just as you reach it
-                    opacity: Math.max(0, Math.min(1, (spListFlick.contentY - spListFlick.originY) / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
-                        GradientStop { position: 1; color: "transparent" }
-                    }
-                }
-                Rectangle {
-                    anchors { left: parent.left; right: parent.right; rightMargin: spListBox.overflow ? 18 : 0; bottom: parent.bottom }
-                    height: 24
-                    opacity: Math.max(0, Math.min(1, (spListFlick.originY + spListFlick.contentHeight - spListFlick.height - spListFlick.contentY) / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "transparent" }
-                        GradientStop { position: 1; color: Config.shade(Config.s.lightMode ? 0.14 : 0.38) }
-                    }
-                }
+                // Scroll shades: at the top once scrolled down, and at the bottom while
+                // there's more below
+                ScrollShade { z: 3; width: spListBox.width - (spListBox.overflow ? 18 : 0); cornerRadius: 8
+                              distance: spListFlick.contentY - spListFlick.originY }
+                ScrollShade { z: 3; atBottom: true; y: spListBox.height - height; width: spListBox.width - (spListBox.overflow ? 18 : 0); cornerRadius: 8
+                              distance: spListFlick.originY + spListFlick.contentHeight - spListFlick.height - spListFlick.contentY }
                 ThinScrollbar {
                     flick: spListFlick
                     color: pop.text
@@ -1710,6 +1701,10 @@ PanelWindow {
                         }
                     }
                 }
+                ScrollShade { z: 3; width: wsBox.width - (wsBox.overflow ? 18 : 0); cornerRadius: 8
+                              distance: wsFlick.contentY - wsFlick.originY }
+                ScrollShade { z: 3; atBottom: true; y: wsBox.height - height; width: wsBox.width - (wsBox.overflow ? 18 : 0); cornerRadius: 8
+                              distance: wsFlick.originY + wsFlick.contentHeight - wsFlick.height - wsFlick.contentY }
                 ThinScrollbar { flick: wsFlick; color: pop.text; anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
             }
 
@@ -3226,30 +3221,11 @@ PanelWindow {
                     anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                 }
 
-                // Shadow at the top once scrolled down. Parented to the list itself (not its
-                // scrolling content) so it stays put.
-                Rectangle {
-                    parent: nList
-                    anchors { left: parent.left; right: parent.right; top: parent.top }
-                    height: 36
-                    // Fades with the distance from the edge, gone just as you reach it
-                    opacity: Math.max(0, Math.min(1, (nList.contentY - nList.originY) / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: pop.bg }
-                        GradientStop { position: 1.0; color: "transparent" }
-                    }
-                }
-                // …and at the bottom while there's more to scroll to
-                Rectangle {
-                    parent: nList
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: 36
-                    opacity: Math.max(0, Math.min(1, (nList.originY + nList.contentHeight - nList.height - nList.contentY) / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 1.0; color: pop.bg }
-                    }
-                }
+                // Shades at the top once scrolled down and at the bottom while there's more,
+                // parented to the list itself (not its scrolling content) so they stay put
+                ScrollShade { parent: nList; z: 3; width: nList.width; cornerRadius: 8; distance: nList.contentY - nList.originY }
+                ScrollShade { parent: nList; z: 3; atBottom: true; y: nList.height - height; width: nList.width; cornerRadius: 8
+                              distance: nList.originY + nList.contentHeight - nList.height - nList.contentY }
             }
         }
     }

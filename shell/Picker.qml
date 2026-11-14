@@ -454,6 +454,19 @@ PanelWindow {
             }
         }
 
+        // Shades at the top once scrolled down and at the bottom while there's more, over
+        // whichever view is showing (the list or the emoji grid)
+        ScrollShade {
+            anchors { left: list.left; right: list.right; top: list.top }
+            z: 3; cornerRadius: 8
+            distance: root.view().contentY - root.view().originY
+        }
+        ScrollShade {
+            anchors { left: list.left; right: list.right; bottom: list.bottom }
+            z: 3; atBottom: true; cornerRadius: 8
+            distance: root.view().originY + root.view().contentHeight - root.view().height - root.view().contentY
+        }
+
         // Scrollbar (ThinScrollbar, as everywhere), only when the view overflows
         ThinScrollbar {
             flick: root.view()

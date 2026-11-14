@@ -290,6 +290,16 @@ FloatingWindow {
                 }
             }
         }
+        ScrollShade {
+            anchors { left: grid.left; right: grid.right; top: grid.top }
+            z: 3; cornerRadius: 8
+            distance: grid.contentY - grid.originY
+        }
+        ScrollShade {
+            anchors { left: grid.left; right: grid.right; bottom: grid.bottom }
+            z: 3; atBottom: true; cornerRadius: 8
+            distance: grid.originY + grid.contentHeight - grid.height - grid.contentY
+        }
         ThinScrollbar {
             flick: grid
             color: pk.text

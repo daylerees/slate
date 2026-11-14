@@ -97,7 +97,7 @@ PanelWindow {
             SmoothWheel { flick: menuScroll }
             Column {
                 id: menuCol
-                width: menuScroll.width
+                width: menuScroll.width - (menuScroll.interactive ? 6 : 0)   // clear of the scrollbar, when there is one
                 spacing: 1
 
                 // Back to the menu this one came from
@@ -217,6 +217,22 @@ PanelWindow {
                     font.family: tm.bar.fontFamily; font.pixelSize: 13
                 }
             }
+        }
+        // Shades and scrollbar, for a menu taller than the screen allows (deeper in dark mode,
+        // where the menu's as dark as the shade itself, as the dock's More)
+        ScrollShade {
+            z: 3; anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
+            cornerRadius: 11; depth: Config.s.lightMode ? 1 : 2.4
+            distance: menuScroll.contentY - menuScroll.originY
+        }
+        ScrollShade {
+            z: 3; atBottom: true; anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
+            cornerRadius: 11; depth: Config.s.lightMode ? 1 : 2.4
+            distance: menuScroll.originY + menuScroll.contentHeight - menuScroll.height - menuScroll.contentY
+        }
+        ThinScrollbar {
+            z: 3; flick: menuScroll; color: tm.textColor
+            anchors { top: parent.top; bottom: parent.bottom; right: parent.right; topMargin: 8; bottomMargin: 8; rightMargin: 0 }
         }
     }
 }

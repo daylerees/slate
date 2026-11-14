@@ -607,6 +607,24 @@ FloatingWindow {
                     }
                 }
             }
+            // Shades and scrollbar for when the pages don't all fit (a short screen)
+            ScrollShade {
+                z: 3
+                anchors { top: parent.top; left: parent.left; right: parent.right }
+                distance: sideScroll.contentY - sideScroll.originY
+            }
+            ScrollShade {
+                z: 3
+                atBottom: true
+                anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+                distance: sideScroll.originY + sideScroll.contentHeight - sideScroll.height - sideScroll.contentY
+            }
+            ThinScrollbar {
+                z: 3
+                flick: sideScroll
+                color: win.text
+                anchors { top: parent.top; bottom: parent.bottom; right: parent.right; topMargin: 14; bottomMargin: 14; rightMargin: 2 }
+            }
         }
 
         // ---- Content -------------------------------------------------------
@@ -1148,7 +1166,7 @@ FloatingWindow {
                 }
             }
             // While the list scrolls: a soft shadow at the top once scrolled down and at the bottom
-            // while there's more below (like Settings' pages), and a 1 px scrollbar
+            // while there's more below (like Settings' pages), and the usual scrollbar
             ScrollShade {
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 1 }
                 cornerRadius: menu.radius - 1
@@ -1160,19 +1178,10 @@ FloatingWindow {
                 cornerRadius: menu.radius - 1
                 distance: menuList.contentHeight - menuList.height - menuList.contentY
             }
-            Rectangle {
-                readonly property real range: menuList.contentHeight - menuList.height
-                // In the gap the rows leave for it, kept in from the menu's top and bottom
-                readonly property real inset: 6
-                readonly property real track: menuList.height - 2 * inset
-                visible: range > 0
-                x: menuList.x + menuList.width - 4
-                width: 1
-                height: Math.max(16, track * menuList.height / Math.max(1, menuList.contentHeight))
-                y: menuList.y + inset + (range > 0 ? (track - height) * Math.max(0, Math.min(1, menuList.contentY / range)) : 0)
-                radius: Config.corner(0.5)
+            ThinScrollbar {
+                flick: menuList
                 color: win.text
-                opacity: 0.4
+                anchors { top: menuList.top; bottom: menuList.bottom; right: parent.right; rightMargin: 2 }
             }
         }
     }
@@ -1897,7 +1906,7 @@ FloatingWindow {
                     model: searchPicker.shown
                     delegate: Rectangle {
                         required property var modelData
-                        width: pickList.width; height: pickDetail.visible ? 42 : 32; radius: Config.corner(6)
+                        width: pickList.width - (pickList.contentHeight > pickList.height ? 12 : 0); height: pickDetail.visible ? 42 : 32; radius: Config.corner(6)
                         color: pickHover.hovered ? Config.hover : "transparent"
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
@@ -1913,6 +1922,20 @@ FloatingWindow {
                         text: "Nothing matches"
                         color: win.dim; font.family: win.font; font.pixelSize: 12
                     }
+                }
+                ScrollShade {
+                    anchors { top: parent.top; left: parent.left; right: parent.right }
+                    z: 3; cornerRadius: 8
+                    distance: pickList.contentY - pickList.originY
+                }
+                ScrollShade {
+                    anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+                    z: 3; atBottom: true; cornerRadius: 8
+                    distance: pickList.originY + pickList.contentHeight - pickList.height - pickList.contentY
+                }
+                ThinScrollbar {
+                    z: 3; flick: pickList; color: win.text
+                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right; topMargin: 4; bottomMargin: 4; rightMargin: 2 }
                 }
             }
         }
@@ -5877,7 +5900,7 @@ FloatingWindow {
                             delegate: Rectangle {
                                 required property string fileName
                                 required property string filePath
-                                width: dirList.width; height: 32; radius: Config.corner(6)
+                                width: dirList.width - (dirList.contentHeight > dirList.height ? 12 : 0); height: 32; radius: Config.corner(6)
                                 color: dirHover.hovered ? Config.hover : "transparent"
                                 Text {
                                     id: dirIcon
@@ -5901,6 +5924,20 @@ FloatingWindow {
                             visible: dirList.count === 0
                             text: "No folders in here"
                             color: win.dim; font.family: win.font; font.pixelSize: 12
+                        }
+                        ScrollShade {
+                            anchors { top: parent.top; left: parent.left; right: parent.right }
+                            z: 3; cornerRadius: 8
+                            distance: dirList.contentY - dirList.originY
+                        }
+                        ScrollShade {
+                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+                            z: 3; atBottom: true; cornerRadius: 8
+                            distance: dirList.originY + dirList.contentHeight - dirList.height - dirList.contentY
+                        }
+                        ThinScrollbar {
+                            z: 3; flick: dirList; color: win.text
+                            anchors { top: parent.top; bottom: parent.bottom; right: parent.right; topMargin: 4; bottomMargin: 4; rightMargin: 2 }
                         }
                     }
                     Row {
