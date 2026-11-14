@@ -532,6 +532,53 @@ class More(MoreCase):
             self.assertIn(kept, kinds, f"the {kept} stays")
 
 
+class MoreScrolls(MoreCase):
+    """More with more than three rows of apps scrolls: its scrollbar has room of its own beside
+    the grid, never over the right-hand column's names, and the shades show which way there's
+    more (the top once scrolled down, the bottom while there's more below), across the cells
+    only, clear of the scrollbar."""
+    APPS = ["slate-more-%d" % i for i in range(1, 15)]
+
+    def test_room_for_the_scrollbar_and_shades_that_show_it_scrolls(self):
+        self.ipc("test", "dockRoom", 200)
+        self.open_apps()
+        st = self.settled()
+        self.assertGreater(len(st["dock"]["more"]), 12, "enough in More for it to scroll")
+        self.ipc("dock", "more")
+        g = self.wait(lambda st: st["dock"]["moreOpen"] and st["dock"]["grid"], "More's grid open")["dock"]["grid"]
+        self.assertGreater(g["contentHeight"], g["height"], "it scrolls")
+        self.assertTrue(g["barShown"], "with its scrollbar")
+        self.assertLessEqual(g["cellsRight"] + 8, g["barLeft"], f"the cells (to {g['cellsRight']}) clear of the scrollbar (from {g['barLeft']})")
+        self.assertLessEqual(g["shadeRight"], g["barLeft"], "the shades over the cells, not the scrollbar")
+        self.assertEqual(g["top"], 0, "no shade at the top before scrolling")
+        self.assertEqual(g["bottom"], 1, "the shade at the bottom: there's more below")
+        # Partway: both
+        self.ipc("test", "dockGridScroll", 46)
+        g = self.wait(lambda st: st["dock"]["grid"]["y"] == 46, "scrolled partway")["dock"]["grid"]
+        self.assertGreater(g["top"], 0, "the top shade once scrolled down")
+        self.assertGreater(g["bottom"], 0, "and the bottom one while there's more")
+        # At the end: only the top
+        self.ipc("test", "dockGridScroll", 10000)
+        g = self.wait(lambda st: st["dock"]["grid"]["y"] == st["dock"]["grid"]["contentHeight"] - st["dock"]["grid"]["height"],
+                      "scrolled to the end")["dock"]["grid"]
+        self.assertEqual((g["top"], g["bottom"]), (1, 0), "the top shade only, at the end")
+        self.ipc("dock", "closeMenu")
+
+    def test_no_room_kept_when_it_fits(self):
+        """A grid that fits keeps the menu its usual width: no scrollbar, no room for one."""
+        self.APPS = MoreCase.APPS          # (five: a row or two)
+        self.ipc("test", "dockRoom", 360)
+        self.open_apps()
+        st = self.settled()
+        self.assertTrue(0 < len(st["dock"]["more"]) <= 12, "a few apps in More")
+        self.ipc("dock", "more")
+        g = self.wait(lambda st: st["dock"]["moreOpen"] and st["dock"]["grid"], "More's grid open")["dock"]["grid"]
+        self.assertFalse(g["barShown"])
+        self.assertEqual(g["menuWidth"], 4 * 88 + 16, "the usual width")
+        self.assertEqual((g["top"], g["bottom"]), (0, 0), "no shades")
+        self.ipc("dock", "closeMenu")
+
+
 class DraggingFromMore(MoreCase):
     """An app dragged out of More's grid onto the dock is pinned where it's let go, through the
     dock's own drag (the gap opening there); let go anywhere else, nothing changes. The grid

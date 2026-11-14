@@ -8,12 +8,15 @@ Rectangle {
     property bool atBottom: false
     property real distance: 0
     property real cornerRadius: 0      // the rounding of the corners it sits in
+    // How strong, times the usual: deeper on a surface as dark as the shade itself (a dark
+    // menu), where it shows only by fading what's under it into the surface
+    property real depth: 1
     height: 18
     topLeftRadius: Config.corner(atBottom ? 0 : cornerRadius); topRightRadius: Config.corner(atBottom ? 0 : cornerRadius)
     bottomLeftRadius: Config.corner(atBottom ? cornerRadius : 0); bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
     opacity: Math.max(0, Math.min(1, distance / 24))
     gradient: Gradient {
-        GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Config.s.lightMode ? 0.12 : 0.32) }
-        GradientStop { position: 1; color: scrollShade.atBottom ? Config.shade(Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+        GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Math.min(1, (Config.s.lightMode ? 0.12 : 0.32) * scrollShade.depth)) }
+        GradientStop { position: 1; color: scrollShade.atBottom ? Config.shade(Math.min(1, (Config.s.lightMode ? 0.14 : 0.38) * scrollShade.depth)) : "transparent" }
     }
 }

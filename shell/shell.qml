@@ -353,6 +353,11 @@ ShellRoot {
             win.carryFromMore(sp);
         }
         function dockMoreDrop(): void { win.dropFromMore(); }
+        // Scroll More's or Downloads' grid (open) to y, as far as it goes
+        function dockGridScroll(y: real): void {
+            const f = appMenu.gridFlick;
+            if (f) f.contentY = Math.max(0, Math.min(f.contentHeight - f.height, y));
+        }
         function dockHover(i: int): void {
             win.testHover = i >= 0;
             if (i >= 0) win.setPointer((strip.width - win.restWidth) / 2 + win.slotStart(i) + win.slotWidth(i) * win.base / 2);
@@ -432,6 +437,9 @@ ShellRoot {
                     base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.roomLength),
                     more: win.moreItems.map(it => it.key), mediaCompact: win.foldPlan.compact,
                     moreOpen: appMenu.visible && !!appMenu.app && !!appMenu.app.moreGrid,
+                    // More's or Downloads' grid as it scrolls: where the cells end and the
+                    // scrollbar starts (menu coordinates), and how strong each shade is now
+                    grid: appMenu.gridFlick ? appMenu.gridState() : null,
                     hoverEffect: win.hoverEffect,
                     fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
                     glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
@@ -2039,7 +2047,17 @@ ShellRoot {
             // rows as the menu's items, and Downloads' grid above them
             items: rows.map(r => r.kind === "sep" ? { separator: true }
                 : { label: r.label, danger: !!r.danger, active: !!r.active, run: () => appMenu.run(r) })
-            menuWidth: app && (app.downloadsGrid || app.moreGrid) ? 4 * 88 + 16 : 240
+            menuWidth: app && (app.downloadsGrid || app.moreGrid) ? 4 * 88 + 16 + (gridScrolls ? 18 : 0) : 240
+            // More's or Downloads' grid with more than its three rows, so it scrolls: the menu
+            // widens by the scrollbar's room (an 8 px gap and the bar's 10) while it does, so the
+            // cells keep their width and nothing sits under the scrollbar
+            readonly property bool gridScrolls: !!app && (app.moreGrid ? moreList.length > 12 : !!app.downloadsGrid && win.recentDownloads.length > 12)
+            // The grid sits 8 px in from the menu's rounded edge (DesktopMenu's card: 12), so its
+            // shades round their corners to match, the same curve 8 px further in
+            readonly property real gridCorner: 12 - 8
+            // and, on the menu's dark (the shade's own colour), go deeper and taller than a
+            // list's, fading the cells into the menu so they show (light mode: the usual shade)
+            readonly property real gridShadeDepth: Config.s.lightMode ? 1 : 2.4
             extra: app && app.downloadsGrid ? downloadsGrid : app && app.moreGrid ? moreGrid : null
             property var app: null
             property real alongX: 0     // where it was opened from along the dock (strip coordinates)
@@ -2069,6 +2087,17 @@ ShellRoot {
                 openFrom(p.x, p.y, win.edge, 0);
             }
             function closeMenu() { close(); }
+            // More's or Downloads' grid while it's open (for the test state): the Flickable,
+            // which names its cells, shades and scrollbar
+            property Flickable gridFlick: null
+            function gridState() {
+                const f = gridFlick, r = it => Math.round(it.mapToItem(f, 0, 0).x + it.width);
+                return { y: Math.round(f.contentY), height: Math.round(f.height), contentHeight: Math.round(f.contentHeight),
+                         menuWidth: menuWidth, cellsRight: r(f.cells), barShown: f.bar.visible,
+                         barLeft: Math.round(f.bar.mapToItem(f, 0, 0).x), barRight: r(f.bar),
+                         shadeRight: Math.max(r(f.topShade), r(f.bottomShade)),
+                         top: Math.round(f.topShade.opacity * 100) / 100, bottom: Math.round(f.bottomShade.opacity * 100) / 100 };
+            }
 
             // Rows: open windows, the app's own actions, then New Window / Pin / Quit. For the
             // launcher button: Settings and a few of the places most often wanted in it
@@ -2176,10 +2205,19 @@ ShellRoot {
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
                     SmoothWheel { flick: moreScroll }
-                    ScrollShade { z: 3; y: moreScroll.contentY; width: moreScroll.width; cornerRadius: 8; distance: moreScroll.contentY }
-                    ScrollShade { z: 3; atBottom: true; y: moreScroll.contentY + moreScroll.height - height; width: moreScroll.width; cornerRadius: 8
+                    readonly property Item cells: moreGridItems
+                    readonly property Item topShade: moreTopShade
+                    readonly property Item bottomShade: moreBottomShade
+                    readonly property Item bar: moreBar
+                    Component.onCompleted: appMenu.gridFlick = moreScroll
+                    Component.onDestruction: if (appMenu.gridFlick === moreScroll) appMenu.gridFlick = null
+                    // (over the cells only, the scrollbar beside them left clear)
+                    ScrollShade { id: moreTopShade; z: 3; y: moreScroll.contentY; width: moreGridItems.width; cornerRadius: appMenu.gridCorner
+                                  height: 28; depth: appMenu.gridShadeDepth; distance: moreScroll.contentY }
+                    ScrollShade { id: moreBottomShade; z: 3; atBottom: true; y: moreScroll.contentY + moreScroll.height - height; width: moreGridItems.width
+                                  height: 28; depth: appMenu.gridShadeDepth; cornerRadius: appMenu.gridCorner
                                   distance: moreScroll.contentHeight - moreScroll.height - moreScroll.contentY }
-                    ThinScrollbar { z: 3; flick: moreScroll; color: win.textColor; x: moreScroll.width - width; y: moreScroll.contentY; height: moreScroll.height }
+                    ThinScrollbar { id: moreBar; z: 3; flick: moreScroll; color: win.textColor; x: moreScroll.width - width; y: moreScroll.contentY; height: moreScroll.height }
                     Grid {
                         id: moreGridItems
                         columns: 4
@@ -2298,10 +2336,19 @@ ShellRoot {
                         boundsBehavior: Flickable.StopAtBounds
                         clip: true
                         SmoothWheel { flick: dlScroll }
-                        ScrollShade { z: 3; y: dlScroll.contentY; width: dlScroll.width; cornerRadius: 8; distance: dlScroll.contentY }
-                        ScrollShade { z: 3; atBottom: true; y: dlScroll.contentY + dlScroll.height - height; width: dlScroll.width; cornerRadius: 8
+                        readonly property Item cells: dlGrid
+                        readonly property Item topShade: dlTopShade
+                        readonly property Item bottomShade: dlBottomShade
+                        readonly property Item bar: dlBar
+                        Component.onCompleted: appMenu.gridFlick = dlScroll
+                        Component.onDestruction: if (appMenu.gridFlick === dlScroll) appMenu.gridFlick = null
+                        // (as More's: over the cells only, the scrollbar beside them left clear)
+                        ScrollShade { id: dlTopShade; z: 3; y: dlScroll.contentY; width: dlGrid.width; cornerRadius: appMenu.gridCorner
+                                      height: 28; depth: appMenu.gridShadeDepth; distance: dlScroll.contentY }
+                        ScrollShade { id: dlBottomShade; z: 3; atBottom: true; y: dlScroll.contentY + dlScroll.height - height; width: dlGrid.width
+                                      height: 28; depth: appMenu.gridShadeDepth; cornerRadius: appMenu.gridCorner
                                       distance: dlScroll.contentHeight - dlScroll.height - dlScroll.contentY }
-                        ThinScrollbar { z: 3; flick: dlScroll; color: win.textColor; x: dlScroll.width - width; y: dlScroll.contentY; height: dlScroll.height }
+                        ThinScrollbar { id: dlBar; z: 3; flick: dlScroll; color: win.textColor; x: dlScroll.width - width; y: dlScroll.contentY; height: dlScroll.height }
                         Grid {
                         id: dlGrid
                         columns: 4
