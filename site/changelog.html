@@ -38,6 +38,48 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.31.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.31.0 <time datetime="2026-11-14">14 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Talk to Nova.</strong> Hold Super+K, or the microphone in Nova's box, and say what you want. It's turned into text on your computer with whisper.cpp, and the recording is deleted straight away. It only listens while held, and never in Private Mode or with the screen locked. Switch it on in Settings → Assistant → Voice; the speech model (148 MB) downloads only after Slate asks.</li>
+        <li><strong>More agents for Nova.</strong> Codex, OpenCode, Goose and Antigravity, as well as Claude Code and a command of your own. Or Ollama, a model on your own computer, with Slate running the agent itself, so nothing leaves your computer.</li>
+        <li><strong>Nova does more.</strong> Undo a setting it changed, straight from its answer. It can turn Wi-Fi and Bluetooth on or off and connect to networks and devices you've used before, pin apps to the dock, empty the waste basket and put a Settings page back to its defaults; anything that can't be undone, or could cut it off, asks first. Answers can have lists, bold words and commands in a box with Copy. Stop it with the round button in its box or Ctrl+C, drag its window by its title, and hear a soft sound when it answers while you wait. The Welcome window now introduces it.</li>
+        <li><strong>A wallpaper switcher.</strong> Super+Alt+W shows your wallpapers in a row. Left and Right preview each one full screen, with your windows faded away and Slate's colours following; Enter keeps it, Escape puts yours back. Pictures are read ahead and colours worked out ahead, so moving along is quick.</li>
+        <li><strong>Bolder wallpaper colours.</strong> Accent boldness and Tint boldness now start at 80% when you turn on colours from the wallpaper.</li>
+        <li><strong>A menu bar that says more.</strong> Rest the pointer on anything for a small label: the whole date on the clock, and how things are ("Volume: 40%", "Wi-Fi: Home", "Battery: 80%, charging"). The workspace's name can go on the bar, buttons take the pointer across the bar's full height, More scrolls when it's long and closes after you pick something, and a press anywhere on the bar closes an open panel.</li>
+        <li><strong>A tidier dock.</strong> At most six window previews, with a card saying how many more windows there are, and drag an app from More onto the dock to pin it there.</li>
+        <li><strong>App theming reaches further.</strong> Flatpak and Snap apps, and Qt 5 apps that use qt5ct. Kvantum themes keep their own look.</li>
+        <li><strong>Settings say why.</strong> A setting that's switched off because of another now says which one it needs, and takes you there.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>A collapsed container on the menu bar that you open now stays open when the bar is short of room, instead of closing again straight away.</li>
+        <li>Pressing a dock icon now closes an open bar panel.</li>
+        <li>In the dock's More and Downloads, names are no longer cut off by the scrollbar, and the shades show which way they scroll.</li>
+        <li>The coloured tiles behind app icons now appear on a first login or with a new icon style, rather than after Slate reloads.</li>
+        <li>Emptying the Waste Basket now works on a minimal install: gvfs is now a dependency.</li>
+        <li>Linked config files (Home Manager, GNU Stow) stay links when App theming changes them, and read-only ones are left alone.</li>
+        <li>The wallpaper switcher no longer leaves a preview on screen after Escape right after a move.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The docs now have screenshots, taken from a clean Slate in its default look.</li>
+        <li>If you use Ollama on a laptop, the docs explain how to let it use built-in graphics (about ten times quicker).</li>
+        <li>whisper.cpp is a new optional package, for talking to Nova. Ollama is never installed by Slate: it's yours to add if you want it.</li>
+        <li>Heads-up: tested against today's Arch packages (Hyprland 0.57.2 and a Qt 6.12.0 update, newer than this release was tested with), Slate stopped during a test that shows live window previews, just after a screen-capture warning. If Slate closes on you after updating Hyprland, please let us know.</li>
+        <li>The full test suite passed (5,493 tests) on the packages this release was tested with.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.30.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.30.0 <time datetime="2026-11-13">13 November 2026</time></h2>
   <div class="cl-grid">
