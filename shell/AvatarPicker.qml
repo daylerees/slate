@@ -99,7 +99,9 @@ FloatingWindow {
 
     FolderListModel {
         id: files
-        folder: "file://" + pk.folder
+        // (not watching a folder while the picker is closed: it's built with Settings, and
+        // this would list your Pictures and keep watching them for nothing)
+        folder: pk.visible ? "file://" + pk.folder : ""
         nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.JPG", "*.JPEG", "*.PNG", "*.WEBP"]
         showDirs: true
         showDirsFirst: true

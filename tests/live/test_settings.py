@@ -90,6 +90,34 @@ class Settings(LiveCase):
         self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "dock", "Settings back on Dock", timeout=10)
         self.ipc("settings", "close")
 
+    def test_built_when_first_wanted(self):
+        """Settings, the welcome and the bar's arranging panel aren't built at start: after a
+        reload with Settings closed they're not there, and Settings is made by the first thing
+        that wants it (here, `settings page`), then opens on that page."""
+        self.ipc("settings", "close")
+        self.wait(lambda st: not st["settings"]["open"], "Settings to close")
+        self.s.settle(1)                        # (so no place is left saved for the reload to reopen)
+        self.ipc("shell", "reload")
+        self.s.settle(4)
+        st = self.wait(lambda st: st["popout"] == "" and st, "Slate after the reload", timeout=10)
+        self.assertFalse(st["settings"]["built"], "Settings was built at start")
+        self.assertFalse(st["welcome"]["built"], "the welcome was built at start")
+        self.assertFalse(st["bar"]["editorBuilt"], "the arranging panel was built at start")
+        self.ipc("settings", "close")           # (nothing to close, and no error)
+        self.assertFalse(self.s.state()["settings"]["built"], "closing Settings built it")
+        self.ipc("settings", "page", "dock")
+        self.wait(lambda st: st["settings"]["built"] and st["settings"]["open"] and st["settings"]["section"] == "dock",
+                  "Settings built and open on Dock")
+        self.ipc("settings", "close")
+        self.wait(lambda st: not st["settings"]["open"], "Settings to close")
+
+    def test_welcome_built_while_it_shows(self):
+        self.addCleanup(lambda: self.ipc("welcome", "close"))
+        self.ipc("welcome", "open")
+        self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["built"], "the welcome, built")
+        self.ipc("welcome", "close")
+        self.wait(lambda st: not st["welcome"]["built"], "the welcome to be let go")
+
 
 class SubPages(LiveCase):
     """Wallpaper and Icons are pages of their own (from Appearance's top): opened by name over

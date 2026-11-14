@@ -72,35 +72,7 @@ FloatingWindow {
         placeSave.restart();                  // open: where it is; closed: forgotten
     }
 
-    IpcHandler {
-        target: "settings"
-        // (open on another workspace, toggle brings it here rather than closing it out of sight)
-        function toggle(): void { if (win.visible && !win.isHere()) win.show(); else win.visible = !win.visible; }
-        function open(): void { win.show(); }
-        function close(): void { win.visible = false; }
-        // Old page names still work: switchers → windows
-        function page(name: string): void {
-            win.keepSection = !win.visible;
-            win.section = ({ switchers: "windows" })[name] ?? name;
-            win.show();
-        }
-        // Open a page scrolled to one setting (or heading), lit up for a moment, e.g.
-        //   slate ipc call settings find appearance "Interface size"
-        function find(page: string, label: string): void { win.goTo(page, label); }
-        // Search, as typing into the search box showing (All Settings', or the one above any
-        // other page) does: slate ipc call settings search "dock"
-        function search(text: string): void { win.show(); win.searchFor(text); }
-        // Open General with the account picture chooser showing (the control centre's avatar)
-        function avatar(): void { win.keepSection = !win.visible; win.section = "general"; win.avatarPicking = true; win.show(); }
-        // For the assistant (slate mcp): how many settings on a page differ from their defaults
-        // (-1: a page with nothing Restore defaults puts back), whether putting them back
-        // restarts Slate, and doing it, as the page title's Restore defaults does
-        function changed(page: string): string {
-            const keys = win.pageKeys[page];
-            return JSON.stringify(keys ? { changed: Config.changedCount(keys), restarts: win.restartsFor(keys) } : { changed: -1, restarts: false });
-        }
-        function restore(page: string): void { if (win.pageKeys[page]) { win.restorePage(page); win.countChanged(); } }
-    }
+    // (`slate ipc call settings …` is in shell.qml, so it works before this window is built)
 
     // ---- Look --------------------------------------------------------------
     readonly property color card: bar.capsuleColor
@@ -153,8 +125,8 @@ FloatingWindow {
     // While Settings is open, its page and how far down it's scrolled are kept in the runtime
     // folder, named for this Hyprland session (so logging in again never opens it); closing it
     // forgets them. When Slate starts again with them there, Settings reopens just as it was.
-    readonly property string placeFile: Config.runtimeDir + "/slate/settings-open-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    // (the file's name comes from shell.qml, which also reads it to build this window at start)
+    required property string placeFile
     // (restored once it has loaded: read straight away as Settings was made, it could still be
     // loading, so Settings came back on All Settings)
     FileView {
@@ -165,6 +137,9 @@ FloatingWindow {
         onLoaded: win.restoreFromFile()
         onLoadFailed: win.placeReady = true     // nothing saved (Settings wasn't open)
     }
+    // Closed from outside Slate and about to be dropped: forget the place now, as the timer
+    // below would go with the window
+    function forgetPlace() { if (placeReady) placeView.setText("{}"); }
     property real restoreY: -1           // scroll back to this once the page has loaded
     property bool placeReady: false      // not saving until any earlier place has been read
     function savePlace() {

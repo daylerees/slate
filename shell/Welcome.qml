@@ -99,9 +99,22 @@ PanelWindow {
     function answer(yes) {
         if (yes && askMode !== "") Config.setThemeMode(askMode);
         askMode = "";
-        panel.forceActiveFocus();
+        content.forceActiveFocus();
     }
 
+    // Everything it shows is built when it opens and let go when it has faded away: it's ~800
+    // lines of pages that nearly every session never shows. (The timer, the IPC and what it
+    // remembers are out here, so nothing about it changes. It's a focus scope: the panel
+    // inside takes the keyboard from it.)
+    readonly property bool built: content.item !== null     // (for the tests)
+    Loader {
+        id: content
+        anchors.fill: parent
+        focus: true
+        active: w.shown || w.fade > 0
+        sourceComponent: Component {
+            Item {
+                anchors.fill: parent
     // The desktop dimmed behind it (as behind Slate's confirmation window; on glass, only the
     // panel itself is frosted)
     Rectangle {
@@ -1011,6 +1024,9 @@ PanelWindow {
                         ClickTap { onTapped: w.answer(true) }
                     }
                 }
+            }
+        }
+    }
             }
         }
     }

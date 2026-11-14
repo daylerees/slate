@@ -178,7 +178,11 @@ PanelWindow {
     // "2 min ago", worded as on notifications, and kept fresh while the window shows
     property int tick: 0
     Timer { interval: 30000; running: root.shown; repeat: true; onTriggered: root.tick++ }
-    onShownChanged: if (shown) tick++
+    // The conversation's cards are built the first time the window opens, not at every start
+    // (they can be fifty exchanges with pictures of actions). `turns` itself, and the file it's
+    // kept in, are read and written as ever, so nothing is lost or late while it's hidden
+    property bool built: false
+    onShownChanged: if (shown) { tick++; built = true; }
     function ago(t) {
         tick;
         if (!t) return "";
@@ -660,7 +664,7 @@ PanelWindow {
                         }
                     }
                     Repeater {
-                        model: root.turns.length
+                        model: root.built ? root.turns.length : 0
                         Column {
                             id: turn
                             required property int index

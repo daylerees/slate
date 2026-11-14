@@ -165,8 +165,8 @@ ShellRoot {
             else if (what === "preview") Config.barPreview = Number(a);
             // (menu item priority: its window, and a row moved to a place in its list; and the
             // "Try it shorter" dropdown: its menu opened or closed, a length chosen from it)
-            else if (what === "length") { if (a === "pick") barEditor.lengthPick(Number(b)); else barEditor.lengthMenu(a === "open"); }
-            else if (what === "priority") { if (a === "move") barEditor.priorityMove(b, n(c)); else if (a === "scroll") barEditor.priorityScroll(Number(b)); else Config.barPrioritising = a === "open"; }
+            else if (what === "length") { if (!barEditor.item) return; if (a === "pick") barEditor.item.lengthPick(Number(b)); else barEditor.item.lengthMenu(a === "open"); }
+            else if (what === "priority") { if (a === "move") { if (barEditor.item) barEditor.item.priorityMove(b, n(c)); } else if (a === "scroll") { if (barEditor.item) barEditor.item.priorityScroll(Number(b)); } else Config.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
             else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
@@ -186,9 +186,11 @@ ShellRoot {
         // Arranging the bar: a chip in the pool pressed with the pointer at x, y (Hyprland's
         // pixels, as `hyprctl cursorpos` says): where that is on the desktop, as the bar counts it
         function barPointer(x: real, y: real): string {
-            barEditor.pointer = Qt.point(0, 0);
-            barEditor.locate(x, y);
-            return JSON.stringify({ x: barEditor.origin.x, y: barEditor.origin.y });
+            const e = barEditor.item;
+            if (!e) return JSON.stringify({ x: 0, y: 0 });       // (only means something while the bar's being arranged)
+            e.pointer = Qt.point(0, 0);
+            e.locate(x, y);
+            return JSON.stringify({ x: e.origin.x, y: e.origin.y });
         }
         // The speakers or the microphone in use, or neither, as if PipeWire had said so:
         // what = "output", "input", "both" or "none" (the volume panel's sliders show it)
@@ -434,7 +436,7 @@ ShellRoot {
                                               dots: b.dotsState, bell: b.bellText })),
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
-                settings: { open: !!settings && settings.visible, section: settings ? settings.section : "",
+                settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
                             ownCard: !!settings && settings.confirming,
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
@@ -500,7 +502,7 @@ ShellRoot {
                 screensaver: { open: screensaver.shown },
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
-                welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps },
+                welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "", toast: notifs.toastLook() },
@@ -567,8 +569,8 @@ ShellRoot {
                 hypr: Config.testHypr(),
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
-                       picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
+                       picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
+                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
@@ -602,27 +604,82 @@ ShellRoot {
     SwitchHardware {}
     PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
     Notifications { id: notifs; bar: topBar }
-    // Settings, built afresh whenever it's closed from outside Slate (Super+Q, a title bar's close
-    // button): after that the window couldn't be shown again until Slate reloaded
+    // Settings, built the first time it's wanted (an IPC call, the dock's menu, or being open when
+    // Slate reloaded) rather than at every start: it's the biggest window Slate has, and most
+    // sessions only open it now and then. Once built it stays, and is built afresh whenever it's
+    // closed from outside Slate (Super+Q, a title bar's close button): after that the window
+    // couldn't be shown again until Slate reloaded
     LazyLoader {
         id: settingsLoader
-        active: true
+        active: false
         SettingsWindow {
             bar: topBar; notifs: notifs
             confirmer: powerConfirm       // (asks in the same window as shutting down: app installs)
             voice: voiceModel             // (Assistant → Voice: the speech model)
-            onClosed: settingsRebuild.restart()
+            placeFile: root.settingsPlaceFile
+            onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
     }
-    // Out here, not in the window: it has to outlive the window it replaces. Runs twice: the first
-    // time drops the old window, the second builds the new one
+    // The Settings window, built if it isn't yet (a LazyLoader builds the moment it's switched on)
+    function settingsWindow() {
+        settingsLoader.active = true;
+        return settingsLoader.item;
+    }
+    // Where Settings keeps its page while it's open (see SettingsWindow.qml), named for this
+    // Hyprland session: logging in again never opens it
+    readonly property string settingsPlaceFile: Config.runtimeDir + "/slate/settings-open-"
+        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    // Open when Slate reloaded or restarted: build Settings now, and it reopens as it was
+    FileView {
+        path: root.settingsPlaceFile
+        blockLoading: true
+        printErrors: false
+        onLoaded: {
+            let p = null;
+            try { p = JSON.parse(text() || "{}"); } catch (e) {}
+            if (p && p.section) Qt.callLater(() => root.settingsWindow());
+        }
+    }
+    // `slate ipc call settings …` (open, toggle, page, find…): out here so it works before the
+    // window exists, building it when there's something to show
+    IpcHandler {
+        target: "settings"
+        // (open on another workspace, toggle brings it here rather than closing it out of sight)
+        function toggle(): void { const w = root.settingsWindow(); if (w.visible && !w.isHere()) w.show(); else w.visible = !w.visible; }
+        function open(): void { root.settingsWindow().show(); }
+        // (nothing to close if it was never built)
+        function close(): void { if (settingsLoader.item) settingsLoader.item.visible = false; }
+        // Old page names still work: switchers → windows
+        function page(name: string): void {
+            const w = root.settingsWindow();
+            w.keepSection = !w.visible;
+            w.section = ({ switchers: "windows" })[name] ?? name;
+            w.show();
+        }
+        // Open a page scrolled to one setting (or heading), lit up for a moment, e.g.
+        //   slate ipc call settings find appearance "Interface size"
+        function find(page: string, label: string): void { root.settingsWindow().goTo(page, label); }
+        // Search, as typing into the search box showing (All Settings', or the one above any
+        // other page) does: slate ipc call settings search "dock"
+        function search(text: string): void { const w = root.settingsWindow(); w.show(); w.searchFor(text); }
+        // Open General with the account picture chooser showing (the control centre's avatar)
+        function avatar(): void { const w = root.settingsWindow(); w.keepSection = !w.visible; w.section = "general"; w.avatarPicking = true; w.show(); }
+        // For the assistant (slate mcp): how many settings on a page differ from their defaults
+        // (-1: a page with nothing Restore defaults puts back), whether putting them back
+        // restarts Slate, and doing it, as the page title's Restore defaults does
+        function changed(page: string): string {
+            const w = root.settingsWindow();
+            const keys = w.pageKeys[page];
+            return JSON.stringify(keys ? { changed: Config.changedCount(keys), restarts: w.restartsFor(keys) } : { changed: -1, restarts: false });
+        }
+        function restore(page: string): void { const w = root.settingsWindow(); if (w.pageKeys[page]) { w.restorePage(page); w.countChanged(); } }
+    }
+    // Out here, not in the window: it has to outlive the window it replaces. Drops the old window;
+    // the next time Settings is wanted, it's built afresh
     Timer {
         id: settingsRebuild
         interval: 0
-        onTriggered: {
-            if (settingsLoader.active) { settingsLoader.active = false; restart(); }
-            else settingsLoader.active = true;
-        }
+        onTriggered: settingsLoader.active = false
     }
     Variants {
         model: Quickshell.screens
@@ -634,7 +691,18 @@ ShellRoot {
         FadeOut { required property var modelData; screen: modelData }
     }
     OSD { id: osdPop; bar: topBar; popouts: popouts }
-    BarEditor { id: barEditor; bar: topBar; confirmer: powerConfirm }       // the panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout)
+    // The panel by the bar while it's being arranged (Settings → Menu Bar → Edit layout): built
+    // when arranging starts, and let go a moment after it ends (it fades out first)
+    LazyLoader {
+        id: barEditor
+        active: Config.barArranging || barEditorLinger.running
+        BarEditor { bar: topBar; confirmer: powerConfirm }
+    }
+    Timer { id: barEditorLinger; interval: 500 }
+    Connections {
+        target: Config
+        function onBarArrangingChanged() { if (!Config.barArranging) barEditorLinger.restart(); }
+    }
     // The secret workspace showing with nothing on it: a note saying so, on that screen
     Variants {
         model: Quickshell.screens
@@ -2384,7 +2452,7 @@ ShellRoot {
                 case "pin": win.setPinned(app.key, !isPinned); break;
                 case "quit": for (const w of wins) w.close(); break;
                 case "kill": forceQuit(wins); break;
-                case "settings": if (settingsLoader.item) settingsLoader.item.goTo(row.target, row.find || ""); break;
+                case "settings": root.settingsWindow().goTo(row.target, row.find || ""); break;
                 case "trash-open": win.openTrash(); break;
                 case "downloads-open": win.openDownloads(); break;
                 case "media-toggle": if (win.player) win.player.togglePlaying(); break;
