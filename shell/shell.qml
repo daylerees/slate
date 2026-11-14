@@ -327,6 +327,8 @@ ShellRoot {
         // As saying yes to an agent that keeps its own tools (Settings → Assistant) leaves it
         function assistantAccepted(id: string): void { Config.s.assistantAgentsAccepted = id === "" ? [] : [id]; }
         // The prompt window as a run would leave it: {asked, answer, working, actions, error}
+        // How quick an answer counts as straight back (no sound), in ms (Nova's quickAnswer)
+        function novaQuickAnswer(ms: int): void { nova.quickAnswer = ms; }
         function nova(json: string): void {
             const st = JSON.parse(json);
             // (history: earlier exchanges, shown above this one)
@@ -428,7 +430,7 @@ ShellRoot {
                                      listing: wallpaperLayer.switcher.listing, walls: wallpaperLayer.switcher.walls,
                                      index: wallpaperLayer.switcher.index, selected: wallpaperLayer.switcher.selected,
                                      cover: wallpaperLayer.switcher.coverShowing, ahead: wallpaperLayer.switcher.ahead,
-                                     colours: Object.keys(Config.wallpaperColourMemo).length, standing: wallpaperLayer.switcher.standing, desktop: wallpaperLayer.desktopShowing, spinning: wallpaperLayer.switcher.spinning,
+                                     colours: Object.keys(Config.wallpaperColourMemo).length, standing: wallpaperLayer.switcher.standing, thumbsDone: wallpaperLayer.switcher.thumbsDone, desktop: wallpaperLayer.desktopShowing, spinning: wallpaperLayer.switcher.spinning,
                                      screen: wallpaperLayer.switcher.screenOn ? wallpaperLayer.switcher.screenOn.name : "",
                                      shown: Config.wallpaper, saved: Config.s.wallpaper, accent: "" + Config.accent,
                                      held: root.heldUpdates.length, themeApplied: root.themeApplied === root.themeJson,

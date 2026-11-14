@@ -334,7 +334,7 @@ PanelWindow {
     // it). Not for one that came straight back (you never looked away), not when the window is
     // away (the notification carries it, with its own sound), not for errors or Stop, not for
     // the history, and not in game mode. The window isn't on the lock or login screens
-    readonly property int quickAnswer: 1000
+    property int quickAnswer: 1000          // (ms; the tests can widen it: under a busy run even an instant answer takes a while to start)
     function finished() {
         if (!working) return;
         working = false;

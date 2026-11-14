@@ -526,8 +526,10 @@ SCENES["overview-windows"] = {
 # seen, the row of wallpapers in the lower half, the bar and dock above it
 SCENES["wallpaper-switcher"] = {
     "do": _STILL_OPEN + [("wallpaper", "switcher")],
+    # (and every card's small picture made: on a first open, one not in the thumbnail cache yet
+    # is made then, a moment later than the rest)
     "wait": lambda st: st["wallpaperSwitcher"]["open"] and not st["wallpaperSwitcher"]["listing"]
-    and st["wallpaperSwitcher"]["fade"] == 1,
+    and st["wallpaperSwitcher"]["fade"] == 1 and st["wallpaperSwitcher"]["thumbsDone"],
     "settle": 2.0, "undo": [("wallpaperSwitcher", "cancel"), lambda st: not st["wallpaperSwitcher"]["switching"], _STILL_GONE],
 }
 

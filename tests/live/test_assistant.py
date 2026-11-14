@@ -762,8 +762,13 @@ class Nova(LiveCase):
         self.ipc("assistant", "open")
         self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["turns"] == 2)
         self.assertEqual(self.steady(lambda: self.s.state()["sounds"], floor=0.3).count("answered"), 0, "played for the history")
+        # (an instant answer still has to start Python and the runner: under a busy full run that
+        # alone took over the second Nova calls straight back, so for this one the window's wider)
+        self.ipc("test", "novaQuickAnswer", "5000")
+        self.addCleanup(lambda: self.ipc("test", "novaQuickAnswer", "1000"))
         self.answering_in(0)
         self.assertEqual(self.answer_sounds("straight back?"), 0, "played for an answer that came straight back")
+        self.ipc("test", "novaQuickAnswer", "1000")
         self.answering_in(1.3)
         self.assertEqual(self.answer_sounds("while it's closed", close=True), 0, "played with the window closed")
         self.ipc("assistant", "open")
