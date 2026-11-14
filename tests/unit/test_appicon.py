@@ -94,8 +94,8 @@ class AppIcon(Case):
     def assert_centred(self, img, tol=1):
         l, t, r, b = img.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
         w, h = img.size
-        self.assertLessEqual(abs(l - (w - r)), tol, f"not centred across: {l}..{r} of {w}")
-        self.assertLessEqual(abs(t - (h - b)), tol, f"not centred down: {t}..{b} of {h}")
+        self.assertLessEqual(abs(l - (w - r)), tol, f"not centered across: {l}..{r} of {w}")
+        self.assertLessEqual(abs(t - (h - b)), tol, f"not centered down: {t}..{b} of {h}")
         return l, t, r, b
 
     # --- shapes ---
@@ -306,7 +306,7 @@ class AppIcon(Case):
             colour = f.read()
         self.assertRegex(colour, r"^#[0-9a-f]{6}\n$")
         rgb = tuple(int(colour[i:i + 2], 16) for i in (1, 3, 5))
-        self.assertTrue(close(rgb, BLUE), f"the preview icon's colour is {colour.strip()}")
+        self.assertTrue(close(rgb, BLUE), f"the preview icon's color is {colour.strip()}")
 
     def test_preview_without_apps(self):
         """No preview app installed: blank tiles, and an empty colour."""

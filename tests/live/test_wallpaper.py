@@ -75,4 +75,4 @@ class SlateWallpapers(LiveCase):
             diff = np.asarray(got.resize(patches, Image.BOX)) - np.asarray(want.resize(patches, Image.BOX))
             worst = max(worst, float(np.abs(diff).max()))
         # Rounded plainly, patches are out by up to half a step (0.5); dithered, a few hundredths
-        self.assertLess(worst, 0.2, f"patches of the screen are {worst:.2f} colour steps out: banding")
+        self.assertLess(worst, 0.2, f"patches of the screen are {worst:.2f} color steps out: banding")

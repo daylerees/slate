@@ -36,7 +36,7 @@ CALCULATORS = {
 }
 # Windows that aren't calculators, terminals or video players, whatever their names contain
 LIBREOFFICE = [("libreoffice-calc", "Untitled 1 — LibreOffice Calc"), ("libreoffice-calc", "budget.ods — LibreOffice Calc"),
-               ("soffice", "LibreOffice Calc"), ("libreoffice-startcenter", "LibreOffice Start Centre"),
+               ("soffice", "LibreOffice Calc"), ("libreoffice-startcenter", "LibreOffice Start Center"),
                ("firefox", "LibreOffice Calc: the spreadsheet — Mozilla Firefox")]
 NOT_TERMINALS = ["firefox", "footage", "org.gnome.TextEditor", "kitty-open", "org.kde.dolphin", "libreoffice-calc"]
 

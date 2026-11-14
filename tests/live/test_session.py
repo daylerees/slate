@@ -55,7 +55,7 @@ class Session(LiveCase):
             if self.good_cache():
                 return
             self.s.settle(0.2)
-        self.fail("the wallpaper's colours weren't cached")
+        self.fail("the wallpaper's colors weren't cached")
 
     def test_bad_colour_cache_is_ignored(self):
         """A damaged, wrong or missing cache doesn't stop Slate starting (no errors), and is
@@ -64,7 +64,7 @@ class Session(LiveCase):
             "damaged": "{not json",
             "empty": "",
             "another wallpaper": json.dumps({"wallpaper": "/nope.png", "accent": "#ff0000", "tone": "#00ff00"}),
-            "not colours": json.dumps({"wallpaper": self.setting("wallpaper"), "accent": "red", "tone": 7}),
+            "not colors": json.dumps({"wallpaper": self.setting("wallpaper"), "accent": "red", "tone": 7}),
             "missing": None,
         }
         for name, text in bad.items():
@@ -126,7 +126,7 @@ class Session(LiveCase):
         with open(path, encoding="utf-8") as f:
             c = json.load(f)
         for key in ("background", "text", "dim", "accent", "mark"):
-            self.assertRegex(c[key], r"^#[0-9a-f]{6}$", f"{key} isn't a colour")
+            self.assertRegex(c[key], r"^#[0-9a-f]{6}$", f"{key} isn't a color")
 
 
 

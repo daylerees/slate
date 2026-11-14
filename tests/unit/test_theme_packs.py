@@ -52,12 +52,12 @@ class ThemePacks(Case):
         url, digest = self.archive("pack.tar.gz", members)
         self.packs([{"id": "nice", "kind": "icons", "name": "Nice", "about": "Nice icons",
                      "files": [{"url": url, "sha256": sha or digest,
-                                "take": take or {"nice-1.0/Nice": "Nice", "nice-1.0/Nice-Grey": "Nice-Grey"}}]}])
+                                "take": take or {"nice-1.0/Nice": "Nice", "nice-1.0/Nice-Grey": "Nice-Gray"}}]}])
 
     def test_installs_and_lists(self):
         self.icon_pack([("nice-1.0/Nice/index.theme", "[Icon Theme]\nName=Nice\n"),
                         ("nice-1.0/Nice/apps/a.svg", "<svg/>"),
-                        ("nice-1.0/Nice-Grey/index.theme", "[Icon Theme]\nName=Nice Grey\n"),
+                        ("nice-1.0/Nice-Grey/index.theme", "[Icon Theme]\nName=Nice Gray\n"),
                         # (a link into the pack's other theme, as Kora Grey's are)
                         ("nice-1.0/Nice-Grey/apps", "->", "../Nice/apps"),
                         ("nice-1.0/README.md", "not a theme: left behind")])
@@ -66,15 +66,15 @@ class ThemePacks(Case):
         code, out = self.go("--install", "nice")
         self.assertEqual(code, 0, out)
         self.assertIn("installed nice", out)
-        self.assertEqual(sorted(os.listdir(self.icons)), ["Nice", "Nice-Grey"])
-        self.assertTrue(os.path.isfile(os.path.join(self.icons, "Nice-Grey", "apps", "a.svg")))
-        self.assertEqual(os.readlink(os.path.join(self.icons, "Nice-Grey", "apps")), "../Nice/apps")
+        self.assertEqual(sorted(os.listdir(self.icons)), ["Nice", "Nice-Gray"])
+        self.assertTrue(os.path.isfile(os.path.join(self.icons, "Nice-Gray", "apps", "a.svg")))
+        self.assertEqual(os.readlink(os.path.join(self.icons, "Nice-Gray", "apps")), "../Nice/apps")
         code, out = self.go("--list")
         self.assertEqual(json.loads(out)[0]["installed"], True)
         # Again: the old copy is replaced, and nothing is left over from the work
         code, out = self.go("--install", "nice")
         self.assertEqual(code, 0, out)
-        self.assertEqual(sorted(os.listdir(self.icons)), ["Nice", "Nice-Grey"])
+        self.assertEqual(sorted(os.listdir(self.icons)), ["Nice", "Nice-Gray"])
 
     def test_wrong_fingerprint(self):
         """A download that isn't the one Slate checked isn't used at all."""

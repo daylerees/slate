@@ -64,7 +64,7 @@ class ControlSwitches(LiveCase):
         self.ipc("popout", "close")
         self.wait(lambda st: st["popout"] == "")
         self.ipc("bar", "panel", "control")
-        self.wait(lambda st: st["popout"] == "control", "the control centre")
+        self.wait(lambda st: st["popout"] == "control", "the control center")
         self.s.settle(0.3)
 
     def check_switch(self, sid, read, settings=()):

@@ -216,7 +216,7 @@ class Actions(PrintersCase):
         self.cups(printers=False)
         self.s.add("pkexec", code=126)
         self.s.add("lpoptions")
-        self.assertEqual(self.script("add", "ipp://192.0.2.40/ipp/print", "Canon"), "error cancelled\n")
+        self.assertEqual(self.script("add", "ipp://192.0.2.40/ipp/print", "Canon"), "error canceled\n")
         self.assertEqual(self.s.calls("lpoptions"), [])
 
     def test_error_message(self):

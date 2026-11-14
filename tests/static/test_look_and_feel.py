@@ -43,7 +43,7 @@ class TitleBarHover(Case):
         src = slate.read("shell", "TitleBar.qml")
         block = src[src.index('model: [{ act: "maximise"'):]
         block = block[:block.index("ClickArea")]
-        self.assertNotIn("Config.accent", block, "a title bar button hovers in the active colour")
+        self.assertNotIn("Config.accent", block, "a title bar button hovers in the active color")
         self.assertNotIn('Config.tint("#f28b8b")', block, "close hovers in a solid red")
         self.assertIn("Config.hoverDanger", block)
         self.assertIn("Config.hover", block)

@@ -227,9 +227,9 @@ SCENES["settings-changed-dot"] = {
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {
     "settings": {"iconFill": "true"},
-    "do": [("settings", "find", "icons", "Tiles in the icon's colour")],
+    "do": [("settings", "find", "icons", "Tiles in the icon's color")],
     "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "icons"
-                       and st["settings"]["found"] == "Tiles in the icon's colour",
+                       and st["settings"]["found"] == "Tiles in the icon's color",
     "settle": 2.5, "undo": [("settings", "close")],
 }
 
@@ -431,7 +431,7 @@ SCENES["bar-label"] = {
 }
 SCENES["bar-label-left"] = {
     "settings": {"barPosition": "left"},
-    "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control Centre"), "settle": 1.0,
+    "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control Center"), "settle": 1.0,
     "undo": [("test", "barHover", ""), _LABEL_GONE],
 }
 # The bar's More panel holding a long list (the line squeezed hard): it scrolls, with a thin

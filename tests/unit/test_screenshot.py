@@ -182,7 +182,7 @@ class Failures(Case):
 
     def test_escape_in_the_chooser_is_silent(self):
         """Esc: slurp says "selection cancelled" and stops. That's a choice, not a failure."""
-        self.tool("slurp", "echo 'selection cancelled' >&2\nexit 1")
+        self.tool("slurp", "echo 'selection canceled' >&2\nexit 1")
         code, out = self.shot("region")
         self.assertEqual(code, 0, out)
         self.assertEqual(self.said(), [])

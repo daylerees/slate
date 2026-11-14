@@ -272,7 +272,7 @@ class FolderColour(Case):
             with self.subTest(str(bad)):
                 code, out = self.folder("--auto", *bad)
                 self.assertEqual(code, 1)
-                self.assertIn("--auto needs a colour like #4a90d9", out)
+                self.assertIn("--auto needs a color like #4a90d9", out)
         self.assertFalse(os.path.exists(self.ours))
 
     def test_unknown_colour(self):
@@ -289,7 +289,7 @@ class FolderColour(Case):
         self.theme("Adwaita")
         code, out = self.folder("teal")
         self.assertEqual(code, 1)
-        self.assertIn("the icon theme (Adwaita) has no folders in colours", out)
+        self.assertIn("the icon theme (Adwaita) has no folders in colors", out)
         self.assertFalse(os.path.exists(self.ours))
 
     def test_default(self):
@@ -377,10 +377,10 @@ class FolderColour(Case):
         self.assertEqual(os.readlink(link), os.path.join(os.path.realpath(places), "folder-red.svg"))
         self.assertEqual(sorted(os.listdir(os.path.dirname(link))), ["desktop.svg", "folder.svg", "user-desktop.svg"])
         desk = open(os.path.join(self.ours, "places", "scalable", "user-desktop.svg")).read()
-        self.assertIn("rgb(200,30,30)", desk, "Desktop isn't in the chosen colour")
+        self.assertIn("rgb(200,30,30)", desk, "Desktop isn't in the chosen color")
         self.assertIn("rgb(20,20,20)", desk, "the outline changed")
         self.assertNotIn("0,131,213", desk)
-        self.assertNotIn("#0b4e94", desk, "the emblem kept the old colour")
+        self.assertNotIn("#0b4e94", desk, "the emblem kept the old color")
         self.assertEqual(os.readlink(os.path.join(self.ours, "places", "scalable", "desktop.svg")), "user-desktop.svg")
         index = open(os.path.join(self.ours, "index.theme")).read()
         self.assertIn("Inherits=kora\n", index)

@@ -687,7 +687,7 @@ class Gate(Base):
                 text, err = self.tool(name)
                 self.assertTrue(err)
                 self.assertIn("Private Mode is on", text)
-                self.assertIn("control centre", text)
+                self.assertIn("control center", text)
         self.assertEqual(self.qs_calls("config"), [])
 
     def test_private_mode_is_the_persons(self):
@@ -1056,7 +1056,7 @@ class Changes(Base):
         self.assertEqual([q["title"] for q in self.asked()], ["Replace “Work”?"])
         with open(store) as f:
             work = next(s for s in json.load(f)["spaces"] if s["id"] == "abc123")
-        self.assertEqual((work["colour"], work["icon"]), ("#ffffff", "edba"), "replacing kept its colour and icon")
+        self.assertEqual((work["colour"], work["icon"]), ("#ffffff", "edba"), "replacing kept its color and icon")
         text, err = self.tool("space_save", {"name": "Empty", "workspaces": "9"})
         self.assertTrue(err)
         self.assertIn("nothing to save", text)
@@ -1182,7 +1182,7 @@ class SettingsTools(Base):
                 ("launcherColumns", 99, "takes 3 to 10"), ("launcherColumns", True, "takes a number"),
                 ("dockIconSize", 5000, "takes 28 to 64"), ("glassOpacity", 0, "takes 0.3 to 0.95"),
                 ("iconShape", "star", "tile, squircle, circle, square, original"), ("iconShape", 3, "takes text"),
-                ("accent", "red; rm", "a colour like #8fb3e8"), ("accent", "#12345", "a colour like"),
+                ("accent", "red; rm", "a color like #8fb3e8"), ("accent", "#12345", "a color like"),
                 ("themeMode", "", "dark, light, auto"), ("nope", 1, "settings_search"), ("lightMode", True, "settings_search")):
             with self.subTest(key + " " + repr(value)):
                 text, err = self.tool("settings_set", {"key": key, "value": value})
@@ -1366,7 +1366,7 @@ class RadiosAndDock(Base):
 
     def test_wifi_only_saved_networks(self):
         """A network that isn't saved (or isn't there) is never connected to, whatever it's called."""
-        for network in ("Neighbours", "", "Home; rm -rf ~", "../Home"):
+        for network in ("Neighbors", "", "Home; rm -rf ~", "../Home"):
             with self.subTest(network):
                 text, err = self.tool("wifi", {"action": "connect", "network": network})
                 self.assertTrue(err)

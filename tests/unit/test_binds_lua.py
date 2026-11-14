@@ -341,7 +341,7 @@ class BindsLua(Case):
             with self.subTest(keyset=keyset):
                 _, started, _ = self.press_all(keyset)
                 self.assertEqual(set(started[picker]),
-                                 {NEED + " hyprpicker 'The colour picker' -- hyprpicker -a -n"})
+                                 {NEED + " hyprpicker 'The color picker' -- hyprpicker -a -n"})
                 self.assertEqual(set(started["CONTROL + SHIFT + Escape"]),
                                  {NEED + " btop 'The system monitor' -- foot -e btop"})
 
@@ -420,7 +420,7 @@ class Need(Case):
 
     def test_installed_runs_the_command_as_it_was(self):
         self.s.add("hyprpicker")
-        self.press("hyprpicker", "The colour picker", "hyprpicker -a -n")
+        self.press("hyprpicker", "The color picker", "hyprpicker -a -n")
         self.assertEqual(self.s.calls("hyprpicker"), [["-a", "-n"]])
         self.assertEqual(self.s.calls("notify-send"), [])
 
@@ -445,8 +445,8 @@ class Need(Case):
 
     def test_missing_colour_picker(self):
         self.s.add("hyprpicker", missing=True)
-        self.press("hyprpicker", "The colour picker", "hyprpicker -a -n")
-        self.assertEqual(self.s.calls("notify-send")[0][-2], "The colour picker needs hyprpicker")
+        self.press("hyprpicker", "The color picker", "hyprpicker -a -n")
+        self.assertEqual(self.s.calls("notify-send")[0][-2], "The color picker needs hyprpicker")
 
     def test_wrong_use_runs_nothing(self):
         code, out = run(["/bin/sh", NEED, "btop", "foot", "-e", "btop"], env=self.s.env, timeout=10)

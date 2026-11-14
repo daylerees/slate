@@ -110,7 +110,7 @@ class TitleBarChecks:
         want = [mon["x"] + to[0] - w["size"][0] / 2, mon["y"] + to[1] - w["size"][1] / 2]
         near = lambda at: abs(at[0] - want[0]) <= 1 and abs(at[1] - want[1]) <= 1
         at = self.until(lambda: self.client(addr)["at"], near, timeout=3)
-        self.assertTrue(near(at), f"dragged to {to} on {mon['name']}, the window's at {at}, not centred on it at {want}")
+        self.assertTrue(near(at), f"dragged to {to} on {mon['name']}, the window's at {at}, not centered on it at {want}")
         self.bar("release")
         self.assertEqual(self.client(addr)["size"], w["size"], "dragging changed its size")
         self.bar_on(self.client(addr))
@@ -300,8 +300,8 @@ class TitleBars(TitleBarChecks, LiveCase):
             if now["size"][0] > before["size"][0]:
                 break
             self.s.settle(0.1)
-        self.assertGreater(now["size"][0], before["size"][0], "not maximised")
-        self.assertEqual(now["fullscreen"], 0, "Hyprland's maximise: the bar can't show")
+        self.assertGreater(now["size"][0], before["size"][0], "not maximized")
+        self.assertEqual(now["fullscreen"], 0, "Hyprland's maximize: the bar can't show")
         self.assertGreaterEqual(now["at"][1], mon["y"] + mon["reserved"][1] + 30, "no room left for the bar")
         # the whole usable width and down to its bottom: no gap or border round it
         sc = mon["scale"] or 1
@@ -335,7 +335,7 @@ class TitleBars(TitleBarChecks, LiveCase):
             if (now["at"], now["size"]) == (before["at"], before["size"]):
                 break
             self.s.settle(0.1)
-        self.assertEqual((now["at"], now["size"]), (before["at"], before["size"]), "maximised twice over, not put back")
+        self.assertEqual((now["at"], now["size"]), (before["at"], before["size"]), "maximized twice over, not put back")
 
     def test_steps_away_while_moved_elsewhere(self):
         """Moved by something other than the bar (its own header, Super+drag), the bar fades

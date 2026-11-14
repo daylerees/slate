@@ -284,26 +284,26 @@ class NeedsAnother(LiveCase):
         self.config("accentFromWallpaper", "false")
         self.ipc("settings", "page", "appearance")
         st = self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "appearance"
-                       and "Accent boldness" in self.waiting(st), "Accent boldness greyed out on Appearance")
-        self.assertEqual(self.waiting(st)["Accent boldness"], "Needs Accent colour from wallpaper to be on")
-        self.assertNotIn("Accent colour", self.waiting(st), "your own accent colour greyed out with the wallpaper's off")
+                       and "Accent boldness" in self.waiting(st), "Accent boldness grayed out on Appearance")
+        self.assertEqual(self.waiting(st)["Accent boldness"], "Needs Accent color from wallpaper to be on")
+        self.assertNotIn("Accent color", self.waiting(st), "your own accent color grayed out with the wallpaper's off")
 
         # The other way round: the wallpaper's colour on, your own colour waits instead
         self.config("accentFromWallpaper", "true")
-        st = self.wait(lambda st: "Accent colour" in self.waiting(st), "Accent colour greyed out")
-        self.assertEqual(self.waiting(st)["Accent colour"], "Needs Accent colour from wallpaper to be off")
+        st = self.wait(lambda st: "Accent color" in self.waiting(st), "Accent color grayed out")
+        self.assertEqual(self.waiting(st)["Accent color"], "Needs Accent color from wallpaper to be off")
         self.assertNotIn("Accent boldness", self.waiting(st))
 
         # Its line leads to what it needs: on the same page...
-        self.ipc("test", "settingsFollowNeeds", "Accent colour")
-        self.wait(lambda st: st["settings"]["section"] == "appearance" and st["settings"]["found"] == "Accent colour from wallpaper",
-                  "Accent colour from wallpaper gone to and lit up")
+        self.ipc("test", "settingsFollowNeeds", "Accent color")
+        self.wait(lambda st: st["settings"]["section"] == "appearance" and st["settings"]["found"] == "Accent color from wallpaper",
+                  "Accent color from wallpaper gone to and lit up")
 
         # ...and on another (Icons, from its own row)
         self.config("iconFill", "true")
         self.ipc("settings", "page", "icons")
-        st = self.wait(lambda st: st["settings"]["section"] == "icons" and "Tiles in the icon's colour" in self.waiting(st),
-                       "Tiles in the icon's colour greyed out on Icons")
-        self.assertEqual(self.waiting(st)["Tiles in the icon's colour"], "Needs Fill the shape to be off")
-        self.ipc("test", "settingsFollowNeeds", "Tiles in the icon's colour")
+        st = self.wait(lambda st: st["settings"]["section"] == "icons" and "Tiles in the icon's color" in self.waiting(st),
+                       "Tiles in the icon's color grayed out on Icons")
+        self.assertEqual(self.waiting(st)["Tiles in the icon's color"], "Needs Fill the shape to be off")
+        self.ipc("test", "settingsFollowNeeds", "Tiles in the icon's color")
         self.wait(lambda st: st["settings"]["found"] == "Fill the shape", "Fill the shape gone to and lit up")

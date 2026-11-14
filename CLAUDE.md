@@ -64,7 +64,9 @@ mascot.
 - Stay accurate and brief: warmth never costs a fact, a warning or a shortcut, and a
   description is still one or two short sentences. Buttons stay short verbs ("Restart",
   "Remove"), and setting names stay plain nouns.
-- British spelling (colour, favourite, tidy).
+- American spelling (color, favorite, gray, center), in everything people read. Identifiers, settings
+  keys and file names keep their old spelling (`pageColour`, `colourful`) so saved settings keep
+  working. `tests/static/test_spelling.py` checks the words people read.
 
 ## Sounds
 
@@ -196,7 +198,7 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Status | Means |
 |---|---|
 | Backlog | Where new issues go. Claude creates issues here. |
-| Todo | The author has prioritised it for Claude. Only the author moves things here (one exception below). |
+| Todo | The author has prioritized it for Claude. Only the author moves things here (one exception below). |
 | In Progress | Claude is working on it. Move it when starting, not after. |
 | In Testing | The work is complete and committed; its tests are running or it's waiting for the author to try it. |
 | Release Ready | Tested (its tests passed, on master) and pushed, not yet released. |
@@ -252,7 +254,7 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Menu bar | Bar.qml, BarEditor.qml, bar layout, tray |
 | Dock | the dock, its menus, More, Downloads, now playing |
 | Launcher | Launcher.qml, app search |
-| Control centre | the control centre and the bar's panels (Popouts.qml) |
+| `Control centre` (the label's name) | the control center and the bar's panels (Popouts.qml) |
 | Notifications | Notifications.qml, NotificationCard, OSD |
 | Menus | DesktopMenu.qml, TrayMenu.qml |
 | Windows & workspaces | windows, title bars, switcher, workspaces, overview, Spaces, hot corners |

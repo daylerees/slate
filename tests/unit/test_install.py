@@ -126,7 +126,7 @@ class WithoutSystemd(Case):
             src = slate.read(*rel.split("/"))
             with self.subTest(rel):
                 for fam in ("artix", "void", "gentoo"):
-                    self.assertRegex(src, r"\n\s+%s\) " % fam, f"{fam} isn't recognised")
+                    self.assertRegex(src, r"\n\s+%s\) " % fam, f"{fam} isn't recognized")
                 # Artix's ID_LIKE is arch: it has to be matched first
                 self.assertLess(src.index("artix)"), src.index("arch|cachyos"), "artix would be taken for Arch")
 
@@ -376,7 +376,7 @@ class IconTheme(Pieces):
     def test_asks_first(self):
         out = self.step(answers=["n"])
         self.assertIn("Use Papirus-Dark icons?", out)
-        self.assertIn("Folder colour", out)
+        self.assertIn("Folder color", out)
         self.assertIn("your other desktops", out)
         self.assertEqual(self.ran(), [], "the icon theme was changed after a no")
         self.assertIn("keeping yours (Adwaita)", out)

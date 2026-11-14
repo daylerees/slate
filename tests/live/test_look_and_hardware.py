@@ -121,9 +121,9 @@ class IconColours(LiveCase):
         shutil.rmtree(folder, ignore_errors=True)        # a style never used
         self.config("iconShape", "squircle")
         self.wait(lambda st: st["icons"]["busy"], "the tiles to start being drawn", timeout=10)
-        st = self.wait(lambda st: not st["icons"]["busy"], "the tiles and their colours", timeout=60)
-        self.assertTrue(os.path.exists(os.path.join(folder, "colours.json")), "the icons' colours weren't noted")
-        self.assertGreater(st["icons"]["colours"], 0, "Slate didn't read the icons' colours for a new tile style")
+        st = self.wait(lambda st: not st["icons"]["busy"], "the tiles and their colors", timeout=60)
+        self.assertTrue(os.path.exists(os.path.join(folder, "colours.json")), "the icons' colors weren't noted")
+        self.assertGreater(st["icons"]["colours"], 0, "Slate didn't read the icons' colors for a new tile style")
 
 
 class Shadows(LiveCase):

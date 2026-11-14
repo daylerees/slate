@@ -37,7 +37,7 @@ class WallpaperSwitcher(LiveCase):
         self.ipc("wallpaper", "set", self.paths[0])
         # The first one's colours worked out, and App theming given them, before it opens
         self.accent = self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == self.paths[0] and st["wallpaperSwitcher"]["themeApplied"]
-                                and st["wallpaperSwitcher"]["accent"] != "#8fb3e8", "the red wallpaper's colours", timeout=12)["wallpaperSwitcher"]["accent"]
+                                and st["wallpaperSwitcher"]["accent"] != "#8fb3e8", "the red wallpaper's colors", timeout=12)["wallpaperSwitcher"]["accent"]
         self.s.settle(0.5)
         self.accent = self.s.state()["wallpaperSwitcher"]["accent"]
 
@@ -86,7 +86,7 @@ class WallpaperSwitcher(LiveCase):
 
         self.ipc("wallpaperSwitcher", "next")
         st = self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == self.paths[1]
-                       and st["wallpaperSwitcher"]["accent"] != self.accent, "the green one, in its colours")
+                       and st["wallpaperSwitcher"]["accent"] != self.accent, "the green one, in its colors")
         ws = st["wallpaperSwitcher"]
         self.assertEqual(ws["saved"], self.paths[0], "looking at one saved it")
         self.assertIn("swish-right", st["sounds"][-3:])
@@ -104,7 +104,7 @@ class WallpaperSwitcher(LiveCase):
         st = self.wait(lambda st: not st["wallpaperSwitcher"]["open"] and not st["wallpaperSwitcher"]["switching"], "it to close")
         ws = st["wallpaperSwitcher"]
         self.assertEqual((ws["shown"], ws["saved"]), (self.paths[0], self.paths[0]))
-        self.assertEqual(ws["accent"], self.accent, "the theme's colours weren't put back")
+        self.assertEqual(ws["accent"], self.accent, "the theme's colors weren't put back")
         self.assertEqual(self.setting("wallpaper"), self.paths[0])
         self.assertEqual(ws["held"], 0)
         # The windows in sight again, and the bar and dock back where they were, taking clicks
@@ -139,7 +139,7 @@ class WallpaperSwitcher(LiveCase):
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == red and st["wallpaperSwitcher"]["ahead"] == [green, blue],
                   "green and blue read ahead of red")
         # Every one's colours known ahead (scripts/wallpaper-colours.py), so the theme follows at once
-        self.wait(lambda st: st["wallpaperSwitcher"]["colours"] == 3, "every wallpaper's colours", timeout=15)
+        self.wait(lambda st: st["wallpaperSwitcher"]["colours"] == 3, "every wallpaper's colors", timeout=15)
         self.ipc("wallpaperSwitcher", "next")
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green and st["wallpaperSwitcher"]["ahead"] == [blue, red],
                   "blue and red read ahead of green")
@@ -183,7 +183,7 @@ class WallpaperSwitcher(LiveCase):
         self.ipc("wallpaperSwitcher", "next")
         # (and its colours: they're worked out a moment after it's on screen, longer on a busy machine)
         self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == self.paths[2] and st["wallpaperSwitcher"]["accent"] != self.accent,
-                  "the blue one, in its colours", timeout=20)
+                  "the blue one, in its colors", timeout=20)
         self.ipc("wallpaperSwitcher", "keep")
         st = self.wait(lambda st: not st["wallpaperSwitcher"]["open"] and not st["wallpaperSwitcher"]["switching"], "it to close")
         ws = st["wallpaperSwitcher"]

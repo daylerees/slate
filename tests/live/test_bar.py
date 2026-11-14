@@ -35,7 +35,7 @@ class Bar(LiveCase):
         self.ipc("bar", "panel", "control")
         self.wait(lambda st: st["popout"] == "control")
         self.ipc("bar", "panel", "calendar")
-        self.wait(lambda st: st["popout"] == "calendar", "the calendar to replace the control centre")
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar to replace the control center")
 
     def test_bar_positions(self):
         """The bar moves to each edge and back, staying on screen as a layer."""
@@ -222,7 +222,7 @@ class FullDepth(LiveCase):
                 self.point(*at(along(line["clock"]), ends[0]), "click")
                 self.wait(lambda st: st["popout"] == "calendar", f"{edge}: the calendar from a click at the screen's edge")
                 self.point(*at(along(line["control"]), ends[1]), "click")
-                self.wait(lambda st: st["popout"] == "control", f"{edge}: the control centre from a click at the bar's inner edge")
+                self.wait(lambda st: st["popout"] == "control", f"{edge}: the control center from a click at the bar's inner edge")
                 self.ipc("popout", "close")
                 self.wait(lambda st: st["popout"] == "")
                 # The first workspace dot, the same (8 px in from its container's end, 14 across)
@@ -346,8 +346,8 @@ class Label(LiveCase):
         self.point(cx, cy)
         lab = self.label()
         self.assertTrue(lab["shown"], "it went, going straight from one thing to the next")
-        self.assertEqual(lab["text"], "Control Centre")
-        self.assertTrue(abs(lab["x"] + lab["w"] / 2 - cx) <= 1.5 or lab["x"] <= 10, f"not under the control centre ({cx}): {lab}")
+        self.assertEqual(lab["text"], "Control Center")
+        self.assertTrue(abs(lab["x"] + lab["w"] / 2 - cx) <= 1.5 or lab["x"] <= 10, f"not under the control center ({cx}): {lab}")
         # A workspace dot: which workspace it is, as the overview says it
         dots = self.s.state()["bar"]["line"]["workspaces"]
         got = self.point(dots["x"] + 8 + 7, dots["y"] + dots["h"] / 2)

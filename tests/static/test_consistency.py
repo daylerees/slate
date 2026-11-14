@@ -136,7 +136,7 @@ class Settings(Case):
     # camera offers), so scripts/settings-index.py can't see them: each must still be written
     # on its page as a label
     SEARCH_ROWS_MADE_IN_CODE = {(name, "webcam") for name in (
-        "Brightness", "Contrast", "Colour", "Sharpness", "Gain", "Gamma", "Colour temperature", "Exposure",
+        "Brightness", "Contrast", "Color", "Sharpness", "Gain", "Gamma", "Color temperature", "Exposure",
         "Backlight compensation")}
 
     def test_search_entries_name_something_on_the_page(self):
@@ -422,7 +422,7 @@ class Settings(Case):
                 dims = m.group(1) == "enabled" or re.search(r"\?\s*(0?\.\d+|1)\s*:\s*(0?\.\d+|1)\b", m.group(2))
                 if dims and tied.search(m.group(2)):
                     with self.subTest(f"SettingsWindow.qml:{n}"):
-                        self.fail(f"SettingsWindow.qml:{n}: greyed out by a setting without saying which: "
+                        self.fail(f"SettingsWindow.qml:{n}: grayed out by a setting without saying which: "
                                   f"give its row needsMet and needs instead ({line.strip()[:90]})")
         labels = set(re.findall(r'\b(?:label|text):\s*"([^"]+)"', src))
         pages = set(settings_pages())

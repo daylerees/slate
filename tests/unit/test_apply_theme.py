@@ -211,8 +211,8 @@ class ApplyTheme(Case):
                     p[key] = value
                 code, out = run([sys.executable, SCRIPT, json.dumps(p)], env=self.env)
                 self.assertEqual(code, 1)
-                self.assertIn("missing or bad colour '%s'" % key, out)
-        self.assertFalse(os.path.exists(self.h(".config/gtk-3.0")), "wrote files despite a bad colour")
+                self.assertIn("missing or bad color '%s'" % key, out)
+        self.assertFalse(os.path.exists(self.h(".config/gtk-3.0")), "wrote files despite a bad color")
 
     def test_usage(self):
         code, out = run([sys.executable, SCRIPT], env=self.env)
