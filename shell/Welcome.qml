@@ -411,19 +411,13 @@ PanelWindow {
                             }
                         }
                         HoverHandler { id: appsHover }
-                        Rectangle {
+                        Toggle {
                             id: appsSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 42; height: 24; radius: Config.corner(12)
-                            color: appsRow.on ? Config.accentFor(appsHover.hovered) : w.line
-                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            Rectangle {
-                                width: 18; height: 18; radius: Config.corner(9)
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: appsRow.on ? parent.width - width - 3 : 3
-                                color: appsRow.on ? w.accentText : w.text
-                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-                            }
+                            plain: true; hovered: appsHover.hovered
+                            checked: appsRow.on
+                            offColor: w.line
+                            knobOn: w.accentText; knobOff: w.text
                         }
                         // On: all installed ones; off: none of them (their configs are put back)
                         ClickTap {
@@ -569,19 +563,13 @@ PanelWindow {
                             }
                         }
                         HoverHandler { id: inAppsHover }
-                        Rectangle {
+                        Toggle {
                             id: inAppsSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 42; height: 24; radius: Config.corner(12)
-                            color: w.inApps ? Config.accentFor(inAppsHover.hovered) : w.line
-                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            Rectangle {
-                                width: 18; height: 18; radius: Config.corner(9)
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: w.inApps ? parent.width - width - 3 : 3
-                                color: w.inApps ? w.accentText : w.text
-                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-                            }
+                            plain: true; hovered: inAppsHover.hovered
+                            checked: w.inApps
+                            offColor: w.line
+                            knobOn: w.accentText; knobOff: w.text
                         }
                         ClickTap { onTapped: w.setInApps(!w.inApps) }
                     }
@@ -650,19 +638,13 @@ PanelWindow {
                             Text { width: parent.width; elide: Text.ElideRight; text: "Gives your windows more room. Push the pointer to its edge whenever you want it back"; color: w.dim; font.family: w.font; font.pixelSize: 12 }
                         }
                         HoverHandler { id: hideHover }
-                        Rectangle {
+                        Toggle {
                             id: hideSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            width: 42; height: 24; radius: Config.corner(12)
-                            color: hideRow.on ? Config.accentFor(hideHover.hovered) : w.line
-                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                            Rectangle {
-                                width: 18; height: 18; radius: Config.corner(9)
-                                anchors.verticalCenter: parent.verticalCenter
-                                x: hideRow.on ? parent.width - width - 3 : 3
-                                color: hideRow.on ? w.accentText : w.text
-                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-                            }
+                            plain: true; hovered: hideHover.hovered
+                            checked: hideRow.on
+                            offColor: w.line
+                            knobOn: w.accentText; knobOff: w.text
                         }
                         ClickTap { onTapped: Config.s.dockAutoHide = !Config.s.dockAutoHide }
                     }

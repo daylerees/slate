@@ -181,30 +181,13 @@ PanelWindow {
             color: root.text
             font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
         }
-        Rectangle {
+        Toggle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 42; height: 24; radius: Config.corner(12)
-            color: sw.checked ? Config.accentFor(swHover.hovered)
-                : (swHover.hovered ? root.controlLit : root.control)
-            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-            // Hover: a soft accent ring around the switch
-            Rectangle {
-                anchors { fill: parent; margins: -3 }
-                radius: Config.corner(height / 2)
-                color: "transparent"
-                border.width: 2; border.color: root.accent
-                opacity: swHover.hovered ? 0.35 : 0
-                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-            }
-            Rectangle {
-                width: 18; height: 18; radius: Config.corner(9)
-                anchors.verticalCenter: parent.verticalCenter
-                x: sw.checked ? parent.width - width - 3 : 3
-                color: sw.checked ? root.accentText : root.text
-                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-            }
-            HoverHandler { id: swHover }
-            ClickTap { onTapped: sw.toggled(!sw.checked) }
+            checked: sw.checked
+            offColor: hovered ? root.controlLit : root.control
+            ringColor: root.accent
+            knobOn: root.accentText; knobOff: root.text
+            onToggled: v => sw.toggled(v)
         }
     }
     // A paragraph of explanation

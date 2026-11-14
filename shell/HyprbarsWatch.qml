@@ -103,9 +103,9 @@ Item {
         if (h.state === "failed") {
             note({ notNow: Config.hyprbarsRunning });         // no asking again by itself
             failedNote.offline = h.error === "No internet connection";
-            failedNote.command = ["notify-send", "-a", "Slate", "-i", icon, "-u", "critical", "-h", "string:x-slate-page:windows"]
-                .concat(failedNote.offline ? ["-A", "retry=Retry"] : [])
-                .concat(["--", "Hyprbars couldn't be built", (h.error || "The build didn't finish") + ". Not to worry: Slate Bars are looking after your windows in the meantime."]);
+            failedNote.command = Config.notify("Hyprbars couldn't be built",
+                (h.error || "The build didn't finish") + ". Not to worry: Slate Bars are looking after your windows in the meantime.",
+                { urgent: true, page: "windows", actions: failedNote.offline ? ["retry=Retry"] : [] });
             failedNote.running = false; failedNote.running = true;
         } else if (h.state === "unreleased") {
             // Nothing was built: ask whether the newest unreleased code will do (once, then Settings has Retry)
@@ -113,8 +113,7 @@ Item {
             unreleasedNote.running = false; unreleasedNote.running = true;
         } else if (h.state === "built") {
             if (h.build === "yes" && !Config.hyprbarsLoaded) readyNotice();
-            else Quickshell.execDetached(["notify-send", "-a", "Slate", "-i", icon, "-h", "string:x-slate-page:windows",
-                "Hyprbars is rebuilt", "It'll be ready and waiting after your next restart."]);
+            else Quickshell.execDetached(Config.notify("Hyprbars is rebuilt", "It'll be ready and waiting after your next restart.", { page: "windows" }));
         }
     }
     // Built for the running Hyprland: a Hyprland reload loads it (windows stay open)
@@ -123,8 +122,8 @@ Item {
     }
     Process {
         id: readyNote
-        command: ["notify-send", "-a", "Slate", "-i", watch.icon, "-h", "string:x-slate-page:windows", "-A", "reload=Reload",
-            "Hyprbars is ready", "Reload Hyprland whenever you like to finish up. Your windows stay open."]
+        command: Config.notify("Hyprbars is ready", "Reload Hyprland whenever you like to finish up. Your windows stay open.",
+            { page: "windows", actions: ["reload=Reload"] })
         stdout: StdioCollector { onStreamFinished: if (text.trim() === "reload") Config.reloadHyprland() }
     }
     Process {
@@ -134,15 +133,14 @@ Item {
     }
     Process {
         id: offerNote
-        command: ["notify-send", "-a", "Slate", "-i", watch.icon, "-h", "string:x-slate-page:windows", "-A", "rebuild=Rebuild", "-A", "later=Later",
-            "Hyprland was updated", "Shall Slate rebuild Hyprbars now, so it's ready after your next restart?"]
+        command: Config.notify("Hyprland was updated", "Shall Slate rebuild Hyprbars now, so it's ready after your next restart?",
+            { page: "windows", actions: ["rebuild=Rebuild", "later=Later"] })
         stdout: StdioCollector { onStreamFinished: if (text.trim() === "rebuild") watch.startBuild() }
     }
     Process {
         id: unreleasedNote
-        command: ["notify-send", "-a", "Slate", "-i", watch.icon, "-h", "string:x-slate-page:windows", "-A", "build=Build", "-A", "later=Not now",
-            "No Hyprbars release yet", "There's no Hyprbars release for your Hyprland yet. Shall Slate build the newest unreleased version instead? "
-            + "Slate Bars look after your windows in the meantime."]
+        command: Config.notify("No Hyprbars release yet", "There's no Hyprbars release for your Hyprland yet. Shall Slate build the newest unreleased version instead? "
+            + "Slate Bars look after your windows in the meantime.", { page: "windows", actions: ["build=Build", "later=Not now"] })
         stdout: StdioCollector { onStreamFinished: if (text.trim() === "build") watch.startBuild(true) }
     }
     Process { id: systemNote }
@@ -216,9 +214,8 @@ Item {
         if (h.build === "yes") { readyNotice(); return; }          // built already: only the reload is missing
         if (h.any !== "yes") {
             // A distro's package that doesn't match this Hyprland
-            systemNote.command = ["notify-send", "-a", "Slate", "-i", icon, "-h", "string:x-slate-page:windows",
-                "Hyprbars doesn't match Hyprland", "The Hyprbars from your system's package didn't load, so your floating windows are using Slate "
-                + "Bars for now. Updating that package should bring it back, or Slate can build its own from Settings → Windows."];
+            systemNote.command = Config.notify("Hyprbars doesn't match Hyprland", "The Hyprbars from your system's package didn't load, so your floating windows are using Slate "
+                + "Bars for now. Updating that package should bring it back, or Slate can build its own from Settings → Windows.", { page: "windows" });
             systemNote.running = false; systemNote.running = true;
             return;
         }

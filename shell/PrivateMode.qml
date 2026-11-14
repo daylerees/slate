@@ -69,16 +69,15 @@ Scope {
             look.running = true;
             if (code === 0) {
                 root.helperThere = true;
-                Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + root.icon, "--hint=string:x-slate-page:control",
-                    "Private Mode is ready", "Slate can now turn your camera off whenever Private Mode is on. It's on now."]);
+                Quickshell.execDetached(Config.notify("Private Mode is ready",
+                    "Slate can now turn your camera off whenever Private Mode is on. It's on now.", { page: "control" }));
             } else {
                 const why = code === 3
                     ? "On NixOS the system is set by your configuration, so Slate can't add it. Private Mode is on without turning the camera off."
                     : code === 126 || code === 127
                     ? "It wasn't added, so Private Mode is on without turning the camera off. You can try again by turning Private Mode off and on."
                     : "Something went wrong adding it, so Private Mode is on without turning the camera off. You can try again by turning Private Mode off and on.";
-                Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + root.icon, "--hint=string:x-slate-page:control",
-                    "Slate couldn't set up the camera helper", why]);
+                Quickshell.execDetached(Config.notify("Slate couldn't set up the camera helper", why, { page: "control" }));
             }
             Config.s.privateMode = true;
         }

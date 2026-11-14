@@ -942,17 +942,19 @@ ShellRoot {
         }
     }
     function themeNotice(kind, id, name) {
-        const base = ["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:apptheming"];
         if (kind === "restored") {
             if (id === "spotify") {
-                spotifyNote.command = base.concat(["--action=restart=Restart Spotify", name + "'s theme is back",
-                    name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it."]);
+                spotifyNote.command = Config.notify(name + "'s theme is back",
+                    name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it.",
+                    { page: "apptheming", actions: ["restart=Restart Spotify"] });
                 spotifyNote.running = false; spotifyNote.running = true;
-            } else Quickshell.execDetached(base.concat([name + "'s theme is back",
-                name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it."]));
-        } else Quickshell.execDetached(base.concat([name + " lost its theme",
+            } else Quickshell.execDetached(Config.notify(name + "'s theme is back",
+                name + " was updated, which took Slate's theme with it. Slate has put it back for you: restart " + name + " to see it.",
+                { page: "apptheming" }));
+        } else Quickshell.execDetached(Config.notify(name + " lost its theme",
             id === "discord" ? name + " was updated, which removed Vencord. Once you've installed Vencord again, Slate's theme will come back with it."
-                             : name + " was updated, and Slate couldn't patch the new version just yet. Refresh in Settings → App Theming is worth a try a little later."]));
+                             : name + " was updated, and Slate couldn't patch the new version just yet. Refresh in Settings → App Theming is worth a try a little later.",
+            { page: "apptheming" }));
     }
     Process {
         id: spotifyNote
@@ -1045,10 +1047,9 @@ ShellRoot {
             body = lines.slice(0, 3).join(" ");
         }
         brokenFiles = [...new Set(links.map(m => m[1]))];
-        Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical", "--hint=string:x-slate-page:about",
-            "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
-            "--",       // (the error is the text, even if it starts with a dash)
-            "Slate couldn't reload", body + " Nothing's lost: the previous version is still running, and Slate will reload as soon as you save the fix."]);
+        Quickshell.execDetached(Config.notify("Slate couldn't reload",
+            body + " Nothing's lost: the previous version is still running, and Slate will reload as soon as you save the fix.",
+            { urgent: true, page: "about" }));
     }
     // After a failed reload Quickshell stops reloading when files change, until it's restarted.
     // So watch the files the error names, and reload as soon as one is saved
@@ -1065,8 +1066,8 @@ ShellRoot {
     Timer {
         id: reloadNotice
         interval: 600          // once the new Slate (and its notification server) is up
-        onTriggered: Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"), "--hint=string:x-slate-page:about",
-            "Slate reloaded", "All fresh: Slate is running on its updated files and settings."])
+        onTriggered: Quickshell.execDetached(Config.notify("Slate reloaded",
+            "All fresh: Slate is running on its updated files and settings.", { page: "about" }))
     }
     // (hyprErrors runs again whenever Hyprland reloads: see onHyprConfigReloaded above)
     // Everything wrong with Hyprland's config, in one notice: Hyprland's own config errors, and
@@ -1084,14 +1085,13 @@ ShellRoot {
                 try { errs = JSON.parse(parts[0]).filter(e => e && String(e).trim() !== "").map(String); } catch (e) {}
                 // (your own files first: each line says which file it's in)
                 errs = (parts[1] || "").split("\n").map(l => l.trim()).filter(l => l !== "").concat(errs);
-                const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
                 // No news when Slate reloaded it itself (to apply a setting); errors always show
                 if (errs.length === 0 && Config.ownHyprReload()) return;
                 if (errs.length === 0)
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland has read its config again, and all is well."]);
+                    Quickshell.execDetached(Config.notify("Hyprland settings reloaded", "Hyprland has read its config again, and all is well.", { page: "windows" }));
                 else
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "--", "Hyprland settings have errors",
-                        errs.join("\n").split("\n").slice(0, 6).join("\n")]);
+                    Quickshell.execDetached(Config.notify("Hyprland settings have errors",
+                        errs.join("\n").split("\n").slice(0, 6).join("\n"), { page: "windows" }));
             }
         }
     }

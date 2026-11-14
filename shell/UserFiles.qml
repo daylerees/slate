@@ -21,7 +21,7 @@ Scope {
     property bool ready: false        // the files exist (watching a missing file doesn't work)
 
     function notify(title, body) {
-        Quickshell.execDetached(["notify-send", "-a", "Slate", "-i", "dialog-warning", "-h", "string:x-slate-page:about", "--", title, body]);     // (--: an error can start with a dash)
+        Quickshell.execDetached(Config.notify(title, body, { icon: "dialog-warning", page: "about" }));
     }
 
     Process {

@@ -960,7 +960,7 @@ FloatingWindow {
                         Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.label : ""; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; wrapMode: Text.Wrap }
                         Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.detail || "" : ""; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
                     }
-                    Toggle {
+                    SettingToggle {
                         id: optToggle
                         anchors { right: parent.right; verticalCenter: optCol.verticalCenter }
                         checked: win.askOption
@@ -1429,34 +1429,13 @@ FloatingWindow {
         id: toggleRow
         property string key
         settingKey: key
-        Toggle { checked: Config.s[toggleRow.key]; onToggled: v => Config.s[toggleRow.key] = v }
+        SettingToggle { checked: Config.s[toggleRow.key]; onToggled: v => Config.s[toggleRow.key] = v }
     }
-    component Toggle: Rectangle {
-        id: toggleSwitch
-        property bool checked: false
-        signal toggled(bool value)
-        width: 42; height: 24; radius: Config.corner(12)
-        color: checked ? Config.accentFor(tgHover.hovered) : "transparent"
-        HoverFill { base: win.control; hovered: tgHover.hovered; gone: toggleSwitch.checked; radius: toggleSwitch.radius }
-        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-        // Hover: a soft accent ring around the switch
-        Rectangle {
-            anchors { fill: parent; margins: -3 }
-            radius: Config.corner(height / 2)
-            color: "transparent"
-            border.width: 2; border.color: win.accent
-            opacity: tgHover.hovered ? 0.35 : 0
-            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-        }
-        HoverHandler { id: tgHover }
-        Rectangle {
-            width: 18; height: 18; radius: Config.corner(9)
-            anchors.verticalCenter: parent.verticalCenter
-            x: toggleSwitch.checked ? parent.width - width - 3 : 3
-            color: toggleSwitch.checked ? win.accentText : win.text
-            Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-        }
-        ClickTap { onTapped: toggleSwitch.toggled(!toggleSwitch.checked) }
+    // The switch on a Settings row: Toggle.qml in this window's colours
+    component SettingToggle: Toggle {
+        hoverFill: true; fillBase: win.control
+        ringColor: win.accent
+        knobOn: win.accentText; knobOff: win.text
     }
     // Slider with its value shown alongside
     component ValueSlider: Row {
@@ -2246,7 +2225,7 @@ FloatingWindow {
                     detail: Config.s.clipboardHistory
                         ? "Keep the last 100 things you copy, text and images (Super+V, or the bar's clipboard). Passwords copied from password managers are never kept"
                         : "Off: nothing you copy is kept. Anything kept before stays until you clear it"
-                    Toggle { checked: Config.s.clipboardHistory; onToggled: v => Config.s.clipboardHistory = v }
+                    SettingToggle { checked: Config.s.clipboardHistory; onToggled: v => Config.s.clipboardHistory = v }
                 }
                 Separator {}
                 SettingRow {
@@ -2620,7 +2599,7 @@ FloatingWindow {
                     label: "Album art"
                     settingKey: "dockMediaArt"
                     detail: "The track's artwork beside the controls; off, just the controls"
-                    Toggle { checked: Config.s.dockMediaArt; onToggled: v => Config.s.dockMediaArt = v }
+                    SettingToggle { checked: Config.s.dockMediaArt; onToggled: v => Config.s.dockMediaArt = v }
                 }
                 Separator {}
                 ToggleSetting {
@@ -2863,7 +2842,7 @@ FloatingWindow {
                     settingKey: "screensaverClock"
                     detail: Config.s.screensaverStyle === "black" ? "The time and date, moving now and then so nothing burns in"
                         : "The time and date in the middle"
-                    Toggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
+                    SettingToggle { checked: Config.s.screensaverClock; onToggled: v => Config.s.screensaverClock = v }
                 }
                 Separator { visible: Config.s.screensaverStyle === "slideshow" }
                 DropdownSetting {
@@ -2987,7 +2966,7 @@ FloatingWindow {
                     label: "Show descriptions"
                     settingKey: "launcherDescriptions"
                     detail: Config.s.launcherLayout === "grid" ? "What the selected app is, under its name at the bottom" : "A short line under each app's name"
-                    Toggle { checked: Config.s.launcherDescriptions; onToggled: v => Config.s.launcherDescriptions = v }
+                    SettingToggle { checked: Config.s.launcherDescriptions; onToggled: v => Config.s.launcherDescriptions = v }
                 }
                 Separator {}
                 ToggleSetting {
@@ -3233,7 +3212,7 @@ FloatingWindow {
                     visible: disp.monitors.length > 1
                     label: "Use this display"
                     detail: displaysPane.cfg && !displaysPane.cfg.disabled && displaysPane.enabledCount <= 1 ? "The only display in use can't be turned off" : "Turn it off to leave it dark and unused"
-                    Toggle {
+                    SettingToggle {
                         checked: displaysPane.cfg ? !displaysPane.cfg.disabled : true
                         opacity: displaysPane.cfg && !displaysPane.cfg.disabled && displaysPane.enabledCount <= 1 ? 0.4 : 1
                         onToggled: v => { if (v || displaysPane.enabledCount > 1) displaysPane.change("disabled", !v); }
@@ -3475,7 +3454,7 @@ FloatingWindow {
                     label: "Acceleration"
                     settingKey: "mouseAccel"
                     detail: "Quick movements carry the pointer further. Off: the same distance however fast you move"
-                    Toggle {
+                    SettingToggle {
                         checked: (Config.s.mouseAccel !== "" ? Config.s.mouseAccel : (inputPane.cur["input:accel_profile"] || "adaptive")) !== "flat"
                         onToggled: v => Config.s.mouseAccel = v ? "adaptive" : "flat"
                     }
@@ -3485,7 +3464,7 @@ FloatingWindow {
                     label: "Natural scrolling"
                     settingKey: "mouseNaturalScroll"
                     detail: "Content moves the way the wheel turns, like a touch screen"
-                    Toggle {
+                    SettingToggle {
                         checked: Config.s.mouseNaturalScroll !== "" ? Config.s.mouseNaturalScroll === "on" : !!inputPane.cur["input:natural_scroll"]
                         onToggled: v => Config.s.mouseNaturalScroll = v ? "on" : "off"
                     }
@@ -3554,7 +3533,7 @@ FloatingWindow {
                     label: "Natural scrolling"
                     settingKey: "touchpadNaturalScroll"
                     detail: "Content follows your fingers, like a phone"
-                    Toggle {
+                    SettingToggle {
                         checked: Config.s.touchpadNaturalScroll !== "" ? Config.s.touchpadNaturalScroll === "on" : !!inputPane.cur["input:touchpad:natural_scroll"]
                         onToggled: v => Config.s.touchpadNaturalScroll = v ? "on" : "off"
                     }
@@ -3563,7 +3542,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Tap to click"
                     settingKey: "touchpadTapToClick"
-                    Toggle {
+                    SettingToggle {
                         checked: Config.s.touchpadTapToClick !== "" ? Config.s.touchpadTapToClick === "on" : inputPane.cur["input:touchpad:tap-to-click"] !== false
                         onToggled: v => Config.s.touchpadTapToClick = v ? "on" : "off"
                     }
@@ -3573,7 +3552,7 @@ FloatingWindow {
                     label: "Ignore while typing"
                     settingKey: "touchpadIgnoreWhileTyping"
                     detail: "Stops a palm on the touchpad moving the pointer as you type"
-                    Toggle {
+                    SettingToggle {
                         checked: Config.s.touchpadIgnoreWhileTyping !== "" ? Config.s.touchpadIgnoreWhileTyping === "on" : inputPane.cur["input:touchpad:disable_while_typing"] !== false
                         onToggled: v => Config.s.touchpadIgnoreWhileTyping = v ? "on" : "off"
                     }
@@ -3629,7 +3608,7 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Mute"
-                    Toggle {
+                    SettingToggle {
                         checked: !!(soundPane.sink && soundPane.sink.audio && soundPane.sink.audio.muted)
                         onToggled: v => { if (soundPane.sink && soundPane.sink.audio) soundPane.sink.audio.muted = v; }
                     }
@@ -3660,7 +3639,7 @@ FloatingWindow {
                     needsMet: !Config.s.privateMode
                     needs: "Muted while Private Mode is on"
                     needsPage: "sound"; needsLabel: "Private Mode is on"
-                    Toggle {
+                    SettingToggle {
                         checked: !!(soundPane.source && soundPane.source.audio && soundPane.source.audio.muted)
                         onToggled: v => { if (soundPane.source && soundPane.source.audio) soundPane.source.audio.muted = v; }
                     }
@@ -3804,7 +3783,7 @@ FloatingWindow {
                     label: "Charging limit"
                     detail: powerPane.limitOn ? "Charging stops at " + powerPane.limitAt + "%, which keeps your battery healthy for longer"
                         : "Your battery charges to full. Stopping at " + powerPane.limitAt + "% is kinder to it"
-                    Toggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
+                    SettingToggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
                 }
             }
             GroupLabel { text: "Restarting" }
@@ -4171,7 +4150,7 @@ FloatingWindow {
                     visible: dateTimePane.canNtp
                     label: "Set the time automatically"
                     detail: "Keeps your clock right, using a time server on the internet"
-                    Toggle {
+                    SettingToggle {
                         checked: dateTimePane.ntp
                         onToggled: v => { dateTimePane.ntp = v; Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "timedate", "set-ntp", v ? "true" : "false"]); reread.restart(); }
                     }
@@ -4363,7 +4342,7 @@ FloatingWindow {
                     needsMet: !Config.s.privateMode
                     needs: "Needs Private Mode to be off"
                     needsPage: "sound"; needsLabel: "Private Mode is on"
-                    Toggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
+                    SettingToggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
                     below: [Button { visible: Config.assistantOn; label: "Read the risks again"; onClicked: win.assistantReadRisks() }]
                 }
             }
@@ -4553,7 +4532,7 @@ FloatingWindow {
                     needsMet: Config.assistantOn
                     needs: "Needs Let assistants use Slate to be on"
                     needsPage: "assistant"; needsLabel: "Let assistants use Slate"
-                    Toggle { checked: Config.s.assistantVoice; onToggled: v => win.voiceSwitch(v) }
+                    SettingToggle { checked: Config.s.assistantVoice; onToggled: v => win.voiceSwitch(v) }
                 }
                 Separator {}
                 SettingRow {
@@ -4827,7 +4806,7 @@ FloatingWindow {
                         command: [Quickshell.shellPath("scripts/hypr-options.py"), "input:follow_mouse"]
                         stdout: StdioCollector { onStreamFinished: { try { focusRow.current = JSON.parse(text)["input:follow_mouse"]; } catch (e) {} } }
                     }
-                    Toggle {
+                    SettingToggle {
                         checked: Config.s.focusFollowsMouse !== "" ? Config.s.focusFollowsMouse === "on" : focusRow.current === 1
                         onToggled: v => Config.s.focusFollowsMouse = v ? "on" : "off"
                     }
@@ -5100,7 +5079,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Do Not Disturb"
                     detail: "Quietens pop-ups so you can focus (critical ones still show). Nothing's lost: everything still goes to history"
-                    Toggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
+                    SettingToggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
                 }
                 Separator {}
                 SoundSetting {
@@ -5391,7 +5370,7 @@ FloatingWindow {
                             color: Config.wallpaperAccent ? Config.fromWallpaper(Config.wallpaperAccent) : "transparent"
                             border.width: 1; border.color: win.ring
                         }
-                        Toggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.accentFromWallpaper; onToggled: v => Config.s.accentFromWallpaper = v }
+                        SettingToggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.accentFromWallpaper; onToggled: v => Config.s.accentFromWallpaper = v }
                     }
                 }
                 Separator {}
@@ -5533,7 +5512,7 @@ FloatingWindow {
                             color: Config.wallpaperTone ? Qt.hsla(Qt.lighter(Config.wallpaperTone, 1).hslHue, 0.3, 0.2, 1) : "transparent"
                             border.width: 1; border.color: win.ring
                         }
-                        Toggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.toneFromWallpaper; onToggled: v => Config.s.toneFromWallpaper = v }
+                        SettingToggle { anchors.verticalCenter: parent.verticalCenter; checked: Config.s.toneFromWallpaper; onToggled: v => Config.s.toneFromWallpaper = v }
                     }
                 }
                 Separator {}
@@ -5602,7 +5581,7 @@ FloatingWindow {
                     settingKey: "fastBlur"
                     detail: Config.s.fastBlur ? "See-through windows and glass blur just the wallpaper, not the windows under them: far less work, so everything stays smooth"
                         : "See-through windows and glass blur whatever's under them, windows included. Heavier: animations and the pointer can slow down"
-                    Toggle { checked: Config.s.fastBlur; onToggled: v => Config.s.fastBlur = v }
+                    SettingToggle { checked: Config.s.fastBlur; onToggled: v => Config.s.fastBlur = v }
                 }
                 Separator {}
                 DropdownSetting {
@@ -6281,7 +6260,7 @@ FloatingWindow {
                     detail: Config.s.iconShape === "original"
                         ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
                         : "Crop each icon's own border and shadow and grow it to fill the shape, on its main color. Off: the whole icon, smaller, on a plain tile"
-                    Toggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
+                    SettingToggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
                 }
                 Separator {}
                 SettingRow {
@@ -6292,7 +6271,7 @@ FloatingWindow {
                     label: "Tiles in the icon's color"
                     settingKey: "iconTileColour"
                     detail: "The tile behind each icon takes a deep shade of the icon's own main color, rather than the theme's. Gray icons keep the theme's tile"
-                    Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
+                    SettingToggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
                 }
                 Separator {}
                 ToggleSetting {
@@ -6448,7 +6427,7 @@ FloatingWindow {
                             // The switch, kept where it sat above the chip (the chip's room left under it)
                             Column {
                                 spacing: 8
-                                Toggle {
+                                SettingToggle {
                                     visible: appSetting.usable
                                     checked: appTheming.isOn(appSetting.app.id)
                                     onToggled: v => appTheming.setOn(appSetting.app.id, v)
@@ -6616,7 +6595,7 @@ FloatingWindow {
                     detail: !wifiPane.dev ? "This computer has no Wi-Fi"
                         : !Networking.wifiEnabled ? "Off"
                         : wifiPane.current ? "Connected to " + wifiPane.current.name : "Not connected"
-                    Toggle { visible: !!wifiPane.dev; checked: Networking.wifiEnabled; onToggled: v => Networking.wifiEnabled = v }
+                    SettingToggle { visible: !!wifiPane.dev; checked: Networking.wifiEnabled; onToggled: v => Networking.wifiEnabled = v }
                 }
             }
             GroupLabel { visible: Networking.wifiEnabled && !!wifiPane.dev; text: wifiPane.nets.length ? "Networks" : "Searching for networks…" }
@@ -7017,7 +6996,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Bluetooth"
                     detail: bluetoothPane.adapter ? (bluetoothPane.adapter.enabled ? "On" : "Off") : "This computer has no Bluetooth"
-                    Toggle { visible: !!bluetoothPane.adapter; checked: bluetoothPane.adapter ? bluetoothPane.adapter.enabled : false; onToggled: v => { if (bluetoothPane.adapter) bluetoothPane.adapter.enabled = v; } }
+                    SettingToggle { visible: !!bluetoothPane.adapter; checked: bluetoothPane.adapter ? bluetoothPane.adapter.enabled : false; onToggled: v => { if (bluetoothPane.adapter) bluetoothPane.adapter.enabled = v; } }
                 }
                 Separator { visible: bluetoothPane.adapter && bluetoothPane.adapter.enabled }
                 SettingRow {
@@ -7739,7 +7718,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Preview"
                     detail: "Shows the camera here. Its light comes on while it's shown"
-                    Toggle { checked: camPane.preview; onToggled: v => camPane.preview = v }
+                    SettingToggle { checked: camPane.preview; onToggled: v => camPane.preview = v }
                 }
                 Separator { visible: camPane.cams.length > 1 }
                 DropdownSetting {
@@ -7790,7 +7769,7 @@ FloatingWindow {
                     visible: !!camPane.ctrl("white_balance_automatic")
                     label: "Automatic white balance"
                     detail: "Adjusts the colors to the light in the room. Off: set the color temperature yourself"
-                    Toggle {
+                    SettingToggle {
                         checked: camPane.ctrl("white_balance_automatic") ? camPane.ctrl("white_balance_automatic").value === 1 : true
                         onToggled: v => camPane.setCtrl("white_balance_automatic", v ? 1 : 0)
                     }
@@ -7813,7 +7792,7 @@ FloatingWindow {
                     visible: !!c
                     label: "Automatic exposure"
                     detail: "Adjusts how bright the picture is to the light. Off: set the exposure yourself"
-                    Toggle {
+                    SettingToggle {
                         // (1 is manual on every camera; the automatic one varies: the camera's default)
                         checked: parent.c ? parent.c.value !== 1 : true
                         onToggled: v => camPane.setCtrl("auto_exposure", v ? (parent.c.default !== 1 ? parent.c.default : 3) : 1)

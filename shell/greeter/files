@@ -43,6 +43,7 @@ emergency/Box.qml            greeter/emergency/Box.qml
 -  bin/slate-init  # what this computer can do (suspend, lock before sleep…): the login screen doesn't ask
 -  fonts/tabler.ttf  # the login screen passes the copy in /var/lib/slate-greeter
 -  sounds  # the login screen plays no sounds (Config.qml checks the welcome is there first)
+-  assets/icon/icon-64.png  # the icon on Slate's notices (Config.notify): the login screen shows none
 
 # Made by the installer
 +  hyprland.lua  # greeter/hyprland.lua with your keyboard layout

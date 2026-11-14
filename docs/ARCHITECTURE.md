@@ -76,6 +76,7 @@ ClickTap.qml, ClickArea.qml  TapHandler / MouseArea that also play the click (Se
 HoverFill.qml           a control's own fill giving way to the muted hover, cross-faded as layers
 ScrollShade.qml         the soft shadow along the top or bottom edge of a scrolling list
 ThinScrollbar.qml       the slim scrollbar used across Slate, shown only when the view overflows
+Toggle.qml            the on/off switch every window draws (Settings, the bar editor, confirmations, Welcome, the launcher)
 WorkspaceDots.qml       a row of workspace dots (bar, switcher, overview, on-screen display), with
 WorkspaceMarker.qml     the accent marker that glides over the one in use
 SlateMark.qml           Slate's mark, drawn as vectors (bar, dock, Slate's notifications)

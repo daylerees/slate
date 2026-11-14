@@ -1,0 +1,55 @@
+"""Things Slate draws or works out in one place for every window: if a file starts doing it
+its own way again, the copies drift apart (they did, once)."""
+import os
+
+import slate
+from slate import Case
+
+SHELL = slate.path("shell")
+
+
+def qml_files():
+    return [n for n in sorted(os.listdir(SHELL)) if n.endswith(".qml")]
+
+
+class Shared(Case):
+    def test_only_toggle_draws_the_switch_track(self):
+        """Every on/off switch is Toggle.qml: nobody else draws a 42 x 24 track with a knob."""
+        for name in qml_files():
+            if name == "Toggle.qml":
+                continue
+            with self.subTest(name):
+                self.assertNotRegex(slate.read("shell", name), r"width:\s*42;\s*height:\s*24",
+                                    f"{name} draws its own switch: use Toggle.qml")
+
+    def test_state_and_cache_folders_come_from_config(self):
+        """~/.local/state and ~/.cache are worked out once (Config.stateHome / cacheHome). The
+        paths that deliberately stay at HOME (dock.json, the tiles and so on) don't read the
+        XDG variables at all."""
+        for name in qml_files():
+            if name == "Config.qml":
+                continue
+            with self.subTest(name):
+                self.assertNotRegex(slate.read("shell", name), r"XDG_(STATE|CACHE)_HOME",
+                                    f"{name} reads the XDG folder itself: use Config.stateHome / cacheHome")
+
+    def test_notices_are_built_by_config_notify(self):
+        """Slate's notices go through Config.notify (one place for the icon, the page they open
+        and the "--" before the words). Files not yet moved over are listed here."""
+        not_yet = {"Config.qml", "Assistant.qml", "SettingsWindow.qml", "Updates.qml"}
+        for name in qml_files():
+            if name in not_yet:
+                continue
+            with self.subTest(name):
+                self.assertNotIn('"notify-send"', slate.read("shell", name),
+                                 f"{name} builds a notify-send call itself: use Config.notify")
+
+    def test_times_ago_come_from_config(self):
+        """A time like "2 min ago" is Config.ago; no window works the minutes out again.
+        (Settings' Updates page rounds and words its own: "just now", "checked 5 min ago".)"""
+        for name in qml_files():
+            if name in ("Config.qml", "SettingsWindow.qml"):
+                continue
+            with self.subTest(name):
+                self.assertNotIn('" min ago"', slate.read("shell", name),
+                                 f"{name} words its own 'min ago': use Config.ago")

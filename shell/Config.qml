@@ -1335,6 +1335,19 @@ Singleton {
     // ...and the one actually in use, which the tiles are drawn from: the chosen one, else what
     // GTK apps use (read from gtk-3.0/settings.ini, so a theme set outside Slate counts too;
     // Slate's folder-colour theme counts as the theme it's made from)
+    // The command that shows a notice from Slate (run it with Quickshell.execDetached, or as a
+    // Process command when an action's answer is read back). `opts`: page (the Settings page
+    // that opens when it's clicked), urgent (critical: it stays up), actions (["id=Label", ...],
+    // the answer is printed on stdout), icon (a name or path; Slate's own by default). The "--"
+    // keeps a title or text that starts with a dash from being taken for an option
+    function notify(title, body, opts) {
+        const o = opts || {};
+        let c = ["notify-send", "--app-name=Slate", "--icon=" + (o.icon || Quickshell.shellPath("assets/icon/icon-64.png"))];
+        if (o.urgent) c.push("--urgency=critical");
+        if (o.page) c.push("--hint=string:x-slate-page:" + o.page);
+        for (const a of (o.actions || [])) c.push("--action=" + a);
+        return c.concat(["--", title, body]);
+    }
     // "2 min ago", worded as on notifications ("now", then a date after a day). `t` is in
     // milliseconds. `wordy` is the clipboard's wording instead: "Just now", and "Yesterday" /
     // "3 days ago" rather than a date
@@ -1733,7 +1746,7 @@ Singleton {
     // launcher-entries.py and session/hypr/hyprland.lua (tests/unit/test_runtime_dir.py)
     readonly property bool runtimeDirOwn: !Quickshell.env("XDG_RUNTIME_DIR")
     readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR")
-        || (root.stateHome + "/slate/run")
+        || ((Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/slate/run")
     Process {
         running: root.runtimeDirOwn && !root.isLoginScreen
         command: ["sh", "-c", 'mkdir -p "$0" && chmod 700 "$0"', root.runtimeDir]

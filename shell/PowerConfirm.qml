@@ -325,19 +325,13 @@ PanelWindow {
                             font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
                     }
-                    Rectangle {
+                    Toggle {
                         id: reopenSwitch
                         anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                        width: 42; height: 24; radius: Config.corner(12)
-                        color: reopen.on ? Config.accentFor(reopenHover.hovered) : Config.tint("#2a313c")
-                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                        Rectangle {
-                            width: 18; height: 18; radius: Config.corner(9)
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: reopen.on ? parent.width - width - 3 : 3
-                            color: reopen.on ? root.accentText : root.textColor
-                            Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-                        }
+                        plain: true; hovered: reopenHover.hovered
+                        checked: reopen.on
+                        offColor: Config.tint("#2a313c")
+                        knobOn: root.accentText; knobOff: root.textColor
                     }
                 }
                 Item { width: 1; height: 16; visible: root.hasOption }
