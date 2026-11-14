@@ -11,10 +11,14 @@ Item {
     id: fill
     property string path: ""                 // the image (a file path)
     property real pixelRatio: 1              // the screen's: the image is decoded at its size
+    property int fadeMs: 600                 // the cross-fade from one image to the next
     // The wallpapers that come with Slate
     readonly property string ownFolder: Quickshell.shellPath("wallpapers")
     // (the image showing, once it's in: the tests' and the switcher's)
     readonly property bool ready: images[front].status === Image.Ready && images[front].source.toString() === wanted
+    // (the picture actually in front, as a path: the tests')
+    readonly property string showing: images[front].status === Image.Ready && images[front].opacity > 0
+        ? images[front].source.toString().replace(/^file:\/\//, "") : ""
 
     // Two images take turns: the new one loads hidden, then fades in over the old
     property int front: 0
@@ -25,8 +29,21 @@ Item {
         if (wanted === "") { retire.stop(); imgA.source = ""; imgB.source = ""; imgA.opacity = 0; imgB.opacity = 0; return; }
         const back = images[1 - front];
         if (images[front].source.toString() === wanted) return;
+        // Going straight back to the one just shown, before it's been let go: the spare still
+        // has it, so setting it again changes nothing and it would never say it's loaded. It's
+        // brought in now instead (otherwise the picture stayed on the one before)
+        if (back.source.toString() === wanted && back.status === Image.Ready) { bringIn(back); return; }
         back.opacity = 0;
         back.source = wanted;
+    }
+    // The new picture is in: over the old one, fading in, and the old one let go once it's covered
+    function bringIn(layer) {
+        const i = images.indexOf(layer);
+        if (i === front && layer.opacity === 1) return;
+        layer.z = 1; images[1 - i].z = 0;
+        layer.opacity = 1;
+        front = i;
+        retire.restart();
     }
 
     component Layer: Image {
@@ -36,7 +53,9 @@ Item {
         anchors { fill: parent; margins: -4 }
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
-        cache: false
+        // (shared: the desktop and the wallpaper switcher's cover read each picture once between
+        // them, and the cover has yours at once)
+        cache: true
         smooth: true
         // One of Slate's own (shell/wallpapers): smooth colour, which bands when it's
         // scaled to the screen's size and rounded to its colours. So it's kept whole,
@@ -46,16 +65,8 @@ Item {
         sourceSize.width: own ? 0 : fill.width * fill.pixelRatio
         sourceSize.height: own ? 0 : fill.height * fill.pixelRatio
         opacity: 0
-        Behavior on opacity { NumberAnimation { duration: Config.ms(600); easing.type: Easing.InOutQuad } }
-        onStatusChanged: {
-            if (status !== Image.Ready || source.toString() !== fill.wanted) return;
-            const i = fill.images.indexOf(layer);
-            if (i === fill.front && opacity === 1) return;
-            z = 1; fill.images[1 - i].z = 0;
-            opacity = 1;
-            fill.front = i;
-            retire.restart();
-        }
+        Behavior on opacity { NumberAnimation { duration: Config.ms(fill.fadeMs); easing.type: Easing.InOutQuad } }
+        onStatusChanged: if (status === Image.Ready && source.toString() === fill.wanted) fill.bringIn(layer)
     }
     Layer { id: imgA; Component.onCompleted: source = fill.wanted }
     Layer { id: imgB }
@@ -81,7 +92,7 @@ Item {
     // Once the new image is in, drop the old one to free its memory
     Timer {
         id: retire
-        interval: 700
+        interval: Config.ms(fill.fadeMs) + 100
         onTriggered: { const old = fill.images[1 - fill.front]; old.opacity = 0; old.source = ""; }
     }
 }

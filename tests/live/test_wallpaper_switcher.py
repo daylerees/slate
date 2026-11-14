@@ -116,6 +116,33 @@ class WallpaperSwitcher(LiveCase):
         self.s.settle(2.0)
         self.assertTrue(self.s.state()["wallpaperSwitcher"]["themeApplied"])
 
+    def test_straight_back_shows_it(self):
+        """Back to the one just shown, before its picture was let go: the screen shows it, not
+        the one before (the spare still had it, so it never said it had loaded, and the
+        picture stayed on the other one)."""
+        self.open()
+        self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == self.paths[0], "the cover showing yours")
+        # (each step goes somewhere new, and back to the one it just left)
+        red, green, blue = self.paths
+        for there, back in ((green, red), (blue, green), (red, blue)):
+            with self.subTest(there=os.path.basename(there), back=os.path.basename(back)):
+                self.ipc("wallpaperSwitcher", "testFlip", there, back)
+                self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == back and st["wallpaperSwitcher"]["cover"] == back,
+                          f"the screen to show {os.path.basename(back)}")
+
+    def test_reads_ahead(self):
+        """Once the one chosen is on screen, the pictures either side are read ahead (nearest
+        first), and moving on to one shows it."""
+        self.open()
+        red, green, blue = self.paths
+        self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == red and st["wallpaperSwitcher"]["ahead"] == [green, blue],
+                  "green and blue read ahead of red")
+        self.ipc("wallpaperSwitcher", "next")
+        self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green and st["wallpaperSwitcher"]["ahead"] == [blue, red],
+                  "blue and red read ahead of green")
+        self.ipc("wallpaperSwitcher", "cancel")
+        self.wait(lambda st: not st["wallpaperSwitcher"]["open"] and st["wallpaperSwitcher"]["ahead"] == [], "nothing read ahead once closed")
+
     def test_enter_keeps_it(self):
         self.open()
         self.ipc("wallpaperSwitcher", "next")

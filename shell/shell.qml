@@ -413,6 +413,7 @@ ShellRoot {
                                      fade: Math.round(wallpaperLayer.switcher.fade * 100) / 100,
                                      listing: wallpaperLayer.switcher.listing, walls: wallpaperLayer.switcher.walls,
                                      index: wallpaperLayer.switcher.index, selected: wallpaperLayer.switcher.selected,
+                                     cover: wallpaperLayer.switcher.coverShowing, ahead: wallpaperLayer.switcher.ahead,
                                      screen: wallpaperLayer.switcher.screenOn ? wallpaperLayer.switcher.screenOn.name : "",
                                      shown: Config.wallpaper, saved: Config.s.wallpaper, accent: "" + Config.accent,
                                      held: root.heldUpdates.length, themeApplied: root.themeApplied === root.themeJson,

@@ -43,7 +43,7 @@ Scope {
     readonly property string selected: index >= 0 && index < walls.length ? walls[index] : ""
 
     property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: Config.ms(200); easing.type: Easing.InOutQuad } }
+    Behavior on fade { NumberAnimation { duration: Config.ms(150); easing.type: Easing.InOutQuad } }
     readonly property bool onScreen: shown || fade > 0
     Binding { target: Config; property: "wallpaperSwitching"; value: root.onScreen }
 
@@ -68,6 +68,28 @@ Scope {
         walls = original === "" || list.includes(original) ? list : [original].concat(list);
         index = Math.max(0, walls.indexOf(at));
         settleIn.restart();
+        thumbs = ({}); thumbsDone = false;
+        thumbMaker.command = [Quickshell.shellPath("scripts/thumbnails.py")].concat(walls);
+        thumbMaker.running = false; thumbMaker.running = true;
+    }
+    // The cards' pictures: small ones from the shared thumbnail cache (scripts/thumbnails.py),
+    // made once for any that aren't there, so a card never reads a whole wallpaper. One that
+    // can't be made shows the image itself once the rest are done
+    property var thumbs: ({})
+    property bool thumbsDone: false
+    Process {
+        id: thumbMaker
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const t = JSON.parse(line);
+                    const m = Object.assign({}, root.thumbs);
+                    m[t.path] = t.thumb;
+                    root.thumbs = m;
+                } catch (e) {}
+            }
+        }
+        onExited: root.thumbsDone = true
     }
     // Opens on yours, in place; moves slide after that
     Timer { id: settleIn; interval: 120; onTriggered: root.animate = true }
@@ -90,8 +112,34 @@ Scope {
     onSelectedChanged: if (shown) lookSoon.restart()
     Timer {
         id: lookSoon
-        interval: 120
+        interval: 60
         onTriggered: if (root.shown) Config.wallpaperPreview = root.selected === root.original ? "" : root.selected
+    }
+    // The wallpapers to read ahead: two each way from the one chosen, nearest first, once it's
+    // on screen (cover, below)
+    property int aheadOf: -1
+    readonly property var ahead: {
+        if (aheadOf < 0 || walls.length < 2) return [];
+        const out = [];
+        for (const d of [1, -1, 2, -2]) {
+            const p = walls[(aheadOf + d + walls.length) % walls.length];
+            if (p !== walls[aheadOf] && !out.includes(p)) out.push(p);
+        }
+        return out;
+    }
+    onShownChanged: if (!shown) aheadOf = -1
+    // (the tests': what the cover on the focused screen really shows, and a look at one then
+    // straight back to another the moment the first is in, quicker than any key)
+    property string coverShowing: ""
+    property string flipTo: ""
+    property string flipFrom: ""
+    function testFlip(a, b) { flipFrom = a; flipTo = b; Config.wallpaperPreview = a === original ? "" : a; }
+    onCoverShowingChanged: {
+        if (shown && coverShowing !== "" && coverShowing === selected) aheadOf = index
+        if (flipTo !== "" && coverShowing === flipFrom) {
+            const b = flipTo; flipTo = ""; flipFrom = "";
+            Qt.callLater(() => Config.wallpaperPreview = b === original ? "" : b);     // (the next moment: well within the old one being let go)
+        }
     }
     function keep() {
         if (!shown) return;
@@ -116,6 +164,7 @@ Scope {
         function prev(): void { root.move(-1); }
         function keep(): void { root.keep(); }
         function cancel(): void { root.cancel(); }
+        function testFlip(a: string, b: string): void { root.testFlip(a, b); }
     }
 
     // A wallpaper's name: Slate's own as Settings names them ("Ember", "Ember (plain)"), yours by file
@@ -154,10 +203,31 @@ Scope {
                 // (they come back as it fades out). Only loaded while it's open: no second copy
                 // kept otherwise
                 WallpaperFill {
+                    id: coverFill
                     anchors.fill: parent
                     path: root.onScreen ? Config.wallpaper : ""
                     pixelRatio: scr.modelData.devicePixelRatio || 1
+                    fadeMs: 200
+                    onShowingChanged: if (scr.main) root.coverShowing = showing
                     opacity: root.fade
+                }
+                // The pictures either side of the one chosen, read ahead at the size the cover
+                // draws them (and shared with it: WallpaperFill's images are cached), so moving
+                // on shows the next at once. Nearest first, and only once the chosen one is on
+                // screen, so they never hold it up; let go when the switcher closes
+                Repeater {
+                    model: root.shown ? root.ahead : []
+                    Image {
+                        required property string modelData
+                        visible: false
+                        asynchronous: true
+                        cache: true
+                        // (Slate's own are read whole, as WallpaperFill reads them)
+                        readonly property bool own: modelData.indexOf(Quickshell.shellPath("wallpapers") + "/") === 0
+                        sourceSize.width: own ? 0 : coverFill.width * coverFill.pixelRatio
+                        sourceSize.height: own ? 0 : coverFill.height * coverFill.pixelRatio
+                        source: "file://" + modelData
+                    }
                 }
             }
 
@@ -282,7 +352,8 @@ Scope {
                                 color: Config.tint("#1d222a")
                                 Image {
                                     anchors.fill: parent
-                                    source: "file://" + card.modelData
+                                    source: root.thumbs[card.modelData] ? "file://" + root.thumbs[card.modelData]
+                                        : root.thumbsDone ? "file://" + card.modelData : ""
                                     sourceSize: Qt.size(root.thumbW * 2, root.thumbH * 2)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
