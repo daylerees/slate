@@ -880,7 +880,10 @@ REFUSE = {
     "wallpaper", "wallpaperFolder", "screenshotFolder", "screensaverVideoFolder",
     # what keeps the computer yours: locking, and what your keys type and do
     "idleLockMinutes", "lockBeforeSleep", "screensaverLock", "lockScreenPowerMenu",
-    "kbLayouts", "kbVariants", "keyset",
+    "kbLayouts", "kbVariants", "keyset", "kbSwitch", "capsLock",
+    # sleep and the screensaver (both can be when the screen locks), the power button and the
+    # lid, and checking for updates
+    "idleSuspendMinutes", "screensaverMinutes", "powerKeyAction", "lidAction", "updateCheck",
     # where you are
     "locationName", "latitude", "longitude",
     # needs something built or chosen by hand (Hyprbars; which screen)
@@ -907,16 +910,12 @@ VALUES = {
     "folderColour": (r"[a-z]{3,20}", "default, auto, or a folder colour your icons have, like teal"),
     "iconTheme": (r"|[\w.+-]{1,60}", "an installed icon theme's folder name, like Papirus-Dark, or empty for this computer's own"),
     "cursorTheme": (r"|[\w.+-]{1,60}", "an installed cursor theme's folder name, like Bibata-Modern-Ice, or empty for Slate's own"),
-    "kbSwitch": ["", "alt_shift", "ctrl_space", "caps", "none"],
-    "capsLock": ["", "default", "ctrl", "escape", "off"],
     "mouseAccel": ["", "adaptive", "flat"],
     "mouseNaturalScroll": ON_OFF, "touchpadNaturalScroll": ON_OFF, "touchpadTapToClick": ON_OFF,
     "touchpadIgnoreWhileTyping": ON_OFF, "focusFollowsMouse": ON_OFF,
     "animations": ["", "normal", "fast", "off"],
     "colourStyle": ["monotone", "colourful"],
     "workspaceAnimation": ["slidefade", "slidefadevert", "slide", "slidevert", "crossfade", "none"],
-    "lidAction": ["", "suspend", "lock", "screenoff", "nothing"],
-    "powerKeyAction": ["", "menu", "suspend", "poweroff", "lock", "nothing"],
     "profileOnBattery": ["", "power-saver", "balanced", "performance"],
     "profileOnAC": ["", "power-saver", "balanced", "performance"],
     "screenshotName": ["default", "compact", "gnome"],
@@ -958,10 +957,35 @@ RANGES = {
     "launcherColumns": (3, 10), "launcherRows": (2, 8),
     "overviewCardWidth": (480, 1000), "overviewGridSize": (2, 9),
     "notificationSeconds": (2, 15), "notificationMaxToasts": (1, 8),
-    "screensaverMinutes": (0, 240), "screensaverSlideSeconds": (10, 300),
+    "screensaverSlideSeconds": (10, 300),
     "glassOpacity": (0.3, 0.95), "glassBlur": (0, 20), "glassGlossTint": (0, 1), "glassGloss": (0, 2),
-    "blurPasses": (0, 4), "idleScreenOffMinutes": (0, 240), "idleSuspendMinutes": (0, 240),
+    "blurPasses": (0, 4), "idleScreenOffMinutes": (0, 240),
     "hotCornerDelay": (0, 1500),
+}
+# The on/off settings an assistant may switch. One that isn't here (or in REFUSE) can't be
+# changed, as a number without a range can't: a new switch is allowed on purpose, never by
+# being overlooked. Allow it unless it holds a command or a path, weakens locking, changes
+# what keys do, says where the person is, or touches updates or safety: those go in REFUSE.
+SWITCHES = {
+    "accentFromWallpaper", "toneFromWallpaper", "wallpaperHideSmall", "wallpaperShowSlate",
+    "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
+    "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
+    "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
+    "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",
+    "spaceSwitcherBadges", "spaceBarTint", "barShowWorkspaces", "barShowWindowMode",
+    "barShowWorkspaceName", "barShowTitle", "barShowTitleIcon", "barShowTray",
+    "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowWifi",
+    "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barShowGameMode",
+    "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard",
+    "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barTrayMono",
+    "barStatusCollapsed", "barShowPower", "barClockSeconds", "barClockDate", "launcherBlur",
+    "notificationBlur", "dockBlur", "dockAutoHide", "dockShowLauncher", "dockPreviews",
+    "dockBadges", "dockDivider", "dockShowMedia", "dockMediaArt", "dockShowDownloads",
+    "dockShowTrash", "launcherDescriptions", "launcherSortByUsage", "launcherWrap",
+    "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles",
+    "launcherFiles", "launcherConvert", "launcherEmoji", "launcherWeb", "switcherPreviews",
+    "switcherAppIcons", "workspaceSwitchName", "wrapWorkspaces", "overviewAppIcons",
+    "overviewPreviews", "screensaverClock", "glass", "fastBlur", "idleRespectInhibitors",
 }
 # Settings that only take effect the next time Slate starts
 AT_START = {"uiScale"}
@@ -978,6 +1002,15 @@ def refused(key):
             return "The wallpaper is changed with wallpaper_set, from the pictures in wallpapers_list."
         return "Slate keeps that setting for the person to change themselves%s. settings_show can open it for them." % where
     return None
+
+
+def settable(s):
+    """Whether the server knows what this setting takes: its values (VALUES), its range
+    (RANGES), or that it's a switch an assistant may use (SWITCHES)."""
+    if not s:
+        return False
+    takes = {"bool": SWITCHES, "int": RANGES, "real": RANGES, "string": VALUES}.get(s["type"], ())
+    return s["key"] in takes
 
 
 def as_number(value):
@@ -1040,7 +1073,7 @@ def settings_set(key, value):
     if why:
         raise Refused(why)
     s = settings().get(key)
-    if not s or (s["type"] in ("int", "real") and key not in RANGES) or (s["type"] == "string" and key not in VALUES):
+    if not settable(s):
         raise Sorry("Slate has no setting with that key that can be changed. settings_search finds a setting by what it's called.")
     new = checked_value(s, value)
     before = value_now(s)

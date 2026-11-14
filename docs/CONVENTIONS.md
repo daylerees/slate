@@ -196,10 +196,13 @@ When a feature is added or changed, make it reachable through Slate's MCP server
 which of these applied:
 
 - **A new setting** (`SettingsData.qml`) is found automatically, but must be given what it
-  takes (`VALUES` for text, `RANGES` for numbers) or put in `REFUSE`, and named in `NAMED` if
-  `settings-index.py` can't link its row. `tests/unit/test_slate_mcp.py` fails until it is.
-  Refuse anything that holds a command or a path, weakens locking, changes what keys do, or
-  says where the person is.
+  takes (`VALUES` for text, `RANGES` for numbers, and `SWITCHES` for an on/off setting: a
+  switch is allowed on purpose too, the server won't change one it hasn't been told about) or
+  put in `REFUSE`, and named in `NAMED` if `settings-index.py` can't link its row.
+  `tests/unit/test_slate_mcp.py` fails until it is. Refuse anything that holds a command or a
+  path, weakens locking (sleep and the screensaver included: they can be when the screen
+  locks), changes what keys or the power button and lid do, turns off update checks, or says
+  where the person is.
 - **Something you can do** (a panel, a mode, an action with IPC): a tool, or an argument to an
   existing one, with its tier (look / change / ask), a `doing()` line in Slate's words, and the
   lists the tools offer kept in step (`PANELS`, `LOOKS`, `MODES`: `test_lists_match_slate`).

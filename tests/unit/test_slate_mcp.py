@@ -1151,7 +1151,8 @@ class SettingsTools(Base):
 
     def test_refuse_list(self):
         """What no assistant may change, whoever asks: its own permissions, anything that
-        holds a command or a folder, locking, keyboard layouts, your location, and lists."""
+        holds a command or a folder, locking, keyboard layouts and keys, sleep, the power
+        button, update checks, your location, and lists."""
         mcp = self.module()
         mcp.SLATE_DIR = slate.path("shell")
         keys = dict((k, t) for t, k in re.findall(r"^\s*property (\w+) (\w+):", slate.read("shell", "SettingsData.qml"), re.M))
@@ -1161,7 +1162,9 @@ class SettingsTools(Base):
         must = own + lists + ["barShowAssistant", "defaultTerminal", "defaultBrowser", "launcherCommands", "logLevel",
                               "clipboardHistory", "wallpaperFolder", "screenshotFolder", "screensaverVideoFolder", "wallpaper",
                               "idleLockMinutes", "lockBeforeSleep", "screensaverLock", "lockScreenPowerMenu",
-                              "kbLayouts", "kbVariants", "locationName", "latitude", "longitude", "titleBarStyle", "keyset"]
+                              "kbLayouts", "kbVariants", "locationName", "latitude", "longitude", "titleBarStyle", "keyset",
+                              "kbSwitch", "capsLock", "idleSuspendMinutes", "screensaverMinutes", "powerKeyAction",
+                              "lidAction", "updateCheck"]
         for key in must:
             with self.subTest(key):
                 self.assertTrue(mcp.refused(key), f"{key} can be changed by an assistant")
@@ -1173,10 +1176,41 @@ class SettingsTools(Base):
         self.assertEqual(self.qs_calls("config", "set"), [])
         self.assertEqual({a["outcome"] for a in self.activity()}, {"refused"})
 
+    def test_keys_sleep_power_and_updates_are_the_persons(self):
+        """What keys do, when the computer sleeps or the screensaver starts (both can be
+        moments the screen locks), what the power button and the lid do, and checking for
+        updates: refused like the lock settings, saying where the person can change each."""
+        mcp = self.module()
+        mcp.SLATE_DIR = slate.path("shell")
+        for key, value, page in (("capsLock", "ctrl", "Input"), ("kbSwitch", "caps", "Input"),
+                                 ("powerKeyAction", "poweroff", "Power"), ("lidAction", "nothing", "Power"),
+                                 ("idleSuspendMinutes", 0, "Security"), ("screensaverMinutes", 0, "Screensaver"),
+                                 ("updateCheck", False, "Updates")):
+            with self.subTest(key):
+                text, err = self.tool("settings_set", {"key": key, "value": value})
+                self.assertTrue(err, text)
+                self.assertEqual(text, "Slate keeps that setting for the person to change themselves (Settings → %s). "
+                                       "settings_show can open it for them." % page)
+                self.assertIn(key, mcp.REFUSE)
+        self.assertEqual(self.qs_calls("config", "set"), [])
+        self.assertEqual(self.asked(), [])
+        self.assertEqual({a["outcome"] for a in self.activity()}, {"refused"})
+
+    def test_a_switch_nobody_allowed_stays_as_it_is(self):
+        """An on/off setting the server hasn't been told about (not in SWITCHES) can't be
+        changed, as a number without a range can't."""
+        mcp = self.module()
+        self.assertTrue(mcp.settable({"key": "glass", "type": "bool"}))
+        self.assertFalse(mcp.settable({"key": "aSwitchFromLater", "type": "bool"}))
+        self.assertFalse(mcp.settable({"key": "aNumberFromLater", "type": "int"}))
+        self.assertFalse(mcp.settable({"key": "someTextFromLater", "type": "string"}))
+        self.assertFalse(mcp.settable(None))
+
     def test_every_setting_is_accounted_for(self):
         """Each setting is refused, or the server knows what it takes: a text setting its
-        values (VALUES), a number its range (RANGES). A new setting that's neither fails
-        here, so it can't be set to anything at all by default."""
+        values (VALUES), a number its range (RANGES), an on/off one that it's allowed
+        (SWITCHES). A new setting that's none of these fails here, so it can't be set to
+        anything at all by default."""
         mcp = self.module()
         mcp.SLATE_DIR = slate.path("shell")
         table = mcp.settings()
@@ -1197,9 +1231,17 @@ class SettingsTools(Base):
                     self.assertTrue(low <= d <= high or d <= 0, f"{key}'s own default ({d}) is outside its range")
                 else:
                     self.assertEqual(t, "bool")
-        for key in list(mcp.VALUES) + list(mcp.RANGES) + [k for k in mcp.REFUSE if not mcp.own(k)]:
+                    self.assertIn(key, mcp.SWITCHES, f"{key}: add the key to SWITCHES (an assistant may turn it on and off), or to REFUSE, in slate-mcp.py")
+        types = dict((k, t) for t, k in re.findall(r"^\s*property (\w+) (\w+):", slate.read("shell", "SettingsData.qml"), re.M))
+        for key in list(mcp.VALUES) + list(mcp.RANGES) + list(mcp.SWITCHES) + [k for k in mcp.REFUSE if not mcp.own(k)]:
             with self.subTest("listed " + key):
                 self.assertIn(key, table, f"{key} is listed in slate-mcp.py but isn't a setting any more")
+        # One place each: what's refused is in none of the lists of what a setting takes
+        for name, kind in (("VALUES", ("string",)), ("RANGES", ("int", "real")), ("SWITCHES", ("bool",))):
+            for key in getattr(mcp, name):
+                with self.subTest(name + " " + key):
+                    self.assertNotIn(key, mcp.REFUSE, f"{key} is refused, so it doesn't belong in {name}")
+                    self.assertIn(types.get(key), kind, f"{key} isn't the kind of setting {name} is for")
 
     def test_lists_match_slate(self):
         """The looks, panels and window modes the tools offer are the ones Slate has."""

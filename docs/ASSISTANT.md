@@ -245,7 +245,9 @@ updates anything.
   mode, questions are declined without interrupting you.
 - **Settings it can't touch.** Its own permissions; anything that holds a command or
   reaches outside Slate (default apps, startup apps, launcher commands, clipboard history,
-  log detail); folders; the lock settings; keyboard layouts and the shortcut set; your
+  log detail); folders; the lock settings; keyboard layouts, the shortcut set and what the
+  Caps Lock and layout-switching keys do; when the computer sleeps and the screensaver
+  starts, and what the power button and closing the lid do; checking for updates; your
   location; title bar style and the main display. Slate says where you can change each
   yourself. Everything else is checked against what that setting takes.
 - **Only from the lists.** A window by the address of one that's open, an app by an
@@ -348,9 +350,10 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
 - **Settings are found, not listed by hand.** Keys, types, defaults and notes are read from
   `SettingsData.qml`; names, pages and descriptions from `SettingsWindow.qml`
   (`scripts/settings-index.py`, which says which setting each row changes); search words from
-  `SettingsIndex.qml`. What each text setting takes (`VALUES`) and each number's range
-  (`RANGES`) are kept in the server, and a test fails when a new setting is in neither and
-  isn't refused, so nothing can be set unchecked.
+  `SettingsIndex.qml`. What each text setting takes (`VALUES`), each number's range
+  (`RANGES`) and the on/off settings an assistant may switch (`SWITCHES`) are kept in the
+  server, and a test fails when a new setting is in none of them and isn't refused, so
+  nothing can be set unchecked or by being overlooked.
 - **What agents are told about Slate** (the server's instructions) is
   `shell/data/assistant-prompt.md`.
 - **The runner** (`shell/scripts/assistant.py`, for the prompt window that's coming) hands
