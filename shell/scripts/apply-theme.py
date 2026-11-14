@@ -13,6 +13,10 @@ Usage:  apply-theme.py '<json>'
         apply-theme.py --stale '<json>'   the switched-on apps whose theming an update of the
                                   app has undone (Spotify, Discord), one id a line. Quick, and
                                   changes nothing: applying again is what puts it back
+        apply-theme.py --undo-own [settings.json]   put back the pointer and the code font in other apps, whether
+                                  they were recorded or an older Slate set them: for a factory
+                                  reset and uninstalling, so neither leaves them behind or has
+                                  them adopted back on. Prints "switched off <id>" for each
 
 A theme put back that way is reported as "restored <id> <name>" (or "lost <id> <name>" where
 it couldn't be) on a line of its own, for Slate to tell you. "lost" is said once for each
@@ -167,10 +171,38 @@ def in_apps(ctx, id, wanted, before, apply):
     ctx.adopting = False
 
 
+def undo_own(settings=None):
+    """Put back the pointer and the code font in other apps, for a factory reset and for
+    uninstalling. What's recorded is undone as it is when the switch goes off. What an older
+    Slate set unasked (nothing recorded) is recorded first, exactly as adopting it would, and
+    then undone: otherwise the next start would find it and adopt it back on."""
+    ctx = Ctx(None, not os.environ.get("SLATE_THEME_TEST"))
+    set_theme, font = os.environ.get("XCURSOR_THEME", ""), ""
+    try:                      # (the pointer and font in Settings are the better answer, where set)
+        with open(settings or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                           "settings.json"), encoding="utf-8") as f:
+            saved = json.load(f)
+        set_theme, font = str(saved.get("cursorTheme") or set_theme), str(saved.get("codeFont") or "")
+    except (OSError, ValueError, AttributeError):
+        pass
+    ptr = pointer(0, set_theme)
+    for id, apply in (("pointer", lambda: cursor_theme(ctx, *ptr)),
+                      ("code-font", lambda: code_font(ctx, font))):
+        if id == "pointer" and not ptr and id not in ctx.manifest:
+            continue
+        if id not in ctx.manifest and was_set_before(ctx, id, ptr[0] if ptr else ""):
+            in_apps(ctx, id, True, True, apply)          # (records what's there)
+        in_apps(ctx, id, False, False, apply)            # (undoes it)
+    ctx.save()
+
+
 # ---- Main ------------------------------------------------------------------------------------
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--apps":
         print(json.dumps(slate_apps.detect()))
+        return
+    if len(sys.argv) in (2, 3) and sys.argv[1] == "--undo-own":
+        undo_own(sys.argv[2] if len(sys.argv) == 3 else None)
         return
     if len(sys.argv) == 3 and sys.argv[1] == "--stale":
         on = set(json.loads(sys.argv[2]).get("on") or [])

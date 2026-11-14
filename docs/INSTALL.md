@@ -397,7 +397,8 @@ and offers to update it (it asks for your password).
 
 This takes "Slate" off the login screen, puts back your previous login screen if you used
 `--login-screen`, and moves `~/.config/slate` aside (to
-`slate.removed-<date>`). It asks whether to remove Slate's root helpers
+`slate.removed-<date>`), after putting back the pointer and code font Slate had set in other
+apps. It asks whether to remove Slate's root helpers
 (`/usr/local/libexec/slate`, and the rule that let Private Mode switch the camera without a
 password), and whether to delete the older copy in `~/.config/slate.previous` too.
 
@@ -437,7 +438,8 @@ It finishes with a list of what it left, and the command that removes each:
 - **Starting over** — Settings → Debug → **Factory reset** (or
   `~/.config/slate/bin/slate-factory-reset`) puts every setting back to its default and forgets
   dock pins, saved Spaces, launcher and clipboard history, notifications, the display layout and
-  app theming. It asks twice first. Your own `hypr/*.lua` and `user/` files are kept unless you
+  app theming (the pointer and code font in other apps are put back first, so they don't come
+  back on by themselves). It asks twice first. Your own `hypr/*.lua` and `user/` files are kept unless you
   switch on **Also clear my own files** (or pass `--user-files`), which swaps them for the blank
   ones Slate starts with. Everything is moved to
   `~/.local/share/slate/backups/factory-reset-<date>`, not deleted.

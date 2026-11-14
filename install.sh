@@ -117,6 +117,11 @@ if [ "$UNINSTALL" -eq 1 ]; then
     data="${XDG_DATA_HOME:-$HOME/.local/share}"
     rm -f "$data/applications/slate-settings.desktop" "$data"/icons/hicolor/*/apps/slate-settings.png
     [ -L "$data/icons/Slate-Cursors" ] && rm "$data/icons/Slate-Cursors" && ok "Removed Slate Cursors"
+    # The pointer and the code font in other apps: put back as they were, so they aren't left
+    # pointing at things Slate was providing
+    if [ -f "$DEST/scripts/apply-theme.py" ]; then
+        python3 "$DEST/scripts/apply-theme.py" --undo-own 2>/dev/null | grep -q "^switched off" && ok "Pointer and code font in your apps put back" || true
+    fi
     # Folder colour: back to the icon theme it was made from (removes Slate-Icons)
     [ -x "$DEST/scripts/folder-colour.py" ] && "$DEST/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
     b=""

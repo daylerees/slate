@@ -22,6 +22,11 @@ mkdir -p "$backup/state" || exit 1
 "$SLATE_DIR/bin/slate" stop
 sleep 0.3
 
+# The pointer and the code font in other apps are put back first, as switching them off would:
+# otherwise their record is moved away below, and the next start finds what Slate wrote and
+# adopts it back on. (Needs settings.json and the undo log, so before they're moved.)
+python3 "$SLATE_DIR/scripts/apply-theme.py" --undo-own >/dev/null 2>&1
+
 [ -e "$SLATE_DIR/settings.json" ] && mv "$SLATE_DIR/settings.json" "$backup/"
 [ -e "$share/spaces.json" ] && mv "$share/spaces.json" "$backup/"
 [ -d "$state" ] && find "$state" -mindepth 1 -maxdepth 1 -exec mv -t "$backup/state/" {} +

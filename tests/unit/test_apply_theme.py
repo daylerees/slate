@@ -921,6 +921,43 @@ class InYourApps(Case):
             os.chmod(self.h(".icons/default/index.theme"), 0o444)
             self.assertNotIn("adopt", self.old(False))
 
+    # ---- a factory reset and uninstalling ----
+    def undo_own(self, settings=None):
+        code, out = run([sys.executable, SCRIPT, "--undo-own"] + ([settings] if settings else []), env=self.env)
+        self.assertEqual(code, 0, out)
+        return out
+
+    def test_undo_own_puts_back_what_was_recorded(self):
+        """Factory reset and uninstalling undo both, as switching them off would."""
+        self.put(YOUR_POINTER)
+        before = self.files()
+        self.both(True)
+        out = self.undo_own()
+        self.assertIn("switched off pointer", out)
+        self.assertIn("switched off code-font", out)
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.manifest(), {})
+        self.assertNotIn("adopt", self.old(False))
+
+    def test_undo_own_takes_an_older_installs_too(self):
+        """Without it a reset leaves what an older Slate set, and the next start adopts it
+        back on: it's undone (and the next start has nothing to adopt)."""
+        self.before_the_choice()
+        self.put({"settings.json": json.dumps({"codeFont": "Geist Mono"})})
+        out = self.undo_own(self.h("settings.json"))
+        self.assertIn("switched off pointer", out)
+        self.assertIn("switched off code-font", out)
+        self.assertFalse(os.path.exists(self.h(".icons/default/index.theme")))
+        self.assertFalse(os.path.exists(self.h(FONTCONF)))
+        self.assertEqual(self.text(".config/qt6ct/qt6ct.conf"), "[Fonts]\nfixed=\"Mono,10\"\n")
+        self.assertNotIn("adopt", self.old(False))
+
+    def test_undo_own_with_nothing_to_undo(self):
+        before = self.files()
+        self.assertEqual(self.undo_own().strip(), "")
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.sets(), [])
+
     @unittest.skipIf(os.geteuid() == 0, "root can write anything")
     def test_read_only_settings_left_alone(self):
         """A settings.ini that's read-only (Home Manager's) is left as it is, said once, and
