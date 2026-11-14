@@ -179,9 +179,11 @@ class TitleBars(TitleBarChecks, LiveCase):
         w = self.floating_foot()
         self.bar_on(w)
         before = looks()
-        self.s.settle(1.5)
-        # (every 150 ms: ten in that time; half that still says it's following the window)
-        self.assertGreaterEqual(looks() - before, 5, "not following the floating window")
+        # (every 150 ms: ten in a second and a half; half that still says it's following the
+        # window. Waited for rather than counted in a set time: each look starts a hyprctl, which
+        # under a busy run (every part's Hyprland at once) can be slow enough that a set 1.5 s held
+        # fewer than five. Five within four seconds is still a look every 800 ms or better)
+        self.wait(lambda st: st["titleBarLooks"] - before >= 5, "Slate to follow the floating window", timeout=4)
         # A tiled window is nothing to follow either (the bar goes, and so does the looking)
         self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.float({{ action = "disable", window = "address:{w["address"]}" }})) end')
         self.wait(lambda st: st["titleBar"] == "", "the bar to go with the window tiled")
