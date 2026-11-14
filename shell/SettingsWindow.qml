@@ -1435,7 +1435,7 @@ FloatingWindow {
         property bool checked: false
         signal toggled(bool value)
         width: 42; height: 24; radius: Config.corner(12)
-        color: checked ? win.accent : "transparent"
+        color: checked ? Config.accentFor(tgHover.hovered) : "transparent"
         HoverFill { base: win.control; hovered: tgHover.hovered; gone: toggleSwitch.checked; radius: toggleSwitch.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         // Hover: a soft accent ring around the switch
@@ -1580,7 +1580,7 @@ FloatingWindow {
         property bool compactLabel: false   // with an icon: show just the icon (narrow window)
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-        color: primary ? win.accent : "transparent"
+        color: primary ? Config.accentFor(btnHover.hovered) : "transparent"
         HoverFill { base: win.control; hover: parent.destructive ? Config.hoverDanger : Config.hover; hovered: btnHover.hovered; gone: parent.primary; radius: parent.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text

@@ -17,7 +17,7 @@ Rectangle {
     readonly property bool lit: phase === "listening" || phase === "starting"
     readonly property bool moving: visible && Config.animate && !Config.gameMode
     width: 30; height: 30; radius: Config.corner(15)
-    color: lit ? accent : "transparent"
+    color: lit ? Config.accentFor(micHover.hovered) : "transparent"
     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
     HoverFill { base: "transparent"; hovered: micHover.hovered; gone: mic.lit; radius: parent.radius }
 

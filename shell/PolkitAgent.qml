@@ -320,7 +320,7 @@ PanelWindow {
         signal clicked()
         height: 40
         radius: Config.corner(10)
-        readonly property color base: primary ? root.accent : root.fieldColor
+        readonly property color base: primary ? Config.accentFor(hh.hovered) : root.fieldColor
         color: primary ? base : "transparent"
         HoverFill { base: btn.base; hovered: hh.hovered; gone: btn.primary; radius: btn.radius }
         opacity: dimmed ? 0.55 : 1

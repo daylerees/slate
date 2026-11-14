@@ -259,6 +259,41 @@ class Settings(Case):
                 with self.subTest(f"bin/slate:{n}"):
                     self.assertIn("QT_SCALE_FACTOR", line, "a Slate window is started without the Interface size")
 
+    def test_accent_fills_on_pressable_controls_light_under_the_pointer(self):
+        """The lit accent (CONVENTIONS, "The lit accent"): a switch that's on, a primary button,
+        anything filled with the active colour that a click acts on, goes lighter under the
+        pointer through Config.accentFor(hovered). A fill like `color: checked ? win.accent : ...`
+        (the condition is checked, primary, on or lit) that skips it is flagged. What's chosen
+        and stays chosen when clicked, and the knobs and glyphs drawn on a switch, are listed."""
+        chosen_or_decoration = {
+            ("AvatarPicker.qml", "color: on ? pk.accent"),                 # the chosen picture
+            ("HotCornerPicker.qml", "color: corner.on ? Qt.rgba"),         # the chosen corner
+            ("HotCornerPicker.qml", "color: corner.on ? hp.accent"),       # its glyph
+            ("Launcher.qml", "color: toggleSwitch.on ? (row.onAccent"),    # the switch's knob
+            ("NovaMic.qml", "color: mic.lit ? mic.accentText"),            # its glyph
+            ("Popouts.qml", "color: wsCard.on ? pop.accent"),              # a number badge
+            ("SettingsWindow.qml", "color: on ? win.accent"),              # chosen options, segments
+            ("Welcome.qml", "color: on ? w.accent"),                       # the chosen theme option
+        }
+        line_re = re.compile(r"^\s*color:\s*([\w.!]+)\s*\?(.*)$")
+        shell = os.path.join(slate.ROOT, "shell")
+        for name in sorted(os.listdir(shell)):
+            if not name.endswith(".qml"):
+                continue
+            for n, line in enumerate(slate.read("shell", name).splitlines(), 1):
+                m = line_re.match(line)
+                if not m or m.group(1).split(".")[-1] not in ("checked", "primary", "on", "lit"):
+                    continue
+                if not re.search(r"\b\w+\.accent\b(?!Text|Lit|Shade)", m.group(2)):
+                    continue
+                if "accentFor" in line or "accentLit" in line:
+                    continue
+                if any(name == f and line.strip().startswith(start) for f, start in chosen_or_decoration):
+                    continue
+                with self.subTest(f"{name}:{n}"):
+                    self.fail(f"{name}:{n} fills with the plain accent on something a click acts on: "
+                              f"use Config.accentFor(<hover>.hovered) ({line.strip()})")
+
     def test_title_bar_converts_once_at_the_edge(self):
         """TitleBar.qml draws on a window Hyprland places, and places it from the pointer: it
         mentioned Config.uiScale (so the test above passed) while using Hyprland's pixels as

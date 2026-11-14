@@ -410,11 +410,12 @@ PanelWindow {
                                 color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: 12
                             }
                         }
+                        HoverHandler { id: appsHover }
                         Rectangle {
                             id: appsSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 42; height: 24; radius: Config.corner(12)
-                            color: appsRow.on ? w.accent : w.line
+                            color: appsRow.on ? Config.accentFor(appsHover.hovered) : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
                                 width: 18; height: 18; radius: Config.corner(9)
@@ -567,11 +568,12 @@ PanelWindow {
                                 color: w.dim; font.family: w.font; font.pixelSize: 12
                             }
                         }
+                        HoverHandler { id: inAppsHover }
                         Rectangle {
                             id: inAppsSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 42; height: 24; radius: Config.corner(12)
-                            color: w.inApps ? w.accent : w.line
+                            color: w.inApps ? Config.accentFor(inAppsHover.hovered) : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
                                 width: 18; height: 18; radius: Config.corner(9)
@@ -647,11 +649,12 @@ PanelWindow {
                             Text { text: "Hide the dock when windows are open"; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
                             Text { width: parent.width; elide: Text.ElideRight; text: "Gives your windows more room. Push the pointer to its edge whenever you want it back"; color: w.dim; font.family: w.font; font.pixelSize: 12 }
                         }
+                        HoverHandler { id: hideHover }
                         Rectangle {
                             id: hideSwitch
                             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                             width: 42; height: 24; radius: Config.corner(12)
-                            color: hideRow.on ? w.accent : w.line
+                            color: hideRow.on ? Config.accentFor(hideHover.hovered) : w.line
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                             Rectangle {
                                 width: 18; height: 18; radius: Config.corner(9)
@@ -947,7 +950,8 @@ PanelWindow {
                 }
                 Rectangle {
                     width: nextText.implicitWidth + 36; height: 38; radius: Config.corner(10)
-                    color: w.accent
+                    color: Config.accentFor(nextHover.hovered)
+                    HoverHandler { id: nextHover }
                     Text {
                         id: nextText
                         anchors.centerIn: parent

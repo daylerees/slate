@@ -61,10 +61,13 @@ Singleton {
     // things with no background of their own; hoverOn(base) is it for things with a fill
     readonly property real hoverStrength: 0.22
     readonly property color hover: Qt.rgba(accent.r, accent.g, accent.b, hoverStrength)
-    // The active colour under the pointer, a little lighter: only on things that are on and that
-    // a click turns off again (the control centre's tiles, a connected Bluetooth device), to
-    // say so. A choice that stays chosen when clicked doesn't change
+    // The active colour under the pointer, a little lighter: on anything filled with it that a
+    // click acts on (a switch that's on, a primary button, a quick tile, a connected device), to
+    // say the click will do something. A choice that stays chosen when clicked doesn't change
     readonly property color accentLit: Qt.tint(accent, Qt.rgba(1, 1, 1, 0.22))
+    // The one way to fill something with the active colour that a click acts on (a switch that's
+    // on, a primary button): the plain accent, or the lit one under the pointer
+    function accentFor(hovered) { return hovered ? accentLit : accent }
     // ---- Rounded corners (Settings → Appearance → Rounded UI elements) -------------------
     // Every rounded corner Slate draws is given as corner(its radius): the radius, or 0 with
     // the setting off, when everything is a hard square (containers, panels, buttons, switches,

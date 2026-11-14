@@ -329,7 +329,7 @@ PanelWindow {
                         id: reopenSwitch
                         anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                         width: 42; height: 24; radius: Config.corner(12)
-                        color: reopen.on ? root.accent : Config.tint("#2a313c")
+                        color: reopen.on ? Config.accentFor(reopenHover.hovered) : Config.tint("#2a313c")
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         Rectangle {
                             width: 18; height: 18; radius: Config.corner(9)
@@ -372,7 +372,7 @@ PanelWindow {
         signal clicked()
         height: 40
         radius: Config.corner(10)
-        readonly property color base: primary ? (root.info.danger ? root.danger : root.accent) : root.buttonColor
+        readonly property color base: primary ? (root.info.danger ? root.danger : Config.accentFor(hh.hovered)) : root.buttonColor
         color: primary ? base : "transparent"
         HoverFill { base: btn.base; hovered: hh.hovered; gone: btn.primary; radius: btn.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }

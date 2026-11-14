@@ -141,7 +141,7 @@ PanelWindow {
         property bool destructive: false
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-        color: primary ? root.accent
+        color: primary ? Config.accentFor(btnHover.hovered)
             : btnHover.hovered ? (destructive ? Config.hoverDanger : root.controlLit) : root.control
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
@@ -184,7 +184,7 @@ PanelWindow {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 42; height: 24; radius: Config.corner(12)
-            color: sw.checked ? root.accent
+            color: sw.checked ? Config.accentFor(swHover.hovered)
                 : (swHover.hovered ? root.controlLit : root.control)
             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
             // Hover: a soft accent ring around the switch

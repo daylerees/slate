@@ -1239,6 +1239,7 @@ PanelWindow {
                 // A quick toggle: a switch at the end of its row showing whether it's on (the list only)
                 Rectangle {
                     id: toggleSwitch
+                    HoverHandler { id: switchHover }
                     visible: row.kind === "toggle" && !root.gridMode
                     readonly property bool on: !!row.modelData.toggleOn
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
@@ -1247,7 +1248,7 @@ PanelWindow {
                     // highlight's dark text colour instead. Off, it's an outline with a solid knob,
                     // so it reads on the bright highlight as well as on the panel
                     readonly property color ink: row.onAccent ? root.accentText : root.textColor
-                    color: on ? (row.onAccent ? root.accentText : root.accent)
+                    color: on ? (row.onAccent ? root.accentText : Config.accentFor(switchHover.hovered))
                         : Qt.rgba(ink.r, ink.g, ink.b, row.onAccent ? 0.08 : 0.1)
                     border.width: on ? 0 : 1.5
                     border.color: Qt.rgba(ink.r, ink.g, ink.b, row.onAccent ? 0.75 : 0.4)

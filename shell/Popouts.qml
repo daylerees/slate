@@ -707,7 +707,8 @@ PanelWindow {
         property bool checked: false
         signal toggled()
         width: 40; height: 22; radius: Config.corner(11)
-        color: checked ? pop.accent : pop.card
+        color: checked ? Config.accentFor(onOffHover.hovered) : pop.card
+        HoverHandler { id: onOffHover }
         Rectangle {
             width: 16; height: 16; radius: Config.corner(8)
             anchors.verticalCenter: parent.verticalCenter

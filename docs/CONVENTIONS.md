@@ -23,7 +23,7 @@ Rules:
   laid over a card's own colour.
 - **The lit accent.** Anything filled with the active colour that a click acts on goes a
   little lighter under the pointer, to show the click will do something: `Config.accentLit`,
-  the same everywhere, with the usual `Behavior on color` fade. That covers a switch that's
+  the same everywhere (in code `Config.accentFor(hovered)`; a static test checks it), with the usual `Behavior on color` fade. That covers a switch that's
   on, a quick tile that's on, a connected device (`RowButton.toggles` in `Popouts.qml`), and a
   primary button filled with the accent (Spaces' Save). A choice that's already chosen and that
   a click wouldn't change (the selected row, tab or page) keeps the plain active colour.
