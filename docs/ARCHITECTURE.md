@@ -23,7 +23,8 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ NightLight.qml       warm screen via Hyprland's screen shader
 ├─ Radios.qml          Wi-Fi and Bluetooth through IPC (`wifi`, `bluetooth`), for the assistant's tools
 ├─ Notifications.qml    notification server + toasts ("slate-notifications")
-│  └─ NotificationCard.qml
+│  ├─ NotificationCard.qml
+│  └─ NotificationText.js       what a notification's message may use: bold, italic, underline, web and mail links
 ├─ Launcher.qml         app launcher + calculator ("slate-launcher")
 ├─ Switcher.qml         Super+Tab window switcher ("slate-switcher")
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")

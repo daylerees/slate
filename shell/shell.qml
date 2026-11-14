@@ -25,6 +25,7 @@ import Quickshell.Wayland
 import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
 import Quickshell.Services.Mpris
+import "NotificationText.js" as NotificationText
 
 ShellRoot {
     id: root
@@ -244,6 +245,10 @@ ShellRoot {
         // What the label off the bar would call a tray icon with this id, title and tooltip title
         // (Config.trayName: the tidying of a raw id)
         function trayName(id: string, title: string, tooltip: string): string { return Config.trayName({ id: id, title: title, tooltipTitle: tooltip }); }
+        // What a notification's card makes of a message before drawing it, and whether it would
+        // open a link in one (NotificationText.js)
+        function safeBody(body: string): string { return NotificationText.safeBody(body); }
+        function opensLink(link: string): bool { return NotificationText.openable(link); }
         // The pointer on the bar menu's item `index` (its row's top at y), as hovering it does
         function menuPoint(index: int, y: real): void { topBar.menu.want(index, y); }
         function menuKey(key: string): void {
@@ -461,7 +466,7 @@ ShellRoot {
                 welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
-                                 latest: notifs.history.length > 0 ? notifs.history[0].summary : "" },
+                                 latest: notifs.history.length > 0 ? notifs.history[0].summary : "", toast: notifs.toastLook() },
                 dock: {
                     pinned: win.pinned, screen: win.screen ? win.screen.name : "",
                     dragging: win.dragKey, dropIndex: win.dropIndex, dragAway: win.dragAway, gapAt: win.gapAt,
@@ -520,7 +525,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
+                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
@@ -2068,6 +2073,7 @@ ShellRoot {
                             Text {
                                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
                                 horizontalAlignment: Text.AlignHCenter
+                                textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                                 text: liveCard.modelData.title || ""
                                 elide: Text.ElideRight
                                 color: liveCard.modelData.activated ? win.activeDotColor : win.textColor
@@ -2135,6 +2141,7 @@ ShellRoot {
                             }
                             Text {
                                 anchors { left: titleIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                                 text: titleCard.modelData.title || ""
                                 elide: Text.ElideRight
                                 color: titleCard.modelData.activated ? win.activeDotColor : win.textColor
@@ -2395,6 +2402,7 @@ ShellRoot {
                                     id: moreName
                                     anchors { top: moreIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
                                     horizontalAlignment: Text.AlignHCenter
+                                    textFormat: Text.PlainText        // never markup: an app's name
                                     text: moreApp.modelData.entry?.name ?? moreApp.modelData.key
                                     elide: Text.ElideRight
                                     color: win.textColor
@@ -2541,6 +2549,7 @@ ShellRoot {
                                 Text {
                                     anchors { top: dlIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
                                     horizontalAlignment: Text.AlignHCenter
+                                    textFormat: Text.PlainText        // never markup: a file's name
                                     text: dl.modelData.name
                                     elide: Text.ElideMiddle
                                     color: win.textColor
@@ -3516,6 +3525,7 @@ ShellRoot {
                     Text {
                         id: labelText
                         anchors.centerIn: parent
+                        textFormat: Text.PlainText        // never markup: an app's name, a window's or a track's title
                         text: label.text.charAt(0).toUpperCase() + label.text.slice(1)   // kitty -> Kitty
                         color: win.textColor
                         font.family: win.fontFamily

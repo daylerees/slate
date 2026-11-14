@@ -205,6 +205,7 @@ PanelWindow {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - x - 26
                                 // Strip the underscore mnemonics some apps put in (e.g. "_Quit")
+                                textFormat: Text.PlainText        // never markup: the app's own menu
                                 text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
                                 color: tm.textColor
                                 opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4

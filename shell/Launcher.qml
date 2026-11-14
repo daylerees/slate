@@ -1243,6 +1243,7 @@ PanelWindow {
                     Text {
                         width: parent.width
                         // (apps' names capitalised; a command, file or window's title as it is)
+                        textFormat: Text.PlainText        // never markup: an app's or a file's name
                         text: row.calc ? "= " + row.modelData.name : row.kind === "" ? root.capitalised(row.modelData.name) : row.modelData.name
                         color: row.onAccent ? root.accentText : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
@@ -1254,6 +1255,7 @@ PanelWindow {
                     Text {
                         width: parent.width
                         visible: row.calc || row.setting || row.action || row.kind !== "" || (Config.s.launcherDescriptions && row.detail !== "" && row.detail !== row.modelData.name)
+                        textFormat: Text.PlainText        // never markup: an app's own description, a file's folder
                         text: row.calc ? row.detail : root.capitalised(row.detail)
                         color: row.onAccent ? Qt.rgba(root.accentText.r, root.accentText.g, root.accentText.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
@@ -1298,6 +1300,7 @@ PanelWindow {
                 Text {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText        // never markup: an app's or a file's name
                     text: !nameStrip.item ? "" : nameStrip.item.calc ? "= " + nameStrip.item.name
                         : !nameStrip.item.kind ? root.capitalised(nameStrip.item.name) : nameStrip.item.name
                     color: root.textColor
@@ -1308,6 +1311,7 @@ PanelWindow {
                     width: parent.width
                     visible: nameStrip.detail !== "" && Config.s.launcherDescriptions
                     horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText        // never markup: an app's own description, a file's folder
                     text: nameStrip.item && nameStrip.item.calc ? nameStrip.detail : root.capitalised(nameStrip.detail)
                     color: root.dimTextColor
                     font.family: root.fontFamily; font.pixelSize: 12

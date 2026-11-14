@@ -347,12 +347,15 @@ PanelWindow {
         working = false;
         answeredAt = Date.now();
         patch({ doneAt: answeredAt });
-        // Finished out of sight: an ordinary notification, which opens the window again
+        // Finished out of sight: an ordinary notification, which opens the window again. Its
+        // words are the agent's, and a notification's message may carry markup, so they go
+        // escaped (shown as written, never read as tags); and after "--", so a line that
+        // starts with a dash isn't taken for one of notify-send's options
         if (!shown && !Config.testMode) {
             const line = error ? error.message.split("\n")[0].slice(0, 160) : firstLine(cur);
             if (line !== "") {
                 doneNote.command = ["notify-send", "-a", "Slate", "-i", Quickshell.shellPath("assets/icon/icon-64.png"),
-                                    "-h", "string:x-slate-page:assistant", "-A", "default=Open", "Nova", line];
+                                    "-h", "string:x-slate-page:assistant", "-A", "default=Open", "--", "Nova", esc(line)];
                 doneNote.running = true;
             }
         }
@@ -1076,6 +1079,7 @@ PanelWindow {
                     anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
                     width: parent.width - 8 - footerButtons.width - 8
                     elide: Text.ElideRight
+                    textFormat: Text.PlainText        // never markup
                     text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
                         + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send" + (root.micShown ? "  ·  Hold Super+K to talk" : ""))
                     color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium

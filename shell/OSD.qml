@@ -255,6 +255,7 @@ PanelWindow {
             anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
             width: 52
             horizontalAlignment: Text.AlignRight
+            textFormat: Text.PlainText        // never markup
             text: osd.label || Math.round(osd.value * 100) + "%"
             color: osd.dimmed ? osd.bar.errorColor : osd.bar.textColor
             font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
@@ -276,6 +277,7 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(implicitWidth, 420)
                 elide: Text.ElideRight
+                textFormat: Text.PlainText        // never markup
                 text: osd.label
                 color: osd.dimmed ? osd.bar.dimTextColor : osd.bar.textColor
                 font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
@@ -343,6 +345,7 @@ PanelWindow {
         Text {
             id: wsName
             anchors.centerIn: parent
+            textFormat: Text.PlainText        // never markup: a workspace's name
             text: ws.name
             color: osd.bar.textColor
             font.family: osd.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium

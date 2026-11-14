@@ -926,12 +926,14 @@ FloatingWindow {
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
                 spacing: 8
                 Text {
+                    textFormat: Text.PlainText        // never markup: some questions carry names other programs chose
                     text: confirmLayer.q ? confirmLayer.q.title : "Restore " + win.pageTitle + " defaults?"
                     color: win.text; font.family: win.font; font.pixelSize: 16; font.weight: Font.Medium
                     width: parent.width; elide: Text.ElideRight
                 }
                 Text {
                     width: parent.width
+                    textFormat: Text.PlainText        // never markup
                     text: confirmLayer.q ? confirmLayer.q.body
                         : win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
                           + " back to how Slate starts out. Your other pages are left just as they are."
@@ -1128,6 +1130,7 @@ FloatingWindow {
                     Text {
                         readonly property Item lead: rowFolder.visible ? rowFolder : rowIcon.visible ? rowIcon : null
                         anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        textFormat: Text.PlainText        // never markup: an option can be a device's, an app's or a file's name
                         text: parent.modelData.label
                         color: parent.picked ? win.accentText : parent.current ? win.accent : win.text
                         // (an option can name a typeface to be written in: the font settings' do)
@@ -1318,12 +1321,13 @@ FloatingWindow {
                 id: labelText
                 // (room left after the name for the changed-from-default dot)
                 width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 20 : 0))
+                textFormat: Text.PlainText        // never markup: a row can be named after an app, a device or a download
                 text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
                 opacity: settingRow.waitOpacity
                 Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             }
             Text {
-                width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+                width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; textFormat: Text.PlainText; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
                 opacity: settingRow.waitOpacity
                 Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             }
@@ -1815,6 +1819,7 @@ FloatingWindow {
                 readonly property Item lead: ddFolder.visible ? ddFolder : ddIcon.visible ? ddIcon : null
                 anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 8 : 12; verticalCenter: parent.verticalCenter }
                 width: Math.min(implicitWidth, ddButton.width - x - 32)
+                textFormat: Text.PlainText        // never markup: an option can be a device's, an app's or a file's name
                 text: dropdown.current ? dropdown.current.label : dropdown.noneLabel !== "" ? dropdown.noneLabel : String(dropdown.value)
                 color: win.text; font.family: (dropdown.current && dropdown.current.font) || win.font; font.pixelSize: 12; font.weight: Font.Medium
                 elide: Text.ElideMiddle      // device names differ at the end: keep it in view
@@ -1909,8 +1914,8 @@ FloatingWindow {
                         color: pickHover.hovered ? Config.hover : "transparent"
                         Column {
                             anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                            Text { width: parent.width; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
-                            Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
+                            Text { width: parent.width; textFormat: Text.PlainText; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
+                            Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; textFormat: Text.PlainText; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
                         }
                         HoverHandler { id: pickHover }
                         ClickTap { onTapped: { searchPicker.picked(parent.modelData.value); searchPicker.open = false; } }
@@ -2197,7 +2202,7 @@ FloatingWindow {
                     Column {
                         anchors { left: acctPic.right; leftMargin: 14; right: acctButtons.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
                         spacing: 2
-                        Text { width: parent.width; text: generalCol.fullName; color: win.text; font.family: win.font; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
+                        Text { width: parent.width; textFormat: Text.PlainText; text: generalCol.fullName; color: win.text; font.family: win.font; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
                         Text {
                             width: Math.min(parent.width, win.detailMeasure)
                             text: Config.avatarBusy ? "Changing your picture…"
@@ -2320,6 +2325,7 @@ FloatingWindow {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: parent.width - (parent.showsPlace ? 20 : 0)
+                                    textFormat: Text.PlainText        // never markup: a place's name, from the weather service
                                     text: parent.showsPlace ? Config.s.locationName
                                         : Config.s.locationName !== "" ? "Search for a new place" : "Search for your town or city"
                                     color: parent.showsPlace ? win.text : win.dim
@@ -2369,6 +2375,7 @@ FloatingWindow {
                                                 spacing: 1
                                                 Text {
                                                     width: parent.width
+                                                    textFormat: Text.PlainText        // never markup: a place's name, from the weather service
                                                     text: placeRow.modelData.name
                                                     color: placeRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                                     elide: Text.ElideRight
@@ -2376,6 +2383,7 @@ FloatingWindow {
                                                 Text {
                                                     width: parent.width
                                                     visible: text !== ""
+                                                    textFormat: Text.PlainText        // never markup
                                                     text: [placeRow.modelData.admin1, placeRow.modelData.country].filter(x => x).join(", ")
                                                     color: placeRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
                                                     elide: Text.ElideRight
@@ -3163,6 +3171,7 @@ FloatingWindow {
                                 spacing: 1
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
+                                    textFormat: Text.PlainText        // never markup: the display's own name
                                     text: tile.modelData.name
                                     color: tile.chosen ? win.accentText : win.text
                                     font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
@@ -3199,7 +3208,7 @@ FloatingWindow {
             }
 
             // ---- The chosen monitor -----------------------------------------------------
-            GroupLabel { visible: !!displaysPane.mon; text: displaysPane.mon ? disp.displayName(displaysPane.mon) + " (" + displaysPane.mon.name + ")" : "" }
+            GroupLabel { visible: !!displaysPane.mon; textFormat: Text.PlainText; text: displaysPane.mon ? disp.displayName(displaysPane.mon) + " (" + displaysPane.mon.name + ")" : "" }
             Group {
                 visible: !!displaysPane.mon
                 SettingRow {
@@ -3880,7 +3889,7 @@ FloatingWindow {
                     required property var modelData
                     width: parent ? parent.width : 0
                     spacing: 4
-                    GroupLabel { text: keyGroup.modelData.name }
+                    GroupLabel { textFormat: Text.PlainText; text: keyGroup.modelData.name }
                     Group {
                         Repeater {
                             model: keyGroup.modelData.rows
@@ -5198,6 +5207,7 @@ FloatingWindow {
         }
         Text {
             anchors { top: thumbFrame.bottom; topMargin: 6; left: parent.left; right: parent.right }
+            textFormat: Text.PlainText        // never markup: a file's name
             text: tile.title || fileName
             color: parent.current ? win.text : win.dim
             font.family: win.font; font.pixelSize: 11
@@ -5814,6 +5824,7 @@ FloatingWindow {
                             width: parent.width - upBtn.width - homeBtn.width - 12
                             anchors.verticalCenter: parent.verticalCenter
                             leftPadding: 6
+                            textFormat: Text.PlainText        // never markup: a folder's name
                             text: wallpaperPane.browseDir.replace(Quickshell.env("HOME"), "~")
                             color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                             elide: Text.ElideMiddle
@@ -5851,6 +5862,7 @@ FloatingWindow {
                                 }
                                 Text {
                                     anchors { left: dirIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                    textFormat: Text.PlainText        // never markup: a file's name
                                     text: parent.fileName
                                     color: win.text; font.family: win.font; font.pixelSize: 13
                                     elide: Text.ElideRight
@@ -6502,6 +6514,7 @@ FloatingWindow {
                                 spacing: 2
                                 Text {
                                     width: parent.width; elide: Text.ElideRight
+                                    textFormat: Text.PlainText        // never markup
                                     text: wifiPane.wires.length > 1 ? "Ethernet (" + wireRow.modelData.name + ")" : "Ethernet"
                                     color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                 }
@@ -6568,6 +6581,7 @@ FloatingWindow {
                                     Text {
                                         width: Math.min(implicitWidth, netLabels.width - (netLock.visible ? netLock.width + 6 : 0))
                                         elide: Text.ElideRight
+                                        textFormat: Text.PlainText
                                         text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
                                     }
                                     Text { id: netLock; visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: win.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
@@ -6624,6 +6638,7 @@ FloatingWindow {
                                 Text {
                                     visible: psk.text === ""
                                     anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                    textFormat: Text.PlainText        // never markup: the network's own name
                                     text: "Password for " + netRow.n.name + ", then Enter"
                                     color: win.dim; font.family: win.font; font.pixelSize: 13
                                 }
@@ -6655,6 +6670,7 @@ FloatingWindow {
                         SettingRow {
                             label: factRow.modelData.k
                             Text {
+                                textFormat: Text.PlainText        // never markup: the network's own details
                                 text: factRow.modelData.v
                                 color: win.dim; font.family: win.font; font.pixelSize: 13
                             }
@@ -6977,7 +6993,7 @@ FloatingWindow {
                         Column {
                             anchors { left: devIcon.right; leftMargin: 12; right: devButtons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                             spacing: 2
-                            Text { width: parent.width; text: d.name || d.deviceName || d.address; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                            Text { width: parent.width; textFormat: Text.PlainText; text: d.name || d.deviceName || d.address; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
                             Text {
                                 width: parent.width
                                 text: d.pairing ? "Pairing…"
@@ -7106,6 +7122,7 @@ FloatingWindow {
             Text {
                 visible: printersPane.note !== ""
                 width: parent.width; leftPadding: 4; bottomPadding: 4
+                textFormat: Text.PlainText        // never markup: it can quote what the printing service said
                 text: printersPane.note
                 color: printersPane.note.startsWith("That didn't") ? win.danger : win.dim
                 font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
@@ -7145,9 +7162,10 @@ FloatingWindow {
                         Column {
                             anchors { left: printerIcon.right; leftMargin: 12; right: printerButtons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                             spacing: 2
-                            Text { width: parent.width; text: printerRow.printer.info || printerRow.printer.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                            Text { width: parent.width; textFormat: Text.PlainText; text: printerRow.printer.info || printerRow.printer.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
                             Text {
                                 width: parent.width; elide: Text.ElideRight
+                                textFormat: Text.PlainText        // never markup
                                 text: printersPane.statusText(printerRow.printer)
                                 color: printerRow.printer.status === "stopped" ? win.danger : printerRow.printer.default ? win.accent : win.dim
                                 font.family: win.font; font.pixelSize: 12
@@ -7230,7 +7248,7 @@ FloatingWindow {
                         Column {
                             anchors { left: foundIcon.right; leftMargin: 16; right: addButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                             spacing: 2
-                            Text { width: parent.width; text: foundRow.modelData.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                            Text { width: parent.width; textFormat: Text.PlainText; text: foundRow.modelData.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
                             Text { text: foundRow.modelData.via === "USB" ? "Plugged in by USB" : "On your network"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
                         }
                         Button {
@@ -7284,6 +7302,7 @@ FloatingWindow {
                         }
                         Text {
                             anchors { left: scannerIcon.right; leftMargin: 16; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                            textFormat: Text.PlainText        // never markup: the scanner's own name
                             text: scannerRow.modelData.name
                             color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
                         }

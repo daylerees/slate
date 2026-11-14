@@ -166,6 +166,44 @@ class Overlays(LiveCase):
         self.wait(lambda st: st["notifications"]["toasts"] == 0 and st["notifications"]["history"] == 0,
                   "the pop-up to go with the history", timeout=4)
 
+    def test_a_notification_cant_restyle_its_card(self):
+        """A notification's title is shown as typed, tags and all, and its message keeps only
+        the markup the spec allows: other tags are shown as typed, a picture it names is never
+        loaded, and a link to a file loses its link. Left to itself, the card read all of it as
+        rich text (any size or colour, a picture fetched from any address). Bug, 2026-11-14."""
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "earlier pop-ups to go")
+        self.addCleanup(lambda: self.ipc("notifications", "clear"))
+        self.s.run(["notify-send", "-a", "Tests", "-t", "20000", '<font size="1"><b></b><i></i><u></u><b></b><i></i>x</font>',
+                    '<img src="http://127.0.0.1:9/x.png"><font size=40>big</font> <b>fine</b> <a href="file:///etc/passwd">open</a>'])
+        st = self.wait(lambda st: st["notifications"]["toasts"] >= 1 and st["notifications"]["toast"], "the pop-up")
+        toast = st["notifications"]["toast"]
+        # (read as markup, all that's left of the title is a very small "x")
+        self.assertGreater(toast["titleWidth"], 150, "the title's tags were read as markup, not shown")
+        self.assertEqual(toast["body"], "&lt;font size=40&gt;big&lt;/font&gt; <b>fine</b> open")
+
+    def test_notification_markup_is_kept_to_the_safe_kind(self):
+        """What the card makes of a message, asked of Slate itself (NotificationText.js; every
+        case is in tests/unit/test_notification_text.py)."""
+        for body, want in {
+            "<b>bold</b> and <i>italic</i>": "<b>bold</b> and <i>italic</i>",
+            '<a href="https://example.org/a?b=1&c=2">a page</a>': '<a href="https://example.org/a?b=1&c=2">a page</a>',
+            '<a href="file:///etc/passwd">a file</a>': "a file",
+            '<a href="javascript:alert(1)">a script</a>': "a script",
+            '<A HREF=\'https://example.org\' onclick="x()">tidy</A>': '<a href="https://example.org">tidy</a>',
+            'a picture <img src="http://example.org/y.png"> <IMG SRC=file:///etc/passwd> gone': "a picture   gone",
+            "<font size=40>big</font>": "&lt;font size=40&gt;big&lt;/font&gt;",
+            "a < b, AT&T, &lt;b&gt;": "a &lt; b, AT&amp;T, &lt;b&gt;",
+            "unclosed <b": "unclosed &lt;b",
+            "<b>left open": "<b>left open</b>",
+        }.items():
+            with self.subTest(body):
+                self.assertEqual(self.ipc("test", "safeBody", body), want)
+        for link, opens in {"https://example.org": "true", "mailto:someone@example.org": "true",
+                            "file:///etc/passwd": "false", "javascript:alert(1)": "false", "slate://x": "false"}.items():
+            with self.subTest(link):
+                self.assertEqual(self.ipc("test", "opensLink", link), opens)
+
     def test_fade_in(self):
         """The login cover (with the logo) shows, then fades away by itself as at login."""
         self.ipc("test", "fadeIn")

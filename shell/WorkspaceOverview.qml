@@ -815,6 +815,7 @@ PanelWindow {
                     opacity: 1 - ov.zoomP
                     readonly property var first: card.wins.length ? Config.appEntry(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
                     // (its own name if it has one: Config.workspaceLabel, live if it's renamed)
+                    textFormat: Text.PlainText        // never markup: a workspace's name
                     text: Config.workspaceLabel(card.modelData.id)
                         + (card.wins.length === 0 ? " · Empty"
                            : " · " + (first ? first.name : card.wins[0].title)

@@ -515,7 +515,11 @@ PanelWindow {
     // ---- Shared pieces -----------------------------------------------------
     function glyph(code) { return String.fromCodePoint(code); }
 
+    // (plain text, never markup: most of what the panels say is a name something else chose,
+    // a Wi-Fi network's, a Bluetooth device's, a track's, what you copied. One that means to
+    // use markup says so itself, as ForecastDay does)
     component Label: Text {
+        textFormat: Text.PlainText
         color: pop.text
         font.family: bar.fontFamily
         font.pixelSize: 13
@@ -1933,6 +1937,7 @@ PanelWindow {
                             Text {
                                 id: codeText
                                 anchors.centerIn: parent
+                                textFormat: Text.PlainText        // never markup
                                 text: layoutBtn.modelData.code
                                 color: layoutBtn.selected ? pop.accentText : pop.text
                                 Behavior on color { ColorAnimation { duration: Config.ms(120) } }

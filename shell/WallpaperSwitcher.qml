@@ -454,6 +454,7 @@ Scope {
                             Text {
                                 anchors { top: frame.bottom; topMargin: 8; left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10 }
                                 horizontalAlignment: Text.AlignHCenter
+                                textFormat: Text.PlainText        // never markup: a file's name
                                 text: root.nameOf(card.modelData)
                                 // (dark on the chosen one, which sits on the active colour)
                                 color: card.chosen ? Config.tint("#12151a") : root.bar.textColor

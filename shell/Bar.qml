@@ -89,6 +89,7 @@ PanelWindow {
         arranger.release();
     }
     readonly property string clockText: clock.text
+    readonly property real titleWidth: titleText.implicitWidth      // (tests) the window's title, written out in full
     readonly property var scrollState: ({ at: Math.round(scroll), max: Math.round(scrollMax), handle: scrollGrip.visible })
     // What's in More, for its panel (Popouts.qml): a row each, in the order they left. The
     // tray is a row for each of its icons; the window's icon goes with its title
@@ -1367,6 +1368,7 @@ PanelWindow {
                         // cutting it off wherever the mask isn't fully clear)
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                         // (while the bar's being arranged it just says what it is, to leave room)
+                        textFormat: Text.PlainText        // never markup: the window's title is the app's (a web page's) to choose
                         text: Config.barArranging ? "Window" : bar.shownTop ? bar.shownTop.title : ""
                         color: bar.textColor
                         font.family: bar.fontFamily
@@ -1585,6 +1587,7 @@ PanelWindow {
                     // Turned to run along a side bar, like the clock
                     rotation: bar.textRotation
                     // (it just changes, as the clock does)
+                    textFormat: Text.PlainText        // never markup: a workspace's name
                     text: wsName.says
                     color: bar.textColor
                     font.family: bar.fontFamily
@@ -2172,6 +2175,7 @@ PanelWindow {
                 id: segLabel
                 visible: seg.drawnLabel !== "" && !bar.vert && !seg.slimText
                 anchors.verticalCenter: parent.verticalCenter
+                textFormat: Text.PlainText        // never markup: a Wi-Fi network's name, a layout's, what an app calls itself
                 text: seg.drawnLabel
                 color: seg.tint
                 font.family: bar.fontFamily

@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
+import "NotificationText.js" as NotificationText
 
 Rectangle {
     id: card
@@ -18,6 +19,10 @@ Rectangle {
     signal activated()
     signal closed()
     signal action(string id)
+    // (tests) The title as drawn (how wide its words come to, written out in full) and the
+    // message as its text item is given it
+    readonly property real titleWidth: titleLabel.implicitWidth
+    readonly property string shownBody: bodyLabel.text
 
     readonly property color textColor: bar.textColor
     readonly property color dim: Config.tint("#8b94a3")
@@ -41,7 +46,9 @@ Rectangle {
     readonly property string title: !entry ? "" : entry.summary ? entry.summary : entry.body ? "" : "New notification"
     // A picture from a file (screenshots, album art…) gets a large preview under the text, with
     // the app's icon beside it; other images (chat avatars) stay as the icon
-    readonly property string image: entry && entry.image ? entry.image : ""
+    // (only a file, or a picture Quickshell holds itself ("image://…": the app's icon by name,
+    // or the picture it sent): never an address Slate would have to go out and fetch)
+    readonly property string image: entry && entry.image && /^(file:|image:|\/)/.test(entry.image) ? entry.image : ""
     // A file path, however the app passed it ("file://…", "/…", or Quickshell's "image://icon//…")
     readonly property string imageFile: image.startsWith("file://") ? image.slice(7)
         : image.startsWith("image://icon//") ? image.slice(13)
@@ -234,6 +241,7 @@ Rectangle {
                 Text {
                     id: appLabel
                     anchors { left: freshDot.visible ? freshDot.right : parent.left; leftMargin: freshDot.visible ? 6 : 0; right: timeLabel.left; rightMargin: 8 }
+                    textFormat: Text.PlainText        // never markup: the app's own name for itself
                     text: card.appName
                     color: card.dim
                     font.family: card.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
@@ -270,7 +278,9 @@ Rectangle {
                 }
             }
             Text {
+                id: titleLabel
                 width: parent.width
+                textFormat: Text.PlainText        // never markup: the app wrote it (only the message below may use any)
                 text: card.title
                 visible: text !== ""
                 color: card.textColor
@@ -280,8 +290,12 @@ Rectangle {
                 elide: Text.ElideRight
             }
             Text {
+                id: bodyLabel
                 width: parent.width
-                text: card.entry ? card.entry.body : ""
+                // The message may use the spec's bold, italic, underline and links, and nothing
+                // else styled text can do (sizes, colours, pictures fetched from an address, links
+                // to files): NotificationText.js takes the rest out before it gets here
+                text: card.entry ? NotificationText.safeBody(card.entry.body) : ""
                 visible: text !== ""
                 textFormat: Text.StyledText
                 color: card.dim
@@ -290,7 +304,8 @@ Rectangle {
                 wrapMode: Text.Wrap
                 maximumLineCount: card.inPanel ? 3 : 4
                 elide: Text.ElideRight
-                onLinkActivated: link => Qt.openUrlExternally(link)
+                // (a web page or an email address, as safeBody leaves; checked again here)
+                onLinkActivated: link => { if (NotificationText.openable(link)) Qt.openUrlExternally(link); }
             }
             // Picture preview (screenshots, album art…)
             RoundImage {
@@ -318,6 +333,7 @@ Rectangle {
                         Text {
                             id: actText
                             anchors.centerIn: parent
+                            textFormat: Text.PlainText        // never markup: the app's own word for its button
                             text: modelData.text
                             color: card.accent
                             font.family: card.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium

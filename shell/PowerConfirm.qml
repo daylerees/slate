@@ -275,6 +275,7 @@ PanelWindow {
                         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                         verticalAlignment: Text.AlignVCenter
                         visible: field.text === "" && root.hasInput
+                        textFormat: Text.PlainText        // never markup
                         text: root.hasInput ? root.custom.input.placeholder || "" : ""
                         color: root.dimTextColor
                         font.family: root.fontFamily; font.pixelSize: 14

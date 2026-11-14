@@ -234,6 +234,7 @@ PanelWindow {
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: card.icons ? 36 : 20; right: parent.right; rightMargin: row.opens ? 30 : 10; verticalCenter: parent.verticalCenter }
+                            textFormat: Text.PlainText        // never markup: some rows carry an app's name or a window's title
                             text: row.modelData.label || ""
                             color: row.modelData.danger ? Config.tint("#f28b8b") : dm.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium

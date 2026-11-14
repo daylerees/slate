@@ -145,6 +145,7 @@ FloatingWindow {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
+                            textFormat: Text.PlainText        // never markup: a folder's name
                             text: parent.parent.modelData.label
                             color: parent.parent.on ? Config.tint("#12151a") : pk.text
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -181,6 +182,7 @@ FloatingWindow {
             }
             Text {
                 anchors { left: upBtn.right; leftMargin: 8; right: parent.right; verticalCenter: parent.verticalCenter }
+                textFormat: Text.PlainText        // never markup: a folder's name
                 text: pk.nicePath(pk.folder)
                 color: pk.text; font.family: pk.font; font.pixelSize: 13; font.weight: Font.Medium
                 elide: Text.ElideMiddle
@@ -268,6 +270,7 @@ FloatingWindow {
                 Text {
                     anchors { top: frame.bottom; topMargin: 4; left: parent.left; right: parent.right; leftMargin: 6; rightMargin: 6 }
                     horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText        // never markup: a file's name
                     text: cell.fileName
                     color: cell.picked ? pk.text : pk.dim
                     font.family: pk.font; font.pixelSize: 11; font.weight: cell.picked ? Font.Medium : Font.Normal
@@ -323,6 +326,7 @@ FloatingWindow {
             Text {
                 width: 190
                 horizontalAlignment: Text.AlignHCenter
+                textFormat: Text.PlainText        // never markup: a file's name
                 text: pk.chosen ? pk.chosen.slice(pk.chosen.lastIndexOf("/") + 1) : "Pick a picture"
                 color: pk.chosen ? pk.text : pk.dim
                 font.family: pk.font; font.pixelSize: 12; font.weight: Font.Medium

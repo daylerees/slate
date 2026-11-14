@@ -182,6 +182,7 @@ PanelWindow {
                     wrapMode: Text.Wrap
                     maximumLineCount: 4
                     elide: Text.ElideRight
+                    textFormat: Text.PlainText        // never markup: the program asking wrote this
                     text: root.message
                     color: root.dimTextColor
                     font.family: root.fontFamily
@@ -195,6 +196,7 @@ PanelWindow {
                     visible: root.identities.length <= 1
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText        // never markup: an account's name
                     text: "As " + root.idName(root.selected)
                     color: root.textColor
                     font.family: root.fontFamily
@@ -226,6 +228,7 @@ PanelWindow {
                             Text {
                                 id: chipText
                                 anchors.centerIn: parent
+                                textFormat: Text.PlainText        // never markup: an account's name
                                 text: (chip.modelData.isGroup ? "Group " : "") + root.idName(chip.modelData)
                                 color: chip.current ? root.accentText : root.textColor
                                 font.family: root.fontFamily
@@ -262,6 +265,7 @@ PanelWindow {
                     Text {
                         anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
                         visible: password.text === ""
+                        textFormat: Text.PlainText        // never markup: the program asking wrote this
                         text: root.busy ? "Checking…" : root.prompt
                         color: root.dimTextColor
                         font.family: root.fontFamily
@@ -278,6 +282,7 @@ PanelWindow {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
+                    textFormat: Text.PlainText        // never markup: the program asking wrote this
                     text: root.error !== "" ? root.error : root.supplementary
                     color: root.error !== "" || root.supplementaryIsError ? root.danger : root.dimTextColor
                     font.family: root.fontFamily

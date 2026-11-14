@@ -313,6 +313,7 @@ PanelWindow {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, Math.min(implicitWidth, bar.width - 2 * (buttons.width + 24) - (titleIcon.visible ? titleIcon.width + 8 : 0)))
+                textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                 text: tb.o ? (tb.o.title || tb.o.class || "") : ""
                 color: tb.textColor
                 font.family: Config.s.fontFamily; font.pixelSize: Math.round(13 * tb.s); font.weight: Font.Medium

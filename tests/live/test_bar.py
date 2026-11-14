@@ -446,6 +446,23 @@ class Label(LiveCase):
         self.assertEqual(got["thing"], "tray", got)
         self.showing("Chrome", "over the tray icon")
 
+    def test_a_windows_title_is_shown_as_typed(self):
+        """A window's title is its app's to choose (a web page's, in a browser), so the bar shows
+        it as plain text: tags in it are shown, not obeyed. They were read as markup, so a
+        title could resize or recolour itself, or name a picture for Slate to fetch.
+        Bug, 2026-11-14."""
+        self.close_windows()
+        self.addCleanup(self.close_windows)
+        self.keep_setting("barShowTitle")
+        self.config("barShowTitle", "true")
+        title = "<font size=1><b></b><i></i><u></u><b></b><i></i><u></u>x</font>"
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot -T \'%s\' sleep 60")' % title)
+        self.wait(lambda st: any(w["title"] == title for w in st["windows"]), "the window, with its title", timeout=15)
+        # (read as markup, all that's left of it is a very small "x")
+        st = self.wait(lambda st: st["bar"]["titleWidth"] > 0, "its title on the bar")
+        st = self.steady(self.s.state, floor=0.6)
+        self.assertGreater(st["bar"]["titleWidth"], 200, "the title's tags were read as markup, not shown")
+
     def test_tray_names_tidied(self):
         """What a tray icon is called: its title, then its tooltip's, then its id; a raw id tidied."""
         for (id_, title, tip), want in {

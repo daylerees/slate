@@ -64,7 +64,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces, each window wearing the space's colour along its top and its icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `SpaceBadge.qml`, `Popouts.qml`, `scripts/spaces.py` |
 | Window switcher | Super+Tab, live previews, circular strip | `Switcher.qml` |
 | Workspace overview | Super+Down, large live cards, reorder with Shift | `WorkspaceOverview.qml` |
-| Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml` |
+| Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml`, `NotificationText.js` |
 | On-screen indicators | Volume, mic, brightness, keyboard backlight, workspace dots (Super+Left/Right) | `OSD.qml` |
 | Settings app | General/appearance, wallpaper, menu bar (what it shows, clock format), dock, launcher, spaces, windows (borders, dimming, switcher, overview), hot corners, notifications, lock & idle, Wi-Fi, Bluetooth, printers & scanners, about, debug (login screen resync, log detail, exporting logs for bug reports, factory reset) | `SettingsWindow.qml`, `bin/slate-logs`, `bin/slate-factory-reset` |
 | Lock screen | Wayland session lock + PAM, lockout countdown, lock-before-sleep, idle lock/screen-off/suspend | `LockScreen.qml`, `LoginScreen.qml` |

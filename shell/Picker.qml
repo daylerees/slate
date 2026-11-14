@@ -365,6 +365,7 @@ PanelWindow {
                     Text {
                         width: parent.width
                         visible: !clipRow.image
+                        textFormat: Text.PlainText        // never markup: something you copied, from anywhere
                         text: clipRow.image ? "" : root.preview(clipRow.modelData.text).slice(0, 300)
                         color: clipRow.ListView.isCurrentItem ? Config.tint("#12151a") : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -376,6 +377,7 @@ PanelWindow {
                     }
                     Text {
                         width: parent.width
+                        textFormat: Text.PlainText        // never markup
                         text: root.clipDetail(clipRow.modelData)
                         color: clipRow.ListView.isCurrentItem ? Qt.rgba(0.07, 0.08, 0.1, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }

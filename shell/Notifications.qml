@@ -261,6 +261,11 @@ Scope {
             if (toastModel.get(i).key === key) { toastModel.remove(i); return; }
     }
     function itemFor(key) { return history.find(h => h.key === key) ?? null; }
+    // (tests) The newest pop-up as its card draws it: its title's width and its message's text
+    function toastLook() {
+        const t = toastList.count > 0 ? toastList.itemAtIndex(0) : null;
+        return t ? { titleWidth: Math.round(t.shownCard.titleWidth), body: t.shownCard.shownBody } : null;
+    }
 
     PanelWindow {
         id: toastWin
@@ -347,6 +352,7 @@ Scope {
                 }
                 readonly property var item: notifs.itemFor(key)
                 readonly property var notif: notifs.live[key] ?? null
+                readonly property alias shownCard: card      // (tests: toastLook)
                 readonly property bool critical: item && item.urgency === NotificationUrgency.Critical
                 width: ListView.view.width
                 height: card.height + 6                // a little room for the shadow below

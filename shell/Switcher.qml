@@ -494,6 +494,7 @@ PanelWindow {
                     id: title
                     anchors { top: previewBox.bottom; topMargin: 10; left: parent.left; right: parent.right; leftMargin: 12; rightMargin: 12 }
                     horizontalAlignment: Text.AlignHCenter
+                    textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                     text: card.modelData.title || (card.entry ? card.entry.name : card.key)
                     // (dark on the selected card, which sits on the active colour)
                     color: Math.abs(card.t) < 0.5 ? Config.tint("#12151a") : sw.bar.textColor

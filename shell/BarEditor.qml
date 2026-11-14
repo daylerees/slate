@@ -327,6 +327,7 @@ PanelWindow {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: barChip.label !== ""
+                textFormat: Text.PlainText        // never markup: a tray icon's name is the app's to choose
                 text: barChip.label
                 color: root.text
                 font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
@@ -832,6 +833,7 @@ PanelWindow {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
+                                    textFormat: Text.PlainText        // never markup: a tray icon's name is the app's to choose
                                     text: prioRow.it ? prioRow.it.label : prioRow.modelData
                                     color: root.text
                                     font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
@@ -1052,6 +1054,7 @@ PanelWindow {
                         Text {
                             visible: text !== ""
                             anchors.verticalCenter: parent.verticalCenter
+                            textFormat: Text.PlainText        // never markup
                             text: parent.modelData.text || ""
                             color: root.text
                             font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
@@ -1061,6 +1064,7 @@ PanelWindow {
                 Text {
                     visible: text !== ""
                     anchors.verticalCenter: parent.verticalCenter
+                    textFormat: Text.PlainText        // never markup: a tray icon's name is the app's to choose
                     text: floater.f ? floater.f.label : ""
                     color: root.text
                     font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium

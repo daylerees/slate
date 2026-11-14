@@ -628,3 +628,153 @@ class CopiedTextIsNeverAnOption(Case):
         """(the check above finds the copies it's meant to, so it can't pass by finding none)"""
         found = [f for f in slate.files("shell", ".qml") if re.search(r'\[\s*"wl-copy",\s*"--",', slate.read(f))]
         self.assertGreaterEqual(len(found), 5, found)
+
+
+class OutsideTextIsPlain(Case):
+    """Words another program chose (a window's title, a notification, a Wi-Fi network's or a
+    Bluetooth device's name, a track, a tray menu, a file's name, what you copied) are shown as
+    plain text. A Text item left to itself reads anything that looks like markup as markup
+    (Text.AutoText), so a web page's title could resize or recolour Slate's own words, place a
+    link in them, or have Slate fetch a picture from an address of its choosing. Each such Text
+    says `textFormat: Text.PlainText`, as Nova's window always has. The one exception is a
+    notification's message, which the spec lets use a little markup: it goes through
+    NotificationText.js first (tests/unit/test_notification_text.py)."""
+
+    # A text binding with any of these in it shows something Slate didn't write
+    OUTSIDE = re.compile(r"\.title\b|\btitle \|\||appName|\.summary\b|\.body\b|trackTitle|trackArtist|trackAlbum|tooltipTitle"
+                         r"|\.identity\b|[fF]ileName|deviceName|\.ssid\b|\.description\b|\.nickname\b|\.comment\b|genericName"
+                         r"|entry\??\.name|modelData\.name|\.n\.name|printer\.(info|name)|fullName|locationName|workspaceLabel\("
+                         r"|\bws\.name|nameOf\(|nicePath\(|browseDir|idName\(|clipDetail\(|\.preview\(")
+    # …and these do too, though nothing in their wording says so: (file, the binding)
+    ALSO = [
+        ("Bar.qml", "text: wsName.says"),                    # a workspace's name
+        ("Bar.qml", "text: seg.drawnLabel"),                 # a Wi-Fi network's name, a keyboard layout's
+        ("BarLabel.qml", "text: lw.says"),                   # a tray icon's tooltip, a Bluetooth device's name
+        ("DesktopMenu.qml", "text: row.modelData.label"),    # "Show <player>", a window's title, an app's name
+        ("TrayMenu.qml", "text: entryRow.e && !entryRow.sep ? String(entryRow.e.text)"),   # apps' own menus
+        ("NotificationCard.qml", "text: modelData.text"),    # an app's word for its button
+        ("PolkitAgent.qml", "text: root.message"),           # the program asking for a password wrote these
+        ("PolkitAgent.qml", "text: root.busy ? \"Checking…\" : root.prompt"),
+        ("PolkitAgent.qml", "text: root.error !== \"\" ? root.error : root.supplementary"),
+        ("OSD.qml", "text: osd.label"),
+        ("shell.qml", "text: label.text.charAt(0)"),         # the dock's label: an app's name, a window's or track's title
+        ("shell.qml", "text: dl.modelData.name"),            # a download's name
+        ("Launcher.qml", "text: row.calc ? row.detail"),     # an app's own description, a file's folder
+        ("BarEditor.qml", "text: barChip.label"),            # a tray icon's name
+        ("SettingsWindow.qml", "text: label; color: win.text"),      # SettingRow: rows named after apps, devices, downloads
+        ("SettingsWindow.qml", "text: detail; color: win.dim"),
+        ("SettingsWindow.qml", "text: dropdown.current ? dropdown.current.label"),   # devices, apps, files as options
+        ("SettingsWindow.qml", "text: parent.parent.modelData.label; color: win.text"),
+        ("SettingsWindow.qml", "text: factRow.modelData.v"),         # a network's own details
+        ("SettingsWindow.qml", "text: printersPane.note"),           # what the printing service said
+    ]
+    # Text you type into has no markup to read
+    TYPED = {"TextInput", "TextEdit", "TextField"}
+    # The login screen's own files are left be (changing one asks everyone to update the login
+    # screen); the names they show are this computer's accounts, and what its own login says
+    LOGIN_SCREEN = {"LoginScreen.qml", "Config.qml", "SettingsData.qml", "RoundImage.qml", "WallBlur.qml", "Gloss.qml", "GlassFill.qml"}
+    # Every word in these is Slate's own (their cards' titles, the corners' names)
+    SLATES_OWN = {"Welcome.qml", "HotCornerPicker.qml"}
+
+    @staticmethod
+    def item_at(src, at):
+        """The item a binding at `at` belongs to: (its type, its text), matched by brackets."""
+        depth, start = 0, None
+        for i in range(at - 1, -1, -1):
+            if src[i] == "}":
+                depth += 1
+            elif src[i] == "{":
+                if depth == 0:
+                    start = i
+                    break
+                depth -= 1
+        if start is None:
+            return "", ""
+        depth = 0
+        for j in range(start, len(src)):
+            if src[j] == "{":
+                depth += 1
+            elif src[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+        kind = re.search(r"([A-Za-z_][\w.]*)\s*$", src[:start])
+        return (kind.group(1) if kind else ""), src[start:j + 1]
+
+    @staticmethod
+    def plain_kinds(src):
+        """The file's own text components that are plain already (the panels' Label, and what's built on it)."""
+        plain = set()
+        for _ in range(3):
+            for name, base, body in re.findall(r"^\s*component (\w+): (\w+) \{([^\n]*\n[^\n]*)", src, re.M):
+                if base in plain or (base == "Text" and re.match(r"\s*textFormat: Text\.PlainText\b", body)):
+                    plain.add(name)
+            # (and one whose text is handed straight to a plain one inside it: PanelTitle's Label)
+            for name, inner in re.findall(r"^\s*component (\w+): \w+ \{\s*property alias text: (\w+)\.text\b", src, re.M):
+                holder = re.search(r"(\w+) \{\s*id: %s\b" % inner, src)
+                if holder and holder.group(1) in plain:
+                    plain.add(name)
+        return plain
+
+    def check(self, name, src, at, why):
+        kind, item = self.item_at(src, at)
+        line = src[src.rfind("\n", 0, at) + 1:src.find("\n", at)].strip()[:120]
+        where = f"{name}:{src.count(chr(10), 0, at) + 1}"
+        if kind in self.TYPED or kind in self.plain_kinds(src):
+            return
+        if "NotificationText.safeBody(" in line:
+            self.assertIn("textFormat: Text.StyledText", item, where)
+            return
+        self.assertRegex(item, r"textFormat:\s*(root\.info\.long \? Text\.StyledText : )?Text\.PlainText\b",
+                         f"{where} shows {why} without `textFormat: Text.PlainText`, so anything in it that looks "
+                         f"like markup would be read as markup: {line}")
+
+    def test_text_from_outside_is_plain(self):
+        seen = 0
+        for name in sorted(os.listdir(slate.SHELL)):
+            if not name.endswith(".qml") or name in self.LOGIN_SCREEN or name in self.SLATES_OWN:
+                continue
+            src = slate.read("shell", name)
+            for m in re.finditer(r"(?<![\w.])text:[ \t]*([^\n]+)", src):
+                # (the binding alone: not what follows it on a one-line item, nor a comment)
+                words = re.split(r";\s+\w[\w.]*:|\s//", m.group(1))[0]
+                if self.OUTSIDE.search(words):
+                    with self.subTest(file=name, line=src.count("\n", 0, m.start()) + 1):
+                        self.check(name, src, m.start(), "something another program chose")
+                    seen += 1
+        self.assertGreater(seen, 40, "the check has stopped finding the labels it's for")
+
+    def test_the_named_ones_are_plain(self):
+        for name, binding in self.ALSO:
+            src = slate.read("shell", name)
+            self.assertIn(binding, src, f"{name}: `{binding}` has moved; find where it went and name it here")
+            at = -1
+            while (at := src.find(binding, at + 1)) >= 0:
+                with self.subTest(file=name, binding=binding):
+                    self.check(name, src, at, "a name something else chose")
+
+    def test_the_panels_label_is_plain(self):
+        """Popouts.qml's Label (every panel's words) is plain, and the one use that wants markup
+        (the forecast's low, in a fainter colour) builds it from numbers alone."""
+        src = slate.read("shell", "Popouts.qml")
+        self.assertIn("Label", self.plain_kinds(src))
+        styled = re.findall(r"[^\n]*\n[^\n]*\n[^\n]*textFormat: Text\.(?:StyledText|RichText|AutoText|MarkdownText)", src)
+        self.assertEqual(len(styled), 1, "markup in a panel other than the forecast's temperatures")
+        self.assertIn("Math.round(pop.forecast.temperature_2m_min[forecastDay.day])", styled[0])
+
+    def test_a_notifications_message_is_made_safe(self):
+        card = slate.read("shell", "NotificationCard.qml")
+        self.assertEqual(len(re.findall(r"textFormat: Text\.(?:StyledText|RichText|AutoText|MarkdownText)", card)), 1)
+        self.assertIn("text: card.entry ? NotificationText.safeBody(card.entry.body) : \"\"", card)
+        self.assertNotRegex(card, r"onLinkActivated: link => Qt\.openUrlExternally", "a link opened without asking what kind it is")
+        self.assertIn("if (NotificationText.openable(link)) Qt.openUrlExternally(link)", card)
+        # Its picture: a file or one Quickshell holds, never an address to fetch
+        self.assertIn("entry.image && /^(file:|image:|\\/)/.test(entry.image) ? entry.image : \"\"", card)
+
+    def test_novas_notification_is_escaped(self):
+        """Nova's answer, sent as a notification when its window is away: the agent's words
+        escaped, and after "--" so a line starting with a dash isn't read as an option."""
+        src = slate.read("shell", "Assistant.qml")
+        sent = re.search(r"doneNote\.command = \[(.*?)\];", src, re.S)
+        self.assertTrue(sent, "the notification has moved")
+        self.assertRegex(sent.group(1), r'"--", "Nova", esc\(line\)$')

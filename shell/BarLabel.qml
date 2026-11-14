@@ -133,6 +133,7 @@ PanelWindow {
             anchors.centerIn: parent
             width: Math.min(implicitWidth, lw.maxWidth - 18)
             elide: Text.ElideRight
+            textFormat: Text.PlainText        // never markup: a tray icon's or a device's own name
             text: lw.says
             color: lw.bar.textColor
             font.family: lw.bar.fontFamily
