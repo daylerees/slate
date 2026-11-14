@@ -20,6 +20,7 @@ SettingsData.qml             SettingsData.qml
 RoundImage.qml               RoundImage.qml
 WallBlur.qml                 WallBlur.qml
 Gloss.qml                    Gloss.qml
+shaders/gloss.frag.qsb       shaders/gloss.frag.qsb
 GlassFill.qml                GlassFill.qml
 scripts/wallpaper-accent.py  scripts/wallpaper-accent.py
 

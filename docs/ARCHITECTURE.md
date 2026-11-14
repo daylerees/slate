@@ -227,6 +227,7 @@ bin/slate-helpers-install     puts those copies there: slate-system-root (the ha
 shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
 shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)
+shaders/gloss.frag(.qsb)      Gloss.qml's bright edge and band, worked out per pixel (no offscreen layers)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
 WindowPreview.qml             every live window preview (overview, switcher, dock, New Space): frames
                               asked for by Slate, not Quickshell's live mode (see Workarounds below)

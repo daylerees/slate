@@ -7,7 +7,6 @@
 // It only shows with glass on (and Gloss switched on).
 
 import QtQuick
-import QtQuick.Effects
 
 Rectangle {
     id: g
@@ -21,7 +20,7 @@ Rectangle {
     property bool band: false
     anchors.fill: parent
     // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
-    // drawing), so its effect isn't rebuilt each time it shows
+    // drawing). Its edge and band are one shader each, with no offscreen layers to keep
     visible: Config.glassGloss
     color: "transparent"
     // Hover highlights set opacity to show it while pointed at: it fades in and out in step
@@ -69,6 +68,8 @@ Rectangle {
     // blend smoothly into each other, rather than the short shapes' crisper bands. Something
     // that changes size (the dock's magnified tiles) sets it, so its look doesn't flip as it grows
     property bool tall: height > 32 && !band
+    // The shape's corners as the shader takes them: top left, top right, bottom right, bottom left
+    readonly property vector4d cornerRadii: Qt.vector4d(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius)
     gradient: Gradient {
         // Tall shapes: a gentler shine fading smoothly over the top half, with no band edge (a
         // bright band, a flat middle and a dark band made them look like three-tone tubes)
@@ -81,43 +82,29 @@ Rectangle {
     // band: the shine as the top of a wide ellipse, so its lower edge curves, kept inside the
     // shape's rounded corners. The ellipse is 1.6× the shape's width and 1.4× its height, its
     // lowest point just past the middle (55%); bright down to the shape's top edge, then fading
-    // towards the curve
+    // towards the curve. Drawn by shaders/gloss.frag from the shape's outline, no layers
     // (Only built for a band: as plain bindings in every Gloss, they were re-run while rows on
     // the login screen were taken down, logging "Unable to assign [undefined]")
     Loader {
         anchors.fill: parent
         active: g.band
         sourceComponent: Component {
-            Item {
-                Item {
-                    anchors.fill: parent
-                    layer.enabled: Config.glassGloss
-                    layer.effect: MultiEffect { maskEnabled: true; maskSource: bandClip; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                    Rectangle {
-                        id: bandShine
-                        readonly property real across: g.width * 1.6
-                        readonly property real down: g.height * 1.4
-                        // A circle, squashed into the ellipse by the Scale below (from its top)
-                        width: across; height: across; radius: Config.corner(across / 2)
-                        x: (g.width - across) / 2
-                        y: g.height * 0.55 - down
-                        transform: Scale { yScale: bandShine.down / Math.max(1, bandShine.across) }
-                        // Where the shape's top edge falls in the ellipse
-                        readonly property real topAt: (down - g.height * 0.55) / Math.max(1, down)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-                            GradientStop { position: bandShine.topAt; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a) }
-                            GradientStop { position: 1.0; color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, g.a * 0.25) }
-                        }
-                    }
-                }
-                Item {
-                    id: bandClip
-                    anchors.fill: parent
-                    visible: false
-                    layer.enabled: Config.glassGloss
-                    Rectangle { anchors.fill: parent; topLeftRadius: g.topLeftRadius; topRightRadius: g.topRightRadius; bottomLeftRadius: g.bottomLeftRadius; bottomRightRadius: g.bottomRightRadius }
-                }
+            ShaderEffect {
+                readonly property real across: g.width * 1.6
+                readonly property real down: g.height * 1.4
+                readonly property vector4d rimColour: Qt.vector4d(0, 0, 0, 0)
+                readonly property vector4d rimColour2: Qt.vector4d(0, 0, 0, 0)
+                readonly property vector4d radii: g.cornerRadii
+                readonly property vector4d radii2: g.cornerRadii
+                readonly property vector4d bandColour: Qt.vector4d(g.sheen.r, g.sheen.g, g.sheen.b, g.a)
+                // The ellipse (its circle squashed from the top), and where the shape's top
+                // falls down it
+                readonly property vector4d bandShape: Qt.vector4d(across, down, (down - g.height * 0.55) / Math.max(1, down), g.height * 0.55)
+                readonly property size size: Qt.size(width, height)
+                readonly property real fadeTo: 0
+                readonly property real rimOn: 0
+                readonly property real bandRound: Config.corner(across / 2)
+                fragmentShader: Qt.resolvedUrl("shaders/gloss.frag.qsb")
             }
         }
     }
@@ -136,53 +123,32 @@ Rectangle {
         }
     }
     // The bright edge: the shape's own rounded outline, so it bends around the top corners,
-    // fading out a little way down the sides
-    Item {
+    // fading out a little way down the sides. Drawn by shaders/gloss.frag in one pass, with no
+    // offscreen layers (they stayed allocated while a sheen was hidden, and were made again
+    // every frame on the dock's magnifying icons)
+    ShaderEffect {
         anchors.fill: parent
-        // Set up once (while gloss is on), not each time the gloss shows: on hover-only gloss
-        // that rebuilt the effect every time the pointer crossed an item, and moving the mouse
-        // over a row of them was choppy
-        layer.enabled: Config.glassGloss
-        layer.effect: MultiEffect { maskEnabled: true; maskSource: rimFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-        Rectangle {
-            anchors.fill: parent
-            topLeftRadius: g.topLeftRadius; topRightRadius: g.topRightRadius; bottomLeftRadius: g.bottomLeftRadius; bottomRightRadius: g.bottomRightRadius
-            color: "transparent"
-            border.width: 1
-            // Light mode: the outermost line is a darker one, so the shape's top edge is defined
-            // rather than its sheen running off into the light background (the bright line
-            // moves just inside it)
-            // (faint on frosted glass, a little stronger on coloured fills)
-            border.color: Config.s.lightMode ? Qt.rgba(0, 0, 0, g.onFill ? Math.min(0.034, 0.0375 * Config.glossAmount) : Math.min(0.035, 0.045 * Config.glossAmount))
-                // Crisper on light frosted glass, where a faint white edge didn't show
-                : Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
-        }
-        Rectangle {
-            visible: Config.s.lightMode
-            anchors { fill: parent; margins: 1 }
-            topLeftRadius: Config.corner(Math.max(0, g.topLeftRadius - 1)); topRightRadius: Config.corner(Math.max(0, g.topRightRadius - 1))
-            bottomLeftRadius: Config.corner(Math.max(0, g.bottomLeftRadius - 1)); bottomRightRadius: Config.corner(Math.max(0, g.bottomRightRadius - 1))
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.rgba(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))
-        }
-    }
-    Item {
-        id: rimFade
-        anchors.fill: parent
-        visible: false
-        layer.enabled: Config.glassGloss
-        Rectangle {
-            id: rimGrad
-            anchors.fill: parent
-            // Solid across the top and round the corners, gone by just past them
-            readonly property real fadeTo: Math.min(0.6, (Math.max(g.radius, 4) + 6) / Math.max(1, g.height))
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "white" }
-                GradientStop { position: Math.max(0.01, rimGrad.fadeTo * 0.45); color: "white" }
-                GradientStop { position: rimGrad.fadeTo; color: "transparent" }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
+        // Light mode: the outermost line is a darker one, so the shape's top edge is defined
+        // rather than its sheen running off into the light background (the bright line
+        // moves just inside it)
+        // (faint on frosted glass, a little stronger on coloured fills)
+        readonly property vector4d rimColour: Config.s.lightMode
+            ? Qt.vector4d(0, 0, 0, g.onFill ? Math.min(0.034, 0.0375 * Config.glossAmount) : Math.min(0.035, 0.045 * Config.glossAmount))
+            // Crisper on light frosted glass, where a faint white edge didn't show
+            : Qt.vector4d(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * 1.6))
+        readonly property vector4d rimColour2: Config.s.lightMode
+            ? Qt.vector4d(g.sheen.r, g.sheen.g, g.sheen.b, Math.min(1, g.a * (g.lightFrost ? 3 : 1.6)))
+            : Qt.vector4d(0, 0, 0, 0)
+        readonly property vector4d radii: g.cornerRadii
+        readonly property vector4d radii2: Qt.vector4d(Config.corner(Math.max(0, g.topLeftRadius - 1)), Config.corner(Math.max(0, g.topRightRadius - 1)),
+                                                       Config.corner(Math.max(0, g.bottomRightRadius - 1)), Config.corner(Math.max(0, g.bottomLeftRadius - 1)))
+        readonly property vector4d bandColour: Qt.vector4d(0, 0, 0, 0)
+        readonly property vector4d bandShape: Qt.vector4d(0, 0, 0, 0)
+        readonly property size size: Qt.size(width, height)
+        // Solid across the top and round the corners, gone by just past them
+        readonly property real fadeTo: Math.min(0.6, (Math.max(g.radius, 4) + 6) / Math.max(1, height))
+        readonly property real rimOn: 1
+        readonly property real bandRound: 0
+        fragmentShader: Qt.resolvedUrl("shaders/gloss.frag.qsb")
     }
 }
