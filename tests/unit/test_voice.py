@@ -65,6 +65,11 @@ class Voice(slate.Case):
         events = [json.loads(first)] if first.strip() else []
         if events and events[0]["type"] == "listening":
             time.sleep(hold)
+            # The stand-in recorder can take a moment to make its file on a busy machine: wait
+            # for it a little, still well inside voice.py's SHORTEST, so a tap stays a tap
+            deadline = time.monotonic() + 0.25
+            while not self.recordings() and time.monotonic() < deadline:
+                time.sleep(0.01)
             self.assertTrue(self.recordings() or end == "now", "nothing was being recorded while held")
             if end == "stop":
                 p.stdin.write("stop\n")
