@@ -405,3 +405,82 @@ class Briefing(Base):
         env = {"SLATE_ASSISTANT_RUN": "r1", "SLATE_ASSISTANT_AGENT": "Claude Code"}
         self.tool("window_close", {"address": "0xa1"}, env=env)
         self.assertTrue(self.asked()[0]["body"].startswith("Your assistant (Claude Code) is asking"))
+
+
+class DetectingQuickly(Base):
+    """Looking for the agents: side by side, each command and Ollama asked once, nothing else
+    changed. Counted with stand-ins in this process, so no process is started at all."""
+
+    def setUp(self):
+        super().setUp()
+        import importlib
+        import slate_agents
+        self.agents = slate_agents
+        self.assistant = importlib.import_module("assistant")
+        self.addCleanup(setattr, slate_agents, "AGENTS", list(slate_agents.AGENTS))
+        self.addCleanup(slate_agents._found.clear)
+        self.addCleanup(slate_agents._models.clear)
+        slate_agents._found.clear()
+        slate_agents._models.clear()
+
+    def test_each_command_is_looked_for_once(self):
+        which = []
+        real = self.agents.shutil.which
+        self.agents.shutil.which = lambda name, path=None: which.append(name) or "/bin/" + name
+        self.addCleanup(setattr, self.agents.shutil, "which", real)
+        got = [self.agents.find("claude") for _ in range(5)] + [self.agents.find("codex")]
+        self.assertEqual(got, ["/bin/claude"] * 5 + ["/bin/codex"])
+        self.assertEqual(which, ["claude", "codex"], "a command was looked for again")
+        old = os.environ.get("PATH", "")
+        self.addCleanup(os.environ.__setitem__, "PATH", old)
+        os.environ["PATH"] = old + os.pathsep + "/elsewhere"
+        self.agents.find("claude")
+        self.assertEqual(which, ["claude", "codex", "claude"], "a different PATH was given the old answer")
+
+    def test_ollama_is_asked_once(self):
+        asked = []
+
+        class Reply:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return b'{"models": [{"name": "qwen3", "size": 5}]}'
+        real = self.agents.urllib.request.urlopen
+        self.agents.urllib.request.urlopen = lambda url, timeout=None: asked.append(url) or Reply()
+        self.addCleanup(setattr, self.agents.urllib.request, "urlopen", real)
+        first = self.agents.ollama_models()
+        for _ in range(4):
+            self.assertEqual(self.agents.ollama_models(), first)
+        self.assertEqual(first, [{"name": "qwen3", "tools": True, "size": 5}])
+        self.assertEqual(len(asked), 1, "Ollama was asked again")
+
+    def test_not_running_is_remembered_too(self):
+        asked = []
+
+        def refuse(url, timeout=None):
+            asked.append(url)
+            raise OSError("no")
+        real = self.agents.urllib.request.urlopen
+        self.agents.urllib.request.urlopen = refuse
+        self.addCleanup(setattr, self.agents.urllib.request, "urlopen", real)
+        self.assertEqual([self.agents.ollama_models() for _ in range(3)], [None] * 3)
+        self.assertEqual(len(asked), 1)
+
+    def test_side_by_side_and_in_order(self):
+        class Slow(self.agents.Agent):
+            def __init__(self, n):
+                self.id, self.label = "slow%d" % n, "Slow %d" % n
+
+            def installed(self):
+                time.sleep(0.4)
+                return True
+
+        self.agents.AGENTS[:] = [Slow(n) for n in range(5)]
+        import contextlib
+        import io
+        out = io.StringIO()
+        began = time.monotonic()
+        with contextlib.redirect_stdout(out):
+            self.assistant.detect()
+        took = time.monotonic() - began
+        self.assertEqual([a["id"] for a in json.loads(out.getvalue())], ["slow0", "slow1", "slow2", "slow3", "slow4"])
+        self.assertLess(took, 1.2, "five agents of 0.4 s each took as long as one after another")

@@ -56,11 +56,19 @@ def by_id(agent_id):
     return next((a for a in AGENTS if a.id == agent_id), None)
 
 
+_found = {}
+
+
 def find(name):
     """A command on PATH, or where these CLIs install themselves when PATH hasn't caught up
-    (Slate's own PATH is the session's, not a terminal's)."""
-    extra = [os.path.expanduser(p) for p in ("~/.local/bin", "~/.npm-global/bin", "~/bin")]
-    return shutil.which(name, path=os.pathsep.join([os.environ.get("PATH", "")] + extra))
+    (Slate's own PATH is the session's, not a terminal's). Looked up once per run of a script
+    (an agent asks for its command several times: installed, version, signed in, the command
+    itself), for the PATH it's given."""
+    path = os.environ.get("PATH", "")
+    if (name, path) not in _found:
+        extra = [os.path.expanduser(p) for p in ("~/.local/bin", "~/.npm-global/bin", "~/bin")]
+        _found[(name, path)] = shutil.which(name, path=os.pathsep.join([path] + extra))
+    return _found[(name, path)]
 
 
 def output(cmd, timeout=10):
@@ -644,12 +652,23 @@ def ollama_url():
     return os.environ.get("SLATE_OLLAMA_URL") or "http://127.0.0.1:11434"
 
 
+_models = {}
+
+
 def ollama_models():
     """The models Ollama has on this computer, or None when it isn't running. Models that run
     on someone else's server (Ollama's cloud models) are left out: they'd send what you ask
-    there. [{"name", "tools": can use tools, "size": bytes}]"""
+    there. [{"name", "tools": can use tools, "size": bytes}]. Asked of Ollama once per run of
+    a script (it's asked several times over, and each ask can take up to two seconds)."""
+    url = ollama_url()
+    if url not in _models:
+        _models[url] = _ollama_models(url)
+    return _models[url]
+
+
+def _ollama_models(url):
     try:
-        with urllib.request.urlopen(ollama_url() + "/api/tags", timeout=2) as r:
+        with urllib.request.urlopen(url + "/api/tags", timeout=2) as r:
             data = json.loads(r.read().decode("utf-8"))
     except (OSError, ValueError, urllib.error.URLError):
         return None

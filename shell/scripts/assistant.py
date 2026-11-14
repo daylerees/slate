@@ -37,6 +37,7 @@ never started (it would reach the network): only "custom", or the one a test nam
 SLATE_ASSISTANT_TEST_AGENT.
 """
 import argparse
+import concurrent.futures
 import importlib
 import json
 import os
@@ -129,19 +130,23 @@ def context(mcp):
     return "<slate-context>\n" + "\n".join(lines) + "\n</slate-context>"
 
 
+def detect_one(a):
+    installed = a.installed()
+    row = {"id": a.id, "label": a.label, "installed": installed, "version": a.version() if installed else "",
+           "signedIn": a.signed_in() if installed else False, "confined": a.confined,
+           "followUps": a.follow_ups, "url": a.url, "note": a.note, "signIn": a.sign_in, "local": a.local}
+    if a.local:
+        row.update(running=False, models=[])
+    if installed:
+        row.update(a.more())
+    return row
+
+
 def detect():
-    out = []
-    for a in slate_agents.AGENTS:
-        installed = a.installed()
-        row = {"id": a.id, "label": a.label, "installed": installed, "version": a.version() if installed else "",
-               "signedIn": a.signed_in() if installed else False, "confined": a.confined,
-               "followUps": a.follow_ups, "url": a.url, "note": a.note, "signIn": a.sign_in, "local": a.local}
-        if a.local:
-            row.update(running=False, models=[])
-        if installed:
-            row.update(a.more())
-        out.append(row)
-    print(json.dumps(out))
+    # Each agent runs its own --version and sign-in check, which can take a moment, so they're
+    # looked at side by side (map keeps the order they're listed in)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(slate_agents.AGENTS))) as pool:
+        print(json.dumps(list(pool.map(detect_one, slate_agents.AGENTS))))
 
 
 def run(args):
