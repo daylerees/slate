@@ -181,6 +181,16 @@ SCENES["settings-changed-dot"] = {
     "settle": 1.2, "undo": [("settings", "close")],
 }
 
+# A setting greyed out because another one is off: its "Needs … to be off" line, with the
+# arrow that goes there (scrolled to it; settled once its highlight has faded)
+SCENES["settings-needs"] = {
+    "settings": {"iconFill": "true"},
+    "do": [("settings", "find", "icons", "Tiles in the icon's colour")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "icons"
+                       and st["settings"]["found"] == "Tiles in the icon's colour",
+    "settle": 2.5, "undo": [("settings", "close")],
+}
+
 # An assistant asking to close a window (docs/ASSISTANT.md): Slate's own words, in its
 # confirmation window, Cancel first
 SCENES["assistant-question"] = {

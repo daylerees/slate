@@ -171,3 +171,42 @@ class RestoreDefaults(LiveCase):
                 for k in changes:
                     self.assertEqual(self.setting(k), defaults[k], f"{k} didn't go back")
                 self.assertEqual(self.setting(key), value, f"{key} (another page) was put back too")
+
+
+class NeedsAnother(LiveCase):
+    """A setting greyed out because another one is off says which one ("Needs … to be on"),
+    and its line goes to that setting (SettingRow's needs)."""
+
+    def waiting(self, st):
+        return {r["label"]: r["needs"] for r in st["settings"]["waiting"]}
+
+    def test_says_what_it_needs_and_goes_there(self):
+        self.keep_setting("accentFromWallpaper")
+        self.keep_setting("iconFill")
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.config("accentFromWallpaper", "false")
+        self.ipc("settings", "page", "appearance")
+        st = self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "appearance"
+                       and "Accent boldness" in self.waiting(st), "Accent boldness greyed out on Appearance")
+        self.assertEqual(self.waiting(st)["Accent boldness"], "Needs Accent colour from wallpaper to be on")
+        self.assertNotIn("Accent colour", self.waiting(st), "your own accent colour greyed out with the wallpaper's off")
+
+        # The other way round: the wallpaper's colour on, your own colour waits instead
+        self.config("accentFromWallpaper", "true")
+        st = self.wait(lambda st: "Accent colour" in self.waiting(st), "Accent colour greyed out")
+        self.assertEqual(self.waiting(st)["Accent colour"], "Needs Accent colour from wallpaper to be off")
+        self.assertNotIn("Accent boldness", self.waiting(st))
+
+        # Its line leads to what it needs: on the same page...
+        self.ipc("test", "settingsFollowNeeds", "Accent colour")
+        self.wait(lambda st: st["settings"]["section"] == "appearance" and st["settings"]["found"] == "Accent colour from wallpaper",
+                  "Accent colour from wallpaper gone to and lit up")
+
+        # ...and on another (Icons, from its own row)
+        self.config("iconFill", "true")
+        self.ipc("settings", "page", "icons")
+        st = self.wait(lambda st: st["settings"]["section"] == "icons" and "Tiles in the icon's colour" in self.waiting(st),
+                       "Tiles in the icon's colour greyed out on Icons")
+        self.assertEqual(self.waiting(st)["Tiles in the icon's colour"], "Needs Fill the shape to be off")
+        self.ipc("test", "settingsFollowNeeds", "Tiles in the icon's colour")
+        self.wait(lambda st: st["settings"]["found"] == "Fill the shape", "Fill the shape gone to and lit up")

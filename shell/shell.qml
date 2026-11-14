@@ -304,6 +304,11 @@ ShellRoot {
             const w = settingsLoader.item;
             if (w) w.askRestoreDefaults();
         }
+        // A greyed-out setting's "Needs …" line, as clicking it does: off to the setting it needs
+        function settingsFollowNeeds(label: string): void {
+            const w = settingsLoader.item;
+            if (w) w.followNeeds(label);
+        }
         // Settings → Assistant's switch and its "Read the risks again", as clicking them does
         function assistant(what: string): void {
             const w = settingsLoader.item;
@@ -368,7 +373,11 @@ ShellRoot {
                             ownCard: !!settings && settings.confirming,
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
-                            checking: settings ? settings.checking : 0 },
+                            checking: settings ? settings.checking : 0,
+                            // Settings greyed out for another one, with what each says it needs
+                            // (SettingRow's needs), and the setting last gone to (goTo)
+                            waiting: settings && settings.visible ? settings.waitingRows().map(r => ({ label: r.label, needs: r.needs })) : [],
+                            found: settings && settings.foundItem ? String(settings.foundItem.label || "") : "" },
                 launcher: { open: appLauncher.shown, visible: appLauncher.visible, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || ""),
                             // How it opened and scrolled (launcherScroll): frame times, the time spent moving
