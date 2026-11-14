@@ -246,8 +246,10 @@ PanelWindow {
                                     }
                                 }
                                 HoverHandler { id: modeHover }
-                                // (Tiling on a tiled layout already keeps it)
-                                ClickTap { onTapped: if (modeCard.usable && !modeCard.on) Config.s.windowMode = modeCard.modelData.key }
+                                // (Tiling on a tiled layout already keeps it.) Through setDefaultMode, as
+                                // Settings does, so workspaces given their own mode follow the new one
+                                // too: at first login none is in use, so every workspace follows it
+                                ClickTap { onTapped: if (modeCard.usable && !modeCard.on) Config.setDefaultMode(modeCard.modelData.key, true) }
                             }
                         }
                     }

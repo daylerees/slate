@@ -733,6 +733,19 @@ class CopiedTextIsNeverAnOption(Case):
         self.assertGreaterEqual(len(found), 5, found)
 
 
+class DefaultWindowModeGoesThroughOneDoor(Case):
+    """The default window mode is changed only by Config.setDefaultMode, which also settles the
+    workspaces given a mode of their own. Welcome's cards once set `s.windowMode` directly, so a
+    workspace already set to the new default kept a stale override of it."""
+    def test_only_config_sets_it(self):
+        bad = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).split("\n"), 1):
+                if re.search(r"\bs\.windowMode\s*=[^=]", line) and not (f.endswith("/Config.qml") and "s.windowMode = v;" in line):
+                    bad.append("%s:%d" % (os.path.basename(f), n))
+        self.assertFalse(bad, "set the default window mode with Config.setDefaultMode: " + ", ".join(bad))
+
+
 class OutsideTextIsPlain(Case):
     """Words another program chose (a window's title, a notification, a Wi-Fi network's or a
     Bluetooth device's name, a track, a tray menu, a file's name, what you copied) are shown as
