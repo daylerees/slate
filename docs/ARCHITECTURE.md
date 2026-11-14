@@ -244,11 +244,11 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - `Config.s.<name>` is a `JsonAdapter` over `settings.json`; the settings app writes it,
   editing the file by hand also works (it's watched). It's read up front (blocking, in
   Config's `Component.onCompleted`), so a reload starts in your theme, not the defaults.
-- `Config.accent` is the accent in use: chosen colour, or one picked from the wallpaper.
-- `Config.tint(hex)` maps every theme colour: light mode flips greys (dark ↔ light) and
-  deepens colours; "background tint from wallpaper" shifts greys toward the wallpaper's
-  hue. With both off it returns the colour unchanged (the default dark slate). **All
-  theme colours in the QML go through `Config.tint()`** — keep it that way for new UI.
+- `Config.accent` is the accent in use: chosen color, or one picked from the wallpaper.
+- `Config.tint(hex)` maps every theme color: light mode flips grays (dark ↔ light) and
+  deepens colors; "background tint from wallpaper" shifts grays toward the wallpaper's
+  hue. With both off it returns the color unchanged (the default dark slate). **All
+  theme colors in the QML go through `Config.tint()`** — keep it that way for new UI.
 - Workspace names: a workspace can have a name of its own (the pencil on the window mode
   panel), shown wherever Slate would say "Workspace 3": always through
   `Config.workspaceLabel(id)`, never built by hand (a test checks). Kept by Slate, not as
@@ -270,7 +270,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
   `applyWorkspaceModes`/`setWorkspaceMode`/`setWindowMode` in `windowrules.lua` set the rules
   and float or re-tile open windows (tagged `slate-floated`, so apps that float
   anyway stay floating). Floating windows' title bars are Slate Bars, Slate's own (`TitleBar.qml`), unless
-  Hyprbars is chosen and loaded, when the plugin draws them, coloured from Slate's theme by
+  Hyprbars is chosen and loaded, when the plugin draws them, colored from Slate's theme by
   `shell.qml`. A Hyprland plugin is tied to one Hyprland build: `slate-build-hyprbars` names
   each build for its Hyprland (`hyprbars-<version>-<commit>.so` plus a `.json` record),
   `hyprbars.lua` asks Hyprland only for the one matching the running Hyprland (and keeps
@@ -281,19 +281,19 @@ opening any of them closes bar panels (wired in `shell.qml`).
   plugins' `vMAJOR.MINOR.0` release for the installed Hyprland and records its commit (`source`)
   and tag (`release`); with no such release it stops with state `unreleased`, and builds the
   newest unreleased code only when started with `--allow-unreleased`, which `HyprbarsWatch.qml`
-  passes after the person says yes to its notification. `SLATE_HYPRBARS_REPO` is honoured only
+  passes after the person says yes to its notification. `SLATE_HYPRBARS_REPO` is honored only
   under `SLATE_TEST=1`.
-- Folder colour (Settings → Appearance): `scripts/folder-colour.py` makes
+- Folder color (Settings → Appearance): `scripts/folder-colour.py` makes
   `~/.local/share/icons/Slate-Icons`, a theme that inherits the user's Papirus theme and only
-  links the folder icons to another of Papirus's colours (no root needed, unlike
+  links the folder icons to another of Papirus's colors (no root needed, unlike
   papirus-folders), then sets it for GTK, qt5ct/qt6ct and KDE. Themes that only have their
-  plain folder in colours (folder.svg beside folder-<colour>.svg: Kora, Nordzy, "kind":
+  plain folder in colors (folder.svg beside folder-<colour>.svg: Kora, Nordzy, "kind":
   "plain" in --list) get it swapped, and their other folders (Desktop, Home…, drawn in the
-  plain folder's colours) repainted: those colours swapped for the chosen one's, emblem colours
-  moved the same way (`recolour`). `X-Slate-Build` makes older builds be made again. "Auto" picks the colour
+  plain folder's colors) repainted: those colors swapped for the chosen one's, emblem colors
+  moved the same way (`recolour`). `X-Slate-Build` makes older builds be made again. "Auto" picks the color
   nearest `Config.wallpaperAccent`; "default" switches back and removes it.
 - Mouse cursor: Slate Cursors (`shell/cursors/Slate-Cursors`, Bibata Modern Ice without
-  colour, GPL-3.0; rebuilt with `tools/build-cursors.py`). The installer links it into
+  color, GPL-3.0; rebuilt with `tools/build-cursors.py`). The installer links it into
   `~/.local/share/icons`; the session's `variables.lua` sets `CURSOR_THEME`/`CURSOR_SIZE`
   (override them in `~/.config/slate/hypr/variables.lua`) as Hyprland's cursor and in the
   environment. With Settings → Input → Pointer in your apps on (`pointerInApps`, off until
@@ -306,11 +306,11 @@ opening any of them closes bar panels (wired in `shell.qml`).
   apply-theme.py gets the name from Slate.
 - Icon theme: Settings → Icons → Icon theme (`iconTheme`, listed by `scripts/icon-themes.py`).
   `shell.qml` sets it for GTK, Qt and KDE with `folder-colour.py --icon-theme`, then makes the
-  folder colour again on top of it. Slate's tiles follow: `Config.tileDir` is
+  folder color again on top of it. Slate's tiles follow: `Config.tileDir` is
   `tiles/themes/<theme>/<style>`, and `appicon.py` draws from the theme, the themes it
   inherits, then the usual ones, finding app icons where each theme's index.theme says.
 - Window borders (0–12 px, default 0, Settings → Windows; only when a workspace has more than one window) follow the
-  theme: `shell.qml` sends the accent (active) and bar colour (inactive), at 60% and 85% (Hyprland cannot blur behind borders),
+  theme: `shell.qml` sends the accent (active) and bar color (inactive), at 60% and 85% (Hyprland cannot blur behind borders),
   to Hyprland with `hyprctl eval`, and again after a config reload. Fallbacks and
   `BORDER_SIZE` live in `colors.lua`.
 - Bar and dock position: `Config.s.barPosition` and `dockPosition` (top/bottom/left/right).
@@ -328,16 +328,16 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - The wallpaper is `Config.s.wallpaper` (drawn by `Wallpaper.qml`);
   `scripts/wallpaper-accent.py` (ImageMagick) returns the accent and tone. They're cached in
   `~/.cache/slate/wallpaper-colours.json` (with the wallpaper they're for) and used at start-up
-  until the script answers; a cache that's damaged, for another wallpaper or not colours is
+  until the script answers; a cache that's damaged, for another wallpaper or not colors is
   ignored and written again. The login screen doesn't use it.
 - The wallpaper switcher previews through `Config.wallpaperPreview` (what `Config.wallpaper`
   shows while it's set), never the setting. While it's open (`Config.wallpaperSwitching`) the
-  colours follow in Slate alone: each wallpaper's are kept (`wallpaperColourMemo`) so going
-  back is instant, the colour cache isn't written, and what's slow or reaches outside Slate
-  (App theming, folder colours, title bar buttons, window borders, the login screen, the
+  colors follow in Slate alone: each wallpaper's are kept (`wallpaperColourMemo`) so going
+  back is instant, the color cache isn't written, and what's slow or reaches outside Slate
+  (App theming, folder colors, title bar buttons, window borders, the login screen, the
   reload cover) is held (`heldBack` in `shell.qml`) and runs once when it closes. The bar and
   dock go up to the overlay layer with no input meanwhile.
-- Canvas-drawn shapes (corners, panel joins) repaint on colour change via a `fill`
+- Canvas-drawn shapes (corners, panel joins) repaint on color change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a
   full restart after editing them.
 - **The menu bar is one arranged line** (`Bar.qml`): every item is a `Segment`, written once in
@@ -389,7 +389,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `config` | `set <key> <value>`, `get <key>` (a setting, as the Settings window changes it) |
 | `workspacemode` | `set <id> <mode>`, `get <id>`, `setDefault <mode> <tidy>`, `notIn <mode>` (the workspaces a change of default would rearrange) |
 | `workspacename` | `set <id> <name>`, `get <id>`, `label <id>` |
-| `titlebar` | `maximise <address>` (maximise or restore, leaving room for its bar) |
+| `titlebar` | `maximise <address>` (maximize or restore, leaving room for its bar) |
 | `updates` | `check`, `install`, `revert` |
 | `voice` | `hold`, `release`, `cancel` (talking to Nova) |
 | `shell` | `reload` (what `slate restart` and `slate stop` use) |
@@ -419,7 +419,7 @@ instead, made mode 0700, never a fixed name in `/tmp`.
 - `binds.lua` — three sets (Settings → Shortcuts, `~/.local/state/slate/keyset.lua`): Slate's
   (below), Hyprland's default shortcuts, or Hyprland's plus Slate's on free keys. Slate's set: Super tap → launcher; Super+Space launcher; Super+Tab switcher;
   Super+Down overview (arrows/Enter/Shift+arrows drive it while open); Super+Up go /
-  special workspace; Super+Return new workspace launch; Super+X control centre;
+  special workspace; Super+Return new workspace launch; Super+X control center;
   Super+A notifications; Super+Alt+C power; Super+Z settings; Super+L lock; media,
   volume, brightness and keyboard-backlight keys → `osd`.
 - `animations.lua` — `fadeTo(dispatcher)` (crossfade) and `instantTo(dispatcher)` used
@@ -461,11 +461,11 @@ Each window a restore opens is noted by its Hyprland `stableId` (addresses get r
 (window ids start over in each Hyprland session, so another session's file is ignored).
 The marks survive Slate reloads and Hyprland config reloads. `Spaces.qml` reads the file
 (`Spaces.owners`); `SpaceBadges.qml` also keeps `Spaces.spaceOfAddress` (window address →
-space), which the bar uses to put the focused window's icon on its space's colour, and the
+space), which the bar uses to put the focused window's icon on its space's color, and the
 window switcher and workspace overview use to badge those windows (`SpaceBadge.qml`). `SpaceBadges.qml` puts a Top-layer strip along
-the top edge of each such window, drawing a 3 px border in the space's colour that wraps down the curve at each end and tapers to
+the top edge of each such window, drawing a 3 px border in the space's color that wraps down the curve at each end and tapers to
 a point: the window's rounded corner (`decoration:rounding`; none for a lone tiled or
-maximised window), or the bar's curve where the window sits under a top bar's curved end) that's on a showing workspace (clear, and taking the
+maximized window), or the bar's curve where the window sits under a top bar's curved end) that's on a showing workspace (clear, and taking the
 pointer only where the badge is), placed from `HyprlandToplevel.lastIpcObject` (re-read on
 window/workspace events, and every 0.5 s while there are any, since Hyprland sends no event
 for resizes or drags); which workspaces are showing comes from `hyprctl -j monitors`.
@@ -547,7 +547,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`; optional: without it the page says what to install) |
 | `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
-| `hyprpicker` | the colour picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
+| `hyprpicker` | the color picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
 | `ffmpeg` (Fedora `ffmpeg-free`; `ffprobe` comes with it) | takes the sound out of downloaded screensaver videos |
 | `whisper-cpp` (Debian/Ubuntu `whisper.cpp`, NixOS `whisper-cpp`, Gentoo GURU `app-accessibility/whisper-cpp`; openSUSE and Void: build it) | talking to Nova (Settings → Assistant → Voice): `whisper-cli` turns what you said into text on this computer (`scripts/voice.py`). Its speech model (whisper's base, 148 MB) is downloaded by Slate only when you ask, into `~/.local/share/slate/whisper/` |
@@ -559,14 +559,14 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `brightnessctl` | screen and keyboard brightness keys |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
-| `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
+| `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colors |
 | `xdg-desktop-portal-hyprland` (Gentoo `gui-libs/xdg-desktop-portal-hyprland`; optional in Debian's list, where it comes with Hyprland's PPA) | Hyprland's portal, required: screen sharing and recording for browsers, OBS and chat apps; Private Mode switches it off while on (`scripts/private-capture.sh`); and the window rule that keeps its share picker (`hyprland-share-picker`) floating and out of Slate's way (`session/hypr/config/windowrules.lua`) |
 | `xdg-desktop-portal-gtk` | Flatpak and Snap apps following light or dark (the Settings portal reads `color-scheme` from gsettings; Hyprland's own portal has no Settings) |
 | hyprbars (Hyprland plugin; `git`, `make`, `g++` and `pkg-config` to build it, optional in the lists and checked by `slate build-hyprbars`, which says which is missing) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
-| `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Icons → Folder colour |
+| `papirus-icon-theme` | The default icon theme (Papirus-Dark); its colored folders back Settings → Icons → Folder color |
 | `ollama` (Fedora, openSUSE, Void, NixOS; Debian and Ubuntu: Ollama's own installer; Gentoo: GURU `sci-ml/ollama`) | Nova with a model on this computer (Settings → Assistant → Ollama), through its HTTP API on 127.0.0.1:11434 (`scripts/ollama-agent.py`, standard library only). Never installed by Slate (a large install): it's yours to add, and Settings says when it isn't there, isn't running or has no model yet. The agent CLIs Nova can use (Claude Code, Codex, OpenCode, Goose, Antigravity) are the person's own, found at run time and never installed by Slate |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).

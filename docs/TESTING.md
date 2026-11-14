@@ -151,7 +151,7 @@ images before committing.
 Approved screenshots are only ever made in the container: the software renderer there gives
 the same pixels every time, where a real GPU wouldn't. Small anti-aliasing shifts are allowed
 (`tests/lib/imgdiff.py`); a scene can also mask a part that changes by itself (the control
-centre's uptime).
+center's uptime).
 
 The scenes run one after another in one Slate session, and each starts with no notifications
 (a pop-up or the bell's count from an earlier scene once showed up in later pictures). One thing

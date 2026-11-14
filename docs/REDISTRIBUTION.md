@@ -10,7 +10,7 @@ what's still open.
   data). Work goes from here to the installed copy (`./install.sh`, or `./install.sh --link`
   to run straight from this folder), never back.
 - **Public, with releases**: the code is at <https://github.com/daylerees/slate>, MIT
-  (`LICENSE`), with the bundled fonts and cursors under their own licences. Each release
+  (`LICENSE`), with the bundled fonts and cursors under their own licenses. Each release
   carries `slate-<tag>.tar.gz` and its checksum (`tools/release-assets.sh`), which Settings →
   Updates checks before installing.
 - **Installer**: `install.sh` installs packages per distro (`packaging/*.txt`,
@@ -25,7 +25,7 @@ what's still open.
   apps are installed on first run; the login screen's keyboard layout is taken from the
   running Hyprland; helper scripts live in `shell/bin` (no `~/.local/bin`).
 - **Self-contained**: wallpaper, polkit agent, clipboard history, emoji picker, night light,
-  screenshots, media keys, app colour themes, log out, icon font and tile generator are all
+  screenshots, media keys, app color themes, log out, icon font and tile generator are all
   part of Slate, with no other desktop shell needed.
 - **Shortcuts**: three sets to choose from (Settings → Shortcuts): Slate's, Hyprland's
   defaults, or Hyprland's plus Slate's on free keys.
@@ -58,13 +58,13 @@ what's still open.
   `~/.local/share/slate/plugins/hyprbars.so`, is loaded as it is and left to its package
   manager.
 - **Slate patches Hyprbars**: `shell/data/hyprbars-idle-button-color.patch` adds an
-  `idle_button_color` option (title bar buttons stay a dull theme colour until hovered, since
+  `idle_button_color` option (title bar buttons stay a dull theme color until hovered, since
   Slate's buttons have no glyphs) and makes hover tracking work for buttons without an icon.
   `slate build-hyprbars` applies it and builds without it if it no longer applies; a build
-  without the patch works too (the buttons keep their colours). Packages should apply the
+  without the patch works too (the buttons keep their colors). Packages should apply the
   patch when building, and it needs rechecking on each hyprland-plugins release (made
   against v0.57.0). The patch is a change to hyprland-plugins code, so it is under their BSD
-  3-Clause licence, not Slate's MIT; worth offering upstream so the patch can go.
+  3-Clause license, not Slate's MIT; worth offering upstream so the patch can go.
 
 ## Still to do
 

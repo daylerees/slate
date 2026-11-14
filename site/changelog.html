@@ -47,8 +47,8 @@
         <li><strong>Talk to Nova.</strong> Hold Super+K, or the microphone in Nova's box, and say what you want. It's turned into text on your computer with whisper.cpp, and the recording is deleted straight away. It only listens while held, and never in Private Mode or with the screen locked. Switch it on in Settings → Assistant → Voice; the speech model (148 MB) downloads only after Slate asks.</li>
         <li><strong>More agents for Nova.</strong> Codex, OpenCode, Goose and Antigravity, as well as Claude Code and a command of your own. Or Ollama, a model on your own computer, with Slate running the agent itself, so nothing leaves your computer.</li>
         <li><strong>Nova does more.</strong> Undo a setting it changed, straight from its answer. It can turn Wi-Fi and Bluetooth on or off and connect to networks and devices you've used before, pin apps to the dock, empty the waste basket and put a Settings page back to its defaults; anything that can't be undone, or could cut it off, asks first. Answers can have lists, bold words and commands in a box with Copy. Stop it with the round button in its box or Ctrl+C, drag its window by its title, and hear a soft sound when it answers while you wait. The Welcome window now introduces it.</li>
-        <li><strong>A wallpaper switcher.</strong> Super+Alt+W shows your wallpapers in a row. Left and Right preview each one full screen, with your windows faded away and Slate's colours following; Enter keeps it, Escape puts yours back. Pictures are read ahead and colours worked out ahead, so moving along is quick.</li>
-        <li><strong>Bolder wallpaper colours.</strong> Accent boldness and Tint boldness now start at 80% when you turn on colours from the wallpaper.</li>
+        <li><strong>A wallpaper switcher.</strong> Super+Alt+W shows your wallpapers in a row. Left and Right preview each one full screen, with your windows faded away and Slate's colors following; Enter keeps it, Escape puts yours back. Pictures are read ahead and colors worked out ahead, so moving along is quick.</li>
+        <li><strong>Bolder wallpaper colors.</strong> Accent boldness and Tint boldness now start at 80% when you turn on colors from the wallpaper.</li>
         <li><strong>A menu bar that says more.</strong> Rest the pointer on anything for a small label: the whole date on the clock, and how things are ("Volume: 40%", "Wi-Fi: Home", "Battery: 80%, charging"). The workspace's name can go on the bar, buttons take the pointer across the bar's full height, More scrolls when it's long and closes after you pick something, and a press anywhere on the bar closes an open panel.</li>
         <li><strong>A tidier dock.</strong> At most six window previews, with a card saying how many more windows there are, and drag an app from More onto the dock to pin it there.</li>
         <li><strong>App theming reaches further.</strong> Flatpak and Snap apps, and Qt 5 apps that use qt5ct. Kvantum themes keep their own look.</li>
@@ -61,7 +61,7 @@
         <li>A collapsed container on the menu bar that you open now stays open when the bar is short of room, instead of closing again straight away.</li>
         <li>Pressing a dock icon now closes an open bar panel.</li>
         <li>In the dock's More and Downloads, names are no longer cut off by the scrollbar, and the shades show which way they scroll.</li>
-        <li>The coloured tiles behind app icons now appear on a first login or with a new icon style, rather than after Slate reloads.</li>
+        <li>The colored tiles behind app icons now appear on a first login or with a new icon style, rather than after Slate reloads.</li>
         <li>Emptying the Waste Basket now works on a minimal install: gvfs is now a dependency.</li>
         <li>Linked config files (Home Manager, GNU Stow) stay links when App theming changes them, and read-only ones are left alone.</li>
         <li>The wallpaper switcher no longer leaves a preview on screen after Escape right after a move.</li>
@@ -95,7 +95,7 @@
       <h3>Fixes</h3>
       <ul>
         <li>With more than one screen, the menu bar on screens other than the main display now opens its panels, and its bell shows your unread notifications and Do Not Disturb. Before, its buttons did nothing.</li>
-        <li>Hover colours fade smoothly. With glass off, buttons, switches, dropdowns, tiles and cards no longer flash brighter as the pointer comes and goes.</li>
+        <li>Hover colors fade smoothly. With glass off, buttons, switches, dropdowns, tiles and cards no longer flash brighter as the pointer comes and goes.</li>
         <li>The launcher's list scrolls smoothly the first time you open it. Its first scroll could skip rows or draw them out of place.</li>
         <li>A wrong password on the login screen says so, rather than showing a message about a connection problem.</li>
         <li>Less space under the Caps Lock warning on the lock and login screens.</li>
@@ -123,7 +123,7 @@
       <h3>Fixes</h3>
       <ul>
         <li><strong>Closing windows while live previews show them no longer crashes Slate.</strong> Closing several windows at once while Spaces → New Space or the overview was showing them could make Slate restart (your apps and windows stayed open). It's a Quickshell bug (<a href="https://github.com/quickshell-mirror/quickshell/issues/1481">quickshell#1481</a>); Slate now works around it, so this is no longer a known issue.</li>
-        <li>The weather no longer disappears from the control centre, leaving an empty space, after a reply from the weather service that isn't a forecast (as can happen while a VPN reconnects after sleep). Slate keeps the weather it had, and if a check doesn't bring the weather, tries again in two minutes rather than half an hour.</li>
+        <li>The weather no longer disappears from the control center, leaving an empty space, after a reply from the weather service that isn't a forecast (as can happen while a VPN reconnects after sleep). Slate keeps the weather it had, and if a check doesn't bring the weather, tries again in two minutes rather than half an hour.</li>
         <li>In the window switcher, the blur behind see-through windows comes in with the preview, not after it.</li>
         <li>When your own assistant command fails, Slate always shows why. The reason could come up empty before.</li>
       </ul>
@@ -143,12 +143,12 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>A new control centre.</strong> A card with the time, today's weather and the days ahead, with what's playing beneath it, and eight quick switches beside it, always the same size. Choose and order them on Settings → Control Centre by dragging. There are more to pick from now (Light Mode, Mute, Mute Mic, Power Saver, Glass, Charging Limit, Hide Dock, Hide Menu Bar, Floating, Clipboard, Game Mode, Airplane Mode), and switches for hardware you haven't got are left out.</li>
+        <li><strong>A new control center.</strong> A card with the time, today's weather and the days ahead, with what's playing beneath it, and eight quick switches beside it, always the same size. Choose and order them on Settings → Control Center by dragging. There are more to pick from now (Light Mode, Mute, Mute Mic, Power Saver, Glass, Charging Limit, Hide Dock, Hide Menu Bar, Floating, Clipboard, Game Mode, Airplane Mode), and switches for hardware you haven't got are left out.</li>
         <li><strong>Private Mode.</strong> One switch mutes your microphones, turns the camera off for every app, switches Nova and other assistants off, and stops screenshots and screen sharing. A note tells you when the camera comes on, and which app is using it, and the menu bar can show a camera indicator.</li>
         <li><strong>Airplane Mode</strong> turns Wi-Fi, Bluetooth and mobile broadband off together, and puts back what was on when you turn it off.</li>
         <li><strong>One right-click menu everywhere.</strong> The desktop, the menu bar, the dock and the Slate button share one menu, with submenus, a tick for the current choice, and the keyboard (arrows, Enter, Escape). The menu bar and dock menus have new items, like Position, Clock, Auto-hide and Icon size.</li>
         <li><strong>Shadows.</strong> Every panel, menu, notification and floating window shares one soft, tinted shadow. Settings → Appearance → Shadows sets its darkness, softness, spread, distance and direction, or turns them off.</li>
-        <li><strong>Icon and pointer themes.</strong> Settings → Icons picks your icon theme and folder colour, with a few good themes a click away. Settings → Input → Pointer style picks your pointer, with one-click packs.</li>
+        <li><strong>Icon and pointer themes.</strong> Settings → Icons picks your icon theme and folder color, with a few good themes a click away. Settings → Input → Pointer style picks your pointer, with one-click packs.</li>
         <li><strong>Workspace dots that scroll.</strong> With lots of workspaces, the dots keep the one you're on in the middle and fade away at the ends.</li>
         <li><strong>The assistant is now Nova</strong>, with a north star for its icon.</li>
         <li>The menu bar's shadow fades in and out, and an open menu bar panel closes when you change workspace.</li>
@@ -172,7 +172,7 @@
         <li>Caffeine keeps working whatever "Wait while media plays" is set to.</li>
         <li>The dock stays usable while a menu bar panel is open.</li>
         <li>The camera watcher stops when Slate stops.</li>
-        <li>With Colourful off, the window mode icon in the bar matches the others.</li>
+        <li>With Colorful off, the window mode icon in the bar matches the others.</li>
       </ul>
     </article>
     <article>
@@ -195,12 +195,12 @@
       <ul>
         <li><strong>Arrange the menu bar by dragging.</strong> Settings → Menu Bar → Edit layout (or right-click the bar) opens a panel under the bar. Drag things along the bar, into and out of containers, and to and from the pool of what isn't on it. Add containers and flexible spaces, split a container up, choose whether each thing shows its text, and put it all back with Defaults. Click anything for its options: the clock's format, date and seconds; whether a container collapses Never, When needed or Always, and its button's icon. Windows are dimmed and shortcuts stand down while you arrange.</li>
         <li><strong>A bar that copes when it doesn't fit.</strong> On a small screen, a bigger Interface size or with long names, the bar slims itself: the window's title shortens, text beside icons goes (longest first), the clock sheds its date and seconds, and "When needed" containers tuck behind their button. What still doesn't fit waits behind a new More button. Set priority chooses what stays longest, "Always keep on the bar" pins a thing, and "Try it shorter" shows what your bar would do.</li>
-        <li><strong>A new default bar.</strong> Apps sits with Chalk, and Spaces with the window mode and the workspace dots. The window's icon and its title are separate things you can place. The Apps, Spaces, Chalk and window mode icons each take one pastel in the Colourful look.</li>
+        <li><strong>A new default bar.</strong> Apps sits with Chalk, and Spaces with the window mode and the workspace dots. The window's icon and its title are separate things you can place. The Apps, Spaces, Chalk and window mode icons each take one pastel in the Colorful look.</li>
         <li><strong>Chalk, an assistant for your desktop (an experiment).</strong> Ask an AI agent you already use to change a setting, move a window or tell you what's where. It works through Slate's own tools (<code>slate mcp</code>), and Slate asks before anything that can't be undone. It's off until you switch it on in Settings → Assistant, which shows the risks first, and no agent is chosen until you choose one. Super+K opens it.</li>
         <li><strong>Glass you can tune.</strong> With glass on, the menu bar, its panels, the dock, notifications, the launcher and Chalk's window each have a Blur switch and their own opacity sliders. The bar's containers can fade, and firm up under the pointer. The bright edge round glass windows takes a tint of your accent.</li>
-        <li><strong>One language for colour.</strong> What stays selected wears the accent; what the pointer is over gets a quieter highlight; anything destructive (Remove, Clear, Force Quit, Shut down) hovers red. The sheen is gone from buttons, switches, text boxes, dropdowns, selections and the bell panel's cards, so it's left for surfaces and app icons.</li>
+        <li><strong>One language for color.</strong> What stays selected wears the accent; what the pointer is over gets a quieter highlight; anything destructive (Remove, Clear, Force Quit, Shut down) hovers red. The sheen is gone from buttons, switches, text boxes, dropdowns, selections and the bell panel's cards, so it's left for surfaces and app icons.</li>
         <li><strong>Rounded UI elements.</strong> Settings → Appearance has a switch that makes everything hard-edged and square: the bar's containers and panels, the dock, menus, buttons, switches and your windows. App icons and workspace dots keep the shapes chosen for them.</li>
-        <li><strong>A gentle reload.</strong> When Slate restarts, the screen fades to "Reloading Slate" in your theme's colours and back, where it used to flash.</li>
+        <li><strong>A gentle reload.</strong> When Slate restarts, the screen fades to "Reloading Slate" in your theme's colors and back, where it used to flash.</li>
         <li><strong>A Network page.</strong> The Wi-Fi page is now Network: how you're connected, each network socket and whether a cable's in, Wi-Fi and its networks, and the connection's details. On a cable the bar shows a wired icon.</li>
         <li><strong>Power.</strong> The power panel shows your battery's health and where charging stops, where the laptop reports them, and Settings → Power has a Charging limit switch. The processor, memory and disk bars turn yellow above 70% and red above 90%.</li>
         <li><strong>Slate fits the computer it's on.</strong> With no battery, the bar's battery item becomes a power button into the same panel. With no Wi-Fi or no speakers, that item leaves the bar and its panel says what's missing.</li>
@@ -210,7 +210,7 @@
         <li><strong>Workspaces.</strong> The indicator shown as you switch names the workspace. To start with, Super+Left/Right stop at the first and last workspace and there's always a spare empty one.</li>
         <li><strong>A hand pointer</strong> over everything in Slate you can click.</li>
         <li><strong>Settings.</strong> A back button on every page; fonts and default apps chosen from type-to-search dropdowns (fonts in their own typefaces); the All Settings search box stays put as the tiles scroll; Monochrome tray icons; shorter page names (Input, Printers, Security).</li>
-        <li><strong>New defaults</strong> (your own settings are kept): title bar buttons on the left, focus follows the pointer, tiles in the icon's colour, a black screensaver, Gloss at 50% on a 0–100% slider.</li>
+        <li><strong>New defaults</strong> (your own settings are kept): title bar buttons on the left, focus follows the pointer, tiles in the icon's color, a black screensaver, Gloss at 50% on a 0–100% slider.</li>
       </ul>
     </article>
     <article>
@@ -221,7 +221,7 @@
         <li><strong>Floating windows fit the screen.</strong> One that opens larger than nine tenths of the usable screen is made that size, and one hanging off an edge is moved in.</li>
         <li><strong>Clicks just under the menu bar get through.</strong> A hidden strip there swallowed them, so a floating window pushed up against the bar couldn't be grabbed by its title.</li>
         <li><strong>Picking a workspace from the overview sticks.</strong> With the zoom, Slate stopped watching for Hyprland handing focus back as soon as the overview had gone, so now and then the switch was undone.</li>
-        <li><strong>Maximising twice in quick succession</strong> puts the window back, where it maximised twice over.</li>
+        <li><strong>Maximizing twice in quick succession</strong> puts the window back, where it maximized twice over.</li>
         <li><strong>Notifications from apps that leave things out</strong> (no name, no icon, a picture that can't be loaded) show sensible stand-ins.</li>
         <li><strong>The dock's window previews</strong> are blurred behind with glass; the symbols on the dock's own buttons no longer wobble as they magnify.</li>
         <li><strong>The loading cursor</strong> no longer shifts left and right as it turns.</li>
@@ -253,7 +253,7 @@
         <li><strong>Name your workspaces.</strong> The pencil on that panel names a workspace ("Coding", "Music"). The name takes the place of "Workspace 3" in the workspace switcher, the bar and the Spaces panel, stays while the workspace is around, and is saved with a Space.</li>
         <li><strong>Slate Bars: Slate's own title bars, now the default.</strong> Floating windows get a title bar Slate draws itself, on the window in front: nothing to build, and nothing that breaks when Hyprland updates. Hyprbars (the plugin, with a bar on every floating window) is now an option you choose in Settings → Windows, which explains what's involved and builds it for you. If you already had Hyprbars working, you keep it.</li>
         <li><strong>Hyprbars looks after itself across Hyprland updates.</strong> A build made for another Hyprland is never loaded, so there are no more red errors at login. Slate switches to Slate Bars, asks whether to rebuild, offers a reload when it's done, then asks whether to switch back. If Hyprland was updated but not yet restarted, it offers to rebuild ahead of time.</li>
-        <li><strong>Ten wallpapers of Slate's own</strong>, in 4K: soft glows of colour over a deep base, each with Slate's mark in the middle or plain. Ember, Iris, Lagoon and Blossom in mixed colours; Fern, Cobalt, Ruby, Honey, Graphite and Mist in single ones. They're listed below your own pictures in Settings → Appearance (a switch hides them), and are drawn without colour banding.</li>
+        <li><strong>Ten wallpapers of Slate's own</strong>, in 4K: soft glows of color over a deep base, each with Slate's mark in the middle or plain. Ember, Iris, Lagoon and Blossom in mixed colors; Fern, Cobalt, Ruby, Honey, Graphite and Mist in single ones. They're listed below your own pictures in Settings → Appearance (a switch hides them), and are drawn without color banding.</li>
         <li><strong>More ways to switch.</strong> The window switcher and the workspace switcher each have a choice of animations (slide, hop, wheel, tilt, orbit, deck, fan or instant), and the workspace switcher can be a grid. Holding Super, the arrow keys move through the window switcher.</li>
         <li><strong>Dock hover effects.</strong> Magnify, tilt, fade, glow or raise (Settings → Dock). Window previews fade in from their icon, scroll sideways when there are many, and can appear instantly: a switch turns them on or off, and a slider sets the wait (now 0.2 s by default).</li>
         <li><strong>The login screen is opt-in.</strong> Installing Slate no longer touches your login screen. Settings → Lock &amp; Idle has Install (with a plain account of the risks), Update and Switch back.</li>
@@ -268,12 +268,12 @@
       <h3>Fixes</h3>
       <ul>
         <li><strong>Tray icons no longer go missing</strong> for apps such as Mullvad after Slate reloads or at login.</li>
-        <li><strong>No more flash of the default colours</strong> when Slate reloads: your settings and the wallpaper's colours are in place before anything is drawn.</li>
+        <li><strong>No more flash of the default colors</strong> when Slate reloads: your settings and the wallpaper's colors are in place before anything is drawn.</li>
         <li><strong>Pressing Print Screen repeatedly</strong> opened a new area chooser each time, dimming the screen further with every press. Only one opens now.</li>
         <li><strong>A config error at login when Hyprbars wasn't loaded</strong> is gone.</li>
         <li><strong>Switching windows now and then did nothing</strong> when the computer was busy: the switcher asked Hyprland to focus the window a moment too early. It checks and asks again.</li>
         <li><strong>Windows opened on a floating workspace stayed floating</strong> when that workspace went back to tiling. They're tiled again now.</li>
-        <li>The menu bar's icons are all drawn the same height and lined up; the window mode button sits closer to its neighbours.</li>
+        <li>The menu bar's icons are all drawn the same height and lined up; the window mode button sits closer to its neighbors.</li>
         <li>Hyprbars' top edge resizes the window.</li>
         <li>The diagonal resize cursors point the right way.</li>
       </ul>
@@ -297,7 +297,7 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Settings → Webcam.</strong> Your camera's picture settings: brightness, contrast, colour, sharpness, gain, white balance and exposure (automatic or manual), anti-flicker for your mains (50 or 60 Hz) and backlight compensation. Webcams forget these when they're unplugged or restarted, so Slate puts yours back at login. A preview turns the camera on only when you ask, and the page shows which apps are using the camera.</li>
+        <li><strong>Settings → Webcam.</strong> Your camera's picture settings: brightness, contrast, color, sharpness, gain, white balance and exposure (automatic or manual), anti-flicker for your mains (50 or 60 Hz) and backlight compensation. Webcams forget these when they're unplugged or restarted, so Slate puts yours back at login. A preview turns the camera on only when you ask, and the page shows which apps are using the camera.</li>
         <li><strong>Drag apps on the dock.</strong> The icon comes away with the pointer at its magnified size, and the others make room around a placeholder that shows where it'll land. Drop a running app among your pinned ones to pin it, or pull a pinned app well up off the dock to unpin it (a warning appears first; it stays on the dock while it's running). Window previews and menus stay out of the way while you drag.</li>
         <li><strong>See which settings you've changed.</strong> A small dot after a setting's name means it isn't at its default; point at the dot to see what the default is.</li>
         <li><strong>Move Settings by its frame.</strong> Drag the Slate mark at the top of the sidebar, or the empty space in the page header.</li>
@@ -328,7 +328,7 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>HDR in Settings → Displays</strong>, for displays that support it: Auto (HDR while a game or video fills the screen with HDR content), On (always, in 10-bit colour, with how bright and colourful everything else looks) or Off. Like the rest of the page, a change reverts by itself unless you keep it.</li>
+        <li><strong>HDR in Settings → Displays</strong>, for displays that support it: Auto (HDR while a game or video fills the screen with HDR content), On (always, in 10-bit color, with how bright and colorful everything else looks) or Off. Like the rest of the page, a change reverts by itself unless you keep it.</li>
         <li><strong>Solid, glossy icon tiles with glass.</strong> The tile behind an app icon was a faint film over whatever was behind it; it's solid now, with the frosting and sheen on top, everywhere icons show: the dock, launcher, switchers, notifications, the bar and Spaces. The dock's sheen no longer fades as an icon magnifies, and magnified tiles keep the dock's glass behind them.</li>
         <li><strong>Dock badges stay until you go to the app.</strong> For apps that don't publish their own count (mail and chat apps such as Thunderbird), the badge counts their notifications since you last went to the app, rather than clearing when you open the notification panel.</li>
         <li><strong>Reload everything</strong> in Settings → Debug: reloads Hyprland's config and restarts Slate from scratch, for when something looks stuck. Your apps stay open.</li>
@@ -360,7 +360,7 @@
       <h3>Fixes</h3>
       <ul>
         <li><strong>The login screen no longer always looks out of date.</strong> On systems without <code>diffutils</code>, Slate's checks for an outdated login screen, missing packages and changed files always failed. It's now one of Slate's packages; Slate offers to install it after updating (or run <code>./install.sh</code>).</li>
-        <li>A grey wallpaper no longer gives a pink accent colour: it keeps the default, as a black one does.</li>
+        <li>A gray wallpaper no longer gives a pink accent color: it keeps the default, as a black one does.</li>
         <li>With whole app icons, an app with no icon no longer shows a dark square in light mode.</li>
         <li>Switching an app's theming off (Settings → App Theming) puts its config back exactly: a file without a final newline stays that way, and KDE's settings no longer gain a blank line.</li>
         <li>Settings → Updates now warns about a file of yours like <code>settings.json.bak</code> in Slate's folder, which an update would remove.</li>
@@ -413,14 +413,14 @@
       <h3>Fixes</h3>
       <ul>
         <li>Icons in the launcher's results no longer flicker as you type, and the arrow keys no longer scroll the results out of view.</li>
-        <li>Commands and file names keep their own capitalisation.</li>
+        <li>Commands and file names keep their own capitalization.</li>
         <li><strong>Works better beyond Arch:</strong> apps, icons, layouts and sessions are found wherever the system keeps them (NixOS, Flatpak, <code>/usr/local</code>); default apps are whichever you have installed; the login screen installer finds greetd's user; the GTK theme is set only when installed; setting your picture explains what's missing.</li>
       </ul>
     </article>
     <article>
       <h3>Other</h3>
       <ul>
-        <li><strong>The installer sets up everything Slate needs on a fresh system:</strong> the colour emoji font, AccountsService and optional extras, a terminal and file manager if you have none, and Bluetooth and NetworkManager. Run <code>./install.sh</code> once after updating.</li>
+        <li><strong>The installer sets up everything Slate needs on a fresh system:</strong> the color emoji font, AccountsService and optional extras, a terminal and file manager if you have none, and Bluetooth and NetworkManager. Run <code>./install.sh</code> once after updating.</li>
       </ul>
     </article>
   </div>
@@ -462,7 +462,7 @@
     <article>
       <h3>Fixes</h3>
       <ul>
-        <li><strong>Live window previews aren't dimmed any more.</strong> Windows without focus came out greyed in the switcher, the overview, the Spaces panel and the dock's previews.</li>
+        <li><strong>Live window previews aren't dimmed any more.</strong> Windows without focus came out grayed in the switcher, the overview, the Spaces panel and the dock's previews.</li>
         <li><strong>Smaller screens.</strong> The notification and Wi-Fi panels, the dock, the clipboard and emoji picker, tray menus, the welcome and the avatar picker now fit small or highly scaled screens.</li>
         <li><strong>Spotify theming</strong> works when Spicetify was installed with its own installer.</li>
       </ul>
@@ -506,7 +506,7 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Eight more scenery videos.</strong> Get scenery videos now fetches twelve clips: Lake Bled at sunrise and from the air, Right Whale Bay and Gold Harbour on South Georgia, an emperor penguin in Antarctica, the Crimean coast, the Blue Ridge mountains and a beach in Cádiz join the four from before. In all: about 410 MB at 1080p, 780 MB at 1440p, 1.1 GB at 4K.</li>
+        <li><strong>Eight more scenery videos.</strong> Get scenery videos now fetches twelve clips: Lake Bled at sunrise and from the air, Right Whale Bay and Gold Harbor on South Georgia, an emperor penguin in Antarctica, the Crimean coast, the Blue Ridge mountains and a beach in Cádiz join the four from before. In all: about 410 MB at 1080p, 780 MB at 1440p, 1.1 GB at 4K.</li>
         <li><strong>Glassier notifications.</strong> With glass on, notifications get a curved glossy shine across their top, and their app icons a sheen like the dock's.</li>
         <li><strong>A steadier menu bar with glass.</strong> In dark mode the bar is a little darker and less see-through than other glass, so it reads as a steady band whatever the wallpaper does.</li>
         <li><strong>The dock stays open over floating windows.</strong> With auto-hide on, a workspace with only floating windows keeps the dock open, as an empty one does (except in floating windows mode).</li>
@@ -519,11 +519,11 @@
         <li>Turning <strong>tap to click</strong> off in Settings now works (Hyprland was refusing it).</li>
         <li>Apps keep the <strong>cursor size</strong> set in Settings, rather than getting the old one back after a theme change.</li>
         <li>The <strong>login screen</strong> no longer runs your startup apps or holds on to the lid switch.</li>
-        <li>The calendar and control centre <strong>clocks follow the 24-hour setting</strong>.</li>
+        <li>The calendar and control center <strong>clocks follow the 24-hour setting</strong>.</li>
         <li>In <strong>game mode</strong> the bar's separators go solid with the rest of the bar.</li>
         <li>The switcher and overview <strong>slide at the Animations speed</strong> (Fast and Off).</li>
         <li>Long <strong>Wi-Fi names</strong> in Settings stop short of the buttons.</li>
-        <li>A broken wallpaper can't hang the <strong>accent colour</strong> pick.</li>
+        <li>A broken wallpaper can't hang the <strong>accent color</strong> pick.</li>
         <li><code>slate ipc call bar panel gamemode</code> opens the game mode panel.</li>
         <li>The package lists now include <strong>numpy and rsvg-convert</strong>, which app icons need. Updating from Settings will ask you to run <code>./install.sh</code> once to install them.</li>
       </ul>
@@ -568,9 +568,9 @@
         <li><strong>The lock screen crossfades</strong> in over your desktop and back out after your password, while staying fully locked the whole time. Locks before sleep don't fade.</li>
         <li><strong>Search every setting from any Settings page,</strong> with a search box at the top of each page.</li>
         <li><strong>Settings comes back where it was</strong> (same page, same scroll position) when Slate reloads or restarts.</li>
-        <li><strong>Tiles in the icon's colour:</strong> the tile behind each app icon can take a deep shade of the icon's own colour, with a soft gradient (Settings → Appearance → App icons).</li>
+        <li><strong>Tiles in the icon's color:</strong> the tile behind each app icon can take a deep shade of the icon's own color, with a soft gradient (Settings → Appearance → App icons).</li>
         <li><strong>Window borders get a sheen</strong> with glass on, catching the light at the top left corner.</li>
-        <li><strong>A Slate Default theme preset</strong>, and presets now set folder colours from the wallpaper too. Restore defaults on Appearance goes back to Slate Default.</li>
+        <li><strong>A Slate Default theme preset</strong>, and presets now set folder colors from the wallpaper too. Restore defaults on Appearance goes back to Slate Default.</li>
         <li><strong>Light mode asks first,</strong> as it's still being polished.</li>
         <li><strong>A picker window for your account picture,</strong> with your picture folders, a thumbnail grid and a round preview.</li>
         <li><strong>Your location searches as you type,</strong> and shows the place you've set.</li>
@@ -582,7 +582,7 @@
         <li><strong>The Settings window never dims</strong> when it isn't focused, so you can watch a change take effect.</li>
         <li><strong>Dropdowns show when there's more to scroll,</strong> with soft shadows and a slim scrollbar.</li>
         <li><strong>Urgent login screen notices:</strong> the prompt to update the login screen, and the notice if updating fails, now stay until you've seen them.</li>
-        <li>More: a switch for game mode's On/Off text, a Spaces button switch on the Menu Bar page, App icons previews that show every icon setting and glass, Slate's mark on its notifications coloured like the bar's button, and a copyright line on the About page.</li>
+        <li>More: a switch for game mode's On/Off text, a Spaces button switch on the Menu Bar page, App icons previews that show every icon setting and glass, Slate's mark on its notifications colored like the bar's button, and a copyright line on the About page.</li>
       </ul>
     </article>
     <article>
@@ -592,9 +592,9 @@
         <li>A hot corner used to lock the screen works again after you unlock, and screens turned off from a corner come back on at your next mouse move or key press.</li>
         <li>The window's app icon on the bar no longer disappears until a reload.</li>
         <li>Changing several settings at once (a preset, Restore defaults) no longer sometimes undoes some of them.</li>
-        <li>Fewer Hyprland reloads (and no flicker or notice) when the accent colour changes, and no "reloaded" notice for reloads Slate makes itself.</li>
+        <li>Fewer Hyprland reloads (and no flicker or notice) when the accent color changes, and no "reloaded" notice for reloads Slate makes itself.</li>
         <li>The window switcher no longer tries to draw its blurred wallpaper hundreds of times too big, which wasted work every time it opened.</li>
-        <li>Containers that were missing glass's sheen now have it: the overview's workspace dots, the control centre's cards, text fields, Settings' search boxes and groups, and the welcome's cards.</li>
+        <li>Containers that were missing glass's sheen now have it: the overview's workspace dots, the control center's cards, text fields, Settings' search boxes and groups, and the welcome's cards.</li>
         <li>Hiding the bar's last item (like the power button) no longer leaves a gap.</li>
         <li>Dropdowns with long choices (sound devices) stay inside the window, and show the end of long names.</li>
         <li>The page search's results show above the rest of the page and can be clicked.</li>
@@ -605,8 +605,8 @@
     <article>
       <h3>Other</h3>
       <ul>
-        <li><strong>New defaults</strong> (existing settings are kept): Colourful colours; 3 px window borders and 50% dimming; key repeat at 500 ms and 16 a second; the clock shows the date; hover descriptions off; no hot corners.</li>
-        <li>Settings tidy-ups: the folder colour moves to Theme &amp; colour, keyboard layouts get their own container, Restore defaults sits opposite each page's title, About's sections get headings, and night light's schedule is a dropdown. Interface size and display Scale also explain how they differ.</li>
+        <li><strong>New defaults</strong> (existing settings are kept): Colorful colors; 3 px window borders and 50% dimming; key repeat at 500 ms and 16 a second; the clock shows the date; hover descriptions off; no hot corners.</li>
+        <li>Settings tidy-ups: the folder color moves to Theme &amp; color, keyboard layouts get their own container, Restore defaults sits opposite each page's title, About's sections get headings, and night light's schedule is a dropdown. Interface size and display Scale also explain how they differ.</li>
       </ul>
     </article>
   </div>
@@ -628,7 +628,7 @@
     <article>
       <h3>Fixes</h3>
       <ul>
-        <li>With glass on, the sheen on the dock, the workspace pop-ups, the window switcher and Settings' controls now picks up the wallpaper's colour, like the menu bar's containers, instead of a dull grey or plain white. Settings' buttons, switches, sliders, dropdowns and text fields also get the bar's frosted glass look, and the window switcher's workspace pill gets a sheen.</li>
+        <li>With glass on, the sheen on the dock, the workspace pop-ups, the window switcher and Settings' controls now picks up the wallpaper's color, like the menu bar's containers, instead of a dull gray or plain white. Settings' buttons, switches, sliders, dropdowns and text fields also get the bar's frosted glass look, and the window switcher's workspace pill gets a sheen.</li>
       </ul>
     </article>
   </div>
@@ -641,7 +641,7 @@
       <h3>Features</h3>
       <ul>
         <li><strong>Reopen your apps after restarting.</strong> The restart dialog has a new "Reopen my apps afterwards" switch (on by default, also in Settings → Power). After the reboot, your windows come back on their original workspaces and screens, with tiling layouts and floating positions restored, and you land on the workspace you were last on. Apps that already reopen themselves aren't started twice, and startup apps get workspaces of their own. A kept session is only restored once, after a real reboot within a day; logging out or shutting down forgets it.</li>
-        <li><strong>Fade in at login.</strong> Every screen fades in from the startup colour while the welcome sound plays, once per session.</li>
+        <li><strong>Fade in at login.</strong> Every screen fades in from the startup color while the welcome sound plays, once per session.</li>
         <li><strong>Fade out on log out, restart and shut down.</strong> Screens fade to black while the goodbye sound plays (a shorter fade if the sound is off). If the action fails, the screens come back after 20 seconds.</li>
       </ul>
     </article>
@@ -649,7 +649,7 @@
       <h3>Fixes</h3>
       <ul>
         <li>The wallpaper and bar no longer flash for a moment before the login fade starts.</li>
-        <li>The login fade now starts from the same dark colour Hyprland shows while Slate loads, so there's no visible step.</li>
+        <li>The login fade now starts from the same dark color Hyprland shows while Slate loads, so there's no visible step.</li>
         <li>Long password errors on the lock and login screens (such as an account-locked notice) now wrap inside the password frame, on a soft red strip with an alert icon, instead of running off the sides.</li>
       </ul>
     </article>
@@ -690,16 +690,16 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Theme presets.</strong> Settings → Appearance now starts with a Preset menu that sets the theme, colours and glass in one go, leaving your wallpaper and everything else alone. It asks before changing anything, and shows "Custom" when your settings don't match a preset. Two presets to start:<ul>
-          <li><strong>Liquid Glass:</strong> dark and colourful, with accent and background tint taken from the wallpaper, and glass with shine and gloss.</li>
-          <li><strong>Metro Flat:</strong> dark and colourful with wallpaper colours, and no glass.</li></ul></li>
+        <li><strong>Theme presets.</strong> Settings → Appearance now starts with a Preset menu that sets the theme, colors and glass in one go, leaving your wallpaper and everything else alone. It asks before changing anything, and shows "Custom" when your settings don't match a preset. Two presets to start:<ul>
+          <li><strong>Liquid Glass:</strong> dark and colorful, with accent and background tint taken from the wallpaper, and glass with shine and gloss.</li>
+          <li><strong>Metro Flat:</strong> dark and colorful with wallpaper colors, and no glass.</li></ul></li>
         <li><strong>Geist Mono is the default code font</strong>, matching Geist as the interface font. If you've already picked a code font, you keep it.</li>
       </ul>
     </article>
     <article>
       <h3>Fixes</h3>
       <ul>
-        <li><strong>Readable app colours.</strong> Colours Slate gives other apps (terminal colours, code highlighting, links) are adjusted just enough to read clearly against the background. Light mode gets crisp, saturated colours instead of washed-out pastels, and readable greys. kitty in light mode gets a nearly solid background, so dim text no longer disappears into the wallpaper.</li>
+        <li><strong>Readable app colors.</strong> Colors Slate gives other apps (terminal colors, code highlighting, links) are adjusted just enough to read clearly against the background. Light mode gets crisp, saturated colors instead of washed-out pastels, and readable grays. kitty in light mode gets a nearly solid background, so dim text no longer disappears into the wallpaper.</li>
         <li><strong>Geist Mono is installed for your other apps.</strong> If you already had the Geist font, the installer used to skip installing Geist Mono, so picking it as the code font did nothing in terminals. Installing or updating now adds it and keeps it up to date.</li>
       </ul>
     </article>
@@ -716,16 +716,16 @@
           <li><strong>Resync the login screen</strong>, if you changed your wallpaper file, picture, name or keyboard layout outside Slate.</li>
           <li><strong>Log detail</strong> (Normal, Detailed, Everything), for tracking down a problem.</li>
           <li><strong>Export recent logs</strong>, which saves Slate's recent log and system details to a file in Downloads to attach to a bug report. Your location is left out. <code>slate logs</code> does the same from a terminal.</li></ul></li>
-        <li><strong>Slate asks before restarting itself.</strong> Changing Interface size or Log detail now asks "Restart Slate?" first, and cancelling leaves everything as it was. Restore defaults says when it will restart Slate.</li>
-        <li><strong>Accent boldness.</strong> A slider under "Accent colour from wallpaper" makes the wallpaper's colour more vivid, while text on it stays readable. It defaults to 60% and works in light and dark mode.</li>
-        <li><strong>Tint boldness.</strong> A slider under "Background tint from wallpaper" sets how much of the wallpaper's colour the bar, panels and other backgrounds take.</li>
-        <li><strong>Nicer notification icons.</strong> Slate's own notices show its mark on an accent tile, matching the icons other notices fall back to. In Colourful mode, notice icons take the colour of the matching Settings page.</li>
+        <li><strong>Slate asks before restarting itself.</strong> Changing Interface size or Log detail now asks "Restart Slate?" first, and canceling leaves everything as it was. Restore defaults says when it will restart Slate.</li>
+        <li><strong>Accent boldness.</strong> A slider under "Accent color from wallpaper" makes the wallpaper's color more vivid, while text on it stays readable. It defaults to 60% and works in light and dark mode.</li>
+        <li><strong>Tint boldness.</strong> A slider under "Background tint from wallpaper" sets how much of the wallpaper's color the bar, panels and other backgrounds take.</li>
+        <li><strong>Nicer notification icons.</strong> Slate's own notices show its mark on an accent tile, matching the icons other notices fall back to. In Colorful mode, notice icons take the color of the matching Settings page.</li>
       </ul>
     </article>
     <article>
       <h3>Fixes</h3>
       <ul>
-        <li>Quick toggles in the control centre that are on now light up when you point at them.</li>
+        <li>Quick toggles in the control center that are on now light up when you point at them.</li>
         <li>The login screen's notices use Slate's look rather than your icon theme's padlock.</li>
         <li>Interface size asks only once you let go of the slider.</li>
       </ul>
@@ -746,18 +746,18 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Accent highlight in the launcher.</strong> The selected result in the launcher's list is now highlighted in your accent colour, as the grid already was. Its text fades to a readable colour as the highlight slides onto it. With glass on, the icon tiles of the highlighted app, setting or action turn solid so they don't vanish into the accent.</li>
-        <li><strong>Colourful settings icons in the launcher.</strong> In Colourful mode, settings found in the launcher show their icons in their page's colour, matching the Settings sidebar.</li>
+        <li><strong>Accent highlight in the launcher.</strong> The selected result in the launcher's list is now highlighted in your accent color, as the grid already was. Its text fades to a readable color as the highlight slides onto it. With glass on, the icon tiles of the highlighted app, setting or action turn solid so they don't vanish into the accent.</li>
+        <li><strong>Colorful settings icons in the launcher.</strong> In Colorful mode, settings found in the launcher show their icons in their page's color, matching the Settings sidebar.</li>
       </ul>
     </article>
     <article>
       <h3>Fixes</h3>
       <ul>
         <li><strong>Settings reopens after Super+Q.</strong> Closing Settings from outside Slate (Super+Q or a title bar's close button) used to leave it unable to open again until Slate reloaded.</li>
-        <li><strong>Light mode looks better.</strong> Backgrounds are darker and less glaring, the wallpaper tint now shows clearly (even with muted wallpapers), and the bar's capsules and the control centre's forecast tiles stand out from what's behind them.</li>
+        <li><strong>Light mode looks better.</strong> Backgrounds are darker and less glaring, the wallpaper tint now shows clearly (even with muted wallpapers), and the bar's capsules and the control center's forecast tiles stand out from what's behind them.</li>
         <li><strong>Light-mode glass looks frosted, not flat.</strong> Containers get a near-white sheen, a crisp top edge with a faint darker line above it, a whiter frosted fill and a soft shade along the bottom.</li>
-        <li><strong>Smoother gloss on tall pieces.</strong> Taller glossy pieces, like the control centre's quick toggles, no longer look like two- or three-tone bands.</li>
-        <li><strong>Accent swatches match what you get.</strong> In light mode, the accent colour circles in Settings and the welcome screen show the deeper shade Slate actually uses.</li>
+        <li><strong>Smoother gloss on tall pieces.</strong> Taller glossy pieces, like the control center's quick toggles, no longer look like two- or three-tone bands.</li>
+        <li><strong>Accent swatches match what you get.</strong> In light mode, the accent color circles in Settings and the welcome screen show the deeper shade Slate actually uses.</li>
         <li><strong>Scrollbars have breathing room.</strong> Scrollable lists leave a small gap before the scrollbar while it shows, and use the full width when it doesn't.</li>
       </ul>
     </article>
@@ -776,7 +776,7 @@
     <article>
       <h3>Fixes</h3>
       <ul>
-        <li><strong>No wallpaper flash at login:</strong> going from the login screen to the Slate desktop no longer briefly shows Hyprland's default wallpaper (or your distro's, such as CachyOS's). You see a plain dark background in the login screen's colour until Slate draws your wallpaper.</li>
+        <li><strong>No wallpaper flash at login:</strong> going from the login screen to the Slate desktop no longer briefly shows Hyprland's default wallpaper (or your distro's, such as CachyOS's). You see a plain dark background in the login screen's color until Slate draws your wallpaper.</li>
         <li><strong>Glass on the lock and login screens looks like the bar:</strong> with glass on, panels, buttons, menus and the password field get the bar's frosted sheen instead of a bright outline.</li>
       </ul>
     </article>
@@ -789,11 +789,11 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>A Colourful look.</strong> Settings → Appearance → Theme &amp; colour → Colour now offers <strong>Colourful</strong> alongside Monotone (the default, as before). In Colourful, each Settings page icon gets its own pastel. So do the bar's status icons (notifications, clipboard, Wi-Fi, volume, battery and more) and the Apps and Spaces buttons, and tray icons show in their own colours instead of black and white.</li>
+        <li><strong>A Colorful look.</strong> Settings → Appearance → Theme &amp; color → Color now offers <strong>Colorful</strong> alongside Monotone (the default, as before). In Colorful, each Settings page icon gets its own pastel. So do the bar's status icons (notifications, clipboard, Wi-Fi, volume, battery and more) and the Apps and Spaces buttons, and tray icons show in their own colors instead of black and white.</li>
         <li><strong>Glass on the lock and login screens.</strong> With glass on, the password box, picture frame, corner buttons and menus are frosted glass like the rest of Slate, with the wallpaper blurred behind them, the shine and the gloss.</li>
         <li><strong>A login screen that can't leave you stuck.</strong> Each update to the login screen is tested before it's installed, and isn't installed if it fails. If it still fails at boot, the last version you logged in with takes over, and failing that a basic emergency login screen, so you're never left at a text console. Update the login screen once (the "Login screen out of date" notification, or Settings → Lock &amp; idle) to get this.</li>
         <li><strong>A clearer notice when Slate can't reload.</strong> If a change to Slate's files has a mistake, a Slate notification says what's wrong and where, instead of a popup across the top of the screen. Slate keeps running as it was and reloads by itself as soon as the fix is saved.</li>
-        <li>Scrollbar handles are in your accent colour, and keep hold while you drag them.</li>
+        <li>Scrollbar handles are in your accent color, and keep hold while you drag them.</li>
       </ul>
     </article>
     <article>
@@ -812,7 +812,7 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Glass takes on your wallpaper's colour.</strong> With glass on, the gloss and the frosted containers (on the bar, the dock and elsewhere) pick up a hint of your wallpaper's colour, so they match a colourful wallpaper instead of looking grey. App icon tiles turn to the same tinted frosted glass. A new <strong>Gloss colour</strong> slider in Settings → Appearance → Glass sets how much colour they take, from plain white to full.</li>
+        <li><strong>Glass takes on your wallpaper's color.</strong> With glass on, the gloss and the frosted containers (on the bar, the dock and elsewhere) pick up a hint of your wallpaper's color, so they match a colorful wallpaper instead of looking gray. App icon tiles turn to the same tinted frosted glass. A new <strong>Gloss color</strong> slider in Settings → Appearance → Glass sets how much color they take, from plain white to full.</li>
         <li><strong>Glossier accents.</strong> Selected items, switches, and progress bars (battery, CPU, memory, disk, volume and the settings sliders) get a clear glossy shine on top and a soft shade underneath, so they look rounded rather than flat.</li>
       </ul>
     </article>
@@ -832,7 +832,7 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Obsidian theming.</strong> Settings → App theming can now theme Obsidian: a Slate style snippet in each of your vaults, switched on for you, with Slate's colours for backgrounds, text, gentle dividing lines, links, inline code and code blocks. Reopen Obsidian once after switching it on; after that it follows Slate's colours live.</li>
+        <li><strong>Obsidian theming.</strong> Settings → App theming can now theme Obsidian: a Slate style snippet in each of your vaults, switched on for you, with Slate's colors for backgrounds, text, gentle dividing lines, links, inline code and code blocks. Reopen Obsidian once after switching it on; after that it follows Slate's colors live.</li>
         <li><strong>A Refresh button for app theming</strong> that writes every switched-on app's theme again, for when an app update or reset has overwritten one.</li>
         <li><strong>A menu on the Slate button.</strong> Right-click the Slate icon at the start of the bar for Settings, Appearance, the next wallpaper, Do Not Disturb, Night Light, glass, updates, restarting Slate, the welcome, locking, logging out and About.</li>
         <li><strong>All Settings.</strong> Settings now opens on All Settings, with a tile for every page.</li>
@@ -877,12 +877,12 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>A welcome on first start.</strong> Slate introduces itself and walks you through a few big choices, each with a recommendation: tiling or floating windows; dark, light or auto; colours from your wallpaper; theming your other apps (with a clear note about what it changes and how to undo it); where the menu bar and dock go; and which keyboard shortcuts to use. It ends with the keys worth knowing. Skip it any time, or open it again from Settings → About.</li>
+        <li><strong>A welcome on first start.</strong> Slate introduces itself and walks you through a few big choices, each with a recommendation: tiling or floating windows; dark, light or auto; colors from your wallpaper; theming your other apps (with a clear note about what it changes and how to undo it); where the menu bar and dock go; and which keyboard shortcuts to use. It ends with the keys worth knowing. Skip it any time, or open it again from Settings → About.</li>
         <li><strong>A Workspaces page in Settings</strong>, gathering everything about workspaces in one place: how switching looks, wrapping round, keeping an empty workspace, the indicator shape and the overview.</li>
         <li><strong>Choose how switching workspace looks:</strong> Slide Fade (as before), Slide, Crossfade, the vertical versions, or none.</li>
         <li><strong>The workspace overview zooms into the workspace you pick</strong>, so the card grows smoothly into the real thing.</li>
         <li><strong>Workspaces can stop at the ends</strong> instead of wrapping round (Super+Left/Right and the overview), and the overview's row then ends there too.</li>
-        <li><strong>More visual settings:</strong> the menu bar and dock position are picked on a small picture of the screen, hot corners are set on a picture showing what each corner does, and the folder colour is chosen from a list of little folders in each colour.</li>
+        <li><strong>More visual settings:</strong> the menu bar and dock position are picked on a small picture of the screen, hot corners are set on a picture showing what each corner does, and the folder color is chosen from a list of little folders in each color.</li>
         <li><strong>App theming has its own page</strong>, opened from Appearance, and search finds each app by name.</li>
         <li><strong>Hide the app icon</strong> before the window title on the bar (Settings → Menu bar → App icon).</li>
       </ul>
@@ -908,7 +908,7 @@
       <h3>Features</h3>
       <ul>
         <li><strong>Updates.</strong> Slate now checks for new releases once a day and lets you know with a notification. The new Settings → Updates page shows what's new and updates in one click, always keeping your settings and your own tweaks (<code>settings.json</code>, <code>hypr/</code> and <code>user/</code>). The version you had is kept, and you can go back to it from the same page. If you've changed any of Slate's own files by hand, they're listed before an update replaces them. An update that needs new packages stops and asks you to run the full installer instead. This release is the first with the updater, so install it the usual way once; later versions can then be installed from Settings.</li>
-        <li><strong>Accent-coloured hover.</strong> Buttons, rows and menu items across Slate (the bar, panels, Settings, menus, dialogs and the login screen) now light up in your accent colour when you point at them.</li>
+        <li><strong>Accent-colored hover.</strong> Buttons, rows and menu items across Slate (the bar, panels, Settings, menus, dialogs and the login screen) now light up in your accent color when you point at them.</li>
         <li><strong>Following apps you're sent to.</strong> When an app opens something in another app, such as a link in your browser, Slate now takes you to that app, even on another workspace.</li>
         <li>The notification close button sits on a small rounded square.</li>
         <li>More room between rows in panel lists (Wi-Fi, Bluetooth, keyboard layouts, sound outputs, clipboard, Spaces and the power menu).</li>
@@ -919,7 +919,7 @@
       <ul>
         <li>Panels from the bar slide open and closed smoothly, without the brief hitch at the start, and fade along with their slide.</li>
         <li>The launcher and clipboard list no longer grow in steps the first time they open.</li>
-        <li>The control centre's profile card shows its wallpaper straight away, instead of fading it in.</li>
+        <li>The control center's profile card shows its wallpaper straight away, instead of fading it in.</li>
       </ul>
     </article>
     <article>
@@ -972,7 +972,7 @@
       <ul>
         <li>Notifications no longer pop up again (and count as unread again) each time Slate restarts, such as a "Battery low" warning showing over and over.</li>
         <li>Notification pop-ups now fade in and out properly, instead of vanishing or appearing half-faded with square-looking corners.</li>
-        <li>The coloured border on windows from a space now wraps round the window's rounded corners, and round the menu bar's curved ends on a full-screen window, instead of cutting across them.</li>
+        <li>The colored border on windows from a space now wraps round the window's rounded corners, and round the menu bar's curved ends on a full-screen window, instead of cutting across them.</li>
       </ul>
     </article>
   </div>
@@ -984,8 +984,8 @@
     <article>
       <h3>Features</h3>
       <ul>
-        <li><strong>Spaces.</strong> A new button on the menu bar, between Apps and the workspaces, saves the apps on one or more workspaces, and where their windows sit, as a space with a name, an icon and a colour. Click a space to bring it back: each workspace opens as a new one after your last, its apps start, and their windows go back to the same tiles, floating spots and sizes. Pick the workspaces from live previews of them; choose from 44 icons and 17 pastel colours, or any colour of your own. Deleting a space asks first, in the middle of the screen.</li>
-        <li><strong>Windows from a space are marked.</strong> They get a thin border in the space's colour along their top and the space's icon in their top left corner (it moves out of the pointer's way). The focused window's icon on the menu bar sits on the space's colour, and the window switcher and workspace overview show the space's badge on its windows.</li>
+        <li><strong>Spaces.</strong> A new button on the menu bar, between Apps and the workspaces, saves the apps on one or more workspaces, and where their windows sit, as a space with a name, an icon and a color. Click a space to bring it back: each workspace opens as a new one after your last, its apps start, and their windows go back to the same tiles, floating spots and sizes. Pick the workspaces from live previews of them; choose from 44 icons and 17 pastel colors, or any color of your own. Deleting a space asks first, in the middle of the screen.</li>
+        <li><strong>Windows from a space are marked.</strong> They get a thin border in the space's color along their top and the space's icon in their top left corner (it moves out of the pointer's way). The focused window's icon on the menu bar sits on the space's color, and the window switcher and workspace overview show the space's badge on its windows.</li>
         <li><strong>Settings → Spaces</strong>, a new page: the Spaces button, and a switch for each of the ways windows are marked.</li>
         <li><strong>Workspace overview (Super+Down):</strong> the cards now show just the area your windows use, without a copy of the menu bar, and the window previews keep their rounded corners. A new option puts each window's app icon on it (Settings → Windows).</li>
         <li><strong>Window switcher (Super+Tab):</strong> the app icon on each preview can now be switched off (Settings → Windows).</li>
@@ -1015,7 +1015,7 @@
       <ul>
         <li>Screenshots are always saved to the chosen folder with the chosen name, even when opened in swash to mark up (it no longer asks where to save).</li>
         <li>Icons are placed correctly again after the bundled icon font was edited.</li>
-        <li>Lone bar icons (no label beside them) are centred.</li>
+        <li>Lone bar icons (no label beside them) are centered.</li>
       </ul>
     </article>
     <article>
@@ -1040,12 +1040,12 @@
         <li><strong>Launcher</strong> (tap Super) for apps, every setting and quick sums.</li>
         <li><strong>Window switcher</strong> (Super+Tab) and <strong>workspace overview</strong> (Super+Down) with live previews.</li>
         <li><strong>Tiling</strong> by default, or optional <strong>floating windows</strong> with title bars (hyprbars).</li>
-        <li><strong>Control centre</strong> with your profile, media, weather and quick toggles.</li>
+        <li><strong>Control center</strong> with your profile, media, weather and quick toggles.</li>
         <li><strong>Notifications</strong> with a history and Do not disturb; on-screen indicators.</li>
         <li><strong>Theming</strong>: dark, light or automatic, an accent and tint that can follow the wallpaper, icon shapes, and opt-in theming for other apps (GTK, Qt, terminals, editors and more).</li>
         <li><strong>Lock and login screens</strong> that match, with idle lock, screen-off and suspend.</li>
         <li><strong>Settings app</strong> covering all of it, with search.</li>
-        <li>Clipboard history, emoji picker, colour picker, screenshots, night light and hot corners.</li>
+        <li>Clipboard history, emoji picker, color picker, screenshots, night light and hot corners.</li>
       </ul>
     </article>
   </div>
@@ -1057,7 +1057,7 @@
   <p class="ai"><i class="ti">&#xF6D7;</i> Built with Claude, Anthropic's AI model, by Dayle Rees: an experienced software
     engineer and Linux user who's open to embracing new and emerging technologies, and to
     understanding them better.</p>
-  <p>Slate is open source under the MIT licence. Made by Dayle Rees.</p>
+  <p>Slate is open source under the MIT license. Made by Dayle Rees.</p>
   <p><a href="index.html">Overview</a> · <a href="features.html">Every feature</a> · <a href="https://github.com/daylerees/slate/releases">Releases on GitHub</a></p>
 </footer>
 

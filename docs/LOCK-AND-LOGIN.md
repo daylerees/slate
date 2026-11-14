@@ -109,7 +109,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
   screen's own code changes (its design, glass pieces, fonts, keyboard layout), not for
   `Config.qml` or `SettingsData.qml`, which are shared with the rest of Slate and change with
   nearly everything; those come along with the next update. It asks once per version, and
-  "Later" (or dismissing it) waits a week. If the update is cancelled or fails, an urgent
+  "Later" (or dismissing it) waits a week. If the update is canceled or fails, an urgent
   "Login screen not updated" notification gives the command to run instead. Settings → Lock
   & Idle has the same Update button.
   Files are read with your own permissions, not root's.
@@ -174,7 +174,7 @@ greeter exits so the fallbacks take over.
 
 ### Testing without greetd
 
-`greeter/shell.qml` honours `GREETD_SOCK` (point it at a fake greetd), `SLATE_GREETER_DATA`
+`greeter/shell.qml` honors `GREETD_SOCK` (point it at a fake greetd), `SLATE_GREETER_DATA`
 (appearance folder) and `SLATE_GREETER_TEST=1` (enables `ipc call greeter submit <pw>`).
 Run it in a nested Hyprland (`Hyprland -c test.lua` from inside a session). A minimal
 fake greetd speaks greetd's IPC: 4-byte native-endian length + JSON

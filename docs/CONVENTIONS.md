@@ -6,36 +6,36 @@ so it applies to every change.
 
 ## Look and feel
 
-### Colours: the active colour and the muted hover
+### Colors: the active color and the muted hover
 
-- **Active colour**: the strong accent, for things that *stay selected* (the chosen row, tab
+- **Active color**: the strong accent, for things that *stay selected* (the chosen row, tab
   or option, the page you're on, a toggle that's on). In code: `Config.accent` / `pop.accent` /
   `win.accent`, with the dark `accentText` (`Config.tint("#12151a")`) for text and icons on it.
 - **Muted hover**: the duller fill for whatever the *pointer is over*. In code: `Config.hover`
-  (the accent at 22%). Text keeps its normal colour.
+  (the accent at 22%). Text keeps its normal color.
 
 Rules:
 
-- Hover is always the muted hover, never the active colour (right-click menus once had the
-  active colour on hover, and it was put back).
-- Selected is always the active colour: not a grey, a tint of the accent, or only an outline.
-- Both are the same in glass and flat modes: no separate grey hover for flat, no lighter hover
-  laid over a card's own colour.
-- **The lit accent.** Anything filled with the active colour that a click acts on goes a
+- Hover is always the muted hover, never the active color (right-click menus once had the
+  active color on hover, and it was put back).
+- Selected is always the active color: not a gray, a tint of the accent, or only an outline.
+- Both are the same in glass and flat modes: no separate gray hover for flat, no lighter hover
+  laid over a card's own color.
+- **The lit accent.** Anything filled with the active color that a click acts on goes a
   little lighter under the pointer, to show the click will do something: `Config.accentLit`,
   the same everywhere (in code `Config.accentFor(hovered)`; a static test checks it), with the usual `Behavior on color` fade. That covers a switch that's
   on, a quick tile that's on, a connected device (`RowButton.toggles` in `Popouts.qml`), and a
   primary button filled with the accent (Spaces' Save). A choice that's already chosen and that
-  a click wouldn't change (the selected row, tab or page) keeps the plain active colour.
+  a click wouldn't change (the selected row, tab or page) keeps the plain active color.
 - **Destructive things hover red.** Anything that removes, clears, deletes, forgets,
   force-quits or shuts down is written in the danger red and takes `Config.hoverDanger` (that
   red at the muted hover's strength) under the pointer. In code: `destructive: true` on
   Settings' `Button` and the arranging panel's `PanelButton`, `danger: true` on the panels'
   `RowButton`/`LinkRow` and on menu rows. A new destructive control must set it; a
   confirmation's red primary button is already solid red.
-- Text and icons on an active-colour fill switch to `accentText` and cross-fade
+- Text and icons on an active-color fill switch to `accentText` and cross-fade
   (`Behavior on color` with `Config.ms`).
-- An accepted exception: a space's chosen icon uses the space's own colour.
+- An accepted exception: a space's chosen icon uses the space's own color.
 
 **Gloss (the sheen in glass mode).** Only what the author specifies is glossy: anything new is
 flat, with no `Gloss` / `IconGloss`. Not glossy: selections, hover fills, buttons, text boxes,
@@ -91,7 +91,7 @@ Hyprland's had stopped.
 
 ### Game mode covers anything costly or interrupting
 
-Game mode (the bar's button and panel, the control centre's Game Mode switch and the launcher's;
+Game mode (the bar's button and panel, the control center's Game Mode switch and the launcher's;
 it has no page or row of its own in Settings: the bar's button is added in Settings → Menu Bar →
 Arrange the menu bar) turns off everything
 costly to draw or distracting while playing, and puts it all back afterwards. **Any new visual
@@ -161,13 +161,13 @@ New or changed pages in `SettingsWindow.qml` match the existing ones:
   components (PageTitle, IntroText, GroupLabel + Group, SettingRow, ToggleSetting,
   DropdownSetting, ValueSlider, Separator, Footnote) and wording.
 - Every section (Group) has a GroupLabel above it.
-- A new page gets its own soft pastel icon colour (`Config.pageColour`) for Colourful mode.
+- A new page gets its own soft pastel icon color (`Config.pageColour`) for Colorful mode.
 - Restore defaults is the page title's button, at the top (`pageKeys` for settings in
   SettingsData; a page with its own state, like Webcam, hooks its reset into the same
   button), never a separate button at the bottom.
 - The exception is All Settings (the grid of pages): no label over its grid and no Restore
   defaults.
-- A setting that only works while another is on (or off) is greyed out by its row, never by an
+- A setting that only works while another is on (or off) is grayed out by its row, never by an
   `enabled:` or dimming of its own: `needsMet` (whether it can be used), `needs` (the line
   saying which, "Needs Glass to be on") and `needsPage` / `needsLabel` (where that setting is,
   as `win.goTo` takes them; the line goes there when clicked). A sub-option that only makes
@@ -233,14 +233,14 @@ which of these applied:
 Anything in `Assistant.qml`, `NovaMic.qml`, `NovaVoice.qml`, Settings → Assistant, Nova's bar button or its
 questions follows the theme, with nothing hard-coded. Before calling a change there done:
 
-- **Colours** come from the theme: `Config.tint("#…")`, `Config.surface` / `Config.raised`,
+- **Colors** come from the theme: `Config.tint("#…")`, `Config.surface` / `Config.raised`,
   `Config.accent`, `Config.pageColour("assistant")`, `Config.hover` / `hoverOn`,
   `Config.shadowColour`. No bare hex, "black" or "white":
   `grep -n '"#[0-9a-fA-F]\{6,8\}"\|"black"\|"white"' shell/Assistant.qml shell/NovaMic.qml shell/NovaVoice.qml | grep -v 'Config.tint("#'`
   prints nothing.
 - **Light mode** and **Tint from wallpaper** follow from `tint()`; text on the accent uses the
   window's `accentText`.
-- **Colourful off**: Nova's icon and name are one colour like everything else (`pageColour`
+- **Colorful off**: Nova's icon and name are one color like everything else (`pageColour`
   falls back to the accent).
 - **Glass**: no translucent shape laid over another (it shows as a lighter patch); a new
   window's namespace goes in both glass lists.

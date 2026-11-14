@@ -15,7 +15,7 @@ agent you chose does it through the same tools.
 ## Nova, the prompt window
 
 - **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
-  your accent colour, Nova's answers on the left as they're written, each with
+  your accent color, Nova's answers on the left as they're written, each with
   a short list of what was done: Slate's own record, in Slate's words, not the agent's
   account of itself. It scrolls once it's long. Point at a message and a copy button appears in its top right corner.
 - **Undo.** A setting Nova changed has **Undo** at the end of its row, which puts back the
@@ -138,7 +138,7 @@ changes what the risks are, the assistant pauses until you've read the new ones 
 **Read the risks again** shows them at any time, with a button to switch off.
 
 While it's off, every tool answers that assistants aren't switched on, and does nothing. The same
-goes while Private Mode is on (a quick switch in the control centre): every tool says so, and
+goes while Private Mode is on (a quick switch in the control center): every tool says so, and
 only you can turn it off. An assistant can't change Private Mode either.
 
 The same page has:
@@ -203,7 +203,7 @@ to ask about every change.
 | `panel_open` | Opens one of the menu bar's panels |
 | `bar_arrange` | Shows how the menu bar is arranged, or arranges it: what's on it and in which containers, how each collapses, the order things leave when it's short of room, what always stays, or Slate's own arrangement again. Nova's button keeps its place and its switch |
 | `app_open` | Starts an installed app. Only an app: no file, address or command |
-| `window_focus`, `window_move`, `window_state` | Goes to a window, moves it to a workspace, floats, tiles, maximises or full-screens it |
+| `window_focus`, `window_move`, `window_state` | Goes to a window, moves it to a workspace, floats, tiles, maximizes or full-screens it |
 | `workspace_go`, `workspace_mode`, `workspace_rename` | Switches workspace, changes how one lays out its windows, names it |
 | `space_restore`, `space_save` | Opens a saved Space, or saves workspaces as one (saving over a Space asks first) |
 | `wallpaper_set`, `wallpaper_next` | Changes the wallpaper, to a picture from `wallpapers_list` only |

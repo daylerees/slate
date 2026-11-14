@@ -18,7 +18,7 @@ desktop, and a few things more, each where you'd expect to find it:
   for the few choices worth making.
 - **Every setting in one place.** One searchable Settings app. Prefer your own Hyprland
   config and overrides? Keep them: Slate never overwrites them.
-- **Yours, automatically.** Colours from your wallpaper, dark at sunset, your other apps
+- **Yours, automatically.** Colors from your wallpaper, dark at sunset, your other apps
   themed to match. As much as possible just happens.
 - **The best of everything.** Inspired by macOS, Windows, GNOME, KDE and tiling window
   managers: familiar whichever you're coming from, and still Hyprland underneath.
@@ -51,7 +51,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
 | `tools/test-install-docker.sh` | try the installer in a clean container of a distro (`tools/test-install-docker.sh <image>`) |
 | `tools/make-sounds.py`, `tools/make-wallpapers.py` | make Slate's sounds (`shell/sounds/`) and wallpapers (`shell/wallpapers/`) |
-| `tools/build-cursors.py`, `tools/build-emoji-data.py` | rebuild Slate Cursors (`shell/cursors/`, from Bibata; `tools/cursors/` has its licence) and the emoji picker's list (`shell/data/emoji.json`, from Unicode's data) |
+| `tools/build-cursors.py`, `tools/build-emoji-data.py` | rebuild Slate Cursors (`shell/cursors/`, from Bibata; `tools/cursors/` has its license) and the emoji picker's list (`shell/data/emoji.json`, from Unicode's data) |
 | `tools/render-settings-icon.py`, `tools/render-logo.py`, `tools/render-site-marks.py` | draw Slate's mark: the Settings icon (`shell/assets/icon/`), the logo, and the site's two pictures of it |
 | `tools/docs-shots/` | takes the docs pages' pictures (`site/docs/img/`) in the test container: `tests/run --docs-shots` |
 | `tools/repro/` | small setups that reproduce bugs elsewhere that Slate works around (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#workarounds-for-bugs-elsewhere)) |
@@ -64,10 +64,10 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Part | What it does | File |
 |---|---|---|
 | Top bar | Spaces button, workspaces (dots + spring indicator), active window title, tray, notifications · clipboard · screenshot · game mode · keyboard · Bluetooth · volume · Wi-Fi · battery group (clipboard, screenshot, game mode and hover descriptions off by default), clock, power. Rounded top screen corners | `Bar.qml` |
-| Panels | Drop-downs from the bar: control centre (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down, and deleting a space, ask in a centred dialog; restarting can reopen your apps where they were | `Popouts.qml`, `PowerConfirm.qml` |
+| Panels | Drop-downs from the bar: control center (profile card with wallpaper, media, clock + forecast, quick toggles), Wi-Fi, volume, battery/power profiles, calendar, session, notifications, clipboard (recent items, clear), screenshot (area, window, screen). Log out / restart / shut down, and deleting a space, ask in a centered dialog; restarting can reopen your apps where they were | `Popouts.qml`, `PowerConfirm.qml` |
 | Dock | macOS-style magnifying dock, pinned apps, right-click menus, auto-hide, media controls with album art, a waste basket | `shell.qml` |
 | Launcher | App search (usage-sorted, forgiving), calculator and conversions, open windows, app actions, quick toggles, recent files and folders, commands (`>`), emoji (`:`), web search, open on a new workspace left/right | `Launcher.qml` |
-| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and colour; one click on the bar opens them again on new workspaces, each window wearing the space's colour along its top and its icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `SpaceBadge.qml`, `Popouts.qml`, `scripts/spaces.py` |
+| Spaces | Save the apps and window layout of one or more workspaces under a name, icon and color; one click on the bar opens them again on new workspaces, each window wearing the space's color along its top and its icon in a corner (`slate ipc call spaces restore <name>`) | `Spaces.qml`, `SpaceBadges.qml`, `SpaceBadge.qml`, `Popouts.qml`, `scripts/spaces.py` |
 | Window switcher | Super+Tab, live previews, circular strip | `Switcher.qml` |
 | Workspace overview | Super+Down, large live cards, reorder with Shift | `WorkspaceOverview.qml` |
 | Notifications | Notification server, toasts (positionable), history | `Notifications.qml`, `NotificationCard.qml`, `NotificationText.js` |
@@ -87,7 +87,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Clipboard & emoji | Super+V clipboard history (text + images; can be switched off in Settings → General), Super+. emoji picker | `Picker.qml`, `scripts/clipstore.py`, `data/emoji.json` |
 | Password prompts | Polkit agent (pkexec, system settings) in Slate's style | `PolkitAgent.qml` |
 | Night light | Warm screen via a Hyprland screen shader; manual, sunset-to-sunrise or custom schedule (Settings → General) | `NightLight.qml` |
-| App theming | Opt-in, per app (Settings → App Theming): GTK, Qt, KDE, terminals (kitty, Alacritty, Ghostty, foot, WezTerm), editors (Text Editor, VS Code, Zed, Helix, Vim/Neovim), bat, fzf, Yazi, cava, zathura, btop, Discord (Vencord), Spotify (Spicetify), Obsidian and Firefox follow Slate's colours, Flatpak and Snap builds too; configs are backed up and switching an app off puts them back | `scripts/apply-theme.py`, `slate_apps.py`, `slate_theme.py` |
+| App theming | Opt-in, per app (Settings → App Theming): GTK, Qt, KDE, terminals (kitty, Alacritty, Ghostty, foot, WezTerm), editors (Text Editor, VS Code, Zed, Helix, Vim/Neovim), bat, fzf, Yazi, cava, zathura, btop, Discord (Vencord), Spotify (Spicetify), Obsidian and Firefox follow Slate's colors, Flatpak and Snap builds too; configs are backed up and switching an app off puts them back | `scripts/apply-theme.py`, `slate_apps.py`, `slate_theme.py` |
 | Screenshots | Print (area, screen frozen) / Super+Print (screen), or area / window / screen from the bar → saved to the chosen folder and copied, then optionally opened in swash | `scripts/screenshot.sh` |
 
 ## Docs
@@ -99,7 +99,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 - [docs/ASSISTANT.md](docs/ASSISTANT.md) — Slate's MCP server for AI agents: what it means to switch it on, its tools, what Slate asks you first
 - [docs/TESTING.md](docs/TESTING.md) — the test suite: what it checks, running it, approving new screenshots
 - [docs/REDISTRIBUTION.md](docs/REDISTRIBUTION.md) — packaging status and what's left
-- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — the rules Slate's code and copy follow: colours, corners, animations, game mode, panels, Settings pages, the assistant, dependencies
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — the rules Slate's code and copy follow: colors, corners, animations, game mode, panels, Settings pages, the assistant, dependencies
 
 ## Where things live
 
@@ -145,10 +145,10 @@ sudo /usr/local/libexec/slate/slate-greeter-install --revert   # back to the pre
 
 ## Gotchas
 
-- **GTK4 apps need reopening to change colour.** GNOME/libadwaita apps (Nautilus, Text
-  Editor, Settings…) read Slate's colours only when they start. Nautilus also keeps running
+- **GTK4 apps need reopening to change color.** GNOME/libadwaita apps (Nautilus, Text
+  Editor, Settings…) read Slate's colors only when they start. Nautilus also keeps running
   in the background after its windows close, so Slate restarts it once its last window is
-  closed; reopen it to see the new colours. GTK3 and Qt/KDE apps update straight away.
+  closed; reopen it to see the new colors. GTK3 and Qt/KDE apps update straight away.
 - **The login screen updates separately.** It runs before you log in, from a system folder
   (`/usr/local/share/slate-greeter`), so it can't read your home folder:
   - It's optional and isn't installed unless you ask: Settings → Security → Install (or
@@ -177,8 +177,8 @@ sudo /usr/local/libexec/slate/slate-greeter-install --revert   # back to the pre
   reach apps when they start; already-open apps keep the old ones, and Slate itself picks
   them up after logging out and in (`slate restart` reloads Slate's code, not its
   environment).
-- **Folder colours need icons drawn in colours.** Settings → Icons → Folder colour uses the
-  coloured folders of Papirus (installed with Slate; the installer offers it as your icon
+- **Folder colors need icons drawn in colors.** Settings → Icons → Folder color uses the
+  colored folders of Papirus (installed with Slate; the installer offers it as your icon
   theme), Kora or Nordzy; other icon themes keep their own folders.
 - **Quickshell built from source must be rebuilt after Qt updates** (Ubuntu, Debian and
   openSUSE, where the installer builds it): run `packaging/build-quickshell.sh` again, or
@@ -196,9 +196,9 @@ Slate stands on the work of two projects and the people behind them:
 Thank you for making something this good to build on. Thanks also to the authors of
 Bibata (the cursors), Tabler Icons, Geist and Papirus.
 
-## Licence
+## License
 
 Slate is released under the [MIT License](LICENSE). The bundled Tabler icon font (MIT)
-and Geist fonts (SIL Open Font License) keep their own licences; see `LICENSE` and
+and Geist fonts (SIL Open Font License) keep their own licenses; see `LICENSE` and
 `shell/fonts/`. The mouse cursors, Slate Cursors, are [Bibata Modern Ice](https://github.com/ful1e5/Bibata_Cursor)
-redrawn without colour, under Bibata's GPL-3.0; see `shell/cursors/Slate-Cursors/`.
+redrawn without color, under Bibata's GPL-3.0; see `shell/cursors/Slate-Cursors/`.

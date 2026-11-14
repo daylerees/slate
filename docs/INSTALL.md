@@ -123,7 +123,7 @@ Void and Gentoo are our best knowledge. If something doesn't work, we'd love to 
   polkit built for elogind.
 - **With seatd alone** (no elogind) Slate still starts and the desktop works, but it can't
   suspend, restart or shut down for you, "Lock before sleep" and the lid and power button
-  settings are greyed out with a note saying why, and password prompts may be refused. It's
+  settings are grayed out with a note saying why, and password prompts may be refused. It's
   not a setup we can recommend.
 - **Hyprland 0.57+ and Quickshell 0.3+**, as everywhere.
 
@@ -212,10 +212,10 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
   source, which needs `git`, `make`, `g++`, a connection and Hyprland's headers (part of the
   `hyprland` package on Arch; `hyprland-devel`/`hyprland-dev` elsewhere). See
   [Title bars](#title-bars) below for what it involves.
-- **Papirus** (the icon theme behind Settings' coloured folder icons) is packaged everywhere
+- **Papirus** (the icon theme behind Settings' colored folder icons) is packaged everywhere
   and installed with Slate. If you haven't picked an icon theme of your own, the installer asks
   whether to make Papirus-Dark yours (the icon theme is shared with your other desktops, so it
-  changes there too); folder colours only work while a Papirus theme is in use.
+  changes there too); folder colors only work while a Papirus theme is in use.
 - **adw-gtk3** (makes GTK apps match) isn't packaged on Debian/Ubuntu/openSUSE; get it
   from [its releases](https://github.com/lassekongo83/adw-gtk3/releases) if you want it.
 
@@ -236,7 +236,7 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    can make it their monospaced font if you choose) unless it's installed
    already, and keeps that copy up to date on updates. Slate's icon font is bundled too.
    **Icons and cursor** — if you haven't chosen an icon theme of your own, the installer asks
-   whether to use Papirus-Dark (a package; Folder colour needs it). It's asked because the icon
+   whether to use Papirus-Dark (a package; Folder color needs it). It's asked because the icon
    theme is shared: it changes for GTK and Qt apps on your other desktops too. Slate's cursors
    (bundled) are linked into `~/.local/share/icons` for the session to use.
 4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is kept as
@@ -260,7 +260,7 @@ bar) have title bars. There are two kinds:
 
 - **Slate Bars** (the default): Slate draws a title bar on the floating window in front. Nothing
   to install, and nothing that breaks when Hyprland updates. The bar fades out while a window
-  moves, resizes or maximises and comes back once it's in place, and floating windows take
+  moves, resizes or maximizes and comes back once it's in place, and floating windows take
   focus when clicked rather than as the pointer passes over them.
 - **Hyprbars** (optional): the
   [hyprbars](https://github.com/hyprwm/hyprland-plugins/tree/main/hyprbars) Hyprland plugin,
@@ -292,10 +292,10 @@ keep it.
 
 - **The welcome** opens the first time Slate starts: an introduction, then a few big
   choices, each with a recommendation (tiling or floating windows; dark, light or auto,
-  colours from the wallpaper and theming your other apps; where the bar and dock go; and
+  colors from the wallpaper and theming your other apps; where the bar and dock go; and
   the shortcuts), then an introduction to Nova, the assistant, which stays off until you
   switch it on in Settings → Assistant. Skip it any time; show it again from Settings → About.
-- **Settings**: Super+Z (or the gear in the control centre, Super+X). Set your **location**
+- **Settings**: Super+Z (or the gear in the control center, Super+X). Set your **location**
   in Settings → General for weather and the sunset-to-sunrise night light, and pick a
   **wallpaper** in Settings → Appearance (Super+Shift+W). Images come from `~/Pictures`
   (change the folder there).
@@ -327,9 +327,9 @@ keep it.
 | Super+Down | workspace overview |
 | Super+Ctrl+1…3 | go to workspace 1…3 |
 | Super+Shift+arrows | move window |
-| Super+F / Super+D | fullscreen / maximise |
+| Super+F / Super+D | fullscreen / maximize |
 | Super+Alt+Space | float / tile window |
-| Super+X | control centre |
+| Super+X | control center |
 | Super+A | notifications |
 | Super+V | clipboard history |
 | Super+. | emoji picker |
@@ -339,7 +339,7 @@ keep it.
 | Super+Shift+W | wallpaper |
 | Super+Alt+W | wallpaper switcher |
 | Print / Super+Print | screenshot an area / the screen |
-| Super+P | colour picker |
+| Super+P | color picker |
 
 All keys are in `shell/session/hypr/config/binds.lua`.
 
@@ -418,7 +418,7 @@ It finishes with a list of what it left, and the command that removes each:
 
 ## Troubleshooting
 
-- **Suspend, Restart or Shut down are missing, or settings are greyed out with "This needs
+- **Suspend, Restart or Shut down are missing, or settings are grayed out with "This needs
   systemd or elogind"** — your computer has no login service running. Run
   `~/.config/slate/bin/slate-init info`: `logind=none` means elogind isn't installed or
   isn't started. See [Without systemd](#without-systemd-artix-void-gentoo).

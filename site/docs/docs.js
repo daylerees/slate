@@ -12,7 +12,7 @@ const SECTIONS = [
   ]},
   { title: "The desktop", pages: [
     { id: "menu-bar", title: "The menu bar", icon: 0xEAD7, about: "What's on it, its panels, and arranging it your way", covers: ["bar"] },
-    { id: "control-centre", title: "Control centre and panels", icon: 0xEB3F, about: "Quick switches, media, the weather and the bar's panels", covers: ["control"] },
+    { id: "control-centre", title: "Control center and panels", icon: 0xEB3F, about: "Quick switches, media, the weather and the bar's panels", covers: ["control"] },
     { id: "dock", title: "The dock", icon: 0xEAD3, about: "Pinned and running apps, Downloads and the waste basket", covers: ["dock"] },
     { id: "launcher", title: "The launcher", icon: 0xEB1C, about: "Finding apps, settings, files, sums and more", covers: ["launcher"] },
     { id: "notifications", title: "Notifications and indicators", icon: 0xEA35, about: "Pop-ups, history, Do Not Disturb and on-screen indicators", covers: ["notifications"] },
@@ -27,10 +27,10 @@ const SECTIONS = [
     { id: "hot-corners", title: "Hot corners", icon: 0xF7A0, about: "Actions for the corners of the screen", covers: ["hotcorners"] },
   ]},
   { title: "Look and feel", pages: [
-    { id: "appearance", title: "Appearance", icon: 0xEB01, about: "Theme, colours, glass, shadows, fonts, size and motion", covers: ["appearance"] },
+    { id: "appearance", title: "Appearance", icon: 0xEB01, about: "Theme, colors, glass, shadows, fonts, size and motion", covers: ["appearance"] },
     { id: "wallpaper", title: "Wallpaper", icon: 0xEF56, about: "Your pictures, Slate's own, and changing by itself", covers: ["wallpaper"] },
-    { id: "icons-and-pointers", title: "Icons and pointers", icon: 0xF1D4, about: "Icon themes, folder colours, app icons and pointer styles", covers: ["icons"] },
-    { id: "app-theming", title: "App theming", icon: 0xEBB8, about: "Your other apps in Slate's colours", covers: ["apptheming"] },
+    { id: "icons-and-pointers", title: "Icons and pointers", icon: 0xF1D4, about: "Icon themes, folder colors, app icons and pointer styles", covers: ["icons"] },
+    { id: "app-theming", title: "App theming", icon: 0xEBB8, about: "Your other apps in Slate's colors", covers: ["apptheming"] },
   ]},
   { title: "Your computer", pages: [
     { id: "displays", title: "Displays", icon: 0xEA89, about: "Arranging screens, resolution, scale and Slate's size", covers: ["displays"] },

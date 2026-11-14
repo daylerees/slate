@@ -7,7 +7,7 @@ Picking it starts Hyprland with Slate's own config. Your other sessions and
 session at login. This is how Slate is meant to be installed for other people.
 
 Until Slate draws your wallpaper, the session shows a plain dark background in the login
-screen's colour (`misc.lua` turns off Hyprland's default wallpaper and logo, which some
+screen's color (`misc.lua` turns off Hyprland's default wallpaper and logo, which some
 distros replace with their own), so nothing flashes up between the login screen and Slate.
 
 ```
