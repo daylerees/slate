@@ -198,14 +198,15 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Backlog | Where new issues go. Claude creates issues here. |
 | Todo | The author has prioritised it for Claude. Only the author moves things here (one exception below). |
 | In Progress | Claude is working on it. Move it when starting, not after. |
-| In Review | Done and committed, not yet released. |
-| Done | Released: move In Review issues here when tagging a release, with the version in the comment. Work with nothing to release (questions, checks, Linear-only tasks) goes straight here. |
+| In Testing | The work is complete and committed; its tests are running or it's waiting for the author to try it. |
+| Release Ready | Tested (its tests passed, on master) and pushed, not yet released. |
+| Released | In a release: move Release Ready issues here when tagging it, with the version in the comment. Work with nothing to release (questions, checks, Linear-only tasks) goes straight here. |
 | Canceled | Not doing it (comment why). |
 | Duplicate | Same as another issue (comment which, and mark it a duplicate of it). |
 
 - **Every move gets a short comment** saying what happened (what was done, what's left, commit
   hashes). **Every comment Claude writes starts with `(Claude)`**: the MCP acts as the author.
-- The **In Review comment** is the author's pre-release checklist: what changed, how to try it, the
+- The **Release Ready comment** is the author's pre-release checklist: what changed, how to try it, the
   commits, and which tests ran and passed.
 - **Picking up work:** the author names the issue. The MCP can't read the board's order, so never guess
   one: if several are in Todo and none is named, ask. When the author says to work through Todo, pick
@@ -220,8 +221,8 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
   leave the issue in its column, comment what's needed; remove it with a comment when sorted,
   and move on to other work meanwhile.
 - **Sub-issues** for bigger work (a plan becomes a parent with a sub-issue per step). The parent
-  goes In Progress with the first sub-issue, In Review when all are In Review/Done/Canceled, and
-  Done when all are.
+  goes In Progress with the first sub-issue, Release Ready when all are Release Ready/Released/Canceled,
+  and Released when all are.
 - **Bugs found along the way** get their own issue (Bug, Area, Claude labels, related to the
   current one), not a fix inside the current one. If it breaks things for users (crash, something
   unusable, data or settings lost, a visible glitch on a common path), set its priority, put it
@@ -242,7 +243,7 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
   experiment never goes into a release without the author's approval: it's built on its own branch
   (`experiment/<short-name>`) from master and merged only once approved, kept contained (new
   files or one clearly marked place) with what it touches listed on the issue, and goes to In
-  Review with the branch named when it's ready to judge.
+  Testing with the branch named when it's ready to judge.
 - **Area** (one or more; a new setting goes under what it controls, plus Settings only if the
   Settings window itself changes; if nothing fits, suggest a new label rather than make one):
 
