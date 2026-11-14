@@ -73,3 +73,35 @@ class SwitcherKeys(Case):
         line = next(l for l in src.splitlines() if "case Qt.Key_Up:" in l)
         self.assertIn("ov.choose()", line)
         self.assertIn("ov.moveRow(-1)", line)
+
+
+class Workflows(Case):
+    """The CI workflows (.github/workflows): mistakes here don't show until the day the
+    check they were meant to make is needed."""
+
+    def files(self):
+        folder = os.path.join(slate.ROOT, ".github", "workflows")
+        return [os.path.join(folder, n) for n in sorted(os.listdir(folder)) if n.endswith((".yml", ".yaml"))]
+
+    def test_a_piped_step_can_fail(self):
+        # GitHub's default shell has no pipefail: `tests/run … | tee file` always passes, since
+        # tee does. Naming bash (`shell: bash`) turns it on. The weekly run once could never
+        # fail for this, so the issue it was meant to open never was.
+        for path in self.files():
+            lines = open(path).read().split("\n")
+            for i, line in enumerate(lines):
+                m = re.match(r"\s*run:\s*(\S.*)$", line)
+                if not m or m.group(1).strip() in ("|", ">") or "|" not in re.sub(r"\|\|", "", m.group(1)):
+                    continue
+                step = "\n".join(lines[max(0, i - 6):i])
+                self.assertIn("shell: bash", step.split("- ")[-1],
+                              f"{os.path.basename(path)}:{i + 1}: a step that pipes needs `shell: bash` (pipefail)")
+
+    def test_actions_are_pinned_to_a_commit(self):
+        # A tag can be moved to other code; a commit can't. The tag stays beside it as a comment.
+        for path in self.files():
+            for n, line in enumerate(open(path).read().split("\n"), 1):
+                m = re.match(r"\s*(?:-\s*)?uses:\s*(\S+)", line)
+                if m:
+                    self.assertRegex(m.group(1), r"@[0-9a-f]{40}$",
+                                     f"{os.path.basename(path)}:{n}: pin {m.group(1)} to a commit, with its tag in a comment")
