@@ -104,7 +104,7 @@ PanelWindow {
             if (!it || !t) continue;
             if (id === "tray") {
                 for (const tr of SystemTray.items.values)
-                    rows.push({ id: id, tray: tr, label: tr.tooltipTitle || tr.title || tr.id || "App", icon: 0, image: String(tr.icon), value: "" });
+                    rows.push({ id: id, tray: tr, label: Config.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" });
                 continue;
             }
             rows.push({ id: id, tray: null, label: it.label, icon: it.icon, image: "",
@@ -2018,8 +2018,6 @@ PanelWindow {
         id: cap
         property bool hoverTint: true
         property real length: bar.capsuleHeight      // size along the bar
-        signal clicked()
-        signal rightClicked()
         width: bar.vert ? bar.capsuleHeight : length
         height: bar.vert ? length : bar.capsuleHeight
         radius: Config.corner(bar.capsuleRadius)
@@ -2048,9 +2046,9 @@ PanelWindow {
         }
         Gloss { radius: cap.radius; }          // glass: a sheen
         // (pointed at across the bar's whole depth, as the things in it are)
+        // (a container itself does nothing when pressed: what's in it takes the clicks, so
+        // nothing here clicks or turns the pointer into a hand)
         Reach { id: capReach }
-        ClickTap { onTapped: cap.clicked() }
-        ClickTap { acceptedButtons: Qt.RightButton; onTapped: cap.rightClicked() }
     }
 
     // One thing on the bar: a button, an icon with a value, the tray, the dots… It sits in a

@@ -264,7 +264,7 @@ FloatingWindow {
                     Rectangle {
                         visible: !cell.fileIsDir
                         anchors.fill: parent; radius: parent.radius
-                        color: "white"
+                        color: Config.tint("#eef1f5")        // the theme's light (dark in light mode)
                         opacity: cellHover.hovered && !cell.picked ? 0.08 : 0
                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                     }

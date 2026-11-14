@@ -378,7 +378,9 @@ PanelWindow {
                         width: parent.width
                         textFormat: Text.PlainText        // never markup
                         text: root.clipDetail(clipRow.modelData)
-                        color: clipRow.ListView.isCurrentItem ? Qt.rgba(0.07, 0.08, 0.1, 0.72) : root.dimTextColor
+                        // On the selected row: the text-on-accent colour, a little softer (as the Launcher's)
+                        readonly property color ink: Config.tint("#12151a")
+                        color: clipRow.ListView.isCurrentItem ? Qt.rgba(ink.r, ink.g, ink.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
                         font.pixelSize: 12

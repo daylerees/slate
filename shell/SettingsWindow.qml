@@ -1712,12 +1712,19 @@ FloatingWindow {
         property bool open: false
         signal picked(var value)
         property string settingKey: ""          // (as SettingRow's: the changed-from-default mark)
+        // (as SettingRow's: what it needs, when it can't be used)
+        property string needs: ""
+        property bool needsMet: true
+        property string needsPage: ""
+        property string needsLabel: ""
         width: parent ? parent.width : 0
         readonly property var current: options.find(o => o.value === value) ?? null
         SettingRow {
             label: choiceSetting.label
             detail: choiceSetting.detail
             settingKey: choiceSetting.settingKey
+            needs: choiceSetting.needs; needsMet: choiceSetting.needsMet
+            needsPage: choiceSetting.needsPage; needsLabel: choiceSetting.needsLabel
             defaultText: {
                 const d = choiceSetting.settingKey !== "" ? Config.defaultOf(choiceSetting.settingKey) : undefined;
                 const o = d === undefined ? null : choiceSetting.options.find(x => x.value === d);
@@ -1730,7 +1737,7 @@ FloatingWindow {
             }
         }
         Flow {
-            visible: choiceSetting.open
+            visible: choiceSetting.open && choiceSetting.needsMet
             width: parent.width - 32; x: 16
             spacing: 6
             bottomPadding: 14
@@ -3734,12 +3741,11 @@ FloatingWindow {
                     visible: powerPane.hasLid
                     label: "Closing the lid"
                     settingKey: "lidAction"
-                    detail: !Config.canInhibit ? Config.noLogindNote
-                        : Config.s.lidAction === "" ? "Left to the system (usually suspends)"
+                    detail: Config.s.lidAction === "" ? "Left to the system (usually suspends)"
                         : "With another screen connected, only the laptop's own screen turns off"
                     // (holding the system's own handling back needs systemd or elogind: Config.system)
-                    enabled: Config.canInhibit
-                    opacity: enabled ? 1 : 0.5
+                    needsMet: Config.canInhibit
+                    needs: Config.noLogindNote
                     options: [{ value: "", label: "System default" }, { value: "suspend", label: "Suspend" }, { value: "lock", label: "Lock the screen" },
                               { value: "screenoff", label: "Turn the screen off" }, { value: "nothing", label: "Do nothing" }]
                         .filter(o => o.value !== "suspend" || Config.canSuspend)
@@ -3750,10 +3756,9 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Power button"
                     settingKey: "powerKeyAction"
-                    enabled: Config.canInhibit
-                    opacity: enabled ? 1 : 0.5
-                    detail: !Config.canInhibit ? Config.noLogindNote
-                        : Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
+                    needsMet: Config.canInhibit
+                    needs: Config.noLogindNote
+                    detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
                     options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                               { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]
                         .filter(o => (o.value !== "suspend" || Config.canSuspend) && (o.value !== "poweroff" || Config.canPowerOff))
@@ -4151,10 +4156,10 @@ FloatingWindow {
                     label: "Time zone"
                     // Without systemd, changing it needs a service that provides the same thing
                     // (openrc-settingsd does). Without one it's shown, greyed, with why
-                    enabled: dateTimePane.canSet
-                    opacity: enabled ? 1 : 0.5
+                    needsMet: dateTimePane.canSet
+                    needs: "Needs a time service, which this computer doesn't have (openrc-settingsd provides one)"
                     detail: dateTimePane.canSet ? "Where you are, for the clock; type to search"
-                        : "Slate can't change this here, as this computer has no time service to ask (openrc-settingsd provides one). Your clock follows the system's own setting"
+                        : "Slate can't change this here. Your clock follows the system's own setting"
                     searchable: true
                     options: dateTimePane.zones
                     value: dateTimePane.zone
@@ -5472,6 +5477,9 @@ FloatingWindow {
                                     border.width: 2; border.color: win.text
                                 }
                                 MouseArea {
+                                    // Keep the drag once it's started here, as the other sliders do: the
+                                    // scrolling page around it took over when the pointer drifted up or down
+                                    preventStealing: true
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
                                     function set(mx) {
@@ -6783,9 +6791,9 @@ FloatingWindow {
                 ToggleSetting {
                     label: "Lock before sleep"
                     // (Slate hears that the computer's about to sleep from systemd or elogind)
-                    enabled: Config.hasLogind
-                    opacity: enabled ? 1 : 0.5
-                    detail: Config.hasLogind ? "Lock the screen whenever the computer suspends or hibernates" : Config.noLogindNote
+                    needsMet: Config.hasLogind
+                    needs: Config.noLogindNote
+                    detail: "Lock the screen whenever the computer suspends or hibernates"
                     key: "lockBeforeSleep"
                 }
             }
@@ -6911,9 +6919,8 @@ FloatingWindow {
                 Separator {}
                 ChoiceSetting {
                     label: "Suspend after"
-                    enabled: Config.canSuspend
-                    opacity: enabled ? 1 : 0.5
-                    detail: Config.canSuspend ? "" : Config.noLogindNote
+                    needsMet: Config.canSuspend
+                    needs: Config.noLogindNote
                     settingKey: "idleSuspendMinutes"
                     options: lockCol.minutes
                     value: Config.s.idleSuspendMinutes
@@ -7719,7 +7726,7 @@ FloatingWindow {
                             wrapMode: Text.WordWrap
                             visible: !(previewLoader.item && previewLoader.item.showing)
                             color: win.dim
-                            font.pixelSize: 13
+                            font.family: win.font; font.pixelSize: 13
                             text: !camPane.preview ? "The preview is off, so the camera isn't on"
                                 : previewLoader.status === Loader.Error ? "The preview needs Qt Multimedia (qt6-multimedia)"
                                 : previewLoader.item && previewLoader.item.problem !== "" ? "No picture: " + previewLoader.item.problem

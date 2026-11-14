@@ -399,7 +399,11 @@ class Settings(Case):
             near = "\n".join(lines[max(0, n - 6):n + 6])
             with self.subTest(f"SettingsWindow.qml:{n}"):
                 needs = re.search(r"\bneeds\s*:(.*)", near)
-                self.assertTrue(needs and re.search(r'"[^"]+"', needs.group(1)), f"line {n}: needsMet without needs saying what")
+                self.assertTrue(needs and re.search(r'"[^"]+"|Config\.\w+', needs.group(1)), f"line {n}: needsMet without needs saying what")
+                # What the system lacks (no systemd, no time service) has nowhere to go: the line
+                # just says why. Only what another setting does leads to that setting
+                if not tied.search(line):
+                    continue
                 page = re.search(r'\bneedsPage\s*:\s*"(\w+)"', near)
                 self.assertTrue(page, f"line {n}: no needsPage to go to")
                 self.assertIn(page.group(1), pages, f"line {n}: needsPage {page.group(1)!r} isn't a Settings page")

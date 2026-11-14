@@ -9,8 +9,8 @@ Rectangle {
     property string selected: "TopLeft"          // TopLeft, TopRight, BottomLeft or BottomRight
     property var actions: []                     // [{ value, label }]
     property color accent: Config.accent
-    property color textColor: "white"
-    property color dimColor: "grey"
+    property color textColor: Config.tint("#eef1f5")
+    property color dimColor: Config.tint("#8b94a3")
     property string fontFamily: ""
     property string iconFont: ""
     signal picked(string corner)
