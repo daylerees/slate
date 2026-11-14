@@ -18,6 +18,7 @@ local gamingApps = "^(steam_app.*|gamescope)$"
 local gamingWorkspace = "name:gaming"
 
 hl.window_rule({ match = { content = "game" }, workspace = gamingWorkspace })
+-- (loose on purpose: a tag is something an app sets about itself, and any that says "game" is one)
 hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, workspace = gamingWorkspace, fullscreen_state = 2, content = "game", sync_fullscreen = true })
 hl.window_rule({ match = { class = gamingApps }, workspace = gamingWorkspace })
 hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
@@ -47,10 +48,21 @@ hl.window_rule({
 })
 
 -- Apps: launchers, Windows apps and chat on the main monitor; sizes for a few utilities
+-- (any Windows program under Wine or Proton, whatever it's called: its class is its .exe)
 hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = PRIMARY_MONITOR, center = true, fullscreen_state = 0 })
+-- (loose on purpose: game launchers name themselves in many ways, faugus-launcher,
+-- com.heroicgameslauncher.hgl, org.prismlauncher.PrismLauncher, minecraft-launcher, and there's
+-- no list of them to keep)
 hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = PRIMARY_MONITOR })
 hl.window_rule({ match = { class = "^(vesktop|discord)$" }, monitor = PRIMARY_MONITOR })
-hl.window_rule({ match = { class = "^(.*[Cc]alc.*)$" }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
+-- Calculators open small and floating: the ones offered as CALCULATOR (variables.lua) and a few
+-- more, each by its windows' own class. By name, never "anything with calc in it": that caught
+-- LibreOffice Calc (libreoffice-calc), and spreadsheets opened floating at a sixth of the screen.
+-- A calculator added to variables.lua is added here too (tests/unit/test_window_rules.py checks)
+local calculators = "^(org\\.gnome\\.Calculator|gnome-calculator|org\\.kde\\.kcalc|kcalc"
+    .. "|qalculate-gtk|qalculate-qt|io\\.github\\.Qalculate.*|galculator|mate-calc"
+    .. "|io\\.elementary\\.calculator|[Xx][Cc]alc)$"
+hl.window_rule({ match = { class = calculators }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
 hl.window_rule({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = true })
 hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monitor_w, monitor_h)*0.40", "min(monitor_w, monitor_h)*0.40" } })
 hl.window_rule({ match = { class = "^(.*swash)$", title = "^(Swash)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
@@ -75,7 +87,10 @@ local terminals = "^(" .. TERMINAL_CLASSES .. ")$"     -- (variables.lua)
 
 hl.window_rule({ match = { class = "^(firefox|zen)$" }, opacity = "1.0 override" })
 hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })
-hl.window_rule({ match = { class = "^(mpv|org.kde.haruna|.*plex.*|org\\.kde\\.gwenview|.*vlc.*)$" }, opacity = "1.0 override" })
+-- (VLC and Plex under any of their names, vlc, org.videolan.VLC, Plex, tv.plex.PlexDesktop,
+-- com.plexamp.Plexamp: the name on its own or after a dot, so not every class with "plex" or
+-- "vlc" somewhere in it, which took in Perplexity's)
+hl.window_rule({ match = { class = "^(mpv|org\\.kde\\.haruna|(.*\\.)?[Pp]lex.*|org\\.kde\\.gwenview|(.*\\.)?(vlc|VLC))$" }, opacity = "1.0 override" })
 
 -- Slate's Settings window never dims when it isn't focused (Settings → Windows → Dim inactive
 -- windows), so you can see a change you make in it take effect on another window
@@ -95,6 +110,9 @@ local modalMatches = {
     { initial_title = "^(Open File)$" },
     { class = "^([Xx]dg-desktop-portal-gtk)$" },
     { title = "^(File Upload|Choose wallpaper|Library)(.*)$" },
+    -- (loose on purpose: kdialog, org.kde.kdialog, file-dialog and toolkits' own dialog
+    -- classes and titles, which have no list. A window that opens with "dialog" in its title
+    -- floats too, such as an editor opened on a file called dialog.qml)
     { class = "^(.*dialog.*)$" },
     { title = "^(.*dialog.*)$" },
     { class = "^(hyprland-share-picker)$"},
@@ -143,10 +161,12 @@ SLIDE_SQUARE_RULE:set_enabled(false)
 hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow = true })
 
 -- Slate's overlays (launcher, switcher, overview, panels, menus, notifications…)
--- animate themselves, so Hyprland shouldn't add its own fade on top
+-- animate themselves, so Hyprland shouldn't add its own fade on top. Every layer Slate makes
+-- (each WlrLayershell.namespace in its QML) is named here, and nothing that's gone
+-- (tests/unit/test_window_rules.py checks both)
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|reloading|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|dock-menu|tray-menu|desktop-menu|notifications|corners|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|titlebar)$" },
+  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar)$" },
   no_anim = true,
 })
 -- Slate's own title bars (TitleBar.qml) are a little see-through: what's behind them (windows

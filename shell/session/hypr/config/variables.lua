@@ -2,9 +2,25 @@
 -- already set in ~/.config/slate/hypr/variables.lua (made for you, with instructions), so
 -- change them there.
 
--- Terminals' window classes (a pattern): they're never made see-through by Slate, as they have
--- their own transparency (windowrules.lua), and they "swallow" apps started from them (misc.lua)
-TERMINAL_CLASSES = "kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal"
+-- Terminals' window classes (a pattern), the one list of them: they're never made see-through by
+-- Slate, as they have their own transparency (windowrules.lua), they "swallow" apps started from
+-- them (misc.lua), and game mode makes them solid (Slate's Config.qml builds its rule from this).
+-- Every terminal offered as TERMINAL below is here, under the class its windows really have
+-- (often not the command's name: Ghostty's is com.mitchellh.ghostty), and a few more besides.
+-- A terminal added below is added here too (tests/unit/test_window_rules.py checks).
+TERMINAL_CLASSES = table.concat({
+    "kitty",
+    "foot|footclient",
+    "[Aa]lacritty",
+    "com\\.mitchellh\\.ghostty|ghostty",
+    "org\\.wezfurlong\\.wezterm",
+    "org\\.kde\\.konsole|[Kk]onsole",
+    "gnome-terminal|gnome-terminal-server|org\\.gnome\\.Terminal",
+    "org\\.gnome\\.Console|kgx",
+    "org\\.gnome\\.Ptyxis",
+    "xfce[0-9]?-terminal",
+    "com\\.raggesilver\\.BlackBox",
+}, "|")
 
 -- Apps opened by the keyboard shortcuts in binds.lua: the first of each list that's installed
 -- (found on PATH here, without starting a shell), else the first. Settings → Default Apps

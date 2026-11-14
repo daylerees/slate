@@ -1013,9 +1013,14 @@ Singleton {
             + (gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
             // ...terminals too, which draw their own see-through background (kitty's
             // background_opacity): with the blur gone that showed the bare wallpaper. Only
-            // terminals: apps drawing their own rounded corners or shadows would turn them black
-            + `; if not SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE = hl.window_rule({ name = "slate-game-opaque", match = { class = "^(kitty|ghostty|com.mitchellh.ghostty|[Kk]onsole|org.kde.konsole|Alacritty|foot|footclient|org.wezfurlong.wezterm|gnome-terminal-server|org.gnome.Terminal|org.gnome.Ptyxis|xfce[0-9]?-terminal|com.raggesilver.BlackBox)$" }, force_rgbx = true }) end; `
-            + `SLATE_GAME_OPAQUE:set_enabled(${gameMode ? "true" : "false"})`;
+            // terminals: apps drawing their own rounded corners or shadows would turn them black.
+            // Which windows are terminals is the session's one list, TERMINAL_CLASSES
+            // (session/hypr/config/variables.lua), read here in Lua rather than listed again:
+            // the rule is made once, and made again if that list changes. Under a Hyprland
+            // config that isn't Slate's there's no list, and no rule
+            + `; if SLATE_GAME_OPAQUE and SLATE_GAME_OPAQUE_FOR ~= TERMINAL_CLASSES then SLATE_GAME_OPAQUE:set_enabled(false); SLATE_GAME_OPAQUE = nil end; `
+            + `if TERMINAL_CLASSES and not SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE_FOR = TERMINAL_CLASSES; SLATE_GAME_OPAQUE = hl.window_rule({ name = "slate-game-opaque", match = { class = "^(" .. TERMINAL_CLASSES .. ")$" }, force_rgbx = true }) end; `
+            + `if SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE:set_enabled(${gameMode ? "true" : "false"}) end`;
     }
     onHyprSettingsChanged: hyprPush.restart()
     // The blur rules alone, sent straight away when one changes (an opacity slider being
