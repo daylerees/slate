@@ -535,3 +535,113 @@ class LostToAnUpdate(ApplyTheme):
         self.assertEqual(self.stale(["discord"]), [])
         self.assertFalse([l for l in self.apply(["discord"]).splitlines() if l.startswith(("restored", "lost"))])
         self.assertTrue(self.text(self.DISCORD + "/app.asar").startswith("plain discord"))
+
+
+class FlatpakAndSnapGtk(ApplyTheme):
+    """Flatpak and Snap apps can't see ~/.config, so GTK's and KDE's theme never reached them.
+    Flatpak apps are given read-only access to it through the overrides every one of them
+    gets (`flatpak override --user`'s file, ~/.local/share/flatpak/overrides/global); each
+    snap gets GTK's theme files in its own ~/snap/<name>/current/.config. All undone when
+    switched off."""
+    OVERRIDES = ".local/share/flatpak/overrides/global"
+    OURS = ["xdg-config/gtk-3.0:ro", "xdg-config/gtk-4.0:ro"]
+
+    def filesystems(self, rel=OVERRIDES):
+        for line in self.text(rel).splitlines():
+            if line.startswith("filesystems="):
+                return [i for i in line.split("=", 1)[1].split(";") if i]
+        return []
+
+    def test_flatpak_apps_read_your_gtk_and_kde_settings(self):
+        self.s.add("flatpak")
+        yours = "[Context]\nfilesystems=xdg-download;\n\n[Environment]\nFOO=1\n"
+        self.put({self.OVERRIDES: yours})
+        self.apply(["gtk", "kde"])
+        self.assertEqual(self.filesystems(), ["xdg-download"] + self.OURS + ["xdg-config/kdeglobals:ro"])
+        self.assertIn("[Environment]\nFOO=1", self.text(self.OVERRIDES))
+        self.assertFalse(os.path.exists(self.h(self.OVERRIDES + ".bak-slate-theme")),
+                         "a stray file in Flatpak's overrides")
+        self.apply(["gtk", "kde"])
+        self.assertEqual(len(self.filesystems()), 4, "added twice")
+        self.apply(["kde"])
+        self.assertEqual(self.filesystems(), ["xdg-download", "xdg-config/kdeglobals:ro"])
+        self.apply([])
+        self.assertEqual(self.text(self.OVERRIDES), yours)
+
+    def test_overrides_made_and_removed(self):
+        self.s.add("flatpak")
+        self.apply(["gtk"])
+        self.assertEqual(self.filesystems(), self.OURS)
+        self.apply([])
+        self.assertFalse(os.path.exists(self.h(".local/share/flatpak")), "Slate's overrides left behind")
+
+    def test_your_own_choice_kept(self):
+        """Access you've given already (even read-write), or refused, is left as it is."""
+        self.s.add("flatpak")
+        yours = "[Context]\nfilesystems=xdg-config/gtk-3.0;!xdg-config/gtk-4.0;\n"
+        self.put({self.OVERRIDES: yours})
+        self.apply(["gtk"])
+        self.assertEqual(self.text(self.OVERRIDES), yours)
+        self.apply([])
+        self.assertEqual(self.text(self.OVERRIDES), yours)
+
+    def test_flatpak_user_dir(self):
+        self.s.add("flatpak")
+        self.env["FLATPAK_USER_DIR"] = self.h("elsewhere", "flatpak")
+        self.apply(["gtk"])
+        self.assertEqual(self.filesystems("elsewhere/flatpak/overrides/global"), self.OURS)
+
+    def test_without_flatpak(self):
+        self.apply(["gtk", "kde"])
+        self.assertFalse(os.path.exists(self.h(".local/share/flatpak")))
+
+    def test_snaps(self):
+        os.makedirs(self.h("snap", "firefox", "4793", ".config"))
+        os.symlink("4793", self.h("snap", "firefox", "current"))
+        os.makedirs(self.h("snap", "cli-tool", "12"))          # nothing of GTK's: no .config
+        os.symlink("12", self.h("snap", "cli-tool", "current"))
+        before = self.tree()
+        self.apply(["gtk"])
+        for v in ("3", "4"):
+            d = "snap/firefox/4793/.config/gtk-%s.0/" % v
+            self.assertIn("@define-color accent_color %s;" % ACCENT, self.text(d + "slate.css"))
+            self.assertEqual(self.text(d + "gtk.css"), '@import url("slate.css");\n')
+        self.assertFalse(os.path.exists(self.h("snap", "cli-tool", "12", ".config")))
+        self.apply([])
+        self.assertEqual({p for p in self.tree() if p.startswith("snap/")}, {p for p in before if p.startswith("snap/")})
+        self.assertFalse(os.path.exists(self.h("snap", "firefox", "4793", ".config", "gtk-3.0")))
+
+
+class LinkedConfigs(ApplyTheme):
+    """Configs that are links: a dotfile manager's (GNU Stow) stays a link, changed where it
+    leads, where Slate used to replace the link with a file; Home Manager's (read-only, in the
+    Nix store) is left alone, where Slate's file in its way stopped `home-manager switch`."""
+
+    def test_link_kept(self):
+        self.put({"dotfiles/gtk.css": "window { padding: 0; }\n"})
+        os.makedirs(self.h(".config", "gtk-3.0"))
+        os.symlink(self.h("dotfiles", "gtk.css"), self.h(".config", "gtk-3.0", "gtk.css"))
+        self.apply(["gtk"])
+        self.assertTrue(os.path.islink(self.h(".config", "gtk-3.0", "gtk.css")))
+        self.assertIn('@import url("slate.css");', self.text("dotfiles/gtk.css"))
+        self.apply([])
+        self.assertTrue(os.path.islink(self.h(".config", "gtk-3.0", "gtk.css")))
+        self.assertEqual(self.text("dotfiles/gtk.css"), "window { padding: 0; }\n")
+
+    @unittest.skipIf(os.geteuid() == 0, "root can write anything")
+    def test_read_only_left_alone(self):
+        self.put({"store/gtk.css": "window { padding: 0; }\n"})
+        os.chmod(self.h("store", "gtk.css"), 0o444)
+        os.chmod(self.h("store"), 0o555)
+        self.addCleanup(os.chmod, self.h("store"), 0o755)
+        os.makedirs(self.h(".config", "gtk-3.0"))
+        os.symlink(self.h("store", "gtk.css"), self.h(".config", "gtk-3.0", "gtk.css"))
+        out = self.apply(["gtk"])
+        self.assertIn("gtk-3.0/gtk.css is read-only", out)
+        self.assertEqual(self.text(".config/gtk-3.0/gtk.css"), "window { padding: 0; }\n")
+        self.assertTrue(os.path.islink(self.h(".config", "gtk-3.0", "gtk.css")))
+        self.assertFalse(os.path.exists(self.h(".config", "gtk-3.0", "gtk.css.bak-slate-theme")))
+        # the rest of GTK's theme still goes on
+        self.assertIn('@import url("slate.css");', self.text(".config/gtk-4.0/gtk.css"))
+        self.apply([])
+        self.assertEqual(self.text(".config/gtk-3.0/gtk.css"), "window { padding: 0; }\n")

@@ -43,7 +43,7 @@
         <tr><td>Editors and tools</td><td>VS Code (Code - OSS and VSCodium too), Zed, Helix, Vim and Neovim, bat, fzf, Yazi,
           btop, cava and zathura</td></tr>
       </table>
-      <p>Flatpak builds are themed too, in their own folders. Text colours are kept readable against each background, in
+      <p>Flatpak and Snap builds are themed too (see below). Text colours are kept readable against each background, in
         light mode as well as dark, and terminals and editors use your <a href="appearance.html#fonts">code font</a>.</p>
 
       <h2>Switching an app on</h2>
@@ -54,6 +54,34 @@
         wallpaper bring new colours, and the app changes with it. Most apps pick up the change while they're open; a few
         need a restart, and their row says so (Firefox, for example, and Obsidian if it was open).</p>
 
+      <h2>Flatpak, Snap and other ways of installing</h2>
+      <p>How an app was installed changes where it keeps its settings. Here's how each kind gets Slate's colours:</p>
+      <table>
+        <tr><th>Installed from</th><th>What Slate does</th></tr>
+        <tr><td>Your distribution, or an AppImage</td><td>They read your own settings, so they're themed like
+          everything else.</td></tr>
+        <tr><td>Flatpak</td><td>GTK and KDE apps are allowed to read Slate's theme files, and only read them: one entry
+          in Flatpak's settings for all your apps, the same as <code>flatpak override --user
+          --filesystem=xdg-config/gtk-4.0:ro</code>. Access you've already given or refused stays as it is, and switching
+          the app off takes Slate's entry away again. Apps with their own theme (VS Code, Zed, Discord, Firefox and the
+          others above) are themed in their Flatpak's own folder. Restart a Flatpak app that was open to see it.</td></tr>
+        <tr><td>Snap</td><td>GTK apps get Slate's theme files in their own folder
+          (<code>~/snap/&lt;app&gt;/current/.config</code>). Snaps only have the GTK themes that come with them, so older
+          GTK 3 apps keep Adwaita's shapes, in Slate's colours.</td></tr>
+        <tr><td>Home Manager (NixOS)</td><td>Files Home Manager looks after are read-only, so Slate leaves them as they are
+          and notes it in its log. Add Slate's line to your Home Manager configuration instead (for GTK,
+          <code>@import url("slate.css");</code> in <code>gtk.css</code>). A config that's a link from another dotfile
+          manager stays a link, and Slate changes the file it leads to.</td></tr>
+      </table>
+      <p>A few apps can't wear Slate's colours, whichever way they're installed:</p>
+      <ul>
+        <li><strong>Qt apps from Flatpak, Snap or an AppImage</strong> bring their own Qt without qt6ct, so they keep
+          their own look. KDE apps from Flatpak do follow Slate, through KDE's colours.</li>
+        <li><strong>Chrome, Chromium and other Electron apps</strong> follow light or dark, but not your accent. Discord,
+          VS Code and Obsidian, above, have Slate themes of their own.</li>
+        <li><strong>Light or dark in Flatpak and Snap apps</strong> comes through <code>xdg-desktop-portal-gtk</code>.
+          The installer adds it where your distribution has it; without it, those apps stay light.</li>
+      </ul>
       <h2>Backups and switching off</h2>
       <p>Before Slate first changes one of your config files, it saves a copy beside it, ending in
         <code>.bak-slate-theme</code>. Slate keeps its colours in theme files of its own and points your config at them,

@@ -50,6 +50,7 @@ gui-apps/slurp
 app-misc/brightnessctl
 ?sys-power/power-profiles-daemon
 ?gui-apps/qt6ct
+?sys-apps/xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 x11-themes/papirus-icon-theme
 dev-vcs/git
 ?gui-libs/greetd

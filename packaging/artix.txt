@@ -52,6 +52,7 @@ brightnessctl
 power-profiles-daemon
 adw-gtk-theme
 qt6ct
+?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 # Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars) — Hyprland ships its headers
 git
