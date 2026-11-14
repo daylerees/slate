@@ -166,6 +166,37 @@ class TitleBars(TitleBarChecks, LiveCase):
         self.bar_on(self.client(w["address"]))
         self.assertBarOnWindow(w["address"])
 
+    def test_looks_only_while_a_window_floats(self):
+        """Slate asks Hyprland for the windows a few times a second only while there's a
+        floating window for a bar to follow (it once did so all the time, every screen's bar
+        for itself). With none it stops; a window opening starts it again, with its bar."""
+        self.config("titleBarStyle", "slate")
+        self.config("windowMode", "floating")
+        looks = lambda: self.s.state()["titleBarLooks"]
+        quiet = self.steady(looks, floor=0.6, step=0.5)
+        self.s.settle(1.5)
+        self.assertEqual(looks(), quiet, "still looking at the windows with none floating")
+        w = self.floating_foot()
+        self.bar_on(w)
+        before = looks()
+        self.s.settle(1.5)
+        # (every 150 ms: ten in that time; half that still says it's following the window)
+        self.assertGreaterEqual(looks() - before, 5, "not following the floating window")
+        # A tiled window is nothing to follow either (the bar goes, and so does the looking)
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.float({{ action = "disable", window = "address:{w["address"]}" }})) end')
+        self.wait(lambda st: st["titleBar"] == "", "the bar to go with the window tiled")
+        quiet = self.steady(looks, floor=0.6, step=0.5)
+        self.s.settle(1.5)
+        self.assertEqual(looks(), quiet, "still looking with the only window tiled")
+        # ...and floated again, its bar's back as promptly as ever
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.float({{ action = "enable", window = "address:{w["address"]}" }})) end')
+        self.wait(lambda st: st["titleBar"] == w["address"], "the bar back on the window floated again", timeout=3)
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.close({{ window = "address:{w["address"]}" }})) end')
+        self.wait(lambda st: st["titleBar"] == "", "the bar to go with its window")
+        quiet = self.steady(looks, floor=0.6, step=0.5)
+        self.s.settle(1.5)
+        self.assertEqual(looks(), quiet, "still looking after the last floating window closed")
+
     def test_dragging_the_bar_moves_the_window_under_the_pointer(self):
         """The drag itself, as the bar's own pointer handling does it (TitleBar.qml: dragPress,
         dragTo, dragRelease): the window ends up centred on where the pointer went."""

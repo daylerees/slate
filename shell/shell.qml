@@ -59,10 +59,12 @@ ShellRoot {
         // Maximise or restore a window, leaving room for its bar (Super+D, binds.lua)
         function maximise(address: string): void { Config.titleBarMaximise(address); }
     }
+    // (one look at Hyprland's windows for every screen's bar, and only while one floats)
+    TitleBarWindows { id: titleBarWindows; bars: titleBars.instances; lock: lockScreen }
     Variants {
         id: titleBars
         model: Config.anyFloating && Config.slateTitleBars ? Quickshell.screens : []
-        TitleBar { required property var modelData; screen: modelData }
+        TitleBar { required property var modelData; screen: modelData; windows: titleBarWindows }
     }
     // Only one of the launcher, window switcher and workspace overview shows at a
     // time: opening one closes the others

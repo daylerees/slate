@@ -32,6 +32,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
+├─ TitleBarWindows.qml  the one look at Hyprland's windows every screen's title bar shares, only while a window floats
 ├─ SecretEmpty.qml      the note in the middle of the screen while the secret workspace shows with nothing on it
 ├─ HyprbarsWatch.qml     Hyprbars, the optional title-bar plugin: notices when it needs rebuilding, falls back to Slate Bars, asks
 │                       on the topmost floating window (last in hyprctl clients, which runs bottom to top)

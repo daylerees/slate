@@ -10,7 +10,6 @@
 import QtQuick
 import QtQuick.Shapes
 import Quickshell
-import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
@@ -33,7 +32,9 @@ PanelWindow {
     // The floating window on top here: Hyprland lists windows bottom to top (raising one moves
     // it to the end), so it's the last floating one on this screen's workspace (or pinned)
     property var o: null
-    property var clients: []                         // every window, as last looked at
+    // Every window, as last looked at: one look shared by every screen's bar, and only while
+    // there's a floating window to follow (TitleBarWindows.qml, passed in by shell.qml)
+    property var windows: null
     // Maximising or restoring: the bar keeps away while the window animates to its new place,
     // and comes back once Hyprland says where it ended up
     property bool placing: false
@@ -47,9 +48,7 @@ PanelWindow {
     property bool placedLook: false                  // the next look at the windows ends it
     Timer { id: placed; interval: Config.ms(420) + 60; onTriggered: { tb.placedLook = true; tb.query(); } }
     readonly property int wsId: monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : -1
-    function pickTop(text) {
-        let list;
-        try { list = JSON.parse(text); } catch (e) { return; }
+    function pickTop(list) {
         if (!mon || dragging || sizing !== "") return;
         let top = null;
         for (const c of list) {
@@ -65,16 +64,11 @@ PanelWindow {
         }
         lastGeo = geo;
         o = top;
-        clients = list;
         if (placedLook) { placedLook = false; placing = false; }
-        if (Config.testMode) { if (top) Config.titleBarSeen = geo; Config.titleBarLooks++; }
+        if (Config.testMode && top) Config.titleBarSeen = geo;
     }
-    Process {
-        id: clientsQuery
-        command: ["hyprctl", "-j", "clients"]
-        stdout: StdioCollector { onStreamFinished: tb.pickTop(text) }
-    }
-    function query() { if (!clientsQuery.running) clientsQuery.running = true; }
+    Connections { target: tb.windows; function onLooked(list) { tb.pickTop(list); } }
+    function query() { if (windows) windows.query(); }
     readonly property string address: o && o.address ? String(o.address) : ""
     // Where the window is (its top left, in this screen's coordinates) and its size. Mid-drag,
     // where the drag puts it.
@@ -132,21 +126,10 @@ PanelWindow {
     Component.onDestruction: if (Config.titleBarOn === address) Config.titleBarOn = ""
     visible: shown || bar.opacity > 0
 
-    // Hyprland doesn't say when a window moves, is resized or raised, so look a few times a
-    // second (not while dragging: the drag knows where the window is), and at once when
-    // windows open, close, change focus, float or go full screen
-    Timer {
-        interval: tb.movingElsewhere ? 50 : 150; repeat: true
-        running: !tb.dragging && tb.sizing === ""
-        onTriggered: tb.query()
-    }
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            if (["openwindow", "closewindow", "activewindowv2", "movewindowv2", "changefloatingmode",
-                 "fullscreen", "workspacev2", "focusedmonv2", "pin"].includes(event.name)) tb.query();
-        }
-    }
+    // Hyprland doesn't say when a window moves, is resized or raised, so the windows are looked
+    // at a few times a second while one floats (not while dragging: the drag knows where the
+    // window is), and at once when windows open, close, change focus, float or go full screen:
+    // TitleBarWindows.qml, for every screen's bar at once
     onWsIdChanged: query()
     Component.onCompleted: { Hyprland.refreshMonitors(); query(); if (barWanted) fadeIn.restart(); }
 
@@ -450,7 +433,7 @@ PanelWindow {
     property var lastPlaced: ({})      // window → { max, at }: how Slate last placed it, and when
     function sameAddress(a, b) { return String(a).replace(/^0x/, "") === String(b).replace(/^0x/, ""); }
     function toggleMaximise(addr) {
-        const c = clients.find(x => sameAddress(x.address, addr));
+        const c = (windows ? windows.clients : []).find(x => sameAddress(x.address, addr));
         if (!c || !mon || c.monitor !== mon.id) return;          // (another screen's bar does it)
         const sc = mon.scale || 1, turned = (mon.transform || 0) % 2 === 1;
         const W = (turned ? mon.height : mon.width) / sc, H = (turned ? mon.width : mon.height) / sc;

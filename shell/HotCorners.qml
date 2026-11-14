@@ -57,6 +57,23 @@ Scope {
         }
     }
 
+    // Where the pointer really is, asked of Hyprland once for all four corners (each used to
+    // start a `hyprctl` of its own, every unlock). ok: Hyprland answered
+    signal pointerAt(real x, real y, bool ok)
+    Process {
+        id: cursorCheck
+        command: ["hyprctl", "-j", "cursorpos"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let q = null;
+                try { q = JSON.parse(text); } catch (e) {}
+                hc.pointerAt(q ? q.x : 0, q ? q.y : 0, !!q);
+            }
+        }
+    }
+    // (the corners all ask at the same moment: the first starts it, and all hear the answer)
+    function askPointer() { if (!cursorCheck.running) cursorCheck.running = true; }
+
     Variants {
         model: [
             { top: true, left: true, key: "hotCornerTopLeft" },
@@ -90,19 +107,12 @@ Scope {
                     else { hover.enabled = false; settle.restart(); }
                 }
             }
-            Timer { id: settle; interval: 400; onTriggered: { hover.enabled = true; cursorCheck.running = true; } }
-            Process {
-                id: cursorCheck
-                command: ["hyprctl", "-j", "cursorpos"]
-                stdout: StdioCollector {
-                    onStreamFinished: {
-                        let inCorner = false;
-                        try {
-                            const q = JSON.parse(text);
-                            inCorner = hc.inCorner(corner.screen, corner.modelData.left, corner.modelData.top, q.x, q.y);
-                        } catch (e) {}
-                        corner.armed = !inCorner;     // in it: armed again once the pointer leaves
-                    }
+            Timer { id: settle; interval: 400; onTriggered: { hover.enabled = true; hc.askPointer(); } }
+            Connections {
+                target: hc
+                function onPointerAt(x, y, ok) {
+                    const inCorner = ok && hc.inCorner(corner.screen, corner.modelData.left, corner.modelData.top, x, y);
+                    corner.armed = !inCorner;     // in it: armed again once the pointer leaves
                 }
             }
             HoverHandler {
