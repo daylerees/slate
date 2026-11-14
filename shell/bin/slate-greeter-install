@@ -29,7 +29,9 @@ DATA=/var/lib/slate-greeter
 CACHE=/var/cache/slate-greeter
 # The user greetd runs its greeter as: whatever greetd's config already says (packages differ:
 # "greeter" on Arch and Fedora, "_greetd" on Debian), else the first of those that exists
-GREETER_USER=$(sed -n 's/^[[:space:]]*user[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$BACKUP" "$CONF" 2>/dev/null | head -1)
+# (|| true: with no greetd config yet, sed fails, and under pipefail that would end the script
+# here without a word, before the "is greetd installed?" message below could be shown)
+GREETER_USER=$(sed -n 's/^[[:space:]]*user[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$BACKUP" "$CONF" 2>/dev/null | head -1 || true)
 if [ -z "$GREETER_USER" ] || ! id "$GREETER_USER" >/dev/null 2>&1; then
     GREETER_USER=""
     for u in greeter _greetd greetd; do id "$u" >/dev/null 2>&1 && { GREETER_USER=$u; break; }; done
