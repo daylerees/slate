@@ -485,7 +485,13 @@ class Restorer:
         cmd = win["command"]
         if win.get("cwd"):
             cmd = "cd " + shlex.quote(win["cwd"]) + " && " + cmd
-        expr = ("(TERMINAL or 'kitty') .. ' -e ' .. " + lstr(cmd)) if win.get("terminal") else lstr(cmd)
+        if win.get("terminal"):
+            # The whole line is one argument to a shell inside the terminal: left bare, the
+            # terminal was asked to run only its first word ("cd"), and whatever came after
+            # an "&&" (the app itself) ran outside it, or not at all
+            expr = "(TERMINAL or 'kitty') .. ' -e sh -c ' .. " + lstr(shlex.quote(cmd))
+        else:
+            expr = lstr(cmd)
         rules = "workspace = " + lstr(str(ws)) + (", float = true" if floating else "")
         reply = lua("hl.exec_cmd(" + expr + ", { " + rules + " })")
         if reply.startswith("error"):

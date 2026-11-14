@@ -3,6 +3,7 @@ restart, against fixture `hyprctl -j` replies. Restoring runs against a fake hyp
 opens a window for each app started, so no real app or Hyprland is ever reached."""
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -338,7 +339,7 @@ class Restore(FakeHyprland, SpacesBase):
             "function() hl.exec_cmd([=[example-term]=], { workspace = [=[2]=] }) end",
             fn % "hl.dsp.focus({ window = [=[address:0xb2]=] })",
             fn % "hl.dsp.layout([=[splitratio 1.000 exact]=])",
-            "function() hl.exec_cmd((TERMINAL or 'kitty') .. ' -e ' .. [=[cd /opt/example && example-viewer]=],"
+            "function() hl.exec_cmd((TERMINAL or 'kitty') .. ' -e sh -c ' .. [=['cd /opt/example && example-viewer']=],"
             " { workspace = [=[2]=], float = true }) end",
             fn % "hl.dsp.window.resize({ x = 960, y = 540, relative = false, window = [=[address:0xb4]=] })",
             fn % "hl.dsp.window.move({ x = 480, y = 270, relative = false, window = [=[address:0xb4]=] })",
@@ -349,6 +350,37 @@ class Restore(FakeHyprland, SpacesBase):
                                                               "104": "aaaaaaaaaaaa"}})
         # Everything opened: no notification
         self.assertEqual(self.s.calls("notify-send"), [])
+
+    def test_terminal_app_runs_inside_the_terminal(self):
+        """A terminal app with a working folder: the line Hyprland is handed, run by a shell as
+        Hyprland runs it, starts the app inside the terminal and in that folder. It used to
+        be `terminal -e cd /folder && app`: the terminal was asked to run "cd", and the app
+        ran outside it, in the wrong folder."""
+        self.fake_hyprland()
+        folder = self.h("My Projects")
+        os.makedirs(folder)
+        viewer = dict(VIEWER, cwd=folder, fullscreen=0)
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778,
+                                                                        "windows": [viewer]}]}]})
+        self.spaces("restore", "work")
+        started = [d for d in self.dispatches() if "hl.exec_cmd" in d]
+        self.assertEqual(len(started), 1, started)
+        m = re.fullmatch(r"function\(\) hl\.exec_cmd\(\(TERMINAL or 'kitty'\) \.\. '([^']*)' \.\. "
+                         r"\[=\[(.*)\]=\], \{ workspace = \[=\[2\]=\] \}\) end", started[0])
+        self.assertTrue(m, started[0])
+        # A terminal that says it opened, then runs what follows -e (as kitty, foot… do), and
+        # an app that notes where it was started and whether the terminal was open by then
+        said = os.path.join(self.h.dir, "terminal-said")
+        for name, text in (("fake-term", 'echo terminal >> "%s"\nshift\nexec "$@"\n' % said),
+                           ("example-viewer", 'echo "app in $PWD" >> "%s"\n' % said)):
+            p = os.path.join(self.s.dir, name)
+            with open(p, "w") as f:
+                f.write("#!/bin/sh\n" + text)
+            os.chmod(p, 0o755)
+        run(["/bin/sh", "-c", "fake-term" + m.group(1) + m.group(2)], env=self.s.env, timeout=10)
+        with open(said) as f:
+            self.assertEqual(f.read().splitlines(), ["terminal", "app in " + folder])
 
     def test_some_apps_dont_open(self):
         """An app that never opens a window: the rest of the space still opens, and one
