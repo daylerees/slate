@@ -79,7 +79,7 @@ class Greying(Case):
         for expr in ("Config.canInhibit", "Config.hasLogind", "Config.canSuspend", "dateTimePane.canSet"):
             with self.subTest(expr):
                 self.assertNotRegex(src, rf"\benabled:\s*{re.escape(expr)}\b")
-                self.assertRegex(src, rf"\bneedsMet:\s*{re.escape(expr)}\b")
+                self.assertRegex(src, rf"\bneedsMet:\s*{re.escape(expr)}\s*\n\s*needs:\s*\"[^\"]{{12,}}\"")
 
 
 class Sliders(Case):
@@ -88,3 +88,9 @@ class Sliders(Case):
         src = slate.read("shell", "SettingsWindow.qml")
         block = src.split("// Hue slider", 1)[1].split("MouseArea {", 1)[1][:400]
         self.assertIn("preventStealing: true", block)
+
+
+class SpacesSave(Case):
+    def test_save_lights_the_accent_under_the_pointer(self):
+        src = slate.read("shell", "Popouts.qml")
+        self.assertRegex(src, r"spacesView\.canSave \? \(spSaveHover\.hovered \? Config\.accentLit : pop\.accent\)")

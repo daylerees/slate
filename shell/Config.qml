@@ -1259,7 +1259,6 @@ Singleton {
     readonly property bool canPowerOff: system.power !== "no"          // restart and shut down
     readonly property bool canInhibit: system.inhibit !== "no"         // hold sleep, the lid, the power button
     readonly property bool hasLogind: system.logind !== "none"         // told when the computer's about to sleep
-    readonly property string noLogindNote: "This needs systemd or elogind, and neither is running on this computer"
     Process {
         // (not in the tests: their container has no init system, and they say what they want
         // through the `test` IPC target)

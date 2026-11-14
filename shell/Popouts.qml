@@ -1907,7 +1907,10 @@ PanelWindow {
                 }
                 Rectangle {
                     width: spSave.implicitWidth + 28; height: 32; radius: Config.corner(8)
-                    color: spacesView.canSave ? pop.accent : pop.card
+                    // The lighter accent under the pointer, as the control centre's toggles (nothing
+                    // to light while it can't save yet)
+                    color: spacesView.canSave ? (spSaveHover.hovered ? Config.accentLit : pop.accent) : pop.card
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Label { id: spSave; anchors.centerIn: parent; text: spacesView.sameName ? "Replace" : "Save"; color: spacesView.canSave ? pop.accentText : pop.dim }
                     HoverHandler { id: spSaveHover }
                     ClickTap { onTapped: spacesView.save() }

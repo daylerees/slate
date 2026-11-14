@@ -3745,7 +3745,7 @@ FloatingWindow {
                         : "With another screen connected, only the laptop's own screen turns off"
                     // (holding the system's own handling back needs systemd or elogind: Config.system)
                     needsMet: Config.canInhibit
-                    needs: Config.noLogindNote
+                    needs: "Slate can't manage the lid here. It needs systemd or elogind, and neither is running"
                     options: [{ value: "", label: "System default" }, { value: "suspend", label: "Suspend" }, { value: "lock", label: "Lock the screen" },
                               { value: "screenoff", label: "Turn the screen off" }, { value: "nothing", label: "Do nothing" }]
                         .filter(o => o.value !== "suspend" || Config.canSuspend)
@@ -3757,7 +3757,7 @@ FloatingWindow {
                     label: "Power button"
                     settingKey: "powerKeyAction"
                     needsMet: Config.canInhibit
-                    needs: Config.noLogindNote
+                    needs: "Slate can't manage the power button here. It needs systemd or elogind, and neither is running"
                     detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
                     options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                               { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]
@@ -4157,7 +4157,7 @@ FloatingWindow {
                     // Without systemd, changing it needs a service that provides the same thing
                     // (openrc-settingsd does). Without one it's shown, greyed, with why
                     needsMet: dateTimePane.canSet
-                    needs: "Needs a time service, which this computer doesn't have (openrc-settingsd provides one)"
+                    needs: "Slate can't change the time zone here. This computer has no time service (openrc-settingsd provides one)"
                     detail: dateTimePane.canSet ? "Where you are, for the clock; type to search"
                         : "Slate can't change this here. Your clock follows the system's own setting"
                     searchable: true
@@ -6792,7 +6792,7 @@ FloatingWindow {
                     label: "Lock before sleep"
                     // (Slate hears that the computer's about to sleep from systemd or elogind)
                     needsMet: Config.hasLogind
-                    needs: Config.noLogindNote
+                    needs: "Slate can't tell when this computer goes to sleep. It needs systemd or elogind, and neither is running"
                     detail: "Lock the screen whenever the computer suspends or hibernates"
                     key: "lockBeforeSleep"
                 }
@@ -6920,7 +6920,7 @@ FloatingWindow {
                 ChoiceSetting {
                     label: "Suspend after"
                     needsMet: Config.canSuspend
-                    needs: Config.noLogindNote
+                    needs: "This computer can't suspend"
                     settingKey: "idleSuspendMinutes"
                     options: lockCol.minutes
                     value: Config.s.idleSuspendMinutes
