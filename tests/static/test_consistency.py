@@ -438,6 +438,17 @@ class Lists(Case):
                     self.assertNotIn(name, seen, f"line {n}: {name} listed twice")
                     seen.add(name)
 
+    def test_hyprlands_portal_is_in_every_list(self):
+        """Screen sharing, Private Mode and the share picker's window rule need
+        xdg-desktop-portal-hyprland: every distro's list has it (Debian's is optional, like
+        its Hyprland, which the PPA brings with it) and so does the NixOS example."""
+        for f in slate.files("packaging", ".txt"):
+            with self.subTest(f):
+                names = [re.sub(r"\s*#.*", "", l).strip().lstrip("?") for l in slate.read(f).splitlines()]
+                self.assertIn(("gui-libs/" if "gentoo" in f else "") + "xdg-desktop-portal-hyprland", names)
+        self.assertIn("pkgs.xdg-desktop-portal-hyprland", slate.read("packaging", "nixos.nix"))
+        self.assertIn("`xdg-desktop-portal-hyprland`", slate.read("docs", "ARCHITECTURE.md"))
+
     def test_lists_stay_tidy(self):
         """Packages Slate never calls stay out of the lists, build tools stay optional (only
         Hyprbars uses them, and it says what's missing), and nothing sits under a heading

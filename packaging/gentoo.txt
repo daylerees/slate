@@ -8,6 +8,7 @@
 
 # Compositor and shell
 gui-wm/hyprland
+gui-libs/xdg-desktop-portal-hyprland   # Hyprland's screen sharing and recording portal (browsers, OBS, Discord; Private Mode switches it off)
 gui-apps/quickshell
 dev-qt/qtdeclarative:6
 

@@ -8,6 +8,7 @@
 
 # Compositor and shell
 hyprland
+xdg-desktop-portal-hyprland   # Hyprland's screen sharing and recording portal (browsers, OBS, Discord; Private Mode switches it off)
 quickshell
 qt6-declarative
 

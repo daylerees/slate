@@ -12,7 +12,13 @@
   services.accounts-daemon.enable = true;   # your account picture
   services.gvfs.enable = true;              # the Waste Basket's trash: location (emptying it)
   programs.dconf.enable = true;             # so theme settings (gsettings) stick
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];   # Flatpak and Snap apps: light or dark
+  xdg.portal = {
+    enable = true;
+    extraPortals = [
+      pkgs.xdg-desktop-portal-hyprland   # screen sharing and recording (browsers, OBS, Discord; Private Mode switches it off)
+      pkgs.xdg-desktop-portal-gtk        # Flatpak and Snap apps: light or dark
+    ];
+  };
   # Printing and scanning (Settings → Printers & Scanners)
   services.printing.enable = true;
   services.avahi = { enable = true; nssmdns4 = true; };   # finds network printers

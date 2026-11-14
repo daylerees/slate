@@ -557,6 +557,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
+| `xdg-desktop-portal-hyprland` (Gentoo `gui-libs/xdg-desktop-portal-hyprland`; optional in Debian's list, where it comes with Hyprland's PPA) | Hyprland's portal, required: screen sharing and recording for browsers, OBS and chat apps; Private Mode switches it off while on (`scripts/private-capture.sh`); and the window rule that keeps its share picker (`hyprland-share-picker`) floating and out of Slate's way (`session/hypr/config/windowrules.lua`) |
 | `xdg-desktop-portal-gtk` | Flatpak and Snap apps following light or dark (the Settings portal reads `color-scheme` from gsettings; Hyprland's own portal has no Settings) |
 | hyprbars (Hyprland plugin; `git`, `make`, `g++` and `pkg-config` to build it, optional in the lists and checked by `slate build-hyprbars`, which says which is missing) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |

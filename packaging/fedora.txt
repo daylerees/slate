@@ -5,6 +5,7 @@ copr:errornointernet/quickshell
 hyprland
 # hyprland-guiutils: Hyprland's own dialogs (an app that's stopped responding, permission prompts). Slate doesn't call it
 ?hyprland-guiutils
+xdg-desktop-portal-hyprland   # Hyprland's screen sharing and recording portal (browsers, OBS, Discord; Private Mode switches it off)
 quickshell
 
 # Scripts and images
