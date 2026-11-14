@@ -478,3 +478,74 @@ class Label(LiveCase):
         }.items():
             with self.subTest(id_):
                 self.assertEqual(self.ipc("test", "trayName", id_, title, tip), want)
+
+
+class BarWithOverlays(LiveCase):
+    """The menu bar stays usable while the launcher, Nova, the dock's Downloads grid or a dock
+    menu is open: a press on a bar item does what it does and closes the overlay, and the
+    overlays' click catchers leave the bar's place free so the press gets there. (The session
+    has no pointer: test barPoint's pretend press goes the bar's own way, pressStarted.)"""
+    def press(self, name):
+        t = self.s.state()["bar"]["line"][name]
+        self.assertTrue(t["visible"], f"{name} isn't on the bar")
+        self.ipc("test", "barPoint", str(int(t["x"] + t["w"] / 2)), str(int(t["y"] + t["h"] / 2)), "click")
+        self.ipc("test", "barPoint", "-1", "-1", "leave")
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(lambda: (self.ipc("popout", "close"), self.ipc("launcher", "close"),
+                                 self.ipc("assistant", "close"), self.ipc("dock", "closeMenu")))
+
+    def test_the_bar_knows_its_place(self):
+        """What the catchers leave out: the bar's own band, on the screen, at its edge."""
+        self.keep_setting("barPosition")
+        for edge in ("top", "bottom", "left", "right"):
+            with self.subTest(edge):
+                self.config("barPosition", edge)
+                self.wait(lambda st: st["barEdge"] == edge, f"the bar at the {edge}")
+                self.s.settle(0.8)
+                rects = self.s.state()["barRects"]
+                self.assertTrue(rects, "no bar place published")
+                r = next(iter(rects.values()))
+                screen = self.s.state()["screens"][0]
+                if edge in ("top", "bottom"):
+                    self.assertEqual(r["width"], screen["width"])
+                    self.assertEqual(r["y"] == 0, edge == "top")
+                    self.assertGreater(r["height"], 0)
+                else:
+                    self.assertEqual(r["height"], screen["height"])
+                    self.assertEqual(r["x"] == 0, edge == "left")
+                    self.assertGreater(r["width"], 0)
+
+    def test_launcher_closes_and_the_panel_opens(self):
+        self.ipc("launcher", "open")
+        self.wait(lambda st: st["launcher"]["open"], "the launcher")
+        self.press("clock")
+        self.wait(lambda st: not st["launcher"]["open"], "the launcher to close on a press on the bar")
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar from the same press")
+
+    def test_nova_closes_and_the_panel_opens(self):
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"], "Nova")
+        self.press("clock")
+        self.wait(lambda st: not st["assistant"]["open"], "Nova to close on a press on the bar")
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar from the same press")
+
+    def test_dock_overlays_close(self):
+        self.ipc("dock", "downloads")
+        self.wait(lambda st: st["dock"]["menu"] == "other", "the Downloads grid")
+        self.press("clock")
+        self.wait(lambda st: st["dock"]["menu"] == "", "the Downloads grid to close on a press on the bar")
+        self.ipc("test", "dockMenu", "open")
+        self.wait(lambda st: st["dockMenu"]["open"], "the dock's menu")
+        self.press("clock")
+        self.wait(lambda st: not st["dockMenu"]["open"], "the dock's menu to close on a press on the bar")
+
+    def test_the_button_that_opened_it_still_closes_it(self):
+        """Pressing Apps with the launcher open closes it, and doesn't open it again."""
+        self.ipc("launcher", "open")
+        self.wait(lambda st: st["launcher"]["open"], "the launcher")
+        self.press("apps")
+        self.wait(lambda st: not st["launcher"]["open"], "the launcher to close")
+        self.s.settle(1.0)
+        self.assertFalse(self.s.state()["launcher"]["open"], "the launcher came back")

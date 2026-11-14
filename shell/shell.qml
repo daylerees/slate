@@ -572,6 +572,8 @@ ShellRoot {
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
+                // (where each screen's bar takes the pointer: the click catchers leave it out)
+                barRects: Config.barRects,
                 // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
                 dockMenu: { open: dockMenu.visible, items: dockMenu.items.map(i => i.separator ? null
                     : { label: i.label, ticked: i.icon === 0xEA5E, sub: i.submenu ? i.submenu.map(j => j.separator ? null : { label: j.label, ticked: j.icon === 0xEA5E }) : null }) }

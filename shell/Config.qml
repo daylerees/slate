@@ -1584,6 +1584,34 @@ Singleton {
     // Every right-click menu closes (DesktopMenu.qml, TrayMenu.qml): sent as the launcher, Nova,
     // the pickers, the window switcher or the overview opens (shell.qml)
     signal closeMenus()
+    // A press on the menu bar (Bar.qml). The launcher, Nova and every right-click menu (the
+    // dock's Downloads and Waste Basket grids are in one) close on it: they leave the bar's
+    // place out of their click catchers, so the press reaches the bar too
+    signal barPressed()
+    // What a bar press closed ("launcher", "assistant"), so the same press's click on the button
+    // that opened it doesn't open it again (barClosed(what) says so once)
+    property string barClosedWhat: ""
+    function barPress() { barClosedWhat = ""; barPressed(); }
+    function noteBarClosed(what) { barClosedWhat = what; }
+    function barClosed(what) {
+        if (barClosedWhat !== what) return false;
+        barClosedWhat = "";
+        return true;
+    }
+    // Where each screen's bar takes the pointer, in that screen's own coordinates (Slate's
+    // units, so Interface size needs nothing), by screen name; read by the catchers above
+    property var barRects: ({})
+    function setBarRect(name, r) {
+        const next = Object.assign({}, barRects);
+        if (r) next[name] = r; else delete next[name];
+        barRects = next;
+    }
+    function barRectOn(screen) {
+        // (a window with no screen of its own is on the first one)
+        const sc = screen || Quickshell.screens[0];
+        const r = sc ? barRects[sc.name] : null;
+        return r || Qt.rect(0, 0, 0, 0);
+    }
     function setPrivateMode(on) { privateModeAsked(on); }
     // The ones this computer can't use (SwitchHardware.qml), and the list without them: what
     // the panel and Settings choose from

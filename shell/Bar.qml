@@ -69,7 +69,7 @@ PanelWindow {
     // to the bar on the focused screen
     property bool primary: true
     Component.onCompleted: { Config.bars = Config.bars.concat([bar]); settledSide = side; }
-    Component.onDestruction: Config.bars = Config.bars.filter(b => b !== bar)
+    Component.onDestruction: { Config.bars = Config.bars.filter(b => b !== bar); if (screen) Config.setBarRect(screen.name, null); }
     // A panel is open from this bar (the panels go to whichever screen opened them)
     // (from the start of opening, so the bar is done changing before the panel slides)
     readonly property bool popoutHere: !!popouts && popouts.engaged && popouts.screen === bar.screen
@@ -168,7 +168,10 @@ PanelWindow {
     // as it began closes as it ends, once what was pressed has had its say, if it's still the one
     // open (what was pressed didn't open another, or close it by its own button)
     property string panelAtPress: ""
-    function pressStarted() { panelAtPress = popouts && popouts.engaged ? popouts.current : ""; }
+    // (it also tells whatever is open over the desktop to close: the launcher, Nova, the menus
+    // and the dock's Downloads and Waste Basket. Their click catchers leave the bar's place
+    // free (Config.barRects), so the press reaches the bar and does what it does as well)
+    function pressStarted() { Config.barPress(); panelAtPress = popouts && popouts.engaged ? popouts.current : ""; }
     function pressEnded() {
         const was = panelAtPress;
         panelAtPress = "";
@@ -490,6 +493,10 @@ PanelWindow {
             }
         }
     }
+    // Where the bar takes the pointer, in its screen's own coordinates, for Config.barRects
+    readonly property rect inputRect: Qt.rect(windowX + hitArea.x, windowY + hitArea.y, hitArea.width, hitArea.height)
+    onInputRectChanged: if (screen) Config.setBarRect(screen.name, inputRect)
+    onScreenChanged: if (screen) Config.setBarRect(screen.name, inputRect)
     // (this window's corner within its screen: it sits against its edge)
     readonly property real windowX: bar.screen && bar.side === "right" ? bar.screen.width - bar.width : 0
     readonly property real windowY: bar.screen && bar.side === "bottom" ? bar.screen.height - bar.height : 0
@@ -1422,7 +1429,7 @@ PanelWindow {
                 id: appsBtn
                 wanted: Config.s.barShowApps
                 length: bar.capsuleHeight + 8
-                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"])
+                onClicked: { if (!Config.barClosed("launcher")) Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"]); }
                 // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
                 // little thinner: optically matched to the line icons round it)
                 Column {
@@ -1484,7 +1491,7 @@ PanelWindow {
                 id: novaBtn
                 wanted: Config.s.barShowAssistant && Config.assistantOn
                 length: bar.capsuleHeight + 8
-                onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"])
+                onClicked: { if (!Config.barClosed("assistant")) Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"]); }
                 // One pastel in the Colourful look, as Apps and Spaces have (the Assistant page's
                 // colour); the text colour otherwise.
                 // While Nova is thinking, Slate's loading spinner takes its place, turning (the

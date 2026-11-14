@@ -228,6 +228,21 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: shown && !releasing ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
+    // Every click outside the panel closes it, except on the menu bar: that's left out, so a
+    // click there reaches the bar and does what it does, and closes this too (Config.barPressed)
+    mask: Region {
+        x: 0; y: 0; width: root.width; height: root.height
+        Region {
+            readonly property rect bar: Config.barRectOn(root.screen)
+            x: bar.x; y: bar.y; width: bar.width; height: bar.height
+            intersection: Intersection.Subtract
+        }
+    }
+    Connections {
+        target: Config
+        function onBarPressed() { if (root.shown) { Config.noteBarClosed("launcher"); root.closeLauncher(); } }
+    }
+
     // ---- Apps --------------------------------------------------------------
     readonly property var apps: {
         const seen = new Set();
