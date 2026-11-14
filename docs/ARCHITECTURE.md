@@ -240,7 +240,10 @@ opening any of them closes bar panels (wired in `shell.qml`).
   order (the title, text, the clock's date and seconds, tucking "When needed" containers,
   then things leaving for More in `Config.barOverflowOrder`), laying the line out afresh at
   each step in one go so none of it is drawn, and keeps the fewest that fit; something comes
-  back only with a margin to spare. `bar.gives` says what's been given up.
+  back only with a margin to spare. `bar.gives` says what's been given up. A collapsed
+  container someone has opened is counted open (its `settledLength`), so room is made for it
+  the same way, and none of its own things leave for More; it's closed only once it no longer
+  collapses after a fit, never by the fit's own trials (which once closed it straight away).
   That last order is **menu item priority**: `BarEditor.qml`'s second window (Set priority,
   `Config.barPrioritising`) lists it backwards, highest priority first, without what always
   stays (`Config.barStay`), and saves a dragged row with `Config.barSetOverflow`.

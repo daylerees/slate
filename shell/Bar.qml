@@ -583,10 +583,11 @@ PanelWindow {
         }
         boxes.sort((a, b) => a.rank - b.rank || a.at - b.at);
         for (const b of boxes) plan.push("tuck:" + b.at);
-        // ...and then things leave for More
+        // ...and then things leave for More (none from a collapsed container you've opened: it's
+        // what you asked to see, and the rest make room for it)
         for (const id of Config.barOverflowOrder) {
             const t = left.things[id];
-            if (!t || !t.shell || Config.barStays(id)) continue;
+            if (!t || !t.shell || Config.barStays(id) || (t.shell.tuck && t.shell.expanded)) continue;
             if (id === "windowtitle" ? (Config.s.barShowTitle && titleText.text !== "") : t.wanted) plan.push("over:" + id);
         }
         return plan;
@@ -639,6 +640,8 @@ PanelWindow {
         slimApply(plan.slice(0, k));
         gives = plan.slice(0, k);
         fitting = false;
+        // (one that no longer collapses is closed, ready for the next time it does)
+        for (const c of left.children) if (c.isBox && !c.tuck) c.expanded = false;
     }
     Timer { id: fitLater; interval: 40; onTriggered: bar.fit() }
     onLineLengthChanged: fitLater.restart()
@@ -2218,8 +2221,13 @@ PanelWindow {
         property string tuckFrom: "end"         // "start": the button first, the things after it; else last
         property int tuckIcon: 0xEC38
         hoverTint: false                        // (each thing has its own hover fill)
+        // Opened by its button: counted open when the line's fitted (settledLength), so room's
+        // made for it as when the bar's short (other things leave for More). Closed once it no
+        // longer collapses (bar.fit does that after fitting), not while the line's being tried
+        // with it uncollapsed: that closed it straight after it was opened, as opening it fits
+        // the line again
         property bool expanded: false
-        onTuckChanged: expanded = false
+        onTuckChanged: if (!bar.fitting) expanded = false
         // 0 closed … 1 open, eased; the things stay laid out until it has finished closing
         // (open while the bar's being arranged, so what's in it can be got at)
         // (...unless it's being tried shorter, when it closes as it would)
@@ -2231,7 +2239,7 @@ PanelWindow {
         readonly property var order: tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
         // As long as it will be once it's settled (opening and closing are eased): what the line
         // is fitted by
-        readonly property real settledLength: (tuck ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + grip
+        readonly property real settledLength: (tuck && !expanded ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + grip
         function shows(c) { return !c.carried && !c.overflowed && (c === toggle ? tuck : (c.wanted && showThings)); }
         property bool carried: false            // being dragged (arranging): off the line till it lands
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }

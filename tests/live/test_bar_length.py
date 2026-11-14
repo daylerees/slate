@@ -89,6 +89,65 @@ class BarLength(LiveCase):
         self.ipc("test", "arrange", "open", str(at), "false", "")
         self.wait(lambda st: at not in st["bar"]["opened"], "the container closed again")
 
+    def open_collapsed(self, item):
+        """The container holding item, collapsed by itself (When needed) at the least squeeze
+        that does it, then opened by its button: it stays open, steadily, and the bar makes room
+        for it the way it does when short of room (other containers collapse, then what's minded
+        least leaves for More, none of what's in it). Closed again, it collapses by itself again
+        and the rest come back. Returns the state while it's open, and what's in it."""
+        self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
+        at = self.where(item)
+        mine = [i for i in self.layout()[at]["items"] if i != "tuck"]
+        for px in range(0, 1400, 20):
+            st = self.squeeze(px)
+            if f"tuck:{at}" in st["gives"]:
+                break
+        else:
+            self.fail(f"squeezing the line never collapsed {item}'s container")
+        before = st["overflowed"]
+        self.assertFalse(st["line"][item]["visible"], "the container collapsed but its things still show")
+        self.ipc("test", "arrange", "open", str(at), "true", "")
+        st = self.steady(self.bar, floor=0.8)
+        self.assertIn(at, st["opened"], "the collapsed container closed again straight after being opened")
+        self.assertTrue(st["line"][item]["visible"], "opened, its things don't show")
+        for i in mine:
+            self.assertNotIn(i, st["overflowed"], f"{i} left for More from the container you opened")
+        # ...and it stays that way (no flapping)
+        self.s.settle(1.5)                  # (a "nothing happens for this long" check)
+        now = self.bar()
+        self.assertEqual(now["opened"], st["opened"], "the open container closed a moment later")
+        self.assertEqual(now["overflowed"], st["overflowed"], "what's in More kept changing")
+        # Closed again: collapsed by itself as before, and what made room for it back from More
+        self.ipc("test", "arrange", "open", str(at), "false", "")
+        closed = self.steady(self.bar, floor=0.8)
+        self.assertNotIn(at, closed["opened"])
+        self.assertIn(f"tuck:{at}", closed["gives"], "closed again, it no longer collapses when needed")
+        self.assertEqual(closed["overflowed"], before, "closed again, what had made room for it didn't come back")
+        return st, mine
+
+    @staticmethod
+    def past_the_end(st):
+        """What's drawn on the line, by name, if any of it runs past the line's end (else {})."""
+        shown = {n: t for n, t in st["line"].items() if t["visible"] and t["parentVisible"] and t["opacity"] > 0 and t["w"] > 0}
+        return shown if max(t["x"] + t["w"] for t in shown.values()) > st["span"]["end"] + 1 else {}
+
+    def test_an_expanded_container_stays_open_and_room_is_made(self):
+        """(It once closed again straight away: every fit tried the line with the container
+        uncollapsed, which closed it, and opening it lengthens the line, which fits it again.
+        Seen at an Interface size of 150% with everything on the bar.) With things left to make
+        room, the line fits with it open."""
+        st, _ = self.open_collapsed("workspaces")
+        self.assertEqual(self.past_the_end(st), {}, f"the open container runs past the bar's end: {st['gives']}")
+
+    def test_an_expanded_container_stays_open_with_nothing_left_to_make_room(self):
+        """With nothing left that could leave for More, it still stays open, steadily: only what
+        stays, More, and what's in it are left on the bar."""
+        st, mine = self.open_collapsed("wifi")
+        self.assertTrue(st["overflowed"], f"nothing left for More to make room for it: {st['gives']}")
+        shown = self.past_the_end(st)
+        self.assertEqual(sorted(set(shown) - set(mine) - set(st["stay"]) - {"more"}), [],
+                         f"the open container runs past the bar's end, with things that could have made room: {st['gives']}")
+
     def test_the_window_title_goes_first(self):
         """With a window to name: its title is the first thing to go, and its icon stays."""
         self.ipc("settings", "open")
