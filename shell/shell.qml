@@ -230,6 +230,10 @@ ShellRoot {
             dockMenu.close();
             if (row && row.run) row.run();
         }
+        // A pretend pointer on the menu bar at x, y (in the bar window's own coordinates; the bar's
+        // band is state's bar.band): "hover" there, "leave", or "click" there. What it's over, as
+        // JSON: {thing, dot, lit}
+        function barPoint(x: real, y: real, what: string): string { return JSON.stringify(topBar.testPoint(x, y, what)); }
         // The pointer on the bar menu's item `index` (its row's top at y), as hovering it does
         function menuPoint(index: int, y: real): void { topBar.menu.want(index, y); }
         function menuKey(key: string): void {
@@ -437,7 +441,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState },
+                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
                 // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
                 dockMenu: { open: dockMenu.visible, items: dockMenu.items.map(i => i.separator ? null

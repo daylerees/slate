@@ -10,7 +10,7 @@ import imgdiff
 import slate
 from live import LiveCase
 
-SHOWN = ["barShowControl", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWindowMode", "barShowWorkspaces",
+SHOWN = ["barShowControl", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWindowMode", "barShowWorkspaces", "barShowWorkspaceName",
          "barShowTray", "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowGameMode",
          "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowWifi", "barShowBattery", "barShowClock",
          "barShowPower", "barShowTitle", "barShowTitleIcon", "barStatusCollapsed"]
@@ -66,7 +66,7 @@ class BarLayout(LiveCase):
         self.assertTrue(st["isDefault"])
         # (Apps with Nova, and Spaces with the window mode and the workspace dots)
         self.assertEqual([e if isinstance(e, str) else e["items"] for e in st["layout"]][:5],
-                         [["control"], ["apps", "nova"], ["spaces", "windowmode", "workspaces"],
+                         [["control"], ["apps", "nova"], ["spaces", "windowmode", "workspaces", "workspacename"],
                           ["windowicon", "windowtitle"], "space"])
 
     def test_an_old_layout_with_chalk_shows_nova(self):
@@ -106,9 +106,9 @@ class BarLayout(LiveCase):
 
     def test_split_up(self):
         at = self.where("windowmode")
-        self.assertEqual(self.layout()[at]["items"], ["spaces", "windowmode", "workspaces"])
+        self.assertEqual(self.layout()[at]["items"], ["spaces", "windowmode", "workspaces", "workspacename"])
         self.do("split", at)
-        self.assertEqual([e["items"] for e in self.layout()[at:at + 3]], [["spaces"], ["windowmode"], ["workspaces"]])
+        self.assertEqual([e["items"] for e in self.layout()[at:at + 4]], [["spaces"], ["windowmode"], ["workspaces"], ["workspacename"]])
 
     def test_flexible_spaces(self):
         n = self.layout().count("space")

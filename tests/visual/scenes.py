@@ -304,6 +304,13 @@ SCENES["panel-windowmode-named"] = {
     "wait": lambda st: st["popout"] == "windowmode" and st["workspaceNames"].get("1") == "Coding",
     "settle": 1.2, "undo": [("popout", "close"), ("workspacename", "set", "1", "")],
 }
+# The workspace's name on the bar (off to start with), beside the dots: a name of its own
+SCENES["bar-workspace-name"] = {
+    "settings": {"barShowWorkspaceName": "true"},
+    "do": [("workspacename", "set", "1", "Coding")],
+    "wait": lambda st: st["bar"]["line"]["workspacename"]["visible"] and st["bar"]["line"]["workspacename"]["text"] == "Coding",
+    "settle": 1.2, "undo": [("workspacename", "set", "1", "")],
+}
 SCENES["rename-workspace"] = {
     "do": [("workspacename", "set", "1", "Coding"), ("test", "renameWorkspace")],
     "wait": lambda st: st["asking"] == "Rename \u201cCoding\u201d",

@@ -171,7 +171,7 @@ Singleton {
     readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
     readonly property var barLayoutDefault: [
         barBox(["control"]), barBox(["apps", "nova"]),
-        barBox(["spaces", "windowmode", "workspaces"]),
+        barBox(["spaces", "windowmode", "workspaces", "workspacename"]),
         barBox(["windowicon", "windowtitle"]), "space",
         barBox(["tray"]), barBox(barStatusItems, { tuck: s.barStatusCollapsed }), barBox(["more"]), barBox(["clock"]), barBox(["power"])
     ]
@@ -184,6 +184,7 @@ Singleton {
         { id: "nova", label: "Nova", icon: 0xF014, key: "barShowAssistant" },
         { id: "windowmode", label: "Window mode", icon: 0xEFE6, key: "barShowWindowMode" },
         { id: "workspaces", label: "Workspaces", icon: 0xEA95, key: "barShowWorkspaces" },
+        { id: "workspacename", label: "Workspace name", icon: 0xFF38, key: "barShowWorkspaceName" },
         { id: "windowicon", label: "Window icon", icon: 0xEFE6, key: "barShowTitleIcon" },
         { id: "windowtitle", label: "Window title", icon: 0xEBC5, key: "barShowTitle" },
         { id: "tray", label: "Tray", icon: 0xEA61, key: "barShowTray" },
@@ -475,7 +476,7 @@ Singleton {
     }
     // The order things leave a bar that's short of room, first to go first (Slate's own; the
     // last three stay)
-    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "windowtitle", "windowicon",
+    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "workspacename", "windowtitle", "windowicon",
         "nova", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
     // The order in use: yours (Settings → Menu Bar → Edit layout → If it doesn't fit), with
     // anything it leaves out put in from Slate's own, so every thing has a place; and the

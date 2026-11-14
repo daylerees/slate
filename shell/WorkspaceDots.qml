@@ -31,6 +31,24 @@ Item {
     property bool interactive: false
     property color hoverFill: "transparent"
     property real hoverStrength: 1
+    // ...pressed and lit this far past the dot each side, across the row (the bar: its whole
+    // depth), so a dot is easy to hit
+    property real reachAcross: 0
+    // (tests: a pretend pointer, in the window's coordinates, lighting the dot it's over; -1, -1: none)
+    property point pretend: Qt.point(-1, -1)
+    // The dot at a point in the window's coordinates (where it takes the pointer), or -1; and
+    // the one lit under the pointer
+    function dotAt(x, y) {
+        for (let i = 0; i < dotsRep.count; i++) {
+            const c = dotsRep.itemAt(i);
+            if (c && c.visible && c.reach.contains(c.reach.mapFromItem(null, x, y))) return i;
+        }
+        return -1;
+    }
+    readonly property int litDot: {
+        for (let i = 0; i < dotsRep.count; i++) { const c = dotsRep.itemAt(i); if (c && c.lit) return i; }
+        return -1;
+    }
     readonly property alias marker: mk
 
     readonly property real step: dot + gap
@@ -82,6 +100,7 @@ Item {
 
     // ---- The dots ------------------------------------------------------------------------
     Repeater {
+        id: dotsRep
         model: wd.spaces
         delegate: Item {
             id: cell
@@ -105,7 +124,7 @@ Item {
                 width: s; height: s
                 radius: Config.dotRadius(s)
                 color: wd.hoverFill
-                opacity: dotHover.hovered ? wd.hoverStrength : 0
+                opacity: cell.lit ? wd.hoverStrength : 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
             }
             Rectangle {
@@ -115,16 +134,27 @@ Item {
                 scale: cell.size
                 // Inactive workspaces dimmed a little (the marker shows the one in use);
                 // brighter under the pointer
-                color: dotHover.hovered ? (cell.full ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
+                color: cell.lit ? (cell.full ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
                     : cell.full ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
                 Behavior on color { ColorAnimation { duration: Config.ms(150) } }
             }
-            HoverHandler { id: dotHover; enabled: wd.interactive }
-            ClickArea {
-                anchors.fill: parent
-                enabled: wd.interactive && cell.seen > 0.5
-                onClicked: cell.modelData.activate()
+            // What takes the pointer: the dot, and reachAcross past it each side
+            Item {
+                id: dotReach
+                x: wd.vertical ? -wd.reachAcross : 0
+                y: wd.vertical ? 0 : -wd.reachAcross
+                width: wd.dot + (wd.vertical ? 2 * wd.reachAcross : 0)
+                height: wd.dot + (wd.vertical ? 0 : 2 * wd.reachAcross)
+                HoverHandler { id: dotHover; enabled: wd.interactive }
+                ClickArea {
+                    anchors.fill: parent
+                    enabled: wd.interactive && cell.seen > 0.5
+                    onClicked: cell.modelData.activate()
+                }
             }
+            readonly property alias reach: dotReach
+            readonly property bool lit: wd.interactive && (dotHover.hovered
+                || (wd.pretend.x >= 0 && dotReach.contains(dotReach.mapFromItem(null, wd.pretend.x, wd.pretend.y))))
         }
     }
 
