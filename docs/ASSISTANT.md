@@ -37,6 +37,10 @@ agent you chose does it through the same tools.
   only you can read, never sent anywhere and not part of `slate logs`. Settings → Assistant
   → **Clear chat history** empties it, and **Keep chat history** switches keeping off, which
   deletes what was kept; the history is then forgotten whenever Slate restarts.
+- **Moving it.** Drag the header (Nova's name) to move the window; a double-click there puts
+  it back in the middle. It's a layer that covers the screen, so the card moves inside it
+  (`offX`/`offY` in `Assistant.qml`), kept wholly on the screen as it grows or the screen or
+  Interface size changes. Closing it forgets where it was: it opens in the middle, as Settings does.
 - **Closing it.** Escape or a click outside hides the window and the work carries on: the
   bar button shows it, and a notification brings the answer when it's done. **Stop**, at the end of
   the box while Nova works, ends it, and so does Ctrl+C there (with nothing selected).

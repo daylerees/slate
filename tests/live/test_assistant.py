@@ -380,6 +380,49 @@ class Nova(LiveCase):
         self.ipc("assistant", "close")
         self.wait(lambda st: not st["assistant"]["open"])
 
+    def test_dragged_by_its_header(self):
+        """Nova's window moves when dragged by its header, never off the screen (also as the card
+        grows), double-clicking the header puts it back, and it opens in the middle again."""
+        self.addCleanup(lambda: self.ipc("assistant", "close"))
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
+        # (once the card has its size: it can still be shrinking from an earlier conversation)
+        home = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.assertEqual((home["x"], home["y"]), (home["homeX"], home["homeY"]), "it didn't open in the middle")
+        self.ipc("test", "novaDrag", "-120", "60")
+        p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to move")["assistant"]["panel"]
+        self.assertEqual((p["x"], p["y"]), (home["x"] - 120, home["y"] + 60))
+        # Too far, either way: it stops at the screen's edges, whole
+        self.ipc("test", "novaDrag", "-10000", "-10000")
+        p = self.wait(lambda st: st["assistant"]["panel"]["x"] < home["x"] - 120)["assistant"]["panel"]
+        self.assertEqual((p["x"], p["y"]), (8, 8))
+        self.ipc("test", "novaDrag", "10000", "10000")
+        self.wait(lambda st: st["assistant"]["panel"]["x"] > home["x"])
+        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        # (whole pixels, against a screen that may not be: within one)
+        self.assertAlmostEqual(p["x"] + p["w"], p["screenW"] - 8, delta=1)
+        self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - 8, delta=1)
+        # Dragged back from the edge, it moves straight away (no stretch to make up first)
+        self.ipc("test", "novaDrag", "-50", "0")
+        self.wait(lambda st: st["assistant"]["panel"]["x"] == p["x"] - 50, "it to move back from the edge")
+        # At the bottom, a conversation making the card taller keeps it on the screen
+        self.ipc("test", "nova", json.dumps({"history": [{"asked": "Tell me something long " + str(i), "answer": "A line.\n" * 6} for i in range(6)],
+                                             "asked": "And?", "answer": "Done."}))
+        self.wait(lambda st: st["assistant"]["panel"]["h"] > p["h"] + 100, "the card to grow")
+        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - 8, delta=1, msg=f"the card grew off the screen: {p}")
+        # Double-clicking the header puts it back in the middle
+        self.ipc("test", "novaCentre")
+        self.wait(lambda st: (st["assistant"]["panel"]["x"], st["assistant"]["panel"]["y"]) == (home["homeX"], home["homeY"]), "it to go back to the middle")
+        # Moved, closed and opened again: in the middle, as Settings opens
+        self.ipc("test", "novaDrag", "200", "-40")
+        self.wait(lambda st: st["assistant"]["panel"]["x"] == home["x"] + 200)
+        self.ipc("assistant", "close")
+        self.wait(lambda st: not st["assistant"]["open"])
+        self.ipc("assistant", "open")
+        p = self.wait(lambda st: st["assistant"]["open"])["assistant"]["panel"]
+        self.assertEqual((p["x"], p["y"]), (home["homeX"], home["homeY"]), "it didn't open in the middle again")
+
     def test_only_one_at_a_time(self):
         """Opening it closes the launcher, and the launcher closes it."""
         self.ipc("launcher", "open")
