@@ -35,6 +35,7 @@ ShellRoot {
                 root.defaultSession = u.session || "";
                 root.pickRemembered();
             } catch (e) {}
+            root.userKnown();
         }
     }
     // Fallback: the first normal account on the system
@@ -45,6 +46,8 @@ ShellRoot {
             onStreamFinished: {
                 const p = text.trim().split(":");
                 if (!root.user && p[0]) { root.user = p[0]; root.displayName = (p[1] || p[0]).split(",")[0]; }
+                root.searched = true;
+                root.userKnown();
             }
         }
     }
@@ -107,6 +110,19 @@ ShellRoot {
         Qt.callLater(gc);
     }
 
+    // A password typed before the account is known (the lookups above are still running, say on a
+    // busy computer): kept, and tried the moment the account is known, rather than asking greetd
+    // to start a session for nobody
+    property bool searched: false
+    property string waiting: ""
+    property bool hasWaiting: false
+    function userKnown() {
+        if (!hasWaiting || (!user && !searched)) return;
+        const w = waiting; waiting = ""; hasWaiting = false;
+        if (!user) { fail("Slate couldn't find your account to log in to. Restart your computer and try again"); return; }
+        submit(w);
+    }
+
     function submit(password) {
         if (asking && Greetd.state !== GreetdState.Inactive) {
             asking = false; busy = true; message = ""; messageIsError = false;
@@ -115,6 +131,7 @@ ShellRoot {
         }
         if (!Greetd.available) { fail("Slate couldn't reach the login service (greetd). Restart your computer and try again"); return; }
         busy = true; message = ""; messageIsError = false;
+        if (!user) { waiting = password; hasWaiting = true; return; }
         pending = password;
         if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
         Greetd.createSession(user);
