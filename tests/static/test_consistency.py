@@ -2,6 +2,7 @@
 places, the site's links, shaders built from their sources."""
 import hashlib
 import html.parser
+import json
 import os
 import re
 import subprocess
@@ -24,6 +25,25 @@ def settings_pages():
 
 def settings_window():
     return slate.read("shell", "SettingsWindow.qml")
+
+
+def settings_page_sources():
+    """Each Settings page's own QML: {page id: the text of its `Component { id: <name>Page`}."""
+    src = settings_window()
+    block = js_object_block(src, src.index("sourceComponent: ({"))
+    pages = {comp: page for page, comp in re.findall(r"(\w+):\s*(\w+Page)\b", block)}
+    parts = re.split(r"Component \{\n\s*id:\s*(\w+Page)\s*\n", src)
+    return {pages[comp]: body for comp, body in zip(parts[1::2], parts[2::2]) if comp in pages}
+
+
+def curated_search_entries():
+    """SettingsIndex.qml's hand-kept search entries: [(name, page, extra words)]."""
+    src = slate.read("shell", "SettingsIndex.qml")
+    block = src.split("readonly property var curated: [")[1].split("\n    ]")[0]
+    found = re.findall(r'^\s*\[\s*"((?:[^"\\]|\\.)*)",\s*"(\w+)",\s*"((?:[^"\\]|\\.)*)"\s*\],?\s*$', block, re.M)
+    lines = [l for l in block.splitlines() if l.strip().startswith("[")]
+    assert len(found) == len(lines), "a curated entry isn't written as [\"name\", \"page\", \"words\"]"
+    return found
 
 
 def js_object_block(src, start):
@@ -78,6 +98,89 @@ class Settings(Case):
                 self.assertIn(page, pages, f"pageKeys has a page that doesn't exist: {page}")
                 missing = [k for k in re.findall(r"\"(\w+)\"", body) if k not in keys]
                 self.assertFalse(missing, f"not in SettingsData.qml: {', '.join(missing)}")
+
+    # Settings a page shows as changed (settingKey) but its Restore defaults leaves alone, on
+    # purpose: each says why
+    NOT_RESTORED = {
+        # Night light on or off is how you have it right now, like a switch on the control
+        # centre, not a preference of the page (the comment above pageKeys says so too)
+        ("general", "nightLight"),
+    }
+
+    def test_page_keys_cover_the_page(self):
+        """Every setting a page's rows name (`settingKey:`, or a switch's `key:`) is in that
+        page's pageKeys. One that isn't shows the changed-from-default dot, yet the page title's
+        Restore defaults neither counts it nor puts it back, and the assistant's settings
+        changed / restore miss it too (Screensaver's Scenery quality was left out)."""
+        src = settings_window()
+        block = js_object_block(src, src.index("pageKeys: ({"))
+        restored = {page: set(re.findall(r"\"(\w+)\"", body)) for page, body in re.findall(r"(\w+):\s*\[(.*?)\]", block, re.S)}
+        sources = settings_page_sources()
+        self.assertGreater(len(sources), 30, "the pages weren't found in SettingsWindow.qml")
+        seen = set()
+        for page, body in sorted(sources.items()):
+            used = set(re.findall(r"\b(?:settingKey|key):\s*\"(\w+)\"", body))
+            seen |= {(page, k) for k in used}
+            missing = sorted(k for k in used - restored.get(page, set()) if (page, k) not in self.NOT_RESTORED)
+            with self.subTest(page):
+                self.assertFalse(missing, f"shown on the {page} page but not in pageKeys.{page}, so Restore defaults misses: {', '.join(missing)}")
+        self.assertGreater(len(seen), 100, "far fewer settingKey/key rows found than Settings has")
+        stale = sorted(f"{p}: {k}" for p, k in self.NOT_RESTORED - seen)
+        self.assertFalse(stale, f"NOT_RESTORED lists a setting its page no longer shows: {stale}")
+
+    # Curated search entries (SettingsIndex.curated) that aren't a row, a heading or the page's
+    # name, on purpose
+    # Another way of saying the whole page: the result opens it at the top
+    SEARCH_PAGE_NAMES = {("General settings", "general"), ("Launcher settings", "launcher"), ("About Slate", "about")}
+    # Rows the page makes from a list once it's open (the webcam's controls come from what the
+    # camera offers), so scripts/settings-index.py can't see them: each must still be written
+    # on its page as a label
+    SEARCH_ROWS_MADE_IN_CODE = {(name, "webcam") for name in (
+        "Brightness", "Contrast", "Colour", "Sharpness", "Gain", "Gamma", "Colour temperature", "Exposure",
+        "Backlight compensation")}
+
+    def test_search_entries_name_something_on_the_page(self):
+        """Every curated search entry [name, page, words] names something search can take you
+        to (SettingsWindow's showFound): a setting on that page as settings-index.py reports
+        it (the entry then lends that row its words: SettingsIndex.entries), one of the page's
+        headings, or the page itself. A name that's none of them is a second, dead result:
+        it opens the page but can't scroll to anything ("Sound effects volume" outlived its
+        slider; "Clicks sound" sat beside the real "Clicks" row instead of adding to it)."""
+        out = subprocess.run(["python3", slate.path("shell", "scripts", "settings-index.py"),
+                              slate.path("shell", "SettingsWindow.qml")], capture_output=True, text=True, check=True).stdout
+        rows = {(r["page"], r["label"].lower()) for r in json.loads(out)}        # (as entries matches them)
+        sources = settings_page_sources()
+        index = slate.read("shell", "SettingsIndex.qml")
+        page_names = dict(re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', index))
+        entries = curated_search_entries()
+        self.assertGreater(len(entries), 100, "the curated entries weren't found in SettingsIndex.qml")
+        used = set()
+        for name, page, _words in entries:
+            with self.subTest(f"{page}: {name}"):
+                self.assertIn(page, sources, f"no such Settings page: {page}")
+                if (page, name.lower()) in rows or page_names.get(page) == name:
+                    continue
+                # A heading is found by its exact text (GroupLabel { … text: "…" })
+                if re.search(r'GroupLabel\s*\{[^}\n]*\btext:\s*"' + re.escape(name) + '"', sources[page]):
+                    continue
+                if (name, page) in self.SEARCH_PAGE_NAMES:
+                    used.add((name, page))
+                    continue
+                if (name, page) in self.SEARCH_ROWS_MADE_IN_CODE:
+                    used.add((name, page))
+                    self.assertIn('"' + name + '"', sources[page], f"the {page} page no longer has a row called {name}")
+                    continue
+                self.fail(f'"{name}" isn\'t a setting or a heading on the {page} page: name the entry after the row '
+                          "(its other names go in the words), or drop it if the setting has gone")
+        unused = sorted(f"{p}: {n}" for n, p in (self.SEARCH_PAGE_NAMES | self.SEARCH_ROWS_MADE_IN_CODE) - used)
+        self.assertFalse(unused, f"an exception for a search entry that's gone, or is a real row now: {unused}")
+
+    def test_search_entries_are_not_repeated(self):
+        """One curated entry per name and page: a second would be a second result (or lend its
+        words twice)."""
+        entries = [(page, name.lower()) for name, page, _words in curated_search_entries()]
+        dupes = sorted({f"{p}: {n}" for p, n in entries if entries.count((p, n)) > 1})
+        self.assertFalse(dupes, f"repeated curated search entries: {dupes}")
 
     def test_config_keys_exist(self):
         """Every Config.s.<key> the QML reads or writes is a setting in SettingsData.qml."""

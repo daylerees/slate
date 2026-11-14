@@ -108,6 +108,58 @@ class SubPages(LiveCase):
         self.wait(lambda st: st["settings"]["open"], "Settings to open")
 
 
+class Search(LiveCase):
+    """What you'd type finds the setting itself: the result is the real row (or its heading),
+    and choosing it scrolls there and lights it up. The curated entries in SettingsIndex.qml
+    once drifted from the rows they were for (other names, settings that had gone), leaving
+    results that opened the page and stopped at the top."""
+
+    # What's typed → the result it must give: (label, page, whether it has to come first)
+    FINDS = {
+        "sound effects": ("Sound effects", "sound", True),
+        "clicks sound": ("Clicks", "sound", True),
+        "volume keys sound": ("Volume keys", "sound", True),
+        "dark": ("Theme", "appearance", False),
+        "dark mode": ("Theme", "appearance", True),
+        "theme presets": ("Preset", "appearance", True),
+        "tiling": ("Default window mode", "windows", True),
+        "idle": ("When you're away", "lock", False),
+        "idle and sleep": ("When you're away", "lock", False),
+        "account picture": ("Account", "general", True),
+        "alt tab": ("Window switcher (Super+Tab)", "windows", False),
+        "workspace overview": ("Workspace overview (Super+Down)", "workspaces", True),
+        # Game mode has no row of its own: it's a quick switch, and a button to add to the bar
+        "game mode": ("Quick switches", "control", False),
+        "gaming": ("Arrange the menu bar", "bar", True),
+    }
+
+    def results(self, text):
+        """SettingsIndex.search(text), as Settings' search box shows it (once the rows are read)."""
+        for _ in range(60):
+            out = self.ipc("test", "settingsSearch", text)
+            if out:
+                return json.loads(out)
+            self.s.settle(0.25)
+        self.fail("Settings' rows were never read (scripts/settings-index.py)")
+
+    def test_words_find_their_setting(self):
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        for text, (label, page, first) in self.FINDS.items():
+            with self.subTest(text):
+                found = [(r["label"], r["page"]) for r in self.results(text)]
+                self.assertIn((label, page), found[:1] if first else found, f'"{text}" found {found}')
+                # ...and choosing it goes to it, rather than only to its page
+                self.ipc("settings", "find", page, label)
+                self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == page
+                          and st["settings"]["found"] == label, f"{label} gone to and lit up on {page}")
+
+    def test_gone_settings_are_not_found(self):
+        """Results for settings that no longer exist are gone, not left pointing at a page."""
+        for text, label in (("sound effects volume", "Sound effects volume"), ("game mode", "Game mode")):
+            with self.subTest(text):
+                self.assertNotIn(label, [r["label"] for r in self.results(text)])
+
+
 class RestoreDefaults(LiveCase):
     """A page's Restore defaults (the button by its title), the way you use it: it asks in
     Slate's confirmation window, and yes puts every setting on that page back to how Slate
@@ -118,6 +170,9 @@ class RestoreDefaults(LiveCase):
     CHANGES = {
         "dock": {"dockAutoHide": "false", "dockIconSize": "52", "dockBadges": "false", "dockPosition": "left"},
         "launcher": {"launcherLayout": "grid", "launcherColumns": "4", "launcherFuzzy": "false"},
+        # (Scenery quality showed as changed but was missing from the page's list, so Restore
+        # defaults neither counted it nor put it back)
+        "screensaver": {"screensaverVideoQuality": "1080p", "screensaverClock": "false"},
     }
     # A setting on another page, which a page's Restore defaults must leave as it is
     ELSEWHERE = ("notificationSeconds", "9")

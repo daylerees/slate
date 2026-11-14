@@ -310,6 +310,13 @@ ShellRoot {
             const w = settingsLoader.item;
             if (w) w.askRestoreDefaults();
         }
+        // What Settings' search and the launcher find for some words (SettingsIndex.search), best
+        // first: [{ label, page, row }], row false for a heading or a whole page. "" until
+        // Settings' own rows have been read
+        function settingsSearch(text: string): string {
+            if (SettingsIndex.rows.length === 0) return "";
+            return JSON.stringify(SettingsIndex.search(text, 8).map(e => ({ label: e.label, page: e.page, row: e.row })));
+        }
         // A greyed-out setting's "Needs …" line, as clicking it does: off to the setting it needs
         function settingsFollowNeeds(label: string): void {
             const w = settingsLoader.item;
@@ -409,7 +416,8 @@ ShellRoot {
                             // Settings greyed out for another one, with what each says it needs
                             // (SettingRow's needs), and the setting last gone to (goTo)
                             waiting: settings && settings.visible ? settings.waitingRows().map(r => ({ label: r.label, needs: r.needs })) : [],
-                            found: settings && settings.foundItem ? String(settings.foundItem.label || "") : "",
+                            // (a heading it went to has no label: its text)
+                            found: settings && settings.foundItem ? String(settings.foundItem.label || settings.foundItem.text || "") : "",
                             // (the agents Settings → Assistant offers, once it's looked)
                             agents: settings ? settings.assistantAgentsSeen : [] },
                 launcher: { open: appLauncher.shown, visible: appLauncher.visible, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,

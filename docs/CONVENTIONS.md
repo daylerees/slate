@@ -89,7 +89,9 @@ Hyprland's had stopped.
 
 ### Game mode covers anything costly or interrupting
 
-Game mode (the bar's button and panel, Settings → Menu Bar → Game mode) turns off everything
+Game mode (the bar's button and its panel, the control centre's Game Mode switch and the
+launcher's; it has no page or row of its own in Settings: the bar's button is added in
+Settings → Menu Bar → Arrange the menu bar) turns off everything
 costly to draw or distracting while playing, and puts it all back afterwards. **Any new visual
 effect, animation, live preview or interruption checks `Config.gameMode`**, or goes through
 something that already does. What it covers today:
@@ -108,7 +110,8 @@ something that already does. What it covers today:
 Never change saved settings for it: override where the value is used. Turning it off calls
 `Config.reloadHyprland()` so Hyprland's own values return, then Slate's settings are pushed on
 top. The login screen ignores it (`Config.isLoginScreen`). When something new is covered,
-update the game mode panel's list (`Popouts.qml`), its Settings description and the site.
+update the game mode panel's list (`Popouts.qml`), the Settings rows that say what it does to
+them ("in game mode" in `SettingsWindow.qml`) and the site.
 
 ### Scrolling views get shades, a scrollbar and smooth wheel
 
