@@ -88,6 +88,12 @@ class WorkspaceSwitch(Waits, switching.SwitcherAnimations):
         # whose gaps at the screen's edges show the wallpaper anyway, and this failed now and then)
         self.close_windows()
         self.windows_on_two_workspaces()
+        # (that ended with an instant switch, which turns the workspace animation off and has
+        # Hyprland put the usual one back 300 ms later (instantTo, animations.lua). Slowed down
+        # before that, the slow one was put back to the usual speed behind this test's back: it
+        # timed out waiting for the slowed animation, or took its pictures of a slide that was
+        # over in a moment. So wait for the usual one to be back first)
+        self.sliding_back()
         self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); setWorkspaceAnimation("slidefade")'))
         # The switch as it is, ten times slower, so a picture can be taken partway through
         a = self.animations()
