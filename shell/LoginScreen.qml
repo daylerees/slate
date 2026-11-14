@@ -309,7 +309,6 @@ Item {
                             // PAM messages can carry their own line breaks; let them wrap to fit instead
                             textFormat: Text.PlainText      // PAM's words, not ours: never markup
                             text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : "Caps Lock is on"
-                            textFormat: Text.PlainText   // (the login's own words: never markup)
                             width: Math.min(implicitWidth, note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0))
                             wrapMode: Text.Wrap
                             maximumLineCount: 3
