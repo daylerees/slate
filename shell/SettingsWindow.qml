@@ -12,6 +12,7 @@ import Quickshell.Networking
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import Qt.labs.folderlistmodel
+import "NotificationText.js" as NotificationText
 
 FloatingWindow {
     id: win
@@ -7489,12 +7490,13 @@ FloatingWindow {
                     x: 16; width: parent.width - 32
                     visible: Updates.notes !== ""
                     topPadding: 12; bottomPadding: 8
-                    text: Updates.notes
+                    // (from the network: pictures and links to anything but the web are taken out first)
+                    text: NotificationText.safeMarkdown(Updates.notes)
                     textFormat: Text.MarkdownText
                     color: win.text; linkColor: win.accent
                     font.family: win.font; font.pixelSize: 13
                     wrapMode: Text.Wrap
-                    onLinkActivated: link => Qt.openUrlExternally(link)
+                    onLinkActivated: link => { if (NotificationText.openable(link)) Qt.openUrlExternally(link); }
                 }
                 Separator { visible: Updates.notes !== "" }
                 // Slate's own files changed by hand: an update replaces them (the old copy is kept)

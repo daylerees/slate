@@ -69,3 +69,28 @@ function safeBody(body) {
         return escaped(text);
     }
 }
+
+// Release notes (Settings → Updates) come from the network and are shown as Markdown, which
+// Qt would turn into pictures (![x](address) loads whatever it names) and links to anything.
+// safeMarkdown() takes those out first: a picture becomes its description, a link to anything
+// but a web page or an address loses the link and keeps its words, and link definitions
+// ([x]: address) go. Headings, lists, bold, code and web links stay as they were written.
+// (Qt's Markdown reader ignores raw HTML itself.) tests/unit/test_notification_text.py.
+function safeMarkdown(text) {
+    let out = String(text === undefined || text === null ? "" : text);
+    try {
+        // Reference-style definitions: nothing then points at an address, so [x][y] stays words
+        out = out.replace(/^[ ]{0,3}\[[^\]\n]+\]:[^\n]*$/gm, "");
+        // Pictures, innermost first, until none is left
+        for (let i = 0; i < 20; ++i) {
+            const next = out.replace(/!\[([^\[\]]*)\]\([^()\n]*(?:\([^()\n]*\)[^()\n]*)*\)/g, "$1");
+            if (next === out) break;
+            out = next;
+        }
+        // Links: kept only when they lead somewhere Slate would open
+        out = out.replace(/\[([^\[\]]*)\]\(\s*<?((?:[^\s()<>]|\([^\s()]*\))*)>?(?:\s[^()\n]*)?\)/g, (all, words, address) => openable(address) ? all : words);
+        return out;
+    } catch (e) {
+        return "";
+    }
+}

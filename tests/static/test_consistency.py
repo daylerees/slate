@@ -933,6 +933,9 @@ class OutsideTextIsPlain(Case):
         ("PolkitAgent.qml", "text: root.busy ? \"Checking…\" : root.prompt"),
         ("PolkitAgent.qml", "text: root.error !== \"\" ? root.error : root.supplementary"),
         ("OSD.qml", "text: osd.label"),
+        ("LoginScreen.qml", "text: ls.message !== \"\" ? ls.message"),   # what the login said (PAM)
+        ("LoginScreen.qml", "text: pill.label"),                        # a session's name
+        ("LoginScreen.qml", "text: parent.parent.modelData.label"),     # …and its menu row
         ("shell.qml", "text: label.text.charAt(0)"),         # the dock's label: an app's name, a window's or track's title
         ("shell.qml", "text: dl.modelData.name"),            # a download's name
         ("Launcher.qml", "text: row.calc ? row.detail"),     # an app's own description, a file's folder
@@ -946,9 +949,9 @@ class OutsideTextIsPlain(Case):
     ]
     # Text you type into has no markup to read
     TYPED = {"TextInput", "TextEdit", "TextField"}
-    # The login screen's own files are left be (changing one asks everyone to update the login
-    # screen); the names they show are this computer's accounts, and what its own login says
-    LOGIN_SCREEN = {"LoginScreen.qml", "Config.qml", "SettingsData.qml", "RoundImage.qml", "WallBlur.qml", "Gloss.qml", "GlassFill.qml"}
+    # The login screen's files that draw nothing from outside (LoginScreen.qml, which shows the
+    # login's message and this computer's account names, is checked like the rest)
+    LOGIN_SCREEN = {"Config.qml", "SettingsData.qml", "RoundImage.qml", "WallBlur.qml", "Gloss.qml", "GlassFill.qml"}
     # Every word in these is Slate's own (their cards' titles, the corners' names)
     SLATES_OWN = {"Welcome.qml", "HotCornerPicker.qml"}
 
@@ -1046,6 +1049,15 @@ class OutsideTextIsPlain(Case):
         self.assertIn("if (NotificationText.openable(link)) Qt.openUrlExternally(link)", card)
         # Its picture: a file or one Quickshell holds, never an address to fetch
         self.assertIn("entry.image && /^(file:|image:|\\/)/.test(entry.image) ? entry.image : \"\"", card)
+
+    def test_release_notes_are_made_safe(self):
+        """Settings → Updates shows release notes from the network as Markdown: they go
+        through NotificationText.safeMarkdown (no pictures, web links only), and a link only
+        opens when it's a web one (tests/unit/test_notification_text.py)."""
+        src = slate.read("shell", "SettingsWindow.qml")
+        self.assertIn("text: NotificationText.safeMarkdown(Updates.notes)", src)
+        self.assertNotRegex(src, r"onLinkActivated: link => Qt\.openUrlExternally", "a link opened without asking what kind it is")
+        self.assertIn("if (NotificationText.openable(link)) Qt.openUrlExternally(link)", src)
 
     def test_novas_notification_is_escaped(self):
         """Nova's answer, sent as a notification when its window is away: the agent's words

@@ -309,6 +309,7 @@ Item {
                             // PAM messages can carry their own line breaks; let them wrap to fit instead
                             textFormat: Text.PlainText      // PAM's words, not ours: never markup
                             text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : "Caps Lock is on"
+                            textFormat: Text.PlainText   // (the login's own words: never markup)
                             width: Math.min(implicitWidth, note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0))
                             wrapMode: Text.Wrap
                             maximumLineCount: 3
@@ -347,7 +348,7 @@ Item {
             anchors.centerIn: parent
             spacing: 8
             Text { anchors.verticalCenter: parent.verticalCenter; text: ls.glyph(pill.icon); color: pill.active ? ls.accentText : ls.text; font.family: tabler.name; font.pixelSize: 18 }
-            Text { visible: pill.label !== ""; anchors.verticalCenter: parent.verticalCenter; text: pill.label; color: pill.active ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
+            Text { visible: pill.label !== ""; anchors.verticalCenter: parent.verticalCenter; text: pill.label; textFormat: Text.PlainText; color: pill.active ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
         }
         HoverHandler { id: pillHover }
         TapHandler { onTapped: pill.clicked() }
@@ -378,7 +379,7 @@ Item {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 10
                         Text { anchors.verticalCenter: parent.verticalCenter; text: ls.glyph(parent.parent.modelData.icon); color: parent.parent.modelData.current ? ls.accentText : (parent.parent.modelData.danger ? ls.error : ls.text); font.family: tabler.name; font.pixelSize: 16 }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.modelData.current ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; textFormat: Text.PlainText; color: parent.parent.modelData.current ? ls.accentText : ls.text; font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium }
                     }
                     HoverHandler { id: itemHover }
                     TapHandler { onTapped: m.chosen(parent.modelData) }

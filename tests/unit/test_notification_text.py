@@ -109,6 +109,28 @@ class NotificationText(unittest.TestCase):
         self.assertEqual(self.ask("openable(v)", OPENS), [True] * len(OPENS))
         self.assertEqual(self.ask("openable(v)", STAYS_SHUT + [None, 3]), [False] * (len(STAYS_SHUT) + 2))
 
+    def test_release_notes_lose_pictures_and_odd_links(self):
+        """Settings -> Updates shows release notes (from the network) as Markdown: no picture
+        is left to load, only web links stay, and the rest of the Markdown is untouched."""
+        notes = {
+            "![logo](file:///etc/passwd) hi": "logo hi",
+            "![x](http://example.org/t.png)": "x",
+            "![a ![b](x)](y)": "a b",
+            "[open](file:///etc/passwd)": "open",
+            "[open](javascript:alert(1))": "open",
+            "[open](<file:///x> \"t\")": "open",
+            "[web](https://example.org/a)": "[web](https://example.org/a)",
+            "[web](https://example.org/a \"title\")": "[web](https://example.org/a \"title\")",
+            "[x][ref]\n\n[ref]: file:///etc/passwd": "[x][ref]\n\n",
+            "# Title\n\n- one\n- **two**": "# Title\n\n- one\n- **two**",
+        }
+        keys = list(notes)
+        for note, got in zip(keys, self.ask("safeMarkdown(v)", keys)):
+            with self.subTest(note=note):
+                self.assertEqual(got, notes[note])
+        for got in self.ask("safeMarkdown(v)", [None, 5, "![" * 3000, "[" * 5000 + "](" * 3000]):
+            self.assertIsInstance(got, str)
+
 
 if __name__ == "__main__":
     unittest.main()
