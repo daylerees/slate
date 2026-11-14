@@ -1,6 +1,9 @@
 """The bar's panels open under their buttons and close again."""
 import json
+import os
+import subprocess
 
+import slate
 from live import LiveCase
 
 # Each panel, and the setting that puts its button on the bar (None: always there)
@@ -275,3 +278,159 @@ class WorkspaceName(LiveCase):
         self.ipc("popout", "close")
         self.ipc("workspacename", "set", str(ws), "")
         self.shown(f"Workspace {ws}", "its name taken away")
+
+
+class Label(LiveCase):
+    """The label just off the bar saying what the pointer's over (BarLabel.qml): Edit layout's
+    name for Slate's own things, which workspace a dot is, a tray app's name. It shows after a
+    rest, under the thing (beside it on a side bar) and on screen, changes at once going
+    straight to the next thing, and never shows while the bar's arranged or a panel's open. A
+    click puts it away quickly, and it stays away until the pointer leaves and comes back. (The
+    session has no pointer: test barPoint's pretend one goes by the same areas.)"""
+    def point(self, x, y, what="hover"):
+        return json.loads(self.ipc("test", "barPoint", str(int(x)), str(int(y)), what))
+
+    def label(self):
+        return self.s.state()["bar"]["label"]
+
+    def tearDown(self):
+        self.point(-1, -1, "leave")
+        super().tearDown()
+
+    def centre(self, name):
+        t = self.s.state()["bar"]["line"][name]
+        self.assertTrue(t["visible"], f"{name} isn't on the bar")
+        return t["x"] + t["w"] / 2, t["y"] + t["h"] / 2
+
+    def showing(self, text, what):
+        st = self.wait(lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == text
+                       and st["bar"]["label"]["opacity"] > 0.99, f"the label to say {text!r} ({what})")
+        return st["bar"]["label"]
+
+    def gone(self, what, timeout=8):
+        self.wait(lambda st: not st["bar"]["label"]["shown"] and st["bar"]["label"]["opacity"] < 0.01,
+                  f"the label to go ({what})", timeout=timeout)
+
+    def at(self, edge):
+        self.keep_setting("barPosition")
+        self.config("barPosition", edge)
+        self.wait(lambda st: st["barEdge"] == edge, f"the bar at the {edge}")
+        self.steady(lambda: self.s.state()["bar"]["line"], floor=0.4)
+
+    def test_says_what_it_is_under_it(self):
+        self.at("top")
+        st = self.s.state()
+        band, width = st["bar"]["band"], st["screens"][0]["width"]
+        x, y = self.centre("clock")
+        self.point(x, y)
+        lab = self.showing("Clock", "over the clock")
+        # Just under the bar, centred on the clock (or held in from the screen's end), on screen
+        self.assertGreaterEqual(lab["y"], band["y"] + band["h"], f"not below the bar: {lab} {band}")
+        self.assertLessEqual(lab["y"], band["y"] + band["h"] + 12, f"not just under the bar: {lab} {band}")
+        self.assertGreaterEqual(lab["x"], 0, lab)
+        self.assertLessEqual(lab["x"] + lab["w"], width, lab)
+        self.assertTrue(abs(lab["x"] + lab["w"] / 2 - x) <= 1.5 or lab["x"] + lab["w"] >= width - 10, f"not under the clock ({x}): {lab}")
+        # Straight on to the next thing: it changes at once, under that
+        cx, cy = self.centre("control")
+        self.point(cx, cy)
+        lab = self.label()
+        self.assertTrue(lab["shown"], "it went, going straight from one thing to the next")
+        self.assertEqual(lab["text"], "Control centre")
+        self.assertTrue(abs(lab["x"] + lab["w"] / 2 - cx) <= 1.5 or lab["x"] <= 10, f"not under the control centre ({cx}): {lab}")
+        # A workspace dot: which workspace it is, as the overview says it
+        dots = self.s.state()["bar"]["line"]["workspaces"]
+        got = self.point(dots["x"] + 8 + 7, dots["y"] + dots["h"] / 2)
+        self.assertEqual((got["thing"], got["dot"]), ("workspaces", 0), got)
+        first = min(w["id"] for w in self.s.hyprctl("workspaces", json_out=True) if w["id"] > 0)
+        self.assertEqual(self.label()["text"], self.ipc("workspacename", "label", str(first)))
+        # Off the bar: gone
+        self.point(-1, -1, "leave")
+        self.gone("the pointer off the bar")
+
+    def test_beside_a_side_bar(self):
+        self.at("left")
+        st = self.s.state()
+        band, height = st["bar"]["band"], st["screens"][0]["height"]
+        x, y = self.centre("clock")
+        self.point(x, y)
+        lab = self.showing("Clock", "over the clock on a side bar")
+        self.assertGreaterEqual(lab["x"], band["x"] + band["w"], f"not beside the bar: {lab} {band}")
+        self.assertLessEqual(lab["x"], band["x"] + band["w"] + 12, lab)
+        self.assertGreaterEqual(lab["y"], 0, lab)
+        self.assertLessEqual(lab["y"] + lab["h"], height, lab)
+        self.assertTrue(abs(lab["y"] + lab["h"] / 2 - y) <= 1.5 or lab["y"] + lab["h"] >= height - 10, f"not beside the clock ({y}): {lab}")
+
+    def test_not_while_arranging(self):
+        self.at("top")
+        self.addCleanup(lambda: self.wait(lambda st: not st["bar"]["arranging"], "arranging to end"))
+        self.addCleanup(lambda: self.ipc("bar", "edit", "done"))
+        self.ipc("bar", "edit", "start")
+        self.wait(lambda st: st["bar"]["arranging"], "arranging")
+        self.steady(lambda: self.s.state()["bar"]["line"], floor=0.4)
+        self.point(*self.centre("clock"))
+        lab = self.steady(self.label, floor=1.0)
+        self.assertFalse(lab["shown"], f"a label while the bar's arranged: {lab}")
+
+    def test_not_with_a_panel_open(self):
+        self.at("top")
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("bar", "panel", "calendar")
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar")
+        self.point(*self.centre("control"))
+        lab = self.steady(self.label, floor=1.0)
+        self.assertFalse(lab["shown"], f"a label with a panel open: {lab}")
+
+    def test_a_click_puts_it_away(self):
+        self.at("top")
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        x, y = self.centre("clock")
+        self.point(x, y)
+        self.showing("Clock", "over the clock")
+        self.point(x, y, "click")
+        self.assertFalse(self.label()["shown"], "the label didn't go at the click itself")
+        self.gone("clicked", timeout=1)
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar from the click")
+        lab = self.steady(self.label, floor=1.0)
+        self.assertFalse(lab["shown"], f"back with the panel open: {lab}")
+        # The panel closed, the pointer still on the clock: still away, till it leaves and comes back
+        self.ipc("popout", "close")
+        self.wait(lambda st: st["popout"] == "", "the calendar to close")
+        lab = self.steady(self.label, floor=1.0)
+        self.assertFalse(lab["shown"], f"back without the pointer leaving the clock: {lab}")
+        self.point(-1, -1, "leave")
+        self.point(x, y)
+        self.showing("Clock", "the pointer back on the clock")
+
+    def test_tray_app_name(self):
+        self.at("top")
+        for key in ("barShowTray", "barTrayCollapsed"):
+            self.keep_setting(key)
+        self.config("barShowTray", "true")
+        self.config("barTrayCollapsed", "false")
+        # An app whose tray icon has only a raw id: tidied to a name
+        app = subprocess.Popen(["python3", os.path.join(slate.FIXTURES, "live", "fake_tray_app.py"), "chrome_status_icon_1", ""],
+                               env=self.s.env, stdout=subprocess.PIPE, text=True)
+        self.addCleanup(lambda: self.wait(lambda st: "chrome_status_icon_1" not in st["tray"], "the pretend app's icon to go", timeout=10))
+        self.addCleanup(app.kill)
+        self.assertEqual(app.stdout.readline().strip(), "registered")
+        self.wait(lambda st: "chrome_status_icon_1" in st["tray"] and st["bar"]["line"]["tray"]["visible"], "the icon in the tray")
+        self.steady(lambda: self.s.state()["bar"]["line"], floor=0.4)
+        got = self.point(*self.centre("tray"))
+        self.assertEqual(got["thing"], "tray", got)
+        self.showing("Chrome", "over the tray icon")
+
+    def test_tray_names_tidied(self):
+        """What a tray icon is called: its title, then its tooltip's, then its id; a raw id tidied."""
+        for (id_, title, tip), want in {
+            ("chrome_status_icon_1", "", ""): "Chrome",
+            ("steam", "", ""): "Steam",
+            ("nm-applet", "", ""): "Nm",
+            ("org.kde.kdeconnect", "", ""): "Kdeconnect",
+            ("StatusNotifierItem-1234-1", "", ""): "",
+            ("telegram-desktop", "", ""): "Telegram desktop",
+            ("discord", "Discord", ""): "Discord",
+            ("whatever_1", "", "Fake tray app"): "Fake tray app",
+            ("whatever_1", "spotify", "Spotify Premium"): "Spotify",
+        }.items():
+            with self.subTest(id_):
+                self.assertEqual(self.ipc("test", "trayName", id_, title, tip), want)

@@ -234,6 +234,15 @@ ShellRoot {
         // band is state's bar.band): "hover" there, "leave", or "click" there. What it's over, as
         // JSON: {thing, dot, lit}
         function barPoint(x: real, y: real, what: string): string { return JSON.stringify(topBar.testPoint(x, y, what)); }
+        // ...at the middle of one of the bar's things, by its name in the arrangement ("": away)
+        function barHover(name: string): string {
+            const t = topBar.lineState()[name];
+            if (!t || !t.visible) return JSON.stringify(topBar.testPoint(-1, -1, "leave"));
+            return JSON.stringify(topBar.testPoint(t.x + t.w / 2, t.y + t.h / 2, "hover"));
+        }
+        // What the label off the bar would call a tray icon with this id, title and tooltip title
+        // (Config.trayName: the tidying of a raw id)
+        function trayName(id: string, title: string, tooltip: string): string { return Config.trayName({ id: id, title: title, tooltipTitle: tooltip }); }
         // The pointer on the bar menu's item `index` (its row's top at y), as hovering it does
         function menuPoint(index: int, y: real): void { topBar.menu.want(index, y); }
         function menuKey(key: string): void {
@@ -441,7 +450,9 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: barEditor.shown, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band },
+                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.priorityState, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
+                       // (the label off the bar saying what the pointer's over: BarLabel.qml)
+                       label: topBar.label.testState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
                 // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
                 dockMenu: { open: dockMenu.visible, items: dockMenu.items.map(i => i.separator ? null

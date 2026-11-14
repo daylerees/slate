@@ -320,6 +320,22 @@ SCENES["bar-workspace-name"] = {
     "wait": lambda st: st["bar"]["line"]["workspacename"]["visible"] and st["bar"]["line"]["workspacename"]["text"] == "Coding",
     "settle": 1.2, "undo": [("workspacename", "set", "1", "")],
 }
+# The label off the bar saying what the pointer's over (BarLabel.qml): under the clock on the
+# bar at the top, and beside the control centre's button on a bar at the left
+def _label_says(text):
+    return lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == text and st["bar"]["label"]["opacity"] > 0.99
+
+
+_LABEL_GONE = lambda st: not st["bar"]["label"]["visible"]
+SCENES["bar-label"] = {
+    "do": [("test", "barHover", "clock")], "wait": _label_says("Clock"), "settle": 1.0,
+    "undo": [("test", "barHover", ""), _LABEL_GONE],
+}
+SCENES["bar-label-left"] = {
+    "settings": {"barPosition": "left"},
+    "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control centre"), "settle": 1.0,
+    "undo": [("test", "barHover", ""), _LABEL_GONE],
+}
 SCENES["rename-workspace"] = {
     "do": [("workspacename", "set", "1", "Coding"), ("test", "renameWorkspace")],
     "wait": lambda st: st["asking"] == "Rename \u201cCoding\u201d",
