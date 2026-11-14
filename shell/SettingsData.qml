@@ -307,6 +307,7 @@ JsonAdapter {
     property bool assistantAskChanges: false    // ask before every change, not only the ones that can't be undone
     property bool assistantSeeTitles: true      // window titles are given (off: app names only)
     property bool assistantSeeNotifications: false  // recent notifications can be read
+    property bool assistantVoice: false         // talk to Nova: hold Super+K or its microphone (whisper.cpp, on this computer; never changed by an assistant)
 
     // Hot corners: none, lock, launcher, overview, control, notifications, screenoff
     property string hotCornerTopLeft: "none"

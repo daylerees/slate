@@ -10,7 +10,9 @@ TapHandler {
     // false: the click, but the pointer stays an arrow (menus, the dock: things that are all
     // pressable anyway, where a hand says nothing)
     property bool hand: true
-    onTapped: Config.click()
+    // false: no click of its own (something it starts plays it instead: Nova's microphone)
+    property bool sound: true
+    onTapped: if (sound) Config.click()
     Component.onCompleted: {
         if (!hand || !Config.handCursor || !parent) return;
         const h = Config.handHover.createObject(parent);

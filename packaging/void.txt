@@ -73,5 +73,9 @@ pkg-config
 ?xdg-user-dirs
 ?pciutils
 
+# Talking to Nova (Settings → Assistant → Voice): speech turned into text on this computer:
+# Void doesn't package whisper.cpp; build it from github.com/ggml-org/whisper.cpp and put
+# whisper-cli on your PATH
+
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
 ?v4l-utils

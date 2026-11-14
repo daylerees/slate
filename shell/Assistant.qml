@@ -101,6 +101,10 @@ PanelWindow {
     // ---- State ---------------------------------------------------------------
     property bool shown: false
     property bool working: false
+    // Talking to Nova (NovaVoice.qml, given by shell.qml): the microphone at the end of the box
+    property var voice: null
+    readonly property bool micShown: !!voice && voice.on && !working
+    readonly property string listening: voice ? voice.phase : ""
     // The conversation, oldest first: [{ asked, answer, error, actions }] (error: { kind,
     // message, detail } when it went wrong; actions: what it did, [{ id, text, state }]).
     // The last one is the exchange in hand
@@ -285,6 +289,8 @@ PanelWindow {
         runner.write(text);
         runner.stdinEnabled = false;       // (closes it: the prompt is the whole of stdin)
     }
+    // What you said (NovaVoice.qml), after anything already typed in the box, sent as typing it would be
+    function sendSpoken(text) { send((field.text.trim() + " " + String(text || "")).trim()); }
     property string pending: ""            // typed before the agents were found: sent once they are
     readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
     function stop() { if (working) runner.signal(15); }
@@ -864,13 +870,17 @@ PanelWindow {
                 color: root.fieldColor
                 Text {
                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                    text: root.working ? "Nova is working…" : "What would you like to do?"
-                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                    text: root.working ? "Nova is working…"
+                        : root.listening === "listening" || root.listening === "starting" ? "Listening… let go when you're done"
+                        : root.listening === "transcribing" ? "Writing down what you said…"
+                        : "What would you like to do?"
+                    color: root.listening === "listening" || root.listening === "starting" ? root.textColor : root.dimTextColor
+                    font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     visible: field.text === ""
                 }
                 TextInput {
                     id: field
-                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working ? 50 : 14; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working || root.micShown ? 50 : 14; verticalCenter: parent.verticalCenter }
                     color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
                     font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     focus: root.shown
@@ -909,6 +919,25 @@ PanelWindow {
                     }
                     ClickTap { enabled: root.working; onTapped: root.stop() }
                 }
+                // Hold to talk (Settings → Assistant → Voice)
+                NovaMic {
+                    objectName: "assistantMic"
+                    visible: root.micShown
+                    anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+                    voice: root.voice
+                    iconFont: tabler.name
+                    ink: root.dimTextColor; accent: root.accent; accentText: root.accentText
+                }
+            }
+
+            // Why talking to Nova didn't go ahead, for a few seconds (NovaVoice.qml)
+            Text {
+                visible: root.on && text !== ""
+                width: parent.width
+                leftPadding: 4; rightPadding: 4
+                text: root.voice ? root.voice.note : ""
+                textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 13
             }
 
             // ---- Footer: who's answering, and the one useful button -----------
@@ -917,11 +946,14 @@ PanelWindow {
                 width: parent.width; height: 32
                 Text {
                     anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                    width: parent.width - 8 - footerButtons.width - 8
+                    elide: Text.ElideRight
                     text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
-                        + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send")
+                        + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send" + (root.micShown ? "  ·  Hold Super+K to talk" : ""))
                     color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                 }
                 Row {
+                    id: footerButtons
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 8
                     PillButton {

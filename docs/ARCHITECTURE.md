@@ -93,6 +93,13 @@ Assistant.qml                 Nova's prompt window ("slate-assistant", Super+K):
                               for a prompt, shows the answer (drawn from the runner's blocks:
                               lists, bold, code boxes with Copy; never Qt's own Markdown) and what was done, as
                               Slate's server reports it (`assistant did`)
+NovaVoice.qml                 talking to Nova (`voice` IPC: hold, release, cancel): listens only while
+                              Super+K or Nova's microphone (NovaMic.qml) is held, through
+                              scripts/voice.py, and sends what was said. VoiceModel.qml: whether
+                              whisper.cpp and the speech model are there, and the model's download
+scripts/voice.py              records the default microphone (pw-record) into $XDG_RUNTIME_DIR while
+                              held, turns it into text with whisper.cpp, deletes it; downloads the
+                              speech model (checked by SHA-256) and deletes it
 AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are
                               allowed and what they may see, and their questions, shown with
                               PowerConfirm and held until the server reads the answer
@@ -376,7 +383,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
-| `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`) |
+| `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`); `pw-record` (same package) records while you hold to talk to Nova |
 | `networkmanager` | Wi-Fi panel |
 | `bluez` | Bluetooth |
 | `upower` | battery |
@@ -398,6 +405,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `hyprpicker` | freezes the screen while picking a screenshot area (optional) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal) |
 | `ffmpeg` (Fedora `ffmpeg-free`) | takes the sound out of downloaded screensaver videos |
+| `whisper-cpp` (Debian/Ubuntu `whisper.cpp`, NixOS `whisper-cpp`, Gentoo GURU `app-accessibility/whisper-cpp`; openSUSE and Void: build it) | talking to Nova (Settings → Assistant → Voice): `whisper-cli` turns what you said into text on this computer (`scripts/voice.py`). Its speech model (whisper's base, 148 MB) is downloaded by Slate only when you ask, into `~/.local/share/slate/whisper/` |
 | `xdg-user-dirs` | finding your Downloads and Pictures folders (else `~/Downloads`, `~/Pictures`) |
 | `pciutils` | Debug → Export logs (graphics card details) |
 | a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |

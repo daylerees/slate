@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""A stand-in for whisper.cpp's whisper-cli (scripts/voice.py): "hears" $HOME/.voice-transcript
+(or "Turn on glass."), printed as whisper prints it with -nt, and notes how it was called and
+what it was given in $HOME/.voice-calls. $HOME/.voice-fail: it fails, as on a broken model."""
+import json
+import os
+import sys
+
+home = os.environ.get("HOME", "/tmp")
+a = sys.argv[1:]
+wav = a[a.index("-f") + 1] if "-f" in a else ""
+with open(os.path.join(home, ".voice-calls"), "a") as f:
+    f.write(json.dumps({"tool": "whisper-cli", "args": a, "wav": os.path.exists(wav) and os.path.getsize(wav)}) + "\n")
+if os.path.exists(os.path.join(home, ".voice-fail")):
+    sys.stderr.write("whisper_init_from_file: failed to load model\n")
+    sys.exit(1)
+try:
+    said = open(os.path.join(home, ".voice-transcript")).read()
+except OSError:
+    said = " Turn on glass."
+print("[BLANK_AUDIO]")
+print(said)

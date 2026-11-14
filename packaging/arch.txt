@@ -78,5 +78,8 @@ pkgconf
 ?xdg-user-dirs
 ?pciutils
 
+# Talking to Nova (Settings → Assistant → Voice): speech turned into text on this computer
+?whisper-cpp
+
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
 v4l-utils

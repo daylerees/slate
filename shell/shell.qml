@@ -72,6 +72,7 @@ ShellRoot {
     // Nova, the assistant's prompt window (Super+K): one of the things only one of shows at a time
     Assistant {
         id: nova
+        voice: novaVoice
         onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
@@ -316,6 +317,13 @@ ShellRoot {
             if (what === "risks") w.assistantReadRisks();
             else w.assistantSwitch(what === "on");
         }
+        // Settings → Assistant → Voice's switch, as clicking it does (on asks to download the model first)
+        function voiceSwitch(on: bool): void {
+            const w = settingsLoader.item;
+            if (w) w.voiceSwitch(on);
+        }
+        // Look again for whisper.cpp and the speech model (VoiceModel.qml), as Slate does when it starts
+        function voiceCheck(): void { voiceModel.check(); }
         // As saying yes to an agent that keeps its own tools (Settings → Assistant) leaves it
         function assistantAccepted(id: string): void { Config.s.assistantAgentsAccepted = id === "" ? [] : [id]; }
         // The prompt window as a run would leave it: {asked, answer, working, actions, error}
@@ -448,6 +456,10 @@ ShellRoot {
                 sounds: Config.testSounds,
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
+                // Talking to Nova: listening or not, why it didn't, and what's there for it
+                novaVoice: { phase: novaVoice.phase, note: novaVoice.note, on: novaVoice.on, mic: nova.micShown,
+                             whisper: voiceModel.whisper !== "", model: voiceModel.model, ready: voiceModel.ready,
+                             downloading: voiceModel.downloading, progress: voiceModel.progress, error: voiceModel.error },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
@@ -493,6 +505,7 @@ ShellRoot {
         SettingsWindow {
             bar: topBar; notifs: notifs
             confirmer: powerConfirm       // (asks in the same window as shutting down: app installs)
+            voice: voiceModel             // (Assistant → Voice: the speech model)
             onClosed: settingsRebuild.restart()
         }
     }
@@ -523,6 +536,10 @@ ShellRoot {
         SecretEmpty { required property var modelData; screen: modelData; bar: topBar }
     }
     LockScreen { id: lockScreen }
+    // Talking to Nova (Settings → Assistant → Voice): what's there for it, and the listening
+    // itself, only while the key or the microphone is held
+    VoiceModel { id: voiceModel }
+    NovaVoice { id: novaVoice; window: nova; model: voiceModel; locked: lockScreen.locked }
     AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: nova }     // what AI agents may do (slate mcp)
     // A bar panel opening takes the prompt window's place, like the other overlays
     Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") nova.closeWindow(); } }
