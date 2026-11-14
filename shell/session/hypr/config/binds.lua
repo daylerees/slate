@@ -153,6 +153,16 @@ local function needing(tool, what, cmd)
     return SLATE_DIR .. "/scripts/need.sh " .. tool .. " '" .. what .. "' -- " .. cmd
 end
 
+-- Start a default app (Settings → Default Apps, or variables.lua). When it's one of the apps Slate
+-- itself offers (KNOWN_APPS) and isn't installed, say what to install, the way `needing` does,
+-- rather than running a command that isn't there. A command line you wrote yourself is run as
+-- it is. `what` is how the notification starts ("The terminal"); no quotes in it
+local function app(cmd, what)
+    local bin = cmd:match("^(%S+)")
+    if bin and (KNOWN_APPS or {})[bin] then return needing(bin, what, launchPrefix .. cmd) end
+    return launchPrefix .. cmd
+end
+
 -- Is one of Slate's overlays open and holding the keyboard? (by layer name, e.g. "slate-launcher")
 local function slateOverlayOpen(name)
     for _, l in ipairs(hl.get_layers({ namespace = name }) or {}) do
@@ -230,12 +240,12 @@ local shared = {
     terminal = function()
         if overviewIsOpen() then ov("go"); return end
         if slateOverlayOpen("slate-launcher") then hl.exec_cmd(slate("launcher launchOnNewWorkspace")); return end
-        hl.exec_cmd(launchPrefix .. TERMINAL)
+        hl.exec_cmd(app(TERMINAL, "The terminal"))
     end,
-    files         = function() hl.exec_cmd(launchPrefix .. FILE_MANAGER) end,
-    editor        = function() hl.exec_cmd(launchPrefix .. EDITOR) end,
-    calculator    = function() hl.exec_cmd(launchPrefix .. CALCULATOR) end,
-    systemMonitor = function() hl.exec_cmd(needing("btop", "The system monitor", launchPrefix .. TERMINAL .. " -e btop")) end,
+    files         = function() hl.exec_cmd(app(FILE_MANAGER, "The file manager")) end,
+    editor        = function() hl.exec_cmd(app(EDITOR, "The text editor")) end,
+    calculator    = function() hl.exec_cmd(app(CALCULATOR, "The calculator")) end,
+    systemMonitor = function() hl.exec_cmd(needing("btop", "The system monitor", launchPrefix .. TERMINAL_RUN("btop"))) end,
 
     -- Slate's windows and panels
     settings      = hl.dsp.exec_cmd(slate("settings toggle")),
@@ -717,7 +727,7 @@ end
 
 -- (Hyprland Defaults, and Hyprland + Slate Extras)
 if HYPR_KEYS then
-    hl.bind(mainMod .. " + Q", function() hl.exec_cmd(launchPrefix .. TERMINAL) end)
+    hl.bind(mainMod .. " + Q", function() hl.exec_cmd(app(TERMINAL, "The terminal")) end)
     hl.bind(mainMod .. " + C", hl.dsp.window.close())
     hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(slate("power confirm logout")))
     hl.bind(mainMod .. " + E", shared.files)

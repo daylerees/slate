@@ -86,7 +86,7 @@ print("TERMINAL_CLASSES=" .. tostring(TERMINAL_CLASSES))
 def offered(name):
     """The commands variables.lua offers as `name` (TERMINAL, CALCULATOR): their first words."""
     src = slate.read("shell", "session", "hypr", "config", "variables.lua")
-    m = re.search(name + r"\s*=\s*" + name + r"\s+or firstInstalled\(\{(.*?)\}\)", src, re.S)
+    m = re.search(r"local " + name + r"S\s*=\s*\{(.*?)\}", src, re.S)
     assert m, f"variables.lua no longer offers a list for {name}"
     return [c.split()[0] for c in re.findall(r'"([^"]+)"', m.group(1))]
 

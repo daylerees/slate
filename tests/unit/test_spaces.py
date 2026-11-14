@@ -339,7 +339,8 @@ class Restore(FakeHyprland, SpacesBase):
             "function() hl.exec_cmd([=[example-term]=], { workspace = [=[2]=] }) end",
             fn % "hl.dsp.focus({ window = [=[address:0xb2]=] })",
             fn % "hl.dsp.layout([=[splitratio 1.000 exact]=])",
-            "function() hl.exec_cmd((TERMINAL or 'kitty') .. ' -e sh -c ' .. [=['cd /opt/example && example-viewer']=],"
+            "function() hl.exec_cmd((TERMINAL_RUN or function(a) return (TERMINAL or 'kitty') .. ' -e ' .. a end)"
+            "('sh -c ' .. [=['cd /opt/example && example-viewer']=]),"
             " { workspace = [=[2]=], float = true }) end",
             fn % "hl.dsp.window.resize({ x = 960, y = 540, relative = false, window = [=[address:0xb4]=] })",
             fn % "hl.dsp.window.move({ x = 480, y = 270, relative = false, window = [=[address:0xb4]=] })",
@@ -366,8 +367,9 @@ class Restore(FakeHyprland, SpacesBase):
         self.spaces("restore", "work")
         started = [d for d in self.dispatches() if "hl.exec_cmd" in d]
         self.assertEqual(len(started), 1, started)
-        m = re.fullmatch(r"function\(\) hl\.exec_cmd\(\(TERMINAL or 'kitty'\) \.\. '([^']*)' \.\. "
-                         r"\[=\[(.*)\]=\], \{ workspace = \[=\[2\]=\] \}\) end", started[0])
+        m = re.fullmatch(r"function\(\) hl\.exec_cmd\(\(TERMINAL_RUN or function\(a\) return \(TERMINAL or 'kitty'\) "
+                         r"\.\. ' -e ' \.\. a end\)\('([^']*)' \.\. "
+                         r"\[=\[(.*)\]=\]\), \{ workspace = \[=\[2\]=\] \}\) end", started[0])
         self.assertTrue(m, started[0])
         # A terminal that says it opened, then runs what follows -e (as kitty, foot… do), and
         # an app that notes where it was started and whether the terminal was open by then
@@ -378,7 +380,7 @@ class Restore(FakeHyprland, SpacesBase):
             with open(p, "w") as f:
                 f.write("#!/bin/sh\n" + text)
             os.chmod(p, 0o755)
-        run(["/bin/sh", "-c", "fake-term" + m.group(1) + m.group(2)], env=self.s.env, timeout=10)
+        run(["/bin/sh", "-c", "fake-term -e " + m.group(1) + m.group(2)], env=self.s.env, timeout=10)
         with open(said) as f:
             self.assertEqual(f.read().splitlines(), ["terminal", "app in " + folder])
 

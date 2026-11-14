@@ -117,6 +117,12 @@ SLATE_DIR = os.getenv("STUB_SLATE_DIR")
 SLATE = SLATE_DIR .. "/bin/slate"
 BORDER_SIZE, ACTIVE_BORDER, RESIZE_BORDER = 3, "the active border", "the resize border"
 TERMINAL, FILE_MANAGER, EDITOR, CALCULATOR = "foot", "nautilus", "gedit", "gnome-calculator"
+if os.getenv("STUB_APPS") then
+    local t, f, e, c = os.getenv("STUB_APPS"):match("^(.-)\t(.-)\t(.-)\t(.*)$")
+    TERMINAL, FILE_MANAGER, EDITOR, CALCULATOR = t, f, e, c
+end
+-- (KNOWN_APPS and TERMINAL_RUN are variables.lua's: the values above are kept)
+dofile(os.getenv("STUB_VARIABLES"))
 MONITOR1, MONITOR2, MONITOR3, NUM_WPM = "DP-1", "DP-2", "DP-3", 3
 -- The functions the rest of Slate's config makes (found by the test: STUB_GLOBALS)
 for name in os.getenv("STUB_GLOBALS"):gmatch("%S+") do
@@ -186,6 +192,8 @@ def other_config_functions():
         if n.endswith(".lua") and n != "binds.lua":
             with open(os.path.join(CONFIG_DIR, n)) as f:
                 names.update(re.findall(r"^function ([A-Za-z_]\w*)\(", f.read(), re.M))
+    # variables.lua's own are loaded for real (TERMINAL_RUN), not stood in for
+    names.discard("TERMINAL_RUN")
     return sorted(names)
 
 
@@ -201,24 +209,27 @@ class BindsLua(Case):
         self.state = os.path.join(self.h.dir, "state")
         os.makedirs(os.path.join(self.state, "slate"))
 
-    def load(self, keyset):
+    def load(self, keyset, apps=None):
         """Load binds.lua with this key set and press everything in every scenario: the
         stand-in's lines, split at their tabs."""
         with open(os.path.join(self.state, "slate", "keyset.lua"), "w") as f:
             f.write(f'KEYSET = "{keyset}"\n')
         env = dict(self.h.env, XDG_STATE_HOME=self.state, STUB_CONFIG=BINDS, STUB_SLATE_DIR=slate.SHELL,
+                   STUB_VARIABLES=os.path.join(CONFIG_DIR, "variables.lua"),
                    STUB_GLOBALS=" ".join(other_config_functions()),
                    STUB_SCENARIOS="\n".join(f"{name}\t{settings}" for name, settings in SCENARIOS))
         env.pop("UWSM_FINALIZE_VARNAMES", None)
+        if apps:
+            env["STUB_APPS"] = "\t".join(apps)
         code, out = run([self.lua, self.stub], env=env)
         self.assertEqual(code, 0, out)
         return [line.split("\t") for line in out.splitlines()]
 
-    def press_all(self, keyset):
+    def press_all(self, keyset, apps=None):
         """Load binds.lua with this key set and press everything: (keys bound, {keys: commands
         started, with nothing open and then with everything open}, [failures])."""
         bound, keys_of, started, failed = [], {}, {}, []
-        for kind, *rest in self.load(keyset):
+        for kind, *rest in self.load(keyset, apps):
             if kind == "BIND":
                 n, submap, keys = rest[:3]
                 keys_of[n] = keys
@@ -324,6 +335,43 @@ class BindsLua(Case):
                                  {NEED + " hyprpicker 'The colour picker' -- hyprpicker -a -n"})
                 self.assertEqual(set(started["CONTROL + SHIFT + Escape"]),
                                  {NEED + " btop 'The system monitor' -- foot -e btop"})
+
+    def test_default_apps_say_what_is_missing(self):
+        """Super+Return, Super+E, Super+T and Super+C start one of the apps Slate offers through
+        need.sh (so one that isn't installed is named in a notification, not a silent nothing),
+        and a command line of the person's own as it is."""
+        for keyset, calculator in (("slate", "SUPER + C"), ("hyprland-extras", "XF86Calculator")):
+            with self.subTest(keyset=keyset, apps="Slate's own"):
+                _, started, _ = self.press_all(keyset, ("kitty", "dolphin", "gnome-text-editor --new-window", "kcalc"))
+                for key, tool, what, cmd in (
+                        ("SUPER + Return", "kitty", "The terminal", "kitty"),
+                        ("SUPER + E", "dolphin", "The file manager", "dolphin"),
+                        ("SUPER + T", "gnome-text-editor", "The text editor", "gnome-text-editor --new-window"),
+                        (calculator, "kcalc", "The calculator", "kcalc")):
+                    self.assertIn(f"{NEED} {tool} '{what}' -- {cmd}", started[key], key)
+            with self.subTest(keyset=keyset, apps="the person's own"):
+                _, started, _ = self.press_all(keyset, ("/opt/me/term --x", "my-files", "env FOO=1 my-editor", "my-calc"))
+                for key, cmd in (("SUPER + Return", "/opt/me/term --x"), ("SUPER + E", "my-files"),
+                                 ("SUPER + T", "env FOO=1 my-editor"), (calculator, "my-calc")):
+                    self.assertIn(cmd, started[key], key)
+                    self.assertFalse([c for c in started[key] if c.startswith(NEED)], key)
+
+    def test_run_in_the_terminal_uses_each_terminals_own_flag(self):
+        """TERMINAL_RUN (variables.lua) is how the launcher, Nova, Spaces and the system monitor
+        run a command in a terminal, and each terminal Slate offers is told it its own way."""
+        flags = {"kitty": "-e", "foot": "-e", "alacritty": "-e", "ghostty": "-e", "konsole": "-e", "kgx": "-e",
+                 "wezterm": "start --", "gnome-terminal": "--", "ptyxis": "--", "xfce4-terminal": "-x"}
+        src = slate.read("shell", "session", "hypr", "config", "variables.lua")
+        offered = re.findall(r'"([^"\s]+)"', re.search(r"local TERMINALS\s*=\s*\{(.*?)\}", src, re.S).group(1))
+        self.assertEqual(sorted(offered), sorted(flags), "a terminal was added without its flag here")
+        for terminal, flag in list(flags.items()) + [("/usr/bin/wezterm", "start --"), ("foot --server", "-e"), ("other", "-e")]:
+            with self.subTest(terminal=terminal):
+                code, out = run([self.lua, "-e",
+                                 f'hl = setmetatable({{}}, {{ __index = function() return function() end end }}); '
+                                 f'TERMINAL = "{terminal}"; dofile("{os.path.join(CONFIG_DIR, "variables.lua")}"); '
+                                 "io.write(TERMINAL_RUN(\"sh -c 'x'\"))"], env=self.h.env)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(out, f"{terminal} {flag} sh -c 'x'")
 
     def test_no_optional_tool_is_started_directly(self):
         """Nothing a shortcut starts is a tool some distro's package list marks optional ("?"),

@@ -508,7 +508,8 @@ class Restorer:
             # The whole line is one argument to a shell inside the terminal: left bare, the
             # terminal was asked to run only its first word ("cd"), and whatever came after
             # an "&&" (the app itself) ran outside it, or not at all
-            expr = "(TERMINAL or 'kitty') .. ' -e sh -c ' .. " + lstr(shlex.quote(cmd))
+            expr = ("(TERMINAL_RUN or function(a) return (TERMINAL or 'kitty') .. ' -e ' .. a end)"
+                    "('sh -c ' .. " + lstr(shlex.quote(cmd)) + ")")
         else:
             expr = lstr(cmd)
         rules = "workspace = " + lstr(str(ws)) + (", float = true" if floating else "")

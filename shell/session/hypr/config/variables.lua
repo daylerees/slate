@@ -37,13 +37,41 @@ local function firstInstalled(list)
     for _, cmd in ipairs(list) do if installed(cmd) then return cmd end end
     return list[1]
 end
-TERMINAL     = TERMINAL     or firstInstalled({ "kitty", "foot", "alacritty", "ghostty", "wezterm", "konsole",
-                                                "gnome-terminal", "kgx", "ptyxis", "xfce4-terminal" })                  -- Super+Return
-FILE_MANAGER = FILE_MANAGER or firstInstalled({ "dolphin", "nautilus", "thunar", "nemo", "pcmanfm-qt", "pcmanfm", "caja" })  -- Super+E
-BROWSER      = BROWSER      or firstInstalled({ "firefox", "chromium", "google-chrome-stable", "brave", "librewolf", "epiphany" })
-EDITOR       = EDITOR       or firstInstalled({ "gnome-text-editor --new-window", "kate", "kwrite", "mousepad", "gedit",
-                                                "xed", "pluma", "code" })                                               -- Super+T
-CALCULATOR   = CALCULATOR   or firstInstalled({ "gnome-calculator", "kcalc", "qalculate-gtk", "galculator", "mate-calc" })  -- Super+C
+local TERMINALS     = { "kitty", "foot", "alacritty", "ghostty", "wezterm", "konsole",
+                       "gnome-terminal", "kgx", "ptyxis", "xfce4-terminal" }
+local FILE_MANAGERS = { "dolphin", "nautilus", "thunar", "nemo", "pcmanfm-qt", "pcmanfm", "caja" }
+local BROWSERS      = { "firefox", "chromium", "google-chrome-stable", "brave", "librewolf", "epiphany" }
+local EDITORS       = { "gnome-text-editor --new-window", "kate", "kwrite", "mousepad", "gedit", "xed", "pluma", "code" }
+local CALCULATORS   = { "gnome-calculator", "kcalc", "qalculate-gtk", "galculator", "mate-calc" }
+TERMINAL     = TERMINAL     or firstInstalled(TERMINALS)       -- Super+Return
+FILE_MANAGER = FILE_MANAGER or firstInstalled(FILE_MANAGERS)   -- Super+E
+BROWSER      = BROWSER      or firstInstalled(BROWSERS)
+EDITOR       = EDITOR       or firstInstalled(EDITORS)         -- Super+T
+CALCULATOR   = CALCULATOR   or firstInstalled(CALCULATORS)     -- Super+C
+
+-- The programs Slate itself offers above, by command name. binds.lua checks one is installed
+-- before starting it (and says what's missing when it isn't), but only for these: a default app
+-- you wrote yourself is a command line of your own, which Slate leaves alone.
+KNOWN_APPS = {}
+for _, list in ipairs({ TERMINALS, FILE_MANAGERS, BROWSERS, EDITORS, CALCULATORS }) do
+    for _, cmd in ipairs(list) do KNOWN_APPS[cmd:match("^(%S+)")] = true end
+end
+
+-- How each terminal is told "run this command line": what goes between the terminal and the
+-- command, by the terminal's command name. Most take -e (the default); a few want something
+-- else. TERMINAL_RUN is the one place that puts them together: the launcher's "> command", an
+-- app that runs in a terminal, Nova's sign-in, the system monitor and Spaces all use it.
+TERMINAL_RUN_FLAGS = {
+    ["wezterm"]        = "start --",
+    ["gnome-terminal"] = "--",
+    ["ptyxis"]         = "--",
+    ["xfce4-terminal"] = "-x",
+}
+-- TERMINAL_RUN("sh -c 'htop'") is the command line that opens the default terminal running it
+function TERMINAL_RUN(args)
+    local bin = ((TERMINAL or "kitty"):match("^(%S+)") or "kitty"):match("([^/]+)$")
+    return (TERMINAL or "kitty") .. " " .. (TERMINAL_RUN_FLAGS[bin] or "-e") .. " " .. args
+end
 
 -- Monitors, by output name ("" = whichever monitor Hyprland finds; see `hyprctl monitors`)
 MONITOR1 = MONITOR1 or ""

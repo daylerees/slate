@@ -604,6 +604,12 @@ PanelWindow {
         return out;
     }
 
+    // Lua for the command line that runs `argsLua` (a Lua string expression) in the default
+    // terminal. Which flag a terminal wants (-e, --, start --...) is the session's one table,
+    // TERMINAL_RUN (variables.lua); a Hyprland config without it gets -e
+    function inTerminalLua(argsLua) {
+        return "(TERMINAL_RUN or function(a) return (TERMINAL or 'kitty') .. ' -e ' .. a end)(" + argsLua + ")";
+    }
     // ---- Run a command (Settings → Launcher → Run commands): "> command" ---------------
     readonly property var commandResults: {
         const cmd = query.slice(1).trim();
@@ -614,7 +620,7 @@ PanelWindow {
         return [
             { kind: "command", icon: 0xEBEF, name: cmd, comment: "Run in a terminal",
               run: () => Quickshell.execDetached(["hyprctl", "dispatch",
-                  "function() hl.exec_cmd(TERMINAL .. ' -e sh -c ' .. " + Config.luaString(q(inTerminal)) + ") end"]) },
+                  "function() hl.exec_cmd(" + inTerminalLua("'sh -c ' .. " + Config.luaString(q(inTerminal))) + ") end"]) },
             { kind: "command", icon: 0xEBEF, name: cmd, comment: "Run on its own (no terminal)",
               run: () => Quickshell.execDetached(["sh", "-c", cmd]) }
         ];
@@ -841,7 +847,7 @@ PanelWindow {
         const q = a => "'" + String(a).replace(/'/g, "'\\''") + "'";
         let cmd = entry.command.map(q).join(" ");
         if (entry.workingDirectory) cmd = "cd " + q(entry.workingDirectory) + " && " + cmd;
-        const lua = (entry.runInTerminal ? "TERMINAL .. ' -e ' .. " : "") + Config.luaString(cmd);
+        const lua = entry.runInTerminal ? inTerminalLua(Config.luaString(cmd)) : Config.luaString(cmd);
         // "silent": just put the window there. Without it Hyprland also switches to that
         // workspace, and switching to the secret one while it's showing hides it
         Quickshell.execDetached(["hyprctl", "dispatch",
