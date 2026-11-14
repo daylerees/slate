@@ -33,6 +33,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")" && pwd)
 DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
 BIN_LINK="$HOME/.local/bin/slate"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/slate"   # what the installer remembers between runs
 HELPERS=/usr/local/libexec/slate      # Slate's root helpers (shell/bin/slate-helpers-install)
 HYPR_MIN="0.57"
 QS_MIN="0.3"
@@ -124,6 +125,20 @@ if [ "$UNINSTALL" -eq 1 ]; then
     fi
     # Folder colour: back to the icon theme it was made from (removes Slate-Icons)
     [ -x "$DEST/scripts/folder-colour.py" ] && "$DEST/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
+    # The icon theme the installer replaced with Papirus-Dark: back to what it was, unless you've
+    # since picked another one (then it's yours, and left alone)
+    if [ -f "$STATE_DIR/previous-icon-theme" ] && have gsettings; then
+        was=$(head -n1 "$STATE_DIR/previous-icon-theme") || was=""
+        now=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'") || now=""
+        if [ "$now" = "Papirus-Dark" ]; then
+            case "$was" in
+                "") gsettings reset org.gnome.desktop.interface icon-theme && ok "Icon theme back to your desktop's own" ;;
+                *[!A-Za-z0-9._\ -]*) warn "Slate couldn't read the icon theme it kept, so yours is left as it is" ;;
+                *) gsettings set org.gnome.desktop.interface icon-theme "$was" && ok "Icon theme back to $was" ;;
+            esac
+        fi
+        rm -f "$STATE_DIR/previous-icon-theme"
+    fi
     b=""
     if [ -L "$DEST" ]; then rm "$DEST" && ok "Removed the link $DEST"
     elif [ -d "$DEST" ]; then
@@ -146,7 +161,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
     case "$cur" in Papirus*|ePapirus*)
         left+=("Your icon theme is $cur. If Slate's installer chose it and you'd like another, pick one in your desktop's settings, or: gsettings set org.gnome.desktop.interface icon-theme <name>") ;;
     esac
-    for d in "${XDG_STATE_HOME:-$HOME/.local/state}/slate" "${XDG_CACHE_HOME:-$HOME/.cache}/slate"; do
+    for d in "$STATE_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/slate"; do
         [ ! -e "$d" ] || left+=("Slate's saved state: rm -r $d")
     done
     left+=("The packages Slate needed (other apps may use them): your package manager removes them")
@@ -346,7 +361,16 @@ case "${ID:-}" in
 esac
 if [ -n "$too_old" ]; then
     warn "$too_old: its Hyprland and/or Quickshell are too old for Slate. See docs/INSTALL.md."
-    ask "Try anyway?" || exit 1
+    # An answer given when installing is kept, so --update (which can't ask) carries on too
+    # instead of failing every time on a release you've already said you'd like to try
+    tried="$STATE_DIR/try-anyway"
+    if [ "$UPDATE" -eq 1 ] && [ -f "$tried" ]; then
+        ok "Carrying on: you chose to try Slate here when you installed it"
+    elif ask "Try anyway?"; then
+        if [ "$UPDATE" -eq 0 ]; then (umask 077; mkdir -p "$STATE_DIR" && echo "$too_old" > "$tried") || true; fi
+    else
+        exit 1
+    fi
 fi
 
 # --update: this version may need packages the last one didn't. If any are missing, stop
@@ -527,6 +551,8 @@ if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark
     case "$cur" in
         ""|Adwaita|AdwaitaLegacy|hicolor|default|gnome|breeze|breeze-dark|Yaru*|elementary)
             if ask "Use Papirus-Dark icons? Slate's Folder colour setting needs it, and it changes the icon theme for GTK and Qt apps on your other desktops too."; then
+                # What it was, so --uninstall can put it back
+                (umask 077; mkdir -p "$STATE_DIR" && printf '%s\n' "$cur" > "$STATE_DIR/previous-icon-theme") || true
                 "$DEST/scripts/folder-colour.py" --icon-theme Papirus-Dark \
                     && ok "Icon theme: Papirus-Dark${cur:+ (was $cur)}" || warn "Slate couldn't set the icon theme to Papirus-Dark"
             else

@@ -366,7 +366,9 @@ class IconTheme(Pieces):
         script(os.path.join(self.dest, "scripts", "folder-colour.py"), f'echo "$*" >> {shlex.quote(self.log)}\n')
         self.s.add("gsettings", stdout=f"'{current}'\n")
         piece = between("# Icon theme: Papirus-Dark", '\ncase ":$PATH:"').replace("/usr/share/icons/Papirus-Dark", papirus)
-        code, out = bash(piece + "\necho CARRIED-ON\n", self.s.env, answers=answers, DEST=self.dest, **vars)
+        self.state = os.path.join(self.h.dir, "state", "slate")
+        code, out = bash(piece + "\necho CARRIED-ON\n", self.s.env, answers=answers, DEST=self.dest,
+                         STATE_DIR=self.state, **vars)
         self.assertEqual(code, 0, out)
         self.assertIn("CARRIED-ON", out)
         return out
@@ -382,6 +384,23 @@ class IconTheme(Pieces):
     def test_yes_sets_it(self):
         self.step(answers=[""])
         self.assertEqual(self.ran(), ["--icon-theme Papirus-Dark"])
+
+    def previous(self):
+        try:
+            with open(os.path.join(self.state, "previous-icon-theme")) as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
+
+    def test_yes_keeps_what_it_replaced_so_uninstall_can_put_it_back(self):
+        self.step(current="Adwaita", answers=[""])
+        self.assertEqual(self.previous(), "Adwaita\n")
+        self.assertEqual(os.stat(self.state).st_mode & 0o777, 0o700)
+        self.assertEqual(os.stat(os.path.join(self.state, "previous-icon-theme")).st_mode & 0o777, 0o600)
+
+    def test_no_keeps_nothing(self):
+        self.step(answers=["n"])
+        self.assertIsNone(self.previous())
 
     def test_dash_dash_yes_sets_it(self):
         self.step(YES=1)
@@ -406,6 +425,50 @@ class IconTheme(Pieces):
         usage = SRC.split("\nset -euo pipefail", 1)[0]
         self.assertNotIn("Your current desktop and ~/.config/hypr are not changed", usage)
         self.assertIn("icon theme", usage)
+
+
+class TooOldRelease(Pieces):
+    """A release the installer calls too old: "Try anyway?" is asked when installing, and the
+    answer is kept so --update (which can't ask) doesn't fail every time."""
+
+    def step(self, answers=None, **vars):
+        self.state = os.path.join(self.h.dir, "state", "slate")
+        piece = between("# Releases too old for Slate's", "\n# --update: this version may need")
+        vars = dict(dict(VERSION_ID="40"), **vars)
+        return bash(piece + "\necho CARRIED-ON\n", self.s.env, answers=answers, ID="fedora",
+                    STATE_DIR=self.state, **vars)
+
+    def kept(self):
+        return os.path.exists(os.path.join(self.state, "try-anyway"))
+
+    def test_yes_when_installing_is_kept(self):
+        code, out = self.step(answers=[""])
+        self.assertEqual(code, 0, out)
+        self.assertIn("CARRIED-ON", out)
+        self.assertTrue(self.kept())
+        self.assertEqual(os.stat(self.state).st_mode & 0o777, 0o700)
+
+    def test_update_honours_it(self):
+        self.step(answers=[""])
+        code, out = self.step(UPDATE=1)
+        self.assertEqual(code, 0, out)
+        self.assertIn("CARRIED-ON", out)
+
+    def test_update_without_it_still_stops(self):
+        code, out = self.step(UPDATE=1)
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("CARRIED-ON", out)
+        self.assertFalse(self.kept())
+
+    def test_no_when_installing_stops_and_keeps_nothing(self):
+        code, out = self.step(answers=["n"])
+        self.assertEqual(code, 1, out)
+        self.assertFalse(self.kept())
+
+    def test_a_release_that_isnt_too_old_keeps_nothing(self):
+        code, out = self.step(answers=[], VERSION_ID="44")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(self.kept())
 
 
 class ThirdPartyRepositories(Pieces):
@@ -519,6 +582,30 @@ class Uninstall(Case):
         self.assertIn("no terminal", out)
         self.assertTrue(os.path.isdir(self.dest + ".previous"))
         self.assertTrue(os.path.isdir(self.fonts))
+
+    def keep_previous(self, theme):
+        state = os.path.join(self.s.env["XDG_STATE_HOME"], "slate")
+        os.makedirs(state)
+        with open(os.path.join(state, "previous-icon-theme"), "w") as f:
+            f.write(theme + "\n")
+        return state
+
+    def test_puts_the_icon_theme_back(self):
+        state = self.keep_previous("Adwaita")
+        out, _ = self.uninstall()
+        self.assertIn(["set", "org.gnome.desktop.interface", "icon-theme", "Adwaita"], self.s.calls("gsettings"))
+        self.assertIn("Icon theme back to Adwaita", out)
+        self.assertFalse(os.path.exists(os.path.join(state, "previous-icon-theme")))
+
+    def test_a_theme_you_picked_since_is_left_alone(self):
+        self.keep_previous("Adwaita")
+        self.uninstall(icon_theme="Tela")
+        self.assertFalse([c for c in self.s.calls("gsettings") if c[0] in ("set", "reset")])
+
+    def test_no_theme_before_resets_it(self):
+        self.keep_previous("")
+        self.uninstall()
+        self.assertIn(["reset", "org.gnome.desktop.interface", "icon-theme"], self.s.calls("gsettings"))
 
     def test_yes_deletes_the_older_copy_only(self):
         out, moved = self.uninstall("--yes", icon_theme="Adwaita")
