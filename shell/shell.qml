@@ -1090,7 +1090,7 @@ ShellRoot {
         }
     }
     // The welcome: the first time Slate starts, and from Settings → About
-    Welcome { id: welcome; bar: topBar }
+    Welcome { id: welcome; bar: topBar; confirmer: powerConfirm }
     // Hyprbars (the optional title-bar plugin): notices when it needs rebuilding, and asks
     HyprbarsWatch { confirm: powerConfirm; welcome: welcome }
     // New releases: checked daily, a notification when one's out (Settings → Updates)

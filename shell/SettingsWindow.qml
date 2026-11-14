@@ -7429,9 +7429,6 @@ FloatingWindow {
         Column {
             id: updatesPane
             spacing: 4
-            // A second click confirms (updating over files you've changed; going back)
-            property bool confirmUpdate: false
-            property bool confirmRevert: false
             readonly property var mod: Updates.modified
             readonly property var touched: mod && mod.known ? mod.changed.concat(mod.added) : []
             readonly property string latest: Updates.latest
@@ -7511,7 +7508,6 @@ FloatingWindow {
                         : "Update to " + updatesPane.latest
                     detail: Updates.status === "installing" ? "Slate restarts on the new version when it's done"
                         : Updates.status === "failed" ? Updates.error
-                        : updatesPane.confirmUpdate ? "Your changed files above will be replaced. Click again to update"
                         : "Takes a moment; Slate restarts on the new version"
                     Row {
                         spacing: 8
@@ -7525,11 +7521,17 @@ FloatingWindow {
                             visible: !Updates.busy
                             primary: true
                             icon: 0xEA96
-                            label: Updates.status === "failed" ? "Try again" : updatesPane.confirmUpdate ? "Update anyway" : "Update now"
+                            label: Updates.status === "failed" ? "Try again" : "Update now"
                             onClicked: {
-                                if (updatesPane.touched.length > 0 && !updatesPane.confirmUpdate) { updatesPane.confirmUpdate = true; return; }
-                                updatesPane.confirmUpdate = false;
-                                Updates.install();
+                                // Over files you've changed, ask first (in Slate's confirmation window)
+                                if (updatesPane.touched.length === 0) { Updates.install(); return; }
+                                win.ask = {
+                                    title: "Update over your changes?",
+                                    body: "You've changed some of Slate's own files. Updating replaces them, and your versions stay in "
+                                        + "~/.config/slate.previous. Your settings.json, hypr/ and user/ aren't touched.",
+                                    button: "Update anyway", code: 0xEA96,
+                                    run: () => Updates.install()
+                                };
                             }
                         }
                     }
@@ -7554,15 +7556,16 @@ FloatingWindow {
                 visible: Updates.previous !== ""
                 SettingRow {
                     label: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous))
-                    detail: updatesPane.confirmRevert ? "Click again to switch. Your settings and tweaks stay as they are now"
-                        : "Kept in ~/.config/slate.previous. Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
+                    detail: "Kept in ~/.config/slate.previous. Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
                     Button {
                         enabled: !Updates.busy
-                        label: updatesPane.confirmRevert ? "Go back now" : "Go back"
-                        onClicked: {
-                            if (!updatesPane.confirmRevert) { updatesPane.confirmRevert = true; return; }
-                            updatesPane.confirmRevert = false;
-                            Updates.revert();
+                        label: "Go back"
+                        onClicked: win.ask = {
+                            title: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous)) + "?",
+                            body: "Slate switches to the version kept in ~/.config/slate.previous and restarts. Your settings and tweaks "
+                                + "stay as they are now, and the version you leave is kept instead, so you can switch back.",
+                            button: "Go back", code: 0xEA60,
+                            run: () => Updates.revert()
                         }
                     }
                 }
