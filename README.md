@@ -45,7 +45,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/session/` | the "Slate" login session and its Hyprland config |
 | `shell/greeter/` | Slate's login screen (greetd) |
 | `shell/wallpapers/` | Slate's own wallpapers (made by `tools/make-wallpapers.py`) |
-| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages and login session in step with Slate) |
+| `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages, login session and root helpers in step with Slate), `slate-helpers-install` (puts the helpers root runs in `/usr/local/libexec/slate`) |
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
 | `tools/release-assets.sh` | pack a tag into the archive and checksum a release carries, which the updater checks before installing |
@@ -111,7 +111,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Session launcher + login entry (installed) | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` |
 | Login screen code (root-owned copy) | `/usr/local/share/slate-greeter/` |
 | Login screen appearance (synced) | `/var/lib/slate-greeter/` |
-| Helpers | `~/.config/slate/bin/`: `slate-session-install` (sudo), `slate-greeter-install` (sudo), `slate-greeter-sync`, `slate-system` (`--check`, `--fix`) |
+| Helpers | `~/.config/slate/bin/`: `slate-greeter-sync`, `slate-system` (`--check`, `--fix`, `--root <helper>`). What runs as root is a root-owned copy in `/usr/local/libexec/slate`: `slate-session-install`, `slate-greeter-install`, `slate-private-camera`, `slate-system-root` |
 | App-icon tile generator | `scripts/appicon.py` (in the shell folder) |
 
 ## Everyday commands
@@ -130,12 +130,12 @@ slate ipc call assistant ask "turn on glass"     # Nova, once it's switched on i
 claude mcp add slate -- ~/.config/slate/bin/slate mcp
 
 # Slate as its own login session
-sudo ~/.config/slate/bin/slate-session-install            # add "Slate" to the login screen
-sudo ~/.config/slate/bin/slate-session-install --remove   # take it off again
+sudo /usr/local/libexec/slate/slate-session-install            # add "Slate" to the login screen
+sudo /usr/local/libexec/slate/slate-session-install --remove   # take it off again
 
 # Login screen
-sudo ~/.config/slate/bin/slate-greeter-install            # install / update its code
-sudo ~/.config/slate/bin/slate-greeter-install --revert   # back to the previous greeter
+sudo /usr/local/libexec/slate/slate-greeter-install            # install / update its code
+sudo /usr/local/libexec/slate/slate-greeter-install --revert   # back to the previous greeter
 ```
 
 ## Gotchas

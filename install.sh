@@ -22,7 +22,9 @@
 #   3. installs the bundled Geist and Geist Mono fonts for your other apps, unless already there
 #   4. puts Slate in ~/.config/slate (keeping your settings) and the `slate` command in ~/.local/bin,
 #      and offers Papirus-Dark as your icon theme if you haven't picked one of your own
-#   5. adds "Slate" to your login screen's session list (two small files, needs sudo)
+#   5. adds "Slate" to your login screen's session list (two small files, needs sudo), and
+#      puts Slate's root helpers in /usr/local/libexec/slate (root-owned: what Slate later
+#      runs with your password is never a script in your home)
 #   6. optionally (--login-screen) switches greetd to Slate's login screen
 # Anything that reaches your other desktops (packages, services, the icon theme) is asked first,
 # and ~/.config/hypr is not changed: pick "Slate" at login to use it.
@@ -32,6 +34,7 @@ ROOT=$(cd "$(dirname "$0")" && pwd)
 DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
 OLD_DEST="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/slate"   # where Slate lived before
 BIN_LINK="$HOME/.local/bin/slate"
+HELPERS=/usr/local/libexec/slate      # Slate's root helpers (shell/bin/slate-helpers-install)
 HYPR_MIN="0.57"
 QS_MIN="0.3"
 
@@ -100,6 +103,16 @@ if [ "$UNINSTALL" -eq 1 ]; then
     if [ -f /etc/greetd/config.toml.before-slate ]; then
         sudo cp -f /etc/greetd/config.toml.before-slate /etc/greetd/config.toml && ok "greetd is back to its previous login screen (from the next reboot)"
     fi
+    # Slate's root helpers, and the rule that let Private Mode switch the camera without a
+    # password (and the camera back on first, if Private Mode had it off)
+    if [ -d "$HELPERS" ] || [ -e "$HELPERS-private-camera" ]; then
+        if ask "Remove Slate's root helpers from $HELPERS (uses sudo)?"; then
+            [ ! -e /run/udev/rules.d/72-slate-private-camera.rules ] || [ ! -x "$HELPERS/slate-private-camera" ] \
+                || sudo "$HELPERS/slate-private-camera" on || true
+            sudo rm -rf "$HELPERS" "$HELPERS-private-camera" /etc/polkit-1/rules.d/49-slate-private-camera.rules \
+                && ok "Removed Slate's root helpers"
+        fi
+    fi
     have qs && qs kill -p "$DEST" >/dev/null 2>&1 || true
     [ -L "$BIN_LINK" ] && rm "$BIN_LINK" && ok "Removed the slate command"
     data="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -121,6 +134,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
     # the fonts and the icon theme, and nothing marks them as Slate's rather than yours.
     left=()
     [ -z "$b" ] || left+=("Your settings and Slate's files: rm -r $b")
+    [ ! -d "$HELPERS" ] || left+=("Slate's root helpers: sudo rm -r $HELPERS /etc/polkit-1/rules.d/49-slate-private-camera.rules")
     [ ! -d "$DEST.previous" ] || left+=("The older copy of Slate: rm -r $DEST.previous")
     fontdir="$data/fonts/Geist"
     [ ! -d "$fontdir" ] || left+=("The Geist and Geist Mono fonts (your other apps may use them): rm -r $fontdir && fc-cache -f")
@@ -533,7 +547,7 @@ if [ "$UPDATE" -eq 1 ]; then
         if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$DEST/bin/slate-system" --fix >/dev/null 2>&1; then
             ok "Updated the login session"
         else
-            warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install $DEST"
+            warn "This version changes the login session; to finish: $DEST/bin/slate-system --fix"
         fi
     fi
 fi
@@ -553,13 +567,20 @@ if [ "$family" = nixos ]; then
     warn "On NixOS, add the Slate session in your configuration (services.displayManager.sessionPackages) rather than here. See docs/INSTALL.md (NixOS)."
 else
     echo "  Adds two files: /usr/local/bin/slate-session and /usr/share/wayland-sessions/slate.desktop"
+    echo "  and Slate's root helpers in $HELPERS, owned by root: what Slate runs with your"
+    echo "  password later (packages, this session, the login screen, Private Mode's camera switch)"
+    echo "  is then never a script in your home, which anything running as you could change"
 fi
+# The helpers are copied by shell/bin/slate-helpers-install, which then runs the one named from
+# its root-owned place. It's run from this release ($ROOT), not from $DEST: this is the folder
+# you chose to run the installer from, so sudo trusts nothing it wasn't already trusting, where
+# $DEST is a well-known path that has sat in your home since it was copied.
 if [ "$family" = nixos ]; then :
 elif ask "Add the Slate session (uses sudo)?"; then
     # (told where Slate is: with XDG_CONFIG_HOME set it isn't ~/.config/slate)
-    sudo "$DEST/bin/slate-session-install" "$DEST" | sed 's/^/  /'
+    sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$DEST" | sed 's/^/  /'
 else
-    warn "Skipped. Later: sudo $DEST/bin/slate-session-install $DEST"
+    warn "Skipped. Later: run ./install.sh again"
 fi
 
 # ---- 6. Slate's login screen (optional) -----------------------------------------------
@@ -568,16 +589,16 @@ if [ "$LOGIN" -eq 1 ]; then
     if [ "$family" = nixos ]; then
         warn "On NixOS, set greetd up in your configuration (services.greetd) rather than here. See docs/INSTALL.md (NixOS)."
     elif ! have greetd && [ ! -x /usr/bin/greetd ] && [ ! -x /usr/sbin/greetd ]; then
-        warn "greetd isn't installed; install it, then run: sudo $DEST/bin/slate-greeter-install"
+        warn "greetd isn't installed; install it, then run: ./install.sh --login-screen"
     else
         echo "  This replaces your computer's login screen with Slate's (greetd). If it breaks, it can"
         echo "  stop you logging in: each copy is tested before it's installed and a basic fallback is"
         echo "  kept, and from a text console (Ctrl+Alt+F3) this puts your old one back:"
-        echo "    sudo $DEST/bin/slate-greeter-install --revert"
+        echo "    sudo $HELPERS/slate-greeter-install --revert"
         echo "  Changes to Slate and updates to Hyprland, Quickshell or greetd can need it updated;"
         echo "  Slate asks when (each update needs your password)."
         if ask "Switch the login screen to Slate's (uses sudo)?"; then
-            sudo "$DEST/bin/slate-greeter-install" | sed 's/^/  /'
+            sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-greeter-install | sed 's/^/  /'
             echo "  If your distro used another display manager (GDM, SDDM, LightDM), switch to greetd:"
             echo "    sudo systemctl disable <your-dm> && sudo systemctl enable greetd"
         fi

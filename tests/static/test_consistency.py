@@ -894,3 +894,54 @@ class OutsideTextIsPlain(Case):
         sent = re.search(r"doneNote\.command = \[(.*?)\];", src, re.S)
         self.assertTrue(sent, "the notification has moved")
         self.assertRegex(sent.group(1), r'"--", "Nova", esc\(line\)$')
+
+
+class NothingOfYoursRunsAsRoot(Case):
+    """No pkexec or sudo in Slate names a script in your home folder (or in the Slate folder,
+    wherever that is), in what it runs or in what it tells you to run, except the one
+    installer of the root helpers."""
+    YOURS = r"""(?:pkexec|sudo)["',\s]+(?:\$\{?(?:SRC|DEST|HOME|SELF|ROOT|SLATE|SLATE_DIR|XDG_CONFIG_HOME)\b|~/|<Slate folder>|Quickshell\.shellPath)"""
+
+    def files(self):
+        found = ["install.sh"]
+        for top, dirs, names in os.walk(slate.path("shell")):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            found += [os.path.relpath(os.path.join(top, n), slate.ROOT) for n in names]
+        return sorted(found)
+
+    def test_no_script_of_yours_is_run_as_root(self):
+        found = []
+        files = self.files()
+        self.assertIn("shell/bin/slate-system", files)
+        for rel in files:
+            try:
+                text = slate.read(*rel.split("/"))
+            except (UnicodeDecodeError, OSError):        # (pictures, fonts, sounds)
+                continue
+            for n, line in enumerate(text.splitlines(), 1):
+                if re.search(self.YOURS, line) and "slate-helpers-install" not in line:
+                    found.append(f"{rel}:{n}: {line.strip()}")
+        self.assertEqual(found, [], "run as root from your folder:\n" + "\n".join(found))
+
+    def test_the_callers(self):
+        self.assertIn('sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$DEST"',
+                      slate.read("install.sh"))
+        self.assertIn('"$SRC/bin/slate-system" --root slate-greeter-install --code-only',
+                      slate.read("shell", "bin", "slate-greeter-sync"))
+        self.assertIn('[Quickshell.shellPath("bin/slate-system"), "--root", "slate-private-camera", "install"]',
+                      slate.read("shell", "PrivateMode.qml"))
+        self.assertIn('[Quickshell.shellPath("bin/slate-system"), "--root", "slate-greeter-install"]',
+                      slate.read("shell", "SettingsWindow.qml"))
+        # Private Mode switches the camera with the root-owned copy, and only once that's allowed
+        private = slate.read("shell", "PrivateMode.qml")
+        self.assertIn('readonly property string helper: "/usr/local/libexec/slate/slate-private-camera"', private)
+        self.assertIn('readonly property string allowed: "/usr/local/libexec/slate/camera-allowed"', private)
+
+    def test_uninstall_takes_them_away(self):
+        """./install.sh --uninstall removes the folder, the old single helper and the camera's
+        rule, and asks first."""
+        block = slate.read("install.sh").split('if [ "$UNINSTALL" -eq 1 ]; then', 1)[1].split("\nfi\n", 1)[0]
+        ask = block.index('if ask "Remove Slate\'s root helpers')
+        rm = block.index('sudo rm -rf "$HELPERS" "$HELPERS-private-camera" /etc/polkit-1/rules.d/49-slate-private-camera.rules')
+        self.assertLess(ask, rm)
+        self.assertIn("HELPERS=/usr/local/libexec/slate ", slate.read("install.sh"))

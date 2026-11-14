@@ -1,0 +1,110 @@
+#!/bin/sh
+# Put Slate's root helpers where only root can change them: /usr/local/libexec/slate.
+#
+# Slate changes a few things outside your home, each with your password: packages, the login
+# session, the login screen, Private Mode's camera switch. The scripts that do it as root never
+# run from your Slate folder, which anything running as you could have changed: they run from a
+# root-owned copy, and this is the script that makes that copy. It is the one thing of Slate's
+# that runs as root from your folder (or from the release you're installing), so it's kept
+# small enough to read in a minute: it copies a fixed list of files, read with your own
+# permissions, and nothing else.
+#
+#   sudo slate-helpers-install <Slate folder> [<helper> <arguments…>]
+#         copy the helpers from that folder (./install.sh does, from the release it's
+#         installing; Slate does, with its password prompt, when a version has changed them:
+#         bin/slate-system). Then, if a helper is named, run the installed copy of it with
+#         those arguments, so one password does both
+#   slate-helpers-install --check [<Slate folder>]
+#         as you, changing nothing: "current" (the installed copies match that folder's),
+#         "outdated" or "missing"
+#
+# Exits 3 on NixOS, where the system is set by its configuration (nothing is installed).
+set -u
+
+TARGET=/usr/local/libexec/slate
+# Everything that's copied: these from bin/ (run as root), and the package lists the root half
+# of slate-system reads (packaging/<name>.txt). Nothing else in your folder is looked at.
+HELPERS="slate-system-root slate-session-install slate-greeter-install slate-private-camera"
+LISTS="arch artix debian fedora gentoo opensuse void"
+# Before there was this folder, the camera switch was one file of its own
+OLD_CAMERA=/usr/local/libexec/slate-private-camera
+CAMERA_RULE=/etc/polkit-1/rules.d/49-slate-private-camera.rules
+
+fail() { echo "slate-helpers-install: $*" >&2; exit 1; }
+
+# ---- --check: as you, reading only -----------------------------------------------------------
+if [ "${1:-}" = "--check" ]; then
+    src=${2:-$(dirname "$(dirname "$(readlink -f "$0")")")}
+    [ -d "$TARGET" ] || { echo missing; exit 0; }
+    # packaging/ is copied into an installed Slate; next to shell/ in a checkout or a release
+    lists="$src/packaging"; [ -d "$lists" ] || lists="$src/../packaging"
+    for f in $HELPERS; do cmp -s "$src/bin/$f" "$TARGET/$f" || { echo outdated; exit 0; }; done
+    for f in $LISTS; do cmp -s "$lists/$f.txt" "$TARGET/packaging/$f.txt" || { echo outdated; exit 0; }; done
+    echo current
+    exit 0
+fi
+
+# ---- As root: copy them ----------------------------------------------------------------------
+[ "$(id -u)" -eq 0 ] || fail "this is run as root: sudo $0 <Slate folder>"
+[ -e /etc/NIXOS ] && { echo "slate-helpers-install: on NixOS, add it to your configuration instead" >&2; exit 3; }
+OWNER="${SUDO_USER:-}"
+[ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec (slate-system)
+[ -n "$OWNER" ] && [ "$OWNER" != root ] || fail "run it with sudo from your own account"
+asowner() { runuser -u "$OWNER" -- "$@"; }
+
+[ "$#" -ge 1 ] || fail "which Slate folder? sudo $0 <Slate folder>"
+FOLDER=$1; shift
+case "$FOLDER" in -*) fail "unknown option: $FOLDER" ;; esac
+# A helper to run afterwards has to be one of the list: its name is never used as a path
+after=""
+if [ "$#" -gt 0 ]; then
+    for f in $HELPERS; do [ "$1" = "$f" ] && after=$f; done
+    [ -n "$after" ] || fail "\"$1\" isn't one of Slate's helpers. Nothing was changed."
+    shift
+fi
+
+# Your Slate folder is looked at with your own permissions (never root's), has to be a real
+# folder, and has to be yours: a path that leads into someone else's folder is left alone.
+SLATE=$(asowner realpath -e -- "$FOLDER" 2>/dev/null) && asowner test -d "$SLATE" \
+    || fail "can't find your Slate folder at $FOLDER"
+[ "$(asowner stat -c %U -- "$SLATE" 2>/dev/null)" = "$OWNER" ] \
+    || fail "$SLATE isn't $OWNER's own folder, so nothing was taken from it."
+lists="$SLATE/packaging"; asowner test -d "$lists" || lists="$SLATE/../packaging"
+
+# Every file is read with your own permissions into a folder only root can see, and installed
+# from there: read as root, a link in your folder could pull in a file only root may read.
+# Links are refused outright, and everything is fetched and looked at before anything is
+# installed, so a refusal changes nothing.
+tmp=$(mktemp -d) || fail "couldn't make a folder to work in"
+trap 'rm -rf "$tmp"' EXIT
+mkdir "$tmp/packaging" || exit 1
+fetch() {    # fetch <file in your folder> <its name under $tmp>
+    if asowner test -L "$1"; then fail "$1 is a link, not Slate's own file. Nothing was changed."; fi
+    asowner cat -- "$1" > "$tmp/$2" || fail "can't read $1; is your copy of Slate complete? Nothing was changed."
+    [ -s "$tmp/$2" ] || fail "$1 is empty. Nothing was changed."
+}
+for f in $HELPERS; do
+    fetch "$SLATE/bin/$f" "$f"
+    case "$(head -c 2 "$tmp/$f")" in "#!") ;; *) fail "$SLATE/bin/$f isn't a script. Nothing was changed." ;; esac
+done
+for f in $LISTS; do fetch "$lists/$f.txt" "packaging/$f.txt"; done
+
+[ -d /usr/local/libexec ] || install -d -m 0755 -o root -g root /usr/local/libexec || fail "couldn't make /usr/local/libexec"
+[ -L "$TARGET" ] && fail "$TARGET is a link, not a folder. Nothing was changed."
+install -d -m 0755 -o root -g root "$TARGET" "$TARGET/packaging" || fail "couldn't make $TARGET"
+for f in $HELPERS; do
+    install -m 0755 -o root -g root "$tmp/$f" "$TARGET/$f" || fail "couldn't install $TARGET/$f"
+done
+for f in $LISTS; do
+    install -m 0644 -o root -g root "$tmp/packaging/$f.txt" "$TARGET/packaging/$f.txt" || fail "couldn't install $TARGET/packaging/$f.txt"
+done
+
+# The camera switch from before this folder goes, and where you'd let Slate use it without a
+# password (Private Mode's question), that now names the copy here instead
+rm -f "$OLD_CAMERA"
+if [ -e "$CAMERA_RULE" ]; then
+    "$TARGET/slate-private-camera" install || fail "couldn't renew the camera switch's permission"
+fi
+
+[ -n "$after" ] || { echo "Slate's helpers are in $TARGET."; exit 0; }
+exec "$TARGET/$after" "$@"

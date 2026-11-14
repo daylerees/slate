@@ -2,9 +2,12 @@
 # Private Mode's camera switch (PrivateMode.qml): turns the camera off for every app, and back
 # on. Apps open cameras directly (/dev/video*, /dev/media*), so only root can take them away.
 #
-#   slate-private-camera install   (as root, by pkexec, once) put this helper where only root
-#                                  can change it, and let the person at the computer run it
-#                                  without a password. Asked for, and explained, by Slate
+# It runs from /usr/local/libexec/slate, a root-owned copy (bin/slate-helpers-install puts it
+# there), never from your Slate folder, which anything running as you could change.
+#
+#   slate-private-camera install   (as root, by pkexec, once) let the person at the computer run
+#                                  that root-owned copy without a password. Asked for, and
+#                                  explained, by Slate
 #   slate-private-camera off | on  (as root, by pkexec) the camera off for every app, or back
 #   slate-private-camera status    "off" while it's turned off, "on" otherwise
 #
@@ -16,8 +19,11 @@
 # Exits 3 on NixOS, where the system is set by its configuration (nothing is installed).
 set -u
 
-TARGET=/usr/local/libexec/slate-private-camera
+TARGET=/usr/local/libexec/slate/slate-private-camera
 POLKIT=/etc/polkit-1/rules.d/49-slate-private-camera.rules
+# Says the rule above is there (its own folder can't be looked into without root), so Slate
+# knows not to ask again
+ALLOWED=/usr/local/libexec/slate/camera-allowed
 RULES=/run/udev/rules.d/72-slate-private-camera.rules    # before 73-seat-late, which gives access
 
 as_root() { [ "$(id -u)" -eq 0 ] || { echo "slate-private-camera: $1 is run as root (by pkexec)" >&2; exit 1; }; }
@@ -34,10 +40,12 @@ case "${1:-}" in
     install)
         as_root install
         [ -e /etc/NIXOS ] && { echo "slate-private-camera: on NixOS, add it to your configuration instead" >&2; exit 3; }
-        self=$(readlink -f "$0")
-        mkdir -p "$(dirname "$TARGET")" "$(dirname "$POLKIT")" || exit 1
-        # A copy of its own, owned by root: the one in your home folder could be changed by anything you run
-        install -m 0755 -o root -g root "$self" "$TARGET" || exit 1
+        # The rule names the root-owned copy, and only that copy may write it: this never
+        # copies itself anywhere (it used to, from your Slate folder, and whatever that copy
+        # held then ran as root without a password from that day on)
+        [ "$(readlink -f "$0")" = "$TARGET" ] || {
+            echo "slate-private-camera: install only runs from $TARGET (bin/slate-system --root slate-private-camera install)" >&2; exit 1; }
+        mkdir -p "$(dirname "$POLKIT")" || exit 1
         cat > "$POLKIT" <<EOF || exit 1
 // Slate's Private Mode: the person at the computer may turn the camera off and on without a
 // password (slate-private-camera, which can do nothing else). Remove this file to take it away.
@@ -49,6 +57,7 @@ polkit.addRule(function (action, subject) {
 });
 EOF
         chmod 0644 "$POLKIT"
+        : > "$ALLOWED" && chmod 0644 "$ALLOWED" || exit 1
         ;;
     off)
         as_root off

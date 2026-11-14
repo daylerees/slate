@@ -382,7 +382,7 @@ FloatingWindow {
         body: "This replaces your computer's login screen, which lives outside Slate, so it needs your password. "
             + "If it breaks, it can stop you logging in: Slate tests every copy before installing it and keeps a basic "
             + "fallback, and you can always press Ctrl+Alt+F3, log in as text and run "
-            + "sudo ~/.config/slate/bin/slate-greeter-install --revert. "
+            + "sudo /usr/local/libexec/slate/slate-greeter-install --revert. "
             + "Changes to Slate and updates to Hyprland, Quickshell or greetd can need it updated; Slate asks when, "
             + "and each update needs your password.",
         button: "Install", code: 0xEAE2
@@ -6756,7 +6756,8 @@ FloatingWindow {
                             }
                         }
                     }
-                    // Install, update or switch back, asking for your password (pkexec). Says what
+                    // Install, update or switch back, asking for your password (pkexec, through
+                    // slate-system, which runs the installer's root-owned copy). Says what
                     // went wrong when it fails; cancelling the password prompt changes nothing
                     Process {
                         id: greeterRun
@@ -6774,7 +6775,7 @@ FloatingWindow {
                     function run(args, doing, done, failed) {
                         status = doing;
                         greeterRun.done = done; greeterRun.failed = failed;
-                        greeterRun.command = ["pkexec", Quickshell.shellPath("bin/slate-greeter-install")].concat(args);
+                        greeterRun.command = [Quickshell.shellPath("bin/slate-system"), "--root", "slate-greeter-install"].concat(args);
                         greeterRun.running = true;
                     }
                     Row {

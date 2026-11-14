@@ -75,6 +75,15 @@
         for each set of changes, and <strong>Later</strong> waits a week. To see what it would do, run
         <code>~/.config/slate/bin/slate-system --check</code>.</p>
 
+      <h2>Slate's helpers</h2>
+      <p>When Slate asks for your password (to install a package, update the login session or login screen, or
+        switch the camera for Private Mode), what it runs is a small helper kept in
+        <code>/usr/local/libexec/slate</code>, where only root can change it, never a script in your home folder.
+        Now and then an update changes those helpers, and updates from Settings can't reach that folder by
+        themselves. So the same notification offers to copy the new ones over, with your password:
+        <strong>Slate's helpers need updating</strong>. Until you say yes, the ones you have carry on working, and
+        <strong>Later</strong> waits a week.</p>
+
       <h2>The login screen</h2>
       <p>If you've installed Slate's own login screen, it's updated separately, because it runs from a system folder
         before you log in. When its design changes, Slate asks with a <strong>Login screen out of date</strong>

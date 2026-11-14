@@ -147,8 +147,12 @@
       <p>To go back to your old desktop, log out and pick it at the login screen. Nothing there has changed, and you
         can switch between the two whenever you like.</p>
       <div class="callout"><i class="ti">&#xEA51;</i>
-        <p>If Slate isn't in the list, run <code>sudo ~/.config/slate/bin/slate-session-install</code>. Some login
-          screens only look for new sessions after a restart.</p></div>
+        <p>If Slate isn't in the list, run <code>~/.config/slate/bin/slate-system --root slate-session-install</code>
+          (it asks for your password). Some login screens only look for new sessions after a restart.</p></div>
+      <p>Along with the session, the installer puts a few small helpers in <code>/usr/local/libexec/slate</code>,
+        owned by root. They're what Slate runs when it asks for your password (to install a package, update the login
+        session or login screen, or switch the camera for Private Mode), so that's never a script in your home
+        folder, which anything running as you could change.</p>
 
       <h2>Slate's own login screen</h2>
       <p>Slate has a matching login screen too, with your wallpaper and picture. It's optional, and nothing changes
@@ -166,7 +170,8 @@
       <pre><code>./install.sh --uninstall</code></pre>
       <p>This takes Slate off the login screen, puts your previous login screen back if you installed Slate's, and
         moves <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather than deleting it.
-        It asks whether to delete the older copy in <code>~/.config/slate.previous</code> too.</p>
+        It asks whether to remove Slate's helpers from <code>/usr/local/libexec/slate</code>, and whether to delete the
+        older copy in <code>~/.config/slate.previous</code> too.</p>
       <p>It finishes with a list of what it left, and the command that removes each: your settings (in
         <code>slate.removed-&lt;date&gt;</code>), the Geist fonts in <code>~/.local/share/fonts/Geist</code> (your
         other apps may be using them), your icon theme if it's a Papirus one, Slate's saved state in

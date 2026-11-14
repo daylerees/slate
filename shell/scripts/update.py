@@ -297,7 +297,7 @@ def install():
             with open(LOG) as log:
                 if "changes the login session" in log.read():
                     st["note"] = ("One more step: this version changes the login session. In a terminal, run: "
-                                  "sudo ~/.config/slate/bin/slate-session-install")
+                                  "~/.config/slate/bin/slate-system --fix")
         elif rc == 3:
             # (install.sh --update installs new packages itself, with a password prompt)
             st.update(status="failed", error="This update needs packages that weren't installed (the password prompt "

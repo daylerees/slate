@@ -57,11 +57,12 @@ adds "Slate" to whatever login screen you already have; Slate's own replaces tha
 screen, so it's something you choose:
 
 - **Install:** Settings → Security → "Slate login screen" → **Install** (it asks for your
-  password), or `./install.sh --login-screen`, or `sudo ~/.config/slate/bin/slate-greeter-install`.
+  password), or `./install.sh --login-screen`. Both run the installer's root-owned copy,
+  `/usr/local/libexec/slate/slate-greeter-install` (never the one in your Slate folder).
   It needs greetd installed; if your computer starts another display manager (GDM, SDDM,
   LightDM), Settings says so and gives the command to switch to greetd.
 - **Switch back:** the same row's **Switch back** button, or
-  `sudo ~/.config/slate/bin/slate-greeter-install --revert`. Either puts greetd's previous
+  `sudo /usr/local/libexec/slate/slate-greeter-install --revert`. Either puts greetd's previous
   config back (from `/etc/greetd/config.toml.before-slate`); Slate then stops offering updates.
 
 Before you install it, know what it involves:
@@ -70,7 +71,7 @@ Before you install it, know what it involves:
   root-owned copy outside Slate. If that copy breaks there's no desktop to fix it from. The
   safety net below makes this unlikely (each copy is tested first, the last working one and a
   basic emergency login are kept), but if all of that fails you need a text console:
-  Ctrl+Alt+F3, log in, run `sudo ~/.config/slate/bin/slate-greeter-install --revert`, then
+  Ctrl+Alt+F3, log in, run `sudo /usr/local/libexec/slate/slate-greeter-install --revert`, then
   `sudo systemctl restart greetd`.
 - **It needs updating, by you, with your password.** The installed copy doesn't change when
   Slate does. When Slate's login screen code changes, Slate asks you to update it (see below);
@@ -104,7 +105,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 - **Updating the code:** when the login screen's code changes, Slate shows an urgent
   notification ("Login screen out of date": it stays until answered, shows through Do Not
   Disturb and plays the attention sound) with an **Update** button that asks for your password
-  (pkexec) and runs `slate-greeter-install --code-only`. It asks only when the login
+  (pkexec) and runs `slate-greeter-install --code-only` from `/usr/local/libexec/slate`. It asks only when the login
   screen's own code changes (its design, glass pieces, fonts, keyboard layout), not for
   `Config.qml` or `SettingsData.qml`, which are shared with the rest of Slate and change with
   nearly everything; those come along with the next update. It asks once per version, and
@@ -143,7 +144,10 @@ The fallbacks above should cover this; if you see the emergency login screen, lo
 update the login screen from Settings → Security. If even that fails:
 
 1. Ctrl+Alt+F3, log in on the text console.
-2. `sudo ~/.config/slate/bin/slate-greeter-install --revert` (restores the previous greeter).
+2. `sudo /usr/local/libexec/slate/slate-greeter-install --revert` (restores the previous greeter).
+   If that file isn't there (a login screen installed before Slate kept its root helpers in
+   that folder), this does the same:
+   `sudo cp /etc/greetd/config.toml.before-slate /etc/greetd/config.toml`.
 3. `sudo systemctl restart greetd` to get a graphical login now.
 4. Look at `/var/cache/slate-greeter/greeter.log` and `journalctl -b -u greetd`.
 

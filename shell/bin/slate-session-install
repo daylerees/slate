@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Add "Slate" as its own session on the login screen. Run with sudo:
-#   sudo ~/.config/slate/bin/slate-session-install            add / update the Slate session
-#   sudo ~/.config/slate/bin/slate-session-install --remove   take it off the login screen
-#   sudo <Slate folder>/bin/slate-session-install <Slate folder>
+# Add "Slate" as its own session on the login screen. It runs as root from
+# /usr/local/libexec/slate, a root-owned copy (bin/slate-helpers-install puts it there), never
+# from your Slate folder, which anything running as you could have changed. ./install.sh and
+# Slate's own prompt run it for you (bin/slate-system); by hand:
+#   sudo /usr/local/libexec/slate/slate-session-install            add / update the Slate session
+#   sudo /usr/local/libexec/slate/slate-session-install --remove   take it off the login screen
+#   sudo /usr/local/libexec/slate/slate-session-install <Slate folder>
 #                                         when Slate isn't in ~/.config/slate (XDG_CONFIG_HOME
 #                                         is set); install.sh and slate-system pass it for you
 #
@@ -64,4 +67,4 @@ install -D -m 644 -o root -g root "$tmp/slate.desktop" "$ENTRY"
 
 echo "Done. Pick \"Slate\" on the login screen next time you log in."
 echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): ~/.config/slate/hypr/"
-echo "To remove: sudo ~/.config/slate/bin/slate-session-install --remove"
+echo "To remove: sudo /usr/local/libexec/slate/slate-session-install --remove"

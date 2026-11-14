@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Install or update the Slate login screen. Run with sudo:
-#   sudo ~/.config/slate/bin/slate-greeter-install            install / update the code, switch greetd to it
-#   sudo ~/.config/slate/bin/slate-greeter-install --revert   switch greetd back to what it was before
-#   pkexec ~/.config/slate/bin/slate-greeter-install --code-only
+# Install or update the Slate login screen. It runs as root from /usr/local/libexec/slate, a
+# root-owned copy (bin/slate-helpers-install puts it there), never from your Slate folder, which
+# anything running as you could have changed. Slate's buttons and ./install.sh --login-screen
+# run it for you (bin/slate-system --root slate-greeter-install …); by hand:
+#   sudo /usr/local/libexec/slate/slate-greeter-install            install / update the code, switch greetd to it
+#   sudo /usr/local/libexec/slate/slate-greeter-install --revert   switch greetd back to what it was before
+#   sudo /usr/local/libexec/slate/slate-greeter-install --code-only
 #                                         update only the code (Slate offers this, asking
 #                                         for your password, when the design has changed)
 #   add --no-check to skip the test below (only if the test itself is what's failing)
@@ -19,7 +22,7 @@
 #
 # It never restarts greetd (that would end your session); the change shows at the
 # next logout or reboot. If the login screen ever fails, log in on a text console
-# (Ctrl+Alt+F3) and run:  sudo ~/.config/slate/bin/slate-greeter-install --revert
+# (Ctrl+Alt+F3) and run:  sudo /usr/local/libexec/slate/slate-greeter-install --revert
 set -euo pipefail
 
 CONF=/etc/greetd/config.toml
@@ -166,4 +169,4 @@ EOF
 echo
 echo "Done. The Slate login screen will appear at your next logout or reboot."
 echo "After changing its design, run this again to update the installed copy."
-echo "If it ever fails: Ctrl+Alt+F3, log in, then: sudo ~/.config/slate/bin/slate-greeter-install --revert"
+echo "If it ever fails: Ctrl+Alt+F3, log in, then: sudo /usr/local/libexec/slate/slate-greeter-install --revert"

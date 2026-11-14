@@ -98,6 +98,8 @@ and a file manager too if you don't have one (kitty and Nautilus, say). NixOS's 
 `/usr/share` are managed by Nix, so the Slate session and login screen are set up in your
 configuration rather than by `slate-session-install` and `slate-greeter-install`: add the
 session with `services.displayManager.sessionPackages`, and greetd with `services.greetd`.
+Slate's root helpers (below, in `/usr/local/libexec/slate` elsewhere) aren't installed on NixOS
+either: anything that would use one says to add it to your configuration instead.
 
 ### Without systemd: Artix, Void, Gentoo
 
@@ -363,6 +365,16 @@ version in place without questions or `sudo`. Your settings and overrides are al
   hand, or a package removed since): when something is missing, an urgent notification
   offers to install it, with your password. It asks once for each set of changes, and
   "Later" waits a week. `~/.config/slate/bin/slate-system --check` lists what it would do.
+- **Slate's root helpers.** What Slate runs with your password (installing packages, the login
+  session, the login screen, Private Mode's camera switch) is never a script in your home
+  folder, which anything running as you could change and then wait for the next prompt. It
+  runs root-owned copies in `/usr/local/libexec/slate`, which `./install.sh` puts there along
+  with the login session. Updates from Settings can't use sudo, so when a release changes
+  those helpers (or you're updating from a version that kept them in your home), the same
+  notification offers to copy the new ones over, with your password: "Slate's helpers need
+  updating". That one step, `bin/slate-helpers-install`, is the only thing of Slate's that
+  root runs from your Slate folder; it is short, copies a fixed list of files, and nothing
+  else. Until you say yes, the helpers you have carry on working.
   Only the required packages are installed this way; optional ones are left to
   `./install.sh`, and on NixOS they come from your configuration.
 
@@ -384,8 +396,9 @@ and offers to update it (it asks for your password).
 
 This takes "Slate" off the login screen, puts back your previous login screen if you used
 `--login-screen`, and moves `~/.config/slate` aside (to
-`slate.removed-<date>`). It asks whether to delete the older copy in `~/.config/slate.previous`
-too.
+`slate.removed-<date>`). It asks whether to remove Slate's root helpers
+(`/usr/local/libexec/slate`, and the rule that let Private Mode switch the camera without a
+password), and whether to delete the older copy in `~/.config/slate.previous` too.
 
 It finishes with a list of what it left, and the command that removes each:
 
@@ -406,8 +419,8 @@ It finishes with a list of what it left, and the command that removes each:
 - **No sound, without systemd** — check PipeWire is installed; Slate's session starts it.
   `pgrep -a pipewire` should show `pipewire`, `wireplumber` and `pipewire-pulse`.
 - **"Slate" isn't on the login screen** — run
-  `sudo ~/.config/slate/bin/slate-session-install`. Some login screens only
-  rescan sessions after a reboot.
+  `~/.config/slate/bin/slate-system --root slate-session-install` (it asks for your
+  password). Some login screens only rescan sessions after a reboot.
 - **The Slate session starts and immediately ends** — usually Hyprland is too old or
   `start-hyprland` is missing. Check `Hyprland --version` (needs 0.57+). With uwsm:
   `journalctl --user -b -u 'wayland-wm@*'`.
@@ -428,4 +441,4 @@ It finishes with a list of what it left, and the command that removes each:
   ones Slate starts with. Everything is moved to
   `~/.local/share/slate/backups/factory-reset-<date>`, not deleted.
 - **Login screen problems** — switch back from a text console (Ctrl+Alt+F3):
-  `sudo ~/.config/slate/bin/slate-greeter-install --revert`, then reboot.
+  `sudo /usr/local/libexec/slate/slate-greeter-install --revert`, then reboot.

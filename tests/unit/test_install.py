@@ -104,7 +104,8 @@ class LoginScreenOptIn(Case):
                 if "slate-greeter-install" in l and not l.lstrip().startswith("#")
                 and "echo" not in l and "warn" not in l]
         self.assertEqual(runs, [], "slate-greeter-install run outside the --login-screen step")
-        self.assertIn('sudo "$DEST/bin/slate-greeter-install"', step)
+        # (through the helpers' installer, from this release: the root-owned copy is what runs)
+        self.assertIn('sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-greeter-install', step)
 
     def test_risks_explained_before_asking(self):
         """The step says what can go wrong and what keeping it working takes, before it asks."""
@@ -449,9 +450,10 @@ class NixOS(Pieces):
     screen go in its configuration, and the installer doesn't offer to write them."""
 
     def step5(self, **vars):
-        script(os.path.join(self.dest, "bin", "slate-session-install"), "echo installed\n")
         self.s.add("sudo", code=0)
-        code, out = bash(between('step "5. ', "# ---- 6. ") + "echo CARRIED-ON\n", self.s.env, DEST=self.dest, YES=1, **vars)
+        self.release = os.path.join(self.h.dir, "release")
+        code, out = bash(between('step "5. ', "# ---- 6. ") + "echo CARRIED-ON\n", self.s.env, DEST=self.dest, YES=1,
+                         ROOT=self.release, HELPERS="/usr/local/libexec/slate", **vars)
         self.assertEqual(code, 0, out)
         self.assertIn("CARRIED-ON", out)
         return out
@@ -465,7 +467,11 @@ class NixOS(Pieces):
     def test_elsewhere_as_before(self):
         out = self.step5(family="fedora")
         self.assertIn("/usr/share/wayland-sessions/slate.desktop", out)
-        self.assertEqual([c[0] for c in self.s.calls("sudo")], [os.path.join(self.dest, "bin", "slate-session-install")])
+        # (the helpers' installer from the release being installed, never a script in $DEST,
+        # which then runs the session's installer from its root-owned place)
+        self.assertIn("/usr/local/libexec/slate", out)
+        self.assertEqual(self.s.calls("sudo"), [[os.path.join(self.release, "shell", "bin", "slate-helpers-install"),
+                                                 os.path.join(self.release, "shell"), "slate-session-install", self.dest]])
 
     def test_no_login_screen_on_nixos(self):
         self.s.add("sudo", code=0)

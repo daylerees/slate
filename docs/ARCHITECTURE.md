@@ -128,9 +128,20 @@ bin/slate-init                the one place that knows the init system and login
                               `info`, so Settings and the panels leave out or explain what can't be done
 scripts/session-services.sh   at session start: Hyprland's environment to D-Bus (and systemd); without
                               systemd, PipeWire, WirePlumber and pipewire-pulse too
-bin/slate-system              packages (packaging/<distro>.txt, copied in) and the login session
-                              in step with this version: --check, --fix (pkexec), --prompt
-                              (urgent notification 25 s after start; shell.qml)
+bin/slate-system              packages (packaging/<distro>.txt, copied in), the login session and
+                              the root helpers in step with this version: --check, --fix (pkexec),
+                              --prompt (urgent notification 25 s after start; shell.qml). Everything
+                              Slate runs as root goes through it (--install, --root <helper>), and
+                              it only ever hands pkexec a root-owned copy in
+                              /usr/local/libexec/slate, never a script in the Slate folder
+bin/slate-helpers-install     puts those copies there: slate-system-root (the half of slate-system
+                              that installs packages), slate-session-install,
+                              slate-greeter-install, slate-private-camera, and the package lists
+                              the first reads. The one script root runs from the Slate folder (or
+                              from the release, by install.sh): a fixed list, each file read as
+                              you, links refused. --check (as you) says whether the copies match;
+                              slate-system runs it with pkexec when they don't, and it then runs
+                              the helper that was wanted from the root-owned folder (one password)
 shaders/mono.frag(.qsb)       tray icons → single theme colour
 shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on the GPU and rounded with fine noise, so smooth colour doesn't band (Wallpaper.qml)
 shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)

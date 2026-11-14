@@ -59,12 +59,18 @@ login screen's default session.
 ## Install / remove
 
 ```sh
-sudo ~/.config/slate/bin/slate-session-install            # add / update
-sudo ~/.config/slate/bin/slate-session-install --remove   # remove
+~/.config/slate/bin/slate-system --root slate-session-install            # add / update
+~/.config/slate/bin/slate-system --root slate-session-install --remove   # remove
 ```
 
-If Slate isn't in `~/.config/slate` (`XDG_CONFIG_HOME` is set), name its folder:
-`sudo <folder>/bin/slate-session-install <folder>` (`install.sh` and Slate's own prompt do).
+Both ask for your password, and run the installer's root-owned copy,
+`/usr/local/libexec/slate/slate-session-install` (never the one in your Slate folder, which
+anything running as you could have changed; `./install.sh` puts the copy there, and
+`slate-system` brings it up to date first when a version has changed it). With sudo, by hand:
+`sudo /usr/local/libexec/slate/slate-session-install`.
+
+If Slate isn't in `~/.config/slate` (`XDG_CONFIG_HOME` is set), name its folder as the last
+argument (`install.sh` and Slate's own prompt do).
 The folder has to be yours, and the two files are read with your permissions, not root's; a
 link in their place is refused.
 

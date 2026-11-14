@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# The half of slate-system that runs as root: installs packages from the distro's repositories
+# and/or the login session. It never runs from your Slate folder, which anything running as you
+# could have changed: slate-helpers-install puts a root-owned copy in /usr/local/libexec/slate,
+# and slate-system calls that one with pkexec (your password).
+#   slate-system-root [<package>…] [--session[=<Slate folder>]]
+# What it's told is checked here, and whatever else it uses (the package lists, the session's
+# installer) is the root-owned copy beside it, never your folder's.
+set -uo pipefail
+
+HERE=$(dirname "$(readlink -f "$0")")
+[ "$HERE" = /usr/local/libexec/slate ] || {
+    echo "slate-system-root: this only runs from /usr/local/libexec/slate (slate-system calls it there)" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "slate-system-root: this is run as root, by slate-system (pkexec)" >&2; exit 1; }
+
+# The distro family, as install.sh and slate-system work it out
+family() {
+    local id
+    . /etc/os-release 2>/dev/null || true
+    for id in ${ID:-} ${ID_LIKE:-}; do
+        case "$id" in
+            artix) echo artix; return ;;         # (like Arch, without systemd: its own list)
+            void) echo void; return ;;
+            gentoo) echo gentoo; return ;;       # (listed, never installed for you: emerge is yours)
+            arch|cachyos|endeavouros|manjaro|garuda) echo arch; return ;;
+            debian|ubuntu|linuxmint|pop|elementary|zorin) echo debian; return ;;
+            fedora|rhel|centos|nobara|ultramarine) echo fedora; return ;;
+            opensuse*|suse|sles) echo opensuse; return ;;
+            nixos) echo nixos; return ;;
+        esac
+    done
+}
+FAMILY=$(family)
+
+# The root-owned copy of the list's lines, without comments
+read_list() { [ -f "$HERE/packaging/$FAMILY.txt" ] && grep -v '^\s*\(#\|$\)' "$HERE/packaging/$FAMILY.txt" | sed 's/\s*#.*//; s/\s*$//'; }
+
+pkgs=(); session=0; folder=""
+for a in "$@"; do
+    case "$a" in
+        --session) session=1 ;;
+        # (which Slate folder the session comes from: it isn't ~/.config/slate when
+        # XDG_CONFIG_HOME is set. slate-session-install checks it before taking anything)
+        --session=*) session=1; folder=${a#--session=} ;;
+        *) [[ "$a" =~ ^[A-Za-z0-9][A-Za-z0-9@._+:-]*$ ]] || { echo "slate-system: bad package name: $a" >&2; exit 1; }
+           pkgs+=("$a") ;;
+    esac
+done
+rc=0
+if [ "${#pkgs[@]}" -gt 0 ]; then
+    case "$FAMILY" in
+        arch|artix) pacman -S --needed --noconfirm "${pkgs[@]}" || rc=1 ;;
+        void) xbps-install -Sy "${pkgs[@]}" || rc=1 ;;
+        debian) apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkgs[@]}" || rc=1 ;;
+        fedora)
+            # a new version may add a repository (copr) too: only ones the root-owned list names
+            while read -r p; do case "$p" in copr:*) dnf -y copr enable "${p#copr:}" >/dev/null 2>&1 ;; esac; done < <(read_list)
+            dnf install -y "${pkgs[@]}" || rc=1 ;;
+        opensuse) zypper --non-interactive install "${pkgs[@]}" || rc=1 ;;
+        *) echo "slate-system: don't know how to install packages here" >&2; rc=1 ;;
+    esac
+fi
+if [ "$session" -eq 1 ]; then
+    if [ -n "$folder" ]; then "$HERE/slate-session-install" "$folder" || rc=1
+    else "$HERE/slate-session-install" || rc=1; fi
+fi
+exit $rc

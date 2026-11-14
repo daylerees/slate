@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Keep the parts of Slate that live outside your home in step with it: the packages it needs
-# and the login session (both need your password to change).
-#   slate-system --check            what's out of date, one per line: "package <name>" or "session"
+# Keep the parts of Slate that live outside your home in step with it: the packages it needs,
+# the login session and Slate's own root helpers (all need your password to change).
+#   slate-system --check            what's out of date, one per line: "package <name>", "helpers"
+#                                   or "session"
 #   slate-system --prompt           if anything is, offer to fix it: a notification with an
 #                                   Install button, then your password. Asks once for each set
 #                                   of changes ("Later" waits a week). Slate runs this.
@@ -9,6 +10,13 @@
 #                                   packages (the updater does those before installing a version)
 #   slate-system --install <pkg>…   install these packages from the distro's repositories (asks
 #                                   for your password); Settings → App Theming's Install buttons
+#   slate-system --root <helper> …  run one of Slate's root helpers (asks for your password):
+#                                   slate-session-install, slate-greeter-install or
+#                                   slate-private-camera, with its own arguments
+# Nothing here runs as root itself, and nothing in your Slate folder is run as root: the root
+# helpers are root-owned copies in /usr/local/libexec/slate (bin/slate-helpers-install puts
+# them there, and is the one exception: it runs from here, with your password, when they're
+# missing or a version has changed them).
 # The packages are the required ones in packaging/<distro>.txt; optional ones ("?") are left to
 # ./install.sh. NixOS is left to your configuration (packaging/nixos.nix).
 set -uo pipefail
@@ -56,7 +64,7 @@ missing_packages() {
     done
 }
 
-# The login session (sudo slate-session-install) is out of date when it's installed and its
+# The login session (slate-session-install) is out of date when it's installed and its
 # script differs from this Slate's, comments aside
 session_outdated() {
     local bin=/usr/local/bin/slate-session new="$SRC/session/slate-session"
@@ -64,53 +72,54 @@ session_outdated() {
     ! cmp -s <(grep -v '^\s*#' "$bin") <(grep -v '^\s*#' "$new")
 }
 
+# Slate's root helpers, the root-owned copies in /usr/local/libexec/slate: "current" when they
+# match this Slate's, else "outdated" or "missing" (bin/slate-helpers-install --check, which
+# only compares). NixOS has none: what they'd do is in its configuration.
+HELPERS=/usr/local/libexec/slate
+helpers_state() { "$SRC/bin/slate-helpers-install" --check "$SRC" 2>/dev/null || echo missing; }
+helpers_outdated() { [ "$FAMILY" != nixos ] && [ "$(helpers_state)" != current ]; }
+
 check() {
     local only_packages=${1:-0}
     missing_packages | sed 's/^/package /'
-    [ "$only_packages" -eq 1 ] || { session_outdated && echo session; }
+    [ "$only_packages" -eq 1 ] || { helpers_outdated && echo helpers; session_outdated && echo session; }
     return 0
 }
 
-# ---- Run as root, by pkexec: install the packages named, and/or the login session ----------
-if [ "${1:-}" = "--as-root" ]; then
-    shift
-    [ "$(id -u)" -eq 0 ] || { echo "slate-system: --as-root is run by pkexec" >&2; exit 1; }
-    pkgs=(); session=0
-    for a in "$@"; do
-        case "$a" in
-            --session) session=1 ;;
-            *) [[ "$a" =~ ^[A-Za-z0-9][A-Za-z0-9@._+:-]*$ ]] || { echo "slate-system: bad package name: $a" >&2; exit 1; }
-               pkgs+=("$a") ;;
-        esac
-    done
-    rc=0
-    if [ "${#pkgs[@]}" -gt 0 ]; then
-        case "$FAMILY" in
-            arch|artix) pacman -S --needed --noconfirm "${pkgs[@]}" || rc=1 ;;
-            void) xbps-install -Sy "${pkgs[@]}" || rc=1 ;;
-            debian) apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkgs[@]}" || rc=1 ;;
-            fedora)
-                # a new version may add a repository (copr) too
-                while read -r p; do case "$p" in copr:*) dnf -y copr enable "${p#copr:}" >/dev/null 2>&1 ;; esac; done < <(read_list)
-                dnf install -y "${pkgs[@]}" || rc=1 ;;
-            opensuse) zypper --non-interactive install "${pkgs[@]}" || rc=1 ;;
-            *) echo "slate-system: don't know how to install packages here" >&2; rc=1 ;;
-        esac
-    fi
-    # (told which Slate folder this is: it isn't ~/.config/slate when XDG_CONFIG_HOME is set)
-    if [ "$session" -eq 1 ]; then "$SRC/bin/slate-session-install" "$SRC" || rc=1; fi
-    exit $rc
-fi
+# ---- Running something as root, with your password ----------------------------------------
+# Only ever a root-owned copy in $HELPERS, never a script in your Slate folder: anything
+# running as you could have changed those, and would only have to wait for the next prompt.
+#   as_root [<helper> <arguments…>]
+# When the copies there are missing, or this version has changed them, they're brought up to
+# date first by bin/slate-helpers-install, which then runs the helper from there itself, so
+# it's still one password. That is the one script of Slate's that root runs from your folder.
+as_root() {
+    # (NixOS has nowhere for them: said before any password is asked for)
+    [ "$FAMILY" != nixos ] || { echo "slate-system: on NixOS, add it to your configuration" >&2; return 3; }
+    command -v pkexec >/dev/null || { echo "slate-system: pkexec isn't installed (it comes with polkit)" >&2; return 1; }
+    if [ "$(helpers_state)" != current ]; then pkexec "$SRC/bin/slate-helpers-install" "$SRC" "$@"
+    elif [ "$#" -gt 0 ]; then pkexec "$HELPERS/$1" "${@:2}"; fi
+}
 
 # ---- fix: everything --check lists, with one password -------------------------------------
 fix() {   # fix <only packages: 0/1>
-    local args=() kind name
+    local args=() kind name helpers=0
     while read -r kind name; do
-        case "$kind" in package) args+=("$name") ;; session) args+=(--session) ;; esac
+        # (the session's installer is told which Slate folder this is: it isn't ~/.config/slate
+        # when XDG_CONFIG_HOME is set)
+        case "$kind" in package) args+=("$name") ;; session) args+=("--session=$SRC") ;; helpers) helpers=1 ;; esac
     done < <(check "$1")
-    [ "${#args[@]}" -eq 0 ] && return 0
-    command -v pkexec >/dev/null || { echo "slate-system: pkexec isn't installed (it comes with polkit)" >&2; return 1; }
-    pkexec "$SELF" --as-root "${args[@]}"
+    # (as_root brings the helpers up to date on the way, when they aren't)
+    if [ "${#args[@]}" -gt 0 ]; then as_root slate-system-root "${args[@]}"
+    elif [ "$helpers" -eq 1 ]; then as_root; fi
+}
+
+# ---- root: one of the root helpers, for Slate's own buttons and prompts ---------------------
+root() {
+    case "${1:-}" in
+        slate-session-install|slate-greeter-install|slate-private-camera) as_root "$@" ;;
+        *) echo "slate-system: --root takes slate-session-install, slate-greeter-install or slate-private-camera" >&2; return 1 ;;
+    esac
 }
 
 # ---- install: packages named by Settings (an app to theme), with your password -------------
@@ -121,21 +130,21 @@ install() {
         [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]] || { echo "slate-system: bad package name: $p" >&2; return 1; }
     done
     case "$FAMILY" in
-        # (every family the --as-root half above can install for)
+        # (every family the root half, bin/slate-system-root, can install for)
         arch|artix|void|debian|fedora|opensuse) ;;
         nixos) echo "slate-system: on NixOS, add it to your configuration" >&2; return 1 ;;
         *) echo "slate-system: don't know how to install packages here" >&2; return 1 ;;
     esac
-    command -v pkexec >/dev/null || { echo "slate-system: pkexec isn't installed (it comes with polkit)" >&2; return 1; }
-    pkexec "$SELF" --as-root "$@"
+    as_root slate-system-root "$@"
 }
 
 case "${1:-}" in
     --check) check; exit 0 ;;
     --install) shift; install "$@"; exit $? ;;
     --fix) [ "${2:-}" = --packages ] && only=1 || only=0; fix "$only"; exit $? ;;
+    --root) shift; root "$@"; exit $? ;;
     --prompt) ;;
-    *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 1 ;;
+    *) sed -n '2,21p' "$SELF" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
 
 # ---- prompt -------------------------------------------------------------------------------
@@ -153,9 +162,17 @@ if [ -n "$pkgs" ]; then
     title="Slate needs some packages"
     body="This version of Slate needs: $pkgs."
     printf '%s\n' "$todo" | grep -qx session && body="$body The login session has changed too."
-else
+elif printf '%s\n' "$todo" | grep -qx session; then
     title="Login session out of date"
     body="This version of Slate changes the Slate session on the login screen."
+else
+    # Only the root helpers: said plainly, since this is the one time something from your
+    # Slate folder is run with your password
+    title="Slate's helpers need updating"
+    body="Slate keeps the helpers that make system changes for it (packages, the login session, the camera switch) in a folder only root can change. This version's need copying there from your Slate folder."
+fi
+if printf '%s\n' "$todo" | grep -qx helpers && [ "$todo" != helpers ]; then
+    body="$body Slate's helpers for system changes are updated from your Slate folder too."
 fi
 # Critical, as the login screen's prompt is: it stays until answered, shows through Do Not
 # Disturb and plays the attention sound
@@ -169,7 +186,9 @@ rm -f "$snooze"
 id=$(notify-send -a Slate -i "$ICON" -p -h string:x-slate-page:updates "Installing…" "Slate is bringing your system up to date." || true)
 replace=(); [ -n "$id" ] && replace=(-r "$id")
 if fix 0 >/dev/null 2>&1; then
-    if [ -n "$pkgs" ]; then done_body="Restart Slate to use them (run: slate restart)."; else done_body="You'll see it at your next login."; fi
+    if [ -n "$pkgs" ]; then done_body="Restart Slate to use them (run: slate restart)."
+    elif printf '%s\n' "$todo" | grep -qx session; then done_body="You'll see it at your next login."
+    else done_body="Slate's helpers are up to date."; fi
     notify-send -a Slate -i "$ICON" "${replace[@]}" -h string:x-slate-page:updates "Installed" "$done_body"
 else
     rm -f "$asked"      # cancelled or failed: ask again next time
@@ -180,7 +199,9 @@ else
         fedora) cmd="sudo dnf install $names" ;; opensuse) cmd="sudo zypper install $names" ;; *) cmd="" ;;
     esac
     [ -n "$names" ] || cmd=""
-    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-session-install $SRC"
+    # (the helpers first: by hand, with sudo, is the same one step Slate's prompt takes)
+    printf '%s\n' "$todo" | grep -qx helpers && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-helpers-install $SRC"
+    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $HELPERS/slate-session-install $SRC"
     # (no command Slate knows for this system: leave the line out rather than end on "run:")
     hint=""; [ -n "$cmd" ] && hint="To finish by hand, run: $cmd"
     notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \

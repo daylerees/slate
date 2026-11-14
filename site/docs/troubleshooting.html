@@ -75,8 +75,8 @@
       <h2>Common problems</h2>
 
       <h3>Slate isn't on the login screen</h3>
-      <p>Run <code>sudo ~/.config/slate/bin/slate-session-install</code>. Some login screens only look for new sessions
-        after a restart.</p>
+      <p>Run <code>~/.config/slate/bin/slate-system --root slate-session-install</code> (it asks for your password).
+        Some login screens only look for new sessions after a restart.</p>
 
       <h3>The session starts and ends straight away</h3>
       <p>Usually Hyprland is too old, or <code>start-hyprland</code> is missing. Check <code>Hyprland --version</code>:
@@ -124,7 +124,7 @@
       <p>Slate's login screen falls back by itself to the last version that worked, then to a basic emergency login.
         If even that fails, switch to a text console with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F3</kbd>, log in, and
         run:</p>
-      <pre><code>sudo ~/.config/slate/bin/slate-greeter-install --revert</code></pre>
+      <pre><code>sudo /usr/local/libexec/slate/slate-greeter-install --revert</code></pre>
       <p>then restart. That puts your previous login screen back.</p>
 
       <h2>Starting over</h2>

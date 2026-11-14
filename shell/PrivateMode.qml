@@ -19,9 +19,15 @@ Scope {
     property var confirm: null             // Slate's question window (PowerConfirm.qml)
     readonly property bool on: Config.s.privateMode
 
-    // Where the camera helper lives once it's added (bin/slate-private-camera install), and the
-    // mark that tells Slate's own scripts Private Mode is on (screenshot.sh)
-    readonly property string helper: "/usr/local/libexec/slate-private-camera"
+    // The camera helper: a root-owned copy beside Slate's other root helpers (never the one in
+    // your Slate folder, which anything running as you could change), and the file that says
+    // you've let Slate run it without a password (bin/slate-private-camera install). oldHelper
+    // is where it lived before there was that folder: used until the helpers are brought up to
+    // date (bin/slate-system), so the camera switch keeps working across the update.
+    // Then the mark that tells Slate's own scripts Private Mode is on (screenshot.sh)
+    readonly property string helper: "/usr/local/libexec/slate/slate-private-camera"
+    readonly property string allowed: "/usr/local/libexec/slate/camera-allowed"
+    readonly property string oldHelper: "/usr/local/libexec/slate-private-camera"
     readonly property string mark: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate-private"
     readonly property string icon: Quickshell.shellPath("assets/icon/icon-64.png")
     property bool helperThere: false
@@ -55,7 +61,8 @@ Scope {
     }
     Process {
         id: setup
-        command: ["pkexec", Quickshell.shellPath("bin/slate-private-camera"), "install"]
+        // (through slate-system, which runs the root-owned copy, with your password)
+        command: [Quickshell.shellPath("bin/slate-system"), "--root", "slate-private-camera", "install"]
         stdout: StdioCollector {}
         stderr: StdioCollector { id: setupErr }
         onExited: code => {
@@ -80,7 +87,7 @@ Scope {
     Process {
         id: look
         running: !Config.testMode
-        command: ["test", "-x", root.helper]
+        command: ["sh", "-c", '[ -e "$0" ] && [ -x "$1" ] || [ -x "$2" ]', root.allowed, root.helper, root.oldHelper]
         onExited: code => root.helperThere = code === 0
     }
 
@@ -93,11 +100,14 @@ Scope {
         // The mark for Slate's scripts, the portal's screen sharing, and the camera
         Quickshell.execDetached(["sh", "-c", on ? ': > "$0"' : 'rm -f "$0"', mark]);
         Quickshell.execDetached([Quickshell.shellPath("scripts/private-capture.sh"), on ? "off" : "on"]);
-        if (on) camera(true);
-        else Quickshell.execDetached(["sh", "-c", '[ -x "$0" ] && exec pkexec "$0" on', helper]);
+        camera(on);
     }
+    // Only once it's allowed without a password: the helper is there from the day Slate is
+    // installed, and without the rule every switch would ask for one
     function camera(off) {
-        Quickshell.execDetached(["sh", "-c", '[ -x "$0" ] && exec pkexec "$0" "$1"', helper, off ? "off" : "on"]);
+        Quickshell.execDetached(["sh", "-c",
+            'if [ -e "$0" ] && [ -x "$1" ]; then exec pkexec "$1" "$3"; elif [ -x "$2" ]; then exec pkexec "$2" "$3"; fi',
+            allowed, helper, oldHelper, off ? "off" : "on"]);
     }
     // A camera plugged in while it's on is covered by the helper's rule; screen sharing that
     // starts its portal again (without systemd to hold it stopped) is stopped again

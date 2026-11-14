@@ -331,8 +331,8 @@ class Sync(GreeterCase):
     def test_not_set_up(self):
         code, out = self.sync()
         self.assertEqual(code, 1)
-        self.assertEqual(out, f"slate-greeter-sync: {self.dest} isn't set up yet; run: "
-                              "sudo ~/.config/slate/bin/slate-greeter-install\n")
+        self.assertEqual(out, f"slate-greeter-sync: {self.dest} isn't set up yet; install it from "
+                              "Settings → Security, or with: ./install.sh --login-screen\n")
         self.assertFalse(os.path.exists(self.dest))
 
     def test_copies_appearance(self):

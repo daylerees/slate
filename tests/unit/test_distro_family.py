@@ -74,8 +74,8 @@ class Family(Case):
         self.assertEqual(code, 0, out)
         return out
 
-    def from_slate_system(self, sample):
-        fn = "family() {" + slate.read("shell", "bin", "slate-system").split("\nfamily() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
+    def from_slate_system(self, sample, script="slate-system"):
+        fn = "family() {" + slate.read("shell", "bin", script).split("\nfamily() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
         code, out = run(["bash", "-c", swapped(fn, sample) + 'printf "%s" "$(family)"'], env=self.h.env)
         self.assertEqual(code, 0, out)
         return out
@@ -86,6 +86,8 @@ class Family(Case):
             with self.subTest(name):
                 self.assertEqual(self.from_install_sh(p), want, f"{name}: install.sh")
                 self.assertEqual(self.from_slate_system(p), want, f"{name}: slate-system")
+                # (its root half works it out again for itself: it trusts nothing it's told)
+                self.assertEqual(self.from_slate_system(p, "slate-system-root"), want, f"{name}: slate-system-root")
                 self.assertEqual(slate_apps.family(p), want, f"{name}: slate_apps.family()")
 
     def test_no_os_release(self):
@@ -128,7 +130,9 @@ class SlateSystem(Case):
             f.write(SAMPLES[name][0])
 
     def test_install_reaches_the_password_prompt(self):
-        """Wherever the root half can install packages, --install hands them to pkexec."""
+        """Wherever the root half can install packages, --install hands them to pkexec: to the
+        root helpers' installer here, where they aren't installed yet, which then runs the root
+        half from its root-owned place (tests/unit/test_root_installers.py has the rest)."""
         for name in ("arch", "artix", "void", "debian", "fedora", "tumbleweed"):
             with self.subTest(name):
                 self.on(name)
@@ -136,7 +140,9 @@ class SlateSystem(Case):
                 before = len(self.s.calls("pkexec"))
                 code, out = run([self.script, "--install", "kitty", "foot"], env=self.s.env, timeout=10)
                 self.assertEqual(code, 0, out)
-                self.assertEqual(self.s.calls("pkexec")[before:], [[self.script, "--as-root", "kitty", "foot"]])
+                top = os.path.dirname(os.path.dirname(self.script))
+                self.assertEqual(self.s.calls("pkexec")[before:],
+                                 [[os.path.join(top, "bin", "slate-helpers-install"), top, "slate-system-root", "kitty", "foot"]])
 
     def test_install_refused_where_it_cant(self):
         """Gentoo (emerge is yours), NixOS (your configuration) and anything unknown: said so,
