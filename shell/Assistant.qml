@@ -288,6 +288,7 @@ PanelWindow {
     property string pending: ""            // typed before the agents were found: sent once they are
     readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
     function stop() { if (working) runner.signal(15); }
+    readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
         const t = asked;
@@ -869,7 +870,7 @@ PanelWindow {
                 }
                 TextInput {
                     id: field
-                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working ? 50 : 14; verticalCenter: parent.verticalCenter }
                     color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
                     font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
                     focus: root.shown
@@ -879,6 +880,8 @@ PanelWindow {
                     onAccepted: root.send(text)
                     Keys.onPressed: e => {
                         if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true; }
+                        // Ctrl+C stops Nova while it works (with text selected, it copies as ever)
+                        else if (e.key === Qt.Key_C && (e.modifiers & Qt.ControlModifier) && root.working && field.selectedText === "") { root.stop(); e.accepted = true; }
                         // Page Up / Page Down move through the conversation, as in Slate's lists
                         else if (e.key === Qt.Key_PageUp || e.key === Qt.Key_PageDown) {
                             const by = (e.key === Qt.Key_PageUp ? -1 : 1) * Math.max(40, talk.height - 40);
@@ -886,6 +889,25 @@ PanelWindow {
                             e.accepted = true;
                         }
                     }
+                }
+                // Stop, at the end of the box while Nova's working (Escape only hides the window,
+                // and the work carries on)
+                Rectangle {
+                    id: stopButton
+                    objectName: "assistantStop"
+                    visible: opacity > 0
+                    opacity: root.working ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                    anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+                    width: 30; height: 30; radius: Config.corner(15)
+                    color: root.accent
+                    Text {
+                        anchors.centerIn: parent
+                        text: String.fromCodePoint(0xED4A)
+                        color: root.accentText
+                        font.family: tabler.name; font.pixelSize: 15
+                    }
+                    ClickTap { enabled: root.working; onTapped: root.stop() }
                 }
             }
 
@@ -896,13 +918,12 @@ PanelWindow {
                 Text {
                     anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
                     text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
-                        + (root.working ? "" : "  ·  Enter to send")
+                        + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send")
                     color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                 }
                 Row {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 8
-                    PillButton { visible: root.working; icon: 0xED4A; label: "Stop"; onPressed: root.stop() }
                     PillButton {
                         visible: !root.working && !!root.error && ["offline", "timeout", "failed"].indexOf(root.error.kind) >= 0
                         icon: 0xEB13; label: "Try again"; primary: true; onPressed: root.again()

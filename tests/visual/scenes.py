@@ -222,6 +222,14 @@ SCENES["assistant-error"] = {
     "wait": lambda st: st["assistant"]["open"] and st["assistant"]["error"] == "offline",
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
+# While it works: Stop at the end of the box, "Ctrl+C to stop" beneath
+SCENES["assistant-working"] = {
+    "settings": dict(_NOVA_ON, animations="off"),
+    "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": "make the dock smaller", "working": True,
+            "actions": [{"id": 1, "text": "Set Icon size to 40", "state": "done"}]})), ("assistant", "open")],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["working"] and st["assistant"]["stopShown"],
+    "undo": [("assistant", "close"), ("test", "nova", "{}")],
+}
 SCENES["assistant-long"] = {
     "settings": _NOVA_ON,
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS,

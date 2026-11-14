@@ -22,7 +22,7 @@ RUN set -e; \
           while read -r p; do pacman -Si "$p" >/dev/null 2>&1 && echo "$p"; done); \
     retry pacman -S --noconfirm --needed $req $opt \
         shellcheck lua mesa grim foot jq python-pillow git ttf-dejavu \
-        xdg-desktop-portal ffmpeg; \
+        xdg-desktop-portal ffmpeg wtype; \
     pacman -Scc --noconfirm; rm -rf /var/cache/pacman/pkg/*
 
 # git: the checkout is owned by whoever runs the tests

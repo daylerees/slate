@@ -519,6 +519,21 @@ class Nova(LiveCase):
         st = self.wait(lambda st: not st["assistant"]["working"], "it to stop", timeout=15)["assistant"]
         self.assertEqual(st["error"], "", "stopping is not an error")
 
+    def test_stop_in_the_box(self):
+        """While Nova works, Stop sits at the end of the box, and Ctrl+C there stops it too."""
+        self.config("assistantAgent", "custom")
+        self.config("assistantCommand", "sleep 30")
+        self.ipc("test", "assistantAccepted", "custom")
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
+        self.assertFalse(self.nova()["stopShown"], "Stop showed with nothing to stop")
+        self.ipc("assistant", "ask", "wait a while")
+        self.wait(lambda st: st["assistant"]["working"] and st["assistant"]["stopShown"], "Stop in the box")
+        self.s.run(["wtype", "-M", "ctrl", "c", "-m", "ctrl"], check=True)     # (a real key press, through the virtual keyboard)
+        st = self.wait(lambda st: not st["assistant"]["working"], "Ctrl+C to stop it", timeout=15)["assistant"]
+        self.assertEqual(st["error"], "", "stopping is not an error")
+        self.wait(lambda st: not st["assistant"]["stopShown"], "Stop to go")
+
     def test_follows_on_for_a_few_minutes(self):
         """What you type soon after an answer follows on from it (the agent's thread is kept);
         left longer than five minutes, Nova starts afresh, with the history still on show."""

@@ -32,7 +32,8 @@ agent you chose does it through the same tools.
   → **Clear chat history** empties it, and **Keep chat history** switches keeping off, which
   deletes what was kept; the history is then forgotten whenever Slate restarts.
 - **Closing it.** Escape or a click outside hides the window and the work carries on: the
-  bar button shows it, and a notification brings the answer when it's done. **Stop** ends it.
+  bar button shows it, and a notification brings the answer when it's done. **Stop**, at the end of
+  the box while Nova works, ends it, and so does Ctrl+C there (with nothing selected).
   Locking the screen stops it too.
 - **Its sound.** An answer you waited for with the window open plays Nova's own sound, a soft
   bloom (`answered`, Settings → Sound → Nova's answer), once as the whole answer arrives. Not
