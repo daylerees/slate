@@ -781,7 +781,8 @@ class Custom(Agent):
         return ["sh", "-c", run.get("command") or "exit 127"]
 
     def env(self, run):
-        return {"SLATE_MCP_COMMAND": " ".join(run["mcp_command"]), "SLATE_MCP_CONFIG": run["mcp_config_file"],
+        # (quoted for a shell, so a folder with a space in its name stays one word)
+        return {"SLATE_MCP_COMMAND": shlex.join(run["mcp_command"]), "SLATE_MCP_CONFIG": run["mcp_config_file"],
                 "SLATE_ASSISTANT_BRIEFING": run["briefing"], "SLATE_ASSISTANT_CONTEXT": run["context_file"]}
 
     def parse(self, line, state):

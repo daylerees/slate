@@ -335,6 +335,19 @@ class Custom(Base):
         self.assertEqual([e["delta"] for e in events[:-1] if e["type"] == "text"], ["got: turn on glass\n", "%s mcp\n" % mcp_tests.SLATE, "files\n"])
         self.assertEqual(events[-2], {"type": "blocks", "blocks": safe_markdown.parse(events[-1]["text"])})
 
+    def test_server_command_with_a_space_in_its_path(self):
+        """$SLATE_MCP_COMMAND is for a shell (or shlex.split) to take apart: Slate kept in a
+        folder with a space in its name must still come out as one word. It used to be the
+        words joined with spaces."""
+        import shlex
+        import slate_agents
+        words = ["/home/some one/.config/slate/bin/slate", "mcp"]
+        env = slate_agents.by_id("custom").env({"mcp_command": words, "mcp_config_file": "c", "briefing": "b",
+                                                "context_file": "x"})
+        self.assertEqual(shlex.split(env["SLATE_MCP_COMMAND"]), words)
+        code, out = run(["sh", "-c", 'printf "%s\\n" ' + env["SLATE_MCP_COMMAND"]])
+        self.assertEqual(out.splitlines(), words)
+
     def test_markdown_comes_as_blocks(self):
         """What a command of your own prints is read as a safe subset of Markdown, like any
         agent's answer: it's no more trusted."""
