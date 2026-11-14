@@ -122,6 +122,43 @@ SCENES["dock-more-scrolled"] = {"do": _more_open(14) + [("test", "dockRoom", 200
                                                        lambda st: st["dock"]["moreOpen"] and st["dock"]["grid"], ("test", "dockGridScroll", 46)],
                                 "wait": lambda st: st["dock"]["grid"] and st["dock"]["grid"]["y"] == 46, "settle": 1.2, "undo": _MORE_CLOSE}
 
+
+# An app with more windows than its previews show: as many cards as fit (five at most), then
+# "+N" for the rest. Nine windows, on a workspace out of sight, closed again after
+_MANY = "slate-many-windows"
+
+
+def _many_there(n):
+    return lambda st: any(x.get("key") == _MANY and x.get("windows") == n for x in st["dock"]["slots"])
+
+
+def _many_open(n):
+    steps = []
+    for i in range(1, n + 1):
+        steps.append(("!hyprctl", "dispatch", 'function() hl.exec_cmd("foot --app-id %s", { workspace = "9 silent" }) end' % _MANY))
+        steps.append(_many_there(i))
+    return steps
+
+
+_MANY_CLOSE = [("dock", "closePreview"),
+               ("!sh", "-c", "hyprctl clients -j | jq -r '.[] | select(.class == \"%s\") | .address' | "
+                             "while read -r a; do hyprctl dispatch \"function() hl.dispatch(hl.dsp.window.close({ window = [=[address:$a]=] })) end\"; done; "
+                             "for i in $(seq 50); do hyprctl clients -j | grep -q %s || exit 0; sleep 0.1; done" % (_MANY, _MANY))]
+_PREVIEWS = {"settings": {"dockPreviews": "true"},
+             "do": _many_open(9) + [("dock", "preview", _MANY)],
+             "wait": lambda st: st["dock"]["previews"] and st["dock"]["previews"]["more"] > 0, "settle": 1.5,
+             "undo": _MANY_CLOSE,
+             # (the five windows' live pictures: what the terminals have drawn by then varies;
+             # their captions and the "+N" card stay in)
+             "mask": [(108, 645, 1128, 133)]}
+SCENES["dock-previews-many"] = dict(_PREVIEWS)
+SCENES["dock-previews-many-light"] = dict(_PREVIEWS, settings={"dockPreviews": "true", "themeMode": "light", "lightMode": "true"}, settle=2)
+SCENES["dock-previews-many-glass"] = dict(_PREVIEWS, settings={"dockPreviews": "true", "glass": "true"}, settle=5)
+# Game mode: titles and the app's icon, no live pictures, "+N" as the last row
+SCENES["dock-previews-many-game"] = dict(_PREVIEWS, settings={"dockPreviews": "true", "gameMode": "true"}, settle=2, mask=[],
+                                         wait=lambda st: st["dock"]["previews"] and st["dock"]["previews"]["mode"] == "titles"
+                                         and st["dock"]["previews"]["more"] > 0)
+
 for _p in PANELS:
     SCENES[f"panel-{_p}"] = {
         "settings": SHOW_ALL,

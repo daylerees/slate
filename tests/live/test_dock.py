@@ -218,6 +218,85 @@ class Dock(LiveCase):
         self.config("dockPosition", old)
 
 
+class ManyWindowPreviews(LiveCase):
+    """An app with many windows: its previews show at most six cards (fewer when fewer fit),
+    the last a "+N" card counting the rest, all on screen, in live pictures and game mode's
+    titles, on the dock's bottom and side edges. The "+N" card opens the app's menu, which
+    lists every window. (Fifteen windows used to make a strip wider than the screen.)"""
+    KEY = "slate-many-windows"
+
+    def setUp(self):
+        super().setUp()
+        for key in ("dockPreviews", "gameMode", "dockPosition"):
+            self.keep_setting(key)
+        self.config("dockPreviews", "true")
+        self.addCleanup(self.close_all)
+
+    def close_all(self):
+        self.ipc("dock", "closeMenu")
+        self.ipc("dock", "closePreview")
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c["class"] == self.KEY:
+                self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.close({ window = [=[address:%s]=] }))" % c["address"])
+        self.wait(lambda st: self.slot(st) is None, "the windows closed", timeout=10)
+
+    def slot(self, st):
+        return next((x for x in st["dock"]["slots"] if x["kind"] == "app" and x["key"] == self.KEY), None)
+
+    def open_windows(self, n):
+        """Up to n windows of the app, on a workspace out of sight."""
+        have = (self.slot(self.s.state()) or {}).get("windows", 0)
+        for i in range(have + 1, n + 1):
+            self.s.hyprctl("dispatch", 'function() hl.exec_cmd("foot --app-id %s", { workspace = "9 silent" }) end' % self.KEY)
+            self.wait(lambda st: (self.slot(st) or {}).get("windows", 0) == i, f"window {i} on the dock", timeout=10)
+
+    def previews(self, mode):
+        self.ipc("dock", "closePreview")
+        self.wait(lambda st: not st["dock"]["preview"], "no preview")
+        self.ipc("dock", "preview", self.KEY)
+        st = self.wait(lambda st: st["dock"]["previews"] and st["dock"]["previews"]["mode"] == mode, f"the {mode} previews")
+        # (once the panel's settled where it goes)
+        self.steady(lambda: self.s.state()["dock"]["previews"], floor=0.4)
+        return self.s.state()["dock"]["previews"]
+
+    def assert_on_screen(self, p):
+        x, y, w, h = p["box"]
+        sw, sh = p["screen"]
+        self.assertTrue(x >= 0 and y >= 0 and x + w <= sw and y + h <= sh, f"the previews run off the screen: {p}")
+
+    def test_few_windows_all_shown(self):
+        self.open_windows(3)
+        p = self.previews("live")
+        self.assertEqual((p["cards"], p["more"]), (3, 0))
+        self.assert_on_screen(p)
+
+    def test_many_windows_capped(self):
+        self.open_windows(9)
+        for edge in ("bottom", "left"):
+            with self.subTest(edge=edge):
+                self.config("dockPosition", edge)
+                self.wait(lambda st: st["dockEdge"] == edge, f"the dock on the {edge}")
+                self.s.settle(0.8)
+                for mode, game in (("live", "false"), ("titles", "true")):
+                    with self.subTest(mode=mode):
+                        self.config("gameMode", game)
+                        self.wait(lambda st: st["gameMode"] == (game == "true"), "game mode " + game)
+                        p = self.previews(mode)
+                        self.assertLessEqual(p["cards"], 5, f"more than six cards with the +N one: {p}")
+                        self.assertGreaterEqual(p["cards"], 1)
+                        self.assertEqual(p["cards"] + p["more"], 9, f"the +N card's count is off: {p}")
+                        self.assert_on_screen(p)
+        self.config("gameMode", "false")
+
+    def test_more_opens_the_app_menu(self):
+        self.open_windows(8)
+        p = self.previews("live")
+        self.assertGreater(p["more"], 0)
+        self.ipc("dock", "previewMore")
+        self.wait(lambda st: st["dock"]["menu"] == self.KEY and not st["dock"]["preview"],
+                  "the app's menu, every window in it, in place of the previews")
+
+
 class Badges(LiveCase):
     """An app's notifications badge its dock icon until you go to the app (opening the
     notification panel used to clear them, so a mail app's count vanished unseen)."""
