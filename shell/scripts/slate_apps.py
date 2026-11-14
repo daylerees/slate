@@ -67,6 +67,32 @@ def config_dirs(native, folder, app_id):
     return out + ([fp] if fp else [])
 
 
+# Flatpak apps read GTK's and KDE's settings from inside their sandbox, so they're given your
+# own, read-only: an entry in the overrides every Flatpak app gets, as
+# `flatpak override --user --filesystem=<path>:ro` writes it, taken out again on undo (it's
+# written here rather than with that command, which can only add a "not" for an entry, never
+# take one away). One you've already given, or refused ("!<path>"), is left as it is.
+def flatpak_overrides():
+    """Flatpak's overrides for all your apps, or None without Flatpak"""
+    if not have("flatpak"):
+        return None
+    return os.path.join(os.environ.get("FLATPAK_USER_DIR") or os.path.join(DATA, "flatpak"), "overrides", "global")
+
+def flatpak_share(ctx, *paths):
+    f = flatpak_overrides()
+    if not f:
+        return
+    for p in paths:
+        ctx.listitem(f, "Context", "filesystems", p + ":ro",
+                     same=lambda x, p=p: re.sub(r":(ro|rw|create)$", "", x.lstrip("!")) == p)
+
+
+# Snap apps keep their settings in ~/snap/<name>/current/.config (that's their ~/.config) and
+# can't read yours, so GTK's theme files go in each one's own
+def snap_configs():
+    return sorted(glob.glob(os.path.join(HOME, "snap", "*", "current", ".config")))
+
+
 def starting(name):
     """Slate's starting config for an app (shell/data/<name>)"""
     return read(os.path.join(SHELL_DIR, "data", name)) or ""
@@ -134,12 +160,14 @@ def gtk_css(c, version):
                 "messagedialog.csd.background, messagedialog.csd decoration { border-radius: 0; }"]
     return "\n".join(out) + "\n"
 
-@app("gtk", "GTK apps", "Files, Text Editor, Calculator and other GNOME and GTK apps", lambda: True)
+@app("gtk", "GTK apps", "Files, Text Editor, Calculator and other GNOME and GTK apps, Flatpak and Snap ones too", lambda: True)
 def gtk(ctx):
     c = ctx.c
-    for v in (3, 4):
-        ctx.file(cfg("gtk-%d.0" % v, "slate.css"), gtk_css(c, v))
-        ctx.line(cfg("gtk-%d.0" % v, "gtk.css"), '@import url("slate.css");')   # last, so its colours win
+    for base in [CFG] + snap_configs():
+        for v in (3, 4):
+            ctx.file(os.path.join(base, "gtk-%d.0" % v, "slate.css"), gtk_css(c, v))
+            ctx.line(os.path.join(base, "gtk-%d.0" % v, "gtk.css"), '@import url("slate.css");')   # last, so its colours win
+    flatpak_share(ctx, "xdg-config/gtk-3.0", "xdg-config/gtk-4.0")
     dark = not c["light"]
     ctx.ini(cfg("gtk-3.0", "settings.ini"), "Settings", "gtk-application-prefer-dark-theme", "1" if dark else "0")
     ctx.gsetting("org.gnome.desktop.interface", "color-scheme", "prefer-dark" if dark else "prefer-light")
@@ -243,7 +271,7 @@ def kde_value(v):
         return "%d,%d,%d" % (r, g, b)
     return v
 
-@app("kde", "KDE apps", "Dolphin, Kate and other KDE apps (kdeglobals)", lambda: True)
+@app("kde", "KDE apps", "Dolphin, Kate and other KDE apps (kdeglobals), Flatpak ones too", lambda: True)
 def kde(ctx):
     groups = kde_groups(ctx.c)
     out = ["[KDE]", "contrast=4", "", "[General]", "ColorScheme=slate", "Name=slate", ""]
@@ -255,6 +283,7 @@ def kde(ctx):
     items = [("General", "ColorScheme", "slate"), ("General", "Name", "slate")]
     items += [(name, k, kde_value(v)) for name, keys in groups for k, v in keys.items()]
     ctx.ini_many(cfg("kdeglobals"), items)
+    flatpak_share(ctx, "xdg-config/kdeglobals")
 
 @reloads("kde")
 def kde_reload(ctx):

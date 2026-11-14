@@ -407,6 +407,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
+| `xdg-desktop-portal-gtk` | Flatpak and Snap apps following light or dark (the Settings portal reads `color-scheme` from gsettings; Hyprland's own portal has no Settings) |
 | hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
@@ -426,7 +427,14 @@ website and packages per distro family, for its Install button, which runs
 `bin/slate-system --install` through pkexec). Apps with Flatpak builds (Discord's Vencord,
 Vesktop, VS Code, VSCodium, Zed, Helix, Neovim, WezTerm, zathura, GNOME Text Editor, Firefox,
 Obsidian) are themed in their Flatpak's own folders too (`~/.var/app/<id>/config` or `data`:
-`flatpak()` and `config_dirs()`). Spotify and Discord are themed through a patch in the app's own
+`flatpak()` and `config_dirs()`). Flatpak GTK and KDE apps are given read-only access to your
+`gtk-3.0`, `gtk-4.0` and `kdeglobals` through an entry in Flatpak's overrides for all apps
+(`$FLATPAK_USER_DIR` or `~/.local/share/flatpak/overrides/global`, what `flatpak override --user
+--filesystem=…:ro` writes: `flatpak_share()`, recorded as a `listitem` so undo takes out only
+Slate's entry), and each snap gets GTK's theme files in its own `~/snap/<name>/current/.config`
+(`snap_configs()`). A config that's a link is written where it leads (it stays a link), and one
+that's read-only, such as Home Manager's in the Nix store, is left alone with a line in the log
+(`slate_theme.writable()`). Spotify and Discord are themed through a patch in the app's own
 files (Spicetify, Vencord), which an update of the app removes: each has a `@stale` check
 (`apply-theme.py --stale`, run by `shell.qml` every five minutes while either is themed), and
 the next apply patches it again (`spicetify backup apply`; for Discord, the small `app.asar`

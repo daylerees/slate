@@ -11,6 +11,7 @@
   fonts.packages = [ pkgs.geist-font pkgs.noto-fonts-color-emoji ];   # (emoji: the picker, the launcher's :emoji)
   services.accounts-daemon.enable = true;   # your account picture
   programs.dconf.enable = true;             # so theme settings (gsettings) stick
+  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];   # Flatpak and Snap apps: light or dark
   # Printing and scanning (Settings → Printers & Scanners)
   services.printing.enable = true;
   services.avahi = { enable = true; nssmdns4 = true; };   # finds network printers
