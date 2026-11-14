@@ -457,6 +457,10 @@ ShellRoot {
                         : { kind: x.kind }),
                     menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : appMenu.app && appMenu.app.moreGrid ? "more" : "other") : "",
                     preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
+                    // The previews: cards shown, the "+N" card's count, the panel's place and the screen's size
+                    previews: previewPop.wanted ? { cards: previewPop.shownWins.length, more: previewPop.moreCount, mode: win.previewMode,
+                                                    box: [Math.round(previewBox.x), Math.round(previewBox.y), Math.round(previewBox.width), Math.round(previewBox.height)],
+                                                    screen: [Math.round(previewPop.width), Math.round(previewPop.height)] } : null,
                     base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.roomLength),
                     more: win.moreItems.map(it => it.key), mediaCompact: win.foldPlan.compact,
                     moreOpen: appMenu.visible && !!appMenu.app && !!appMenu.app.moreGrid,
@@ -1603,6 +1607,8 @@ ShellRoot {
                 previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
             }
             function closePreview(): void { win.previewApp = null; }
+            // The previews' "+N" card, as clicking it does (the app's menu, every window in it)
+            function previewMore(): void { if (previewPop.wanted && previewPop.moreCount > 0) win.showAllWindows(); }
             // The Downloads stack's grid, as clicking it does:  slate ipc call dock downloads
             function downloads(): void {
                 if (!win.downloadsShown) return;
@@ -1837,6 +1843,14 @@ ShellRoot {
             previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
         }
+        // The previews' "+N" card: the app's menu, which lists every one of its windows (the
+        // previews close as it opens)
+        function showAllWindows() {
+            const app = previewPop.shownApp;
+            const sl = app ? slots.find(o => o.kind === "app" && o.item.key === app.key) : null;
+            if (!sl) { previewApp = null; return; }
+            appMenu.openFor(sl.item, (strip.width - restWidth) / 2 + slotStart(sl.at) + base / 2);
+        }
         Connections {
             target: appMenu
             function onVisibleChanged() {
@@ -1964,12 +1978,37 @@ ShellRoot {
             // A card's size: live pictures are wider than title-only cards
             readonly property real cardW: win.previewMode === "live" ? 220 : 200
             readonly property real cardH: win.previewMode === "live" ? 160 : 48
+            // At most six cards, and never more than fit beside the icon (along the screen for
+            // live pictures, from the icon to the screen's far side when the dock's on one; down
+            // the screen for titles). An app with more windows than that shows as many as fit
+            // with room for one more card, which says how many it has besides and opens the
+            // app's menu, where every one of its windows is listed
+            readonly property int cap: 6
+            readonly property real moreW: 110            // the live "+N" card: narrower than a picture
+            readonly property bool live: win.previewMode === "live"
+            readonly property real room: live
+                ? (win.edge === "left" ? width - atX - 8 : win.edge === "right" ? atX - 8 : width - 16) - 16
+                : height - 16 - 12
+            readonly property bool capped: wins.length > cap
+                || (live ? wins.length * (cardW + 8) - 8 : wins.length * (cardH + 4) - 4) > room
+            // How many windows get a card, the "+N" card standing in for the rest
+            readonly property int fitCount: !capped ? wins.length
+                : Math.max(1, Math.min(cap - 1, live ? Math.floor((room - moreW) / (cardW + 8))
+                                                     : Math.floor((room + 4) / (cardH + 4)) - 1))
+            // The first ones, in the dock's order, the window you're in always among them
+            readonly property var shownWins: {
+                if (!capped) return wins;
+                const s = wins.slice(0, fitCount);
+                const now = wins.find(w => w.activated);
+                if (now && !s.includes(now)) s[s.length - 1] = now;
+                return s;
+            }
+            readonly property int moreCount: wins.length - shownWins.length
 
             Rectangle {
                 id: previewBox
-                readonly property real wanted: previewPop.wins.length * (previewPop.cardW + 8) + 8
-                width: Math.min(wanted, previewPop.width - 32)
-                height: win.previewMode === "live" ? previewPop.cardH + 16 : Math.min(previewPop.wins.length * (previewPop.cardH + 4) + 12, previewPop.height - 32)
+                width: previewPop.live ? previewRow.implicitWidth + 16 : previewPop.cardW + 16
+                height: previewPop.live ? previewPop.cardH + 16 : titleCol.implicitHeight + 12
                 x: Math.max(8, Math.min(previewPop.width - width - 8,
                     win.edge === "left" ? previewPop.atX : win.edge === "right" ? previewPop.atX - width : previewPop.atX - width / 2))
                 y: Math.max(8, Math.min(previewPop.height - height - 8,
@@ -1990,120 +2029,145 @@ ShellRoot {
                     onHoveredChanged: { win.previewHeld = hovered; if (!hovered) previewLeave.restart(); }
                 }
 
-                // Live: the windows side by side (scrolling sideways when there are many)
-                Flickable {
-                    id: previewScroll
-                    visible: win.previewMode === "live"
-                    anchors { fill: parent; margins: 8 }
-                    contentWidth: previewRow.width
-                    interactive: contentWidth > width
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
-                    // More windows than fit: the wheel or a swipe scrolls sideways
-                    SmoothWheel { flick: previewScroll; horizontal: true }
-                    Row {
-                        id: previewRow
-                        spacing: 8
-                        Repeater {
-                            model: win.previewMode === "live" ? previewPop.wins : []
-                            delegate: Rectangle {
-                                id: liveCard
-                                required property var modelData
-                                width: previewPop.cardW; height: previewPop.cardH
-                                radius: Config.corner(8)
-                                color: liveHover.hovered ? Config.hover : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                                Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
-                                WindowPreview {
-                                    id: liveShot
-                                    readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
-                                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
-                                    width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
-                                    height: width / ratio
-                                    window: previewPop.visible ? liveCard.modelData : null
-                                    running: previewPop.wanted          // (still while it fades out)
-                                    // Rounded, and brightened back if Hyprland dims it (it isn't focused)
-                                    layer.enabled: true
-                                    layer.effect: PreviewShape { radius: Config.corner(6); gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
-                                }
-                                Text {
-                                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: liveCard.modelData.title || ""
-                                    elide: Text.ElideRight
-                                    color: liveCard.modelData.activated ? win.activeDotColor : win.textColor
-                                    font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                                }
-                                HoverHandler { id: liveHover }
-                                ClickTap { hand: false; onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
+                // Live: the windows side by side, then "+N" for the rest
+                Row {
+                    id: previewRow
+                    visible: previewPop.live
+                    x: 8; y: 8
+                    spacing: 8
+                    Repeater {
+                        model: previewPop.live ? previewPop.shownWins : []
+                        delegate: Rectangle {
+                            id: liveCard
+                            required property var modelData
+                            width: previewPop.cardW; height: previewPop.cardH
+                            radius: Config.corner(8)
+                            color: liveHover.hovered ? Config.hover : "transparent"
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                            Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
+                            WindowPreview {
+                                id: liveShot
+                                readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
+                                anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
+                                width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
+                                height: width / ratio
+                                window: previewPop.visible ? liveCard.modelData : null
+                                running: previewPop.wanted          // (still while it fades out)
+                                // Rounded, and brightened back if Hyprland dims it (it isn't focused)
+                                layer.enabled: true
+                                layer.effect: PreviewShape { radius: Config.corner(6); gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
                             }
+                            Text {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
+                                horizontalAlignment: Text.AlignHCenter
+                                text: liveCard.modelData.title || ""
+                                elide: Text.ElideRight
+                                color: liveCard.modelData.activated ? win.activeDotColor : win.textColor
+                                font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                            }
+                            HoverHandler { id: liveHover }
+                            ClickTap { hand: false; onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
                         }
                     }
-                }
-                // While there are more windows than fit: a soft shadow at the side that has more,
-                // fading in as it's scrolled (as Settings' long pages and menus do)
-                Repeater {
-                    model: win.previewMode === "live" ? [0, 1] : []
+                    // The rest: a card of the same shape (no sheen), "+N" where the picture would
+                    // be, on the dock's own tile colour, and its caption below. Opens the app's
+                    // menu, which lists every window
                     Rectangle {
-                        required property int modelData
-                        readonly property bool atRight: modelData === 1
-                        readonly property real more: atRight ? previewScroll.contentWidth - previewScroll.width - previewScroll.contentX
-                                                           : previewScroll.contentX
-                        width: 22
-                        anchors { top: parent.top; bottom: parent.bottom }
-                        x: atRight ? parent.width - width : 0
-                        topLeftRadius: Config.corner(atRight ? 0 : previewBox.radius); bottomLeftRadius: Config.corner(atRight ? 0 : previewBox.radius)
-                        topRightRadius: Config.corner(atRight ? previewBox.radius : 0); bottomRightRadius: Config.corner(atRight ? previewBox.radius : 0)
-                        opacity: Math.max(0, Math.min(1, more / 24))
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0; color: atRight ? "transparent" : Config.shade(Config.s.lightMode ? 0.14 : 0.38) }
-                            GradientStop { position: 1; color: atRight ? Config.shade(Config.s.lightMode ? 0.14 : 0.38) : "transparent" }
+                        id: moreCard
+                        visible: previewPop.moreCount > 0
+                        width: previewPop.moreW; height: previewPop.cardH
+                        radius: Config.corner(8)
+                        color: moreHover.hovered ? Config.hover : "transparent"
+                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
+                            height: parent.height - 34
+                            radius: Config.corner(6)
+                            color: win.tileColor
+                            Text {
+                                anchors.centerIn: parent
+                                text: "+" + previewPop.moreCount
+                                color: win.textColor
+                                font.family: Config.s.fontFamily; font.pixelSize: 22; font.weight: Font.Medium
+                            }
                         }
+                        Text {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
+                            horizontalAlignment: Text.AlignHCenter
+                            text: "More windows"
+                            elide: Text.ElideRight
+                            color: win.textColor
+                            font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        }
+                        HoverHandler { id: moreHover }
+                        ClickTap { hand: false; onTapped: win.showAllWindows() }
                     }
                 }
 
-                // Titles: the windows one above another, each with the app's icon
-                Flickable {
-                    id: titleScroll
-                    visible: win.previewMode === "titles"
-                    anchors { fill: parent; margins: 6 }
-                    contentHeight: titleCol.height
-                    interactive: contentHeight > height
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
-                    SmoothWheel { flick: titleScroll }
-                    Column {
-                        id: titleCol
-                        width: parent.width
-                        spacing: 4
-                        Repeater {
-                            model: win.previewMode === "titles" ? previewPop.wins : []
-                            delegate: Rectangle {
-                                id: titleCard
-                                required property var modelData
-                                width: titleCol.width; height: previewPop.cardH
-                                radius: Config.corner(8)
-                                color: titleHover.hovered ? Config.hover : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                                Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
-                                AppTile {
-                                    id: titleIcon
-                                    anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                    width: 28; height: 28
-                                    app: win.previewApp ? (win.previewApp.entry ? win.previewApp.entry.id : win.previewApp.key) : ""
-                                }
-                                Text {
-                                    anchors { left: titleIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                                    text: titleCard.modelData.title || ""
-                                    elide: Text.ElideRight
-                                    color: titleCard.modelData.activated ? win.activeDotColor : win.textColor
-                                    font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
-                                }
-                                HoverHandler { id: titleHover }
-                                ClickTap { hand: false; onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
+                // Titles: the windows one above another, each with the app's icon, then a row
+                // for the rest in the same way
+                Column {
+                    id: titleCol
+                    visible: !previewPop.live
+                    x: 6; y: 6
+                    width: previewBox.width - 12
+                    spacing: 4
+                    Repeater {
+                        model: !previewPop.live ? previewPop.shownWins : []
+                        delegate: Rectangle {
+                            id: titleCard
+                            required property var modelData
+                            width: titleCol.width; height: previewPop.cardH
+                            radius: Config.corner(8)
+                            color: titleHover.hovered ? Config.hover : "transparent"
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                            Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
+                            AppTile {
+                                id: titleIcon
+                                anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                                width: 28; height: 28
+                                app: win.previewApp ? (win.previewApp.entry ? win.previewApp.entry.id : win.previewApp.key) : ""
+                            }
+                            Text {
+                                anchors { left: titleIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                text: titleCard.modelData.title || ""
+                                elide: Text.ElideRight
+                                color: titleCard.modelData.activated ? win.activeDotColor : win.textColor
+                                font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                            }
+                            HoverHandler { id: titleHover }
+                            ClickTap { hand: false; onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
+                        }
+                    }
+                    Rectangle {
+                        id: moreRow
+                        visible: !previewPop.live && previewPop.moreCount > 0
+                        width: titleCol.width; height: previewPop.cardH
+                        radius: Config.corner(8)
+                        color: moreRowHover.hovered ? Config.hover : "transparent"
+                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                        Rectangle {
+                            id: moreRowTile
+                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            width: 28; height: 28
+                            radius: Config.corner(6)
+                            color: win.tileColor
+                            Text {
+                                anchors.centerIn: parent
+                                text: "+" + previewPop.moreCount
+                                color: win.textColor
+                                font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                             }
                         }
+                        Text {
+                            anchors { left: moreRowTile.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            text: "More windows"
+                            elide: Text.ElideRight
+                            color: win.textColor
+                            font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                        }
+                        HoverHandler { id: moreRowHover }
+                        ClickTap { hand: false; onTapped: win.showAllWindows() }
                     }
                 }
             }
