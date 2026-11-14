@@ -19,8 +19,9 @@
                     a quiet fifth (B5) just after it, each with a faint shimmer an octave up that
                     twinkles as it fades; settled, not questioning, about 0.55 s
 
-The volume tick itself (volume-tick.wav) isn't made by this script yet: it's the one file in
-shell/sounds/ with no generator here, and running this leaves it as it is.
+  volume-tick.wav   the volume keys' tick: a short, bright tone (about 1.25 kHz, with a quieter
+                    octave above) that swells in over a couple of milliseconds and dies away
+                    quickly, about 70 ms
 
 Run it from anywhere; it writes next to the other sounds.
 
@@ -222,6 +223,19 @@ def answered(name="answered.wav", notes=((0.0, 659.25, 1.0), (0.03, 987.77, 0.45
     write(name, out, peak=peak, tail=0.1)
 
 
+def volume_tick():
+    # The volume keys' tick: a short, bright tone with a quieter octave above it, swelling in
+    # over a couple of milliseconds and dying away fast (halving about every 10 ms)
+    freq, octave, attack, decay = 1250.0, 0.42, 2.5, 0.0145
+    n = int(RATE * 0.070)
+    samples = []
+    for i in range(n):
+        t = i / RATE
+        p = 2 * math.pi * freq * t
+        samples.append(onset(t, attack) * math.exp(-t / decay) * (math.sin(p) + octave * math.sin(2 * p)))
+    write("volume-tick.wav", samples, peak=0.247, tail=0.004)
+
+
 if __name__ == "__main__":
     notification()
     click()
@@ -230,3 +244,4 @@ if __name__ == "__main__":
     swish()
     attention()
     answered()
+    volume_tick()
