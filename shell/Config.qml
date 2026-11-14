@@ -1972,13 +1972,16 @@ Singleton {
     //   ready     built for the running Hyprland, loads at the next Hyprland reload
     //   stale     built for another Hyprland: needs rebuilding
     //   failed    the last build failed (hyprbars.error says why)
+    //   unreleased  the plugin has no release for this Hyprland yet: nothing was built, and
+    //             the newest unreleased version only with a yes (a calm wait, not a failure)
     //   system    a distro's package is there but didn't load
     //   removed   removed, but still in the running Hyprland until that restarts
     readonly property string hyprbarsState: !hyprbarsKnown ? ""
         : hyprbars.state === "building" ? "building"
         : hyprbarsLoaded ? "loaded"
         : hyprbars.build === "yes" ? "ready"
-        : hyprbars.state === "failed" || hyprbars.state === "unreleased" ? "failed"
+        : hyprbars.state === "unreleased" ? "unreleased"
+        : hyprbars.state === "failed" ? "failed"
         : hyprbars.any === "yes" ? "stale"
         : hyprbars.removed === "yes" ? "removed"
         : hyprbars.system === "yes" ? "system"

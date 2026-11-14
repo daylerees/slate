@@ -4738,6 +4738,7 @@ FloatingWindow {
                         : state === "ready" ? "Built. Reload Hyprland to load it; your windows stay open"
                         : state === "stale" ? "Needs rebuilding: it was built for another version of Hyprland, so it can't load. Slate Bars are used until it's rebuilt"
                         : state === "failed" ? "Couldn't be built: " + (Config.hyprbars.error || "the build failed")
+                        : state === "unreleased" ? "Waiting for a Hyprbars release for your Hyprland"
                         : state === "removed" ? "Removed. Fully gone after your next restart"
                         : state === "system" ? "The one from your system's package doesn't match this Hyprland. Update that package, or build Slate's own"
                         : "Optional title bars from a Hyprland plugin, on every floating window. Slate builds it on this computer, and it needs rebuilding after every Hyprland update"
@@ -4753,6 +4754,12 @@ FloatingWindow {
                                 || (hyprbarsRow.state === "loaded" && Config.hyprlandUpdated && Config.hyprbars.next !== "yes")
                             label: hyprbarsRow.state === "failed" ? "Retry" : hyprbarsRow.state === "system" ? "Build" : "Rebuild"
                             onClicked: Config.hyprbarsRebuild()
+                        }
+                        Button {
+                            // (no release yet: only with a yes is the newest, unreleased code built)
+                            visible: hyprbarsRow.state === "unreleased"
+                            label: "Build the unreleased version"
+                            onClicked: Config.hyprbarsBuildUnreleased()
                         }
                         Button {
                             visible: hyprbarsRow.state === "none" || hyprbarsRow.state === "removed"

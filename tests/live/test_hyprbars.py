@@ -219,7 +219,7 @@ class Hyprbars(LiveCase):
         self.s.settle(2.5)
         self.assertEqual(self.calls(), ["build"])
         self.assertEqual(self.s.state()["asking"], "")
-        self.assertEqual(self.s.state()["hyprbars"], "failed", "Settings shows it as one that can be tried again")
+        self.assertEqual(self.s.state()["hyprbars"], "unreleased", "Settings waits calmly, with a button for the yes, rather than showing a failure")
         self.assertEqual(self.s.state()["titleBars"], "slate")
         # the yes
         self.ipc("test", "hyprbars", "unreleased")
