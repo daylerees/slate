@@ -482,12 +482,6 @@ PanelWindow {
             }
         }
     }
-    function pretendAudioBusy(what) {          // (tests)
-        const busy = {}, out = Pipewire.defaultAudioSink, mic = Pipewire.defaultAudioSource;
-        if (out && (what === "output" || what === "both")) busy[out.name] = true;
-        if (mic && (what === "input" || what === "both")) busy[mic.name] = true;
-        audioBusy = busy;
-    }
     Timer {
         interval: 3000; repeat: true; triggeredOnStart: true
         running: pop.current === "volume" && !Config.testMode
@@ -662,7 +656,7 @@ PanelWindow {
         MouseArea {
             preventStealing: true      // keep the drag once started, even if the pointer drifts off
             anchors.fill: parent
-            cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
+            cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
             function set(mx) { sl.moved(Math.max(0, Math.min(1, mx / width))); }
             onPressed: m => set(m.x)
             onPositionChanged: m => { if (pressed) set(m.x); }
@@ -1867,7 +1861,7 @@ PanelWindow {
                     }
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
+                        cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
                         function set(mx) {
                             const h = Math.max(0, Math.min(0.999, mx / width));
                             spacesView.colour = Qt.hsla(h, 0.65, 0.78, 1);

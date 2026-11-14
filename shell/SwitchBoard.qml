@@ -270,7 +270,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 preventStealing: true          // (the page scrolls: the drag stays ours once begun)
-                cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor
+                cursorShape: Qt.PointingHandCursor
                 property real offX: 0
                 property real offY: 0
                 property bool moved: false

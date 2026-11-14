@@ -3,9 +3,6 @@
 // Submenus open in place, with a row to go back. Click outside or press Escape to close.
 //   trayMenu.openFor(item.menu, x, y)   x, y: the icon's centre at the bar's inner edge
 //                                       (screen coordinates)
-//   trayMenu.openList(list, x, y)       Slate's own menu (the Slate button's), a list of
-//       { text, glyph (icon font code), action: function, checked: bool (optional) } or
-//       { separator: true }
 
 import QtQuick
 import Quickshell
@@ -28,30 +25,16 @@ PanelWindow {
         anchorY = y;
         visible = true;
     }
-    function close() { visible = false; stack = []; list = null; }
+    function close() { visible = false; stack = []; }
     // Closes as every menu does: going to another workspace, or a launcher or switcher opening
     Connections {
         target: Config
         function onCloseMenus() { if (tm.visible) tm.close(); }
         function onFocusedWorkspaceIdChanged() { if (tm.visible) tm.close(); }
     }
-    // Slate's own menu: shaped like an app's menu entries, so the rows below draw it the same
-    property var list: null
-    function openList(items, x, y) {
-        list = items.map(i => i.separator ? { isSeparator: true } : {
-            isSeparator: false, text: i.text, glyph: i.glyph || 0, icon: "", enabled: true, hasChildren: false,
-            buttonType: i.checked === undefined ? QsMenuButtonType.None : QsMenuButtonType.CheckBox,
-            checkState: i.checked ? Qt.Checked : Qt.Unchecked, triggered: i.action
-        });
-        stack = [];
-        anchorX = x;
-        anchorY = y;
-        visible = true;
-    }
-
-    QsMenuOpener { id: opener; menu: tm.list ? null : tm.current }
-    readonly property var entries: tm.list ? tm.list : opener.children ? opener.children.values : []
-    readonly property bool anyIcons: entries.some(e => e && !e.isSeparator && (String(e.icon) !== "" || !!e.glyph))
+    QsMenuOpener { id: opener; menu: tm.current }
+    readonly property var entries: opener.children ? opener.children.values : []
+    readonly property bool anyIcons: entries.some(e => e && !e.isSeparator && (String(e.icon) !== ""))
     readonly property bool anyChecks: entries.some(e => e && e.buttonType !== QsMenuButtonType.None)
 
     screen: bar.screen
@@ -178,17 +161,6 @@ PanelWindow {
                                 text: String.fromCodePoint(0xEA5E)
                                 color: Config.accent
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
-                            }
-                            // Slate's own entries: an icon from the icon font
-                            Text {
-                                visible: !!entryRow.e && !entryRow.sep && !!entryRow.e.glyph
-                                x: tm.anyChecks ? 28 : 10
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 16
-                                horizontalAlignment: Text.AlignHCenter
-                                text: visible ? String.fromCodePoint(entryRow.e.glyph) : ""
-                                color: tm.dimColor
-                                font.family: tm.bar.iconFont; font.pixelSize: 15
                             }
                             Image {
                                 id: entryIcon

@@ -5,10 +5,8 @@
 // theme, the tint and glass (it shares the OSD's layer name, which is blurred on glass).
 
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 PanelWindow {
     id: note

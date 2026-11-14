@@ -16,7 +16,6 @@
 //   slate ipc call wallpaperSwitcher next | prev | keep | cancel
 
 import QtQuick
-import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -326,7 +325,7 @@ Scope {
                     opacity: root.fade
                     scale: 0.97 + 0.03 * root.fade
                     // Glass: a thin light rim, and the wallpaper blurred behind, as Hyprland blurs it
-                    border.width: Config.glassShine ? 1 : 0
+                    border.width: Config.glass ? 1 : 0
                     border.color: Config.glassEdge
                     Shadow {}
                     WallBlur {

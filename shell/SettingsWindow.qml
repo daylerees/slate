@@ -1512,7 +1512,7 @@ FloatingWindow {
                 preventStealing: true
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
+                cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
                 function set(mx) {
                     const raw = valueSlider.from + Math.max(0, Math.min(1, mx / width)) * (valueSlider.to - valueSlider.from);
                     valueSlider.moved(Math.round(raw / valueSlider.stepSize) * valueSlider.stepSize);
@@ -1671,7 +1671,6 @@ FloatingWindow {
     component FontSetting: DropdownSetting {
         id: fontSetting
         property string key
-        property string defaultFont
         property bool monoOnly: false
         // Monospaced fonts, from fontconfig, plus anything named like one
         property var monoFonts: []
@@ -5444,7 +5443,7 @@ FloatingWindow {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
-                                    cursorShape: Config.handCursor ? Qt.PointingHandCursor : Qt.ArrowCursor      // (a hand over it, as over what's clicked)
+                                    cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
                                     function set(mx) {
                                         const h = Math.max(0, Math.min(0.999, mx / width));
                                         const c = Qt.hsla(h, 0.65, 0.74, 1);
@@ -5732,14 +5731,12 @@ FloatingWindow {
                     label: "Interface font"
                     detail: "Used across the bar, panels, launcher, switchers, notifications and this window"
                     key: "fontFamily"
-                    defaultFont: "Geist"
                 }
                 Separator {}
                 FontSetting {
                     label: "Code font"
                     detail: "Monospaced font for code: Slate uses it, and your other apps can too, with the switch below"
                     key: "codeFontFamily"
-                    defaultFont: "Geist Mono"
                     monoOnly: true
                 }
                 Separator {}

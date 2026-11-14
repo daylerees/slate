@@ -150,7 +150,7 @@ ShellRoot {
             // (a chip from the pool held over the bar at a place on the desktop: the gap opens)
             else if (what === "hover") {
                 const at = c.split(",");
-                Config.barFloat = { kind: a, icons: [{ code: (Config.barItem(b) || { icon: 0xEAD5 }).icon, item: b, text: topBar.exampleOf(b) }], label: "" };
+                Config.barFloat = { kind: a, icons: [{ code: (Config.barItem(b) || { icon: 0xEAD5 }).icon, item: b, text: topBar.exampleOf(b) }] };
                 Config.barCarry = { kind: a, id: b };
                 Config.barCarryAt = Qt.point(Number(at[0]), Number(at[1]));
                 Config.barFloatAt = Config.barCarryAt;
@@ -169,7 +169,6 @@ ShellRoot {
             else if (what === "priority") { if (a === "move") { if (barEditor.item) barEditor.item.priorityMove(b, n(c)); } else if (a === "scroll") { if (barEditor.item) barEditor.item.priorityScroll(Number(b)); } else Config.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
-            else if (what === "unhover") { Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
         // Hot corners: is this point (Hyprland's pixels, as `hyprctl cursorpos` says) in that
@@ -192,9 +191,6 @@ ShellRoot {
             e.locate(x, y);
             return JSON.stringify({ x: e.origin.x, y: e.origin.y });
         }
-        // The speakers or the microphone in use, or neither, as if PipeWire had said so:
-        // what = "output", "input", "both" or "none" (the volume panel's sliders show it)
-        function audioBusy(what: string): void { popouts.pretendAudioBusy(what); }
         // Weather for the clock panel and control centre, as if it had been fetched for a place
         // (tests have no network): mild rain now, then four days
         // The control centre's quick switches: their order (ids, comma-separated; "" for none
@@ -493,7 +489,7 @@ ShellRoot {
                             fade: Math.round(wsOverview.fade * 100) / 100, animate: wsOverview.animate, strip: Math.round(wsOverview.stripAt() * 10000) / 10000,
                             // (the workspaces Slate knows of now: the overview shows these as it opens)
                             known: Hyprland.workspaces.values.filter(w => w.id > 0).map(w => w.id).sort((a, b) => a - b),
-                            workspaces: wsOverview.spaces.map(w => w.id), cards: wsOverview.spaces.length + Object.keys(wsOverview.contents).length + wsOverview.shotAddrs.length, pending: wsOverview.pendingId, arrived: wsOverview.arrived,
+                            workspaces: wsOverview.spaces.map(w => w.id), cards: wsOverview.spaces.length + Object.keys(wsOverview.contents).length + wsOverview.shotAddrs.length,
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, busy: lockScreen.busy, message: lockScreen.message,
@@ -1212,7 +1208,6 @@ ShellRoot {
             const shape = Config.s.iconShape;
             return shape === "circle" ? base / 2 : shape === "square" ? 0 : shape === "squircle" ? base * 0.3 : base * 0.225;
         }
-        readonly property real bottomGap: 0      // gap between dock and screen edge
         readonly property int hideDelay: 700     // ms after the pointer leaves
         readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
         // What's drawn on the dock's own buttons (the Apps bars, the Downloads and bin symbols, the
@@ -1261,7 +1256,7 @@ ShellRoot {
         }
         readonly property bool vertical: edge === "left" || edge === "right"
         // How far the dock reaches out from its edge: magnified icons and room for their labels
-        readonly property real reach: Math.ceil(base * maxScale + padding * 2 + bottomGap + 40)
+        readonly property real reach: Math.ceil(base * maxScale + padding * 2 + 40)
         // The window is taller still, so an app dragged up far enough to unpin it stays over it (the
         // dock only gets the pointer while it's over its window). Only a drag takes the pointer there
         readonly property real thickness: reach + Math.ceil(Math.max(120, base * 2.5)) + 40
@@ -1744,7 +1739,7 @@ ShellRoot {
         Timer { id: relocated; interval: 120; onTriggered: win.relocating = false }
         onEdgeChanged: { relocating = true; relocated.restart(); movedHold.restart(); }
         readonly property real dockHeight: base + padding * 2
-        property real offset: shown ? 0 : dockHeight + bottomGap + 4
+        property real offset: shown ? 0 : dockHeight + 4
         Behavior on offset { NumberAnimation { duration: Config.ms(260); easing.type: Easing.OutCubic } }
 
         // Open an app's menu by its key, e.g.  slate ipc call dock menu firefox
@@ -2919,7 +2914,7 @@ ShellRoot {
                 x: (strip.width - width) / 2
                 // (while dragging: the whole window, so the app can be carried anywhere above the dock)
                 width: win.dragKey !== "" ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
-                height: !win.shown ? 2 : win.dragKey !== "" ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight + win.bottomGap)
+                height: !win.shown ? 2 : win.dragKey !== "" ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight)
                 y: strip.height - height
             }
 
@@ -2935,7 +2930,7 @@ ShellRoot {
                     width: row.width + win.padding * 2
                     height: win.dockHeight
                     x: (strip.width - width) / 2
-                    y: strip.height - height - win.bottomGap
+                    y: strip.height - height
                     // Corners that follow the icons': the icons' own corner plus half the gap around
                     // them (a fully concentric corner looks too round); a pill for circles
                     // (square with Rounded UI elements off, whatever the icons' shape)

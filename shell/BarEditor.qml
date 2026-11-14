@@ -38,8 +38,7 @@ PanelWindow {
     readonly property color danger: bar.errorColor
     readonly property color control: Config.raised(Config.tint("#2a313c"))
     // (under the pointer: a button, and a switch's track, as in Settings)
-    readonly property color controlLit: Config.hover
-    readonly property color knobLit: Config.hover
+    readonly property color controlLit: Config.hover   // a control, or a switch's knob, under the pointer
     readonly property color divider: Config.tint("#262c35")
     function glyph(code) { return String.fromCodePoint(code); }
 
@@ -113,7 +112,7 @@ PanelWindow {
             carrying = chip;
             Config.barCarryAt = Qt.point(-100000, -100000);
             Config.barFloatAt = Qt.point(-100000, -100000);
-            Config.barFloat = { kind: chip.carry.kind, label: "",
+            Config.barFloat = { kind: chip.carry.kind,
                                 icons: [{ code: chip.icon, item: chip.item, text: chip.item !== "" ? root.bar.exampleOf(chip.item) : "" }] };
             Config.barCarry = chip.carry;
         }
@@ -186,7 +185,7 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: 42; height: 24; radius: Config.corner(12)
             color: sw.checked ? root.accent
-                : (swHover.hovered ? root.knobLit : root.control)
+                : (swHover.hovered ? root.controlLit : root.control)
             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
             // Hover: a soft accent ring around the switch
             Rectangle {
@@ -257,7 +256,7 @@ PanelWindow {
     }
     // The workspace dots as a picture of themselves: four, the first the one you're on, the
     // next with windows on it (for the pool's chip and what's carried, in place of an icon)
-    component WorkspaceDots: Row {
+    component DotsPicture: Row {
         spacing: 5
         Repeater {
             model: 4
@@ -316,7 +315,7 @@ PanelWindow {
                 sourceSize: Qt.size(32, 32)
                 source: visible ? "file://" + Quickshell.shellPath("assets/icon/icon-64.png") : ""
             }
-            WorkspaceDots { visible: barChip.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
+            DotsPicture { visible: barChip.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
             Text {
                 visible: barChip.item !== "control" && barChip.item !== "workspaces"
                 anchors.verticalCenter: parent.verticalCenter
@@ -380,7 +379,7 @@ PanelWindow {
         color: root.bar.barColor
         opacity: root.fade * (1 - root.turn)
         visible: opacity > 0
-        border.width: Config.glassShine ? 1 : 0
+        border.width: Config.glass ? 1 : 0
         border.color: Config.glassEdge
         Shadow {}      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
@@ -650,7 +649,7 @@ PanelWindow {
         color: root.bar.barColor
         opacity: root.fade * root.turn
         visible: opacity > 0
-        border.width: Config.glassShine ? 1 : 0
+        border.width: Config.glass ? 1 : 0
         border.color: Config.glassEdge
         Shadow {}
         Gloss { radius: parent.radius; strength: 0.6 }
@@ -1042,7 +1041,7 @@ PanelWindow {
                         required property var modelData
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
-                        WorkspaceDots { visible: parent.modelData.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
+                        DotsPicture { visible: parent.modelData.item === "workspaces"; anchors.verticalCenter: parent.verticalCenter }
                         Text {
                             visible: parent.modelData.item !== "workspaces"
                             anchors.verticalCenter: parent.verticalCenter
@@ -1060,14 +1059,6 @@ PanelWindow {
                             font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
                         }
                     }
-                }
-                Text {
-                    visible: text !== ""
-                    anchors.verticalCenter: parent.verticalCenter
-                    textFormat: Text.PlainText        // never markup: a tray icon's name is the app's to choose
-                    text: floater.f ? floater.f.label : ""
-                    color: root.text
-                    font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
                 }
             }
         }

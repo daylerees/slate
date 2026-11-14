@@ -24,7 +24,6 @@ Item {
     property bool vertical: false
     property color accent: Config.accent
     property bool animate: true             // the marker's glide and the scroll (else they jump)
-    property bool markerAnimate: animate    // the marker's own glide when activeIndex changes
     property bool markerFollows: true       // false: the caller moves the marker itself (marker.go)
     // Each dot's look: occupied (has windows) or empty
     property var occupied: ws => (ws && ws.toplevels && ws.toplevels.values ? ws.toplevels.values.length : 0) > 0
@@ -175,7 +174,7 @@ Item {
             dot: wd.dot; step: wd.step
             index: wd.markerFollows ? wd.activeIndex : 0
             vertical: wd.vertical
-            animate: wd.markerAnimate
+            animate: wd.animate
             color: wd.accent
         }
     }

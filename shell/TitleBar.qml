@@ -214,7 +214,6 @@ PanelWindow {
                 hoverEnabled: true
                 cursorShape: atLeft ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
                 HoverHandler {
-                    id: cornerHover
                     cursorShape: corner.atLeft ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
                 }
                 onPressed: mouse => { const p = mapToItem(null, mouse.x, mouse.y); tb.sizePress(modelData, p.x, p.y); }

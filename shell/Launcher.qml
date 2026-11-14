@@ -907,7 +907,7 @@ PanelWindow {
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
         // Glass: a thin light rim
-        border.width: Config.glassShine ? 1 : 0
+        border.width: Config.glass ? 1 : 0
         border.color: Config.glassEdge
         Shadow { strength: Config.launcherShadowShare }      // raised: Slate's shadow, with glass too
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
@@ -1159,7 +1159,7 @@ PanelWindow {
                     // see-through, and the accent behind would show through it
                     IconPlate {
                         anchors.fill: parent; z: -1
-                        color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c"), true) : Config.iconTileFor(app, Config.iconPlateColor)
+                        color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c")) : Config.iconTileFor(app, Config.iconPlateColor)
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     }
                     IconGloss {}                // glass: a sheen on the tile, as on the dock's icons

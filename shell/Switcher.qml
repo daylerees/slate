@@ -6,7 +6,6 @@
 //   slate ipc call switcher next | prev | commit | cancel
 
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -21,7 +20,6 @@ PanelWindow {
     readonly property real cardH: 200
     readonly property real previewH: 140
     readonly property real tileSize: 64
-    readonly property color selectColor: Config.tint("#262c35")
     // Live pictures of the windows (Settings → Windows → Windows show), not in game mode
     readonly property bool livePreviews: Config.s.switcherPreviews && !Config.gameMode
 
@@ -261,7 +259,7 @@ PanelWindow {
         opacity: sw.fade
         scale: 0.97 + 0.03 * sw.fade
         // Glass: a thin light rim
-        border.width: Config.glassShine ? 1 : 0
+        border.width: Config.glass ? 1 : 0
         border.color: Config.glassEdge
         Shadow {}      // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent }

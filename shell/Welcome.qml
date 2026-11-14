@@ -958,7 +958,6 @@ PanelWindow {
                         text: w.page === 0 ? "Get started" : w.page === w.pages - 1 ? "Start using Slate" : "Next"
                         color: w.accentText; font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
                     }
-                    HoverHandler { id: nextHover }
                     ClickTap { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
                 }
             }
@@ -1020,7 +1019,6 @@ PanelWindow {
                         width: askYes.implicitWidth + 28; height: 32; radius: Config.corner(8)
                         color: w.accent
                         Text { id: askYes; anchors.centerIn: parent; text: w.askText.button; color: w.accentText; font.family: w.font; font.pixelSize: 12; font.weight: Font.Medium }
-                        HoverHandler { id: askYesHover }
                         ClickTap { onTapped: w.answer(true) }
                     }
                 }

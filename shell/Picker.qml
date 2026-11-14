@@ -39,7 +39,6 @@ PanelWindow {
     readonly property int slideMs: 140
     readonly property color barColor: Config.surface(Config.tint("#0f1216"))
     readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
-    readonly property color selectColor: Config.tint("#262c35")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimTextColor: Config.tint("#8b94a3")
     readonly property color accent: Config.accent
@@ -208,7 +207,7 @@ PanelWindow {
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
         // Glass: a thin light rim
-        border.width: Config.glassShine ? 1 : 0
+        border.width: Config.glass ? 1 : 0
         border.color: Config.glassEdge
         Shadow {}      // raised: Slate's shadow, with glass too
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }

@@ -1088,10 +1088,10 @@ PanelWindow {
             function floatOf(h) {
                 const e = Config.barLayout[h.index];
                 const icon = id => { const it = Config.barItem(id), t = left.things[id]; return { code: it ? it.icon : 0, item: id, text: id === "windowtitle" ? "Window" : t && !bar.vert ? (t.shownLabel || "") : "" }; };
-                if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }], label: "" };
-                if (h.kind === "item") return { kind: "item", icons: [icon(h.name)], label: "" };
-                if (e === "space") return { kind: "space", icons: [{ code: bar.vert ? 0xEB5B : 0xEB59, item: "" }], label: "" };
-                return { kind: "box", icons: e.items.filter(id => id !== "tuck" && Config.barShown(id)).map(icon), label: "" };
+                if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }] };
+                if (h.kind === "item") return { kind: "item", icons: [icon(h.name)] };
+                if (e === "space") return { kind: "space", icons: [{ code: bar.vert ? 0xEB5B : 0xEB59, item: "" }] };
+                return { kind: "box", icons: e.items.filter(id => id !== "tuck" && Config.barShown(id)).map(icon) };
             }
             function carry(h, on) {
                 if (!h) return;
@@ -2031,8 +2031,8 @@ PanelWindow {
         // does the fading. Both for the active window's icon, which goes with its title)
         property bool over: capReach.hovered
         property bool fades: true
-        readonly property bool lifted: over && Config.barItemHoverSet
-        readonly property bool own: !Config.barArranging && (lifted || Config.barItemSet)
+        readonly property bool lifted: over && Config.glass
+        readonly property bool own: !Config.barArranging && (lifted || Config.glass)
         color: own || (Config.barArranging && Config.glass) ? bar.capsuleSolid : bar.capsuleColor
         opacity: !own || !fades ? 1 : lifted ? Config.barItemHoverOpacity : Config.barItemOpacity
         // (each part fades by itself rather than the container as one picture: drawn that way,

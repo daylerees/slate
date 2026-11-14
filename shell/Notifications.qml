@@ -128,13 +128,14 @@ Scope {
             const key = notifs.nextKey++;
             notifs.live[key] = n;
             n.closed.connect(() => { delete notifs.live[key]; });
+            const entry = notifs.entryFor(n);
             const item = {
                 key: key,
                 id: n.id,
-                appName: notifs.nameFor(n.appName || "", notifs.entryFor(n)),
+                appName: notifs.nameFor(n.appName || "", entry),
                 summary: n.summary || "",
                 body: n.body || "",
-                entryId: notifs.entryFor(n),
+                entryId: entry,
                 image: n.image || "",
                 appIcon: n.appIcon || "",
                 // Slate's own notices name the Settings page they're about (x-slate-page), for
@@ -149,7 +150,7 @@ Scope {
             // Do Not Disturb holds back all but urgent ones; game mode holds back every one (they
             // still go to the history, and the bell counts them)
             if (!Config.gameMode && (!notifs.dnd || n.urgency === NotificationUrgency.Critical)) {
-                notifs.showToast(item, n);
+                notifs.showToast(item);
                 notifs.chime(n);
             }
         }
@@ -227,7 +228,7 @@ Scope {
     // and a toast added before then would be most of the way through fading in (and its
     // first frame drawn rough) by the time it's seen
     property var pendingToasts: []
-    function showToast(item, n) {
+    function showToast(item) {
         if (toastWin.ready) { addToast(item.key); return; }
         pendingToasts = pendingToasts.concat([item.key]);
         toastWin.showing = true;

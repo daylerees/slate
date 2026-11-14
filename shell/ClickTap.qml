@@ -2,7 +2,7 @@ import QtQuick
 
 // A TapHandler that also plays Slate's click (Settings → Sound → Click sound, off by default).
 // Use it for things you press: buttons, menu items, switches, tiles.
-// (The pointer becomes a hand over whatever it's on, Config.handCursor. A tap
+// (The pointer becomes a hand over whatever it's on. A tap
 // handler can't change the pointer itself except while pressed, so it gives its item a hover
 // handler that does)
 TapHandler {
@@ -14,7 +14,7 @@ TapHandler {
     property bool sound: true
     onTapped: if (sound) Config.click()
     Component.onCompleted: {
-        if (!hand || !Config.handCursor || !parent) return;
+        if (!hand || !parent) return;
         const h = Config.handHover.createObject(parent);
         if (h) h.enabled = Qt.binding(() => tap.enabled);
     }

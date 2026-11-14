@@ -55,8 +55,7 @@ Singleton {
         return s.lightMode ? Qt.hsla(a.hslHue < 0 ? 0 : a.hslHue, Math.max(a.hslSaturation, 0.45), 0.42, 1) : a;
     }
     // The pointer becomes a hand over anything in Slate that can be clicked (ClickTap and
-    // ClickArea, which everything pressable uses). One switch for it, here
-    readonly property bool handCursor: true
+    // ClickArea, which everything pressable uses)
     readonly property Component handHover: Component { HoverHandler { cursorShape: Qt.PointingHandCursor } }
     // Hover highlight, everywhere in Slate: the accent, lightly. `hover` is see-through, for
     // things with no background of their own; hoverOn(base) is it for things with a fill
@@ -1317,14 +1316,12 @@ Singleton {
     // Tiles with glass (behind app icons everywhere, and the dock's own buttons): the tile's own
     // colour, solid, with the frosting over it (as one colour), so icons sit on something
     // rather than on a faint film
-    readonly property real tileOpacity: 1
     function frostedTile(c) {
         c = Qt.lighter(c, 1.0);
         if (!glass) return c;
-        const f = raised(c), a = tileOpacity;
-        const A = 1 - (1 - a) * (1 - f.a);
-        const mix = (x, y) => (x * a * (1 - f.a) + y * f.a) / A;
-        return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), A);
+        const f = raised(c);
+        const mix = (x, y) => x * (1 - f.a) + y * f.a;
+        return Qt.rgba(mix(c.r, f.r), mix(c.g, f.g), mix(c.b, f.b), 1);
     }
     // The icon theme: the one chosen in Settings → Icons → Icon theme ("" = this computer's)
     readonly property string iconThemeChosen: /^[\w.+-]+$/.test(s.iconTheme) ? s.iconTheme : ""
@@ -1495,25 +1492,24 @@ Singleton {
         iconColoursSoon.restart();
     }
     // The tile behind an app's icon: a deep shade of the icon's colour (a light one in light
-    // mode) with the setting on, else `fallback`. Grey icons keep the fallback. `solid`: never
-    // see-through, even with glass (the launcher's highlighted row)
-    function iconTileFor(app, fallback, solid) { return iconTileShade(app, solid) ?? fallback; }
+    // mode) with the setting on, else `fallback`. Grey icons keep the fallback
+    function iconTileFor(app, fallback) { return iconTileShade(app) ?? fallback; }
     // The shade itself, or null when the theme's tile applies (setting off, filled icons, a grey
     // icon, or its colour not noted yet)
-    function iconTileShade(app, solid) {
+    function iconTileShade(app) {
         if (!s.iconTileColour || s.iconFill || !app) return null;
         const hex = iconColours[app];
         if (!hex) { askIconColour(app); return null; }
-        return iconTileShadeOf(hex, solid);
+        return iconTileShadeOf(hex);
     }
     // The shade for an icon whose main colour is `hex` (also Settings' preview of it)
-    function iconTileShadeOf(hex, solid) {
+    function iconTileShadeOf(hex) {
         if (!s.iconTileColour || s.iconFill || !hex) return null;
         const c = Qt.color(hex);
         if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return null;
         const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
         const t = s.lightMode ? Qt.hsla(h, sat * 0.7, 0.84, 1) : Qt.hsla(h, sat * 0.8, 0.22, 1);
-        return glass && !solid ? Qt.rgba(t.r, t.g, t.b, tileOpacity) : t;
+        return t;
     }
 
     // ---- Keyboard shortcuts set (Settings → Shortcuts) ------------------------------
@@ -1765,8 +1761,6 @@ Singleton {
     // text, highlight and the lines between things. And to Hover opacity while the pointer's
     // over it. Each its own: neither follows the other. (Below 0, from before they had a
     // number to start at: 1)
-    readonly property bool barItemSet: glass
-    readonly property bool barItemHoverSet: glass
     readonly property real barItemOpacity: !glass || s.barItemOpacity < 0 ? 1 : Math.min(1, s.barItemOpacity)
     readonly property real barItemHoverOpacity: !glass || s.barItemHoverOpacity < 0 ? 1 : Math.min(1, s.barItemHoverOpacity)
     // Where Hyprland starts blurring behind the bar. Its window also holds its shadow, which
@@ -1843,9 +1837,8 @@ Singleton {
     // solid hides that, where stopping at its faint edge showed it ("pixely" against a bright
     // window border)
     readonly property real glassCut: Math.max(0.05, glassOpacity * 0.85)
-    // The shine: a thin light rim around glass surfaces
-    // (always there with glass: it was a setting once, and made too little difference to keep)
-    readonly property bool glassShine: glass
+    // The shine, a thin light rim around glass surfaces, is always there with glass (it was a
+    // setting once, and made too little difference to keep): draw it with `glass`
     // Gloss: a sheen on the bar's containers, hover highlights and tooltips (Gloss.qml)
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0
