@@ -7,7 +7,8 @@
 // ~/.config/slate/hypr/hyprland.lua loads after it, so monitor rules there still win.
 //
 // Changes apply straight away but are only saved once kept: apply() remembers how things
-// were, and revert() puts them back (Settings asks, and reverts by itself after a while).
+// were, and revert() puts them back (Settings asks, and reverts by itself after a while, or
+// as soon as its page is left with the question unanswered).
 
 import QtQuick
 import Quickshell
@@ -210,6 +211,18 @@ Scope {
             root.secondsLeft--;
             if (root.secondsLeft <= 0) root.revert();
         }
+    }
+
+    // Let go with a change still waiting (Settings closed with Esc, another page chosen, Slate
+    // reloading): the countdown goes with this, so nothing would ever put the old settings
+    // back, and a mode the screen can't show would stay. So they go back now. Not through
+    // revert(): the timers here may already be gone, and there's nothing left to keep in step;
+    // execDetached's command runs on by itself.
+    Component.onDestruction: {
+        if (!before) return;
+        const lines = [];
+        for (const m of monitors) if (before[m.name]) lines.push(luaFor(m.description, m.name, before[m.name], hdrCapable(m)));
+        if (lines.length > 0) Quickshell.execDetached(["hyprctl", "eval", lines.join("; ")]);
     }
 
     // ---- Saving -----------------------------------------------------------------

@@ -260,6 +260,11 @@ FloatingWindow {
         walk(pageLoader.item);
         return out;
     }
+    // For the tests: one thing about the chosen display changed, as its row on the Displays
+    // page does (it applies at once, and waits to be kept)
+    function displayChange(field, value) {
+        if (section === "displays" && pageLoader.item) pageLoader.item.change(field, value);
+    }
     function followNeeds(label) {
         const row = waitingRows().find(r => r.label === label);
         if (row && row.needsPage !== "") goTo(row.needsPage, row.needsLabel);

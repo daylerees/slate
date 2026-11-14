@@ -310,6 +310,12 @@ ShellRoot {
             const w = settingsLoader.item;
             if (w) w.followNeeds(label);
         }
+        // Settings → Displays: the chosen display turned (0 to 3, as Rotation's choices), as
+        // picking it does: applied straight away, and waiting to be kept
+        function settingsRotateDisplay(transform: int): void {
+            const w = settingsLoader.item;
+            if (w) w.displayChange("transform", transform);
+        }
         // Settings → Assistant's switch and its "Read the risks again", as clicking them does
         function assistant(what: string): void {
             const w = settingsLoader.item;
