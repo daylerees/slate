@@ -2225,7 +2225,7 @@ FloatingWindow {
                             width: Math.min(parent.width, win.detailMeasure)
                             text: Config.avatarBusy ? "Changing your picture…"
                                 : Config.avatarError !== "" ? Config.avatarError
-                                : "Your picture on the control centre, lock screen and login screen"
+                                : "Your picture on the control center, lock screen and login screen"
                             color: Config.avatarError !== "" && !Config.avatarBusy ? win.danger : win.dim
                             font.family: win.font; font.pixelSize: 12
                             wrapMode: Text.Wrap
@@ -2421,14 +2421,14 @@ FloatingWindow {
             Group {
                 ToggleSetting {
                     label: "Night light"
-                    detail: "Warmer screen colours that are kinder to your eyes at night. Also in the control centre"
+                    detail: "Warmer screen colors that are kinder to your eyes at night. Also in the control center"
                     key: "nightLight"
                 }
                 Separator {}
                 SettingRow {
                     label: "Warmth"
                     settingKey: "nightLightTemperature"
-                    detail: "Colour temperature: lower is warmer"
+                    detail: "Color temperature: lower is warmer"
                     ValueSlider { from: 2500; to: 6000; stepSize: 100; suffix: " K"; value: Config.s.nightLightTemperature; onMoved: v => Config.s.nightLightTemperature = v }
                 }
                 Separator {}
@@ -2486,7 +2486,7 @@ FloatingWindow {
                     Button { label: "Edit layout"; onClicked: Config.barArranging = true }
                 }
             }
-            GroupLabel { text: "Position & behaviour" }
+            GroupLabel { text: "Position & behavior" }
             Group {
                 SettingRow {
                     label: "Position"
@@ -2504,7 +2504,7 @@ FloatingWindow {
                 Separator {}
                 ToggleSetting {
                     label: "Monochrome tray icons"
-                    detail: "Draws the tray's app icons in one colour, like the rest of the bar, even with the Colourful look on"
+                    detail: "Draws the tray's app icons in one color, like the rest of the bar, even with the Colorful look on"
                     key: "barTrayMono"
                 }
             }
@@ -2561,7 +2561,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "Dock" }
-            GroupLabel { text: "Position & behaviour" }
+            GroupLabel { text: "Position & behavior" }
             Group {
                 SettingRow {
                     label: "Position"
@@ -2652,8 +2652,8 @@ FloatingWindow {
                         both: "With the pointer on the dock, the icons turn in 3D towards it, and the ones near it straighten up and grow",
                         fade: "The icons away from the pointer fade, so the ones near it stand out; all clear again when it leaves",
                         fademagnify: "The icons near the pointer grow, and the ones away from it fade",
-                        glow: "The icon under the pointer gets a ring and a soft glow round it, in its own colour",
-                        glowmagnify: "The icons near the pointer grow, and the one under it gets a ring and a soft glow in its own colour",
+                        glow: "The icon under the pointer gets a ring and a soft glow round it, in its own color",
+                        glowmagnify: "The icons near the pointer grow, and the one under it gets a ring and a soft glow in its own color",
                         raise: "The icon under the pointer lifts up a little; the others stay where they are",
                         none: "The icons stay as they are"
                     })[Config.s.dockHoverEffect] ?? "The icons near the pointer grow, the one under it most"
@@ -2679,7 +2679,7 @@ FloatingWindow {
                     visible: Config.s.dockHoverEffect !== "none" && Config.s.dockHoverEffect !== "raise"
                     label: "Magnification spread"
                     settingKey: "dockSpread"
-                    detail: "How many neighbouring icons rise in the arc (or turn, with tilt, or stay clear, with fade)"
+                    detail: "How many neighboring icons rise in the arc (or turn, with tilt, or stay clear, with fade)"
                     ValueSlider { from: 1; to: 5; stepSize: 0.5; decimals: 1; value: Config.s.dockSpread; onMoved: v => Config.s.dockSpread = v }
                 }
             }
@@ -2726,8 +2726,8 @@ FloatingWindow {
             GroupLabel { text: "Menu Bar" }
             Group {
                 ToggleSetting {
-                    label: "Colour the window's icon"
-                    detail: "When the focused window came from a space, its icon on the menu bar sits on the space's colour"
+                    label: "Color the window's icon"
+                    detail: "When the focused window came from a space, its icon on the menu bar sits on the space's color"
                     key: "spaceBarTint"
                 }
             }
@@ -2735,7 +2735,7 @@ FloatingWindow {
             Group {
                 ToggleSetting {
                     label: "Top border"
-                    detail: "A thin line in the space's colour along the top of each window"
+                    detail: "A thin line in the space's color along the top of each window"
                     key: "spaceBorders"
                 }
                 Separator {}
@@ -2896,8 +2896,8 @@ FloatingWindow {
         id: controlPage
         Column {
             spacing: 4
-            PageTitle { text: "Control Centre" }
-            IntroText { text: "The control centre has eight quick switches. Drag one onto another and the two change places; drag one across from More switches to put it in. You can change this at any time." }
+            PageTitle { text: "Control Center" }
+            IntroText { text: "The control center has eight quick switches. Drag one onto another and the two change places; drag one across from More switches to put it in. You can change this at any time." }
             SwitchBoard {
                 width: parent.width
                 label: "Quick switches"
@@ -3281,7 +3281,7 @@ FloatingWindow {
                 DropdownSetting {
                     visible: displaysPane.hdrShown
                     label: "HDR"
-                    detail: "Auto: HDR while a game or video fills the screen with HDR content. On: always, in 10-bit colour. Off: never"
+                    detail: "Auto: HDR while a game or video fills the screen with HDR content. On: always, in 10-bit color. Off: never"
                     options: disp.hdrOptions
                     value: displaysPane.cfg ? displaysPane.cfg.hdr : "auto"
                     onPicked: v => displaysPane.change("hdr", v)
@@ -3296,8 +3296,8 @@ FloatingWindow {
                 Separator { visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on" }
                 SettingRow {
                     visible: displaysPane.hdrShown && displaysPane.cfg.hdr === "on"
-                    label: "SDR colour"
-                    detail: "How colourful everything that isn't HDR looks while HDR is on"
+                    label: "SDR color"
+                    detail: "How colorful everything that isn't HDR looks while HDR is on"
                     ValueSlider { from: 0.5; to: 1.5; stepSize: 0.05; decimals: 2; suffix: "×"; value: displaysPane.cfg ? displaysPane.cfg.sdrSaturation : 1; onMoved: v => displaysPane.change("sdrSaturation", v) }
                 }
                 Separator { visible: disp.monitors.length > 1 }
@@ -3782,7 +3782,7 @@ FloatingWindow {
                 DropdownSetting {
                     label: "On battery"
                     settingKey: "profileOnBattery"
-                    detail: "Switched to when you unplug; the control centre can still change it any time"
+                    detail: "Switched to when you unplug; the control center can still change it any time"
                     options: powerPane.profileOptions
                     value: Config.s.profileOnBattery
                     onPicked: v => { Config.s.profileOnBattery = v; Config.applyPowerProfile(); }
@@ -3887,7 +3887,7 @@ FloatingWindow {
                     value: Config.s.keyset
                     onPicked: v => Config.setKeyset(v)
                     detail: Config.s.keyset === "hyprland" ? "Hyprland's own default shortcuts (Super+Q terminal, Super+C close, Super+R launcher, Super+1–0 workspaces)"
-                        : Config.s.keyset === "hyprland-extras" ? "Hyprland's defaults, plus Slate's shortcuts where the keys are free (clipboard on Super+Shift+V, colour picker on Super+Shift+P, overview on Super+Ctrl+Down)"
+                        : Config.s.keyset === "hyprland-extras" ? "Hyprland's defaults, plus Slate's shortcuts where the keys are free (clipboard on Super+Shift+V, color picker on Super+Shift+P, overview on Super+Ctrl+Down)"
                         : "Slate's own shortcuts (Super+Q close, Super+Space or tap Super for the launcher, Super+Tab to switch windows)"
                 }
             }
@@ -4057,7 +4057,7 @@ FloatingWindow {
                 SettingRow {
                     visible: (Config.s.startupApps || []).length === 0
                     label: "Nothing opens at login just yet"
-                    detail: "Add your favourites below, and they'll be ready and waiting each time you log in"
+                    detail: "Add your favorites below, and they'll be ready and waiting each time you log in"
                 }
                 Repeater {
                     model: Config.s.startupApps || []
@@ -4204,7 +4204,7 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Temperature"
                     settingKey: "temperatureUnit"
-                    detail: "For the weather in the clock's panel and the control centre"
+                    detail: "For the weather in the clock's panel and the control center"
                     options: [{ value: "celsius", label: "Celsius (°C)" }, { value: "fahrenheit", label: "Fahrenheit (°F)" }]
                     value: Config.s.temperatureUnit
                     onPicked: v => Config.s.temperatureUnit = v
@@ -4353,7 +4353,7 @@ FloatingWindow {
                     label: "Let assistants use Slate"
                     settingKey: "assistantEnabled"
                     detail: Config.s.privateMode && Config.s.assistantEnabled
-                        ? "Off while Private Mode is on, and back when you turn Private Mode off in the control centre."
+                        ? "Off while Private Mode is on, and back when you turn Private Mode off in the control center."
                         : Config.assistantRisksChanged
                         ? "Something's changed about the assistant, so it's paused. Switch it on again to read what's new."
                         : "What Slate tells an assistant about your desktop (your settings, your open windows and their titles) is sent to the service behind the agent you use, "
@@ -4701,7 +4701,7 @@ FloatingWindow {
                     label: "Default window mode"
                     settingKey: "windowMode"
                     detail: ({
-                        floating: "Windows open floating and centred, like a traditional desktop. Move them by their title bar or with Super+drag; Super+Alt+Space tiles one",
+                        floating: "Windows open floating and centered, like a traditional desktop. Move them by their title bar or with Super+drag; Super+Alt+Space tiles one",
                         master: "One main window on the left, the rest stacked beside it. Super+J makes the focused window the main one; Super+Alt+Space floats one",
                         scrolling: "Windows sit in columns on a strip that scrolls sideways as you move between them. Super+J changes a column's width; Super+Alt+Space floats one",
                         monocle: "One window at a time, filling the screen; the others wait behind it. Super+J or Super+Alt+Left/Right switch between them",
@@ -4739,7 +4739,7 @@ FloatingWindow {
                     label: "Title bars"
                     settingKey: "titleBarStyle"
                     detail: Config.slateTitleBars
-                        ? "Slate Bars: Slate draws a title bar on the floating window in front, with nothing to install or rebuild. It fades out while a window moves, resizes or maximises. Drag it to move the window; double-click to maximise"
+                        ? "Slate Bars: Slate draws a title bar on the floating window in front, with nothing to install or rebuild. It fades out while a window moves, resizes or maximizes. Drag it to move the window; double-click to maximize"
                         : "From the Hyprbars plugin, on every floating window and moving with it. It has to be rebuilt after every Hyprland update; until then Slate Bars are used"
                     options: [{ value: "slate", label: "Slate Bars" },
                               { value: "hyprbars", label: Config.hyprbarsState === "stale" ? "Hyprbars (needs rebuilding)" : "Hyprbars (optional)" }]
@@ -4808,7 +4808,7 @@ FloatingWindow {
                 DropdownSetting {
                     label: "Title bar buttons"
                     settingKey: "titleButtons"
-                    detail: "Which side of a floating window's title bar the close and maximise buttons sit on"
+                    detail: "Which side of a floating window's title bar the close and maximize buttons sit on"
                     options: [{ value: "left", label: "Left" }, { value: "right", label: "Right" }]
                     value: Config.s.titleButtons
                     onPicked: v => Config.s.titleButtons = v
@@ -4850,7 +4850,7 @@ FloatingWindow {
                 SettingRow {
                     label: "Space around a lone window"
                     settingKey: "soloWindowGap"
-                    detail: "Padding around a window that's alone on its workspace, which then keeps its rounded corners. 0 lets it fill the screen up to the bar. Maximised and full-screen apps always fill it"
+                    detail: "Padding around a window that's alone on its workspace, which then keeps its rounded corners. 0 lets it fill the screen up to the bar. Maximized and full-screen apps always fill it"
                     ValueSlider { from: 0; to: 32; stepSize: 2; suffix: " px"; value: Config.s.soloWindowGap; onMoved: v => Config.s.soloWindowGap = v }
                 }
                 Separator {}
@@ -5282,14 +5282,14 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Icons"
-                    detail: "The icon theme, folder colours, the shape of app icons, and more icon styles to add"
+                    detail: "The icon theme, folder colors, the shape of app icons, and more icon styles to add"
                     Button { label: "Open"; onClicked: win.goTo("icons", "") }
                 }
                 Separator {}
                 SettingRow {
                     label: "App Theming"
                     readonly property int count: (Config.s.themedApps || []).length
-                    detail: "Terminals, editors, GTK, Qt and more following Slate's colours and accent · "
+                    detail: "Terminals, editors, GTK, Qt and more following Slate's colors and accent · "
                         + (count === 0 ? "none switched on" : count + (count === 1 ? " app" : " apps") + " themed")
                     Button { label: "Open"; onClicked: win.goTo("apptheming", "") }
                 }
@@ -5299,7 +5299,7 @@ FloatingWindow {
             Group {
                 DropdownSetting {
                     label: "Preset"
-                    detail: "A quick way to a finished look, if you'd rather not fine-tune every setting: sets the theme, colours, glass and folder colours below in one go. Your wallpaper and other settings stay as they are"
+                    detail: "A quick way to a finished look, if you'd rather not fine-tune every setting: sets the theme, colors, glass and folder colors below in one go. Your wallpaper and other settings stay as they are"
                     // Reads "Custom" while the settings don't match a preset; that's not something to
                     // pick, so it isn't in the list
                     readonly property var match: win.themePresets.find(p => win.presetActive(p)) ?? null
@@ -5311,7 +5311,7 @@ FloatingWindow {
                         if (!p || win.presetActive(p)) return;
                         win.ask = {
                             title: "Apply " + p.name + "?",
-                            body: "This gives you a fresh look: it changes the theme, colours, glass and folder colours. "
+                            body: "This gives you a fresh look: it changes the theme, colors, glass and folder colors. "
                                 + "Your wallpaper stays as it is, and so does everything else.",
                             button: "Apply", code: 0xEB01,
                             run: () => win.applyPreset(p)
@@ -5319,7 +5319,7 @@ FloatingWindow {
                     }
                 }
             }
-            GroupLabel { text: "Theme & colour" }
+            GroupLabel { text: "Theme & color" }
             Group {
                 SettingRow {
                     label: "Theme"
@@ -5370,19 +5370,19 @@ FloatingWindow {
                 }
                 Separator {}
                 DropdownSetting {
-                    label: "Colour"
+                    label: "Color"
                     settingKey: "colourStyle"
-                    detail: Config.colourful ? "More variety of colour: soft pastels, like each Settings page in its own colour"
-                        : "The accent colour and greys throughout"
-                    options: [{ value: "monotone", label: "Monotone" }, { value: "colourful", label: "Colourful" }]
+                    detail: Config.colourful ? "More variety of color: soft pastels, like each Settings page in its own color"
+                        : "The accent color and grays throughout"
+                    options: [{ value: "monotone", label: "Monotone" }, { value: "colourful", label: "Colorful" }]
                     value: Config.s.colourStyle || "colourful"
                     onPicked: v => Config.s.colourStyle = v
                 }
                 Separator {}
                 SettingRow {
-                    label: "Accent colour from wallpaper"
+                    label: "Accent color from wallpaper"
                     settingKey: "accentFromWallpaper"
-                    detail: "Highlights (switches, sliders, selected items, the active workspace dot) use a bright colour picked from the wallpaper. Off: the colour chosen below"
+                    detail: "Highlights (switches, sliders, selected items, the active workspace dot) use a bright color picked from the wallpaper. Off: the color chosen below"
                     Row {
                         spacing: 12
                         Rectangle {
@@ -5398,11 +5398,11 @@ FloatingWindow {
                 SettingRow {
                     // Only for the wallpaper's colour
                     needsMet: Config.s.accentFromWallpaper
-                    needs: "Needs Accent colour from wallpaper to be on"
-                    needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
+                    needs: "Needs Accent color from wallpaper to be on"
+                    needsPage: "appearance"; needsLabel: "Accent color from wallpaper"
                     label: "Accent boldness"
                     settingKey: "accentBoldness"
-                    detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
+                    detail: "How vivid the wallpaper's color is: from soft, as picked, to bold. Text on it stays readable"
                     ValueSlider {
                         per: 100
                         from: 0; to: 100; stepSize: 5; suffix: "%"
@@ -5416,9 +5416,9 @@ FloatingWindow {
                     // Only for a colour of your own
                     SettingRow {
                         needsMet: !Config.s.accentFromWallpaper
-                        needs: "Needs Accent colour from wallpaper to be off"
-                        needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
-                        label: "Accent colour"
+                        needs: "Needs Accent color from wallpaper to be off"
+                        needsPage: "appearance"; needsLabel: "Accent color from wallpaper"
+                        label: "Accent color"
                         settingKey: "accent"
                         detail: "Used for highlights across the bar, dock, launcher and panels"
                         Row {
@@ -5443,9 +5443,9 @@ FloatingWindow {
                     SettingRow {
                         id: customRow
                         needsMet: !Config.s.accentFromWallpaper
-                        needs: "Needs Accent colour from wallpaper to be off"
-                        needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
-                        label: "Custom colour"
+                        needs: "Needs Accent color from wallpaper to be off"
+                        needsPage: "appearance"; needsLabel: "Accent color from wallpaper"
+                        label: "Custom color"
                         settingKey: "accent"
                         detail: "Slide to pick a shade, or type a hex code"
                         readonly property color current: Config.s.accent
@@ -5543,7 +5543,7 @@ FloatingWindow {
                     needsPage: "appearance"; needsLabel: "Background tint from wallpaper"
                     label: "Tint boldness"
                     settingKey: "toneBoldness"
-                    detail: "How much of the wallpaper's colour the backgrounds take, in light and dark mode. 50% is the standard amount"
+                    detail: "How much of the wallpaper's color the backgrounds take, in light and dark mode. 50% is the standard amount"
                     ValueSlider {
                         per: 100
                         from: 0; to: 100; stepSize: 5; suffix: "%"
@@ -5564,7 +5564,7 @@ FloatingWindow {
                     visible: Config.s.glass
                     label: "Opacity"
                     settingKey: "glassOpacity"
-                    detail: "How much of their colour the surfaces keep: lower is clearer glass"
+                    detail: "How much of their color the surfaces keep: lower is clearer glass"
                     ValueSlider { per: 100; from: 30; to: 95; stepSize: 5; suffix: "%"; value: Math.round(Config.s.glassOpacity * 100); onMoved: v => Config.s.glassOpacity = v / 100 }
                 }
                 Separator { visible: Config.s.glass }
@@ -5589,9 +5589,9 @@ FloatingWindow {
                 Separator { visible: Config.s.glass }
                 SettingRow {
                     visible: Config.s.glass
-                    label: "Gloss colour"
+                    label: "Gloss color"
                     settingKey: "glassGlossTint"
-                    detail: "How much colour the sheen takes from what it's on: the wallpaper's colour on glass, a selection's own. 0% for plain white"
+                    detail: "How much color the sheen takes from what it's on: the wallpaper's color on glass, a selection's own. 0% for plain white"
                     ValueSlider { per: 100; from: 0; to: 100; stepSize: 5; suffix: "%"; value: Math.round(Config.glossTint * 100); onMoved: v => Config.s.glassGlossTint = v / 100 }
                 }
             }
@@ -6163,7 +6163,7 @@ FloatingWindow {
                     // (looked at again once a new icon theme is in: it decides whether there are coloured folders)
                     Connections { target: Config.s; function onIconThemeChanged() { folderRelist.restart(); } }
                     Timer { id: folderRelist; interval: 2500; onTriggered: { folderList.running = false; folderList.running = true; } }
-                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue grey", breeze: "Breeze blue",
+                    readonly property var names: ({ adwaita: "Adwaita blue", bluegrey: "Blue gray", breeze: "Breeze blue",
                         darkcyan: "Dark cyan", deeporange: "Deep orange", palebrown: "Pale brown", paleorange: "Pale orange" })
                     function nice(n) { return names[n] || (n.charAt(0).toUpperCase() + n.slice(1)); }
                     readonly property var colours: folderSet.info.colours || []
@@ -6188,14 +6188,14 @@ FloatingWindow {
                     }
                     SettingRow {
                         visible: !folderSet.info.supported
-                        label: "Folder colour"
-                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs icons with folders in colours, like Papirus, Kora or Nordzy (yours are " + folderSet.info.base + ")"
+                        label: "Folder color"
+                        detail: "Folders in Nautilus, Dolphin and other file managers. Needs icons with folders in colors, like Papirus, Kora or Nordzy (yours are " + folderSet.info.base + ")"
                     }
                     DropdownSetting {
                         visible: folderSet.info.supported
-                        label: "Folder colour"
+                        label: "Folder color"
                         settingKey: "folderColour"
-                        detail: "Folders in Nautilus, Dolphin and other file managers" + (Config.s.folderColour === "auto" ? ", in the colour closest to the wallpaper's" : "")
+                        detail: "Folders in Nautilus, Dolphin and other file managers" + (Config.s.folderColour === "auto" ? ", in the color closest to the wallpaper's" : "")
                         options: [{ value: "auto", label: "From the wallpaper", folder: folderSet.autoHex },
                                   { value: "default", label: "Theme's own", folder: folderSet.hexOf("blue") || "#5294e2" }]
                             .concat(folderSet.colours.map(c => ({ value: c.name, label: folderSet.nice(c.name), folder: c.hex })))
@@ -6280,7 +6280,7 @@ FloatingWindow {
                     settingKey: "iconFill"
                     detail: Config.s.iconShape === "original"
                         ? "Trim icons' empty margins and theme shadows so they're all the same size. Off: exactly as the apps ship them"
-                        : "Crop each icon's own border and shadow and grow it to fill the shape, on its main colour. Off: the whole icon, smaller, on a plain tile"
+                        : "Crop each icon's own border and shadow and grow it to fill the shape, on its main color. Off: the whole icon, smaller, on a plain tile"
                     Toggle { checked: Config.s.iconFill; onToggled: v => Config.s.iconFill = v }
                 }
                 Separator {}
@@ -6289,15 +6289,15 @@ FloatingWindow {
                     needsMet: !Config.s.iconFill && Config.s.iconShape !== "original"
                     needs: Config.s.iconShape === "original" ? "Needs a Shape other than Original" : "Needs Fill the shape to be off"
                     needsPage: "icons"; needsLabel: Config.s.iconShape === "original" ? "Shape" : "Fill the shape"
-                    label: "Tiles in the icon's colour"
+                    label: "Tiles in the icon's color"
                     settingKey: "iconTileColour"
-                    detail: "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
+                    detail: "The tile behind each icon takes a deep shade of the icon's own main color, rather than the theme's. Gray icons keep the theme's tile"
                     Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
                 }
                 Separator {}
                 ToggleSetting {
                     label: "Tint app icons"
-                    detail: "Colour app icons in the dock, launcher, switcher, bar and notifications with the accent colour"
+                    detail: "Color app icons in the dock, launcher, switcher, bar and notifications with the accent color"
                     key: "tintIcons"
                 }
                 Separator { visible: Config.s.tintIcons }
@@ -6305,7 +6305,7 @@ FloatingWindow {
                     visible: Config.s.tintIcons
                     label: "Tint strength"
                     settingKey: "iconTintStrength"
-                    detail: "A light wash of colour, up to icons drawn entirely in the accent"
+                    detail: "A light wash of color, up to icons drawn entirely in the accent"
                     ValueSlider { from: 20; to: 100; stepSize: 5; suffix: "%"; value: Config.s.iconTintStrength; onMoved: v => Config.s.iconTintStrength = v }
                 }
             }
@@ -6319,7 +6319,7 @@ FloatingWindow {
         Column {
             spacing: 4
             PageTitle { text: "App Theming" }
-            IntroText { text: "Apps you switch on follow Slate's colours, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back." }
+            IntroText { text: "Apps you switch on follow Slate's colors, light or dark, and the accent (even one picked from the wallpaper). Slate backs up a config before changing it, and switching an app off puts it back." }
             GroupLabel { text: "Refresh" }
             Group {
                 SettingRow {
@@ -6947,7 +6947,7 @@ FloatingWindow {
                 { value: "lock", label: "Lock screen" },
                 { value: "launcher", label: "App launcher" },
                 { value: "overview", label: "Workspace overview" },
-                { value: "control", label: "Control Centre" },
+                { value: "control", label: "Control Center" },
                 { value: "notifications", label: "Notifications" },
                 { value: "screenoff", label: "Turn screen off" }
             ]
@@ -7173,7 +7173,7 @@ FloatingWindow {
                     onStreamFinished: {
                         const line = text.trim();
                         printersPane.note = line === "ok" ? "" : line.startsWith("error ")
-                            ? (line === "error cancelled" ? "" : "Slate couldn't do that: " + line.slice(6)) : line;
+                            ? (line === "error canceled" ? "" : "Slate couldn't do that: " + line.slice(6)) : line;
                         printersPane.refresh();
                         // A printer added: it's no longer one to add
                         if (findProc.command && printersPane.searched) { findProc.running = false; findProc.running = true; }
@@ -7276,7 +7276,7 @@ FloatingWindow {
                             Button {
                                 visible: printerRow.printer.jobs > 0
                                 label: "Cancel jobs"
-                                onClicked: printersPane.act(["cancel", printerRow.printer.name], "Cancelling…")
+                                onClicked: printersPane.act(["cancel", printerRow.printer.name], "Canceling…")
                             }
                             Button {
                                 visible: !printerRow.printer.default
@@ -7603,11 +7603,11 @@ FloatingWindow {
             readonly property var words: ({
                 brightness: ["Brightness", ""],
                 contrast: ["Contrast", ""],
-                saturation: ["Colour", "How vivid colours are"],
+                saturation: ["Color", "How vivid colors are"],
                 sharpness: ["Sharpness", ""],
                 gain: ["Gain", "Brightens a dim picture, at the cost of more grain"],
                 gamma: ["Gamma", "Brightens or darkens the middle tones"],
-                white_balance_temperature: ["Colour temperature", "Lower is warmer, higher is cooler"],
+                white_balance_temperature: ["Color temperature", "Lower is warmer, higher is cooler"],
                 exposure_time_absolute: ["Exposure", "How long each frame gathers light: longer is brighter, but blurs movement"],
                 backlight_compensation: ["Backlight compensation", "Brightens you when there's a bright light behind you"]
             })
@@ -7789,7 +7789,7 @@ FloatingWindow {
                 SettingRow {
                     visible: !!camPane.ctrl("white_balance_automatic")
                     label: "Automatic white balance"
-                    detail: "Adjusts the colours to the light in the room. Off: set the colour temperature yourself"
+                    detail: "Adjusts the colors to the light in the room. Off: set the color temperature yourself"
                     Toggle {
                         checked: camPane.ctrl("white_balance_automatic") ? camPane.ctrl("white_balance_automatic").value === 1 : true
                         onToggled: v => camPane.setCtrl("white_balance_automatic", v ? 1 : 0)

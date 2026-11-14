@@ -40,7 +40,7 @@ else:
 if problem:
     # One line for Slate's log, so default colours with "Accent from wallpaper" on can be
     # explained; the defaults are still printed below
-    print("wallpaper-accent: " + problem + "; using the default colours", file=sys.stderr)
+    print("wallpaper-accent: " + problem + "; using the default colors", file=sys.stderr)
 best, best_score = None, -1
 hx = hy = wsat = wtot = 0.0
 for line in out.splitlines():

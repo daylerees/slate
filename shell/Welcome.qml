@@ -284,10 +284,10 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "Colours"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "Colors"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 12
-                        text: "Slate can borrow its colours from your wallpaper, so everything matches, and change along with it."
+                        text: "Slate can borrow its colors from your wallpaper, so everything matches, and change along with it."
                         color: w.dim; font.family: w.font; font.pixelSize: 13
                     }
                     // Theme
@@ -319,13 +319,13 @@ PanelWindow {
                     }
                     Item { width: 1; height: 14 }
                     // Accent
-                    Text { text: "Accent colour"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; bottomPadding: 4 }
+                    Text { text: "Accent color"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; bottomPadding: 4 }
                     Row {
                         width: parent.width
                         spacing: 12
                         Repeater {
-                            model: [{ wall: true, title: "From your wallpaper", rec: true, detail: "A bright colour picked from your wallpaper, changing whenever it does" },
-                                    { wall: false, title: "Choose one", rec: false, detail: "Pick a favourite, and it stays put" }]
+                            model: [{ wall: true, title: "From your wallpaper", rec: true, detail: "A bright color picked from your wallpaper, changing whenever it does" },
+                                    { wall: false, title: "Choose one", rec: false, detail: "Pick a favorite, and it stays put" }]
                             delegate: Rectangle {
                                 id: accOpt
                                 required property var modelData
@@ -401,12 +401,12 @@ PanelWindow {
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
-                                text: "Every app Slate can theme that you have installed (GTK and Qt apps, terminals, editors and more) follows these colours too, so your whole desktop matches."
+                                text: "Every app Slate can theme that you have installed (GTK and Qt apps, terminals, editors and more) follows these colors too, so your whole desktop matches."
                                 color: w.dim; font.family: w.font; font.pixelSize: 12
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
-                                text: "This changes those apps' own settings (their colour or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
+                                text: "This changes those apps' own settings (their color or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
                                 color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: 12
                             }
                         }
@@ -459,7 +459,7 @@ PanelWindow {
                         Repeater {
                             model: [
                                 { name: "Metro Flat", glass: false, rec: true, detail: "Solid, flat panels with crisp edges. Clean and quiet, and a little lighter on your computer." },
-                                { name: "Liquid Glass", glass: true, rec: false, detail: "See-through panels with your desktop softly blurred behind them, and a glossy sheen. Best with a colourful wallpaper." }
+                                { name: "Liquid Glass", glass: true, rec: false, detail: "See-through panels with your desktop softly blurred behind them, and a glossy sheen. Best with a colorful wallpaper." }
                             ]
                             delegate: Rectangle {
                                 id: lookCard
@@ -608,7 +608,7 @@ PanelWindow {
                         spacing: 16
                         Repeater {
                             model: [{ bar: true, title: "Menu Bar", detail: "Apps, workspaces, the window title, status icons and the clock" },
-                                    { bar: false, title: "Dock", detail: "Your favourite and open apps" }]
+                                    { bar: false, title: "Dock", detail: "Your favorite and open apps" }]
                             delegate: Rectangle {
                                 id: edgeCard
                                 required property var modelData

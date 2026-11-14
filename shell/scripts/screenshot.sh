@@ -18,7 +18,7 @@ RUNTIME="${XDG_RUNTIME_DIR:-}"
 # Private Mode (PrivateMode.qml) leaves this mark while it's on: no screenshots then
 if [ -e "$RUNTIME/slate-private" ]; then
     notify-send -a Slate -i "$here/../assets/icon/icon-64.png" -h string:x-slate-page:control "Screenshots are off" \
-        "Private Mode is on, so Slate isn't taking screenshots. Turn it off in the control centre when you're ready." 2>/dev/null
+        "Private Mode is on, so Slate isn't taking screenshots. Turn it off in the control center when you're ready." 2>/dev/null
     exit 0
 fi
 settings=$(python3 -c '

@@ -301,7 +301,7 @@ def install():
         elif rc == 3:
             # (install.sh --update installs new packages itself, with a password prompt)
             st.update(status="failed", error="This update needs packages that weren't installed (the password prompt "
-                      "was cancelled, or they couldn't be). Try again, or download the release and run ./install.sh from it.")
+                      "was canceled, or they couldn't be). Try again, or download the release and run ./install.sh from it.")
         else:
             st.update(status="failed", error="The update didn't finish (see the log). Your previous Slate is still in place.")
     except Refused as e:

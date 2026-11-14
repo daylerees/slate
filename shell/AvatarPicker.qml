@@ -348,7 +348,7 @@ FloatingWindow {
                 width: 190
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
-                text: "Shown on the lock and login screens and in the control centre. It's cropped to a circle from the middle."
+                text: "Shown on the lock and login screens and in the control center. It's cropped to a circle from the middle."
                 color: pk.dim; font.family: pk.font; font.pixelSize: 11
             }
         }

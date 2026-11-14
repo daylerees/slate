@@ -390,10 +390,10 @@ def main():
             shutil.rmtree(OURS)
         return
     if not root:
-        sys.exit("folder-colour: the icon theme (%s) has no folders in colours" % base)
+        sys.exit("folder-colour: the icon theme (%s) has no folders in colors" % base)
     if args[0] == "--auto":
         if len(args) < 2 or not re.fullmatch(r"#[0-9a-fA-F]{6}", args[1]):
-            sys.exit("folder-colour: --auto needs a colour like #4a90d9")
+            sys.exit("folder-colour: --auto needs a color like #4a90d9")
         colour = nearest(args[1], colours(root))
     else:
         colour = args[0]          # (a name: only whether it's there matters, not its SVG's colour)

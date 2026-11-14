@@ -620,7 +620,7 @@ PanelWindow {
                 topPadding: 6
                 Text {
                     width: parent.width
-                    text: Config.s.privateMode ? "Nova is off while Private Mode is on. You can turn Private Mode off in the control centre."
+                    text: Config.s.privateMode ? "Nova is off while Private Mode is on. You can turn Private Mode off in the control center."
                         : Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
                         : "The assistant isn't switched on yet. You can switch it on in Settings, which says what that means first."
                     textFormat: Text.PlainText; wrapMode: Text.WordWrap

@@ -173,7 +173,7 @@ NAMED = {
     "themeMode": ("appearance", "Theme"),
     "wallpaper": ("wallpaper", "Wallpaper"),
     "wallpaperFolder": ("wallpaper", "Wallpaper folder"),
-    "folderColour": ("icons", "Folder colour"),
+    "folderColour": ("icons", "Folder color"),
     "shadows": ("appearance", "Shadows (on or off): under panels, menus, the launcher, notifications and floating windows"),
     "shadowDarkness": ("appearance", "Shadow darkness"),
     "shadowSoftness": ("appearance", "Shadow softness (px)"),
@@ -195,7 +195,7 @@ NAMED = {
     "airplaneRestore": ("control", "Airplane mode: which radios it turned off, to turn back on after"),
     "privateMode": ("control", "Private Mode (on or off): microphones muted, camera off, screenshots and screen sharing stopped"),
     "privateRestore": ("control", "Private Mode: which microphones it muted, to unmute after"),
-    "controlSwitches": ("control", "Control centre: its quick switches and their order"),
+    "controlSwitches": ("control", "Control center: its quick switches and their order"),
     "barPosition": ("bar", "Menu bar position"),
     "barLayout": ("bar", "Menu bar arrangement"),
     "barOverflow": ("bar", "Menu bar: what leaves first when it doesn't fit"),
@@ -211,7 +211,7 @@ NAMED = {
     "barShowTitleIcon": ("bar", "Window title: app icon"),
     "barShowTray": ("bar", "App icons (tray)"),
     "barTrayCollapsed": ("bar", "Tuck the tray away"),
-    "barTrayMono": ("bar", "Tray icons in one colour, even in the Colourful look"),
+    "barTrayMono": ("bar", "Tray icons in one color, even in the Colorful look"),
     "barShowNotifications": ("bar", "Notifications"),
     "barShowClipboard": ("bar", "Clipboard"),
     "barShowScreenshot": ("bar", "Screenshot"),
@@ -237,7 +237,7 @@ NAMED = {
     "barClockSeconds": ("bar", "Show seconds"),
     "barClockDate": ("bar", "Show the date"),
     "barStatusCollapsed": ("bar", "Tuck the status icons away (in Slate's own arrangement)"),
-    "barShowControl": ("bar", "Control centre button"),
+    "barShowControl": ("bar", "Control center button"),
     "barShowClock": ("bar", "Clock"),
     "dockPosition": ("dock", "Dock position"),
     "switcherAppIcons": ("windows", "Window switcher: app icons"),
@@ -436,7 +436,7 @@ def gate():
     STATUS.update(st)
     if st.get("private"):
         raise Refused("Private Mode is on in Slate, so assistants can't use it just now. Only the person can turn it "
-                      "off, from the control centre.")
+                      "off, from the control center.")
     if st.get("risksChanged"):
         raise Refused("Something's changed about the assistant in Slate, so its tools are paused until the person has "
                       "read what's new. Tell them to have a look in Settings → Assistant.")
@@ -919,7 +919,7 @@ MOVES = ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"]
 # What each text setting takes: a list of values, or a pattern (with how to say it)
 VALUES = {
     "themeMode": ["dark", "light", "auto"],
-    "accent": (r"#[0-9a-fA-F]{6}", "a colour like #8fb3e8"),
+    "accent": (r"#[0-9a-fA-F]{6}", "a color like #8fb3e8"),
     "wallpaperMinSize": (r"\d{3,5}x\d{3,5}", "a size like 1280x720"),
     "wallpaperChange": (r"off|login|[1-9]\d{0,3}", "off, login, or a number of minutes"),
     "nightLightSchedule": ["manual", "sun", "custom"],
@@ -927,7 +927,7 @@ VALUES = {
     "nightLightTo": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 07:00"),
     "workspaceShape": ["square", "circle"],
     "iconShape": ["tile", "squircle", "circle", "square", "original"],
-    "folderColour": (r"[a-z]{3,20}", "default, auto, or a folder colour your icons have, like teal"),
+    "folderColour": (r"[a-z]{3,20}", "default, auto, or a folder color your icons have, like teal"),
     "iconTheme": (r"|[\w.+-]{1,60}", "an installed icon theme's folder name, like Papirus-Dark, or empty for this computer's own"),
     "cursorTheme": (r"|[\w.+-]{1,60}", "an installed cursor theme's folder name, like Bibata-Modern-Ice, or empty for Slate's own"),
     "mouseAccel": ["", "adaptive", "flat"],
@@ -1151,7 +1151,7 @@ PANELS = ["control", "spaces", "notifications", "session", "volume", "wifi", "cl
 
 @tool("look_apply", "Apply a look",
       "Switch to one of Slate's finished looks (a preset of appearance settings): Liquid Glass (see-through, "
-      "blurred) or Metro Flat (solid). The theme (dark or light) and accent colour stay as they are.",
+      "blurred) or Metro Flat (solid). The theme (dark or light) and accent color stay as they are.",
       {"name": {"type": "string", "enum": LOOKS}}, ["name"], tier="change")
 def look_apply(name):
     doing("Switch to %s" % name)
@@ -1162,7 +1162,7 @@ def look_apply(name):
 
 
 @tool("panel_open", "Open a panel",
-      "Open one of the menu bar's panels for the person to use (control is the control centre).",
+      "Open one of the menu bar's panels for the person to use (control is the control center).",
       {"name": {"type": "string", "enum": PANELS}}, ["name"], tier="change")
 def panel_open(name):
     changing("Open a panel?", "%s is asking to open the %s panel." % (asker(), name), "Open")
@@ -1173,7 +1173,7 @@ def panel_open(name):
 # What can be on the menu bar, by the names its arrangement uses (Config.barItems). "more" holds
 # whatever there isn't room for: it's always on the bar
 BAR_ITEMS = {
-    "control": "Control Centre", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
+    "control": "Control Center", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
     "workspaces": "Workspaces", "workspacename": "Workspace name", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
     "notifications": "Notifications", "clipboard": "Clipboard", "screenshot": "Screenshot", "camera": "Camera",
     "gamemode": "Game Mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
@@ -1346,12 +1346,12 @@ STATES = {
 
 
 @tool("window_state", "Float, tile or fill the screen",
-      "Make a window float or tile, maximise it, make it full screen, or restore it from either of those.",
+      "Make a window float or tile, maximize it, make it full screen, or restore it from either of those.",
       {"address": ADDRESS, "state": {"type": "string", "enum": list(STATES)}}, ["address", "state"], tier="change")
 def window_state(address, state):
     c = window(address)
     name = app_name(c.get("class", ""))
-    doing("%s %s" % ({"float": "Float", "tile": "Tile", "maximise": "Maximise", "fullscreen": "Full-screen", "restore": "Restore"}[state], name))
+    doing("%s %s" % ({"float": "Float", "tile": "Tile", "maximise": "Maximize", "fullscreen": "Full-screen", "restore": "Restore"}[state], name))
     changing("Change %s's window?" % name, "%s is asking to %s this window." % (asker(), state), "Change")
     hypr_do(STATES[state] % spaces.win_sel(address))
     return {"window": name, "state": state}

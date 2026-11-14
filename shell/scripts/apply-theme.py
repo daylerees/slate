@@ -225,7 +225,7 @@ def main():
     p = json.loads(sys.argv[1])
     for k in ("accent", "accentText", "bg", "surface", "surfaceHigh", "text", "dim", "error"):
         if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(p.get(k, ""))):
-            sys.exit("apply-theme: missing or bad colour '%s'" % k)
+            sys.exit("apply-theme: missing or bad color '%s'" % k)
     live = not os.environ.get("SLATE_THEME_TEST")
     on = set(p.get("on") or [])
     ctx = Ctx(palette(p), live)

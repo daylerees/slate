@@ -34,7 +34,7 @@ Disturb, Wi-Fi, Bluetooth and the dock.
 Words people use: Glass: translucent, blurred surfaces. A look: a preset of appearance
 settings. A Space: a saved arrangement of workspaces and their windows. Window mode: how a
 workspace lays out windows (tiled, floating and so on). Game mode: switches off effects and
-interruptions. Night light: warmer colours in the evening. More (on the dock): apps that
+interruptions. Night light: warmer colors in the evening. More (on the dock): apps that
 don't fit.
 
 [shared]

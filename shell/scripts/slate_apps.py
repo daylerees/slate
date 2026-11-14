@@ -309,7 +309,7 @@ def kde_reload(ctx):
 
 
 # ==== Terminals =============================================================================
-@app("kitty", "kitty", "Colours, plus a see-through starting config if you have none", lambda: have("kitty"))
+@app("kitty", "kitty", "Colors, plus a see-through starting config if you have none", lambda: have("kitty"))
 def kitty(ctx):
     c = ctx.c
     lines = ["# " + GEN]
@@ -347,7 +347,7 @@ def kitty_reload(ctx):
         signal_all("kitty", "USR1")          # kitty re-reads its config on SIGUSR1
 
 
-@app("alacritty", "Alacritty", "Colours, plus a see-through starting config if you have none", lambda: have("alacritty"))
+@app("alacritty", "Alacritty", "Colors, plus a see-through starting config if you have none", lambda: have("alacritty"))
 def alacritty(ctx):
     c = ctx.c
     q = lambda h: "'%s'" % h
@@ -384,7 +384,7 @@ def alacritty(ctx):
         ctx.block(conf, "[general]\nimport = [%s]\n\n" % path, top=True)
 
 
-@app("ghostty", "Ghostty", "Colours, plus a see-through starting config if you have none", lambda: have("ghostty"))
+@app("ghostty", "Ghostty", "Colors, plus a see-through starting config if you have none", lambda: have("ghostty"))
 def ghostty(ctx):
     c = ctx.c
     out = ["# " + GEN]
@@ -404,7 +404,7 @@ def ghostty_reload(ctx):
         signal_all("ghostty", "USR2")        # Ghostty reloads its config on SIGUSR2
 
 
-@app("foot", "foot", "Colours, plus a see-through starting config if you have none", lambda: have("foot"))
+@app("foot", "foot", "Colors, plus a see-through starting config if you have none", lambda: have("foot"))
 def foot(ctx):
     c = ctx.c
     out = ["# " + GEN, "[colors]", "background=%s" % bare(c["bg"]), "foreground=%s" % bare(c["text"]),
@@ -434,7 +434,7 @@ def wezterm_into(ctx, d, native):
 
 
 
-@app("wezterm", "WezTerm", "A Slate colour scheme (pick \"Slate\" in your config); a starting config if you have none",
+@app("wezterm", "WezTerm", "A Slate color scheme (pick \"Slate\" in your config); a starting config if you have none",
      lambda: have("wezterm") or flatpak("org.wezfurlong.wezterm") is not None)
 def wezterm(ctx):
     if have("wezterm"):
@@ -442,7 +442,7 @@ def wezterm(ctx):
     fp = flatpak("org.wezfurlong.wezterm", "config", "wezterm")
     if fp:
         wezterm_into(ctx, fp, False)
-@app("btop", "btop", "The system monitor's colours", lambda: have("btop"))
+@app("btop", "btop", "The system monitor's colors", lambda: have("btop"))
 def btop(ctx):
     c = ctx.c
     a, s, t = c["accent"], c["secondary"], c["tertiary"]
@@ -462,7 +462,7 @@ def btop_reload(ctx):
 
 
 # ==== Code editors ==========================================================================
-@app("texteditor", "GNOME Text Editor", "A Slate colour scheme, used unless you've picked another",
+@app("texteditor", "GNOME Text Editor", "A Slate color scheme, used unless you've picked another",
      lambda: have("gnome-text-editor") or flatpak("org.gnome.TextEditor") is not None)
 def text_editor(ctx):
     c, s = ctx.c, ctx.c["syn"]
@@ -500,7 +500,7 @@ def text_editor(ctx):
         rows.append('  <style name="%s"%s/>' % (name, attrs))
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<!-- %s -->\n'
            '<style-scheme id="slate" name="Slate" version="1.0">\n  <author>Slate</author>\n'
-           "  <description>Slate's colours, following its light or dark theme</description>\n"
+           "  <description>Slate's colors, following its light or dark theme</description>\n"
            % GEN + "\n".join(rows) + "\n</style-scheme>\n")
     if have("gnome-text-editor"):
         ctx.file(os.path.join(DATA, "gtksourceview-5", "styles", "slate.xml"), xml)
@@ -621,7 +621,7 @@ def vscode(ctx):
     c = ctx.c
     ext_id, ver = "slate.slate-theme", "1.0.0"
     folder = "%s-%s" % (ext_id, ver)
-    pkg = {"name": "slate-theme", "displayName": "Slate", "description": "Slate's colours. " + GEN,
+    pkg = {"name": "slate-theme", "displayName": "Slate", "description": "Slate's colors. " + GEN,
            "publisher": "slate", "version": ver, "engines": {"vscode": "^1.60.0"}, "categories": ["Themes"],
            "contributes": {"themes": [{"label": "Slate", "uiTheme": "vs" if c["light"] else "vs-dark",
                                        "path": "./themes/slate.json"}]}}
@@ -818,7 +818,7 @@ def nvim_dirs():
     return config_dirs(have("nvim"), "nvim", "io.neovim.nvim")
 
 
-@app("vim", "Vim and Neovim", "A Slate colour scheme (%s), used unless you set your own" % VIM_NAME,
+@app("vim", "Vim and Neovim", "A Slate color scheme (%s), used unless you set your own" % VIM_NAME,
      lambda: have("vim") or bool(nvim_dirs()))
 def vim(ctx):
     text = vim_colors(ctx.c)
@@ -890,7 +890,7 @@ def bat_reload(ctx):
         run([bat_cmd(), "cache", "--build"], timeout=60)
 
 
-@app("fzf", "fzf", "Slate's colours for the fuzzy finder (FZF_DEFAULT_OPTS_FILE, set by the Slate session)",
+@app("fzf", "fzf", "Slate's colors for the fuzzy finder (FZF_DEFAULT_OPTS_FILE, set by the Slate session)",
      lambda: have("fzf"))
 def fzf(ctx):
     c = ctx.c
@@ -906,7 +906,7 @@ def fzf_opts_dir():
     return os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local", "state"), "slate", "fzf")
 
 
-@app("yazi", "Yazi", "A Slate flavour, selected for you", lambda: have("yazi"))
+@app("yazi", "Yazi", "A Slate flavor, selected for you", lambda: have("yazi"))
 def yazi(ctx):
     c = ctx.c
     q = lambda h: '"%s"' % h
@@ -944,7 +944,7 @@ def yazi(ctx):
     ctx.ini_many(theme, [("flavor", "dark", '"slate"'), ("flavor", "light", '"slate"')], sep=" = ")
 
 
-@app("cava", "cava", "The audio visualiser's colours: a gradient in Slate's accent", lambda: have("cava"))
+@app("cava", "cava", "The audio visualizer's colors: a gradient in Slate's accent", lambda: have("cava"))
 def cava(ctx):
     c = ctx.c
     conf = cfg("cava", "config")
@@ -981,7 +981,7 @@ def zathura_dirs():
     return config_dirs(have("zathura"), "zathura", "org.pwmt.zathura")
 
 
-@app("zathura", "zathura", "The document viewer's colours (and its recolour mode), Flatpak too", lambda: bool(zathura_dirs()))
+@app("zathura", "zathura", "The document viewer's colors (and its recolor mode), Flatpak too", lambda: bool(zathura_dirs()))
 def zathura(ctx):
     for d in zathura_dirs():
         zathura_into(ctx, d)
@@ -1014,7 +1014,7 @@ def discord_css(c):
         "--mention-background": c["accent"] + "1f", "--mention-foreground": c["accent"],
     }
     body = "\n".join("    %s: %s !important;" % kv for kv in v.items())
-    return ("/**\n * @name Slate\n * @description Slate's colours. %s\n * @author Slate\n * @version 1.0.0\n */\n"
+    return ("/**\n * @name Slate\n * @description Slate's colors. %s\n * @author Slate\n * @version 1.0.0\n */\n"
             ":root, .theme-dark, .theme-light, .visual-refresh {\n%s\n}\n" % (GEN, body))
 
 DISCORDS = ["vesktop", "Vencord", "equibop", "Equicord", "legcord"]
@@ -1270,7 +1270,7 @@ def firefox_css(c):
     return ("/* %s */\n:root, #navigator-toolbox, menupopup, panel {\n%s\n}\n"
             "#navigator-toolbox, #TabsToolbar, #titlebar { background-color: %s !important; }\n" % (GEN, body, c["bg"]))
 
-@app("firefox", "Firefox", "Toolbars, tabs and menus in Slate's colours (userChrome.css), after a restart",
+@app("firefox", "Firefox", "Toolbars, tabs and menus in Slate's colors (userChrome.css), after a restart",
      lambda: bool(firefox_profiles()))
 def firefox(ctx):
     css = firefox_css(ctx.c)
@@ -1313,7 +1313,7 @@ INFO = {
     "fzf": ("A fuzzy finder for the terminal", "https://junegunn.github.io/fzf/",
             {"arch": "fzf", "debian": "fzf", "fedora": "fzf", "opensuse": "fzf"}),
     "yazi": ("A fast file manager for the terminal", "https://yazi-rs.github.io", {"arch": "yazi"}),
-    "cava": ("An audio visualiser for the terminal", "https://github.com/karlstav/cava",
+    "cava": ("An audio visualizer for the terminal", "https://github.com/karlstav/cava",
              {"arch": "cava", "debian": "cava", "fedora": "cava", "opensuse": "cava"}),
     "zathura": ("A keyboard-driven document viewer", "https://pwmt.org/projects/zathura/",
                 {"arch": "zathura zathura-pdf-mupdf", "debian": "zathura", "fedora": "zathura zathura-pdf-mupdf",

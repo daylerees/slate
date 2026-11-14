@@ -64,7 +64,7 @@ def act(cmd, timeout=60, report=True):
             print("ok")
         return True
     elif cmd[0] == "pkexec" and r.returncode in (126, 127):
-        print("error cancelled")              # the password prompt was dismissed
+        print("error canceled")              # the password prompt was dismissed
     else:
         msg = (r.stderr or r.stdout).strip().splitlines()
         print("error " + (msg[-1] if msg else "it didn't work"))

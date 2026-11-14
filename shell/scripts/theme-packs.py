@@ -80,7 +80,7 @@ PACKS = [
                             ("macchiato-blue", "4c66fba0272661f03dee2e5ffefd1829e1a94625781237804bc791ca5a781c42"))]},
     # ---- Icons ----
     {"id": "kora", "kind": "icons", "name": "Kora",
-     "about": "Soft, colourful and rounded, in colour or grey",
+     "about": "Soft, colorful and rounded, in color or gray",
      "files": [{"url": GH + "bikass/kora/archive/refs/tags/v2.0.6.tar.gz",
                 "sha256": "159bdb7a09409a12e54a71136ec8889c51b0bf7c145c8b20e3509dc1e90089bd",
                 "take": {"kora-2.0.6/kora": "kora", "kora-2.0.6/kora-pgrey": "kora-pgrey"}}]},

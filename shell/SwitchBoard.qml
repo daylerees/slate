@@ -136,7 +136,7 @@ Item {
 
     // ---- In the control centre ----------------------------------------------------------------
     // (beside them: over the switches' column, with the ones waiting headed on the left)
-    Heading { id: inHead; x: board.side ? Math.max(spareSide.width + 8, grid.x0 - 4) : 0; text: "In the control centre" }
+    Heading { id: inHead; x: board.side ? Math.max(spareSide.width + 8, grid.x0 - 4) : 0; text: "In the control center" }
     Heading { id: spareSide; visible: board.side; x: 12; text: "More switches" }
     Rectangle {
         id: panelCard

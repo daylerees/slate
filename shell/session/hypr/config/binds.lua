@@ -47,7 +47,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + C"]                  = "Apps: Calculator",
     ["CONTROL + SHIFT + Escape"]   = "Apps: System monitor (btop)",
     ["SUPER + Z"]                  = "Slate: Settings",
-    ["SUPER + X"]                  = "Slate: Control centre",
+    ["SUPER + X"]                  = "Slate: Control center",
     ["SUPER + A"]                  = "Slate: Notifications",
     ["SUPER + ALT + C"]            = "Slate: Power menu",
     ["SUPER + L"]                  = "Slate: Lock the screen",
@@ -55,7 +55,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + period"]             = "Slate: Emoji",
     ["SUPER + SHIFT + W"]          = "Slate: Change the wallpaper",
     ["SUPER + ALT + W"]            = "Slate: Wallpaper switcher (Left and Right to look, Enter to keep one)",
-    ["SUPER + P"]                  = "Slate: Pick a colour from the screen (copied)",
+    ["SUPER + P"]                  = "Slate: Pick a color from the screen (copied)",
     ["Print"]                      = "Slate: Screenshot of an area",
     ["SUPER + Print"]              = "Slate: Screenshot of the screen",
     ["SUPER + Minus"]              = "Slate: Zoom out",
@@ -67,7 +67,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + Tab"]                = "Windows: Switch windows (hold Super)",
     ["ALT + Tab"]                  = "Windows: Next window",
     ["SUPER + ALT + Space"]        = "Windows: Float or tile the window",
-    ["SUPER + D"]                  = "Windows: Maximise",
+    ["SUPER + D"]                  = "Windows: Maximize",
     ["SUPER + F"]                  = "Windows: Full screen",
     ["SUPER + J"]                  = "Windows: Split the other way (Side Stack: make it the main window; Scrolling: change the column's width; Stacking: the next window)",
     ["SUPER + R"]                  = "Windows: Resize with the arrow keys",
@@ -115,7 +115,7 @@ local HYPRLAND_DESCRIPTIONS = {
 -- Slate's shortcuts that move to other keys in "Hyprland + Slate Extras" (theirs are taken)
 local EXTRA_DESCRIPTIONS = {
     ["SUPER + SHIFT + V"]          = "Slate: Clipboard history",
-    ["SUPER + SHIFT + P"]          = "Slate: Pick a colour from the screen (copied)",
+    ["SUPER + SHIFT + P"]          = "Slate: Pick a color from the screen (copied)",
     ["SUPER + CONTROL + Down"]     = "Workspaces: Workspace overview",
 }
 -- The descriptions for the set in use; the number-key ones are worked out from the keys
@@ -150,7 +150,7 @@ local launchPrefix = os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "
 -- A command that needs a tool not every distro installs with Slate (hyprpicker, btop): run
 -- through scripts/need.sh, which runs it as it is when the tool is there, and otherwise says
 -- what to install in a notification, so the shortcut never just does nothing. `what` is how
--- the notification starts ("The colour picker"); no quotes in it
+-- the notification starts ("The color picker"); no quotes in it
 local function needing(tool, what, cmd)
     return SLATE_DIR .. "/scripts/need.sh " .. tool .. " '" .. what .. "' -- " .. cmd
 end
@@ -261,7 +261,7 @@ local shared = {
 
     -- Utilities: the colour picker (copies the colour), screenshots, and the wallpaper (Slate
     -- Settings → Appearance, at the wallpapers) and its switcher
-    colourPicker      = hl.dsp.exec_cmd(needing("hyprpicker", "The colour picker", "hyprpicker -a -n")),
+    colourPicker      = hl.dsp.exec_cmd(needing("hyprpicker", "The color picker", "hyprpicker -a -n")),
     screenshotArea    = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"),
     screenshotScreen  = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"),
     wallpaper         = hl.dsp.exec_cmd(slate("settings page wallpaper")),

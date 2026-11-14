@@ -190,7 +190,7 @@ Singleton {
     // Everything that can be in a container: its name in the arrangement, what it's called, its
     // icon (for the pool on Settings → Menu Bar), and the setting that says whether it shows
     readonly property var barItems: [
-        { id: "control", label: "Control Centre", icon: 0xEAD7, key: "barShowControl" },
+        { id: "control", label: "Control Center", icon: 0xEAD7, key: "barShowControl" },
         { id: "apps", label: "Apps", icon: 0xEC42, key: "barShowApps" },
         { id: "spaces", label: "Spaces", icon: 0xEDBA, key: "barShowSpaces" },
         { id: "nova", label: "Nova", icon: 0xF014, key: "barShowAssistant" },

@@ -31,7 +31,7 @@ if ! gdbus call --system --dest org.freedesktop.Accounts --object-path "/org/fre
     if ! gdbus introspect --system --dest org.freedesktop.Accounts --object-path /org/freedesktop/Accounts >/dev/null 2>&1; then
         echo "AccountsService isn't running (install the accountsservice package); saved as ~/.face only" >&2
     else
-        echo "AccountsService didn't accept the picture (was the password prompt cancelled?)" >&2
+        echo "AccountsService didn't accept the picture (was the password prompt canceled?)" >&2
     fi
     exit 1
 fi

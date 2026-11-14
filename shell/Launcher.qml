@@ -505,7 +505,7 @@ PanelWindow {
         { name: "Bluetooth", words: "bluetooth bt wireless", icon: 0xEA37,
           on: () => !!Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled,
           set: v => { if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = v; }, can: () => !!Bluetooth.defaultAdapter },
-        { name: "Airplane Mode", words: "airplane aeroplane flight mode plane radios offline", icon: 0xEB6F,
+        { name: "Airplane Mode", words: "airplane flight mode plane radios offline aeroplane", icon: 0xEB6F,
           on: () => Config.s.airplaneMode, set: v => Config.s.airplaneMode = v, can: () => true },
         { name: "Private Mode", words: "private privacy mode incognito microphone mic camera webcam screenshots recording", icon: 0xF227,
           on: () => Config.s.privateMode, set: v => Config.setPrivateMode(v), can: () => true },

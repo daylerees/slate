@@ -550,7 +550,7 @@ if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark
     cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'") || true
     case "$cur" in
         ""|Adwaita|AdwaitaLegacy|hicolor|default|gnome|breeze|breeze-dark|Yaru*|elementary)
-            if ask "Use Papirus-Dark icons? Slate's Folder colour setting needs it, and it changes the icon theme for GTK and Qt apps on your other desktops too."; then
+            if ask "Use Papirus-Dark icons? Slate's Folder color setting needs it, and it changes the icon theme for GTK and Qt apps on your other desktops too."; then
                 # What it was, so --uninstall can put it back
                 (umask 077; mkdir -p "$STATE_DIR" && printf '%s\n' "$cur" > "$STATE_DIR/previous-icon-theme") || true
                 "$DEST/scripts/folder-colour.py" --icon-theme Papirus-Dark \
@@ -559,7 +559,7 @@ if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark
                 ok "Icon theme: keeping yours${cur:+ ($cur)}. To change it later: Settings → Icons → Icon theme"
             fi ;;
         Papirus*|ePapirus*|Slate-Icons) ok "Icon theme: $cur" ;;
-        *) ok "Icon theme: keeping yours ($cur); Papirus-Dark is installed if you want it (Folder colour needs it)" ;;
+        *) ok "Icon theme: keeping yours ($cur); Papirus-Dark is installed if you want it (Folder color needs it)" ;;
     esac
 fi
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin isn't on your PATH; add it to use the slate command in a terminal" ;; esac

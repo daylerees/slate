@@ -1767,7 +1767,7 @@ PanelWindow {
                 }
             }
 
-            Label { visible: spacesView.mode === "new"; text: "Colour"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+            Label { visible: spacesView.mode === "new"; text: "Color"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
             Grid {
                 visible: spacesView.mode === "new"
                 columns: 9
