@@ -531,6 +531,37 @@ class Shaders(Case):
                 self.assertGreaterEqual(changed(qsb), changed(frag), f"{frag} changed after {os.path.basename(qsb)} was built")
 
 
+class PrivateFiles(Case):
+    """What Slate keeps that's private (the conversation with Nova, the notification history)
+    is written from QML, where a file can't be made with a mode: so its folder is closed
+    first, by a command run here as Slate runs it, and the file after."""
+    FILES = {"Assistant.qml": "root.chatFile", "Notifications.qml": "notifs.stateFile"}
+
+    def test_folder_is_closed_before_the_file_is_written(self):
+        import stat
+        import tempfile
+        for name, prop in self.FILES.items():
+            with self.subTest(name):
+                src = slate.read("shell", name)
+                m = re.search(r"""command: \["sh", "-c", '([^']+)', %s\]\s*onExited: \{(.*?)\n    \}""" % re.escape(prop), src, re.S)
+                self.assertTrue(m, "no command closing the folder of " + prop)
+                script, after = m.groups()
+                # Every write is after that command has finished, and is followed by the file's chmod
+                self.assertEqual(src.count(".setText("), 1, "a write that doesn't wait for the folder")
+                self.assertRegex(after, r"""(?s)\.setText\(.*?\);\s*Quickshell\.execDetached\(\["chmod", "600", %s\]\)""" % re.escape(prop))
+                # The command: the folder made, or one that was open to others closed
+                old = os.umask(0o022)
+                self.addCleanup(os.umask, old)
+                with tempfile.TemporaryDirectory() as top:
+                    for folder in ("new", "old"):
+                        d = os.path.join(top, folder, "slate")
+                        if folder == "old":
+                            os.makedirs(d)
+                            self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o755)
+                        subprocess.run(["sh", "-c", script, os.path.join(d, "file.json")], check=True)
+                        self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o700, folder)
+
+
 class NovaAnswers(Case):
     """Nova's answers never reach a text item that reads markup of its own accord
     (docs/ASSISTANT.md, "How answers look"): Qt's Markdown, styled and rich text all load the

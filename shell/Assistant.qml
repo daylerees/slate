@@ -157,7 +157,14 @@ PanelWindow {
     Timer {
         id: chatSave
         interval: 600
-        onTriggered: {
+        onTriggered: if (root.keepChat && root.restored) chatDir.running = true
+    }
+    // (its folder is made yours alone first, each time, so the file is never where another
+    // account could read it, not even for the moment before its own chmod)
+    Process {
+        id: chatDir
+        command: ["sh", "-c", 'mkdir -p "${0%/*}" && chmod 700 "${0%/*}"', root.chatFile]
+        onExited: {
             if (!root.keepChat || !root.restored) return;
             chatStore.setText(JSON.stringify({ session: root.session, turns: root.turns }));
             Quickshell.execDetached(["chmod", "600", root.chatFile]);

@@ -10,7 +10,7 @@ Other commands (used by Picker.qml):
     clipstore.py clear         forget everything
 
 History lives in ~/.local/state/slate/clipboard/: index.json (newest first) and
-one file per image. Text and images are kept; a repeat moves to the top. Entries a
+one file per image, all readable only by you. Text and images are kept; a repeat moves to the top. Entries a
 password manager marks as secret are never stored.
 """
 import fcntl
@@ -42,9 +42,27 @@ def load():
     return [x for x in e if isinstance(x, dict)] if isinstance(e, list) else []
 
 
+def private(path, mode):
+    """Open a file for writing that only you can read: what's copied is nobody else's business."""
+    return open(path, mode, opener=lambda p, flags: os.open(p, flags, 0o600))
+
+
+def keep_private():
+    """The folder is yours alone. One made by an older version (readable by other accounts) is
+    closed, and what's in it; checked by the folder's mode, so it's a look at one file each run."""
+    os.makedirs(DIR, mode=0o700, exist_ok=True)
+    if os.stat(DIR).st_mode & 0o077:
+        os.chmod(DIR, 0o700)
+        for name in os.listdir(DIR):
+            try:
+                os.chmod(os.path.join(DIR, name), 0o600)
+            except OSError:
+                pass
+
+
 def save(entries):
     tmp = INDEX + ".tmp"
-    with open(tmp, "w") as f:
+    with private(tmp, "w") as f:
         json.dump({"entries": entries}, f, ensure_ascii=False)
     os.replace(tmp, INDEX)      # Slate watches the file; never show it half-written
 
@@ -110,7 +128,7 @@ def store():
         name = digest + "." + ext
         path = os.path.join(DIR, name)
         if not os.path.exists(path):
-            with open(path + ".tmp", "wb") as f:
+            with private(path + ".tmp", "wb") as f:
                 f.write(data)
             os.replace(path + ".tmp", path)
         w, h = image_size(data)
@@ -163,9 +181,9 @@ def clear():
 
 
 def main():
-    os.makedirs(DIR, exist_ok=True)
+    keep_private()
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    with open(LOCK, "w") as lock:
+    with private(LOCK, "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)    # one change at a time
         if cmd == "store":
             store()

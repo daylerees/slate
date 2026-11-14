@@ -235,6 +235,39 @@ class Clipstore(Case):
                 self.assertNotIn("Traceback", out)
                 self.assertEqual([e["text"] for e in self.entries()], ["new"])
 
+    # ---- private ----
+
+    def modes(self):
+        """{name: mode} for the folder (".") and everything in it."""
+        names = ["."] + sorted(os.listdir(self.dir))
+        return {n: os.stat(os.path.join(self.dir, n)).st_mode & 0o777 for n in names}
+
+    def test_only_you_can_read_it(self):
+        """What's copied (text in the index, and pictures) is readable by you alone, whatever
+        the umask: the folder 700, every file in it 600."""
+        old = os.umask(0o022)
+        self.addCleanup(os.umask, old)
+        self.offer_types(UTF8, data=b"a one-time code")
+        self.clip("store")
+        data = image("PNG")
+        self.offer_types("image/png", data=data)
+        self.clip("store")
+        name = sha(data) + ".png"
+        self.assertEqual(self.modes(), {".": 0o700, ".lock": 0o600, "index.json": 0o600, name: 0o600})
+
+    def test_older_store_is_closed(self):
+        """A folder an older version made (755, files 644) is closed the next time anything
+        runs, with what's in it."""
+        old = os.umask(0o022)
+        self.addCleanup(os.umask, old)
+        self.seed([{"id": "i", "kind": "image", "file": "i.png", "mime": "image/png"}], files=["i.png"])
+        with open(os.path.join(self.dir, ".lock"), "w"):
+            pass
+        self.assertEqual(self.modes(), {".": 0o755, ".lock": 0o644, "i.png": 0o644, "index.json": 0o644})
+        self.clip("copy", "nope", code=1)       # (any command, even one that changes nothing)
+        self.assertEqual(self.modes(), {".": 0o700, ".lock": 0o600, "i.png": 0o600, "index.json": 0o600})
+        self.assertEqual([e["id"] for e in self.entries()], ["i"])
+
     # ---- copy, delete, clear ----
 
     def test_copy_text(self):

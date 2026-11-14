@@ -595,6 +595,7 @@ class Nova(LiveCase):
             kept = json.load(f)
         self.assertEqual([t["asked"] for t in kept["turns"]], ["is glass on?", "close the terminal"])
         self.assertEqual(os.stat(self.chat_file()).st_mode & 0o077, 0, "others can read the conversation")
+        self.assertEqual(os.stat(os.path.dirname(self.chat_file())).st_mode & 0o077, 0, "others can look in its folder")
         self.ipc("shell", "reload")
         self.s.settle(2.5)
         st = self.wait(lambda st: st["assistant"]["turns"] == 2, "the conversation after a reload", timeout=20)["assistant"]
