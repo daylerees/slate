@@ -67,7 +67,7 @@ Item {
         id: wbMask
         anchors.fill: parent
         visible: false
-        layer.enabled: true
+        layer.enabled: wb.drawn
         Rectangle { anchors.fill: parent; radius: wb.radius }
     }
 }

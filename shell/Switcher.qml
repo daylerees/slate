@@ -198,7 +198,7 @@ PanelWindow {
     // WallBlur's size so it's in the image cache as the switcher opens
     Image {
         visible: false
-        source: Config.hyprBlur.enabled && Config.wallpaper ? "file://" + Config.wallpaper : ""
+        source: sw.livePreviews && Config.hyprBlur.enabled && Config.wallpaper ? "file://" + Config.wallpaper : ""
         sourceSize: Qt.size(1600, 1000)     // (WallBlur's decodeSize)
         asynchronous: true
     }

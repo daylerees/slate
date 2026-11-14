@@ -5200,8 +5200,11 @@ FloatingWindow {
                 layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask }
                 Image {
                     anchors.fill: parent
-                    source: "file://" + filePath
-                    sourceSize.width: 360
+                    // (nothing decoded for a tile that's hidden as too small to be a wallpaper)
+                    source: tile.small ? "" : "file://" + filePath
+                    // Decoded at twice the tile's width, in steps of 64 so resizing the window
+                    // doesn't decode every picture again at each pixel
+                    sourceSize.width: Math.max(64, Math.ceil(tile.tileW * 2 / 64) * 64)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     cache: true

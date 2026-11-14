@@ -158,6 +158,10 @@ Scope {
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         smooth: true
+        // Decoded at the size it's drawn at its largest (the slow zoom, 1.06) times the screen's
+        // pixel ratio, as WallpaperFill does, not at the picture's own size
+        sourceSize.width: width * 1.06 * (Screen.devicePixelRatio || 1)
+        sourceSize.height: height * 1.06 * (Screen.devicePixelRatio || 1)
         transform: [
             Translate { id: shift },
             Scale { id: zoom; origin.x: img.width / 2; origin.y: img.height / 2 }

@@ -290,6 +290,30 @@ class Settings(Case):
                 with self.subTest(f"TitleBar.qml:{n}"):
                     self.fail(f"multiplied by the Interface size, which Qt already applies: {line.strip()}")
 
+    def test_small_pictures_are_not_decoded_at_full_size(self):
+        """A thumbnail, avatar or cover is drawn a few dozen to a few hundred pixels wide, but a
+        photo can be thousands across: an Image with no sourceSize decodes all of it. So the
+        shared ones (RoundImage, the screensaver's Drifting, Settings' WallTile) say a size."""
+        def block(src, start):
+            i = src.index(start)
+            depth = 0
+            for end in range(src.index("{", i), len(src)):
+                depth += (src[end] == "{") - (src[end] == "}")
+                if depth == 0:
+                    return src[i:end]
+            self.fail(f"{start}: block not closed")
+        wall = slate.read("shell", "SettingsWindow.qml")
+        tile = block(wall, "component WallTile: Item {")
+        cases = [
+            ("RoundImage's Image", block(slate.read("shell", "RoundImage.qml"), "Image {")),
+            ("Drifting", block(slate.read("shell", "Screensaver.qml"), "component Drifting: Image {")),
+            ("WallTile's Image", block(tile[tile.index("Image {"):], "Image {")),
+        ]
+        for label, body in cases:
+            with self.subTest(label):
+                self.assertRegex(body, r"sourceSize(\.width|\.height)?\s*:", f"{label} has no sourceSize")
+        self.assertIn("tile.small ?", tile, "a hidden too-small tile still decodes its picture")
+
     def test_rounded_corners_go_through_config(self):
         """Settings → Appearance → Rounded UI elements squares everything, which works because
         every corner is written Config.corner(radius). A corner given as a plain number would
