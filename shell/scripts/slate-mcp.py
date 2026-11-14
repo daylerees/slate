@@ -1442,6 +1442,171 @@ def do_not_disturb(on):
     return {"doNotDisturb": bool(on)}
 
 
+# ---- Wi-Fi, Bluetooth and the dock (Radios.qml; the dock's own IPC) ----------------------
+
+def slate_list(*args):
+    """A list Slate keeps (as JSON), or a Sorry saying Slate needs restarting to give it."""
+    try:
+        out = json.loads(ipc(*args))
+        if not isinstance(out, (dict, list)):
+            raise ValueError
+        return out
+    except ValueError:
+        raise Sorry("Slate needs restarting before assistants can do that. The person can run: slate restart") from None
+
+
+def named_in(items, name):
+    """The one in Slate's list with that name (exactly, or failing that, ignoring case)."""
+    want = (name or "").strip()
+    if not want:
+        return None
+    return next((i for i in items if i.get("name") == want), None) or \
+        next((i for i in items if str(i.get("name", "")).lower() == want.lower()), None)
+
+
+RADIO = ["on", "off", "connect", "disconnect"]
+
+
+def radio_power(what, st, on, where):
+    """Turn Wi-Fi or Bluetooth on or off, as its switch does."""
+    word = "on" if on else "off"
+    if st["on"] == on:
+        return {what: word, "note": "It was already %s; nothing changed." % word}
+    doing("Turn %s %s" % (what, word))
+    changing("Turn %s %s?" % (what, word), "%s is asking to turn %s %s. You can turn it %s again at any time from %s."
+             % (asker(), what, word, "off" if on else "on", where), "Turn %s" % word)
+    CALL["before"] = st["on"]
+    ipc("wifi" if what == "Wi-Fi" else "bluetooth", "power", "true" if on else "false")
+    return {what: word}
+
+
+@tool("wifi", "Wi-Fi",
+      "See or change Wi-Fi. With no action: whether it's on, the network it's on, and the saved networks in "
+      "range. action: on, off, connect (to a saved network from that list, by name: never a new one) or "
+      "disconnect. Off or disconnecting may cut you off too, if you work over the internet." + OTHERS,
+      {"action": {"type": "string", "enum": RADIO},
+       "network": {"type": "string", "description": "For connect: a saved network's name"}}, tier="change")
+def wifi(action="", network=""):
+    st = slate_list("wifi", "list")
+    if not action:
+        CALL["tier"] = "look"           # (only looking: not listed as a change in the prompt window)
+        if not st.get("available"):
+            return {"available": False, "wired": bool(st.get("wired")), "note": "This computer has no Wi-Fi."}
+        return {"on": bool(st.get("on")), "connected": clean(st.get("connected", ""), 60), "wired": bool(st.get("wired")),
+                "saved": [{"name": clean(n.get("name", ""), 60), "connected": bool(n.get("connected")),
+                           "signal": n.get("signal", 0)} for n in (st.get("networks") or [])[:30]]}
+    if not st.get("available"):
+        raise Sorry("This computer has no Wi-Fi for Slate to change.")
+    st["on"] = bool(st.get("on"))
+    if action in ("on", "off"):
+        return radio_power("Wi-Fi", st, action == "on", "the Wi-Fi panel on the menu bar")
+    if not st["on"]:
+        raise Sorry("Wi-Fi is off. Turn it on first (action on).")
+    if action == "disconnect":
+        name = clean(st.get("connected", ""), 60)
+        if not name:
+            return {"note": "Wi-Fi isn't connected to a network; nothing changed."}
+        doing("Disconnect from “%s”" % name)
+        changing("Disconnect from “%s”?" % name, "%s is asking to disconnect from this Wi-Fi network. You can connect "
+                 "again at any time from the Wi-Fi panel on the menu bar." % asker(), "Disconnect")
+        CALL["before"] = name
+        ipc("wifi", "disconnect")
+        return {"disconnected": name}
+    n = named_in(st.get("networks") or [], network)
+    if not n:
+        raise Sorry("Slate only connects to a network you've connected to before that's in range now: wifi with no "
+                    "action lists them. A new network needs its password, which only the person can give, from the "
+                    "Wi-Fi panel on the menu bar.")
+    name = clean(n["name"], 60)
+    if n.get("connected"):
+        return {"connected": name, "note": "It's already connected to that network; nothing changed."}
+    doing("Connect to “%s”" % name)
+    changing("Connect to “%s”?" % name, "%s is asking to connect to this Wi-Fi network, one you've connected to "
+             "before." % asker(), "Connect")
+    CALL["before"] = clean(st.get("connected", ""), 60)
+    if ipc("wifi", "connect", n["name"]) != "ok":
+        raise Sorry("Slate couldn't connect to that network just now.")
+    return {"connecting": name, "note": "It can take a few seconds."}
+
+
+@tool("bluetooth", "Bluetooth",
+      "See or change Bluetooth. With no action: whether it's on, and the devices paired with this computer "
+      "(connected or not). action: on, off, connect or disconnect (a paired device from that list, by name: "
+      "never pairing a new one)." + OTHERS,
+      {"action": {"type": "string", "enum": RADIO},
+       "device": {"type": "string", "description": "For connect and disconnect: a paired device's name"}}, tier="change")
+def bluetooth(action="", device=""):
+    st = slate_list("bluetooth", "list")
+    if not action:
+        CALL["tier"] = "look"
+        if not st.get("available"):
+            return {"available": False, "note": "This computer has no Bluetooth that Slate can see."}
+        out = []
+        for d in (st.get("devices") or [])[:30]:
+            o = {"name": clean(d.get("name", ""), 60), "connected": bool(d.get("connected"))}
+            if isinstance(d.get("battery"), int):
+                o["battery"] = d["battery"]
+            out.append(o)
+        return {"on": bool(st.get("on")), "paired": out}
+    if not st.get("available"):
+        raise Sorry("This computer has no Bluetooth that Slate can see.")
+    st["on"] = bool(st.get("on"))
+    if action in ("on", "off"):
+        return radio_power("Bluetooth", st, action == "on", "the Bluetooth panel on the menu bar")
+    if not st["on"]:
+        raise Sorry("Bluetooth is off. Turn it on first (action on).")
+    d = named_in(st.get("devices") or [], device)
+    if not d:
+        raise Sorry("Slate only connects a device that's already paired with this computer: bluetooth with no action "
+                    "lists them. Pairing a new one is the person's to do, in Settings → Bluetooth.")
+    name, on = clean(d["name"], 60), action == "connect"
+    if bool(d.get("connected")) == on:
+        return {"device": name, "connected": on,
+                "note": "It was already %s; nothing changed." % ("connected" if on else "disconnected")}
+    verb = "Connect" if on else "Disconnect"
+    doing("%s %s" % (verb, name))
+    changing("%s %s?" % (verb, name),
+             "%s is asking to %s this Bluetooth device. You can %s it again at any time from the Bluetooth panel on "
+             "the menu bar." % (asker(), verb.lower(), "disconnect" if on else "connect"), verb)
+    CALL["before"] = not on
+    if ipc("bluetooth", verb.lower(), d.get("address", "")) != "ok":
+        raise Sorry("Slate couldn't %s that device just now." % verb.lower())
+    return {"device": name, "connected": on, "note": "It can take a few seconds."}
+
+
+@tool("dock_pin", "Pin to the dock",
+      "See or change the apps pinned to the dock. With no arguments: the pinned apps, in order. id (from "
+      "apps_list) with pinned true pins that app at the end; false unpins it.",
+      {"id": {"type": "string", "description": "The app's id from apps_list, e.g. firefox"},
+       "pinned": {"type": "boolean", "description": "true: pin it; false: unpin it"}}, tier="change")
+def dock_pin(id="", pinned=None):
+    now = slate_list("dock", "pinned")
+    now = [k for k in now if isinstance(k, str)] if isinstance(now, list) else []
+    table = apps()
+
+    def name_of(k):
+        return clean(table[k]["Name"], 80) if k in table else clean(k, 80)
+    if not id and pinned is None:
+        CALL["tier"] = "look"
+        return {"pinned": [{"id": clean(k, 120), "name": name_of(k)} for k in now[:50]]}
+    if not id or pinned is None:
+        raise Sorry("Give an app's id from apps_list, and pinned: true to pin it, or false to unpin it.")
+    if id not in table and not (pinned is False and id in now):
+        raise Sorry("There's no app with that id. apps_list finds an app's id by its name.")
+    name = name_of(id)
+    if (id in now) == pinned:
+        return {"app": name, "pinned": pinned,
+                "note": "It was already %s; nothing changed." % ("pinned" if pinned else "not pinned")}
+    doing(("Pin %s to the dock" if pinned else "Unpin %s from the dock") % name)
+    changing(("Pin %s to the dock?" if pinned else "Unpin %s from the dock?") % name,
+             "%s is asking to %s. You can change it back at any time from its menu on the dock."
+             % (asker(), "pin this app to the dock" if pinned else "take this app off the dock"),
+             "Pin" if pinned else "Unpin")
+    CALL["before"] = not pinned
+    ipc("dock", "pin", id, "true" if pinned else "false")
+    return {"app": name, "pinned": pinned}
+
+
 @tool("screenshot", "Take a screenshot",
       "Take a screenshot for the person, as the Print key does: of the screen, of an area they drag out, or "
       "of a window they click. It's saved and copied for them. You are never shown the picture or told "
@@ -1496,6 +1661,39 @@ def space_delete(name):
         "saved Space can't be brought back." % asker(), "Delete", danger=True)
     spaces.delete(s["id"])
     return {"deleted": label}
+
+
+def waste_count():
+    """How many things are in the waste basket (the desktop's own trash, as the dock counts it)."""
+    folder = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "Trash", "files")
+    try:
+        return len(os.listdir(folder))
+    except OSError:
+        return 0
+
+
+@tool("waste_basket_empty", "Empty the waste basket",
+      "Empty the waste basket (the trash), as the dock's Empty Waste Basket does: what's in it is deleted "
+      "for good." + ASKS, tier="ask")
+def waste_basket_empty():
+    n = waste_count()
+    if n == 0:
+        return {"note": "The waste basket is already empty; nothing changed."}
+    doing("Empty the waste basket")
+    # (the dock's own question, in its words: shell.qml, "trash-empty"; Slate empties it the same way)
+    ask("Empty the waste basket?", "%s is asking to empty the waste basket. %s deleted for good. Just so you know, "
+        "this can't be undone." % (asker(), "The item in it will be" if n == 1 else "The %d items in it will be" % n),
+        "Empty", danger=True)
+    ipc("dock", "emptyTrash")
+    # (it's emptied in the background: say it's done only once it is)
+    until = time.monotonic() + 3
+    while waste_count() and time.monotonic() < until:
+        time.sleep(0.1)
+    left = waste_count()
+    if left:
+        raise Sorry("Slate couldn't empty the waste basket: %d %s still in it. The person can empty it from their "
+                    "file manager." % (left, "thing is" if left == 1 else "things are"))
+    return {"emptied": n}
 
 
 # Pages whose defaults only the person puts back: the assistant's own, and the lock screen's
