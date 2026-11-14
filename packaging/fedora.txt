@@ -30,6 +30,7 @@ util-linux
 diffutils           # cmp: is the installed copy (Slate, the login screen) up to date
 dbus-tools
 glib2
+gvfs                # the Waste Basket's trash: location, so emptying it works (gio trash --empty)
 procps-ng
 libnotify
 fontconfig

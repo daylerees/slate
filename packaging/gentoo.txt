@@ -36,6 +36,7 @@ sys-apps/util-linux
 sys-apps/diffutils
 sys-apps/dbus
 dev-libs/glib
+gnome-base/gvfs     # the Waste Basket's trash: location, so emptying it works (gio trash --empty)
 sys-process/procps
 x11-libs/libnotify
 media-libs/fontconfig

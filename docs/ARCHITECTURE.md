@@ -389,6 +389,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `curl` | weather |
 | `xdg-utils` | `xdg-open` (open settings file, links) |
 | `glib2` (`gio`) | the dock: emptying and binning to the Waste Basket (`gio trash`), opening files dropped on an app (`gio launch`, `scripts/open-with.sh`) |
+| `gvfs` | the `trash:` location `gio trash --empty` needs: without it, emptying the Waste Basket does nothing |
 | — | Geist (interface + mono) is bundled in `fonts/` (SIL OFL) and loaded by Slate itself |
 
 **Needed for specific features**

@@ -10,6 +10,7 @@
   services.pipewire = { enable = true; pulse.enable = true; wireplumber.enable = true; };
   fonts.packages = [ pkgs.geist-font pkgs.noto-fonts-color-emoji ];   # (emoji: the picker, the launcher's :emoji)
   services.accounts-daemon.enable = true;   # your account picture
+  services.gvfs.enable = true;              # the Waste Basket's trash: location (emptying it)
   programs.dconf.enable = true;             # so theme settings (gsettings) stick
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];   # Flatpak and Snap apps: light or dark
   # Printing and scanning (Settings → Printers & Scanners)
