@@ -137,10 +137,12 @@ class LoginScreen(LiveCase):
 
         with self.subTest("wrong password"):
             ipc("submit", "not it")
-            for _ in range(50):
+            # (under load the answer can be slow to reach greetd: wait for it, don't index an empty list)
+            for _ in range(150):
                 if greetd.of_type("post_auth_message_response"):
                     break
                 time.sleep(0.1)
+            self.assertTrue(greetd.of_type("post_auth_message_response"), "the password never reached greetd")
             time.sleep(0.5)
             self.assertEqual(greetd.of_type("post_auth_message_response")[0]["response"], "not it")
             self.assertFalse(greetd.of_type("start_session"), "started a session with the wrong password")

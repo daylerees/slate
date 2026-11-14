@@ -40,6 +40,6 @@ class NewSpace(LiveCase):
                        + " ".join(f'hl.dispatch(hl.dsp.window.close({{ window = "address:{a}" }}))' for a in windows)
                        + " end")
         self.s.settle(2.0)
-        self.assertTrue(self.s.alive(), "Slate died")
+        self.assertFalse(self.s.died(), "Slate died (tests/out/live/slate.log and crashes/)")
         self.assertEqual(self.s.slate_pid(), pid, "Slate restarted")
         self.assertEqual(self.s.state()["popout"], "spaces", "the panel went")

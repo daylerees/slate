@@ -91,7 +91,7 @@ class Session:
             atexit.register(s.stop)
             s.start()
             cls._shared = s
-        elif not cls._shared.alive():
+        elif cls._shared.died():
             raise SessionError("the Slate session died earlier in this run (see tests/out/live/)")
         return cls._shared
 
@@ -254,6 +254,7 @@ class Session:
         code, out = self.run(["qs", "-p", self.slate_dir, "ipc", "call", target, function] + [str(a) for a in args],
                              timeout=timeout)
         if code != 0:
+            self.died()         # (if it's gone, keep its log and crash report before anything else runs)
             raise SessionError(f"ipc {target} {function} {' '.join(map(str, args))}: {out.strip()[:300]}")
         return out.strip()
 
@@ -318,6 +319,24 @@ class Session:
             shutil.copy(self.log_path(), os.path.join(self.out, "slate.log"))
         except OSError:
             pass
+        # Quickshell's own crash reports (a log with the backtrace, and the minidump): it writes
+        # them under the cache, which is thrown away with the scratch home, so a crash would
+        # otherwise leave nothing but "Slate died"
+        crashes = os.path.join(self.h.cache, "quickshell", "crashes")
+        if os.path.isdir(crashes):
+            dest = os.path.join(self.out, "crashes")
+            shutil.rmtree(dest, ignore_errors=True)
+            try:
+                shutil.copytree(crashes, dest)
+            except OSError:
+                pass
+
+    def died(self):
+        """True (after keeping the logs and any crash report) when Slate is no longer running."""
+        if self.alive():
+            return False
+        self.save_logs()
+        return True
 
     # ---- helpers ------------------------------------------------------------------------
     def _until(self, fn, timeout, msg, on_fail=None):
