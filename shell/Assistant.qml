@@ -71,6 +71,15 @@ PanelWindow {
             return { type: b.type === "heading" ? "heading" : "paragraph", runs: cleanRuns(b.runs) };
         });
     }
+    // A streamed answer sends all its blocks again every moment. A block that reads just as it
+    // did keeps its old object, so the window has nothing to redraw for it
+    function sameBlocks(old, next) {
+        const was = old || [];
+        return next.map((b, i) => i < was.length && JSON.stringify(was[i]) === JSON.stringify(b) ? was[i] : b);
+    }
+    // (for the tests: how many answer blocks each exchange has made, so a block kept shows as a count that didn't move)
+    property var blocksMade: ({})
+    function blockMade(ti) { if (Config.testMode) blocksMade[ti] = (blocksMade[ti] || 0) + 1; }
     // Words made safe to show: every character that markup could start with written as itself
     function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
     function hex(c) { return "#" + [c.r, c.g, c.b].map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join(""); }
@@ -327,7 +336,7 @@ PanelWindow {
         if (!e || !e.type) return;
         if (e.type === "start") { if (e.session) session = e.session; }
         else if (e.type === "text") patch({ answer: e.fresh ? String(e.delta || "") : answer + String(e.delta || "") });
-        else if (e.type === "blocks") patch({ blocks: cleanBlocks(e.blocks) });
+        else if (e.type === "blocks") patch({ blocks: sameBlocks(cur ? cur.blocks : [], cleanBlocks(e.blocks)) });
         else if (e.type === "done") {
             patch({ answer: String(e.text || answer) });
             if (e.session) session = e.session;
@@ -772,15 +781,20 @@ PanelWindow {
                                         visible: reply.drawn
                                         spacing: 8
                                         Repeater {
-                                            model: reply.drawn ? turn.t.blocks : []
+                                            // The blocks' places (0, 1, 2…), not the blocks: a ScriptModel keeps the delegates
+                                            // of the places it still has and only makes the new ones, so a streamed answer
+                                            // adds its new block and the rest stay. (A plain count would make every one again
+                                            // each time it changed.) Each block reads its own words from its place
+                                            model: ScriptModel { values: reply.drawn ? turn.t.blocks.map((b, i) => i) : [] }
                                             Column {
                                                 id: block
-                                                required property var modelData
                                                 required property int index
-                                                readonly property string kind: modelData.type
+                                                readonly property var spec: turn.t.blocks[index] || ({ type: "paragraph", runs: [] })
+                                                readonly property string kind: spec.type
+                                                Component.onCompleted: root.blockMade(turn.index)
                                                 AnswerWords {
                                                     visible: block.kind === "paragraph" || block.kind === "heading"
-                                                    runs: visible ? block.modelData.runs : []
+                                                    runs: visible ? block.spec.runs : []
                                                     heading: block.kind === "heading"
                                                     maxWidth: replyCol.inner
                                                 }
@@ -788,7 +802,7 @@ PanelWindow {
                                                     visible: block.kind === "list"
                                                     spacing: 4
                                                     Repeater {
-                                                        model: block.kind === "list" ? block.modelData.items : []
+                                                        model: block.kind === "list" ? block.spec.items : []
                                                         Row {
                                                             id: item
                                                             required property var modelData
@@ -812,8 +826,8 @@ PanelWindow {
                                                 }
                                                 CodeBox {
                                                     visible: block.kind === "code" || block.kind === "table"
-                                                    code: visible ? block.modelData.text : ""
-                                                    lang: visible ? block.modelData.lang : ""
+                                                    code: visible ? block.spec.text : ""
+                                                    lang: visible ? block.spec.lang : ""
                                                     table: block.kind === "table"
                                                     turnIndex: turn.index
                                                     blockIndex: block.index

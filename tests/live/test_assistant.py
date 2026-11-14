@@ -567,6 +567,34 @@ class Nova(LiveCase):
         self.assertEqual(hits, [], "the answer made Slate fetch something")
         self.s.new_log_errors()
 
+    def test_a_streamed_answer_keeps_its_blocks(self):
+        """While an answer streams in, its blocks come again whole every moment. Only a block that
+        changed or is new is drawn: earlier blocks, and the exchanges above, aren't made again
+        (the window counts the blocks each exchange has made)."""
+        para = lambda text: {"type": "paragraph", "runs": [{"text": text}]}
+        self.addCleanup(lambda: self.ipc("assistant", "close"))
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
+        self.ipc("test", "nova", json.dumps({
+            "history": [{"asked": "before", "answer": "one two", "blocks": [para("one"), para("two")]}],
+            "asked": "now", "working": True}))
+        stream = lambda e: self.ipc("test", "novaStream", json.dumps(e))
+        made = lambda: {int(k): v for k, v in self.nova()["blocksMade"].items()}
+        self.wait(lambda st: made().get(0, 0) >= 2, "the earlier answer's blocks")
+        before = made()
+        stream({"type": "text", "delta": "First. "})
+        stream({"type": "blocks", "blocks": [para("First.")]})
+        self.wait(lambda st: made().get(1, 0) == before.get(1, 0) + 1, "the first block")
+        first = made()[1]
+        stream({"type": "blocks", "blocks": [para("First."), para("Second.")]})
+        self.wait(lambda st: made()[1] == first + 1, "the second block")
+        stream({"type": "blocks", "blocks": [para("First."), para("Second."), para("Third")]})
+        stream({"type": "blocks", "blocks": [para("First."), para("Second."), para("Third, and more")]})
+        self.wait(lambda st: made()[1] == first + 2, "the third block")
+        self.s.settle(0.5)
+        self.assertEqual(made()[1], first + 2, "an earlier block was made again as the answer grew")
+        self.assertEqual(made().get(0, 0), before.get(0, 0), "the earlier exchange was made again")
+
     def test_kept_plain_answers(self):
         """A conversation kept before answers had blocks still loads, its answers plain."""
         os.makedirs(os.path.dirname(self.chat_file()), exist_ok=True)

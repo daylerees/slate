@@ -385,6 +385,8 @@ ShellRoot {
         // Forget the sounds noted so far (state().sounds: what would have played, Config.testSounds)
         function sounds(): void { Config.testSounds = []; }
         // A code box's Copy in the latest answer, as clicking it does (block: its place among the blocks)
+        // One line from the agent's runner, as it arrives ({"type": "text" | "blocks", …}): to stream an answer
+        function novaStream(json: string): void { nova.handle(JSON.parse(json)); }
         function novaCopyCode(block: int): void { nova.copyCode(nova.turns.length - 1, block); }
         // Undo on a row of what the latest answer did, as clicking it does (action: its place in the list)
         function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
@@ -554,7 +556,7 @@ ShellRoot {
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
-                             blocks: nova.cur ? nova.cur.blocks || [] : [], rich: nova.richNow(), copied: nova.copied,
+                             blocks: nova.cur ? nova.cur.blocks || [] : [], blocksMade: nova.blocksMade, rich: nova.richNow(), copied: nova.copied,
                              // (where the card is, its size, and the window's: dragged by its header)
                              panel: { x: nova.panelX, y: nova.panelY, w: nova.panelWidth, h: nova.panelHeight, homeX: nova.homeX, homeY: nova.homeY, screenW: nova.width, screenH: nova.height },
                              // (whether each row of what it did offers Undo just now)
