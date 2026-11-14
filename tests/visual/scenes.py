@@ -156,8 +156,17 @@ SCENES["panel-calendar-weather"] = {
 
 # An app held up off the dock while it's dragged: the gap it'd go into, with its placeholder
 # (dashed on a plain dock, frosted on glass). Put back where it was after.
+# It starts from a settled dock: only its pinned apps on it, nothing in More, no menu. The hook
+# places the dragged icon from where the slots are when it's called, so an app still leaving
+# (Settings, from the settings-dock scene just before) moved the gap along afterwards, and the
+# icon was pictured off to its left
+def _dock_settled(st):
+    d = st["dock"]
+    return not d["more"] and d["menu"] == "" and all(x.get("pinned") for x in d["slots"] if x["kind"] == "app")
+
+
 _DRAG = {
-    "do": [("test", "dockDrag", "foot", 1, 40)],
+    "do": [_dock_settled, ("test", "dockDrag", "foot", 1, 40)],
     "wait": lambda st: st["dock"]["dragging"] == "foot", "settle": 1.5,
     "undo": [("test", "dockDrag", "foot", 1, 0), ("test", "dockDrop")],
 }
