@@ -128,3 +128,35 @@ class Session(LiveCase):
         for key in ("background", "text", "dim", "accent", "mark"):
             self.assertRegex(c[key], r"^#[0-9a-f]{6}$", f"{key} isn't a colour")
 
+
+
+class YourHyprlandFiles(LiveCase):
+    def test_a_mistake_makes_one_notification(self):
+        """Saving one of your hypr/*.lua files with a mistake in it: Hyprland's config reloads,
+        and one notification says there's an error. There used to be two, from two places, with
+        different names and pictures, and one of them said all was well. Fixing the file gets
+        the one that says so."""
+        path = os.path.join(self.s.slate_dir, "hypr", "rules.lua")
+        with open(path, encoding="utf-8") as f:
+            good = f.read()
+
+        def save(text):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+        def put_back():
+            with open(path, encoding="utf-8") as f:
+                if f.read() != good:
+                    save(good)
+            self.ipc("notifications", "clear")
+        self.addCleanup(put_back)
+        history = lambda: self.s.state()["notifications"]["history"]
+        before = history()
+        save(good + "\nthis is not lua (\n")
+        self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings have errors", "the notice of the mistake")
+        # (and nothing more a moment later: the second notification came about half a second on)
+        self.assertEqual(self.steady(history, floor=1.5), before + 1, "more than one notification for one mistake")
+        self.assertEqual(self.s.state()["notifications"]["latest"], "Hyprland settings have errors")
+        save(good)
+        self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings reloaded", "the notice that it's well again")
+        self.assertEqual(self.steady(history, floor=1.5), before + 2)

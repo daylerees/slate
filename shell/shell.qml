@@ -899,7 +899,7 @@ ShellRoot {
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)
-    UserFiles {}
+    UserFiles { id: userFiles }
     // No "Configuration reloaded" popup when Slate reloads (after an update or a setting that
     // needs it, or a code change): it covered the top of the screen and got in the way of the
     // panels. Slate's own notice instead (a notification, kept in history like any other), for
@@ -954,13 +954,21 @@ ShellRoot {
             "Slate reloaded", "All fresh: Slate is running on its updated files and settings."])
     }
     // (hyprErrors runs again whenever Hyprland reloads: see onHyprConfigReloaded above)
+    // Everything wrong with Hyprland's config, in one notice: Hyprland's own config errors, and
+    // your files in hypr/ that failed to load. Hyprland knows nothing of those: the session's
+    // hyprland.lua skips such a file and notes it in slate-hypr-errors.txt, so that's read here
+    // too (after a line holding only a record separator, to tell the two apart). UserFiles.qml
+    // once reported them itself, so one mistake made two notifications that could disagree
     Process {
         id: hyprErrors
-        command: ["hyprctl", "-j", "configerrors"]
+        command: ["sh", "-c", "hyprctl -j configerrors 2>/dev/null; printf '\\n\\036\\n'; cat \"$0\" 2>/dev/null", userFiles.errorsPath]
         stdout: StdioCollector {
             onStreamFinished: {
+                const parts = text.split("\x1e");
                 let errs = [];
-                try { errs = JSON.parse(text).filter(e => e && String(e).trim() !== ""); } catch (e) {}
+                try { errs = JSON.parse(parts[0]).filter(e => e && String(e).trim() !== "").map(String); } catch (e) {}
+                // (your own files first: each line says which file it's in)
+                errs = (parts[1] || "").split("\n").map(l => l.trim()).filter(l => l !== "").concat(errs);
                 const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
                 // No news when Slate reloaded it itself (to apply a setting); errors always show
                 if (errs.length === 0 && Config.ownHyprReload()) return;

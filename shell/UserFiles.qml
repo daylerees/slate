@@ -5,7 +5,8 @@
 // At start, any that are missing are made from data/user-files, with instructions in them
 // (scripts/user-files.sh; one that exists is never touched). Saving a Hyprland one reloads
 // Hyprland's config; saving shell.qml reloads Slate. A mistake shows in a notification:
-// Hyprland's config errors, a user file that failed to load, or shell.qml's QML error.
+// shell.qml's QML error from here, and Hyprland's config errors and a user file that failed to
+// load from shell.qml (hyprErrors, which runs whenever Hyprland has reloaded).
 
 import QtQuick
 import Quickshell
@@ -45,22 +46,11 @@ Scope {
     }
     // Several saves in a row (or a whole folder copied in) make one reload
     Timer { id: reloadHypr; interval: 400; onTriggered: { hyprReload.running = false; hyprReload.running = true; } }
+    // (anything wrong is reported by shell.qml's hyprErrors once Hyprland says it has reloaded,
+    // user files that failed to load included: it reads errorsPath)
     Process {
         id: hyprReload
         command: ["hyprctl", "reload"]
-        onExited: errorCheck.restart()
-    }
-    // Then: anything wrong? Hyprland's own config errors, and user files that failed to load
-    Timer { id: errorCheck; interval: 500; onTriggered: { errorsProc.running = false; errorsProc.running = true; } }
-    Process {
-        id: errorsProc
-        command: ["sh", "-c", "hyprctl configerrors 2>/dev/null; cat \"$0\" 2>/dev/null", root.errorsPath]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const t = text.split("\n").map(l => l.trim()).filter(l => l !== "").join("\n");
-                if (t !== "") root.notify("Hyprland config has a problem", t.slice(0, 600));
-            }
-        }
     }
 
     // ---- user/shell.qml: loaded into Slate ---------------------------------------------
