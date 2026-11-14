@@ -1398,16 +1398,28 @@ Singleton {
         printErrors: false
         onFileChanged: reload()
         onLoaded: {
+            root.iconColoursReading = false;
             try {
                 const d = JSON.parse(text()), m = {};
                 for (const k in d) if (d[k] && d[k].c) m[k] = d[k].c;
                 root.iconColours = m;
             } catch (e) {}
         }
-        onLoadFailed: iconColoursSoon.restart()      // not made yet
+        onLoadFailed: { root.iconColoursReading = false; iconColoursSoon.restart(); }     // not made yet
     }
     Timer { id: iconColoursSoon; interval: 1500; onTriggered: if (root.iconColoursWanted) { iconColoursRun.running = false; iconColoursRun.running = true; } }
-    Process { id: iconColoursRun; command: [root.tileScript, "--colours", root.tileDir, root.iconColoursPath] }
+    // Read straight after it's written: watching for the file only works once its folder
+    // exists, and a style's folder is made by the first tiles drawn in it (on a first login,
+    // or a style never used before), after the watch began, so the colours never arrived
+    Process {
+        id: iconColoursRun
+        command: [root.tileScript, "--colours", root.tileDir, root.iconColoursPath]
+        onExited: code => { if (code === 0 && iconColoursFile.path !== "") { root.iconColoursReading = true; iconColoursFile.reload(); } }
+    }
+    property bool iconColoursReading: false
+    // Still drawing tiles or noting their colours (the test hook waits for this before a picture)
+    readonly property bool iconsBusy: tileAll.running || tileAllRun.running || iconColoursSoon.running
+        || iconColoursRun.running || iconColoursReading
     onIconColoursWantedChanged: if (iconColoursWanted) iconColoursSoon.restart()
     // An icon with no colour noted yet (an app just drawn): look again, at most every 30 s each
     property var iconColourAsked: ({})

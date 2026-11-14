@@ -3,6 +3,7 @@ whether anything is rounded."""
 import json
 import os
 import re
+import shutil
 
 from live import LiveCase
 
@@ -105,6 +106,24 @@ class Rounding(LiveCase):
                 break
             self.s.settle(0.2)
         self.assertEqual(self.rounding(), usual, "windows didn't get their corners back")
+
+
+class IconColours(LiveCase):
+    """Settings → Icons → Tiles in the icon's colour: each icon's colour is noted after its
+    tiles are drawn, and Slate reads it, even when the style's tiles folder didn't exist yet
+    (a first login, or a style never used before). The file appearing in a folder made after
+    Slate began watching for it went unnoticed, so the tiles stayed in the theme's colour."""
+    def test_a_new_styles_colours_arrive(self):
+        self.keep_setting("iconShape")
+        self.addCleanup(lambda: self.wait(lambda st: not st["icons"]["busy"], "the tiles to be drawn again", timeout=60))
+        self.config("iconTileColour", "true")
+        folder = os.path.join(self.s.h.cache, "slate", "tiles", "squircle-whole")
+        shutil.rmtree(folder, ignore_errors=True)        # a style never used
+        self.config("iconShape", "squircle")
+        self.wait(lambda st: st["icons"]["busy"], "the tiles to start being drawn", timeout=10)
+        st = self.wait(lambda st: not st["icons"]["busy"], "the tiles and their colours", timeout=60)
+        self.assertTrue(os.path.exists(os.path.join(folder, "colours.json")), "the icons' colours weren't noted")
+        self.assertGreater(st["icons"]["colours"], 0, "Slate didn't read the icons' colours for a new tile style")
 
 
 class Shadows(LiveCase):
