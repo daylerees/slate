@@ -116,6 +116,11 @@ SCENES["dock-more-open"] = {"do": _more_open(5) + [("test", "dockRoom", 360),
 SCENES["dock-more-many"] = {"do": _more_open(14) + [("test", "dockRoom", 200),
                                                    lambda st: _more_there(14)(st) and len(st["dock"]["more"]) > 12, ("dock", "more")],
                             "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
+# Scrolled partway (half a row): the shades at both ends, the scrollbar beside the cells
+SCENES["dock-more-scrolled"] = {"do": _more_open(14) + [("test", "dockRoom", 200),
+                                                       lambda st: _more_there(14)(st) and len(st["dock"]["more"]) > 12, ("dock", "more"),
+                                                       lambda st: st["dock"]["moreOpen"] and st["dock"]["grid"], ("test", "dockGridScroll", 46)],
+                                "wait": lambda st: st["dock"]["grid"] and st["dock"]["grid"]["y"] == 46, "settle": 1.2, "undo": _MORE_CLOSE}
 
 for _p in PANELS:
     SCENES[f"panel-{_p}"] = {
