@@ -1,7 +1,7 @@
 """The site's docs (site/docs/): every page in docs.js's list has its file and every file is in
 the list; every Settings page is documented somewhere (a page's `covers`); every page follows
-the docs' skeleton; links between docs pages, and to their headings, lead somewhere; and the
-words stay Slate's (no old names, never "premium" on its own)."""
+the docs' skeleton; links between docs pages, and to their headings, lead somewhere; every
+picture is there, described and sized (and every file in site/docs/img is used); and the words stay Slate's (no old names, never "premium" on its own)."""
 import html.parser
 import os
 import re
@@ -39,7 +39,7 @@ class Page(html.parser.HTMLParser):
     """A docs page's headings (as docs.js names them), links, ids and body text."""
     def __init__(self):
         super().__init__()
-        self.heads, self.links, self.ids, self.text = [], [], set(), []
+        self.heads, self.links, self.ids, self.text, self.imgs = [], [], set(), [], []
         self._head = None
         self._skip = 0
 
@@ -51,6 +51,8 @@ class Page(html.parser.HTMLParser):
             self._head = []
         if tag == "a" and a.get("href"):
             self.links.append(a["href"])
+        if tag == "img":
+            self.imgs.append(a)
         if tag in ("script", "style"):
             self._skip += 1
 
@@ -116,6 +118,38 @@ class Docs(Case):
                     if anchor:
                         t = pages[page]
                         self.assertIn(anchor, set(t.heads) | t.ids, f"{name}.html links to {href}: {page}.html has no heading for #{anchor}")
+
+    def test_pictures(self):
+        """Every picture on a docs page (site/docs/img, taken by tools/docs-shots) is there, has
+        alt text, a width and height (half its pixels: the files are twice the size, for sharp
+        screens) and loads lazily; and nothing in site/docs/img is left unused."""
+        try:
+            from PIL import Image
+        except ImportError:
+            Image = None
+        used = set()
+        pages = [i + ".html" for i, _ in nav()] + ["index.html"]
+        for name in pages:
+            for img in parse(name).imgs:
+                src = img.get("src", "")
+                if src.startswith("../"):          # the site's own (the logo in the header)
+                    continue
+                with self.subTest(f"{name}: {src}"):
+                    path = os.path.join(DOCS, src.split("?")[0])
+                    self.assertTrue(src.startswith("img/") and os.path.isfile(path),
+                                    f"{name} shows {src}, which isn't in site/docs/img")
+                    used.add(os.path.basename(path))
+                    self.assertTrue((img.get("alt") or "").strip(), f"{name}: {src} has no alt text (say what it shows)")
+                    self.assertEqual(img.get("loading"), "lazy", f"{name}: {src} should have loading=\"lazy\"")
+                    w, h = img.get("width", ""), img.get("height", "")
+                    self.assertTrue(w.isdigit() and h.isdigit(), f"{name}: {src} needs a width and height (its size on the page)")
+                    if Image is not None:
+                        with Image.open(path) as im:
+                            self.assertEqual((int(w) * 2, int(h) * 2), im.size,
+                                             f"{name}: {src} is {im.size[0]}×{im.size[1]}; its width and height should be half that")
+        folder = os.path.join(DOCS, "img")
+        files = set(os.listdir(folder)) if os.path.isdir(folder) else set()
+        self.assertEqual(files - used, set(), "pictures in site/docs/img that no docs page shows")
 
     def test_words(self):
         for i, _ in nav():

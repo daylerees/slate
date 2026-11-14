@@ -34,6 +34,7 @@ tests/run --deps latest             # today's Arch packages instead of the pinne
 tests/run --approve [scene…]        # approve the changed screenshots the last run took (all, or these;
                                     # tests/out/visual/review.html shows them, to pick from)
 tests/run --update-baselines [scene…]   # re-shoot approved screenshots (all, or these)
+tests/run --docs-shots [name…]          # take the docs' pictures again (all, or these): see below
 ```
 
 Logs, failed screenshots and their diffs go in `tests/out/` (not committed): a failure line
@@ -160,6 +161,14 @@ icons (a "16×16 area" or a fraction of a percent, on text). The approved pictur
 runs: approve from a whole visual run (`tests/run --tier visual`), not from a filtered one, and
 a faint text-edge difference in a filtered run alone isn't a change. Slate sets nothing that
 would pin it (Qt here ignores fontconfig's rgba and `QT_SUBPIXEL_AA_TYPE`).
+
+## The docs' pictures
+
+The pictures on the docs pages (`site/docs/img/`) come from the same container and session,
+set up as Slate comes (dark, its own accent, flat) with pretend apps and data:
+`tests/run --docs-shots [name…]` takes them again, straight into `site/docs/img/`. They aren't
+tests and aren't compared; `tests/static/test_docs.py` only checks each one on a page exists and
+is described and sized. How they're made, and adding one: `tools/docs-shots/README.md`.
 
 ## Pinned and latest packages
 

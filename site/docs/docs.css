@@ -142,8 +142,25 @@ body.docs { background: var(--bg); }
 
 /* A picture from the site, framed */
 .doc figure { margin: 0 0 24px; }
-.doc figure img, .doc figure video { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
-.doc figcaption { color: var(--dim); font-size: 14px; margin-top: 8px; }
+.doc figure:not(.shot) img, .doc figure video { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.doc figcaption { color: var(--dim); font-size: 14px; line-height: 1.5; margin-top: 10px; }
+
+/* A picture of Slate (img/, taken by tools/docs-shots): shown at its own size (its width and
+   height attributes; the file has twice the pixels, for sharp screens), never wider than the
+   page, and always in Slate's default dark look (the site is dark too). Small ones (a panel, a
+   menu) stay small rather than being blown up: no width here, so the attribute's holds */
+.doc figure.shot { margin: 4px 0 28px; }
+.doc figure.shot img {
+  display: block; max-width: 100%; height: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f1216;
+  box-shadow: 0 12px 32px -18px rgba(0, 0, 0, .7);
+}
+.doc figure.shot img + img { margin-top: 12px; }
+@media (max-width: 860px) {
+  .doc figure.shot img { border-radius: 8px; }
+}
 
 /* ---- Previous and next ---------------------------------------------------------------- */
 .docs-pager {

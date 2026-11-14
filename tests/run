@@ -22,6 +22,8 @@
 #                                  to look at them on: each scene's approved picture, the new one
 #                                  and the difference, with tick boxes for the --approve line
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
+#   tests/run --docs-shots [shot…] take the docs' pictures again (all, or these): not a test,
+#                                  they go straight into site/docs/img (tools/docs-shots/README.md)
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
 #
@@ -34,7 +36,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
 tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""; failed=0
-repeat=""; pass=(); again=()      # (again: the options for each run of a --repeat)
+repeat=""; pass=(); again=(); docs=0; shots=""      # (again: the options for each run of a --repeat)
 while [ $# -gt 0 ]; do
     case "$1" in
         --repeat|--repeat=*|-q|--quiet|-v|--verbose|--json) ;;
@@ -60,6 +62,9 @@ while [ $# -gt 0 ]; do
         --update-baselines)
             updating=1
             while [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; do update="$update $2"; shift; done ;;
+        --docs-shots)
+            docs=1
+            while [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; do shots="$shots $2"; shift; done ;;
         -h|--help) sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0"; exit 0 ;;
         *) echo "tests/run: unknown option $1 (see tests/run --help)" >&2; exit 2 ;;
     esac
@@ -70,6 +75,12 @@ case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest
 case "$repeat" in ""|[1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) echo "tests/run: --repeat is a number, 1 or more" >&2; exit 2 ;; esac
 if [ -n "$repeat" ] && [ "$updating" = 1 ]; then
     echo "tests/run: --repeat doesn't go with --update-baselines" >&2; exit 2
+fi
+if [ "$docs" = 1 ]; then
+    if [ -n "$repeat" ] || [ "$updating" = 1 ] || [ "$container" = 0 ] || [ "$failed" = 1 ]; then
+        echo "tests/run: --docs-shots goes on its own (with --deps at most)" >&2; exit 2
+    fi
+    tier=visual; filtered=1     # (it needs what the visual tier needs: the container and vkms)
 fi
 if [ "$updating" = 1 ]; then
     [ "$tier" = all ] && tier=visual
@@ -165,6 +176,17 @@ case ",$tier," in *,live,*|*,visual,*|*,all,*)
 esac
 
 label=""; [ "$deps" = latest ] && label="[latest deps]"
+# The docs' pictures: one session, writing into site/docs/img (tools/docs-shots/shoot.py)
+if [ "$docs" = 1 ]; then
+    mkdir -p "$ROOT/site/docs/img"
+    # shellcheck disable=SC2086
+    exec docker run --rm --init --hostname slate-test \
+        -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+        -v "$ROOT:/slate:ro" -v "$OUT:/slate/tests/out" -v "$ROOT/site/docs/img:/slate/site/docs/img" -w /slate \
+        --mount type=tmpfs,destination=/sys/class/leds \
+        "${run_args[@]+"${run_args[@]}"}" \
+        "$image" python3 /slate/tools/docs-shots/shoot.py $shots
+fi
 if [ "$updating" = 1 ]; then
     mkdir -p "$ROOT/tests/visual/baselines"
     run_args+=(-v "$ROOT/tests/visual/baselines:/slate/tests/visual/baselines")
