@@ -100,7 +100,7 @@ Item {
             failedNote.offline = h.error === "No internet connection";
             failedNote.command = ["notify-send", "-a", "Slate", "-i", icon, "-u", "critical", "-h", "string:x-slate-page:windows"]
                 .concat(failedNote.offline ? ["-A", "retry=Retry"] : [])
-                .concat(["Hyprbars couldn't be built", (h.error || "The build didn't finish") + ". Not to worry: Slate Bars are looking after your windows in the meantime."]);
+                .concat(["--", "Hyprbars couldn't be built", (h.error || "The build didn't finish") + ". Not to worry: Slate Bars are looking after your windows in the meantime."]);
             failedNote.running = false; failedNote.running = true;
         } else if (h.state === "built") {
             if (h.build === "yes" && !Config.hyprbarsLoaded) readyNotice();

@@ -1636,11 +1636,11 @@ FloatingWindow {
                 const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
                 if (code === 0) {
                     packs.installed();
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, p.name + " is ready",
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--", p.name + " is ready",
                         "Choose it in " + packs.chooseIn + " whenever you like."]);
                 } else {
                     const why = packErr.text.replace(/^theme-packs: /, "").trim();
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "Slate couldn't add " + p.name,
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--", "Slate couldn't add " + p.name,
                         (why !== "" && why.indexOf("fingerprint") >= 0 ? why.charAt(0).toUpperCase() + why.slice(1) + "."
                             : "Check you're connected to the internet, then try again.")]);
                 }
@@ -4294,7 +4294,7 @@ FloatingWindow {
             }
             property string copied: ""
             Timer { id: copiedReset; interval: 1600; onTriggered: assistantPane.copied = "" }
-            function copy(what, text) { Quickshell.execDetached(["wl-copy", text]); copied = what; copiedReset.restart(); }
+            function copy(what, text) { Quickshell.execDetached(["wl-copy", "--", text]); copied = what; copiedReset.restart(); }
 
             IntroText {
                 text: "Ask an AI agent you already use, like Claude Code or Codex, or a model on this computer through Ollama, to change a setting, move a window or tell you what's where. "
@@ -6304,6 +6304,7 @@ FloatingWindow {
                         const icon = Quickshell.shellPath("assets/icon/icon-64.png");
                         const err = (installErr.text || "").trim().split("\n").filter(l => l.trim() !== "").pop() || "";
                         Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + icon, "--hint=string:x-slate-page:apptheming",
+                            "--",       // (the package manager's last line is the text, even if it starts with a dash)
                             code === 0 ? a.label + " is installed" : "Slate couldn't install " + a.label,
                             code === 0 ? "Switch on its theme in Settings → App Theming." : (err || "The package manager stopped with an error.")]);
                     }

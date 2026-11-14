@@ -917,6 +917,7 @@ ShellRoot {
         brokenFiles = [...new Set(links.map(m => m[1]))];
         Quickshell.execDetached(["notify-send", "--app-name=Slate", "--urgency=critical", "--hint=string:x-slate-page:about",
             "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
+            "--",       // (the error is the text, even if it starts with a dash)
             "Slate couldn't reload", body + " Nothing's lost: the previous version is still running, and Slate will reload as soon as you save the fix."]);
     }
     // After a failed reload Quickshell stops reloading when files change, until it's restarted.
@@ -951,7 +952,7 @@ ShellRoot {
                 if (errs.length === 0)
                     Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings reloaded", "Hyprland has read its config again, and all is well."]);
                 else
-                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "Hyprland settings have errors",
+                    Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--hint=string:x-slate-page:windows", "--", "Hyprland settings have errors",
                         errs.join("\n").split("\n").slice(0, 6).join("\n")]);
             }
         }

@@ -1114,7 +1114,7 @@ PanelWindow {
                         HoverHandler { id: tileHover }
                         ClickTap {
                             enabled: tile.modelData.copy
-                            onTapped: { Quickshell.execDetached(["wl-copy", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
+                            onTapped: { Quickshell.execDetached(["wl-copy", "--", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
                         }
                     }
                 }

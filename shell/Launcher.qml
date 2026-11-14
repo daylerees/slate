@@ -613,7 +613,7 @@ PanelWindow {
             if (starts.length >= 40) break;
         }
         return starts.concat(within).slice(0, 40).map(e => ({ kind: "emoji", emoji: e[0], name: e[1], comment: "Enter to copy",
-            run: () => Quickshell.execDetached(["wl-copy", e[0]]) }));
+            run: () => Quickshell.execDetached(["wl-copy", "--", e[0]]) }));
     }
 
     // ---- Conversions (Settings → Launcher → Conversions) -------------------------------
@@ -739,7 +739,9 @@ PanelWindow {
             return;
         }
         if (entry.calc) {          // calculator: copy the answer
-            Quickshell.execDetached(["wl-copy", entry.name]);
+            // (--: an answer can start with a minus, "-5" or "-40 c", which wl-copy would
+            // otherwise read as an option, and copy nothing)
+            Quickshell.execDetached(["wl-copy", "--", entry.name]);
             closeLauncher();
             return;
         }

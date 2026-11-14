@@ -22,6 +22,25 @@ class Overlays(LiveCase):
         self.wait(lambda st: st["launcher"]["query"] == "2+3*4")
         self.s.settle(0.3)
 
+    def test_launcher_copies_a_negative_answer(self):
+        """Enter on a sum copies its answer, one below zero included: "-5" went to wl-copy as
+        an option, so nothing was copied and the launcher closed as if it had been. Bug,
+        2026-11-14."""
+        self.addCleanup(lambda: self.ipc("launcher", "close"))
+        self.s.run(["wl-copy", "--", "what was copied before"])
+        self.ipc("launcher", "search", "2-7")
+        st = self.wait(lambda st: st["launcher"]["query"] == "2-7" and st["launcher"]["results"], "the sum's answer")
+        self.assertEqual(st["launcher"]["current"], 0, st["launcher"]["results"][:3])
+        self.ipc("launcher", "launchSelected")
+        self.wait(lambda st: not st["launcher"]["open"], "the launcher to close")
+        pasted = ""
+        for _ in range(40):
+            code, pasted = self.s.run(["wl-paste", "--no-newline"])
+            if pasted == "-5":
+                break
+            self.s.settle(0.1)
+        self.assertEqual(pasted, "-5")
+
     def test_launcher_keeps_the_top_result(self):
         """Typing a sum a character at a time, quickly: the selection stays on the top result
         (the answer) as later results come in. The list used to carry it along with its row,

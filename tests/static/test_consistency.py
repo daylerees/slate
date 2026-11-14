@@ -600,3 +600,31 @@ class NovaAnswers(Case):
         self.assertNotRegex(src, r"\b(Image|AnimatedImage|BorderImage|AnimatedSprite)\s*\{", "a picture in Nova's window")
         for opens in ("openUrlExternally", "linkActivated"):
             self.assertNotIn(opens, src)
+
+
+class CopiedTextIsNeverAnOption(Case):
+    """Text handed to wl-copy as an argument comes after "--", so words that start with a dash
+    are still the words: the launcher's answer to 2-7 is "-5", which wl-copy took for an option
+    and copied nothing (2026-11-14). Options written out ("--type", "text/plain") are fine,
+    and text piped in needs nothing."""
+    def test_wl_copy_text_follows_a_double_dash(self):
+        bad = []
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).split("\n"), 1):
+                for argv in re.findall(r'\[\s*"wl-copy"([^\]]*(?:\[[^\]]*\][^\]]*)*)\]', line):
+                    # What follows "wl-copy": words written out in quotes are Slate's own (its
+                    # options and their values); anything else is text Slate worked out, and
+                    # needs the "--" before it
+                    words = [w.strip() for w in re.split(r',(?![^\[(]*[\])])', argv) if w.strip()]
+                    for word in words:
+                        if word == '"--"':
+                            break
+                        if not re.fullmatch(r'"[^"]*"', word):
+                            bad.append("%s:%d" % (os.path.basename(f), n))
+                            break
+        self.assertFalse(bad, 'wl-copy is given text without "--" before it: ' + ", ".join(bad))
+
+    def test_it_is_looked_for(self):
+        """(the check above finds the copies it's meant to, so it can't pass by finding none)"""
+        found = [f for f in slate.files("shell", ".qml") if re.search(r'\[\s*"wl-copy",\s*"--",', slate.read(f))]
+        self.assertGreaterEqual(len(found), 5, found)

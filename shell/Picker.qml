@@ -185,7 +185,7 @@ PanelWindow {
     }
     function copyEmoji(e) {
         if (!e) return;
-        Quickshell.execDetached(["wl-copy", e[0]]);
+        Quickshell.execDetached(["wl-copy", "--", e[0]]);     // (--: what follows is the text, never an option)
         recent = [e[0]].concat(recent.filter(r => r !== e[0])).slice(0, columns * 2);
         recentFile.setText(JSON.stringify({ recent: recent }));
         close();
