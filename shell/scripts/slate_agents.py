@@ -456,6 +456,116 @@ class OpenCode(Agent):
 
 
 @agent
+class Goose(Agent):
+    """Goose, one prompt at a time (`goose run --output-format stream-json`), checked against
+    goose 1.54 and its source. --no-profile leaves out every extension the person set up (its
+    developer extension holds the shell and files), so the only one is Slate's
+    (--with-extension); a follow-up resumes the session, which keeps that one. Sessions are
+    named by Slate ("slate-nova-<run>"), since the stream doesn't say. GOOSE_MODE=auto: in a
+    run it can't ask, and Slate's gate does the asking. Goose talks to whichever provider it's
+    set up with; one that is itself an agent with tools (Claude Code, Codex, Gemini CLI,
+    Cursor) brings those tools along, so then it isn't confined."""
+    id = "goose"
+    label = "Goose"
+    url = "https://goose-docs.ai"
+    note = "Slate switches off its own extensions, so it works through Slate's alone"
+    briefing = "system"
+    sign_in = "goose configure"
+    AGENT_PROVIDERS = ("claude-code", "codex", "gemini-cli", "cursor-agent")
+
+    @property
+    def confined(self):
+        return self.provider() not in self.AGENT_PROVIDERS
+
+    def provider(self):
+        """The provider it's set up with: GOOSE_PROVIDER, or its config.yaml."""
+        if os.environ.get("GOOSE_PROVIDER"):
+            return os.environ["GOOSE_PROVIDER"].strip()
+        home = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+        try:
+            with open(os.path.join(home, "goose", "config.yaml"), encoding="utf-8") as fh:
+                for line in fh:
+                    m = re.match(r"\s*GOOSE_PROVIDER\s*:\s*['\"]?([\w.-]+)", line)
+                    if m:
+                        return m.group(1)
+        except OSError:
+            pass
+        return ""
+
+    def installed(self):
+        return bool(find("goose"))
+
+    def version(self):
+        code, out = output([find("goose") or "goose", "--version"])
+        return version_in(out) if code == 0 else ""
+
+    def signed_in(self):
+        return bool(self.provider())
+
+    def name(self, run):
+        return run.get("session") or "slate-nova-" + re.sub(r"[^\w-]", "", run.get("run") or "run")
+
+    def command(self, run):
+        cmd = [find("goose") or "goose", "run", "-i", "-", "--output-format", "stream-json", "--no-profile",
+               "--max-turns", "25", "--system", briefing_text(run), "-n", self.name(run)]
+        if run.get("session"):
+            cmd.append("--resume")          # (with Slate's extension, as the session keeps it)
+        else:
+            server, args, _ = slate_server(run)
+            cmd += ["--with-extension", "slate:" + shlex.join([server] + args)]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        return cmd
+
+    def env(self, run):
+        # (Slate's server inherits these from Goose: the run's own id is set by the runner)
+        _, _, env = slate_server(run)
+        env.pop("SLATE_ASSISTANT_RUN", None)
+        return dict(env, GOOSE_MODE="auto")
+
+    def opening(self, run):
+        return [{"type": "start", "session": self.name(run)}]
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        kind = d.get("type")
+        if kind == "message":
+            m = d.get("message") or {}
+            out = []
+            for c in m.get("content") or []:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") in ("toolRequest", "toolResponse"):
+                    state["fresh"] = True       # what comes after the tools is a new message
+                elif c.get("type") == "text" and m.get("role") == "assistant" and isinstance(c.get("text"), str):
+                    ev = {"type": "text", "delta": c["text"]}
+                    if state.pop("fresh", False) or m.get("id") != state.get("message", m.get("id")):
+                        ev["fresh"], state["answer"] = True, ""
+                    state["message"] = m.get("id")
+                    state["answer"] = state.get("answer", "") + c["text"]
+                    out.append(ev)
+                elif c.get("type") == "error":
+                    out.append(trouble(self, "authentication" if c.get("kind") == "authentication" else str(c.get("message") or "")))
+            return out
+        if kind == "error":
+            return [trouble(self, str(d.get("error") or ""))]
+        if kind == "complete":
+            return [{"type": "done", "text": state.get("answer", ""), "session": state.get("session", "")}]
+        return []
+
+    def finish(self, code, state, errors):
+        text = " ".join(errors[-2:])
+        if code != 0 and re.search(r"No (model|provider) configured|goose configure", text):
+            return trouble(self, "not configured")
+        return None
+
+
+@agent
 class Custom(Agent):
     """A command of your own: Slate runs it as typed, with the prompt on its stdin, and shows
     whatever it prints. Where to find Slate's MCP server is in its environment. One prompt,

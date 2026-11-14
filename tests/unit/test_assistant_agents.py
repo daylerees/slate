@@ -270,3 +270,64 @@ class OpenCode(Base):
                 self.assertEqual((e["type"], e["kind"]), ("error", kind))
         e = self.ask("opencode", "", env={"STUB_EXIT": "1", "STUB_ERR": "boom"})[-1]
         self.assertEqual((e["kind"], e["detail"]), ("failed", "boom"))
+
+
+class Goose(Base):
+    def test_detect(self):
+        c = self.detect()["goose"]
+        self.assertEqual((c["label"], c["installed"], c["version"], c["signedIn"], c["confined"]), ("Goose", True, "1.54.0", False, True),
+                         "no provider set up yet")
+        os.makedirs(self.h(".config", "goose"))
+        with open(self.h(".config", "goose", "config.yaml"), "w") as f:
+            f.write("GOOSE_MODEL: qwen3\nGOOSE_PROVIDER: ollama\n")
+        c = self.detect()["goose"]
+        self.assertEqual((c["signedIn"], c["confined"]), (True, True))
+
+    def test_an_agent_as_its_provider(self):
+        """A provider that is itself an agent with tools brings them along: not confined."""
+        self.s.env["GOOSE_PROVIDER"] = "claude-code"
+        self.assertFalse(self.detect()["goose"]["confined"])
+        self.assertEqual(self.ask("goose", GOOSE)[0]["kind"], "not-accepted")
+
+    def test_a_prompt(self):
+        events = self.ask("goose", GOOSE)
+        self.answered(events, "Glass is **off**.", "slate-nova-r1")
+        self.assertEqual([(e["delta"], e.get("fresh", False)) for e in events if e["type"] == "text"],
+                         [("Let me check.", False), ("Glass is ", True), ("**off**.", False)])
+
+    def test_confined(self):
+        """None of the person's extensions (--no-profile), Slate's server as the only one, a
+        session Slate names, and the briefing as extra system instructions."""
+        self.ask("goose", GOOSE)
+        got = self.got("goose")
+        a = got["args"]
+        self.assertEqual(a[:5], ["run", "-i", "-", "--output-format", "stream-json"])
+        self.assertIn("--no-profile", a)
+        self.assertNotIn("--with-builtin", a)
+        self.assertEqual(self.after(a, "--with-extension"), "slate:%s mcp" % mcp_tests.SLATE)
+        self.assertEqual(self.after(a, "-n"), "slate-nova-r1")
+        self.assertTrue(self.after(a, "--system").startswith("You are Nova"))
+        self.assertNotIn("--resume", a)
+        self.assertEqual(got["env"]["GOOSE_MODE"], "auto")
+        self.assertEqual((got["env"]["SLATE_ASSISTANT_RUN"], got["env"]["SLATE_ASSISTANT_AGENT"]), ("r1", "Goose"))
+        self.assertTrue(got["stdin"].endswith("is glass on?"))
+
+    def test_follow_up(self):
+        """A follow-up resumes the session by its name; the session keeps Slate's server."""
+        events = self.ask("goose", GOOSE, session="slate-nova-r0", model="qwen3")
+        self.assertEqual(events[0], {"type": "start", "session": "slate-nova-r0"})
+        a = self.got("goose")["args"]
+        self.assertEqual(self.after(a, "-n"), "slate-nova-r0")
+        self.assertIn("--resume", a)
+        self.assertNotIn("--with-extension", a)
+        self.assertEqual(self.after(a, "--model"), "qwen3")
+
+    def test_errors(self):
+        auth = lines({"type": "message", "message": {"id": "a", "role": "assistant", "created": 1,
+                      "content": [{"type": "error", "kind": "authentication", "message": "Invalid API key"}], "metadata": {}}})
+        self.assertEqual(self.ask("goose", auth)[-1]["kind"], "signed-out")
+        self.assertIn("goose configure", self.ask("goose", auth)[-1]["message"])
+        e = self.ask("goose", lines({"type": "error", "error": "error sending request: connection refused"}), env={"STUB_EXIT": "1"})[-1]
+        self.assertEqual(e["kind"], "offline")
+        e = self.ask("goose", "", env={"STUB_EXIT": "1", "STUB_ERR": "No provider configured. Run 'goose configure' first"})[-1]
+        self.assertEqual(e["kind"], "signed-out")
