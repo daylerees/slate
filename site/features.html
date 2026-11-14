@@ -606,7 +606,9 @@
     <article>
       <h3>Your own agent</h3>
       <ul>
-        <li>Nova uses an agent you already have and are signed in to: Claude Code, or a command of your own. Slate keeps no keys and sends nothing anywhere itself</li>
+        <li>Nova uses an agent you already have and are signed in to: Claude Code, Codex, OpenCode, Goose, Antigravity, or a command of your own. Slate keeps no keys and sends nothing anywhere itself</li>
+        <li>For Claude Code, Codex, OpenCode and Goose, Slate switches off the agent's own tools for each prompt, so it works through Slate's alone, and nothing in your own setup changes. Antigravity and a command of your own keep theirs, so choosing one asks first</li>
+        <li>Or a model on this computer through Ollama, with Slate running the agent itself: only Slate's tools, no account, and nothing you ask leaves the computer. Settings picks the model from the ones you have, and says if Ollama isn't running or has none yet. Codex can use a model through Ollama too</li>
         <li>You choose the agent: there's none to start with, and Nova asks you to pick one in Settings before it does anything. What the one you pick needs shows beneath it</li>
         <li>With Claude Code, Slate switches off the agent's own tools for the prompt, so it works through Slate's alone</li>
         <li>An agent Slate can't limit that way is marked "Keeps its own tools", and choosing it asks first</li>
@@ -626,7 +628,7 @@
     <article>
       <h3>What it's told, and what it isn't</h3>
       <ul>
-        <li>What you type, and what Slate tells the assistant about your desktop (your settings, your open windows and their titles), goes to the service behind your agent, under your own account with them</li>
+        <li>What you type, and what Slate tells the assistant about your desktop (your settings, your open windows and their titles), goes to the service behind your agent, under your own account with them. With Ollama, it stays on this computer</li>
         <li>Slate's tools answer in words: they never show an assistant your screen, your files or your clipboard</li>
         <li>Window titles and notifications each have a switch; notifications start off</li>
         <li>Slate does its best to keep an assistant within these limits, but it can't promise what one will do, so using it is your choice and your responsibility</li>

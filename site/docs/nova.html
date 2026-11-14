@@ -35,9 +35,10 @@
 
       <h2>What it is</h2>
       <p>Nova isn't an AI of Slate's own. It hands what you type to an agent you already have and are signed in to,
-        like Claude Code, and that agent works through a set of tools Slate gives it. Slate keeps no keys and sends
-        nothing anywhere itself: your prompts go to the agent's service under your own account, and count towards it
-        like any other.</p>
+        like Claude Code, Codex, OpenCode or Goose, and that agent works through a set of tools Slate gives it. Slate
+        keeps no keys and sends nothing anywhere itself: your prompts go to the agent's service under your own account,
+        and count towards it like any other. Or, with <strong>Ollama</strong>, a model on this computer answers, and
+        nothing leaves it.</p>
       <p>Nova is still an experiment, and its window says so.</p>
 
       <h2>Switching it on</h2>
@@ -47,7 +48,7 @@
       <ul>
         <li><strong>What leaves your computer.</strong> What you type, and what Slate's tools tell the agent about your
           desktop (your settings, your open windows and their titles, the names of your workspaces, Spaces, apps and
-          wallpapers), goes to the service behind your agent.</li>
+          wallpapers), goes to the service behind your agent. With Ollama, it stays on this computer.</li>
         <li><strong>What it can do.</strong> Change settings, move windows and open apps without asking. Slate asks you
           before anything that can't be undone.</li>
         <li><strong>What can go wrong.</strong> Assistants make mistakes, and can be misled by text they read, like a
@@ -61,14 +62,30 @@
       <p>There's no agent to start with: pick one under <strong>Agent</strong> on the same page, and what it needs
         shows beneath it.</p>
       <ul>
-        <li><strong>Claude Code</strong> is the recommended one. For each prompt, Slate switches off Claude Code's own
-          tools (its shell, files and web access) and any other servers you've added, so it works through Slate's
-          tools alone. Nothing in your own Claude Code setup changes. If it isn't installed or signed in yet, Settings
-          says so and offers <strong>Get it</strong> or <strong>Sign in</strong>.</li>
+        <li><strong>Claude Code</strong>, <strong>Codex</strong>, <strong>OpenCode</strong> and <strong>Goose</strong>:
+          for each prompt, Slate switches off the agent's own tools (its shell, files and web access) and any other
+          servers or extensions you've added, so it works through Slate's tools alone. Nothing in your own setup
+          changes. If one isn't installed or signed in yet, Settings says so and offers <strong>Get it</strong> or
+          <strong>Sign in</strong>. (An OpenCode older than 2.2.3, or a Goose set up to use another agent as its
+          provider, can't be limited this way, and asks first like Antigravity.)</li>
+        <li><strong>Antigravity</strong> keeps its own tools: Slate can't switch them off for one prompt, so it's
+          marked "Keeps its own tools" and choosing it asks you first. It also asks before using another program's
+          tools, which it can't do while Nova works, so allow Slate's in its settings: add <code>mcp(slate/*)</code>
+          to <code>permissions.allow</code>.</li>
+        <li><strong>Ollama (on this computer)</strong> runs a model on your own computer, with Slate running the agent
+          itself: the model gets Slate's tools and nothing else, and nothing you ask leaves the computer. No account or
+          keys. Settings says if Ollama isn't running or has no model yet (<code>ollama pull qwen3</code> gets a small
+          one that's good with tools). Small models can be unreliable with tools, and on a computer without a strong
+          graphics card an answer can take a minute or more.</li>
+        <li><strong>Codex with Ollama</strong> is Codex with its own tools switched off, using a model on this computer
+          through Ollama instead of an OpenAI account. One prompt at a time: it doesn't follow on. It needs Ollama
+          started with more room than it has to begin with (<code>OLLAMA_CONTEXT_LENGTH=16384</code>), and Nova says so
+          if it runs out.</li>
         <li><strong>A command of your own</strong> runs whatever command you type, with your words on its input. Slate
           can't limit what such a command does, so it's marked "Keeps its own tools" and choosing it asks you first.</li>
       </ul>
-      <p><strong>Model</strong> picks a model for agents that let you choose; left empty, the agent uses its own.</p>
+      <p><strong>Model</strong> picks a model for agents that let you choose; left empty, the agent uses its own. For
+        Ollama, it's a list of the models on this computer; left as it is, Nova uses the first that can use tools.</p>
 
       <h2>Asking Nova</h2>
       <p>Open Nova with any of these:</p>
