@@ -440,8 +440,43 @@ end
 -- Nova, Slate's assistant, in every key set: Super+K; a keyboard's own assistant key; and
 -- the Copilot key on recent laptops, which has no key of its own: it presses Left Super,
 -- Left Shift and F23 together (keycode 201, bound by code as keyboard tables name it
--- differently). Switched off, they open its window saying so, never a dead key
-hl.bind(mainMod .. " + K",          hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Nova" })
+-- differently). Switched off, they open its window saying so, never a dead key.
+-- Super+K can also be held to talk to Nova (Settings → Assistant → Voice, NovaVoice.qml): a
+-- quick press opens Nova (or closes it, if it was open, as it's let go); held past NOVA_HOLD
+-- ms, Slate listens until K is let go, then sends what was said. The let-go is caught by a
+-- release bind on K alone with any modifiers (Super is often let go first), which does
+-- nothing unless Super+K started it, and never takes the key from anything
+local NOVA_HOLD = 350
+local novaHeld, novaListening, novaWasOpen, novaTimer = false, false, false, nil
+-- (global, so the tests can press and let go through hyprctl: a virtual keyboard's keys
+-- don't reach binds)
+function novaKeyDown()
+    if novaHeld then return end
+    novaHeld, novaListening = true, false
+    novaWasOpen = slateOverlayOpen("slate-assistant")
+    if not novaWasOpen then hl.exec_cmd(slate("assistant open")) end
+    if novaTimer then novaTimer:set_enabled(false) end
+    novaTimer = hl.timer(function()
+        novaTimer = nil
+        if novaHeld then
+            novaListening = true
+            hl.exec_cmd(slate("voice hold"))
+        end
+    end, { timeout = NOVA_HOLD, type = "oneshot" })
+end
+function novaKeyUp()
+    if not novaHeld then return end
+    novaHeld = false
+    if novaTimer then novaTimer:set_enabled(false); novaTimer = nil end
+    if novaListening then
+        novaListening = false
+        hl.exec_cmd(slate("voice release"))
+    elseif novaWasOpen then
+        hl.exec_cmd(slate("assistant close"))
+    end
+end
+hl.bind(mainMod .. " + K", function() novaKeyDown() end, { description = "Slate: Ask Nova (hold to talk)" })
+hl.bind("K", function() novaKeyUp() end, { release = true, non_consuming = true, ignore_mods = true })
 hl.bind("XF86Assistant",            hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Nova (assistant key)" })
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd(slate("assistant toggle")), { description = "Slate: Ask Nova (Copilot key)" })
 ---------------------------

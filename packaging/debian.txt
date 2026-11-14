@@ -85,5 +85,9 @@ qml6-module-qtquick-shapes
 ?xdg-user-dirs
 ?pciutils
 
+# Talking to Nova (Settings → Assistant → Voice): speech turned into text on this computer
+# (Debian 14 and Ubuntu 26.04 onwards)
+?whisper.cpp
+
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
 v4l-utils

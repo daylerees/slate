@@ -26,6 +26,9 @@ FloatingWindow {
     // Slate's confirmation window (PowerConfirm: confirmWith), for questions asked as the rest
     // of Slate asks them (installing an app)
     property var confirmer: null
+    // Talking to Nova: whisper.cpp and the speech model (VoiceModel.qml, kept by shell.qml so a
+    // download carries on with Settings closed)
+    property var voice: null
 
     title: "Slate Settings"
     // 880×620, or less on a small screen (Hyprland centres it at the size it asks for)
@@ -329,7 +332,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
-        assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
+        assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications", "assistantVoice"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -406,6 +409,24 @@ FloatingWindow {
         if (!confirmer) return;
         confirmer.confirmWith({ title: "Switch on the assistant?", body: assistantRisks, long: true,
                                 button: "Switch on", code: 0xF014, danger: false }, () => assistantAccept());
+    }
+    // Assistant → Voice → Talk to Nova. On, it needs the speech model: Slate asks before
+    // downloading it (its size, and where from), and only a yes turns it on
+    function voiceSwitch(on) {
+        if (!on) { Config.s.assistantVoice = false; return; }
+        if (voice && voice.model) { Config.s.assistantVoice = true; return; }
+        voiceDownload(() => { Config.s.assistantVoice = true; });
+    }
+    function voiceDownload(then) {
+        if (!confirmer || !voice) return;
+        confirmer.confirmWith({
+            title: "Download the speech model?",
+            body: "To turn what you say into text on this computer, Slate needs whisper's speech model: " + voice.sizeText
+                + ", downloaded once from Hugging Face into ~/.local/share/slate/whisper. You can delete it here at any time.\n\n"
+                + "What you say never leaves your computer: Slate only listens while you hold the key or the microphone, "
+                + "and the recording is deleted as soon as it's written down.",
+            long: true, button: "Download", code: 0xEAF0, danger: false
+        }, () => { if (then) then(); voice.download(); });
     }
     // Choosing which agent answers the prompt window. One Slate can't confine (it keeps tools
     // of its own: a command of your own always does) asks once, per agent
@@ -4433,6 +4454,54 @@ FloatingWindow {
                     Button { label: "Clear"; destructive: true; onClicked: Config.slateCall("assistant", "clear") }
                 }
             }
+            // Talking to Nova: hold Super+K or the microphone, turned into text on this computer
+            // (whisper.cpp, optional, and its model, downloaded when you ask: VoiceModel.qml)
+            GroupLabel { text: "Voice" }
+            Group {
+                SettingRow {
+                    label: "Talk to Nova"
+                    settingKey: "assistantVoice"
+                    Component.onCompleted: if (win.voice) win.voice.check()     // (whisper.cpp installed since?)
+                    detail: win.voice && win.voice.looked && win.voice.whisper === ""
+                        ? "Slate needs whisper.cpp to understand you, and it isn't installed yet. Install it from your system's packages "
+                          + "(whisper-cpp on Arch, Fedora and NixOS; whisper.cpp on Debian and Ubuntu), then turn this on"
+                        : "Hold Super+K, or the microphone in Nova's window, and say what you want. Let go, and it's written down and sent. "
+                          + "Slate only listens while you hold it, and turns what you say into text on this computer"
+                    needsMet: Config.assistantOn
+                    needs: "Needs Let assistants use Slate to be on"
+                    needsPage: "assistant"; needsLabel: "Let assistants use Slate"
+                    Toggle { checked: Config.s.assistantVoice; onToggled: v => win.voiceSwitch(v) }
+                }
+                Separator {}
+                SettingRow {
+                    id: modelRow
+                    readonly property var vm: win.voice
+                    label: "Speech model"
+                    detail: !vm ? ""
+                        : vm.downloading ? "Downloading… " + Math.round(vm.progress * 100) + "% of " + vm.sizeText
+                        : vm.error !== "" ? vm.error
+                        : vm.model ? "Downloaded (" + vm.sizeText + "), in ~/.local/share/slate/whisper. Slate uses it to turn what you say into text"
+                        : vm.sizeText + ", downloaded once from Hugging Face. Slate needs it to turn what you say into text, and asks before downloading it"
+                    Button {
+                        visible: !!modelRow.vm
+                        label: !modelRow.vm ? "" : modelRow.vm.downloading ? "Cancel" : modelRow.vm.model ? "Delete" : "Download"
+                        destructive: !!modelRow.vm && modelRow.vm.model && !modelRow.vm.downloading
+                        onClicked: {
+                            const vm = win.voice;
+                            if (vm.downloading) vm.cancel();
+                            else if (vm.model) vm.remove();
+                            else win.voiceDownload(null);
+                        }
+                    }
+                }
+                Separator {}
+                SettingRow {
+                    label: "Hold to talk"
+                    detail: "Hold Super+K for a moment and talk; a quick press still opens Nova. Nova's window shows when it's listening"
+                    Button { label: "Shortcuts"; onClicked: win.goTo("shortcuts", "") }
+                }
+            }
+            Footnote { text: "Slate only listens while you hold the key or the microphone, never in Private Mode or while the screen is locked. What you say is turned into text on this computer, and the recording is deleted straight after." }
             GroupLabel { text: "Activity" }
             Group {
                 SettingRow {

@@ -171,6 +171,9 @@ class Session:
             # A stand-in for bin/slate-build-hyprbars (tests/live/test_hyprbars.py says what it
             # reports): nothing is ever built, and nothing looks at the real plugin folder
             "SLATE_HYPRBARS_TOOL": os.path.join(slate.FIXTURES, "live", "hyprbars-tool"),
+            # Stand-ins for pw-record and whisper-cli (talking to Nova, scripts/voice.py): no
+            # microphone is ever opened, and what's "heard" is $HOME/.voice-transcript
+            "SLATE_VOICE_TOOLS": os.path.join(slate.FIXTURES, "voice"),
         })
 
     def start(self):

@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""A stand-in for PipeWire's pw-record (scripts/voice.py): writes a WAV of silence, as the real
+one writes what the microphone hears, until it's stopped (SIGINT), and notes how it was called
+in $HOME/.voice-calls. $HOME/.voice-no-mic: it fails at once, as with no microphone."""
+import json
+import os
+import signal
+import sys
+import time
+import wave
+
+home = os.environ.get("HOME", "/tmp")
+with open(os.path.join(home, ".voice-calls"), "a") as f:
+    f.write(json.dumps({"tool": "pw-record", "args": sys.argv[1:]}) + "\n")
+if os.path.exists(os.path.join(home, ".voice-no-mic")):
+    sys.stderr.write("stand-in pw-record: no microphone\n")
+    sys.exit(1)
+stop = []
+signal.signal(signal.SIGINT, lambda *a: stop.append(1))
+signal.signal(signal.SIGTERM, lambda *a: stop.append(1))
+w = wave.open(sys.argv[-1], "wb")
+w.setnchannels(1)
+w.setsampwidth(2)
+w.setframerate(16000)
+while not stop:
+    w.writeframes(b"\0\0" * 1600)
+    time.sleep(0.1)
+w.close()

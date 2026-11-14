@@ -293,6 +293,27 @@ for _name, _asked, _answer in (("markdown", "turn on glass, and how do I do it m
             "settle": 1.2,
             "undo": [("assistant", "close"), ("test", "nova", "{}")],
         }
+# Talking to Nova (Settings → Assistant → Voice): listening while the key or the microphone is
+# held, with the session's stand-in recorder (nothing is really heard). The model is a sparse
+# file of its size, as a download leaves it
+_VOICE_MODEL = ('d="${XDG_DATA_HOME:-$HOME/.local/share}/slate/whisper"; mkdir -p "$d" && '
+                'truncate -s 147951465 "$d/ggml-base.bin"')
+_VOICE_GONE = 'rm -f "${XDG_DATA_HOME:-$HOME/.local/share}/slate/whisper/ggml-base.bin"'
+SCENES["assistant-listening"] = {
+    "settings": dict(_NOVA_ON, assistantVoice="true", animations="off"),
+    "do": [("!sh", "-c", _VOICE_MODEL), ("test", "voiceCheck"), ("test", "nova", _json.dumps({"agents": _NOVA_AGENTS})),
+           ("assistant", "open"), lambda st: st["novaVoice"]["ready"], ("voice", "hold")],
+    "wait": lambda st: st["assistant"]["open"] and st["novaVoice"]["phase"] == "listening",
+    "undo": [("voice", "cancel"), ("assistant", "close"), ("test", "nova", "{}"), ("!sh", "-c", _VOICE_GONE), ("test", "voiceCheck")],
+}
+# Settings → Assistant scrolled to Voice: switched on, with the model downloaded
+SCENES["settings-assistant-voice"] = {
+    "settings": dict(_NOVA_ON, assistantVoice="true"),
+    "do": [("!sh", "-c", _VOICE_MODEL), ("test", "voiceCheck"), ("settings", "find", "assistant", "Talk to Nova")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "assistant"
+                       and st["settings"]["found"] == "Talk to Nova" and st["novaVoice"]["model"],
+    "settle": 2.5, "undo": [("settings", "close"), ("!sh", "-c", _VOICE_GONE), ("test", "voiceCheck")],
+}
 SCENES["assistant-off"] = {
     "do": [("assistant", "open")],
     "wait": lambda st: st["assistant"]["open"] and not st["assistant"]["enabled"],

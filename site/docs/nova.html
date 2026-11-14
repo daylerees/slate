@@ -73,7 +73,7 @@
       <h2>Asking Nova</h2>
       <p>Open Nova with any of these:</p>
       <ul>
-        <li><kbd>Super</kbd> + <kbd>K</kbd>.</li>
+        <li><kbd>Super</kbd> + <kbd>K</kbd> (hold it to talk, with Talk to Nova on).</li>
         <li>Your keyboard's <strong>Copilot</strong> or <strong>assistant</strong> key, if it has one.</li>
         <li>Nova's button on the menu bar, which appears while it's switched on.</li>
       </ul>
@@ -107,6 +107,23 @@
       </ul>
       <p>If something goes wrong, Nova says what happened and offers what will help: <strong>Try again</strong>,
         <strong>Open a terminal</strong> (to sign in to your agent) or <strong>Open Settings</strong>.</p>
+
+      <h3>Talking to Nova</h3>
+      <p>Rather say it than type it? Turn on <strong>Talk to Nova</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Assistant → Voice</span>. Then hold <kbd>Super</kbd> +
+        <kbd>K</kbd> for a moment, or hold the microphone at the end of Nova's box, and say what you want. Let go, and
+        what you said is written down and sent, just as if you'd typed it. A quick press of <kbd>Super</kbd> +
+        <kbd>K</kbd> still just opens Nova.</p>
+      <ul>
+        <li><strong>It only listens while you hold it.</strong> Nova's window shows it's listening the whole time, with
+          the microphone lit and "Listening… let go when you're done" in the box. Let go and the microphone is closed
+          straight away.</li>
+        <li><strong>Answers stay in words.</strong> Nova never speaks back.</li>
+        <li><strong>What it needs:</strong> whisper.cpp, which turns speech into text on your computer (the
+          <code>whisper-cpp</code> package on Arch, Fedora and NixOS, <code>whisper.cpp</code> on Debian and Ubuntu), and
+          its speech model, 148 MB, which Slate asks before downloading when you turn it on. Settings says what's
+          missing, and <strong>Delete</strong> there removes the model.</li>
+      </ul>
 
       <h3>Chat history</h3>
       <p>Your last 100 messages are still there after Slate restarts, kept on this computer only and never sent
@@ -150,9 +167,22 @@
         lines about the moment, like the time and the window you're in. It never includes your name, your computer's
         name or your home folder.</p>
 
+      <h2>Your voice stays on your computer</h2>
+      <p>No spying: talking to Nova is built so your voice never goes anywhere.</p>
+      <ul>
+        <li>Slate only listens while you hold the key or the microphone, and Nova's window always shows when it does.
+          It never listens in the background, while the screen is locked or in Private Mode.</li>
+        <li>What you say is recorded to a temporary file only you can read, turned into text on this computer by
+          whisper.cpp, and deleted straight after. The sound is never sent anywhere, kept, or given to an
+          assistant.</li>
+        <li>Only the words go on, to your agent, exactly as if you'd typed them, and they show in your message so you
+          can see what was heard.</li>
+        <li>An assistant can't turn talking on, or reach your microphone in any way.</li>
+      </ul>
+
       <h2>Private Mode</h2>
-      <p>While <a href="privacy.html">Private Mode</a> is on, Nova and every assistant are off, and Nova's window says
-        so. Only you can turn Private Mode off, from the control centre or the launcher, and Nova is back as it was when you do. An
+      <p>While <a href="privacy.html">Private Mode</a> is on, Nova and every assistant are off, Nova never listens, and
+        Nova's window says so. Only you can turn Private Mode off, from the control centre or the launcher, and Nova is back as it was when you do. An
         assistant can't change Private Mode.</p>
 
       <h2>Settings</h2>
@@ -165,6 +195,7 @@
           and what always asks first.</td></tr>
         <tr><td>What it can see</td><td>Window titles and notifications.</td></tr>
         <tr><td>Nova</td><td>Its shortcuts, Keep chat history and Clear chat history.</td></tr>
+        <tr><td>Voice</td><td>Talk to Nova, the Speech model (Download or Delete) and Hold to talk.</td></tr>
         <tr><td>Activity</td><td>Everything assistants did, with how each ended, and Clear.</td></tr>
         <tr><td>What Slate adds</td><td>Exactly what Slate sends along with your words.</td></tr>
         <tr><td>Use Slate from other apps</td><td>The lines to add Slate's tools to Claude Code, Codex or another agent

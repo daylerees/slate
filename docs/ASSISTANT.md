@@ -58,6 +58,51 @@ agent you chose does it through the same tools.
 - **When it goes wrong**, the window says what happened and offers the one useful thing:
   Open Settings, Open a terminal (to sign in), or Try again.
 - **Game mode.** The window opens as normal; the bar button's spinner and the typing dots keep still.
+  Talking to Nova works as ever, with its microphone keeping still too.
+
+## Talking to Nova
+
+Settings → Assistant → Voice → **Talk to Nova** (off to start with). Then hold **Super+K** for
+a moment (a quick press still just opens Nova), or hold the **microphone** at the end of Nova's
+box, and say what you want. Let go, and what you said is written down and sent, after anything
+already typed in the box. It shows in your bubble like anything typed; Slate still asks before
+anything that can't be undone, so a misheard word can't do lasting harm unasked.
+
+- **Only while held.** Slate opens the microphone when you've held the key for 350 ms or
+  pressed the button, and closes it the moment you let go. Nova's window is always open while
+  it listens and says so ("Listening… let go when you're done"), with the microphone lit in
+  the accent and a soft ring round it. Listening starts with Slate's click (Settings → Sound →
+  Click sound). It stops after a minute if the key is never let go.
+- **On this computer.** The recording goes to a file in `$XDG_RUNTIME_DIR` (in memory, yours
+  alone, mode 600), is turned into text by [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+  on this computer, and is deleted straight after, whatever happens. Only the words go on, to
+  Nova, as typed words would. No sound is ever sent anywhere, kept, or given to an assistant.
+- **Never** with Talk to Nova off, while Private Mode is on (which mutes the microphones
+  anyway; `scripts/voice.py` also checks Private Mode's mark itself), while the screen is
+  locked, or with Nova's window closed. Closing the window, locking the screen or turning on
+  Private Mode while it listens stops it, deletes the recording and sends nothing.
+- **Assistants can't turn it on.** `assistantVoice` is the assistant's own setting (`own()` in
+  the server): never shown to an assistant, never changed by one, and no tool reaches the
+  microphone.
+- **Answers stay text.** Nova never speaks.
+
+What it needs:
+
+| | |
+|---|---|
+| whisper.cpp | Optional. Arch, Fedora, NixOS: `whisper-cpp`; Debian 14 and Ubuntu 26.04 onwards: `whisper.cpp`; Gentoo: the GURU overlay; openSUSE and Void don't package it (build it, with `whisper-cli` on your PATH). Slate looks for `whisper-cli`, then the older names `whisper-cpp` and `whisper.cpp`. Without it, Settings and Nova say what to install |
+| The speech model | whisper's **base** model (`ggml-base.bin`, 148 MB), multilingual: small enough to download and quick on any computer, and it understands whichever language you speak (told from your locale where whisper knows it, worked out otherwise). Turning Talk to Nova on asks before downloading it from Hugging Face into `~/.local/share/slate/whisper/`, with progress; it's checked against its SHA-256 before it's kept (anything else is deleted), and **Delete** on the same page removes it |
+| `pw-record` | PipeWire's recorder, in the same package as `pw-play` |
+
+How it's built: Super+K's bind (`binds.lua`, `novaKeyDown`/`novaKeyUp`) opens Nova on the
+press and, held past 350 ms, calls `slate ipc call voice hold`; K's release (a bind on K with any
+modifiers, which does nothing unless Super+K started it) calls `voice release`, or closes Nova
+on a quick press if it was already open. `NovaVoice.qml` runs `scripts/voice.py listen`, which
+records until it reads "stop" on its stdin, then runs `whisper-cli -m <model> -f <wav> -l <lang>
+-nt -np`; stdin closing without "stop" (Slate gone) or SIGTERM cancels it. `VoiceModel.qml`
+runs `voice.py status`, `download` and `delete`. Tests: `tests/unit/test_voice.py` (stand-in
+`pw-record` and `whisper-cli` in `tests/fixtures/voice`, downloads from a local file and a local
+server, checksum failures, no whisper.cpp) and `tests/live/test_assistant_voice.py`.
 
 ## Before you switch it on
 

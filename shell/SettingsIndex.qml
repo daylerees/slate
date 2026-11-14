@@ -95,6 +95,8 @@ Singleton {
         ["Blur quality", "appearance", "blur passes smooth performance"],
         ["Assistant", "assistant", "assistant ai agent agents claude chatgpt codex gemini copilot mcp server tools nova"],
         ["Let assistants use Slate", "assistant", "assistant ai agent switch on off enable allow mcp risks privacy"],
+        ["Talk to Nova", "assistant", "voice speak talk speech dictate dictation microphone mic hold push to talk whisper transcribe nova assistant"],
+        ["Speech model", "assistant", "voice speech model whisper download delete microphone talk nova"],
         ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],
         ["Check for updates", "updates", "update notification daily automatic new version"],
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],
