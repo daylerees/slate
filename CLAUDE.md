@@ -140,7 +140,7 @@ another Interface size.
 (`--jobs`, docs/TESTING.md): a full run is about five minutes.
 
 - **Tests are written with the change, and run on their own.** As a feature is shaped, lint
-  the QML you touched (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple"`),
+  the QML you touched (`/usr/lib/qt6/bin/qmllint <files> 2>&1 | grep -i "syntax\|multiple\|duplicate"`),
   install, reload and check the log, so the author can try it; alongside, write or update its tests
   (the rules below) and run just those, in the background (`tests/run -q --tier live --filter
   <name>`, a minute or so), fixing what they find before moving on. A change is done when its
