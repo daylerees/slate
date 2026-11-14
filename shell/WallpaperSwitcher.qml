@@ -160,6 +160,7 @@ Scope {
     // (the tests': what the cover on the focused screen really shows, and a look at one then
     // straight back to another the moment the first is in, quicker than any key)
     property string coverShowing: ""
+    property bool standing: false           // (the small picture standing in for a full one)
     property string flipTo: ""
     property string flipFrom: ""
     function testFlip(a, b) { flipFrom = a; flipTo = b; Config.wallpaperPreview = a === original ? "" : a; }
@@ -239,6 +240,34 @@ Scope {
                     fadeMs: 200
                     onShowingChanged: if (scr.main) root.coverShowing = showing
                     opacity: root.fade
+                }
+                // Until the full picture's in: its small one, filling the screen, so every move
+                // answers at once and in step with the colours (a big picture takes longer to
+                // read than a small one, which made moving along feel uneven). The full one fades
+                // in under it, then it goes; one already read ahead never shows this at all.
+                // (The cards' own small picture, at the cards' size: already in memory)
+                Image {
+                    id: stand
+                    anchors.fill: parent
+                    readonly property string small: root.thumbs[Config.wallpaper] || ""
+                    source: root.onScreen && small !== "" ? "file://" + small : ""
+                    sourceSize: Qt.size(root.thumbW * 2, root.thumbH * 2)
+                    fillMode: Image.PreserveAspectCrop
+                    cache: true
+                    smooth: true
+                    // Wanted while the full picture isn't in: shown at once; once it is, kept a
+                    // moment longer, while the full one fades in under it, then faded away
+                    readonly property bool wanted: !coverFill.ready && Config.wallpaper !== "" && status === Image.Ready
+                    property real level: 0
+                    onLevelChanged: if (scr.main) root.standing = level > 0
+                    opacity: level * root.fade
+                    onWantedChanged: {
+                        if (wanted) { goAway.stop(); fadeAway.stop(); level = 1; }
+                        else if (level > 0) goAway.restart();
+                    }
+                    Timer { id: goAway; interval: Config.ms(200); onTriggered: fadeAway.restart() }
+                    NumberAnimation { id: fadeAway; target: stand; property: "level"; to: 0; duration: Config.ms(150) }
+                    onSourceChanged: if (source.toString() === "") { goAway.stop(); fadeAway.stop(); level = 0; }
                 }
                 // The pictures either side of the one chosen, read ahead at the size the cover
                 // draws them (and shared with it: WallpaperFill's images are cached), so moving

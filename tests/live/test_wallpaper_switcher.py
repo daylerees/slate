@@ -142,11 +142,13 @@ class WallpaperSwitcher(LiveCase):
         self.ipc("wallpaperSwitcher", "next")
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green and st["wallpaperSwitcher"]["ahead"] == [blue, red],
                   "blue and red read ahead of green")
+        # The small picture that stands in until a full one's in never stays once it is
+        self.wait(lambda st: not st["wallpaperSwitcher"]["standing"], "the stand-in to go once the full picture's in")
         self.ipc("wallpaperSwitcher", "cancel")
         # Closed: everything it held let go
         self.wait(lambda st: not st["wallpaperSwitcher"]["switching"] and st["wallpaperSwitcher"]["ahead"] == []
                   and st["wallpaperSwitcher"]["walls"] == [] and st["wallpaperSwitcher"]["colours"] == 0
-                  and st["wallpaperSwitcher"]["cover"] == "", "everything let go once closed")
+                  and st["wallpaperSwitcher"]["cover"] == "" and not st["wallpaperSwitcher"]["standing"], "everything let go once closed")
 
     def test_enter_keeps_it(self):
         self.open()
