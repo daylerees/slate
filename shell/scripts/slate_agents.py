@@ -566,6 +566,82 @@ class Goose(Agent):
 
 
 @agent
+class Antigravity(Agent):
+    """Google's Antigravity CLI (`agy`), in its headless mode, checked against its documentation
+    (headless mode, MCP, permissions). The prompt goes on stdin as one stream-json message.
+    Slate's server is given in the folder it's started in (.agents/mcp_config.json there:
+    its workspace configuration), so the person's own setup is untouched. Its own tools (its
+    terminal, files in its workspace, the web, its browser) can't be switched off for one run:
+    the only way is the person's own settings.json, so it keeps them, and choosing it asks
+    first. In headless mode it can't ask before using another program's tools, so Slate's
+    tools only work once allowed in its settings (mcp(slate/*)); Settings says so."""
+    id = "antigravity"
+    label = "Antigravity"
+    url = "https://antigravity.google/product/antigravity-cli"
+    note = ("Slate can't switch off its own tools. It also asks before using Slate's, and can't ask while Nova works: "
+            "allow them in its settings by adding mcp(slate/*) to permissions.allow")
+    confined = False
+    briefing = "prompt"
+    sign_in = "agy"
+    workspace = True
+
+    def installed(self):
+        return bool(find("agy"))
+
+    def version(self):
+        code, out = output([find("agy") or "agy", "--version"])
+        return version_in(out) if code == 0 else ""
+
+    def prepare(self, run):
+        cmd, args, env = slate_server(run)
+        write_json(os.path.join(run["work"], ".agents", "mcp_config.json"),
+                   {"mcpServers": {"slate": {"command": cmd, "args": args, "env": env}}})
+
+    def command(self, run):
+        cmd = [find("agy") or "agy", "--input-format", "stream-json", "--output-format", "stream-json",
+               "--disable-slash-commands"]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        if run.get("session"):
+            cmd += ["--conversation", run["session"]]
+        return cmd
+
+    def stdin(self, text):
+        return json.dumps({"event": "user", "message": {"content": text}}) + "\n"
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        kind = d.get("event")
+        if kind == "init":
+            state["session"] = str(d.get("conversation_id") or "")
+            return [{"type": "start", "session": state["session"]}]
+        if kind == "step_update":
+            s = d.get("step_update") or {}
+            if s.get("step_type") != "agent_response" or not isinstance(s.get("text_delta"), str) or not s["text_delta"]:
+                return []
+            ev = {"type": "text", "delta": s["text_delta"]}
+            if s.get("step_index") != state.get("step"):
+                state["step"] = s.get("step_index")
+                ev["fresh"] = True
+            return [ev]
+        if kind == "result":
+            r = d.get("result") or {}
+            if r.get("status") == "SUCCESS":
+                return [{"type": "done", "text": str(r.get("response") or "").rstrip("\n"),
+                         "session": str(r.get("conversation_id") or state.get("session", ""))}]
+            return [trouble(self, str(r.get("error") or r.get("status") or ""), "Google")]
+        return []
+
+    def finish(self, code, state, errors):
+        return trouble(self, " ".join(errors[-2:]), "Google") if errors and code != 0 else None
+
+
+@agent
 class Custom(Agent):
     """A command of your own: Slate runs it as typed, with the prompt on its stdin, and shows
     whatever it prints. Where to find Slate's MCP server is in its environment. One prompt,

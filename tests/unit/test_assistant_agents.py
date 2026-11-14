@@ -331,3 +331,46 @@ class Goose(Base):
         self.assertEqual(e["kind"], "offline")
         e = self.ask("goose", "", env={"STUB_EXIT": "1", "STUB_ERR": "No provider configured. Run 'goose configure' first"})[-1]
         self.assertEqual(e["kind"], "signed-out")
+
+
+class Antigravity(Base):
+    def test_detect(self):
+        c = self.detect()["antigravity"]
+        self.assertEqual((c["label"], c["installed"], c["version"], c["confined"], c["signIn"]), ("Antigravity", True, "1.4.4", False, "agy"))
+        self.assertIn("mcp(slate/*)", c["note"])
+
+    def test_asks_first(self):
+        """It keeps its own tools: not run until you've said yes to it."""
+        e, = self.ask("antigravity", AGY)
+        self.assertEqual(e["kind"], "not-accepted")
+        self.assertFalse(os.path.exists(os.path.join(self.s.dir, "agy.got")))
+
+    def test_a_prompt(self):
+        events = self.ask("antigravity", AGY, accepted="antigravity")
+        self.answered(events, "Glass is **off**.", "c3b66b04-872b-4fbe-a3a4-058a026ef20a")
+        got = self.got("agy")
+        self.assertEqual(got["args"][:4], ["--input-format", "stream-json", "--output-format", "stream-json"])
+        self.assertNotIn("-p", got["args"])
+        message = json.loads(got["stdin"])
+        self.assertEqual(message["event"], "user")
+        text = message["message"]["content"]
+        self.assertTrue(text.startswith("You are Nova"), "no system prompt of its own: the briefing goes above the prompt")
+        self.assertTrue(text.endswith("is glass on?"))
+        conf = json.loads(got["files"][os.path.join(".agents", "mcp_config.json")])
+        self.assertEqual(conf["mcpServers"]["slate"]["command"], mcp_tests.SLATE)
+        self.assertEqual(got["cwd"], self.h(".local", "state", "slate", "assistant", "work-antigravity"))
+
+    def test_follow_up(self):
+        self.ask("antigravity", AGY, accepted="antigravity", session="c3b66b04", model="gemini-3.8-flash-medium")
+        a = self.got("agy")["args"]
+        self.assertEqual((self.after(a, "--conversation"), self.after(a, "--model")), ("c3b66b04", "gemini-3.8-flash-medium"))
+        self.assertFalse(json.loads(self.got("agy")["stdin"])["message"]["content"].startswith("You are Nova"),
+                         "the briefing went again on a follow-up")
+
+    def test_errors(self):
+        for error, kind in (("authentication required", "signed-out"), ("RESOURCE_EXHAUSTED: quota", "failed"),
+                            ("UNAVAILABLE: connection reset", "offline")):
+            with self.subTest(kind):
+                stream = lines({"event": "result", "result": {"conversation_id": "", "status": "ERROR", "response": "", "error": error}})
+                e = self.ask("antigravity", stream, accepted="antigravity", env={"STUB_EXIT": "1"})[-1]
+                self.assertEqual((e["type"], e["kind"]), ("error", kind))
