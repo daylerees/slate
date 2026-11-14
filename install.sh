@@ -3,7 +3,8 @@
 # it needs it):
 #
 #   ./install.sh                  install everything (asks before each system change)
-#   ./install.sh --yes            same, without questions
+#   ./install.sh --yes            same, without questions (yes to each). Without it, a question that
+#                                 can't be asked (no terminal to answer in) is skipped, as a no
 #   ./install.sh --login-screen   also make Slate's login screen the system's (greetd). Optional
 #                                 and off by default; it can also be installed later from
 #                                 Settings → Lock & Idle. See docs/LOCK-AND-LOGIN.md for the risks
@@ -12,16 +13,19 @@
 #   ./install.sh --update         just put this version of Slate in place, keeping your files, with
 #                                 no questions or sudo (Settings → Updates runs this); stops with
 #                                 code 3 if it needs new packages or more (run it in full then)
-#   ./install.sh --uninstall      remove Slate (keeps packages and your settings backup)
+#   ./install.sh --uninstall      remove Slate (keeps packages and your settings backup, and lists
+#                                 what else it leaves, with how to remove each)
 #
 # What it does:
 #   1. installs the packages Slate needs (packaging/<distro>.txt)
 #   2. checks Hyprland (0.57+, Lua config) and Quickshell (0.3+) are new enough
 #   3. installs the bundled Geist and Geist Mono fonts for your other apps, unless already there
-#   4. puts Slate in ~/.config/slate (keeping your settings) and the `slate` command in ~/.local/bin
+#   4. puts Slate in ~/.config/slate (keeping your settings) and the `slate` command in ~/.local/bin,
+#      and offers Papirus-Dark as your icon theme if you haven't picked one of your own
 #   5. adds "Slate" to your login screen's session list (two small files, needs sudo)
 #   6. optionally (--login-screen) switches greetd to Slate's login screen
-# Your current desktop and ~/.config/hypr are not changed: pick "Slate" at login to use it.
+# Anything that reaches your other desktops (packages, services, the icon theme) is asked first,
+# and ~/.config/hypr is not changed: pick "Slate" at login to use it.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
@@ -51,19 +55,41 @@ if [ -t 1 ]; then B=$'\e[1m'; G=$'\e[32m'; Y=$'\e[33m'; R=$'\e[31m'; N=$'\e[0m';
 step() { echo; echo "${B}==> $*${N}"; }
 ok()   { echo "  ${G}✓${N} $*"; }
 warn() { echo "  ${Y}!${N} $*"; }
-die()  { echo "${R}Error:${N} $*" >&2; exit 1; }
-ask() {   # ask "Question?" → 0 for yes. Default yes. (--update never asks: always no)
+die()  { echo "${R}Slate's installer couldn't carry on:${N} $*" >&2; exit 1; }
+# ask "Question?" → 0 for yes. Enter means yes. --update never asks (always no), --yes never asks
+# (always yes). A question that can't be asked, because there's no terminal to answer in (run
+# from a script, or over a pipe), is a no and says so: silence is never taken as a yes to sudo
+# or to changing something of yours.
+NO_TERMINAL_SAID=0
+ask() {
     [ "$UPDATE" -eq 1 ] && return 1
     [ "$YES" -eq 1 ] && return 0
-    local r; read -r -p "  $1 [Y/n] " r </dev/tty || r=""
+    local r=""
+    if ! { : </dev/tty; } 2>/dev/null || ! read -r -p "  $1 [Y/n] " r </dev/tty; then
+        if [ "$NO_TERMINAL_SAID" -eq 0 ]; then
+            warn "Skipped \"$1\": there's no terminal to answer in. ./install.sh --yes answers yes to everything."
+        else warn "Skipped \"$1\" (no terminal to answer in)"; fi
+        NO_TERMINAL_SAID=1
+        return 1
+    fi
     case "$r" in [nN]*) return 1 ;; *) return 0 ;; esac
 }
 have() { command -v "$1" >/dev/null 2>&1; }
 # version_ge 0.57.1 0.57 → true
 version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
-[ "$(id -u)" -ne 0 ] || die "Run this as your normal user, not root (it uses sudo when needed)."
-[ "$UPDATE" -eq 1 ] || have sudo || die "sudo is needed for the system steps."
+# Is this Slate running? Only Slate's own copy counts (the one started from its folder, which is
+# how bin/slate finds it too): `qs` is Quickshell, and other shells run on it as well, so "a qs
+# is running" on another desktop says nothing about Slate.
+slate_running() {
+    have qs || return 1
+    local dir
+    dir=$("$DEST/bin/slate" dir 2>/dev/null) || return 1
+    [ -n "$(qs list -p "$dir" 2>/dev/null | sed -n 's/^ *Process ID: *//p')" ]
+}
+
+[ "$(id -u)" -ne 0 ] || die "it's running as root. Run it as your normal user (it asks for sudo when it needs it)."
+[ "$UPDATE" -eq 1 ] || have sudo || die "sudo isn't installed, and the system steps need it."
 
 # ---- Uninstall ------------------------------------------------------------------------
 if [ "$UNINSTALL" -eq 1 ]; then
@@ -82,11 +108,33 @@ if [ "$UNINSTALL" -eq 1 ]; then
     # Folder colour: back to the icon theme it was made from (removes Slate-Icons)
     [ -x "$DEST/scripts/folder-colour.py" ] && "$DEST/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
     [ -L "$OLD_DEST" ] && rm "$OLD_DEST"
+    b=""
     if [ -L "$DEST" ]; then rm "$DEST" && ok "Removed the link $DEST"
     elif [ -d "$DEST" ]; then
         b="$DEST.removed-$(date +%Y%m%d-%H%M%S)"; mv "$DEST" "$b" && ok "Moved $DEST to $b (your settings are in there; delete it when you're sure)"
     fi
-    echo; echo "Done. Packages were left installed. Log out of Slate if you're in it."
+    # The version before this one, kept by the last install or update
+    if [ -d "$DEST.previous" ] && ask "Delete the older copy of Slate kept in $DEST.previous too?"; then
+        rm -rf "$DEST.previous" && ok "Deleted $DEST.previous"
+    fi
+    # What's left, and how to remove each. None of it is deleted here: other apps may be using
+    # the fonts and the icon theme, and nothing marks them as Slate's rather than yours.
+    left=()
+    [ -z "$b" ] || left+=("Your settings and Slate's files: rm -r $b")
+    [ ! -d "$DEST.previous" ] || left+=("The older copy of Slate: rm -r $DEST.previous")
+    fontdir="$data/fonts/Geist"
+    [ ! -d "$fontdir" ] || left+=("The Geist and Geist Mono fonts (your other apps may use them): rm -r $fontdir && fc-cache -f")
+    cur=""
+    if have gsettings; then cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'") || true; fi
+    case "$cur" in Papirus*|ePapirus*)
+        left+=("Your icon theme is $cur. If Slate's installer chose it and you'd like another, pick one in your desktop's settings, or: gsettings set org.gnome.desktop.interface icon-theme <name>") ;;
+    esac
+    for d in "${XDG_STATE_HOME:-$HOME/.local/state}/slate" "${XDG_CACHE_HOME:-$HOME/.cache}/slate"; do
+        [ ! -e "$d" ] || left+=("Slate's saved state: rm -r $d")
+    done
+    left+=("The packages Slate needed (other apps may use them): your package manager removes them")
+    echo; echo "Slate is removed. Log out of Slate if you're in it. These were left as they are:"
+    for l in "${left[@]}"; do echo "  - $l"; done
     exit 0
 fi
 
@@ -151,15 +199,35 @@ install_void() {
     done < <(read_list void)
     [ "${#failed[@]}" -eq 0 ] || warn "Couldn't install: ${failed[*]}. Slate needs these: find Void's name for each (xbps-query -Rs <name>) and install it. Hyprland comes from a third-party repository (docs/INSTALL.md)."
 }
+# Ubuntu's own Hyprland is too old; this PPA (a third-party repository) has current releases
+HYPR_PPA="ppa:cppiber/hyprland"
+# The third-party repositories installing the packages would add, in plain words, so they're
+# seen before the question is answered (nothing when there are none, or they're there already)
+third_party_repos() {
+    local repos=() p list
+    case "$family" in
+        debian)
+            if { [ "${ID:-}" = ubuntu ] || [[ " ${ID_LIKE:-} " == *" ubuntu "* ]]; } && ! grep -rqs cppiber/hyprland /etc/apt/sources.list.d/; then
+                repos+=("$HYPR_PPA (a current Hyprland; Ubuntu's own is too old)")
+            fi ;;
+        fedora)
+            while read -r p; do case "$p" in copr:*) repos+=("the ${p#copr:} COPR") ;; esac; done < <(read_list fedora) ;;
+    esac
+    [ "${#repos[@]}" -gt 0 ] || return 0
+    list=$(printf '%s, ' "${repos[@]}")
+    if [ "${#repos[@]}" -eq 1 ]; then echo "  This adds a third-party repository: ${list%, }"
+    else echo "  This adds third-party repositories: ${list%, }"; fi
+    echo "  (run by neither your distro nor Slate; Hyprland or Quickshell come from there)"
+}
 install_debian() {
     local req=() opt=() p
     while read -r p; do case "$p" in \?*) opt+=("${p#\?}") ;; *) req+=("$p") ;; esac; done < <(read_list debian)
     if [ "${ID:-}" = ubuntu ] || [[ " ${ID_LIKE:-} " == *" ubuntu "* ]]; then
-        # Ubuntu's own Hyprland is too old; this PPA has current releases (26.04 and newer)
+        # ($HYPR_PPA, named by third_party_repos before the question; 26.04 and newer)
         if ! grep -rqs cppiber/hyprland /etc/apt/sources.list.d/; then
             sudo apt-get update
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
-            sudo add-apt-repository -y ppa:cppiber/hyprland
+            sudo add-apt-repository -y "$HYPR_PPA"
         fi
     fi
     sudo apt-get update
@@ -174,7 +242,7 @@ install_fedora() {
     while read -r p; do
         case "$p" in copr:*) copr+=("${p#copr:}") ;; \?*) opt+=("${p#\?}") ;; *) req+=("$p") ;; esac
     done < <(read_list fedora)
-    have dnf || die "dnf not found"
+    have dnf || die "dnf wasn't found, and Fedora's packages are installed with it."
     sudo dnf install -y dnf-plugins-core >/dev/null 2>&1 || true
     for p in "${copr[@]}"; do sudo dnf -y copr enable "$p"; done
     # Fedora Workstation's tuned-ppd does power-profiles-daemon's job (and conflicts with it)
@@ -219,13 +287,19 @@ enable_services() {
     # Without systemd Slate doesn't switch services on for you (each init system has its own
     # way): it says which aren't running, with the command for yours (bin/slate-init)
     if [ ! -d /run/systemd/system ]; then
-        local init="$ROOT/shell/bin/slate-init" svc hint
+        local init="$ROOT/shell/bin/slate-init" svc hint rc info
         for svc in bluetooth network; do
-            "$init" service-active "$svc"; [ $? -eq 1 ] || continue
+            # (1 is "not running", the answer looked for: caught here, or `set -e` would take
+            # it for a failure and end the installer on the spot, without a word)
+            rc=0; "$init" service-active "$svc" || rc=$?
+            [ "$rc" -eq 1 ] || continue
             hint=$("$init" service-hint "$svc")
             warn "The $svc service isn't running (Slate's $([ "$svc" = network ] && echo Wi-Fi || echo Bluetooth) panel needs it)${hint:+. To switch it on: $hint}"
         done
-        "$init" info | grep -qx 'logind=none' && warn "elogind isn't running: without it Slate can't suspend, restart or shut down, lock before sleep, or show password prompts. See docs/INSTALL.md (Without systemd)."
+        # (read in full first: `grep -q` leaving at the first match would cut slate-init off
+        # mid-answer, which `pipefail` counts as a failure, and the warning would never show)
+        info=$("$init" info) || true
+        case $'\n'"$info"$'\n' in *$'\nlogind=none\n'*) warn "elogind isn't running: without it Slate can't suspend, restart or shut down, lock before sleep, or show password prompts. See docs/INSTALL.md (Without systemd)." ;; esac
         return 0
     fi
     have systemctl || return 0
@@ -280,6 +354,7 @@ if [ "$DEPS" -eq 1 ]; then
         arch|artix|void|debian|fedora|opensuse)
             echo "  Slate needs these packages (packaging/$family.txt):"
             read_list "$family" | tr '\n' ' ' | fold -s -w 76 | sed 's/^/    /'; echo
+            third_party_repos
             if ask "Install them now (uses sudo)?"; then "install_$family"; ok "Packages installed"
             else warn "Skipped; install them yourself before using Slate"; fi
             ensure_one "terminal" kitty kitty foot alacritty ghostty wezterm konsole gnome-terminal kgx ptyxis xfce4-terminal
@@ -295,7 +370,7 @@ if [ "$DEPS" -eq 1 ]; then
             warn "Emerge them (Hyprland 0.57+ from hyproverlay, Quickshell from GURU; see docs/INSTALL.md), then run: ./install.sh --no-deps"
             exit 1 ;;
         *)
-            warn "Unknown distro; install the packages listed in docs/INSTALL.md yourself, then run: ./install.sh --no-deps"
+            warn "Slate doesn't know this distro; install the packages listed in docs/INSTALL.md yourself, then run: ./install.sh --no-deps"
             exit 1 ;;
     esac
 fi
@@ -322,7 +397,7 @@ if have qs; then
 else
     warn "Quickshell isn't installed."
     if { [ "$family" = debian ] || [ "$family" = opensuse ]; } && ask "Your distro doesn't package Quickshell 0.3. Build it from source now (about 5–10 minutes)?"; then
-        "$ROOT/packaging/build-quickshell.sh" && ok "Quickshell built and installed" || { warn "Quickshell build failed"; problems=1; }
+        "$ROOT/packaging/build-quickshell.sh" && ok "Quickshell built and installed" || { warn "Quickshell couldn't be built"; problems=1; }
     else
         warn "See docs/INSTALL.md for your distro"; problems=1
     fi
@@ -344,7 +419,9 @@ fonts_changed=0
 for fam in "Geist" "Geist Mono"; do
     file=${fam// /}                                   # Geist / GeistMono
     # installed from somewhere other than Slate's copy? (a package, or fonts you added)
-    if fc-list : family file 2>/dev/null | grep -vE "^$fontdir/$file-(Italic-)?Variable\.ttf:" | grep -qiE "(: |,)$fam(,|$)"; then
+    # (not `grep -q`: it leaves at the first match, fc-list is cut off, and `pipefail` then
+    # calls the whole check a failure, so a font that is installed would be installed again)
+    if fc-list : family file 2>/dev/null | grep -vE "^$fontdir/$file-(Italic-)?Variable\.ttf:" | grep -iE "(: |,)$fam(,|$)" >/dev/null; then
         ok "$fam is installed"; continue
     fi
     mkdir -p "$fontdir"
@@ -430,13 +507,18 @@ ln -sfn "$DEST/cursors/Slate-Cursors" "$data/icons/Slate-Cursors"; ok "Slate Cur
 # Hyprland plugin for them) is built only when chosen: Settings → Windows → Title bars, or
 # `slate build-hyprbars`. A build that's already there is left as it is.
 # Icon theme: Papirus-Dark (its coloured folders back Settings → Appearance → Folder colour),
-# unless you've already picked an icon theme of your own
+# offered when you haven't picked an icon theme of your own. Asked, never just done: the icon
+# theme is one setting shared by every desktop you log in to, not only Slate.
 if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark ] || [ -d /run/current-system/sw/share/icons/Papirus-Dark ]; }; then
-    cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")
+    cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'") || true
     case "$cur" in
         ""|Adwaita|AdwaitaLegacy|hicolor|default|gnome|breeze|breeze-dark|Yaru*|elementary)
-            "$DEST/scripts/folder-colour.py" --icon-theme Papirus-Dark \
-                && ok "Icon theme: Papirus-Dark${cur:+ (was $cur)}" || warn "Couldn't set the icon theme to Papirus-Dark" ;;
+            if ask "Use Papirus-Dark icons? Slate's Folder colour setting needs it, and it changes the icon theme for GTK and Qt apps on your other desktops too."; then
+                "$DEST/scripts/folder-colour.py" --icon-theme Papirus-Dark \
+                    && ok "Icon theme: Papirus-Dark${cur:+ (was $cur)}" || warn "Slate couldn't set the icon theme to Papirus-Dark"
+            else
+                ok "Icon theme: keeping yours${cur:+ ($cur)}. To change it later: Settings → Icons → Icon theme"
+            fi ;;
         Papirus*|ePapirus*|Slate-Icons) ok "Icon theme: $cur" ;;
         *) ok "Icon theme: keeping yours ($cur); Papirus-Dark is installed if you want it (Folder colour needs it)" ;;
     esac
@@ -446,7 +528,8 @@ case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin isn't on your
 # changed them, put the new ones there now (Slate's password prompt, before Slate restarts),
 # or say how to
 if [ "$UPDATE" -eq 1 ]; then
-    if "$DEST/bin/slate-system" --check | grep -qx session; then
+    # (`grep -x … >/dev/null`, not `grep -q`: see the fonts step)
+    if "$DEST/bin/slate-system" --check | grep -x session >/dev/null; then
         if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$DEST/bin/slate-system" --fix >/dev/null 2>&1; then
             ok "Updated the login session"
         else
@@ -454,8 +537,9 @@ if [ "$UPDATE" -eq 1 ]; then
         fi
     fi
 fi
-# If Slate is running (updating from inside it), restart it on the new code
-if have qs && pgrep -x qs >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then "$DEST/bin/slate" restart && ok "Restarted Slate"; fi
+# If Slate is running (updating from inside it), restart it on the new code. Only then: on
+# another desktop `slate restart` would start Slate over it.
+if [ -n "${WAYLAND_DISPLAY:-}" ] && slate_running; then "$DEST/bin/slate" restart && ok "Restarted Slate"; fi
 if [ "$UPDATE" -eq 1 ]; then
     echo; echo "${G}${B}Slate is updated.${N}"
     exit 0
@@ -463,8 +547,15 @@ fi
 
 # ---- 5. Login session -----------------------------------------------------------------
 step "5. \"Slate\" on the login screen"
-echo "  Adds two files: /usr/local/bin/slate-session and /usr/share/wayland-sessions/slate.desktop"
-if ask "Add the Slate session (uses sudo)?"; then
+# (NixOS manages /usr/share and /etc itself: the session and the login screen are set up in its
+# configuration, and the two helpers below have nowhere to write)
+if [ "$family" = nixos ]; then
+    warn "On NixOS, add the Slate session in your configuration (services.displayManager.sessionPackages) rather than here. See docs/INSTALL.md (NixOS)."
+else
+    echo "  Adds two files: /usr/local/bin/slate-session and /usr/share/wayland-sessions/slate.desktop"
+fi
+if [ "$family" = nixos ]; then :
+elif ask "Add the Slate session (uses sudo)?"; then
     # (told where Slate is: with XDG_CONFIG_HOME set it isn't ~/.config/slate)
     sudo "$DEST/bin/slate-session-install" "$DEST" | sed 's/^/  /'
 else
@@ -474,7 +565,9 @@ fi
 # ---- 6. Slate's login screen (optional) -----------------------------------------------
 if [ "$LOGIN" -eq 1 ]; then
     step "6. Slate's login screen (greetd)"
-    if ! have greetd && [ ! -x /usr/bin/greetd ] && [ ! -x /usr/sbin/greetd ]; then
+    if [ "$family" = nixos ]; then
+        warn "On NixOS, set greetd up in your configuration (services.greetd) rather than here. See docs/INSTALL.md (NixOS)."
+    elif ! have greetd && [ ! -x /usr/bin/greetd ] && [ ! -x /usr/sbin/greetd ]; then
         warn "greetd isn't installed; install it, then run: sudo $DEST/bin/slate-greeter-install"
     else
         echo "  This replaces your computer's login screen with Slate's (greetd). If it breaks, it can"

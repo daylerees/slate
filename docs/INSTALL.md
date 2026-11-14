@@ -20,6 +20,10 @@ Options: `./install.sh --help`.
 | Option | What it does |
 |---|---|
 | `--yes` | don't ask, answer yes to everything |
+
+Without `--yes`, a question that can't be asked (the installer was started from a script, with
+no terminal to answer in) is skipped as a no, and the installer says so: nothing that uses
+`sudo` or changes something of yours goes ahead unanswered.
 | `--login-screen` | also switch your login screen to Slate's own (greetd). Optional; read the risks in [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) first |
 | `--no-deps` | skip installing packages (you installed them yourself) |
 | `--link` | link `~/.config/slate` to this folder instead of copying (for working on Slate) |
@@ -205,16 +209,18 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
   `hyprland` package on Arch; `hyprland-devel`/`hyprland-dev` elsewhere). See
   [Title bars](#title-bars) below for what it involves.
 - **Papirus** (the icon theme behind Settings' coloured folder icons) is packaged everywhere
-  and installed with Slate. The installer makes Papirus-Dark your icon theme unless you've
-  picked your own; folder colours only work while a Papirus theme is in use.
+  and installed with Slate. If you haven't picked an icon theme of your own, the installer asks
+  whether to make Papirus-Dark yours (the icon theme is shared with your other desktops, so it
+  changes there too); folder colours only work while a Papirus theme is in use.
 - **adw-gtk3** (makes GTK apps match) isn't packaged on Debian/Ubuntu/openSUSE; get it
   from [its releases](https://github.com/lassekongo83/adw-gtk3/releases) if you want it.
 
 
 ## What the installer does
 
-1. **Packages** — installs the list for your distro from `packaging/` (you're shown the list
-   and asked first). If you have no terminal or no file manager, it offers kitty and
+1. **Packages** — installs the list for your distro from `packaging/` (you're shown the list,
+   and any third-party repository it adds: a PPA on Ubuntu, two COPRs on Fedora, and asked
+   first). If you have no terminal or no file manager, it offers kitty and
    Nautilus (Slate's shortcuts, dock and desktop menu open them; any you already have are
    used instead, and Settings → Default Apps picks between them). It also offers to switch on
    Bluetooth and NetworkManager if they're off (some distros leave them off), leaving another
@@ -224,15 +230,17 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    loads them itself); the installer also installs each to `~/.local/share/fonts` for your
    other apps (so terminals can use Geist Mono as the code font) unless it's installed
    already, and keeps that copy up to date on updates. Slate's icon font is bundled too.
-   **Icons and cursor** — the Papirus icon theme (a package) becomes your icon theme,
-   Papirus-Dark, unless you've chosen one of your own; Slate's cursors (bundled) are
-   linked into `~/.local/share/icons` for the session to use.
+   **Icons and cursor** — if you haven't chosen an icon theme of your own, the installer asks
+   whether to use Papirus-Dark (a package; Folder colour needs it). It's asked because the icon
+   theme is shared: it changes for GTK and Qt apps on your other desktops too. Slate's cursors
+   (bundled) are linked into `~/.local/share/icons` for the session to use.
 4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is kept as
    `slate.previous` (one version back; your `settings.json`, `hypr/` and `user/` are
    carried over).
 5. **Login entry** — adds two files so login screens list "Slate":
    `/usr/local/bin/slate-session` and `/usr/share/wayland-sessions/slate.desktop`. This
-   works with GDM, SDDM, LightDM and greetd login screens.
+   works with GDM, SDDM, LightDM and greetd login screens. (Not on NixOS, where the session
+   goes in your configuration: see [NixOS](#nixos).)
 6. **Login screen (only with `--login-screen`)** — switches greetd to Slate's own login
    screen, keeping your old greetd setup to go back to. It's optional and not installed
    otherwise; you can also install it later from Settings → Security. A broken login
@@ -372,8 +380,18 @@ and offers to update it (it asks for your password).
 
 This takes "Slate" off the login screen, puts back your previous login screen if you used
 `--login-screen`, and moves `~/.config/slate` aside (to
-`slate.removed-<date>`). Packages are left installed, since other apps may use them.
-Slate's state in `~/.local/state/slate` and `~/.cache/slate` can be deleted by hand.
+`slate.removed-<date>`). It asks whether to delete the older copy in `~/.config/slate.previous`
+too.
+
+It finishes with a list of what it left, and the command that removes each:
+
+- your settings, in `slate.removed-<date>` (and `slate.previous`, if you kept it);
+- the Geist and Geist Mono fonts in `~/.local/share/fonts/Geist`, which your other apps may be
+  using;
+- your icon theme, if it's a Papirus one: pick another in your desktop's settings if the
+  installer chose it and you'd like a change;
+- Slate's state in `~/.local/state/slate` and `~/.cache/slate`;
+- the packages, since other apps may use them.
 
 ## Troubleshooting
 

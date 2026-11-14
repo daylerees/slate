@@ -53,13 +53,15 @@
 
       <h3>What the installer does</h3>
       <ol>
-        <li><strong>Packages.</strong> Installs your distro's list (you see it first). If you have no terminal or file
+        <li><strong>Packages.</strong> Installs your distro's list (you see it first, along with any third-party
+          repository it adds: a PPA on Ubuntu, two COPRs on Fedora). If you have no terminal or file
           manager, it offers kitty and Nautilus; ones you already have are used instead. It also offers to switch on
           Bluetooth and NetworkManager if they're off.</li>
         <li><strong>Checks</strong> that Hyprland and Quickshell are new enough.</li>
         <li><strong>Fonts, icons and pointers.</strong> Geist and Geist Mono come with Slate, and are installed for
-          your other apps too. Papirus becomes your icon theme unless you've picked your own, and Slate's pointers are
-          made available to the session.</li>
+          your other apps too. If you haven't picked an icon theme of your own, it asks whether to use Papirus-Dark,
+          which Folder colour needs: the icon theme is shared, so it changes on your other desktops too. Slate's
+          pointers are made available to the session.</li>
         <li><strong>Slate itself</strong>, copied to <code>~/.config/slate</code>, with the <code>slate</code> command
           in <code>~/.local/bin</code>. An existing copy is kept as <code>~/.config/slate.previous</code>, and your
           settings and own files come along.</li>
@@ -79,6 +81,9 @@
         <tr><td><code>--uninstall</code></td><td>Removes Slate (see <a href="#removing-slate">Removing Slate</a>)</td></tr>
       </table>
       <p><code>./install.sh --help</code> lists them too.</p>
+      <p>Without <code>--yes</code>, a question that can't be asked (the installer was started from a script, with no
+        terminal to answer in) is skipped as a no, and the installer says so. Nothing that uses <code>sudo</code> or
+        changes something of yours goes ahead unanswered.</p>
 
       <h2>Your distro</h2>
 
@@ -111,7 +116,7 @@
         Hyprland 0.57), run <code>sudo nixos-rebuild switch</code>, then <code>./install.sh --no-deps</code>. Since Nix
         manages <code>/etc</code> and <code>/usr/share</code>, you add the Slate session with
         <code>services.displayManager.sessionPackages</code>, and greetd with <code>services.greetd</code>, in your
-        configuration.</p>
+        configuration. The installer leaves both to you there.</p>
 
       <h3>Artix, Void and Gentoo</h3>
       <p>Slate also runs without systemd, as long as <strong>elogind</strong> is installed and running. This support
@@ -161,8 +166,12 @@
       <pre><code>./install.sh --uninstall</code></pre>
       <p>This takes Slate off the login screen, puts your previous login screen back if you installed Slate's, and
         moves <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather than deleting it.
-        Packages are left installed, since other apps may use them. Slate's saved state in
-        <code>~/.local/state/slate</code> and <code>~/.cache/slate</code> can be deleted by hand if you'd like.</p>
+        It asks whether to delete the older copy in <code>~/.config/slate.previous</code> too.</p>
+      <p>It finishes with a list of what it left, and the command that removes each: your settings (in
+        <code>slate.removed-&lt;date&gt;</code>), the Geist fonts in <code>~/.local/share/fonts/Geist</code> (your
+        other apps may be using them), your icon theme if it's a Papirus one, Slate's saved state in
+        <code>~/.local/state/slate</code> and <code>~/.cache/slate</code>, and the packages, since other apps may use
+        them.</p>
     </article>
     <nav class="docs-pager" id="docs-pager"></nav>
   </main>
