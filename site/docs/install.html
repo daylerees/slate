@@ -42,7 +42,8 @@
         <li>PipeWire, NetworkManager, polkit and a few other packages. The installer installs these for you.</li>
       </ul>
       <p>If your distro's Hyprland or Quickshell is too old, the installer says so and points you to the notes for
-        your distro below.</p>
+        your distro below. If you choose to try anyway, Slate remembers that, so updating later doesn't stop at the
+        same question.</p>
 
       <h2>Installing</h2>
       <pre><code>git clone https://github.com/daylerees/slate.git &amp;&amp; cd slate
@@ -169,7 +170,8 @@
       <h2>Removing Slate</h2>
       <pre><code>./install.sh --uninstall</code></pre>
       <p>This takes Slate off the login screen, puts your previous login screen back if you installed Slate's, and
-        puts back the pointer and code font Slate had set in your other apps, and
+        puts back the pointer and code font Slate had set in your other apps (and your icon theme, if the
+        installer switched you to Papirus-Dark), and
         moves <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather than deleting it.
         It asks whether to remove Slate's helpers from <code>/usr/local/libexec/slate</code>, and whether to delete the
         older copy in <code>~/.config/slate.previous</code> too.</p>

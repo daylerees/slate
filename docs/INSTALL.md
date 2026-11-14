@@ -41,7 +41,9 @@ no terminal to answer in) is skipped as a no, and the installer says so: nothing
   installer installs them).
 
 Your distro's notes are below. If its Hyprland or Quickshell is too old, the installer
-says so and points here.
+says so and points here, and asks whether to try anyway. Your answer is kept in
+`~/.local/state/slate`, so updating later (Settings → Updates) carries on instead of
+stopping at the same question.
 
 ## Your distro
 
@@ -398,7 +400,8 @@ and offers to update it (it asks for your password).
 This takes "Slate" off the login screen, puts back your previous login screen if you used
 `--login-screen`, and moves `~/.config/slate` aside (to
 `slate.removed-<date>`), after putting back the pointer and code font Slate had set in other
-apps. It asks whether to remove Slate's root helpers
+apps, and back to the icon theme you had before if the installer switched you to Papirus-Dark
+(the installer keeps what it replaced in `~/.local/state/slate`). It asks whether to remove Slate's root helpers
 (`/usr/local/libexec/slate`, and the rule that let Private Mode switch the camera without a
 password), and whether to delete the older copy in `~/.config/slate.previous` too.
 
@@ -407,8 +410,9 @@ It finishes with a list of what it left, and the command that removes each:
 - your settings, in `slate.removed-<date>` (and `slate.previous`, if you kept it);
 - the Geist and Geist Mono fonts in `~/.local/share/fonts/Geist`, which your other apps may be
   using;
-- your icon theme, if it's a Papirus one: pick another in your desktop's settings if the
-  installer chose it and you'd like a change;
+- your icon theme, if it's a Papirus one the uninstaller didn't put back (one you chose yourself,
+  or from before the installer kept what it replaced): pick another in your desktop's settings if
+  you'd like a change;
 - Slate's state in `~/.local/state/slate` and `~/.cache/slate`;
 - the packages, since other apps may use them.
 
