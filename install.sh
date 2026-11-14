@@ -32,7 +32,6 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
 DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
-OLD_DEST="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/slate"   # where Slate lived before
 BIN_LINK="$HOME/.local/bin/slate"
 HELPERS=/usr/local/libexec/slate      # Slate's root helpers (shell/bin/slate-helpers-install)
 HYPR_MIN="0.57"
@@ -120,7 +119,6 @@ if [ "$UNINSTALL" -eq 1 ]; then
     [ -L "$data/icons/Slate-Cursors" ] && rm "$data/icons/Slate-Cursors" && ok "Removed Slate Cursors"
     # Folder colour: back to the icon theme it was made from (removes Slate-Icons)
     [ -x "$DEST/scripts/folder-colour.py" ] && "$DEST/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
-    [ -L "$OLD_DEST" ] && rm "$OLD_DEST"
     b=""
     if [ -L "$DEST" ]; then rm "$DEST" && ok "Removed the link $DEST"
     elif [ -d "$DEST" ]; then
@@ -460,10 +458,6 @@ ok "Icon font: bundled with Slate"
 step "4. Slate"
 KEEP=(settings.json hypr user)     # (the same list as KEEP in shell/scripts/update.py)
 mkdir -p "$(dirname "$DEST")"
-# Slate used to live in ~/.config/quickshell/slate: bring its settings along
-if [ -d "$OLD_DEST" ] && [ ! -L "$OLD_DEST" ] && [ ! -e "$DEST/settings.json" ] && [ -f "$OLD_DEST/settings.json" ]; then
-    mkdir -p "$DEST"; cp "$OLD_DEST/settings.json" "$DEST/settings.json"; ok "Brought your settings over from $OLD_DEST"
-fi
 if [ -L "$DEST" ] && [ "$(readlink -f "$DEST")" = "$ROOT/shell" ]; then
     ok "$DEST already links to this folder"
 else

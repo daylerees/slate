@@ -28,7 +28,7 @@ Status of making Slate installable by other people.
 | What | Notes |
 |---|---|
 | Public repo + release tarballs | INSTALL.md uses `<repo-url>` as a placeholder. Licence: MIT (`LICENSE`), with the bundled fonts under their own |
-| Distro packages | an AUR `slate-git` package would be the natural first one (system path `/usr/share/slate`, which `slate-session` already falls back to) |
+| Distro packages | an AUR `slate-git` package would be the natural first one (it would need a system path such as `/usr/share/slate`: today `slate-session` and the Hyprland config only look in `~/.config/slate`) |
 | Brightness | `brightnessctl` and a keyboard-backlight glob in `OSD.qml`; detect devices instead |
 | Keymap | `session/hypr/config/binds.lua` is one person's keymap; consider a smaller default set |
 | Run as a systemd user service | auto-restart (matters most for the lock screen); would need an equivalent without systemd |

@@ -528,3 +528,45 @@ class Uninstall(Case):
         self.assertNotIn("icon theme", left)
         self.assertTrue(os.path.isdir(self.fonts), "the fonts may be yours: they're listed, not deleted")
         self.assertIn(f"rm -r {self.fonts}", left)
+
+
+class SessionStarter(Case):
+    """session/slate-session (what the login screen's "Slate" entry runs) starts Hyprland with
+    the config in your own install, and nothing else: there was never a release that lived in
+    ~/.config/quickshell/slate, and a system-wide copy couldn't work (the config itself looks
+    for Slate in ~/.config/slate), so neither is tried."""
+    scratch = True
+    STARTER = slate.path("shell", "session", "slate-session")
+
+    def setUp(self):
+        super().setUp()
+        self.s = Stubs(self.h)
+        self.s.add("start-hyprland", code=0)
+        self.s.add("uwsm", missing=True)
+        # (a session bus "already there", so it's started directly on any computer)
+        self.env = dict(self.s.env, DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent")
+
+    def config_in(self, *folder):
+        d = os.path.join(self.h.config, *folder, "session", "hypr")
+        os.makedirs(d)
+        with open(os.path.join(d, "hyprland.lua"), "w") as f:
+            f.write("-- a stand-in\n")
+        return os.path.join(d, "hyprland.lua")
+
+    def test_starts_from_your_install(self):
+        conf = self.config_in("slate")
+        code, out = run(["sh", self.STARTER], env=self.env, timeout=20)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.s.calls("start-hyprland"), [["--", "-c", conf]])
+
+    def test_nowhere_else(self):
+        self.config_in("quickshell", "slate")
+        code, out = run(["sh", self.STARTER], env=self.env, timeout=20)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Slate isn't installed", out)
+        self.assertEqual(self.s.calls("start-hyprland"), [])
+        for rel in (("install.sh",), ("shell", "session", "slate-session")):
+            with self.subTest(rel[-1]):
+                src = slate.read(*rel)
+                self.assertNotIn("quickshell/slate", src)
+                self.assertNotIn("/usr/share/slate", src)

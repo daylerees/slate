@@ -50,8 +50,8 @@ itself for `shell.qml` (`UserFiles.qml`). A mistake in a `.lua` file skips that 
 rest still loads) and Slate shows it in a notification, with Hyprland's own config errors;
 a mistake in `shell.qml` leaves Slate running without it, and is shown the same way.
 
-`slate-session` looks for the config in `$XDG_CONFIG_HOME/slate/session/hypr/`
-first, then `/usr/share/slate/session/hypr/` (for a system-wide package).
+`slate-session` looks for the config in `$XDG_CONFIG_HOME/slate/session/hypr/`, your own
+install: the config finds the rest of Slate there too, so that's the one place it runs from.
 
 Inside the session `SLATE_SESSION=1` is set. `slate-greeter-sync` uses it to make Slate the
 login screen's default session.
