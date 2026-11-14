@@ -384,6 +384,24 @@ class Dragging(LiveCase):
         self.assertIsNotNone(self.slot(st), "a running app stays on the dock")
         self.assertFalse(self.slot(st)["pinned"])
 
+    def test_icons_survive_another_window_opening_and_closing(self):
+        """A window opening or closing makes (or removes) its own icon only: the others aren't
+        made again, which would decode every picture again. `made` counts each icon's makings."""
+        st = self.s.state()
+        before = dict(st["dock"]["made"])
+        self.assertEqual(before.get("app:foot"), 1, before)
+        self.assertEqual(before.get("app:" + self.KEY), 1, before)
+        other = "slate-test-other"
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id %s")' % other)
+        st = self.wait(lambda st: st["dock"]["made"].get("app:" + other) == 1, "the new app's icon", timeout=10)
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c["class"] == other:
+                self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.close({ window = [=[address:%s]=] }))" % c["address"])
+        self.wait(lambda st: not any(x.get("key") == other for x in st["dock"]["slots"]), "its icon to leave", timeout=10)
+        made = self.s.state()["dock"]["made"]
+        for key, n in before.items():
+            self.assertEqual(made.get(key), n, f"{key} was made again: {made}")
+
     def test_running_app_beside_the_dock_goes_back(self):
         self.ipc("test", "dockDrag", self.KEY, -1, 0)
         st = self.wait(lambda st: st["dock"]["dragging"] == self.KEY)

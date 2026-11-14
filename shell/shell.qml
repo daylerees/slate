@@ -523,7 +523,7 @@ ShellRoot {
                     // More's or Downloads' grid as it scrolls: where the cells end and the
                     // scrollbar starts (menu coordinates), and how strong each shade is now
                     grid: appMenu.gridFlick ? appMenu.gridState() : null,
-                    hoverEffect: win.hoverEffect,
+                    hoverEffect: win.hoverEffect, made: win.madeOf,
                     fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
                     glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
                     lift: win.slots.map(x => Math.round(win.liftAt(x.at))),
@@ -1359,6 +1359,13 @@ ShellRoot {
         }
         // The slots drawn by the apps' Repeater: the apps and the dividers between them
         readonly property var middleSlots: slots.filter(x => x.kind === "app" || x.kind === "divider" || x.kind === "more")
+        // A name for each of those that stays the same while it's the same icon: the app's key, "more",
+        // or "divider" and which one it is. The Repeater is keyed by these (see its model)
+        function keyOfSlot(x, dividerNo) { return x.kind === "app" ? "app:" + x.item.key : x.kind === "divider" ? "divider:" + dividerNo : x.kind; }
+        readonly property var middleKeys: { let d = 0; return middleSlots.map(x => keyOfSlot(x, x.kind === "divider" ? d++ : 0)); }
+        function slotByKey(key) { let d = 0; return middleSlots.find(x => keyOfSlot(x, x.kind === "divider" ? d++ : 0) === key) || null; }
+        // How many times each icon has been made (the test IPC reads it: it should stay at one)
+        property var madeOf: ({})
         function slotAt(i) { return i >= 0 && i < slots.length ? slots[i] : null; }
         function indexOfKind(kind) { const x = slots.find(o => o.kind === kind); return x ? x.at : -1; }
         readonly property int count: slots.length
@@ -3235,19 +3242,27 @@ ShellRoot {
                     }
 
                     Repeater {
-                        model: win.middleSlots
+                        // Keyed by strings, so a window opening or closing, a pin or a drag only adds,
+                        // removes or moves the icons that changed instead of making every one again
+                        // (a new list of slots each time would, and each would decode its picture again)
+                        model: ScriptModel { values: win.middleKeys }
                         delegate: Item {
                             id: cell
-                            required property var modelData
-                            readonly property bool isApp: modelData.kind === "app"
-                            readonly property bool isMore: modelData.kind === "more"
+                            required property string modelData
+                            // This icon's slot, found again by its key whenever the slots are worked out
+                            // afresh. Keeps the last one for the moment an icon is on its way out
+                            readonly property var found: win.slotByKey(modelData)
+                            property var slot: found
+                            onFoundChanged: if (found) slot = found
+                            readonly property bool isApp: slot.kind === "app"
+                            readonly property bool isMore: slot.kind === "more"
                             // The app in this slot ({ key, entry, windows, pinned }; none for a divider;
                             // for More, the windows of the apps in it, so its running dot shows)
-                            readonly property var app: isApp ? modelData.item
+                            readonly property var app: isApp ? slot.item
                                 : ({ key: "", entry: null, pinned: false,
-                                     windows: isMore ? modelData.items.reduce((w, it) => w.concat(it.windows), []) : [] })
-                            readonly property real s: win.scaleAt(modelData.at)
-                            opacity: win.fadeAt(modelData.at)
+                                     windows: isMore ? slot.items.reduce((w, it) => w.concat(it.windows), []) : [] })
+                            readonly property real s: win.scaleAt(slot.at)
+                            opacity: win.fadeAt(slot.at)
                             readonly property var badge: isMore ? win.moreBadge : win.badgeFor(isApp ? app : null)
                             readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
                             property int version: 0
@@ -3256,17 +3271,20 @@ ShellRoot {
                             readonly property real bounce: win.bounceOf(cell.app.key)
                             readonly property int windowCount: cell.app.windows.length
                             onWindowCountChanged: if (windowCount > 0) win.endLaunch(cell.app.key)
-                            Component.onCompleted: if (windowCount > 0) win.endLaunch(cell.app.key)
-                            width: win.base * win.slotWidth(modelData.at) * s
+                            Component.onCompleted: {
+                                win.madeOf[modelData] = (win.madeOf[modelData] || 0) + 1;
+                                if (windowCount > 0) win.endLaunch(cell.app.key);
+                            }
+                            width: win.base * win.slotWidth(slot.at) * s
                             height: row.height
                             // Moved along to open the gap for an app being dragged in: sliding when the
                             // gap opens, closes or moves past it, at once as the gap grows and shrinks
-                            property real past: win.gapAt >= 0 && cell.modelData.at >= win.gapAt ? 1 : 0
+                            property real past: win.gapAt >= 0 && cell.slot.at >= win.gapAt ? 1 : 0
                             Behavior on past { enabled: !win.settling; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
                             transform: [
-                                Matrix4x4 { matrix: win.tiltMatrix(cell.width, cell.height, win.tiltAt(cell.modelData.at)) },
+                                Matrix4x4 { matrix: win.tiltMatrix(cell.width, cell.height, win.tiltAt(cell.slot.at)) },
                                 Translate {
-                                    x: cell.past * (win.gapWidth + win.spacing); y: -win.liftAt(cell.modelData.at)
+                                    x: cell.past * (win.gapWidth + win.spacing); y: -win.liftAt(cell.slot.at)
                                     Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
                                 }
                             ]
@@ -3274,7 +3292,7 @@ ShellRoot {
                             // A divider: a faint line across the dock, between the pinned apps and
                             // the others (and before Downloads and the Waste Basket)
                             Rectangle {
-                                visible: cell.modelData.kind === "divider"
+                                visible: cell.slot.kind === "divider"
                                 opacity: Config.dockIconOpacity
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.bottom
@@ -3297,7 +3315,7 @@ ShellRoot {
                                 width: parent.width; height: width
                                 transform: Matrix4x4 { matrix: win.upright(moreTile.width, moreTile.height) }
                                 DockGlow {
-                                    strength: win.glowAt(cell.modelData.at)
+                                    strength: win.glowAt(cell.slot.at)
                                     radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
                                 }
                                 IconPlate {
@@ -3355,7 +3373,7 @@ ShellRoot {
                                 width: parent.width; height: width
                                 transform: Translate { y: -cell.bounce * win.base * 0.4 }
                                 DockGlow {
-                                    strength: win.glowAt(cell.modelData.at)
+                                    strength: win.glowAt(cell.slot.at)
                                     colour: win.glowColour(cell.tilePath)
                                     radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
                                 }
@@ -3394,7 +3412,6 @@ ShellRoot {
                                 sourceSize: Qt.size(192, 192)
                                 smooth: true
                                 mipmap: true
-                                cache: false
                                 layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                                 onStatusChanged: if (cell.isApp && status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
                                 // Glass: a sheen, rounded like the icon tiles (not on icons shown as
