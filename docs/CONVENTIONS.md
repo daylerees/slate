@@ -21,10 +21,12 @@ Rules:
 - Selected is always the active colour: not a grey, a tint of the accent, or only an outline.
 - Both are the same in glass and flat modes: no separate grey hover for flat, no lighter hover
   laid over a card's own colour.
-- One exception: something that's on and that a click turns off again (the control centre's
-  quick tiles, a connected Bluetooth device; not real switches, and not a choice that stays
-  chosen) goes a little lighter under the pointer, to show it can be switched off:
-  `Config.accentLit` (`RowButton.toggles` in `Popouts.qml`).
+- **The lit accent.** Anything filled with the active colour that a click acts on goes a
+  little lighter under the pointer, to show the click will do something: `Config.accentLit`,
+  the same everywhere, with the usual `Behavior on color` fade. That covers a switch that's
+  on, a quick tile that's on, a connected device (`RowButton.toggles` in `Popouts.qml`), and a
+  primary button filled with the accent (Spaces' Save). A choice that's already chosen and that
+  a click wouldn't change (the selected row, tab or page) keeps the plain active colour.
 - **Destructive things hover red.** Anything that removes, clears, deletes, forgets,
   force-quits or shuts down is written in the danger red and takes `Config.hoverDanger` (that
   red at the muted hover's strength) under the pointer. In code: `destructive: true` on
