@@ -280,7 +280,8 @@ keep it.
 - **The welcome** opens the first time Slate starts: an introduction, then a few big
   choices, each with a recommendation (tiling or floating windows; dark, light or auto,
   colours from the wallpaper and theming your other apps; where the bar and dock go; and
-  the shortcuts). Skip it any time; show it again from Settings → About.
+  the shortcuts), then an introduction to Nova, the assistant, which stays off until you
+  switch it on in Settings → Assistant. Skip it any time; show it again from Settings → About.
 - **Settings**: Super+Z (or the gear in the control centre, Super+X). Set your **location**
   in Settings → General for weather and the sunset-to-sunrise night light, and pick a
   **wallpaper** in Settings → Appearance (Super+Shift+W). Images come from `~/Pictures`

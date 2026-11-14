@@ -305,6 +305,11 @@ SCENES["welcome-look"] = {
     "do": [("welcome", "page", "3")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3,
     "settle": 1.2, "undo": [("welcome", "close")],
 }
+# Nova's page: the assistant by its name and icon, and the button to Settings → Assistant
+SCENES["welcome-nova"] = {
+    "do": [("welcome", "page", "6")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 6,
+    "settle": 1.2, "undo": [("welcome", "close")],
+}
 SCENES["welcome-glass"] = {
     "settings": {"glass": "true"},
     "do": [("welcome", "page", "5")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 5,

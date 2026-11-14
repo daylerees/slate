@@ -164,7 +164,7 @@ class Overlays(LiveCase):
         self.config("accent", "#e8a6b5")
         self.ipc("welcome", "page", "3")
         st = self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3, "the Glass or flat page")
-        self.assertEqual(st["welcome"]["pages"], 7)
+        self.assertEqual(st["welcome"]["pages"], 8)
         self.ipc("welcome", "look", "Liquid Glass")
         self.s.settle(0.6)
         self.assertEqual(self.setting("glass"), "true")
@@ -178,6 +178,27 @@ class Overlays(LiveCase):
                          ("light", "false", "#e8a6b5"))
         self.ipc("welcome", "close")
         self.wait(lambda st: not st["welcome"]["open"], "the welcome to close")
+
+    def test_welcome_meets_nova(self):
+        """The Welcome window introduces Nova on a page of its own, and its button opens
+        Settings → Assistant without switching the assistant on (that switch shows the risks
+        first; the welcome never switches it on itself)."""
+        for key in ("welcomeShown", "assistantEnabled", "assistantRisksAccepted"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.config("welcomeShown", "false")
+        self.ipc("welcome", "page", "6")
+        st = self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 6, "Nova's page")
+        self.assertFalse(st["assistant"]["enabled"])
+        self.ipc("welcome", "assistant")
+        st = self.wait(lambda st: not st["welcome"]["open"] and st["settings"]["open"]
+                       and st["settings"]["section"] == "assistant", "Settings → Assistant")
+        self.assertEqual(self.setting("welcomeShown"), "true", "leaving for Settings finishes the welcome")
+        self.s.settle(0.5)
+        st = self.s.state()
+        self.assertFalse(st["assistant"]["enabled"], "the welcome switched the assistant on")
+        self.assertEqual(st["asking"], "", "the welcome asked about the assistant itself")
+        self.assertEqual((self.setting("assistantEnabled"), self.setting("assistantRisksAccepted")), ("false", "0"))
 
     def test_without_a_login_service(self):
         """A computer with neither systemd nor elogind (seatd alone, say): nothing can suspend,

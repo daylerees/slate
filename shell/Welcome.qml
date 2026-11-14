@@ -1,7 +1,7 @@
 // The welcome: shown the first time Slate starts (and from Settings → About), it introduces
 // Slate and walks through a few big choices, each with a recommendation: tiling or floating
 // windows, colours (from the wallpaper), glass or flat, where the bar and dock go, and the
-// shortcuts. It's drawn in the theme in use (light or dark, the tint, glass), as it can be
+// shortcuts; then it introduces Nova, the assistant (off, and only switched on in Settings). It's drawn in the theme in use (light or dark, the tint, glass), as it can be
 // opened again at any time.
 // Everything it sets is in Settings too. Skip (or Escape) at any point.
 //
@@ -20,7 +20,7 @@ PanelWindow {
     // ---- Showing ---------------------------------------------------------------
     property bool shown: false
     property int page: 0
-    readonly property int pages: 7
+    readonly property int pages: 8
     function open() {
         screen = Config.focusedScreen;
         page = 0;
@@ -30,6 +30,12 @@ PanelWindow {
     function finish() {
         Config.s.welcomeShown = true;
         shown = false;
+    }
+    // Nova's page: Settings → Assistant, where switching it on shows the risks first. The
+    // welcome never switches it on itself
+    function openAssistant() {
+        finish();
+        Config.slateCall("settings", "page", "assistant");
     }
     // The first time Slate starts (a moment after, once the desktop is up)
     Timer {
@@ -41,9 +47,11 @@ PanelWindow {
         target: "welcome"
         function open(): void { w.open(); }
         function close(): void { w.shown = false; }
-        // Straight to a page (0: the welcome … 6: the keys to know), and its "Glass or flat?" choice
+        // Straight to a page (0: the welcome … 6: Nova, 7: the keys to know), its "Glass or flat?"
+        // choice, and Nova's page's button
         function page(n: int): void { if (!w.shown) w.open(); w.page = Math.max(0, Math.min(w.pages - 1, n)); }
         function look(name: string): void { Config.applyLook(name); }
+        function assistant(): void { w.openAssistant(); }
     }
 
     property real fade: shown ? 1 : 0
@@ -593,7 +601,7 @@ PanelWindow {
                 }
             }
 
-            // ---- 4. Shortcuts ---------------------------------------------
+            // ---- 5. Shortcuts ---------------------------------------------
             Item {
                 anchors.fill: parent
                 opacity: w.page === 5 ? 1 : 0
@@ -653,13 +661,58 @@ PanelWindow {
                 }
             }
 
-            // ---- 5. All set ------------------------------------------------
+            // ---- 6. Nova ---------------------------------------------------
+            // The assistant, introduced by its name and icon (as on its bar button and Settings →
+            // Assistant). It's off, and stays off: the button only opens Settings → Assistant
+            Item {
+                id: novaPage
+                anchors.fill: parent
+                opacity: w.page === 6 ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                readonly property color novaColour: Config.pageColour("assistant")
+                Column {
+                    anchors.centerIn: parent
+                    width: parent.width
+                    spacing: 18
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 76; height: 76; radius: Config.corner(20)
+                        color: Qt.rgba(novaPage.novaColour.r, novaPage.novaColour.g, novaPage.novaColour.b, 0.16)
+                        Text { anchors.centerIn: parent; text: w.glyph(0xF014); color: novaPage.novaColour; font.family: w.iconFont; font.pixelSize: 40 }
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Meet Nova"
+                        color: w.text; font.family: w.font; font.pixelSize: 28; font.weight: Font.DemiBold
+                    }
+                    Text {
+                        width: Math.min(parent.width, 540)
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        lineHeight: 1.25
+                        text: "Nova is Slate's assistant. Ask in plain words, like \u201Cturn on glass\u201D or \u201Cput Firefox on workspace 2\u201D, and Nova asks an AI agent you already use, such as Claude Code, to do it through Slate's own tools: changing settings, arranging windows and more.\n\nIt works with your agent and your own account, and Slate keeps no keys. Nova is off to start with, and it's still an experiment. If you'd like to try it, Settings \u2192 Assistant explains what it can see and do, and the risks, before you switch it on."
+                        color: w.dim; font.family: w.font; font.pixelSize: 14
+                    }
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: novaText.implicitWidth + 32; height: 38; radius: Config.corner(10)
+                        color: novaHover.hovered ? Config.hoverOn(w.card) : w.card
+                        Text { id: novaText; anchors.centerIn: parent; text: "Open Assistant settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
+                        HoverHandler { id: novaHover }
+                        ClickTap { onTapped: w.openAssistant() }
+                    }
+                }
+            }
+
+            // ---- 7. All set ------------------------------------------------
             // The logo and a line on top, the keys worth knowing as cards (icon, what it
             // does, the keys as keycaps), and a thank-you to close
             Item {
                 id: donePage
                 anchors.fill: parent
-                opacity: w.page === 6 ? 1 : 0
+                opacity: w.page === 7 ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                 readonly property var tips: Config.s.keyset === "slate" ? [
