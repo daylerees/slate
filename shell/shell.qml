@@ -67,17 +67,17 @@ ShellRoot {
     Launcher {
         id: appLauncher
         notifs: notifs
-        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     // Nova, the assistant's prompt window (Super+K): one of the things only one of shows at a time
     Assistant {
         id: nova
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); nova.closeWindow(); }
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
@@ -406,6 +406,17 @@ ShellRoot {
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
                 switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(),
                             fade: Math.round(winSwitcher.fade * 100) / 100, animate: winSwitcher.animate },
+                // The wallpaper switcher: the wallpapers it shows, the one chosen, the one on screen
+                // and the one saved; the updates held back while it's open, and whether App theming
+                // has been given the theme in use
+                wallpaperSwitcher: { open: wallpaperLayer.switcher.shown, switching: Config.wallpaperSwitching,
+                                     fade: Math.round(wallpaperLayer.switcher.fade * 100) / 100,
+                                     listing: wallpaperLayer.switcher.listing, walls: wallpaperLayer.switcher.walls,
+                                     index: wallpaperLayer.switcher.index, selected: wallpaperLayer.switcher.selected,
+                                     screen: wallpaperLayer.switcher.screenOn ? wallpaperLayer.switcher.screenOn.name : "",
+                                     shown: Config.wallpaper, saved: Config.s.wallpaper, accent: "" + Config.accent,
+                                     held: root.heldUpdates.length, themeApplied: root.themeApplied === root.themeJson,
+                                     input: { bar: topBar.mask === topBar.barInput, dock: win.mask === win.dockInput } },
                 // Every window Hyprland has, with where it is (address: Hyprland's, without the 0x)
                 windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1,
                                                               address: (t.address || "").replace(/^0x/, "") })),
@@ -492,7 +503,14 @@ ShellRoot {
         model: ["Geist-Variable.ttf", "Geist-Italic-Variable.ttf", "GeistMono-Variable.ttf", "GeistMono-Italic-Variable.ttf"]
         FontLoader { required property var modelData; source: "file://" + Quickshell.shellPath("fonts/" + modelData) }
     }
-    Wallpaper {}
+    Wallpaper { id: wallpaperLayer; bar: topBar }
+    // The wallpaper switcher (Super+Alt+W, in Wallpaper.qml): one of the things only one of shows at a time
+    Connections {
+        target: wallpaperLayer.switcher
+        function onShownChanged() {
+            if (wallpaperLayer.switcher.shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+        }
+    }
     NightLight {}
     AirplaneMode {}
     Radios {}                                 // Wi-Fi and Bluetooth through IPC, for assistants
@@ -542,13 +560,33 @@ ShellRoot {
     // A bar panel opening takes the prompt window's place, like the other overlays
     Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") nova.closeWindow(); } }
     // The screen locks: the prompt window closes and a run stops
-    Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); } } }
+    Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); wallpaperLayer.switcher.cancel(); } } }
     Screensaver { id: screensaver; lock: lockScreen }
     HotCorners { id: hotCorners; lock: lockScreen }
 
+    // While the wallpaper switcher shows wallpapers (Config.wallpaperSwitching), the theme follows
+    // each one in Slate alone: what's slow or reaches outside Slate (App theming, folder colours,
+    // title bar buttons, which can reload Hyprland, window borders, the login screen) is held,
+    // and done once when it closes, for the wallpaper kept (or not at all, if nothing changed)
+    property var heldUpdates: []
+    function heldBack(timer) {
+        if (!Config.wallpaperSwitching) return false;
+        if (!heldUpdates.includes(timer)) heldUpdates = heldUpdates.concat([timer]);
+        return true;
+    }
+    Connections {
+        target: Config
+        function onWallpaperSwitchingChanged() {
+            if (Config.wallpaperSwitching) return;
+            const held = root.heldUpdates;
+            root.heldUpdates = [];
+            for (const t of held) t.restart();
+        }
+    }
+
     // Keep the login screen (/var/lib/slate-greeter) in step with the wallpaper and
     // settings. Does nothing until it's been set up with: sudo slate-greeter-install
-    Timer { id: greeterSync; interval: 3000; onTriggered: greeterSyncRun.running = !Config.testMode }
+    Timer { id: greeterSync; interval: 3000; onTriggered: if (!root.heldBack(greeterSync)) greeterSyncRun.running = !Config.testMode }
     Process {
         id: greeterSyncRun
         command: ["sh", "-c", "[ -w /var/lib/slate-greeter ] && exec \"$0\" || true", Quickshell.shellPath("bin/slate-greeter-sync")]
@@ -625,7 +663,7 @@ ShellRoot {
         id: barButtonsSync
         interval: 1500; running: true
         onTriggered: {
-            if (barButtonsFile.text() === root.barButtonsLua) return;
+            if (root.heldBack(barButtonsSync) || barButtonsFile.text() === root.barButtonsLua) return;
             barButtonsFile.setText(root.barButtonsLua);
             if (Config.anyFloating && !Config.slateTitleBars) barButtonsReload.restart();
             else root.barButtonsStale = true;
@@ -647,7 +685,7 @@ ShellRoot {
                 `function() WINDOW_MODE = "${Config.windowMode}"; WORKSPACE_MODES = ${Config.workspaceModesLua}; if setWindowMode then setWindowMode(${Config.windowMode === "floating"}, true) end end`]);
         }
     }
-    Timer { id: borderPush; interval: 300; running: true; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.borderCmd]) }
+    Timer { id: borderPush; interval: 300; running: true; onTriggered: if (!root.heldBack(borderPush)) Quickshell.execDetached(["hyprctl", "eval", root.borderCmd]) }
     Connections {
         target: Config
         // Hyprland reloaded: borders go back (and see whether Hyprbars is loaded now: it may
@@ -675,7 +713,7 @@ ShellRoot {
     Timer {
         id: folderTimer
         interval: 1200; running: true
-        onTriggered: if (root.folderArgs.length) { folderRun.command = [Quickshell.shellPath("scripts/folder-colour.py")].concat(root.folderArgs); folderRun.running = true; }
+        onTriggered: if (!root.heldBack(folderTimer) && root.folderArgs.length) { folderRun.command = [Quickshell.shellPath("scripts/folder-colour.py")].concat(root.folderArgs); folderRun.running = true; }
     }
     Process { id: folderRun }
 
@@ -711,8 +749,12 @@ ShellRoot {
         on: Config.s.themedApps || []
     })
     onThemeJsonChanged: themeApply.restart()
-    Timer { id: themeApply; interval: 1500; running: true; onTriggered: root.applyThemes() }
+    // (only when they've changed since: the wallpaper switcher closed without keeping one
+    // leaves them as they were)
+    Timer { id: themeApply; interval: 1500; running: true; onTriggered: if (!root.heldBack(themeApply) && root.themeJson !== root.themeApplied) root.applyThemes() }
+    property string themeApplied: ""
     function applyThemes() {
+        themeApplied = themeJson;
         themeProc.running = false;
         themeProc.command = ["python3", Quickshell.shellPath("scripts/apply-theme.py"), root.themeJson];
         themeProc.running = true;
@@ -794,12 +836,12 @@ ShellRoot {
     Switcher {
         id: winSwitcher
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     WorkspaceOverview {
         id: wsOverview
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)
@@ -884,7 +926,7 @@ ShellRoot {
     // daily check and the "updates" IPC), as singletons are only made when first used
     readonly property bool updateAvailable: Updates.available
     // A space's colour and icon on the windows it opened (Settings → Menu Bar → Mark windows from a space)
-    SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown }
+    SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown || wallpaperLayer.switcher.shown }
 
     PanelWindow {
         id: win
@@ -1074,9 +1116,12 @@ ShellRoot {
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "slate-dock"
-        WlrLayershell.layer: WlrLayer.Top
+        // (above the wallpaper switcher, which covers the windows: seen, but taking no clicks)
+        WlrLayershell.layer: Config.wallpaperSwitching ? WlrLayer.Overlay : WlrLayer.Top
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        mask: Region { item: maskBox }
+        mask: Config.wallpaperSwitching ? noInput : dockInput
+        readonly property Region dockInput: Region { item: maskBox }
+        readonly property Region noInput: Region {}
         // The input area in window coordinates (hitArea is in the turned strip)
         Item {
             id: maskBox
@@ -1499,7 +1544,7 @@ ShellRoot {
         }
         // (and once at start, so the windows already open have their details)
         Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
-        property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag)
+        property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag || Config.wallpaperSwitching)
         Timer { id: holdTimer; interval: win.hideDelay }
         // Moved to another edge: it shows there for a moment (even with auto-hide), so you see
         // where it went. Meanwhile it's kept out of sight until its window has moved: drawn for

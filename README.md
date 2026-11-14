@@ -77,7 +77,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | MCP server | `slate mcp`: add it to an AI agent you already use (Claude Code, Codex…) and, once you switch it on (Settings → Assistant, which shows what it means and asks), that agent can answer questions about your desktop and act on it: change settings, arrange windows and workspaces, open apps and Spaces, change the wallpaper. Slate asks you before anything that can't be undone, and its tools answer in words: never the screen, files or the clipboard ([docs/ASSISTANT.md](docs/ASSISTANT.md)) | `scripts/slate-mcp.py`, `AssistantGate.qml`, `data/assistant-prompt.md` |
 | Screen corners | Rounded black screen corners | `ScreenCorners.qml`, `Bar.qml` |
 | Shared settings | `Config` singleton backed by `settings.json`; theme (accent, light/dark, wallpaper tint) | `Config.qml` |
-| Wallpaper | Drawn per screen on the background layer, cross-fades on change; picker in Settings (Super+Shift+W) | `Wallpaper.qml` |
+| Wallpaper | Drawn per screen on the background layer, cross-fades on change; picker in Settings (Super+Shift+W); a switcher that previews each one, theme included (Super+Alt+W) | `Wallpaper.qml`, `WallpaperSwitcher.qml` |
 | Clipboard & emoji | Super+V clipboard history (text + images; can be switched off in Settings → General), Super+. emoji picker | `Picker.qml`, `scripts/clipstore.py`, `data/emoji.json` |
 | Password prompts | Polkit agent (pkexec, system settings) in Slate's style | `PolkitAgent.qml` |
 | Night light | Warm screen via a Hyprland screen shader; manual, sunset-to-sunrise or custom schedule (Settings → General) | `NightLight.qml` |
