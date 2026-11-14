@@ -76,7 +76,8 @@ class WallpaperSwitcher(LiveCase):
         # The wallpaper over the windows, filling the screen (top layer), with the bar and dock
         # above it (overlay), seen but taking no clicks, and the row (with the keys) on the overlay
         mon = self.s.state()["screens"][0]
-        layers = self.until(self.layers, lambda l: [x[0] for x in l.get("slate-bar", [])] == [3])
+        layers = self.until(self.layers, lambda l: [x[0] for x in l.get("slate-bar", [])] == [3]
+                            and "slate-wallpaper-preview" in l and "slate-wallpaper-switcher" in l, timeout=20)
         self.assertEqual(layers.get("slate-wallpaper-preview"), [(2, mon["width"], mon["height"])], layers)
         self.assertEqual([x[0] for x in layers.get("slate-wallpaper-switcher", [])], [3], layers)
         self.assertEqual([x[0] for x in layers.get("slate-bar", [])], [3], "the bar is under the switcher")
@@ -180,7 +181,9 @@ class WallpaperSwitcher(LiveCase):
         self.open()
         self.ipc("wallpaperSwitcher", "next")
         self.ipc("wallpaperSwitcher", "next")
-        self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == self.paths[2], "the blue one")
+        # (and its colours: they're worked out a moment after it's on screen, longer on a busy machine)
+        self.wait(lambda st: st["wallpaperSwitcher"]["shown"] == self.paths[2] and st["wallpaperSwitcher"]["accent"] != self.accent,
+                  "the blue one, in its colours", timeout=20)
         self.ipc("wallpaperSwitcher", "keep")
         st = self.wait(lambda st: not st["wallpaperSwitcher"]["open"] and not st["wallpaperSwitcher"]["switching"], "it to close")
         ws = st["wallpaperSwitcher"]
