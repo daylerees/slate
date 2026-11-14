@@ -89,6 +89,14 @@ FloatingWindow {
         function search(text: string): void { win.show(); win.searchFor(text); }
         // Open General with the account picture chooser showing (the control centre's avatar)
         function avatar(): void { win.keepSection = !win.visible; win.section = "general"; win.avatarPicking = true; win.show(); }
+        // For the assistant (slate mcp): how many settings on a page differ from their defaults
+        // (-1: a page with nothing Restore defaults puts back), whether putting them back
+        // restarts Slate, and doing it, as the page title's Restore defaults does
+        function changed(page: string): string {
+            const keys = win.pageKeys[page];
+            return JSON.stringify(keys ? { changed: Config.changedCount(keys), restarts: win.restartsFor(keys) } : { changed: -1, restarts: false });
+        }
+        function restore(page: string): void { if (win.pageKeys[page]) { win.restorePage(page); win.countChanged(); } }
     }
 
     // ---- Look --------------------------------------------------------------
@@ -426,8 +434,11 @@ FloatingWindow {
     function closeConfirm() { confirmReset = false; ask = null; }
     function cancelConfirm() { const c = ask && ask.cancel; closeConfirm(); if (c) c(); }
     // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
-    readonly property bool resetRestarts: (currentKeys.includes("uiScale") && Math.abs(Config.s.uiScale - 1) > 0.001)
-        || (currentKeys.includes("logLevel") && (Config.s.logLevel || "normal") !== "normal")
+    readonly property bool resetRestarts: restartsFor(currentKeys)
+    function restartsFor(keys) {
+        return (keys.includes("uiScale") && Math.abs(Config.s.uiScale - 1) > 0.001)
+            || (keys.includes("logLevel") && (Config.s.logLevel || "normal") !== "normal");
+    }
     onSectionChanged: {
         if (section !== "general") avatarPicking = false;
         cancelConfirm();
@@ -463,8 +474,12 @@ FloatingWindow {
     // and checked again a moment later, so the preset reads Slate Default afterwards
     function restoreDefaults() {
         if (pageResetRun) pageResetRun();
-        Config.resetKeys(currentKeys);
-        if (section !== "appearance") return;
+        restorePage(section);
+    }
+    // ...or on any page by its id (the assistant's settings_restore_defaults), showing or not
+    function restorePage(page) {
+        Config.resetKeys(pageKeys[page] || []);
+        if (page !== "appearance") return;
         const d = themePresets.find(p => p.name === "Slate Default");
         applyPreset(d);
         Qt.callLater(() => { if (!presetActive(d)) { console.warn("Slate Default didn't stick after Restore defaults; applying it again"); applyPreset(d); } });

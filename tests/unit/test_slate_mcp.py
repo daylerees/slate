@@ -69,6 +69,8 @@ elif a[:2] == ["notifications", "list"]:
     out = json.dumps(state.get("notifications", []))
 elif a[:2] == ["media", "info"]:
     out = state.get("media", "")
+elif a[:2] == ["settings", "changed"]:
+    out = json.dumps(state.get("changed", {{}}).get(a[2], {{"changed": -1, "restarts": False}}))
 elif a[:2] == ["launcher", "launch"]:
     out = "ok"
 elif a[:2] == ["bar", "arrangement"]:
@@ -99,7 +101,7 @@ CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arr
            "window_state", "workspace_go", "workspace_mode", "workspace_rename", "space_restore", "space_save",
            "wallpaper_set", "wallpaper_next", "volume_set", "brightness_set", "media_control", "do_not_disturb",
            "screenshot", "lock_screen", "screensaver_start"]
-ASKS = ["window_close", "space_delete", "session"]
+ASKS = ["window_close", "space_delete", "settings_restore_defaults", "session"]
 # What Slate may be asked while only looking
 READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"], ["notifications", "list"],
          ["osd", "volumeGet"], ["media", "info"])
@@ -115,6 +117,7 @@ ARGS = {
     "wallpaper_set": {"name": "beach.jpg"}, "volume_set": {"percent": 40}, "brightness_set": {"percent": 50},
     "media_control": {"action": "toggle"}, "do_not_disturb": {"on": True}, "screenshot": {"what": "screen"},
     "window_close": {"address": "0xa1"}, "space_delete": {"name": "Work"}, "session": {"action": "shutdown"},
+    "settings_restore_defaults": {"page": "dock"},
 }
 
 
@@ -159,7 +162,8 @@ class Base(Case):
             f.write(QS.format(python=sys.executable))
         os.chmod(qs, os.stat(qs).st_mode | stat.S_IXUSR)
         self.slate_is(SETTINGS)
-        self.state = {"status": dict(STATUS), "answer": "yes", "volume": json.dumps({"volume": 35, "muted": False})}
+        self.state = {"status": dict(STATUS), "answer": "yes", "volume": json.dumps({"volume": 35, "muted": False}),
+                      "changed": {"dock": {"changed": 2, "restarts": False}}}
         self.put_state()
         self.clients = json.loads(fixture_text("spaces", "clients.json"))
         self.hyprland()
@@ -847,6 +851,46 @@ class Gate(Base):
         self.assertEqual(self.dispatched(), [])
         for cmd in ("systemctl", "loginctl", "pkexec", "sudo"):
             self.assertEqual(self.s.calls(cmd), [])
+
+    def test_restore_defaults(self):
+        """A page's Restore defaults: asked in Settings' own words, then Slate puts them back;
+        a page already at its defaults, or with nothing to put back, isn't asked about."""
+        self.state["changed"] = {"dock": {"changed": 3, "restarts": False}, "appearance": {"changed": 1, "restarts": True},
+                                 "launcher": {"changed": 0, "restarts": False}}
+        self.put_state()
+        got, err = self.tool("settings_restore_defaults", {"page": "dock"})
+        self.assertFalse(err)
+        self.assertEqual(got, {"restored": "Dock", "settings": 3})
+        q, = self.asked()
+        self.assertEqual(q, {"title": "Restore Dock defaults?", "button": "Restore defaults", "danger": False,
+                             "body": "Your assistant (TestAgent) is asking to put 3 settings on this page back to how "
+                                     "Slate starts out. Your other pages stay as they are."})
+        self.assertEqual(self.qs_calls("settings", "restore"), [["settings", "restore", "dock"]])
+        self.tool("settings_restore_defaults", {"page": "appearance"})
+        self.assertTrue(self.asked()[-1]["body"].endswith("1 setting on this page back to how Slate starts out. Your other "
+                                                          "pages stay as they are. Slate restarts to apply them; your apps "
+                                                          "and windows stay open."))
+        got, err = self.tool("settings_restore_defaults", {"page": "launcher"})
+        self.assertFalse(err)
+        self.assertIn("already at its defaults", got["note"])
+        got, err = self.tool("settings_restore_defaults", {"page": "webcam"})
+        self.assertTrue(err)
+        self.assertIn("nothing Restore defaults puts back", got)
+        self.assertEqual(len(self.asked()), 2, "asked about a page with nothing to put back")
+        self.assertEqual(len(self.qs_calls("settings", "restore")), 2)
+
+    def test_restore_defaults_kept_to_the_person(self):
+        """The assistant's own page and Security's (Slate's defaults could lock less) aren't
+        restored for an assistant, nor a page that doesn't exist; Slate isn't asked."""
+        self.state["changed"] = {"lock": {"changed": 2, "restarts": False}, "assistant": {"changed": 2, "restarts": False}}
+        self.put_state()
+        for page, words in (("lock", "Only the person"), ("assistant", "Only the person"), ("nowhere", "Give one of these pages")):
+            with self.subTest(page):
+                got, err = self.tool("settings_restore_defaults", {"page": page})
+                self.assertTrue(err)
+                self.assertIn(words, got)
+        self.assertEqual(self.asked(), [])
+        self.assertEqual(self.qs_calls("settings", "restore"), [])
 
     def test_questions_are_slates_words(self):
         """What a question says comes from checked values: a hostile window class is cleaned

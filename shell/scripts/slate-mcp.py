@@ -1498,6 +1498,42 @@ def space_delete(name):
     return {"deleted": label}
 
 
+# Pages whose defaults only the person puts back: the assistant's own, and the lock screen's
+# (Slate's defaults could lock less than you've chosen)
+KEEP_DEFAULTS = {"assistant", "lock"}
+
+
+@tool("settings_restore_defaults", "Restore a page's defaults",
+      "Put every setting on one Settings page back to how Slate starts out, by the page's id (e.g. "
+      "appearance), as its Restore defaults button does. Other pages stay as they are." + ASKS,
+      {"page": {"type": "string", "description": "A Settings page's id, e.g. appearance"}}, ["page"], tier="ask")
+def settings_restore_defaults(page):
+    settings()                          # (fills PAGES)
+    if page in KEEP_DEFAULTS:
+        raise Refused("Only the person can restore that page's defaults. They can do it with Restore defaults at the "
+                      "top of the page, in Settings → %s." % PAGES.get(page, page))
+    if page not in PAGES:
+        raise Sorry("Give one of these pages: %s." % ", ".join(sorted(p for p in PAGES if p not in KEEP_DEFAULTS)))
+    name = PAGES[page]
+    try:
+        st = json.loads(ipc("settings", "changed", page))
+        n, restarts = int(st["changed"]), bool(st.get("restarts"))
+    except (ValueError, KeyError, TypeError):
+        raise Sorry("Slate needs restarting before it can do that. The person can run: slate restart") from None
+    if n < 0:
+        raise Sorry("Settings → %s has nothing Restore defaults puts back." % name)
+    if n == 0:
+        return {"page": name, "note": "Everything on it is already at its defaults; nothing changed."}
+    doing("Restore %s defaults" % name)
+    ask("Restore %s defaults?" % name,
+        "%s is asking to put %s on this page back to how Slate starts out. Your other pages stay as they are.%s"
+        % (asker(), "1 setting" if n == 1 else "%d settings" % n,
+           " Slate restarts to apply them; your apps and windows stay open." if restarts else ""),
+        "Restore defaults")
+    ipc("settings", "restore", page)
+    return {"restored": name, "settings": n}
+
+
 LEAVING = {
     "logout": ("logout", "Log out?", "log you out. Your apps will close.", "Log out", False),
     "restart": ("reboot", "Restart?", "restart your computer. Your apps will close.", "Restart", False),

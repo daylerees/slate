@@ -156,6 +156,7 @@ and no setting turns the question off.
 |---|---|
 | `window_close` | "Close Firefox?" |
 | `space_delete` | "Delete “Work”?" |
+| `settings_restore_defaults` | "Restore Dock defaults?": every setting on one Settings page back to how Slate starts out, as the page's Restore defaults does. Not for Assistant or Security: those are yours to restore |
 | `session` | "Shut down?", "Restart?", "Log out?" or "Sleep?" |
 
 There is no tool that runs a command, opens a file or a web address, types or clicks for
