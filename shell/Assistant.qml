@@ -286,7 +286,7 @@ PanelWindow {
         runner.stdinEnabled = false;       // (closes it: the prompt is the whole of stdin)
     }
     property string pending: ""            // typed before the agents were found: sent once they are
-    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
+    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. You can choose one in Settings → Assistant." })
     function stop() { if (working) runner.signal(15); }
     readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
     // Try again: the same words, in place of the exchange that went wrong
@@ -948,7 +948,7 @@ PanelWindow {
         closeWindow();
         const cmd = root.agent && root.agent.signIn ? root.agent.signIn : "claude";
         Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w.-]/g, "")}") end`]);
+            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w. -]/g, "")}") end`]);
     }
 
     // A paragraph, heading or list item of an answer: its runs as Slate's own markup (rich():

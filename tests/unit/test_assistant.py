@@ -116,7 +116,8 @@ class Detect(Base):
 
     def test_ready(self):
         a = self.detect()
-        self.assertEqual(list(a), ["claude", "custom"])
+        self.assertEqual(list(a)[0], "claude")
+        self.assertEqual(list(a)[-1], "custom")
         c = a["claude"]
         self.assertEqual((c["label"], c["installed"], c["version"], c["signedIn"], c["confined"], c["followUps"]),
                          ("Claude Code", True, "9.9.9", True, True, True))

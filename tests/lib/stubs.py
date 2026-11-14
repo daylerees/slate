@@ -46,7 +46,7 @@ class Stubs:
                "pkexec", "sudo",
                # the agent CLIs the assistant can drive: a real one would reach the network and
                # spend the person's own account (tests bring stand-ins: test_assistant.py)
-               "claude", "codex", "agy", "gemini", "ollama")
+               "claude", "codex", "agy", "gemini", "ollama", "opencode", "goose")
 
     def __init__(self, home):
         self.home = home
@@ -59,6 +59,9 @@ class Stubs:
             self.add(name, stdout="", code=127, stderr_note=True)
         self.env = dict(home.env)
         self.env["PATH"] = self.dir + ":" + home.env["PATH"]
+        # (and Ollama's HTTP API, which isn't a command: a port nothing listens on, unless a test
+        # brings a stand-in for it)
+        self.env["SLATE_OLLAMA_URL"] = "http://127.0.0.1:9"
 
     def add(self, name, stdout="", code=0, by_args=None, missing=False, stdin_to=None, stderr_note=False):
         """Make `name` a fake command (or, with missing=True, hide it as if not installed)."""

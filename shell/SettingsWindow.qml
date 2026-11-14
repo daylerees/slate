@@ -4242,8 +4242,9 @@ FloatingWindow {
             readonly property string inUse: Config.s.assistantAgent
             readonly property var chosen: inUse === "" || inUse === "custom" ? null : (agents.find(a => a.id === inUse) || null)
             function signIn(cmd) {
+                // (the agent's own words, from scripts/slate_agents.py: letters, dots, dashes and spaces)
                 Quickshell.execDetached(["hyprctl", "dispatch",
-                    `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w.-]/g, "")}") end`]);
+                    `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w. -]/g, "")}") end`]);
             }
             // What Slate adds to a prompt (scripts/assistant.py briefing), read when asked for
             property bool showAdds: false
