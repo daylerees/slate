@@ -4,6 +4,10 @@
 # Builds it for the Hyprland that's installed, into ~/.local/share/slate/plugins. No root.
 #
 #   slate build-hyprbars            build it (or bin/slate-build-hyprbars)
+#   slate build-hyprbars --allow-unreleased
+#                                   the same, and when the plugins have no release for this
+#                                   Hyprland yet, build their newest unreleased code instead
+#                                   (Slate passes it only once the person has said yes)
 #   slate build-hyprbars --status   what Slate needs to know, one key=value a line (below)
 #   slate build-hyprbars --adopt    note which Hyprland a build from before builds were named
 #                                   is for (when it's the one loaded now)
@@ -23,10 +27,14 @@
 # the running Hyprland), build (yes/no: one of Slate's builds fits the running Hyprland), next
 # (yes/no: one fits the installed Hyprland), any (yes/no: Slate has a build at all), system
 # (yes/no: a distro package of hyprbars is there), removed (yes/no), state (building, built,
-# failed or nothing: the last build), stateFor (its Hyprland), error (why it failed).
+# failed, unreleased or nothing: the last build; unreleased: it stopped because there's no
+# release for this Hyprland and it wasn't told to use unreleased code), stateFor (its Hyprland), error (why it failed).
 set -euo pipefail
 
-REPO="${SLATE_HYPRBARS_REPO:-https://github.com/hyprwm/hyprland-plugins}"
+REPO="https://github.com/hyprwm/hyprland-plugins"
+# (another repository is for the tests only: otherwise a stray environment variable could make
+# this build, and Hyprland load, someone else's code)
+[ "${SLATE_TEST:-}" = 1 ] && REPO="${SLATE_HYPRBARS_REPO:-$REPO}"
 OUT="${XDG_DATA_HOME:-$HOME/.local/share}/slate/plugins"
 WORK="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprland-plugins"
 LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprbars-build.log"
@@ -38,7 +46,9 @@ RUNTIME="${XDG_RUNTIME_DIR:-}"
 LOCK="$RUNTIME/slate-hyprbars-build.lock"
 LEGACY="$OUT/hyprbars.so"                   # a build from before builds were named
 # Distro packages of hyprbars (the override is only for testing)
-SYSTEM="${SLATE_HYPRBARS_SYSTEM:-/usr/lib/hyprland-plugins/hyprbars.so:/usr/lib/hyprland/plugins/hyprbars.so:/usr/local/lib/hyprland/plugins/hyprbars.so}"
+# (hyprbars.lua keeps the same list; lib64 is where Fedora and openSUSE put 64-bit libraries, and
+# Debian's multiarch folders are named for the architecture)
+SYSTEM="${SLATE_HYPRBARS_SYSTEM:-/usr/lib/hyprland-plugins/hyprbars.so:/usr/lib/hyprland/plugins/hyprbars.so:/usr/local/lib/hyprland/plugins/hyprbars.so:/usr/lib64/hyprland-plugins/hyprbars.so:/usr/lib64/hyprland/plugins/hyprbars.so:/usr/local/lib64/hyprland/plugins/hyprbars.so:/usr/lib/x86_64-linux-gnu/hyprland/plugins/hyprbars.so:/usr/lib/aarch64-linux-gnu/hyprland/plugins/hyprbars.so}"
 WAIT="${SLATE_HYPRBARS_WAIT:-60}"           # seconds to wait for a connection
 
 json_get() { python3 -c 'import json,sys
@@ -169,7 +179,7 @@ case "${1:-}" in
     if [ -n "$keep" ] && [ -f "$keep" ]; then : > "$OUT/removed"; else rm -f "$OUT/removed"; fi
     echo "Hyprbars removed."
     exit 0 ;;
-"") ;;
+""|--allow-unreleased) ;;
 *) sed -n '2,/^set/{/^set/d;s/^# \{0,1\}//;p}' "$0" >&2; exit 2 ;;
 esac
 
@@ -214,10 +224,18 @@ fi
 why="Couldn't get hyprbars' code ready"
 git -C "$WORK" reset -q --hard >>"$LOG" 2>&1
 git -C "$WORK" clean -qfdx >>"$LOG" 2>&1
+release="$tag"
 if has_tag; then
     git -C "$WORK" checkout -q "$tag" >>"$LOG" 2>&1
 else
-    echo "No hyprland-plugins release $tag yet; building their latest code" | tee -a "$LOG" >&2
+    # Unreleased code moves, and Hyprland loads what's built: only with the person's yes
+    if [ "${1:-}" != --allow-unreleased ]; then
+        write_state unreleased "$ver" "There's no Hyprbars release for Hyprland $ver yet"
+        echo "slate-build-hyprbars: no hyprland-plugins release $tag yet; run with --allow-unreleased to build their newest code" >&2
+        exit 4
+    fi
+    release=""
+    echo "No hyprland-plugins release $tag yet; building their latest code (you agreed to that)" | tee -a "$LOG" >&2
     git -C "$WORK" checkout -q --detach origin/HEAD >>"$LOG" 2>&1
 fi
 # Slate's tweak: buttons in a dull colour until hovered (idle_button_color). If it no
@@ -228,15 +246,17 @@ if [ ! -f "$PATCH" ] || ! git -C "$WORK" apply "$PATCH" >>"$LOG" 2>&1; then
     patched=false
     echo "Slate's hyprbars patch doesn't apply to this release; building without it" | tee -a "$LOG" >&2
 fi
-why="Hyprbars doesn't compile for Hyprland $ver (see ~/.cache/slate/hyprbars-build.log)"
+why="Hyprbars doesn't compile for Hyprland $ver (see ${LOG/#"$HOME"\//\~/})"
 make -C "$WORK/hyprbars" all >>"$LOG" 2>&1 || { tail -n 15 "$LOG" >&2; exit 1; }
 
 why="Couldn't put the build in place"
 mkdir -p "$OUT"
 name=$(name_for "$ver" "$commit")
 install -m 755 "$WORK/hyprbars/hyprbars.so" "$OUT/$name.tmp"
-python3 -c 'import json,sys,time; json.dump({"version": sys.argv[1], "commit": sys.argv[2], "built": time.strftime("%Y-%m-%d %H:%M"), "patched": sys.argv[3] == "true"}, open(sys.argv[4], "w"))' \
-    "$ver" "$commit" "$patched" "$OUT/${name%.so}.json"
+# (source: the plugins' commit this was built from; release: their tag, or empty for unreleased code)
+source=$(git -C "$WORK" rev-parse HEAD 2>/dev/null || true)
+python3 -c 'import json,sys,time; json.dump({"version": sys.argv[1], "commit": sys.argv[2], "built": time.strftime("%Y-%m-%d %H:%M"), "patched": sys.argv[3] == "true", "source": sys.argv[5], "release": sys.argv[6]}, open(sys.argv[4], "w"))' \
+    "$ver" "$commit" "$patched" "$OUT/${name%.so}.json" "$source" "$release"
 mv -f "$OUT/$name.tmp" "$OUT/$name"
 rm -f "$OUT/removed"
 

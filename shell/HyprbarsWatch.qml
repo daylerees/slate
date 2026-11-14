@@ -72,6 +72,7 @@ Item {
         function onHyprbarsRebuild() { watch.rebuild(); }
         function onHyprbarsReload() { Config.reloadHyprland(); }
         function onHyprbarsRemove() { watch.remove(); }
+        function onHyprbarsBuildUnreleased() { watch.startBuild(true); }
         function onAnyFloatingChanged() { watch.evaluate(); }
         function onGameModeChanged() { if (!Config.gameMode && watch.buildWaiting) watch.startBuild(); }
     }
@@ -82,14 +83,18 @@ Item {
     property bool buildWaiting: false        // wanted, once game mode ends (a build takes a core for a minute)
     property real startedAt: 0
     Timer { running: watch.building; interval: 2000; repeat: true; onTriggered: watch.look() }
-    function startBuild() {
+    // unreleased: the person has agreed to building the plugins' newest unreleased code, because
+    // there's no release for this Hyprland yet (the tool builds nothing unreleased without it)
+    property bool buildUnreleased: false     // the yes is kept while a build waits for game mode to end
+    function startBuild(unreleased) {
         if (building) return;
+        buildUnreleased = unreleased === true || (buildWaiting && buildUnreleased);
         if (Config.gameMode) { buildWaiting = true; return; }
         buildWaiting = false;
         building = true;
         startedAt = Date.now();
         // On its own, at low priority: it carries on if Slate reloads or restarts
-        Quickshell.execDetached(["sh", "-c", 'nice -n 15 "$0" >/dev/null 2>&1', tool]);
+        Quickshell.execDetached(["sh", "-c", 'nice -n 15 "$0" "$@" >/dev/null 2>&1', tool].concat(buildUnreleased ? ["--allow-unreleased"] : []));
         lookAgain.restart();
     }
     // A build has just ended
@@ -102,6 +107,10 @@ Item {
                 .concat(failedNote.offline ? ["-A", "retry=Retry"] : [])
                 .concat(["--", "Hyprbars couldn't be built", (h.error || "The build didn't finish") + ". Not to worry: Slate Bars are looking after your windows in the meantime."]);
             failedNote.running = false; failedNote.running = true;
+        } else if (h.state === "unreleased") {
+            // Nothing was built: ask whether the newest unreleased code will do (once, then Settings has Retry)
+            note({ notNow: Config.hyprbarsRunning });
+            unreleasedNote.running = false; unreleasedNote.running = true;
         } else if (h.state === "built") {
             if (h.build === "yes" && !Config.hyprbarsLoaded) readyNotice();
             else Quickshell.execDetached(["notify-send", "-a", "Slate", "-i", icon, "-h", "string:x-slate-page:windows",
@@ -128,6 +137,13 @@ Item {
         command: ["notify-send", "-a", "Slate", "-i", watch.icon, "-h", "string:x-slate-page:windows", "-A", "rebuild=Rebuild", "-A", "later=Later",
             "Hyprland was updated", "Shall Slate rebuild Hyprbars now, so it's ready after your next restart?"]
         stdout: StdioCollector { onStreamFinished: if (text.trim() === "rebuild") watch.startBuild() }
+    }
+    Process {
+        id: unreleasedNote
+        command: ["notify-send", "-a", "Slate", "-i", watch.icon, "-h", "string:x-slate-page:windows", "-A", "build=Build", "-A", "later=Not now",
+            "No Hyprbars release yet", "There's no Hyprbars release for your Hyprland yet. Shall Slate build the newest unreleased version instead? "
+            + "Slate Bars look after your windows in the meantime."]
+        stdout: StdioCollector { onStreamFinished: if (text.trim() === "build") watch.startBuild(true) }
     }
     Process { id: systemNote }
 

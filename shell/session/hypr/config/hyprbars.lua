@@ -11,6 +11,13 @@ local system = {
     "/usr/lib/hyprland-plugins/hyprbars.so",
     "/usr/lib/hyprland/plugins/hyprbars.so",
     "/usr/local/lib/hyprland/plugins/hyprbars.so",
+    -- (lib64: Fedora and openSUSE; the architecture's folder: Debian and Ubuntu. The same list as
+    -- bin/slate-build-hyprbars)
+    "/usr/lib64/hyprland-plugins/hyprbars.so",
+    "/usr/lib64/hyprland/plugins/hyprbars.so",
+    "/usr/local/lib64/hyprland/plugins/hyprbars.so",
+    "/usr/lib/x86_64-linux-gnu/hyprland/plugins/hyprbars.so",
+    "/usr/lib/aarch64-linux-gnu/hyprland/plugins/hyprbars.so",
 }
 
 local function exists(path)

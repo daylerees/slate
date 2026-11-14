@@ -1985,7 +1985,7 @@ Singleton {
         : hyprbars.state === "building" ? "building"
         : hyprbarsLoaded ? "loaded"
         : hyprbars.build === "yes" ? "ready"
-        : hyprbars.state === "failed" ? "failed"
+        : hyprbars.state === "failed" || hyprbars.state === "unreleased" ? "failed"
         : hyprbars.any === "yes" ? "stale"
         : hyprbars.removed === "yes" ? "removed"
         : hyprbars.system === "yes" ? "system"
@@ -1997,6 +1997,7 @@ Singleton {
     signal hyprbarsRebuild()
     signal hyprbarsReload()
     signal hyprbarsRemove()
+    signal hyprbarsBuildUnreleased()      // the person said yes to building the newest unreleased version
     signal hyprbarsCheck()
     // Slate switched from Hyprbars to its own title bars because Hyprbars couldn't load (it asks
     // whether to switch back once it can): for Settings and the tests

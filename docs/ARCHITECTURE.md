@@ -274,7 +274,12 @@ opening any of them closes bar panels (wired in `shell.qml`).
   asking for the file it loaded for as long as that Hyprland runs), and `HyprbarsWatch.qml`
   reads `slate-build-hyprbars --status`, switches the setting to Slate Bars when Hyprbars is
   wanted but can't load, and asks about rebuilding and switching back
-  (`~/.local/state/slate/hyprbars-notes.json` remembers what it has asked).
+  (`~/.local/state/slate/hyprbars-notes.json` remembers what it has asked). The build uses the
+  plugins' `vMAJOR.MINOR.0` release for the installed Hyprland and records its commit (`source`)
+  and tag (`release`); with no such release it stops with state `unreleased`, and builds the
+  newest unreleased code only when started with `--allow-unreleased`, which `HyprbarsWatch.qml`
+  passes after the person says yes to its notification. `SLATE_HYPRBARS_REPO` is honoured only
+  under `SLATE_TEST=1`.
 - Folder colour (Settings → Appearance): `scripts/folder-colour.py` makes
   `~/.local/share/icons/Slate-Icons`, a theme that inherits the user's Papirus theme and only
   links the folder icons to another of Papirus's colours (no root needed, unlike

@@ -170,7 +170,8 @@ sudo /usr/local/libexec/slate/slate-greeter-install --revert   # back to the pre
   optional alternative: a Hyprland plugin with a bar on every floating window, which only
   works with the exact Hyprland it was built for. After a Hyprland update Slate switches to
   Slate Bars and asks whether to rebuild Hyprbars; once that's done and Hyprland has
-  reloaded, it asks whether to switch back. See
+  reloaded, it asks whether to switch back. If the plugin has no release for your Hyprland
+  yet, Slate asks before building its newest unreleased version. See
   [docs/INSTALL.md](docs/INSTALL.md#title-bars).
 - **Some changes need a fresh login.** The mouse cursor theme and other environment settings
   reach apps when they start; already-open apps keep the old ones, and Slate itself picks

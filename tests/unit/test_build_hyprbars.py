@@ -40,7 +40,7 @@ class BuildCase(Case):
         self.sig = COMMIT + "_1794313951_949994311"
         self.env.update(HYPRLAND_INSTANCE_SIGNATURE=self.sig, SLATE_HYPRBARS_WAIT="0",
                         SLATE_HYPRBARS_SYSTEM=os.path.join(self.h.dir, "no-system", "hyprbars.so"),
-                        GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_SYSTEM="/dev/null")
+                        GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_SYSTEM="/dev/null", SLATE_TEST="1")
         # hyprland-plugins, with a release for Hyprland 0.57
         self.repo = os.path.join(self.h.dir, "hyprland-plugins")
         os.makedirs(os.path.join(self.repo, "hyprbars"))
@@ -111,6 +111,14 @@ class BuildCase(Case):
 
 
 class Build(BuildCase):
+    def test_the_record_says_what_was_built(self):
+        """The plugins' commit and the release tag are in the record beside the build."""
+        self.assertEqual(self.build()[0], 0)
+        with open(os.path.join(self.out, "hyprbars-0.57.2-11cbc6c577b8.json")) as f:
+            rec = json.load(f)
+        head = subprocess.run(["git", "-C", self.repo, "rev-parse", "HEAD"], env=self.env, capture_output=True, text=True).stdout.strip()
+        self.assertEqual((rec["source"], rec["release"]), (head, "v0.57.0"))
+
     def test_named_for_its_hyprland(self):
         code, out = self.build()
         self.assertEqual(code, 0, out)
@@ -129,6 +137,8 @@ class Build(BuildCase):
     def test_for_the_installed_hyprland_not_the_running_one(self):
         """Hyprland updated but not restarted: the new build sits beside the running one's."""
         self.build()
+        # (their release for 0.58 is out: this is about the two builds side by side)
+        self.ok(["git", "-C", self.repo, "tag", "v0.58.0"], env=self.env)
         self.hyprland(installed=("0.58.0", NEWER))
         st = self.status()
         self.assertEqual((st["build"], st["next"]), ("yes", "no"))
@@ -170,6 +180,15 @@ class Build(BuildCase):
         code, out = run(["bash", SCRIPT], env=self.s.env)
         self.assertEqual(code, 1)
         self.assertEqual(self.last()["error"], "Needs g++, which isn't installed")
+
+    def test_the_failure_names_the_real_log(self):
+        """The message points at the log where it really is (XDG_CACHE_HOME), home folder as ~."""
+        cache = os.path.join(self.h.dir, "elsewhere")
+        env = dict(self.env, STUB_MAKE_FAILS="1", XDG_CACHE_HOME=cache)
+        run(["bash", SCRIPT], env=env)
+        self.assertIn("see " + os.path.join(cache, "slate", "hyprbars-build.log"), self.last()["error"])
+        run(["bash", SCRIPT], env=dict(self.env, STUB_MAKE_FAILS="1", XDG_CACHE_HOME=os.path.join(self.h.home, ".cache")))
+        self.assertIn("(see ~/.cache/slate/hyprbars-build.log)", self.last()["error"])
 
     def test_does_not_compile(self):
         code, out = run(["bash", SCRIPT], env=dict(self.env, STUB_MAKE_FAILS="1"))
@@ -361,3 +380,60 @@ class Remove(BuildCase):
         self.assertEqual(self.build()[0], 0)
         st = self.status()
         self.assertEqual((st["removed"], st["any"], st["build"]), ("no", "yes", "yes"))
+
+
+class Unreleased(BuildCase):
+    """No release for this Hyprland yet: the newest unreleased code is built only when asked to."""
+
+    def setUp(self):
+        super().setUp()
+        self.hyprland(running=("0.58.0", NEWER), installed=("0.58.0", NEWER))
+
+    def test_nothing_is_built_without_a_yes(self):
+        code, out = self.build()
+        self.assertEqual(code, 4, out)
+        st = self.last()
+        self.assertEqual((st["state"], st["for"]), ("unreleased", "0.58.0"))
+        self.assertIn("no Hyprbars release for Hyprland 0.58.0 yet", st["error"])
+        self.assertEqual(self.builds(), [])
+        self.assertEqual(self.status()["state"], "unreleased")
+
+    def test_a_yes_builds_it_and_says_so(self):
+        code, out = run(["bash", SCRIPT, "--allow-unreleased"], env=self.env)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.last()["state"], "built")
+        with open(os.path.join(self.out, "hyprbars-0.58.0-ffee00112233.json")) as f:
+            rec = json.load(f)
+        self.assertEqual(rec["release"], "")
+        self.assertEqual(len(rec["source"]), 40)
+
+    def test_the_flag_changes_nothing_when_there_is_a_release(self):
+        self.hyprland(running=("0.57.2", COMMIT), installed=("0.57.2", COMMIT))
+        self.assertEqual(run(["bash", SCRIPT, "--allow-unreleased"], env=self.env)[0], 0)
+        with open(os.path.join(self.out, "hyprbars-0.57.2-11cbc6c577b8.json")) as f:
+            self.assertEqual(json.load(f)["release"], "v0.57.0")
+
+
+class WhichRepository(BuildCase):
+    """Only the tests may point the build at another repository: Hyprland loads what's built."""
+
+    def clone_url(self, test):
+        log = os.path.join(self.h.dir, "git-args")
+        git = os.path.join(self.s.dir, "git")
+        with open(git, "w") as f:
+            f.write('#!/bin/sh\necho "$*" >> "$GIT_LOG"\nexit 1\n')
+        os.chmod(git, 0o755)
+        env = dict(self.env, GIT_LOG=log)
+        if not test:
+            del env["SLATE_TEST"]
+        run(["bash", SCRIPT], env=env)
+        with open(log) as f:
+            return f.read()
+
+    def test_ignored_outside_the_tests(self):
+        asked = self.clone_url(test=False)
+        self.assertIn("https://github.com/hyprwm/hyprland-plugins", asked)
+        self.assertNotIn(self.repo, asked)
+
+    def test_used_in_the_tests(self):
+        self.assertIn(self.repo, self.clone_url(test=True))

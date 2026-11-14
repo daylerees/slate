@@ -204,6 +204,27 @@ class Hyprbars(LiveCase):
         self.steady(self.s.state, floor=2)
         self.assertEqual(self.s.state()["asking"], "")
 
+    def test_no_release_yet_asks_before_building_unreleased_code(self):
+        """With no release for this Hyprland, the build stops and Slate asks (a notification);
+        the newest unreleased code is only built with a yes, which passes --allow-unreleased."""
+        self.float_with_hyprbars()
+        self.report(**STALE)
+        self.asking("Hyprbars needs rebuilding")
+        self.report("build-result", any="yes", state="unreleased", stateFor="0.57.2",
+                    error="There's no Hyprbars release for Hyprland 0.57.2 yet")
+        self.answer(True)
+        self.s.wait(lambda st: st["notifications"]["latest"] == "No Hyprbars release yet", timeout=12, what="the question about unreleased code")
+        # no building it by itself, and nothing asked in the window
+        self.ipc("test", "hyprbars", "check")
+        self.s.settle(2.5)
+        self.assertEqual(self.calls(), ["build"])
+        self.assertEqual(self.s.state()["asking"], "")
+        self.assertEqual(self.s.state()["hyprbars"], "failed", "Settings shows it as one that can be tried again")
+        self.assertEqual(self.s.state()["titleBars"], "slate")
+        # the yes
+        self.ipc("test", "hyprbars", "unreleased")
+        self.s.wait(lambda st: self.calls() == ["build", "--allow-unreleased"], what="the build with the yes")
+
     def test_failed_build(self):
         self.float_with_hyprbars()
         self.report(**STALE)

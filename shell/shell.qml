@@ -284,6 +284,7 @@ ShellRoot {
             else if (what === "rebuild") Config.hyprbarsRebuild();
             else if (what === "reload") Config.hyprbarsReload();
             else if (what === "remove") Config.hyprbarsRemove();
+            else if (what === "unreleased") Config.hyprbarsBuildUnreleased();    // the yes to "build the newest unreleased version?"
             else if (what === "unset") Config.titleBarStyleUnset = true;      // as if the settings were from before the choice
             else Config.hyprbarsCheck();
         }

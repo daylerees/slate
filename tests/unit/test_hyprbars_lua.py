@@ -169,3 +169,17 @@ class HyprbarsLua(Case):
         p = self.build("hyprbars-0.57.2.so")
         self.build("hyprbars-0.57.1.so")
         self.assertEqual(self.passes(HYPRLAND_INSTANCE_SIGNATURE="")[0], [p])
+
+
+class SystemPackages(Case):
+    def test_the_build_script_and_the_session_look_in_the_same_places(self):
+        """hyprbars.lua and bin/slate-build-hyprbars each list where a distro's package puts the
+        plugin (Fedora and openSUSE use lib64, Debian a folder named for the architecture): the
+        two lists must stay the same, or Settings and the session disagree about it."""
+        import re
+        lua = re.findall(r'"(/[^"]*hyprbars\.so)"', text(CONFIG).split("local function exists")[0])
+        script = text(slate.path("shell", "bin", "slate-build-hyprbars"))
+        sh = re.search(r'SYSTEM="\$\{SLATE_HYPRBARS_SYSTEM:-([^}]*)\}"', script).group(1).split(":")
+        self.assertEqual(lua, sh)
+        for need in ("/usr/lib64/hyprland/plugins/hyprbars.so", "/usr/lib/x86_64-linux-gnu/hyprland/plugins/hyprbars.so"):
+            self.assertIn(need, lua)

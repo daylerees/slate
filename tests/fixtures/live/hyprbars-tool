@@ -17,6 +17,6 @@ case "${1:-}" in
     printf '%s\n' running=0.57.2 runningCommit=aaaa installed=0.57.2 installedCommit=aaaa loaded=no \
         build=no next=no any=no system=no removed=no state= stateFor= error= > "$d/status" ;;
 --adopt) ;;
-"") [ -f "$d/build-result" ] && cp "$d/build-result" "$d/status" ;;
+""|--allow-unreleased) [ -f "$d/build-result" ] && cp "$d/build-result" "$d/status" ;;
 esac
 exit 0
