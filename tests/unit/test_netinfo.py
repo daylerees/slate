@@ -79,6 +79,25 @@ class NetInfo(Case):
         self.nmcli(devices="devices-vpn.txt")
         self.assertEqual(self.info(), self.WIFI + "vpn=tun0\n")
 
+    def test_vpn_pick_is_the_first_of_all_the_names(self):
+        """Connection names and tunnel devices together, sorted, the first one: the same
+        answer however many programs it takes to find it."""
+        self.nmcli(devices="devices-vpn.txt", connections="connections-vpn.txt")
+        # (fixtures: the VPN "Office VPN", the WireGuard "wg0", the tunnels wg0 and tun0)
+        self.assertEqual(self.info(), self.WIFI + "vpn=Office VPN\n")
+
+    def test_few_programs_for_every_reading(self):
+        """It runs every few seconds while the panel's open, so it reads the lists in the shell
+        itself: no head, no cut, and awk only for the Wi-Fi's own line."""
+        self.nmcli(devices="devices-vpn.txt", connections="connections-vpn.txt")
+        for tool in ("head", "cut", "awk", "grep"):
+            self.s.add(tool, stdout="")
+        self.info()
+        self.assertEqual(self.s.calls("head"), [])
+        self.assertEqual(self.s.calls("cut"), [])
+        self.assertEqual(self.s.calls("grep"), [])
+        self.assertLessEqual(len(self.s.calls("awk")), 1)
+
     def test_no_vpn(self):
         """Only the Wi-Fi connection active: no vpn line."""
         self.s.add("nmcli", by_args={

@@ -3849,17 +3849,20 @@ FloatingWindow {
             }
             Timer { id: bindsAgain; interval: 500; onTriggered: { bindsProc.running = false; bindsProc.running = true; } }
             readonly property var order: ["Apps", "Slate", "Windows", "Workspaces", "Monitors"]
+            // What's typed in the search box. The rows below are all built once, and a search
+            // only shows or hides them: rebuilding about a hundred rows for every key typed was slow
+            readonly property string query: findKeys.text.toLowerCase().trim()
+            function matches(row) { return !query || row.hay.includes(query); }
             readonly property var groups: {
-                const q = findKeys.text.toLowerCase().trim();
                 const g = {};
                 for (const b of binds) {
                     const i = b.description.indexOf(": ");
                     const group = i > 0 ? b.description.slice(0, i) : "Other";
                     const text = i > 0 ? b.description.slice(i + 2) : b.description;
                     const keys = keysOf(b);
-                    if (q && !(text + " " + keys.join(" ")).toLowerCase().includes(q)) continue;
                     if (!g[group]) g[group] = [];
-                    if (!g[group].some(r => r.text === text && r.keys.join() === keys.join())) g[group].push({ text: text, keys: keys });
+                    if (!g[group].some(r => r.text === text && r.keys.join() === keys.join()))
+                        g[group].push({ text: text, keys: keys, hay: (text + " " + keys.join(" ")).toLowerCase() });
                 }
                 return Object.keys(g).sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)).map(k => ({ name: k, rows: g[k] }));
             }
@@ -3906,6 +3909,9 @@ FloatingWindow {
                     required property var modelData
                     width: parent ? parent.width : 0
                     spacing: 4
+                    // The first of its rows the search shows (-1: none, and the group hides)
+                    readonly property int firstShown: { shortcutsPane.query; return keyGroup.modelData.rows.findIndex(r => shortcutsPane.matches(r)); }
+                    visible: firstShown >= 0
                     GroupLabel { textFormat: Text.PlainText; text: keyGroup.modelData.name }
                     Group {
                         Repeater {
@@ -3915,7 +3921,8 @@ FloatingWindow {
                                 required property var modelData
                                 required property int index
                                 width: parent ? parent.width : 0
-                                Separator { visible: keyRow.index > 0 }
+                                visible: shortcutsPane.matches(keyRow.modelData)
+                                Separator { visible: keyRow.index > keyGroup.firstShown }
                                 SettingRow {
                                     label: keyRow.modelData.text
                                     Row {
@@ -4100,6 +4107,11 @@ FloatingWindow {
             property bool canSet: true            // something here can change the zone
             property var zones: []
             property date now: new Date()
+            // The day alone, for the date examples below: it changes at midnight, where `now`
+            // changes every second and rebuilt them each time
+            property date today: now
+            readonly property string dayKey: Qt.formatDate(now, "yyyyMMdd")
+            onDayKeyChanged: today = now
             // The clock on this page; only ticks while Settings is showing (and catches up at once)
             Timer { interval: 1000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: dateTimePane.now = Config.clockDate(new Date()) }
             function refresh() { stateProc.running = false; stateProc.running = true; }
@@ -4165,9 +4177,9 @@ FloatingWindow {
                     label: "Date format"
                     settingKey: "dateFormat"
                     detail: "On the menu bar's clock, the calendar, notifications and everywhere else Slate shows a date"
-                    options: [{ value: "dmy", label: Qt.formatDate(dateTimePane.now, "ddd d MMM") },
-                              { value: "mdy", label: Qt.formatDate(dateTimePane.now, "ddd, MMM d") },
-                              { value: "ymd", label: Qt.formatDate(dateTimePane.now, "yyyy-MM-dd") }]
+                    options: [{ value: "dmy", label: Qt.formatDate(dateTimePane.today, "ddd d MMM") },
+                              { value: "mdy", label: Qt.formatDate(dateTimePane.today, "ddd, MMM d") },
+                              { value: "ymd", label: Qt.formatDate(dateTimePane.today, "yyyy-MM-dd") }]
                     value: Config.s.dateFormat
                     onPicked: v => Config.s.dateFormat = v
                 }
@@ -7976,27 +7988,32 @@ FloatingWindow {
                 Behavior on memShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
                 Behavior on cpuShown { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
                 function mb(v) { return v >= 1024 ? (v / 1024).toFixed(v >= 10240 ? 0 : 1) + " GB" : Math.round(v) + " MB"; }
+                // Slate is the process reading these, so /proc/self is its own: three small files
+                // read in place, with no process started for each reading. The core count never
+                // changes, so it's asked once
+                FileView { id: usageStatus; path: "/proc/self/status" }
+                FileView { id: usageStat; path: "/proc/self/stat" }
+                FileView { id: usageMeminfo; path: "/proc/meminfo" }
                 Process {
-                    id: usageProc
-                    // One awk reads all three files; prints Slate's memory (kB), its processor time
-                    // (ticks), the number of cores and the total memory (kB), one per line.
-                    // $PPID: the shell's parent, Slate itself.
-                    command: ["sh", "-c", "awk -v cores=\"$(nproc)\" 'FILENAME ~ /status$/ && /^VmRSS/ { mem = $2 } FILENAME ~ /stat$/ { ticks = $14 + $15 } /^MemTotal/ { total = $2 } END { print mem; print ticks; print cores; print total }' /proc/$PPID/status /proc/$PPID/stat /proc/meminfo"]
-                    stdout: StdioCollector {
-                        onStreamFinished: {
-                            const l = text.trim().split("\n");
-                            if (l.length < 4) return;
-                            usage.mem = Number(l[0]) / 1024;
-                            usage.cores = Number(l[2]) || 1;
-                            usage.memTotal = Number(l[3]) / 1024;
-                            const ticks = Number(l[1]), now = Date.now();
-                            if (usage.lastTicks >= 0 && now > usage.lastTime) {
-                                usage.cpu = Math.max(0, (ticks - usage.lastTicks) / 100 / ((now - usage.lastTime) / 1000) / usage.cores * 100);
-                                usage.history = usage.history.concat([usage.cpu]).slice(-30);
-                            }
-                            usage.lastTicks = ticks; usage.lastTime = now;
-                        }
+                    running: !Config.testMode
+                    command: ["nproc"]
+                    stdout: StdioCollector { onStreamFinished: usage.cores = Number(text.trim()) || 1 }
+                }
+                function read() {
+                    usageStatus.reload(); usageStat.reload(); usageMeminfo.reload();
+                    const rss = /^VmRSS:\s+(\d+)/m.exec(usageStatus.text());
+                    const total = /^MemTotal:\s+(\d+)/m.exec(usageMeminfo.text());
+                    // (the process's name is in brackets and can hold spaces: the fields count from its end)
+                    const stat = usageStat.text(), f = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+                    if (!rss || !total || f.length < 13) return;
+                    usage.mem = Number(rss[1]) / 1024;
+                    usage.memTotal = Number(total[1]) / 1024;
+                    const ticks = Number(f[11]) + Number(f[12]), now = Date.now();   // utime and stime: fields 14 and 15
+                    if (usage.lastTicks >= 0 && now > usage.lastTime) {
+                        usage.cpu = Math.max(0, (ticks - usage.lastTicks) / 100 / ((now - usage.lastTime) / 1000) / usage.cores * 100);
+                        usage.history = usage.history.concat([usage.cpu]).slice(-30);
                     }
+                    usage.lastTicks = ticks; usage.lastTime = now;
                 }
                 Timer {
                     interval: 2000; repeat: true; triggeredOnStart: true
@@ -8004,7 +8021,7 @@ FloatingWindow {
                     onTriggered: {
                         // (in tests, the same every time: Slate's own use varies from run to run)
                         if (Config.testMode) { usage.mem = 420; usage.cores = 8; usage.memTotal = 16384; usage.cpu = 3; usage.history = [2, 3, 4, 3, 2, 3]; return; }
-                        usageProc.running = false; usageProc.running = true;
+                        usage.read();
                     }
                 }
                 Column {

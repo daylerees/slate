@@ -461,7 +461,8 @@ PanelWindow {
 
     // Which speakers and microphones are in use just now: sound playing through one, or
     // something listening to one ({ node's name: true }). PipeWire knows (a node that's
-    // "running"); asked once a second, and only while the volume panel's open. Without
+    // "running"); asked every three seconds (pw-dump lists everything PipeWire knows, so it's
+    // not cheap), and only while the volume panel's open. Without
     // pw-dump nothing's marked, and the sliders are as they always were
     property var audioBusy: ({})
     Process {
@@ -488,7 +489,7 @@ PanelWindow {
         audioBusy = busy;
     }
     Timer {
-        interval: 1000; repeat: true; triggeredOnStart: true
+        interval: 3000; repeat: true; triggeredOnStart: true
         running: pop.current === "volume" && !Config.testMode
         onTriggered: if (!audioBusyAsk.running) audioBusyAsk.running = true
     }
@@ -2531,11 +2532,14 @@ PanelWindow {
                     if (mm) mem[mm[1]] = Number(mm[2]) * 1024;
                 }
                 if (mem.MemTotal) { memTotal = mem.MemTotal; memUsed = mem.MemTotal - (mem.MemAvailable || mem.MemFree || 0); }
-                if (!diskInfo.running) diskInfo.running = true;
+                // (the drive's size and use barely move: asked on opening, then every 30 s)
+                if (Date.now() - lastDisk > 30000 && !diskInfo.running) { lastDisk = Date.now(); diskInfo.running = true; }
             }
+            property double lastDisk: 0
             Timer {
                 interval: 2000; repeat: true; triggeredOnStart: true
                 running: pop.shown && pop.displayed === "battery"
+                onRunningChanged: if (running) bat.lastDisk = 0      // opened again: the drive read afresh
                 onTriggered: bat.sample()
             }
             // Shown values glide from one reading to the next (readings come every 2s)
