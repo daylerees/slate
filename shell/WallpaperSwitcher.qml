@@ -161,6 +161,12 @@ Scope {
     // straight back to another the moment the first is in, quicker than any key)
     property string coverShowing: ""
     property bool standing: false           // (the small picture standing in for a full one)
+    // The full picture of the one chosen isn't in yet (on the focused screen's cover): after a
+    // moment, the chosen card shows a spinner until it is
+    property bool fullIn: true
+    property bool spinning: false
+    onFullInChanged: { if (fullIn) { spinSoon.stop(); spinning = false; } else spinSoon.restart(); }
+    Timer { id: spinSoon; interval: 150; onTriggered: root.spinning = root.shown && !root.fullIn }
     property string flipTo: ""
     property string flipFrom: ""
     function testFlip(a, b) { flipFrom = a; flipTo = b; Config.wallpaperPreview = a === original ? "" : a; }
@@ -239,6 +245,7 @@ Scope {
                     pixelRatio: scr.modelData.devicePixelRatio || 1
                     fadeMs: 200
                     onShowingChanged: if (scr.main) root.coverShowing = showing
+                    onReadyChanged: if (scr.main) root.fullIn = ready || path === ""
                     opacity: root.fade
                 }
                 // Until the full picture's in: its small one, filling the screen, so every move
@@ -421,6 +428,27 @@ Scope {
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(160) } }
                                     layer.enabled: true
                                     layer.effect: PreviewShape { radius: Config.corner(8) }
+                                }
+                                // Still reading the full picture for the one chosen: a spinner,
+                                // fading in (after a moment, so a quick one doesn't flicker) and out
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 36; height: 36
+                                    radius: Config.corner(18)
+                                    color: Config.tint("#1d222a")         // (the card's own fill)
+                                    opacity: card.chosen && root.spinning ? 1 : 0
+                                    visible: opacity > 0
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: String.fromCodePoint(0xF226)
+                                        color: Config.accent
+                                        font.family: root.bar.iconFont; font.pixelSize: 18
+                                        RotationAnimation on rotation {
+                                            running: parent.parent.visible && Config.animate
+                                            loops: Animation.Infinite; from: 0; to: 360; duration: 900
+                                        }
+                                    }
                                 }
                             }
                             Text {
