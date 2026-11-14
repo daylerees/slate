@@ -1479,8 +1479,14 @@ def radio_power(what, st, on, where):
     if st["on"] == on:
         return {what: word, "note": "It was already %s; nothing changed." % word}
     doing("Turn %s %s" % (what, word))
-    changing("Turn %s %s?" % (what, word), "%s is asking to turn %s %s. You can turn it %s again at any time from %s."
-             % (asker(), what, word, "off" if on else "on", where), "Turn %s" % word)
+    body = "%s is asking to turn %s %s. You can turn it %s again at any time from %s." % (
+        asker(), what, word, "off" if on else "on", where)
+    if what == "Wi-Fi" and not on:
+        # (it can cut the assistant off from its own service mid-answer: always asked)
+        CALL["tier"] = "ask"
+        ask("Turn Wi-Fi off?", body + " Your assistant may lose its connection too.", "Turn off")
+    else:
+        changing("Turn %s %s?" % (what, word), body, "Turn %s" % word)
     CALL["before"] = st["on"]
     ipc("wifi" if what == "Wi-Fi" else "bluetooth", "power", "true" if on else "false")
     return {what: word}
@@ -1489,7 +1495,7 @@ def radio_power(what, st, on, where):
 @tool("wifi", "Wi-Fi",
       "See or change Wi-Fi. With no action: whether it's on, the network it's on, and the saved networks in "
       "range. action: on, off, connect (to a saved network from that list, by name: never a new one) or "
-      "disconnect. Off or disconnecting may cut you off too, if you work over the internet." + OTHERS,
+      "disconnect. Off and disconnect always ask the person first, since they may cut you off too." + OTHERS,
       {"action": {"type": "string", "enum": RADIO},
        "network": {"type": "string", "description": "For connect: a saved network's name"}}, tier="change")
 def wifi(action="", network=""):
@@ -1513,8 +1519,10 @@ def wifi(action="", network=""):
         if not name:
             return {"note": "Wi-Fi isn't connected to a network; nothing changed."}
         doing("Disconnect from “%s”" % name)
-        changing("Disconnect from “%s”?" % name, "%s is asking to disconnect from this Wi-Fi network. You can connect "
-                 "again at any time from the Wi-Fi panel on the menu bar." % asker(), "Disconnect")
+        CALL["tier"] = "ask"            # (it can cut the assistant off mid-answer: always asked)
+        ask("Disconnect from “%s”?" % name, "%s is asking to disconnect from this Wi-Fi network. Your assistant may "
+            "lose its connection too. You can connect again at any time from the Wi-Fi panel on the menu bar."
+            % asker(), "Disconnect")
         CALL["before"] = name
         ipc("wifi", "disconnect")
         return {"disconnected": name}
@@ -1829,7 +1837,7 @@ def call_tool(params, mid=None):
         log("%s failed: %r" % (name, e))
         return answer("Slate couldn't do that just now.", True)
     finally:
-        record(name, t["tier"], args, outcome)
+        record(name, CALL.get("tier") or t["tier"], args, outcome)     # (what this call was: a look, or always asked)
         if STATUS.get("enabled"):
             tell(outcome)
 

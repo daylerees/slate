@@ -1269,6 +1269,11 @@ class RadiosAndDock(Base):
                 self.assertFalse(err, got)
                 self.assertEqual(self.acted()[-1], want)
                 self.assertEqual(self.did()[-1], (did, "done"))
+        # Off and disconnecting always ask (they can cut the assistant off too); connecting doesn't
+        self.assertEqual([(q["title"], q["button"]) for q in self.asked()],
+                         [("Turn Wi-Fi off?", "Turn off"), ("Disconnect from “Cafe”?", "Disconnect")])
+        self.assertTrue(all("may lose its connection" in q["body"] for q in self.asked()))
+        self.assertEqual([a["tier"] for a in self.activity()][-3:], ["ask", "change", "ask"])
         # Already so: nothing to do
         got, err = self.tool("wifi", {"action": "on"})
         self.assertIn("already on", got["note"])
