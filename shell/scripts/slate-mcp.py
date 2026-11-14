@@ -195,6 +195,7 @@ NAMED = {
     "barShowAssistant": ("bar", "Nova"),
     "barShowWorkspaces": ("bar", "Workspaces"),
     "barShowWindowMode": ("bar", "Workspace window mode"),
+    "barShowWorkspaceName": ("bar", "Workspace name"),
     "barShowTitle": ("bar", "Window title"),
     "barShowTitleIcon": ("bar", "Window title: app icon"),
     "barShowTray": ("bar", "App icons (tray)"),
@@ -1114,7 +1115,7 @@ def panel_open(name):
 # whatever there isn't room for: it's always on the bar
 BAR_ITEMS = {
     "control": "Control centre", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
-    "workspaces": "Workspaces", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
+    "workspaces": "Workspaces", "workspacename": "Workspace name", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
     "notifications": "Notifications", "clipboard": "Clipboard", "screenshot": "Screenshot", "camera": "Camera",
     "gamemode": "Game mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
     "wifi": "Wi-Fi", "battery": "Battery", "clock": "Clock", "power": "Power", "more": "More",

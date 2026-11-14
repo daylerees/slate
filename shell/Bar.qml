@@ -103,7 +103,7 @@ PanelWindow {
                 continue;
             }
             rows.push({ id: id, tray: null, label: id === "windowtitle" ? "Window" : it.label, icon: it.icon, image: "",
-                        value: id === "windowtitle" ? titleText.text : id === "workspaces" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
+                        value: id === "windowtitle" ? titleText.text : id === "workspaces" || id === "workspacename" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
         }
         return rows;
     }
@@ -127,7 +127,7 @@ PanelWindow {
         const out = {};
         for (const name in left.things) {
             const t = left.things[name], p = t.mapToItem(null, 0, 0);
-            out[name] = { visible: t.visible, text: t.plain ? (t.slimText ? "" : t.drawnLabel) : "", opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
+            out[name] = { visible: t.visible, text: t.plain ? (t.slimText ? "" : t.drawnLabel) : name === "workspacename" ? wsNameText.text : "", opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
                           lit: t.lit, box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
         }
         return out;
@@ -867,7 +867,7 @@ PanelWindow {
 
             // Everything that can go in a container, by its name in the arrangement
             readonly property var things: ({
-                control: flameBtn, apps: appsBtn, spaces: spacesBtn, nova: novaBtn, windowmode: wsMode, workspaces: wsCap,
+                control: flameBtn, apps: appsBtn, spaces: spacesBtn, nova: novaBtn, windowmode: wsMode, workspaces: wsCap, workspacename: wsName,
                 tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, camera: camSeg, gamemode: gameSeg,
                 keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn,
                 windowicon: winIcon, windowtitle: winTitle, more: moreBtn })
@@ -1473,6 +1473,33 @@ PanelWindow {
                     // (each dot pressed and lit across the bar's whole depth, as everything on it)
                     reachAcross: Config.barArranging ? 0 : bar.reachOut + (bar.capsuleHeight - wsCap.dot) / 2
                     pretend: bar.testPointer
+                }
+            }
+
+            // The workspace's name: its own (the pencil on the window mode panel), or "Workspace 3"
+            // without one, as the overview and the switch's display call it (Config.workspaceLabel).
+            // The workspace in use, as the dots' marker shows (one for the whole desktop, so every
+            // screen's bar says the same). Click for the window mode panel, where it's named.
+            // Only text, like the clock: short of room it doesn't slim (there'd be nothing left),
+            // it leaves for More whole, early (Config.barOverflowDefault)
+            Segment {
+                id: wsName
+                readonly property string says: Config.focusedWorkspaceId > 0 ? Config.workspaceLabel(Config.focusedWorkspaceId) : ""
+                wanted: Config.s.barShowWorkspaceName && says !== ""
+                label: says             // (what it says: for the arranging panel's chips, and what's carried)
+                length: wsNameText.implicitWidth + 20
+                onClicked: bar.openPopout("windowmode", wsName)
+                Text {
+                    id: wsNameText
+                    anchors.centerIn: parent
+                    // Turned to run along a side bar, like the clock
+                    rotation: bar.textRotation
+                    // (it just changes, as the clock does)
+                    text: wsName.says
+                    color: bar.textColor
+                    font.family: bar.fontFamily
+                    font.pixelSize: bar.fontSize
+                    font.weight: Font.Medium
                 }
             }
 

@@ -236,3 +236,42 @@ class FullDepth(LiveCase):
                 first = shown[0]["y"] if vert else shown[0]["x"]
                 got = self.point(*at(first - 3, ends[0]))
                 self.assertEqual(got["thing"], "", f"{edge}: the bar's end took the pointer: {got}")
+
+
+class WorkspaceName(LiveCase):
+    """The workspace's name on the bar (off to start with): the focused workspace's own name, or
+    "Workspace 3" without one, following a rename and a switch; clicking it opens the window mode
+    panel, where it's named."""
+    def go(self, ws):
+        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws} }})) end")
+
+    def shown(self, text, what):
+        self.wait(lambda st: st["bar"]["line"]["workspacename"]["visible"] and st["bar"]["line"]["workspacename"]["text"] == text,
+                  f"the bar to say {text!r} ({what})")
+
+    def test_follows_the_workspace(self):
+        self.keep_setting("barShowWorkspaceName")
+        self.wait(lambda st: not st["bar"]["line"]["workspacename"]["visible"], "it to be off the bar to start with")
+        ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
+        self.addCleanup(lambda: (self.go(ws), self.ipc("workspacename", "set", str(ws), "")))
+        # (put on the bar as Edit layout's pool does)
+        self.ipc("test", "arrange", "shown", "workspacename", "true", "")
+        self.shown(f"Workspace {ws}", "no name of its own")
+        self.ipc("workspacename", "set", str(ws), "Coding")
+        self.shown("Coding", "renamed")
+        other = ws + 1
+        self.go(other)
+        self.shown(f"Workspace {other}", "switched to another workspace")
+        self.ipc("workspacename", "set", str(other), "Music")
+        self.shown("Music", "the other one renamed")
+        self.go(ws)
+        self.shown("Coding", "switched back")
+        # Clicked: the window mode panel, where it's named
+        t = self.s.state()["bar"]["line"]["workspacename"]
+        got = json.loads(self.ipc("test", "barPoint", str(t["x"] + t["w"] // 2), str(t["y"] + t["h"] // 2), "click"))
+        self.ipc("test", "barPoint", "-1", "-1", "leave")
+        self.assertEqual(got["thing"], "workspacename", got)
+        self.wait(lambda st: st["popout"] == "windowmode", "the window mode panel from a click on the name")
+        self.ipc("popout", "close")
+        self.ipc("workspacename", "set", str(ws), "")
+        self.shown(f"Workspace {ws}", "its name taken away")
