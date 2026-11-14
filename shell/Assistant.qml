@@ -246,6 +246,7 @@ PanelWindow {
         }
     }
     function openWindow() {
+        if (!shown) centre();           // (it opens in the middle, as Settings does)
         screen = Config.focusedScreen;
         openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         openedAt = Date.now();
@@ -298,6 +299,9 @@ PanelWindow {
     readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. You can choose one in Settings → Assistant." })
     function stop() { if (working) runner.signal(15); }
     readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
+    readonly property real panelX: panel.x                  // (for the tests: where the card is)
+    readonly property real panelY: panel.y
+    readonly property real panelHeight: panel.height
     property int keysSeen: 0               // (for the tests: keys the box has been given)
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
@@ -439,16 +443,39 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    // Click outside to close (a run carries on)
+    // Click outside to close (a run carries on). A drag by the header isn't a click outside:
+    // the header holds on to the pointer until it's let go, wherever that is
     MouseArea { anchors.fill: parent; enabled: root.shown; onClicked: root.closeWindow() }
+
+    // ---- Where it sits ---------------------------------------------------------
+    // In the middle, as the launcher, or where you've dragged it by its header (offX/offY:
+    // how far from the middle, in Slate's own units). Closing it forgets that: it opens in the
+    // middle again, as Settings does, and a double-click on the header puts it back there.
+    // Always wholly on the screen, kept there as the screen or the interface size changes
+    // (the window covers the screen: the card moves inside it, Hyprland can't move a layer)
+    property real offX: 0
+    property real offY: 0
+    readonly property real homeX: Math.round((width - panelWidth) / 2)
+    readonly property real homeY: Math.round(Math.max(24, (height - 520) / 2))
+    readonly property int edgeGap: 8
+    function clampX(x) { return Math.round(Math.max(edgeGap, Math.min(width - panelWidth - edgeGap, x))); }
+    function clampY(y) { return Math.round(Math.max(edgeGap, Math.min(height - panel.height - edgeGap, y))); }
+    function centre() { offX = 0; offY = 0; }
+    // A drag: from where the card is when it starts, by dx, dy (what the header does, and the tests)
+    property point dragFrom: Qt.point(0, 0)
+    function dragStart() { dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); }
+    function dragBy(dx, dy) {
+        offX = clampX(homeX + dragFrom.x + dx) - homeX;
+        offY = clampY(homeY + dragFrom.y + dy) - homeY;
+    }
 
     Rectangle {
         id: panel
         width: root.panelWidth
         height: body.implicitHeight + 28
         Behavior on height { enabled: root.shown; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round(Math.max(24, (parent.height - 520) / 2))
+        x: root.clampX(root.homeX + root.offX)
+        y: root.clampY(root.homeY + root.offY)
         radius: Config.corner(18)
         color: root.barColor
         opacity: root.fade
@@ -468,6 +495,28 @@ PanelWindow {
             // ---- Header: its name, and a round close button as on Settings ----
             Item {
                 width: parent.width; height: 30
+                // Drag it to move the window, as Settings' logo and window title bars do (an
+                // arrow, silent, moving once the pointer has gone 4 px); double-click to put it
+                // back in the middle. Not the close button, which takes its own clicks
+                MouseArea {
+                    id: headDrag
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom; right: closeBtn.left }
+                    property point grab: Qt.point(0, 0)
+                    property bool moved: false
+                    // (places on the screen: the header moves with the card under the pointer)
+                    onPressed: mouse => {
+                        grab = mapToItem(null, mouse.x, mouse.y);
+                        moved = false;
+                        root.dragStart();
+                    }
+                    onPositionChanged: mouse => {
+                        const p = mapToItem(null, mouse.x, mouse.y);
+                        if (!moved && Math.abs(p.x - grab.x) + Math.abs(p.y - grab.y) < 4) return;   // (a click so far)
+                        moved = true;
+                        root.dragBy(p.x - grab.x, p.y - grab.y);
+                    }
+                    onDoubleClicked: root.centre()
+                }
                 Row {
                     anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
                     spacing: 8

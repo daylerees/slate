@@ -344,6 +344,10 @@ ShellRoot {
         function novaCopyCode(block: int): void { nova.copyCode(nova.turns.length - 1, block); }
         // Undo on a row of what the latest answer did, as clicking it does (action: its place in the list)
         function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
+        // Drag Nova's window by its header, as the pointer would: pressed, moved by dx, dy (Slate's
+        // units), let go. centre: as double-clicking the header does
+        function novaDrag(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); }
+        function novaCentre(): void { nova.centre(); }
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
@@ -491,6 +495,8 @@ ShellRoot {
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
                              blocks: nova.cur ? nova.cur.blocks || [] : [], rich: nova.richNow(), copied: nova.copied,
+                             // (where the card is, its size, and the window's: dragged by its header)
+                             panel: { x: nova.panelX, y: nova.panelY, w: nova.panelWidth, h: nova.panelHeight, homeX: nova.homeX, homeY: nova.homeY, screenW: nova.width, screenH: nova.height },
                              // (whether each row of what it did offers Undo just now)
                              undo: nova.actions.map(a => nova.undoable(a)),
                              button: Config.s.barShowAssistant && Config.assistantOn,
