@@ -18,7 +18,7 @@ class NetInfo(Case):
         f = lambda n: fixture_text("netinfo", n) if n else ""
         self.s.add("nmcli", by_args={
             "DEVICE,TYPE,STATE": f(devices), "IP4.ADDRESS": f("device-show.txt"),
-            "IN-USE": f("wifi-list.txt"), "NAME,TYPE": f(connections)})
+            "IN-USE": f("wifi-list.txt"), "TYPE,NAME": f(connections)})
 
     def info(self):
         code, out = run(["sh", SCRIPT], env=self.s.env)
@@ -62,6 +62,18 @@ class NetInfo(Case):
         self.nmcli(devices="devices-vpn.txt", connections="connections-vpn.txt")
         self.assertEqual(self.info(), self.WIFI + "vpn=Office VPN\n")
 
+    def test_vpn_name_with_a_colon(self):
+        """A colon in the connection's name: the whole name, where the VPN used to go unseen.
+        (The replies are nmcli's own: it escapes a colon in a value unless told "-e no".)"""
+        self.s.add("nmcli", by_args={
+            "DEVICE,TYPE,STATE": fixture_text("netinfo", "devices.txt"),
+            "IP4.ADDRESS": fixture_text("netinfo", "device-show.txt"),
+            "IN-USE": fixture_text("netinfo", "wifi-list.txt"),
+            "-e no -f TYPE,NAME": "802-11-wireless:Home Wi-Fi\nvpn:Office: London\n",
+            "TYPE,NAME": "802-11-wireless:Home Wi-Fi\nvpn:Office\\: London\n",
+            "NAME,TYPE": "Home Wi-Fi:802-11-wireless\nOffice\\: London:vpn\n"})
+        self.assertEqual(self.info(), self.WIFI + "vpn=Office: London\n")
+
     def test_tunnel_from_another_app(self):
         """A tunnel NetworkManager doesn't manage (e.g. a VPN app's own), by its device."""
         self.nmcli(devices="devices-vpn.txt")
@@ -73,7 +85,7 @@ class NetInfo(Case):
             "DEVICE,TYPE,STATE": fixture_text("netinfo", "devices.txt"),
             "IP4.ADDRESS": fixture_text("netinfo", "device-show.txt"),
             "IN-USE": fixture_text("netinfo", "wifi-list.txt"),
-            "NAME,TYPE": "Home Wi-Fi:802-11-wireless\nlo:loopback\n"})
+            "TYPE,NAME": "802-11-wireless:Home Wi-Fi\nloopback:lo\n"})
         self.assertNotIn("vpn=", self.info())
 
     def test_network_not_in_list(self):

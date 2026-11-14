@@ -20,6 +20,8 @@ else
         | awk -F: '$1=="*" {print "freq="$2; print "rate="$3; print "security="$4; print "channel="$5; exit}'
 fi
 # VPNs: NetworkManager VPN/WireGuard connections, and tunnels other apps run (e.g. Mullvad)
-{ nmcli -t -f NAME,TYPE connection show --active 2>/dev/null | awk -F: '$2=="vpn" || $2=="wireguard" {print $1}'
+# (the type first and the name as it is, "-e no": a name can have a colon in it, which lost
+# the VPN when the line was split on colons)
+{ nmcli -t -e no -f TYPE,NAME connection show --active 2>/dev/null | sed -n -e 's/^vpn://p' -e 's/^wireguard://p'
   printf '%s\n' "$devices" | awk -F: '($2=="tun" || $2=="wireguard") && $3 ~ /^connected/ {print $1}'
 } | sort -u | head -1 | sed 's/^/vpn=/'
