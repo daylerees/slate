@@ -4368,7 +4368,8 @@ FloatingWindow {
                     visible: !!assistantPane.chosen && assistantPane.chosen.local
                     label: "Model"
                     settingKey: "assistantLocalModel"
-                    detail: "Small models can be unreliable with tools: a bigger one follows Slate's tools better, but answers more slowly"
+                    detail: "Small models can be unreliable with tools: a bigger one follows Slate's tools better, but answers more slowly. "
+                        + "Slow on a laptop? Ollama leaves built-in graphics unused unless its service has OLLAMA_VULKAN=1 and OLLAMA_IGPU_ENABLE=1"
                     value: Config.s.assistantLocalModel
                     noneLabel: Config.s.assistantLocalModel
                     options: [{ value: "", label: "The first that can use tools" }]

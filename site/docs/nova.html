@@ -76,7 +76,15 @@
           itself: the model gets Slate's tools and nothing else, and nothing you ask leaves the computer. No account or
           keys. Settings says if Ollama isn't running or has no model yet (<code>ollama pull qwen3</code> gets a small
           one that's good with tools). Small models can be unreliable with tools, and on a computer without a strong
-          graphics card an answer can take a minute or more.</li>
+          graphics card an answer can take a minute or more.
+          <p><strong>Slow on a laptop?</strong> Ollama leaves built-in graphics (Intel, AMD) unused unless you ask it to,
+            so the model runs on the processor alone. To use them, give Ollama's service
+            <code>OLLAMA_VULKAN=1</code> and <code>OLLAMA_IGPU_ENABLE=1</code> (with the Vulkan build, such as Arch's
+            <code>ollama-vulkan</code>): run <code>sudo systemctl edit ollama</code>, add
+            <code>Environment="OLLAMA_VULKAN=1"</code> and <code>Environment="OLLAMA_IGPU_ENABLE=1"</code> under
+            <code>[Service]</code>, then <code>sudo systemctl restart ollama</code>. <code>ollama ps</code> then says GPU
+            rather than CPU. On one laptop this read Nova's question about ten times faster. Slate leaves this to you, and
+            <code>sudo systemctl revert ollama</code> undoes it.</p></li>
         <li><strong>Codex with Ollama</strong> is Codex with its own tools switched off, using a model on this computer
           through Ollama instead of an OpenAI account. One prompt at a time: it doesn't follow on. It needs Ollama
           started with more room than it has to begin with (<code>OLLAMA_CONTEXT_LENGTH=16384</code>), and Nova says so

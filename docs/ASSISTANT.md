@@ -307,6 +307,14 @@ Small models can be unreliable with tools: Settings says so, and a bigger model 
 Slate's tools better but answers more slowly. On a processor without a graphics card's help a
 round can take minutes.
 
+**Built-in graphics.** Ollama leaves integrated graphics (Intel Arc, AMD APUs) unused unless
+its service is given `OLLAMA_VULKAN=1` and `OLLAMA_IGPU_ENABLE=1` (with its Vulkan build, e.g.
+Arch's `ollama-vulkan`), so on most laptops the model runs on the processor alone. With them
+(`sudo systemctl edit ollama`, two `Environment=` lines under `[Service]`, then restart it),
+`ollama ps` says GPU; on an Intel Lunar Lake laptop, reading Nova's ~6,000-token prompt went
+from about 13 to 150 tokens a second, and writing from 2.4 to 13. Slate never sets this itself
+(it's the person's own service): Settings and the docs say how.
+
 ## What it did
 
 Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, one line
