@@ -432,7 +432,7 @@ It finishes with a list of what it left, and the command that removes each:
   (`./install.sh --no-deps`).
 - **Reporting a problem** — Settings → Debug → **Export recent logs** (or `slate logs` in a
   terminal) saves Slate's recent log and system details to a file in Downloads, without your
-  location; look it over, then attach it to the issue. Turning **Log detail** up first (it
+  location, your own command for Nova or your home folder's name; look it over, then attach it to the issue. Turning **Log detail** up first (it
   restarts Slate) and reproducing the problem gives a fuller log.
 - **Starting over** — Settings → Debug → **Factory reset** (or
   `~/.config/slate/bin/slate-factory-reset`) puts every setting back to its default and forgets

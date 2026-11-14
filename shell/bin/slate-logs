@@ -2,8 +2,11 @@
 # Save Slate's recent log and some system details to a text file, to attach to a bug report.
 # Prints the file's path. Run as `slate logs`, or from Settings → Debug → Export recent logs.
 #
-# Leaves out your location (latitude, longitude, place name). The log itself can still name
-# apps, windows and file paths, so the file says to look it over before sharing it.
+# Leaves out your location (latitude, longitude, place name), and says only whether the command
+# of your own for Nova and your main display (its description holds the monitor's serial number)
+# are set. Your home folder is written as ~ throughout, so your user name isn't in the file. The
+# log itself can still name apps, windows and files, so the file says to look it over before
+# sharing it.
 SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
 LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate.log"
 LINES=2000
@@ -15,11 +18,18 @@ dir=$(xdg-user-dir DOWNLOAD 2>/dev/null)
 out="$dir/slate-logs-$(date +%Y%m%d-%H%M%S).txt"
 
 nocolour() { sed 's/\x1b\[[0-9;]*m//g'; }
+# Your home folder as ~ (python, not sed: the folder's name needs no escaping there)
+untilde() { python3 -c '
+import os, re, sys
+home = os.environ.get("HOME", "")
+pat = re.compile(re.escape(home.rstrip("/")) + r"(?=/|$)") if home.strip("/") else None
+for line in sys.stdin:
+    sys.stdout.write(pat.sub("~", line) if pat else line)'; }
 section() { printf '\n===== %s =====\n' "$1"; }
 
 {
     echo "Slate logs, saved $(date '+%Y-%m-%d %H:%M:%S %Z')"
-    echo "Look this over before sharing it: the log can name apps, windows and file paths."
+    echo "Look this over before sharing it: the log can name apps, windows and files. Your location, and your own command for Nova, are left out, and your home folder is written as ~."
 
     section "Versions"
     echo "Slate:       $(cat "$SLATE_DIR/VERSION" 2>/dev/null || echo unknown)$(git -C "$SLATE_DIR" describe --tags 2>/dev/null | sed 's/^/ (git: /; s/$/)/')"
@@ -35,22 +45,34 @@ section() { printf '\n===== %s =====\n' "$1"; }
     hyprctl monitors 2>/dev/null | grep -E '^Monitor|^\s+[0-9]+x[0-9]+@|scale:' | sed 's/^\s*/  /'
     lspci 2>/dev/null | grep -iE 'vga|3d|display' | sed 's/^/  GPU: /'
 
-    section "Settings (location left out)"
+    section "Settings (location, your own command and your display's name left out)"
     python3 -c '
-import json, sys
+import json, os, re, sys
 s = json.load(open(sys.argv[1]))
 for k in ("latitude", "longitude", "locationName"):
     s.pop(k, None)
-print(json.dumps(s, indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" 2>/dev/null || echo "(couldn't read settings.json)"
+# A command of your own, and a monitor description (it carries the serial number): only
+# whether they are set
+for k in ("assistantCommand", "mainDisplay"):
+    if k in s:
+        s[k] = "(set)" if s[k] else "(not set)"
+home = os.environ.get("HOME", "").rstrip("/")
+pat = re.compile(re.escape(home) + r"(?=/|$)") if home else None
+def tidy(v):
+    if isinstance(v, str): return pat.sub("~", v) if pat else v
+    if isinstance(v, list): return [tidy(x) for x in v]
+    if isinstance(v, dict): return {tidy(k): tidy(x) for k, x in v.items()}
+    return v
+print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" 2>/dev/null || echo "(couldn't read settings.json)"
 
     section "Slate's log (last $LINES lines)"
-    if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour
-    else qs log -p "$SLATE_DIR" -t "$LINES" 2>/dev/null | nocolour; fi
+    if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour | untilde
+    else qs log -p "$SLATE_DIR" -t "$LINES" 2>/dev/null | nocolour | untilde; fi
 
     section "Login screen's log (last 200 lines, if readable)"
     # (the journal with systemd; the greeter's own file without)
-    if command -v journalctl >/dev/null 2>&1; then journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"
-    else tail -n 200 /var/cache/slate-greeter/hyprland.log 2>/dev/null || echo "(not readable)"; fi
+    if command -v journalctl >/dev/null 2>&1; then { journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"; } | untilde
+    else { tail -n 200 /var/cache/slate-greeter/hyprland.log 2>/dev/null || echo "(not readable)"; } | untilde; fi
 } > "$out" 2>&1
 
 echo "$out"
