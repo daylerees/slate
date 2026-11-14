@@ -72,6 +72,10 @@ class Visual(LiveCase):
                 else:
                     self.ipc(*step)
             self.wait(scene["wait"], f"the {name} scene")
+            # App icons drawn and their colours noted (the tiles behind them take a shade of
+            # each): they arrive in the background, at startup and after a change of icon
+            # style, so a picture taken sooner depended on how busy the computer was
+            self.wait(lambda st: not st["icons"]["busy"], f"the {name} scene's app icons")
             self.s.settle(scene.get("settle", 0.8))
             return self.s.screenshot(os.path.join(OUT, name + ".actual.png"))
         finally:
