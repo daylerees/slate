@@ -1,7 +1,9 @@
 """The site's docs (site/docs/): every page in docs.js's list has its file and every file is in
 the list; every Settings page is documented somewhere (a page's `covers`); every page follows
 the docs' skeleton; links between docs pages, and to their headings, lead somewhere; every
-picture is there, described and sized (and every file in site/docs/img is used); and the words stay Slate's (no old names, never "premium" on its own)."""
+picture is there, described and sized (and every file in site/docs/img is used); and the words stay Slate's (no old names, never "premium" on its own).
+And docs/ARCHITECTURE.md: its list names every QML file, helper and script Slate ships, and none
+that has gone."""
 import html.parser
 import os
 import re
@@ -158,3 +160,42 @@ class Docs(Case):
                 self.assertNotRegex(body, r"\bChalk\b", "the assistant is called Nova now")
                 self.assertNotRegex(body, r"(?i)\bpremium\b(?!\s*(feel|-feeling))", "Slate has a premium feel; it isn't \"premium\" (that sounds like it costs money)")
                 self.assertNotIn("!", re.sub(r"<!--.*?-->|<!doctype[^>]*>", "", body), "Slate is calm: no exclamation marks")
+
+
+def shipped_files():
+    """What docs/ARCHITECTURE.md's list has to name: [(the name to look for, the file)]. Slate's
+    own QML (and the script beside it) by file name, helpers as bin/<name> and scripts as
+    scripts/<name>, the way the list writes them."""
+    out = []
+    for f in sorted(os.listdir(slate.SHELL)):
+        if f.endswith((".qml", ".js")):
+            out.append((f, "shell/" + f))
+    for folder in ("bin", "scripts"):
+        for f in sorted(os.listdir(os.path.join(slate.SHELL, folder))):
+            if os.path.isfile(os.path.join(slate.SHELL, folder, f)):
+                out.append((folder + "/" + f, f"shell/{folder}/{f}"))
+    return out
+
+
+class Architecture(Case):
+    """docs/ARCHITECTURE.md's list of what Slate is made of keeps up with the files: it once
+    left out a third of them (the menus, the Welcome window, most helpers), since nothing said
+    a new file needed a line there."""
+
+    def test_every_shipped_file_is_named(self):
+        doc = slate.read("docs", "ARCHITECTURE.md")
+        for name, where in shipped_files():
+            with self.subTest(where):
+                # The whole name: "Gloss.qml" isn't named by "IconGloss.qml", nor bin/slate by bin/slate-init
+                self.assertRegex(doc, r"(?<![\w-])" + re.escape(name) + r"(?![\w-])",
+                                 f"{where} isn't in docs/ARCHITECTURE.md: give it a line there (as {name}) saying what it's for")
+
+    def test_named_files_exist(self):
+        """And the other way: nothing the list names as a QML file, helper or script has gone."""
+        doc = slate.read("docs", "ARCHITECTURE.md")
+        have = {name for name, _ in shipped_files()}
+        named = set(re.findall(r"(?<![\w/.-])((?:bin|scripts)/[\w.-]*\w)", doc))
+        named |= set(re.findall(r"(?<![\w/.-])([A-Z]\w+\.qml)\b", doc))
+        for name in sorted(named - have - {"LoginWindow.qml"}):      # greeter/LoginWindow.qml: the login screen's own
+            with self.subTest(name):
+                self.fail(f"docs/ARCHITECTURE.md names {name}, which isn't in shell/ any more")
