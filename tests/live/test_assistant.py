@@ -237,6 +237,15 @@ class Assistant(LiveCase):
         self.ipc("config", "set", "themeMode", "light")
         self.assertEqual(self.setting("lightMode"), "false", "config set themeMode changed another setting")
 
+    def test_a_negative_number_is_a_value(self):
+        """A value that starts with a minus reaches Slate as the value (qs doesn't take it for an
+        option), through the server's own direct call to qs."""
+        self.keep_setting("mouseSpeed")
+        self.switch_on()
+        text, err = self.tool("settings_set", {"key": "mouseSpeed", "value": -0.5})
+        self.assertFalse(err, text)
+        self.assertEqual(float(self.setting("mouseSpeed")), -0.5)
+
     def test_the_server(self):
         """slate mcp against the real Slate: refused while off, then a change and a look."""
         text, err = self.tool("settings_set", {"key": "barClockSeconds", "value": True})

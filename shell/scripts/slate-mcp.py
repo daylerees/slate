@@ -80,6 +80,7 @@ RATE_CALLS, RATE_SECONDS = 60, 60
 RUN = os.environ.get("SLATE_ASSISTANT_RUN", "")
 # Questions: how long one waits for an answer, how many are put (in a run; in any ASK_WINDOW
 # seconds otherwise), and how long a "no" stands when there's no run to end it
+ASK_QUICK = 3                       # seconds a question is checked every 0.25 s, then every second
 ASK_TIMEOUT = float(os.environ.get("SLATE_MCP_ASK_TIMEOUT") or 45)
 ASK_MAX, ASK_WINDOW = 5, 600
 # What assistants did: one line per tool call, the last LOG_KEEP (Settings shows it; it holds
@@ -112,11 +113,20 @@ def log(*words):
 
 # ---- Talking to Slate ------------------------------------------------------------------
 
+def ipc_command(args):
+    """The command that makes one `slate ipc call …`. With Slate's own command, `qs` is
+    started directly (what bin/slate would do, without a shell and a second process in
+    between); a SLATE_COMMAND stand-in, as the tests use, is run as it is."""
+    words = [str(a) for a in args]
+    if os.environ.get("SLATE_COMMAND"):
+        return [SLATE, "ipc", "call", *words]
+    return ["qs", "-p", os.environ.get("SLATE_DIR") or SLATE_DIR, "ipc", "call", *words]
+
+
 def ipc(*args):
     """`slate ipc call …`: what Slate answered."""
     try:
-        p = subprocess.run([SLATE, "ipc", "call", *[str(a) for a in args]], capture_output=True,
-                           text=True, timeout=IPC_TIMEOUT)
+        p = subprocess.run(ipc_command(args), capture_output=True, text=True, timeout=IPC_TIMEOUT)
     except (OSError, subprocess.SubprocessError):
         raise NotRunning() from None
     if p.returncode != 0:
@@ -463,6 +473,12 @@ def asker():
     return "Your assistant (%s)" % WHO if WHO else "Your assistant"
 
 
+def ask_pause(waited):
+    """How long to wait before looking for an answer again, `waited` seconds into a question:
+    often to begin with, so a quick yes shows at once, then once a second."""
+    return 0.25 if waited < ASK_QUICK else 1.0
+
+
 def ask(title, body, button, danger=False, leave=None):
     """Put a question to the person in Slate's confirmation window, and come back only on a
     yes. The words are Slate's own, built by the tool from checked values, never the
@@ -490,7 +506,8 @@ def ask(title, body, button, danger=False, leave=None):
     if "did" not in CALL:
         doing(title.rstrip("?"))
     tell("asking")
-    until = time.monotonic() + ASK_TIMEOUT
+    asked_at = time.monotonic()
+    until = asked_at + ASK_TIMEOUT
     while True:
         try:
             a = ipc("assistant", "answer", qid)
@@ -507,7 +524,7 @@ def ask(title, body, button, danger=False, leave=None):
             except NotRunning:
                 pass
             raise NoAnswer("The person didn't answer, so this wasn't done. Don't ask again unless they bring it up.")
-        time.sleep(0.25)
+        time.sleep(ask_pause(time.monotonic() - asked_at))
 
 
 def changing(title, body, button="Change"):

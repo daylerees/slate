@@ -601,6 +601,47 @@ class Tools(Base):
         self.assertEqual(len(self.qs_calls()), 60, "Slate was still asked past the limit")
 
 
+class Starting(Base):
+    """How the server reaches Slate: qs started directly, and a patient look for an answer."""
+
+    def test_qs_is_started_directly(self):
+        """Without SLATE_COMMAND the server starts `qs -p <Slate's folder> ipc call …` itself:
+        bin/slate (a shell script that works out its own folder first) isn't run at all."""
+        self.s.add("dirname")          # what bin/slate runs first: a call to it means that script ran
+        self.s.env.pop("SLATE_COMMAND", None)
+        self.tool("settings_get", {"key": "glass"})
+        with open(os.path.join(self.s.dir, "qs.calls")) as f:
+            argv = [json.loads(l) for l in f if l.strip()]
+        self.assertTrue(argv)
+        for a in argv:
+            self.assertEqual(a[:1] + a[2:4], ["-p", "ipc", "call"], a)
+            self.assertEqual(a[1], os.path.dirname(os.path.dirname(SCRIPT)), "not Slate's own folder")
+        self.assertEqual(self.s.calls("dirname"), [], "bin/slate was run to reach qs")
+
+    def test_slate_command_is_still_used(self):
+        """A SLATE_COMMAND (the tests', or an install that wants its own) is run as it is."""
+        self.s.add("dirname")
+        self.tool("settings_get", {"key": "glass"}, env=dict(self.s.env, SLATE_COMMAND=SLATE))
+        self.assertTrue(self.qs_calls("config", "get"))
+        self.assertTrue(self.s.calls("dirname"), "bin/slate wasn't the one that ran")
+
+    def test_a_minus_value_goes_after_call(self):
+        """settings_set's value comes after `ipc call <target> <function> <key>`, as it is (a
+        negative number is a value there, not an option: tests/live/test_assistant.py checks
+        that against the real qs)."""
+        mcp = self.module()
+        self.assertEqual(mcp.ipc_command(["config", "set", "mouseSpeed", "-0.5"])[-5:],
+                         ["call", "config", "set", "mouseSpeed", "-0.5"])
+
+    def test_looking_for_an_answer_backs_off(self):
+        """Often for the first three seconds of a question (a quick yes shows at once), then
+        once a second, so a question left for 45 s isn't asked after 180 times."""
+        mcp = self.module()
+        self.assertEqual([mcp.ask_pause(w) for w in (0, 1.5, 2.9)], [0.25] * 3)
+        self.assertEqual([mcp.ask_pause(w) for w in (3.0, 10, 44)], [1.0] * 3)
+        self.assertLess(sum(1 / mcp.ask_pause(w) for w in range(45)), 80)
+
+
 class Gate(Base):
     """Slate decides what its tools allow: switched off, locked, and what needs a yes."""
 
