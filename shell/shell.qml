@@ -206,6 +206,8 @@ ShellRoot {
         function listScroll(y: real): void { popouts.scrollList(y); }
         // ...and one of them closed, as its card's close button does (0: the newest)
         function removeNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.remove(h.key); }
+        // ...or its main action run, as a click on its card does (0: the newest)
+        function activateNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.activate(h.key); }
         // Settings → Printers and Network: what their next looks find, as printers.py list and
         // netinfo.sh would print it ("": the real thing again), and a look now
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }

@@ -51,6 +51,11 @@ Scope {
     }
     property var live: ({})           // key -> Notification still open (for actions)
 
+    // The notification still open under this key, or null once its app (or we) closed it.
+    // Asked at the moment of closing, never kept: a pop-up's own copy goes stale when the app
+    // closes the notification first, and closing a destroyed one is an error in the log.
+    function liveFor(key) { return live[key] ?? null; }
+
     function markRead() { unread = 0; readUpTo = nextKey - 1; save(); }
     function remove(key) {
         const n = live[key];
@@ -79,7 +84,10 @@ Scope {
         if (n) {
             const act = n.actions.find(a => a.identifier === identifier);
             if (act) act.invoke();
-            n.dismiss();
+            // (invoking an action closes the notification itself unless the app marked it
+            // resident, so ask again before closing: closing it twice is an error in the log)
+            const still = liveFor(key);
+            if (still) still.dismiss();
         }
         dismissToast(key);
     }
@@ -368,7 +376,7 @@ Scope {
                     paused: running && toastHover.hovered
                     from: 1; to: 0
                     duration: toast.timeout
-                    onFinished: { if (toast.notif) toast.notif.expire(); notifs.dismissToast(toast.key); }
+                    onFinished: { const n = notifs.liveFor(toast.key); if (n) n.expire(); notifs.dismissToast(toast.key); }
                 }
                 HoverHandler { id: toastHover }
 
@@ -383,7 +391,7 @@ Scope {
                     bar: notifs.bar
                     critical: toast.critical
                     onActivated: notifs.activate(toast.key)
-                    onClosed: { if (toast.notif) toast.notif.dismiss(); notifs.dismissToast(toast.key); }
+                    onClosed: { const n = notifs.liveFor(toast.key); if (n) n.dismiss(); notifs.dismissToast(toast.key); }
                     onAction: id => notifs.invokeAction(toast.key, id)
                 }
             }

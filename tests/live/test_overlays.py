@@ -1,6 +1,7 @@
 """Full-screen and floating parts: the launcher, picker, overview, window switcher, lock
 screen preview, screensaver, power confirmation and password prompt."""
 import os
+import re
 
 from live import LiveCase
 
@@ -157,6 +158,61 @@ class Overlays(LiveCase):
         before = self.s.state()["notifications"]["history"]
         self.s.run(["notify-send", "-a", "Tests", "Hello", "From the test suite"])
         self.wait(lambda st: st["notifications"]["history"] == before + 1, "the notification")
+
+    def test_closing_a_notification_the_app_already_closed(self):
+        """An app closes its notification while its pop-up is still showing; when the pop-up's
+        time runs out Slate must not close it again. It did, and Quickshell logged "Cannot
+        close destroyed notification". Bug, 2026-11-14."""
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "earlier pop-ups to go")
+        self.s.new_log_errors()
+        dbus = ["gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications",
+                "--object-path", "/org/freedesktop/Notifications", "--method"]
+        _, out = self.s.run(dbus + ["org.freedesktop.Notifications.Notify", "Tests", "0", "",
+                                    "Closed early", "The app closes this itself", "[]", "{}", "3000"])
+        nid = re.search(r"uint32 (\d+)", out)
+        self.assertTrue(nid, f"no id from Notify: {out!r}")
+        self.wait(lambda st: st["notifications"]["toasts"] >= 1, "the pop-up")
+        self.s.run(dbus + ["org.freedesktop.Notifications.CloseNotification", nid.group(1)])
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "the pop-up's time to run out", timeout=12)
+        self.assertEqual(self.s.new_log_errors(), [])
+
+    def test_closing_a_notification_the_app_replaced(self):
+        """The same, for one the app replaced (same id) before the pop-up and the bell's list
+        closed it: Clear all and a pop-up's close button reach the old one. Bug, 2026-11-14."""
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "earlier pop-ups to go")
+        self.s.new_log_errors()
+        dbus = ["gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications",
+                "--object-path", "/org/freedesktop/Notifications", "--method",
+                "org.freedesktop.Notifications.Notify", "Tests"]
+        _, out = self.s.run(dbus + ["0", "", "First", "Replaced soon", "[]", "{}", "20000"])
+        nid = re.search(r"uint32 (\d+)", out).group(1)
+        self.wait(lambda st: st["notifications"]["toasts"] >= 1, "the pop-up")
+        self.s.run(dbus + [nid, "", "Second", "Replaced", "[]", "{}", "20000"])
+        self.s.settle(0.5)
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "the pop-ups to go", timeout=6)
+        self.s.settle(0.5)
+        self.assertEqual(self.s.new_log_errors(), [])
+
+    def test_running_a_notifications_action_closes_it_once(self):
+        """Clicking a notification runs its action, and the app's notification closes with it;
+        Slate must not close it a second time ("Cannot close destroyed notification").
+        Bug, 2026-11-14."""
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "earlier pop-ups to go")
+        self.s.new_log_errors()
+        before = self.s.state()["notifications"]["history"]
+        self.s.run(["gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications",
+                    "--object-path", "/org/freedesktop/Notifications", "--method",
+                    "org.freedesktop.Notifications.Notify", "Tests", "0", "", "With a button",
+                    "Click me", "['default', 'Open']", "{}", "20000"])
+        self.wait(lambda st: st["notifications"]["history"] == before + 1, "the notification")
+        self.ipc("test", "activateNotification", "0")
+        self.wait(lambda st: st["notifications"]["toasts"] == 0, "the pop-up to go", timeout=6)
+        self.s.settle(0.5)
+        self.assertEqual(self.s.new_log_errors(), [])
 
     def test_clear_all_takes_the_pop_ups_too(self):
         """Clear all also sends the pop-ups showing on their way. They stayed, each an empty
