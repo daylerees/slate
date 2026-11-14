@@ -263,7 +263,10 @@ PanelWindow {
                     required property var modelData
                     width: 18; height: width; radius: Config.corner(width / 2)
                     readonly property bool danger: modelData.act === "close"
-                    color: btnArea.containsMouse ? (danger ? Config.tint("#f28b8b") : Config.accent) : Config.tint("#3a424e")
+                    // The muted hover (the red one for close), laid over the resting grey, as
+                    // everywhere else: the active colour is for what stays selected
+                    readonly property color rest: Config.tint("#3a424e")
+                    color: btnArea.containsMouse ? Qt.tint(rest, danger ? Config.hoverDanger : Config.hover) : rest
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
@@ -271,7 +274,7 @@ PanelWindow {
                         // (it comes in with the colour behind it, not ahead of it)
                         opacity: btnArea.containsMouse ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
-                        color: Config.tint("#12151a")
+                        color: tb.textColor
                         font.family: tabler.name; font.pixelSize: 12
                     }
                     ClickArea {
