@@ -2,6 +2,8 @@
 Scanners, from CUPS's and SANE's own commands (stubbed with fixture output)."""
 import importlib.util
 import json
+import subprocess
+from unittest import mock
 
 import slate
 from slate import Case, run
@@ -278,3 +280,34 @@ class SafeName(Case):
     def test_at_most_127(self):
         self.assertEqual(self.safe_name("a" * 300), "a" * 127)
         self.assertEqual(len(self.safe_name("x " * 200)), 127)
+
+
+class ServiceState(Case):
+    """Whether CUPS is running, asked of CUPS itself where systemd has no answer."""
+
+    def state(self, lpstat):
+        mod = load_module()
+        asked = []
+
+        def fake_run(cmd, **kw):
+            asked.append((cmd, kw.get("timeout")))
+            return lpstat(cmd, kw)
+        with mock.patch.object(mod.shutil, "which", lambda name: "/usr/bin/lpstat" if name == "lpstat" else None), \
+                mock.patch.object(mod.subprocess, "run", fake_run):
+            return mod.service_state(), asked
+
+    def test_cups_never_answers(self):
+        """An lpstat that hangs is given up on (it used to be waited for with no limit, and
+        the page with it): CUPS counts as off."""
+        def hangs(cmd, kw):
+            self.assertTrue(kw.get("timeout"), "lpstat -r was run with no time limit")
+            raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+        state, asked = self.state(hangs)
+        self.assertEqual(state, "off")
+        self.assertEqual(asked, [(["lpstat", "-r"], 15)])
+
+    def test_answers(self):
+        for said, expected in (("scheduler is running\n", "on"), ("scheduler is not running\n", "off")):
+            with self.subTest(expected):
+                state, asked = self.state(lambda cmd, kw: subprocess.CompletedProcess(cmd, 0, said, ""))
+                self.assertEqual(state, expected)

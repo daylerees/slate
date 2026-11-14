@@ -79,9 +79,9 @@ def service_state():
         out = run(["systemctl", "is-active", "cups.service", "cups.socket"]).split()
         if "active" in out:
             return "on"
-    # No systemd answer: ask CUPS itself
-    r = subprocess.run(["lpstat", "-r"], capture_output=True, text=True, env=ENV)
-    return "on" if "is running" in r.stdout else "off"
+    # No systemd answer: ask CUPS itself (given up on after a while like every other command
+    # here: a CUPS that doesn't answer would have kept the page waiting for good)
+    return "on" if "is running" in run(["lpstat", "-r"]) else "off"
 
 
 def service_hint():
