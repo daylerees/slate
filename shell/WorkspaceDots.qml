@@ -12,6 +12,7 @@
 //   marker: the WorkspaceMarker, for a caller that moves it itself (the OSD's prime())
 
 import QtQuick
+import Quickshell
 
 Item {
     id: wd
@@ -103,7 +104,9 @@ Item {
     // ---- The dots ------------------------------------------------------------------------
     Repeater {
         id: dotsRep
-        model: wd.spaces
+        // (a dot for each workspace, kept while the workspace is (ScriptModel): handed the list
+        // itself, every dot was made again each time a workspace came or went)
+        model: ScriptModel { values: wd.spaces || [] }
         delegate: Item {
             id: cell
             required property var modelData

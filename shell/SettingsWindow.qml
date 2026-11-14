@@ -344,6 +344,14 @@ FloatingWindow {
     readonly property var currentKeys: pageKeys[section] || []
     // Settings on this page that differ from their defaults (re-read whenever settings change)
     property int changedHere: 0
+    // (the test hooks for the pages' lists. rowsMade: how many rows each list has made and how
+    // many times each page has looked, by name, so a test can tell a row that was kept from one
+    // made again. pretendPolls: what Printers' and Network's looks find, in place of what
+    // printers.py list and netinfo.sh say: { printers: "…", network: "…" })
+    property var rowsMade: ({})
+    function rowMade(list) { if (Config.testMode) rowsMade[list] = (rowsMade[list] || 0) + 1; }
+    property var pretendPolls: ({})
+    function pretendPoll(what, text) { const p = Object.assign({}, pretendPolls); if (text === "") delete p[what]; else p[what] = text; pretendPolls = p; }
     function countChanged() { changedHere = Config.changedCount(currentKeys); }
     onCurrentKeysChanged: countChanged()
     Connections { target: Config; function onSaved() { win.countChanged(); } }
@@ -6462,13 +6470,19 @@ FloatingWindow {
             // The connection's details (scripts/netinfo.sh: the cable's while on one, the Wi-Fi's
             // otherwise), refreshed while the page is open
             property var info: ({})
+            property string infoText: "\n"      // what netinfo.sh last said, as it said it
             Process {
                 id: netDetails
                 command: [Quickshell.shellPath("scripts/netinfo.sh")]
                 stdout: StdioCollector {
                     onStreamFinished: {
+                        // The same as last time, as it nearly always is: nothing to do
+                        const said = win.pretendPolls.network ?? text;
+                        win.rowMade("networkLooks");
+                        if (said === wifiPane.infoText) return;
+                        wifiPane.infoText = said;
                         const o = {};
-                        for (const line of text.split("\n")) {
+                        for (const line of said.split("\n")) {
                             const i = line.indexOf("=");
                             if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
                         }
@@ -6564,7 +6578,11 @@ FloatingWindow {
             Group {
                 visible: Networking.wifiEnabled && wifiPane.nets.length > 0
                 Repeater {
-                    model: wifiPane.nets
+                    // A row for each network, kept while the network's in range and moved when
+                    // the order changes (ScriptModel). Handed the list itself, every row was made
+                    // again each time any network's signal changed, which is every few seconds
+                    // while the page scans: a password half typed went with its row
+                    model: ScriptModel { values: wifiPane.nets }
                     delegate: Column {
                         id: netRow
                         required property var modelData
@@ -6679,17 +6697,19 @@ FloatingWindow {
                         : "Choose a network below, or plug in a cable"
                 }
                 Repeater {
-                    model: wifiPane.facts
+                    // (a row for each fact there is, by its name, so a row stays while its fact does)
+                    model: ScriptModel { values: wifiPane.facts.map(f => f.k) }
                     delegate: Column {
                         id: factRow
-                        required property var modelData
+                        required property var modelData      // its fact's name
+                        Component.onCompleted: win.rowMade("facts")
                         width: parent.width
                         Separator {}
                         SettingRow {
-                            label: factRow.modelData.k
+                            label: factRow.modelData
                             Text {
                                 textFormat: Text.PlainText        // never markup: the network's own details
-                                text: factRow.modelData.v
+                                text: (wifiPane.facts.find(f => f.k === factRow.modelData) ?? { v: "" }).v
                                 color: win.dim; font.family: win.font; font.pixelSize: 13
                             }
                         }
@@ -6989,7 +7009,8 @@ FloatingWindow {
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
                 Repeater {
-                    model: bluetoothPane.devices
+                    // (a row for each device, kept while it's there and moved when the order changes)
+                    model: ScriptModel { values: bluetoothPane.devices }
                     delegate: Item {
                         required property var modelData
                         required property int index
@@ -7060,6 +7081,13 @@ FloatingWindow {
             readonly property string script: Quickshell.shellPath("scripts/printers.py")
             // From printers.py list: { service: "on"|"off"|"missing", printers: [...], configTool }
             property var state: ({ service: "", printers: [], configTool: "" })
+            property string listText: ""           // what printers.py list last said, as it said it
+            // The same as last time, as it nearly always is: nothing to do
+            function take(text) {
+                win.rowMade("printerLooks");
+                if (text === listText) return;
+                try { state = JSON.parse(text); listText = text; } catch (e) {}
+            }
             property var found: []                 // printers that could be added (printers.py find)
             property bool searched: false          // Find printers has run at least once
             property var scan: ({ sane: true, scanners: [], app: null })
@@ -7079,7 +7107,7 @@ FloatingWindow {
                 id: listProc
                 running: true
                 command: [printersPane.script, "list"]
-                stdout: StdioCollector { onStreamFinished: { try { printersPane.state = JSON.parse(text); } catch (e) {} } }
+                stdout: StdioCollector { onStreamFinished: printersPane.take(win.pretendPolls.printers ?? text) }
             }
             // Printers change by themselves (a job finishes, one goes offline): look again now and
             // then while the page shows (it's let go when Settings closes)
@@ -7157,12 +7185,19 @@ FloatingWindow {
                     color: win.dim; font.family: win.font; font.pixelSize: 13
                 }
                 Repeater {
-                    model: printersPane.state.printers
+                    // A row for each printer, by its name, kept while the printer is: what it
+                    // shows is looked up as it changes (and kept as it goes, for the moment the
+                    // row outlives its printer)
+                    model: ScriptModel { values: printersPane.state.printers.map(p => p.name) }
                     delegate: Item {
                         id: printerRow
-                        required property var modelData
+                        required property var modelData      // its printer's name
                         required property int index
-                        readonly property var printer: modelData
+                        readonly property var now: printersPane.state.printers.find(p => p.name === modelData)
+                        property var kept: ({})
+                        onNowChanged: if (now) kept = now
+                        Component.onCompleted: { if (now) kept = now; win.rowMade("printers"); }
+                        readonly property var printer: now ?? kept
                         width: parent.width
                         height: 60
                         Separator { visible: printerRow.index > 0 }

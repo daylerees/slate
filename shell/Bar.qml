@@ -508,6 +508,9 @@ PanelWindow {
     }
     property alias menu: barMenu
     // The workspace dots, for the test hook: how many are in view, the first, and the one in use
+    // (and the tray: icons made and measured since Slate started, so a test can tell an icon
+    // that was kept from one made again)
+    property var trayTest: ({ made: 0, measured: 0 })
     readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
                                               firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width } : null
     // (and the bell's unread count beside it, "" for none)
@@ -1627,10 +1630,14 @@ PanelWindow {
                     y: bar.vert ? parent.height - height - 5 : (parent.height - height) / 2
                     spacing: 2
                     Repeater {
-                        model: trayCapsule.showIcons ? SystemTray.items.values : []
+                        // An icon for each app, kept while the app's in the tray (ScriptModel).
+                        // Handed the list itself, one app coming or going made every icon
+                        // again, each to be loaded and measured afresh (trayMeasure)
+                        model: ScriptModel { values: trayCapsule.showIcons ? SystemTray.items.values : [] }
                         delegate: Item {
                             id: trayItem
                             required property var modelData
+                            Component.onCompleted: if (Config.testMode) bar.trayTest.made++
                             opacity: trayCapsule.openness
                             width: bar.vert ? 22 : 26; height: bar.vert ? 26 : 22
                             required property int index
@@ -1702,6 +1709,7 @@ PanelWindow {
                                     }
                                     // (not yet on screen as the bar first builds: try again in a moment)
                                     if (!trayIcon.Window.window || !trayIcon.visible) { trayGrabLater.restart(); return; }
+                                    if (Config.testMode) bar.trayTest.measured++;
                                     trayIcon.grabToImage(r => {
                                         if (trayMeasure.src) trayMeasure.unloadImage(trayMeasure.src);
                                         trayMeasure.src = r.url;

@@ -199,6 +199,18 @@ ShellRoot {
         // chosen), a press on one by id (the panel open), and which this computer can't use
         function controlSwitches(ids: string): void { Config.s.controlSwitches = ids === "" ? [] : ids.split(","); }
         function pressSwitch(id: string): void { popouts.pressSwitchAsked(id); }
+        // The Wi-Fi panel with pretend networks, {"Home": 0.9, …} (their signals changed when
+        // they're there already; "": none again), and one's password field opened, as a click
+        // on its row does
+        function wifi(nets: string): void { popouts.pretendWifi(nets); }
+        function wifiPassword(name: string): void { popouts.askForPassword(name); }
+        // The notifications panel's list scrolled to a place (px from its top)
+        function listScroll(y: real): void { popouts.scrollList(y); }
+        // ...and one of them closed, as its card's close button does (0: the newest)
+        function removeNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.remove(h.key); }
+        // Settings → Printers and Network: what their next looks find, as printers.py list and
+        // netinfo.sh would print it ("": the real thing again), and a look now
+        function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Less room for the dock's things than its edge has (px; 0: the whole edge), to fill it
         // with a few windows rather than dozens
@@ -515,6 +527,9 @@ ShellRoot {
                     tilt: win.slots.map(x => Math.round(win.tiltAt(x.at))), scale: win.slots.map(x => Math.round(win.scaleAt(x.at) * 100) / 100)
                 },
                 tray: SystemTray.items.values.map(i => i.id),
+                // The lists that keep their rows: rows made in each so far, the tray's icons made and
+                // measured, and the open bar panel's list (Popouts.listState)
+                lists: { tray: topBar.trayTest, panel: popouts.listState(), settings: settings ? settings.rowsMade : {} },
                 gameMode: Config.gameMode,
                 titleBar: Config.titleBarOn, titleBarAway: Config.titleBarAway,
                 titleBarLooks: Config.titleBarLooks, titleBarSeen: Config.titleBarSeen,

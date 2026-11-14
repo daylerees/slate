@@ -27,6 +27,49 @@ PanelWindow {
     signal pressSwitchAsked(string id)
     // (the test hook: Spaces → New Space, as clicking it does; the Spaces panel has to be open)
     signal newSpaceAsked()
+    // (the test hooks for the panels' lists. rowsMade: how many rows each list has made, by
+    // name, so a test can tell a row that was kept from one made again. pretendNets: networks
+    // for the Wi-Fi panel to list where there's no Wi-Fi, and askForPassword opens one's
+    // password field, as a click on it does. listState: the open panel's password field
+    // and how far its list has scrolled)
+    property var rowsMade: ({})
+    function rowMade(list) { if (Config.testMode) rowsMade[list] = (rowsMade[list] || 0) + 1; }
+    property var pretendNets: null
+    signal askForPassword(string name)
+    Component {
+        id: pretendNet
+        QtObject {
+            property string name
+            property real signalStrength
+            property bool connected: false
+            property bool known: false
+            property bool stateChanging: false
+            property int security: -1
+            function connect() {}
+            function connectWithPsk(psk) {}
+        }
+    }
+    // names and signals (0 … 1) as JSON, {"Home": 0.9, …}: made the first time, then each
+    // network's signal changed as it would be by a scan ("": back to none)
+    function pretendWifi(json) {
+        if (json === "") { pretendNets = null; return; }
+        const want = JSON.parse(json), nets = (pretendNets || []).slice();
+        let added = pretendNets === null;
+        for (const name in want) {
+            const old = nets.find(n => n.name === name);
+            if (old) old.signalStrength = want[name];
+            else { nets.push(pretendNet.createObject(pop, { name: name, signalStrength: want[name] })); added = true; }
+        }
+        if (added) pretendNets = nets;
+    }
+    function scrollList(y) { const list = content.item ? content.item.testList : null; if (list) list.contentY = list.originY + y; }
+    function listState() {
+        const panel = content.item, list = panel && panel.testList ? panel.testList : null;
+        const f = panel && panel.testField ? panel.testField() : null;
+        return { rows: rowsMade, typing: !!f && f.focus, typed: f ? f.text : "", cursor: f ? f.cursorPosition : -1,
+                 order: panel && panel.testOrder ? panel.testOrder() : [],
+                 scroll: list ? Math.round(list.contentY - list.originY) : 0, count: list ? list.count : 0 };
+    }
     property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
     property var dock: null              // the dock's window (shell.qml), left usable while a panel's open
 
@@ -826,7 +869,9 @@ PanelWindow {
                 width: parent.width
                 spacing: 6
                 Repeater {
-                    model: vol.sinks
+                    // (a row for each device, kept while it's there: handed the list itself, every
+                    // row was made again whenever anything started or stopped playing)
+                    model: ScriptModel { values: vol.sinks }
                     delegate: RowButton {
                         required property var modelData
                         width: parent.width
@@ -863,14 +908,27 @@ PanelWindow {
             width: 320
             spacing: 10
             readonly property var dev: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
+            // (tests: pretend ones, where there's no Wi-Fi)
+            readonly property var found: pop.pretendNets ?? (dev ? dev.networks.values : [])
+            readonly property bool wifiOn: Networking.wifiEnabled || pop.pretendNets !== null
             readonly property var nets: {
-                if (!dev) return [];
                 const seen = new Set();
-                return dev.networks.values
+                return found
                     .filter(n => n.name && !seen.has(n.name) && seen.add(n.name))
                     .sort((a, b) => (b.connected - a.connected) || (b.signalStrength - a.signalStrength));
             }
             property string askingFor: ""      // network waiting for a password
+            Connections { target: pop; function onAskForPassword(name) { wifiView.askingFor = name; } }
+            readonly property var testList: netList
+            function testOrder() { return nets.map(n => n.name); }
+            // (the password field that's open, if one is)
+            function testField() {
+                for (let i = 0; i < netList.count; i++) {
+                    const row = netList.itemAtIndex(i);
+                    if (row && row.modelData.name === askingFor) return row.field;
+                }
+                return null;
+            }
             // On a cable, connected: the panel says so first, and its details are the cable's
             readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
             // Scan while the panel is open
@@ -930,7 +988,8 @@ PanelWindow {
                             const i = line.indexOf("=");
                             if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
                         }
-                        wifiView.info = o;
+                        // (the same as last time, as it nearly always is: nothing to do)
+                        if (JSON.stringify(o) !== JSON.stringify(wifiView.info)) wifiView.info = o;
                     }
                 }
             }
@@ -945,14 +1004,14 @@ PanelWindow {
             }
 
             Label {
-                visible: !!wifiView.dev && (!Networking.wifiEnabled || wifiView.nets.length === 0)
+                visible: !!wifiView.dev && (!wifiView.wifiOn || wifiView.nets.length === 0)
                 text: Networking.wifiEnabled ? "Searching…" : "Wi-Fi is off"
                 color: pop.dim
             }
 
             ListView {
                 id: netList
-                visible: Networking.wifiEnabled && wifiView.nets.length > 0
+                visible: wifiView.wifiOn && wifiView.nets.length > 0
                 width: parent.width
                 // At most 320, less on a short screen (with room for the rest of the panel: its
                 // title, the connection's details), so the panel never runs off the screen
@@ -960,11 +1019,17 @@ PanelWindow {
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
-                model: wifiView.nets
+                // A row for each network, kept while the network's in range and moved when the
+                // order changes (ScriptModel). Handed the list itself, every row was made again
+                // each time any network's signal changed, which is every few seconds while the
+                // panel scans: a password half typed went with its row
+                model: ScriptModel { values: wifiView.nets }
                 SmoothWheel { flick: netList }
                 delegate: Column {
                     id: netRow
                     required property var modelData
+                    Component.onCompleted: pop.rowMade("wifi")
+                    readonly property alias field: psk
                     readonly property bool secure: modelData.security !== undefined && modelData.security !== WifiSecurityType.Open
                     width: netList.width
                     spacing: 4
@@ -1028,6 +1093,9 @@ PanelWindow {
                             font.pixelSize: 13
                             focus: parent.visible
                             onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
+                            // (its row moved as the networks' order changed: the list lets go of
+                            // the keyboard as it moves a row, so take it back and carry on typing)
+                            onFocusChanged: if (!focus && visible) forceActiveFocus()
                             onAccepted: { netRow.modelData.connectWithPsk(text); wifiView.askingFor = ""; }
                             Keys.onEscapePressed: wifiView.askingFor = ""
                         }
@@ -1082,8 +1150,10 @@ PanelWindow {
                 width: parent.width
                 columns: 2
                 spacing: 6
-                Repeater {
-                    model: {
+                // (a tile for each detail there is, by its name, so a tile stays while its detail
+                // does: "Copied" isn't lost when another detail changes)
+                id: detailGrid
+                readonly property var details: {
                         const ip = (wifiView.info.ip || "").split("/")[0];
                         const t = [
                             { k: "Band", v: [wifiView.band(wifiView.info.freq), wifiView.info.channel ? "ch " + wifiView.info.channel : ""].filter(x => x).join(" · "), copy: false },
@@ -1093,32 +1163,35 @@ PanelWindow {
                         ];
                         if (wifiView.info.dns && wifiView.info.dns !== wifiView.info.gateway) t.push({ k: "DNS", v: wifiView.info.dns, copy: true });
                         return t.filter(x => x.v);
-                    }
+                }
+                Repeater {
+                    model: ScriptModel { values: detailGrid.details.map(x => x.k) }
                     delegate: Rectangle {
                         id: tile
-                        required property var modelData
+                        required property var modelData     // its detail's name
+                        readonly property var detail: detailGrid.details.find(x => x.k === modelData) ?? ({ k: modelData, v: "", copy: false })
                         width: (wifiView.width - 6) / 2
                         height: 46
                         radius: Config.corner(9)
                         color: "transparent"
-                        HoverFill { base: pop.card; hovered: tileHover.hovered && modelData.copy; radius: parent.radius }
+                        HoverFill { base: pop.card; hovered: tileHover.hovered && tile.detail.copy; radius: parent.radius }
                         property bool copied: false
                         Timer { id: copiedTimer; interval: 1200; onTriggered: tile.copied = false }
                         Column {
                             anchors { left: parent.left; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             spacing: 2
-                            Label { text: tile.modelData.k; color: pop.dim; font.pixelSize: 11 }
+                            Label { text: tile.detail.k; color: pop.dim; font.pixelSize: 11 }
                             Label {
                                 width: parent.width
-                                text: tile.copied ? "Copied" : tile.modelData.v
+                                text: tile.copied ? "Copied" : tile.detail.v
                                 color: tile.copied ? pop.accent : pop.text
                                 font.pixelSize: 13
                             }
                         }
                         HoverHandler { id: tileHover }
                         ClickTap {
-                            enabled: tile.modelData.copy
-                            onTapped: { Quickshell.execDetached(["wl-copy", "--", tile.modelData.v]); tile.copied = true; copiedTimer.restart(); }
+                            enabled: tile.detail.copy
+                            onTapped: { Quickshell.execDetached(["wl-copy", "--", tile.detail.v]); tile.copied = true; copiedTimer.restart(); }
                         }
                     }
                 }
@@ -2110,7 +2183,8 @@ PanelWindow {
                 width: parent.width
                 spacing: 6
                 Repeater {
-                    model: btView.devices
+                    // (a row for each device, kept while it's there and moved when the order changes)
+                    model: ScriptModel { values: btView.devices }
                     delegate: RowButton {
                         id: devRow
                         required property var modelData
@@ -2966,58 +3040,64 @@ PanelWindow {
                         function onPressSwitchAsked(id) {
                             for (let i = 0; i < ccTileRep.count; i++) {
                                 const t = ccTileRep.itemAt(i);
-                                if (t && t.modelData.id === id) { t.clicked(); return; }
+                                if (t && t.modelData === id) { t.clicked(); return; }
                             }
                         }
                     }
                     Repeater {
                         id: ccTileRep
-                        model: ccTiles.toggles
+                        // A tile for each switch you chose, by its id, which only changes when
+                        // the choice does; what it shows is looked up as it changes (tile). Handed
+                        // the switches as they stand, every tile was made again when any one of
+                        // them was switched, so none ever faded from one colour to the other
+                        model: ScriptModel { values: ccTiles.toggles.map(t => t.id) }
                         delegate: RowButton {
                             id: controlTile
-                            required property var modelData
+                            required property var modelData      // its switch's id
+                            readonly property var tile: ccTiles.every[modelData]
+                            Component.onCompleted: pop.rowMade("tiles")
                             required property int index
                             readonly property rect at: ccTiles.rects[index] ?? Qt.rect(0, 0, 0, 0)
                             readonly property color fg: selected ? pop.accentText : pop.text
                             x: at.x; y: at.y; width: at.width; height: at.height
                             radius: Config.corner(12)
-                            selected: modelData.on
+                            selected: tile.on
                             // On ones light up too when pointed at (a lighter accent), as they can be turned off
                             color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent) : "transparent"
                             HoverFill { base: pop.card; hovered: tileHover.hovered; gone: controlTile.selected; radius: controlTile.radius }
                             HoverHandler { id: tileHover }
                             onClicked: {
-                                switch (modelData.id) {
+                                switch (modelData) {
                                 case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;
                                 case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
                                 case "caffeine": Config.caffeine = !Config.caffeine; break;
                                 case "night": Config.s.nightLight = !Config.s.nightLight; break;
                                 case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
-                                case "perf": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
+                                case "perf": PowerProfiles.profile = tile.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
                                 case "airplane": Config.s.airplaneMode = !Config.s.airplaneMode; break;
                                 case "gamemode": Config.setGameMode(!Config.s.gameMode); break;
-                                case "light": Config.setThemeMode(modelData.on ? "dark" : "light"); break;
-                                case "mute": if (ccTiles.ccSink && ccTiles.ccSink.audio) ccTiles.ccSink.audio.muted = !modelData.on; break;
-                                case "micmute": if (ccTiles.ccSource && ccTiles.ccSource.audio) ccTiles.ccSource.audio.muted = !modelData.on; break;
-                                case "saver": PowerProfiles.profile = modelData.on ? PowerProfile.Balanced : PowerProfile.PowerSaver; break;
+                                case "light": Config.setThemeMode(tile.on ? "dark" : "light"); break;
+                                case "mute": if (ccTiles.ccSink && ccTiles.ccSink.audio) ccTiles.ccSink.audio.muted = !tile.on; break;
+                                case "micmute": if (ccTiles.ccSource && ccTiles.ccSource.audio) ccTiles.ccSource.audio.muted = !tile.on; break;
+                                case "saver": PowerProfiles.profile = tile.on ? PowerProfile.Balanced : PowerProfile.PowerSaver; break;
                                 case "glass": Config.s.glass = !Config.s.glass; break;
                                 case "chargelimit":
                                     // (charging to full is asked about first, in the usual window: the panel makes way for it)
-                                    if (modelData.on) pop.close();
-                                    Config.askChargeLimit(!modelData.on, pop.powerConfirm);
+                                    if (tile.on) pop.close();
+                                    Config.askChargeLimit(!tile.on, pop.powerConfirm);
                                     break;
                                 case "dockhide": Config.s.dockAutoHide = !Config.s.dockAutoHide; break;
                                 case "barhide": Config.s.barAutoHide = !Config.s.barAutoHide; break;
                                 // (this workspace: floating, or back to how it was. Where floating's the
                                 // default, off means tiled)
                                 case "floating":
-                                    Config.setWorkspaceMode(Config.focusedWorkspaceId, modelData.on ? (Config.windowMode === "floating" ? "tiling" : "") : "floating");
+                                    Config.setWorkspaceMode(Config.focusedWorkspaceId, tile.on ? (Config.windowMode === "floating" ? "tiling" : "") : "floating");
                                     break;
                                 case "clipboard": Config.s.clipboardHistory = !Config.s.clipboardHistory; break;
                                 // (the first time, Slate asks before turning it on: the panel makes way)
                                 case "private":
-                                    if (!modelData.on) pop.close();
-                                    Config.setPrivateMode(!modelData.on);
+                                    if (!tile.on) pop.close();
+                                    Config.setPrivateMode(!tile.on);
                                     break;
                                 }
                             }
@@ -3027,14 +3107,14 @@ PanelWindow {
                                 spacing: 3
                                 Icon {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    code: controlTile.modelData.code
+                                    code: controlTile.tile.code
                                     color: controlTile.fg
                                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                                 }
                                 Label {
                                     width: parent.width
                                     horizontalAlignment: Text.AlignHCenter
-                                    text: controlTile.modelData.label
+                                    text: controlTile.tile.label
                                     font.pixelSize: 11
                                     color: controlTile.fg
                                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
@@ -3055,6 +3135,9 @@ PanelWindow {
             width: 380
             spacing: 10
             readonly property var list: pop.notifs ? pop.notifs.history : []
+            // (each by its key, for its row to find)
+            readonly property var byKey: { const m = {}; for (const h of list) m[h.key] = h; return m; }
+            readonly property var testList: nList
 
             PanelTitle {
                 text: "Notifications"
@@ -3098,19 +3181,29 @@ PanelWindow {
                 clip: true
                 spacing: 6
                 boundsBehavior: Flickable.StopAtBounds
-                model: notifView.list
+                // A row for each notification, by its key, kept while the notification is: one
+                // coming or going leaves the others as they are, where you'd scrolled to, and
+                // the row that goes fades while the rest close up (remove and displaced, below).
+                // Handed the history itself, a new list each time, every row was made again
+                model: ScriptModel { values: notifView.list.map(h => h.key) }
                 readonly property bool overflowing: contentHeight > height
                 SmoothWheel { flick: nList }
                 delegate: NotificationCard {
-                    required property var modelData
+                    required property var modelData      // its notification's key
+                    // What it shows: its notification, and still that as it fades away, once the
+                    // notification has gone from the history
+                    readonly property var now: notifView.byKey[modelData]
+                    property var kept: null
+                    onNowChanged: if (now) kept = now
+                    Component.onCompleted: { kept = now ?? null; pop.rowMade("notifications"); }
                     width: nList.width - (nList.overflowing ? 18 : 0)   // room for the scrollbar and a gap before it
                     bar: pop.bar
                     inPanel: true
-                    entry: modelData
-                    notif: pop.notifs ? (pop.notifs.live[modelData.key] ?? null) : null
-                    onActivated: { pop.notifs.activate(modelData.key); pop.close(); }
-                    onClosed: pop.notifs.remove(modelData.key)
-                    onAction: id => { pop.notifs.invokeAction(modelData.key, id); pop.close(); }
+                    entry: now ?? kept
+                    notif: pop.notifs ? (pop.notifs.live[modelData] ?? null) : null
+                    onActivated: { pop.notifs.activate(modelData); pop.close(); }
+                    onClosed: pop.notifs.remove(modelData)
+                    onAction: id => { pop.notifs.invokeAction(modelData, id); pop.close(); }
                 }
                 remove: Transition { NumberAnimation { property: "opacity"; to: 0; duration: Config.ms(150) } }
                 displaced: Transition { NumberAnimation { property: "y"; duration: Config.ms(180); easing.type: Easing.OutCubic } }
