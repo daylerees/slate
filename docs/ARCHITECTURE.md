@@ -10,6 +10,7 @@ the lock screen (`WlSessionLock`).
 ```
 shell.qml               root: creates everything below, plus the dock itself
 ├─ Bar.qml              top bar (layer "slate-bar")
+├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
 ├─ PowerConfirm.qml     centred confirmation ("slate-confirm"): log out / restart / shut down,
 │                       and confirmWith() for anything else (deleting a space)

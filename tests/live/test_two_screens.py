@@ -313,6 +313,22 @@ class TwoScreensAt125(TwoScreensCase):
                 self.open_panel(panel, SECOND)
                 self.close_panel()
 
+    def test_bar_label_under_the_main_bar(self):
+        """The label off the bar (BarLabel.qml, a window of its own) on the main bar's screen,
+        TEST2: just under the bar in Hyprland's pixels too, and on screen in Slate's units."""
+        self.addCleanup(lambda: self.ipc("test", "barHover", ""))
+        self.ipc("test", "barHover", "clock")
+        st = self.wait(lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == "Clock"
+                       and st["bar"]["label"]["opacity"] > 0.99, "the clock's label")
+        lab, band = st["bar"]["label"], st["bar"]["band"]
+        width = SIZES[SECOND][0] / self.scale
+        self.assertTrue(0 <= lab["x"] and lab["x"] + lab["w"] <= width, f"{lab} off a {width} wide screen")
+        self.assertGreaterEqual(lab["y"], band["y"] + band["h"])
+        layer = self.wait_layer("slate-bar-label", SECOND)
+        self.assertInside(layer, SECOND)
+        self.assertEqual((layer[1], layer[3]), (AT[SECOND][0], SIZES[SECOND][0]), "not along the whole bar")
+        self.assertAlmostEqual(layer[2], band["h"] * self.scale, delta=1, msg="not against the bar's edge")
+
     def test_notifications_on_the_main_display(self):
         self.addCleanup(lambda: self.ipc("notifications", "clear"))
         self.s.run(["notify-send", "-a", "Tests", "-t", "20000", "Hello", "On the main display"])

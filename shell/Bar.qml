@@ -165,11 +165,51 @@ PanelWindow {
         }
         const dot = name === "workspaces" ? wsRow.dotAt(x, y) : -1;
         if (what === "click" && name !== "") {
+            barLabel.dismiss();             // (as a real press does: Reach)
             if (name === "workspaces") { if (dot >= 0) wsRow.spaces[dot].activate(); }
             else left.things[name].clicked();
         }
         return { thing: name, dot: dot, lit: name === "workspaces" ? dot >= 0 && wsRow.litDot === dot : name !== "" && left.things[name].lit };
     }
+    // ---- The label off the bar saying what the pointer's over (BarLabel.qml) ------------------
+    // Every Reach under the pointer, and of those with something to say, the innermost (a
+    // tray icon's, not the tray's; a dot's, not the dots')
+    property var overReaches: []
+    function reachHovered(r, on) {
+        const has = overReaches.indexOf(r) >= 0;
+        if (on && !has) overReaches = overReaches.concat([r]);
+        else if (!on && has) overReaches = overReaches.filter(x => x !== r);
+    }
+    readonly property var tipSource: {
+        let best = null, depth = -1;
+        for (const r of overReaches) {
+            if (!r || !r.visible || r.tip === "") continue;
+            let d = 0;
+            for (let p = r.parent; p; p = p.parent) d++;
+            if (d > depth) { best = r; depth = d; }
+        }
+        return best;
+    }
+    // What a thing on the bar is called, as Edit layout calls it ("Wi-Fi", "Clock"). The
+    // window's icon: its app's name. The title says itself, and the tray's icons and the dots
+    // each have their own. A container's collapse button: what's behind it
+    function thingTip(seg) {
+        if (seg.isToggle) {
+            const names = seg.shell ? seg.shell.cells.filter(c => c.wanted && !c.overflowed && !c.carried)
+                .map(c => { const it = Config.barItem(c.name); return it ? it.label : ""; }).filter(n => n !== "") : [];
+            return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+        }
+        const n = seg.name;
+        if (n === "" || n === "windowtitle" || n === "tray") return "";
+        if (n === "windowicon") { const e = appTile.entry; if (e && e.name) return e.name; }
+        const it = Config.barItem(n);
+        return it ? it.label : "";
+    }
+    // (for the label: a panel or menu from the bar is open)
+    readonly property bool popoutsOpen: !!popouts && popouts.engaged
+    readonly property bool menuOpen: trayMenuWin.visible || slateMenu.visible || barMenu.visible
+    BarLabel { id: barLabel; bar: bar }
+    property alias label: barLabel
     function outermost(item) {
         const box = item ? item.shell : null;
         // (tried shorter: the line's ends are off in the middle of the edge, nowhere near its corners)
@@ -1458,6 +1498,10 @@ PanelWindow {
                     readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
                     readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
                     length: (bar.vert ? wsRow.height : wsRow.width) + 16
+                    // The label says which workspace the dot under the pointer is, as the
+                    // overview calls it, under that dot
+                    tip: wsRow.litDot >= 0 && wsRow.spaces[wsRow.litDot] ? Config.workspaceLabel(wsRow.spaces[wsRow.litDot].id) : ""
+                    tipAt: wsRow.litDot >= 0 ? wsRow.dotItem(wsRow.litDot) : null
                 // The dots and the accent marker, six at most: with more workspaces, the row
                 // scrolls to keep yours in view, and shrinks away at an end with more beyond
                 // (WorkspaceDots)
@@ -1664,6 +1708,7 @@ PanelWindow {
                             Reach {
                                 id: trayReach
                                 extra: (bar.capsuleHeight - (bar.vert ? trayItem.width : trayItem.height)) / 2
+                                tip: Config.trayName(trayItem.modelData)
                                 ClickArea {
                                     anchors.fill: parent
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
@@ -1699,6 +1744,7 @@ PanelWindow {
                         Reach {
                             id: toggleReach
                             extra: (bar.capsuleHeight - 22) / 2
+                            tip: Config.barItem("tray").label
                             ClickTap { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
                         }
                     }
@@ -2000,6 +2046,9 @@ PanelWindow {
         // Icon and value across a top/bottom bar; just the icon, stacked, on a side bar. pad: the
         // space beside the icon, both sides together
         property real pad: 20
+        // What the label off the bar says for it (BarLabel.qml), and what that's centred on
+        property string tip: bar.thingTip(seg)
+        property Item tipAt: null
         width: bar.vert ? bar.capsuleHeight : length >= 0 ? length : segRow.width + pad
         height: bar.vert ? (length >= 0 ? length : segRow.height + 14) : bar.capsuleHeight
 
@@ -2007,6 +2056,8 @@ PanelWindow {
         // whatever's put inside it, the dots or the tray's icons, has the pointer before it)
         Reach {
             id: segReach
+            tip: seg.tip
+            tipAt: seg.tipAt
             ClickTap { enabled: seg.clickable; onTapped: seg.clicked() }
             ClickTap { enabled: seg.clickable; acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
             WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
@@ -2078,6 +2129,10 @@ PanelWindow {
     component Reach: Item {
         id: rc
         property real extra: 0
+        // What the label just off the bar says while the pointer's here (BarLabel.qml; "": none,
+        // or whatever this sits in has its say), and what it's centred on (null: this)
+        property string tip: ""
+        property Item tipAt: null
         readonly property real out: Config.barArranging ? 0 : bar.reachOut + extra
         x: bar.vert ? -out : 0
         y: bar.vert ? 0 : -out
@@ -2086,7 +2141,16 @@ PanelWindow {
         HoverHandler { id: rcHover }
         // (or the tests' pretend pointer: bar.testPointer)
         readonly property bool hovered: rcHover.hovered
-            || (bar.testPointer.x >= 0 && rc.contains(rc.mapFromItem(null, bar.testPointer.x, bar.testPointer.y)))
+            || (bar.testPointer.x >= 0 && rc.visible && rc.contains(rc.mapFromItem(null, bar.testPointer.x, bar.testPointer.y)))
+        onHoveredChanged: bar.reachHovered(rc, hovered)
+        Component.onDestruction: bar.reachHovered(rc, false)
+        // A press here, any button, puts the label away at once. (On top of what's in it, and
+        // only looking: whatever's here still gets the press)
+        Item {
+            anchors.fill: parent
+            z: 100
+            PointHandler { acceptedButtons: Qt.AllButtons; onActiveChanged: if (active) barLabel.dismiss() }
+        }
     }
 
     // A container on the bar: the rounded shape, holding one thing or several in a row with a

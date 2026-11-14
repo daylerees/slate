@@ -205,6 +205,29 @@ Singleton {
         { id: "more", label: "More", icon: 0xEA95, key: "" }
     ]
     function barItem(id) { return barItems.find(i => i.id === id) || null; }
+    // What a tray icon is called (the label off the bar says it): the app's title for it, or its
+    // tooltip's title, or else its id; tidied, so a raw id reads as a name
+    function trayName(item) {
+        if (!item) return "";
+        for (const n of [item.title, item.tooltipTitle, item.id]) { const t = trayTidy(n); if (t !== "") return t; }
+        return "";
+    }
+    // Words are left as they are ("Fake tray app"). One with no spaces is an id: its last part
+    // if it's dotted (org.kde.kdeconnect), split at _, - and camelCase, with numbers and words
+    // that only say it's a tray icon (status, icon, tray, indicator…) left out, and a capital
+    // first: "chrome_status_icon_1" → "Chrome", "nm-applet" → "Nm", "steam" → "Steam". Nothing left
+    // ("StatusNotifierItem-1234-1", Qt's own made-up id): "", and no label
+    function trayTidy(raw) {
+        const t = String(raw || "").trim();
+        if (t === "" || /\s/.test(t)) return t;
+        const word = t.split(".").filter(p => p !== "").pop() || t;
+        const parts = word.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s_\-]+/).filter(p => p !== "" && !/^\d+$/.test(p));
+        const filler = ["status", "icon", "tray", "indicator", "notifier", "notification", "item", "sni", "applet", "appindicator", "systray"];
+        const kept = parts.filter(p => filler.indexOf(p.toLowerCase()) < 0);
+        if (kept.length === 0) return "";
+        const out = kept.join(" ");
+        return out.charAt(0).toUpperCase() + out.slice(1);
+    }
     // A saved name for something on the bar, as it's called now: Nova's button was "chalk"
     // (its old name) in arrangements and orders saved before it was renamed
     function barId(id) { return id === "chalk" ? "nova" : String(id); }
@@ -950,7 +973,7 @@ Singleton {
     // dragged): waiting with the rest left the blur a step behind the surface, gone or wrong
     // for a moment
     readonly property string glassRules: ""
-        + glassRule("SLATE_GLASS", "^slate-(bar-editor|dock-menu|dock-previews|picker|switcher|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
+        + glassRule("SLATE_GLASS", "^slate-(bar-editor|bar-label|dock-menu|dock-previews|picker|switcher|tray-menu|desktop-menu|confirm|polkit|osd|welcome)$", glassCut)
         + glassRule("SLATE_GLASS_DOCK", "^slate-dock$", dockGlassCut, s.dockBlur)
         + glassRule("SLATE_GLASS_BAR", "^slate-bar$", barGlassCut, s.barBlur && !barArranging)
         // (the panels that come out of the bar: an opacity and a blur of their own too)
@@ -1710,7 +1733,7 @@ Singleton {
     function glassRule(v, match, cut, wanted) {
         // (the number after the cut: put up by one whenever a rule here changes what it matches,
         // so a Hyprland that's still running remakes it)
-        const c = cut.toFixed(3), made = `"${c} 7"`;
+        const c = cut.toFixed(3), made = `"${c} 8"`;
         return `if ${v} and ${v}_ALPHA ~= ${made} then ${v}:set_enabled(false); ${v} = nil end; `
             + `if not ${v} then ${v}_ALPHA = ${made}; ${v} = hl.layer_rule({ name = "${v.toLowerCase().replace(/_/g, "-")}-${Math.round(cut * 1000)}", `
             + `match = { namespace = "${match}" }, blur = true, ignore_alpha = ${c} }) end; ${v}:set_enabled(${glass && wanted !== false ? "true" : "false"}); `;

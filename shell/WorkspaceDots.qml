@@ -45,6 +45,8 @@ Item {
         }
         return -1;
     }
+    // The dot itself (for something to point at it: the menu bar's label)
+    function dotItem(i) { return i >= 0 && i < dotsRep.count ? dotsRep.itemAt(i) : null; }
     readonly property int litDot: {
         for (let i = 0; i < dotsRep.count; i++) { const c = dotsRep.itemAt(i); if (c && c.lit) return i; }
         return -1;
