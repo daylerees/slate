@@ -488,3 +488,43 @@ class Shaders(Case):
                 qsb = frag + ".qsb"
                 self.assertTrue(os.path.exists(slate.path(qsb)), f"{qsb} is missing (build it with qsb)")
                 self.assertGreaterEqual(changed(qsb), changed(frag), f"{frag} changed after {os.path.basename(qsb)} was built")
+
+
+class NovaAnswers(Case):
+    """Nova's answers never reach a text item that reads markup of its own accord
+    (docs/ASSISTANT.md, "How answers look"): Qt's Markdown, styled and rich text all load the
+    pictures they name, from the network or disk (checked on Qt 6.12), and an answer is
+    written by a model that may have been misled. The runner reads the answer
+    (scripts/safe_markdown.py); the window's one rich text item is given only what rich()
+    writes, around words it has escaped."""
+    def src(self):
+        return slate.read("shell", "Assistant.qml")
+
+    def test_no_markup_of_the_models(self):
+        src = self.src()
+        self.assertNotRegex(src, r"\b(Text|TextEdit)\.(MarkdownText|StyledText|AutoText)\b")
+        self.assertNotRegex(src, r"\bText\.RichText\b", "a Text item with rich text (only AnswerWords may have it)")
+        self.assertEqual(len(re.findall(r"textFormat:\s*TextEdit\.RichText", src)), 1, "rich text other than AnswerWords")
+        words = re.search(r"component AnswerWords: TextEdit \{(.*?)\n    \}", src, re.S)
+        self.assertTrue(words, "AnswerWords has moved")
+        self.assertIn("text: root.rich(runs, heading)", words.group(1))
+        self.assertIn("textFormat: TextEdit.RichText", words.group(1))
+
+    def test_rich_escapes_the_words(self):
+        src = self.src()
+        esc = re.search(r"function esc\(s\) \{ return String\(s\)(.*?) \}\n", src)
+        self.assertTrue(esc, "esc() has moved")
+        # (& first, or the others' & would be escaped again)
+        self.assertEqual(esc.group(1), '.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");')
+        rich = re.search(r"function rich\(runs, strong\) \{(.*?)\n    \}", src, re.S)
+        self.assertTrue(rich, "rich() has moved")
+        self.assertIn("let t = esc(r.text);", rich.group(1))
+        # Nothing but Slate's own tags, and no address of any kind
+        self.assertEqual(set(re.findall(r"<(/?\w+)", rich.group(1))), {"b", "/b", "i", "/i", "span", "/span"})
+        self.assertNotRegex(rich.group(1), r"url\(|src=|href=")
+
+    def test_nothing_loads_or_opens(self):
+        src = self.src()
+        self.assertNotRegex(src, r"\b(Image|AnimatedImage|BorderImage|AnimatedSprite)\s*\{", "a picture in Nova's window")
+        for opens in ("openUrlExternally", "linkActivated"):
+            self.assertNotIn(opens, src)

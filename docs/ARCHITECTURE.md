@@ -78,8 +78,10 @@ scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (AS
 scripts/assistant.py          hands a prompt to the person's own agent CLI (`detect`, `run`, `briefing`):
                               adds Slate's briefing and a few lines on the moment, runs the agent
                               in an empty folder with Slate's server as its tools, and turns what
-                              it prints into start/text/done/error lines. scripts/slate_agents.py
-                              has the agents (Claude Code, a command of your own)
+                              it prints into start/text/blocks/done/error lines. scripts/slate_agents.py
+                              has the agents (Claude Code, a command of your own);
+                              scripts/safe_markdown.py reads the answer's small, safe subset of
+                              Markdown into the blocks the window draws (no HTML, nothing fetched)
 Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,
                               Nova, the bar): one look, dark with a light tint of the theme
                               (Config.shadowColour, also sent to Hyprland for floating windows), drawn by
@@ -87,7 +89,8 @@ Shadow.qml                    the shadow under anything raised (panels, menus, t
                               can have shadows too. Off in game mode
 BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
 Assistant.qml                 Nova's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
-                              for a prompt, shows the answer (plain text) and what was done, as
+                              for a prompt, shows the answer (drawn from the runner's blocks:
+                              lists, bold, code boxes with Copy; never Qt's own Markdown) and what was done, as
                               Slate's server reports it (`assistant did`)
 AssistantGate.qml             Slate's half of that gate (`assistant` IPC): whether assistants are
                               allowed and what they may see, and their questions, shown with

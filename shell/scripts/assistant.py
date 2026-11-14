@@ -11,6 +11,10 @@ comes back in one form whichever agent it is (docs/ASSISTANT.md).
         the prompt on stdin; one JSON object per line on stdout:
           {"type": "start", "session": …}
           {"type": "text", "delta": …, "fresh": true?}     (fresh: replaces what's shown)
+          {"type": "blocks", "blocks": […]}   the answer so far, read by safe_markdown.py for
+                                              the window to draw; no more than ten a second as
+                                              it grows, and once more for the whole answer
+                                              just before done
           {"type": "done", "text": …, "session": …}
           {"type": "error", "kind": …, "message": …}
         kinds: off (assistants aren't switched on), not-installed, not-accepted (an agent that
@@ -46,17 +50,42 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SLATE_DIR = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+import safe_markdown  # noqa: E402
 import slate_agents  # noqa: E402
 
 SLATE = os.environ.get("SLATE_COMMAND") or os.path.join(SLATE_DIR, "bin", "slate")
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "assistant")
 TIMEOUT = float(os.environ.get("SLATE_ASSISTANT_TIMEOUT") or 120)
 PROMPT_MAX = 4000
+BLOCKS_EVERY = 0.1      # seconds between blocks events while an answer grows
 
 
 def emit(**event):
     sys.stdout.write(json.dumps(event) + "\n")
     sys.stdout.flush()
+
+
+class Answer:
+    """The answer as the window shows it (text events add to it; fresh starts it again), sent
+    as blocks (scripts/safe_markdown.py) so the window never reads the model's marks itself."""
+
+    def __init__(self):
+        self.text, self.dirty, self.sent = "", False, 0.0
+
+    def add(self, event):
+        delta = str(event.get("delta") or "")
+        self.text = delta if event.get("fresh") else self.text + delta
+        self.dirty = True
+        if time.monotonic() - self.sent >= BLOCKS_EVERY:
+            self.flush()
+
+    def flush(self, text=None):
+        """Send the blocks now: those still waiting, or (text) the whole answer's."""
+        if text is not None:
+            self.text, self.dirty = text, True
+        if self.dirty:
+            emit(type="blocks", blocks=safe_markdown.parse(self.text))
+            self.dirty, self.sent = False, time.monotonic()
 
 
 def server():
@@ -197,8 +226,11 @@ def run(args):
             except subprocess.TimeoutExpired:
                 pass
 
+    answer = Answer()
+
     def stopped(*_):
         stop()
+        answer.flush()
         emit(type="error", kind="stopped", message="Stopped.")
         os._exit(0)
     signal.signal(signal.SIGTERM, stopped)
@@ -226,21 +258,36 @@ def run(args):
 
     state, finished, last, until = {}, False, "", time.monotonic() + TIMEOUT
     while True:
+        wait = max(0.05, until - time.monotonic())
         try:
-            line = lines.get(timeout=max(0.05, until - time.monotonic()))
+            # (words waiting to be sent as blocks go after a moment, even if no more come)
+            line = lines.get(timeout=min(wait, BLOCKS_EVERY) if answer.dirty else wait)
         except queue.Empty:
             line = False
         if time.monotonic() > until and line is not None:
             stop()
+            answer.flush()
             return emit(type="error", kind="timeout", message="That took longer than Slate waits. Anything already done is listed below.")
         if line is None:
             break
         if line is False:
+            if answer.dirty and time.monotonic() - answer.sent >= BLOCKS_EVERY:
+                answer.flush()
             continue
         last = line or last
         for event in agent.parse(line, state):
             if finished:
                 continue
+            if event["type"] == "text":
+                emit(**event)
+                answer.add(event)
+                continue
+            # (the whole answer's blocks just before it's done: the window shows done's text
+            # in place of what came before, or keeps that when done has none)
+            if event["type"] == "done":
+                answer.flush(str(event.get("text") or answer.text))
+            else:
+                answer.flush()
             emit(**event)
             if event["type"] in ("done", "error"):
                 finished = True
@@ -251,7 +298,10 @@ def run(args):
     if finished:
         return
     if agent.id == "custom" and code == 0:
-        return emit(type="done", text=state.get("text", "").strip(), session="")
+        text = state.get("text", "").strip()
+        answer.flush(text)
+        return emit(type="done", text=text, session="")
+    answer.flush()
     if agent.id != "custom" and not agent.signed_in():
         return emit(type="error", kind="signed-out",
                     message="%s isn't signed in. Open a terminal and run %s once, then try again." % (agent.label, agent.sign_in or "it"))

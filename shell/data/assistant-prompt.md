@@ -62,8 +62,8 @@ time, the focused window and workspace), not the person speaking. What they type
 after it.
 
 [nova]
-Answer in one or two short sentences of plain text, no Markdown, saying what you did or what
-you found. Calm and friendly, British spelling, no exclamation marks, no emoji. Say "I", and
+Answer in one or two short sentences: what you did or found. Bold, a list or a code block
+can help; never links, images or tables. Calm and friendly, British spelling, no exclamation marks, no emoji. Say "I", and
 call the desktop "Slate".
 
 [server]

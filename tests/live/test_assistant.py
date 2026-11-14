@@ -1,10 +1,13 @@
 """Assistants (docs/ASSISTANT.md): Slate's side of the gate (the `assistant` IPC and its
 questions in the confirmation window), the IPC added for the tools, and Slate's MCP server
 run against the real thing."""
+import http.server
 import json
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 
 from live import LiveCase
@@ -396,6 +399,79 @@ class Nova(LiveCase):
         self.assertTrue(st["answer"].endswith("You asked: and again"))
         self.ipc("assistant", "clear")
         self.wait(lambda st: st["assistant"]["turns"] == 0, "New to forget it")
+
+    def test_an_answer_with_markdown(self):
+        """An answer with a list, bold words and a code block, all the way through: the runner
+        reads it (safe_markdown.py) and the window draws Slate's own blocks. The code box's Copy
+        copies just the code. A picture and HTML in the same answer are shown as characters,
+        and nothing is fetched: a server in the session hears no request."""
+        hits = []
+
+        class Heard(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                hits.append(self.path)
+                self.send_response(404)
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+        server = http.server.HTTPServer(("127.0.0.1", 0), Heard)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        url = "http://127.0.0.1:%d/" % server.server_port
+        answer = (f"I've turned on **Glass**. To do it yourself:\n\n1. Open *Settings*\n2. Go to **Appearance**\n   - switch on Glass\n\n"
+                  f"```sh\nslate ipc call config set glass true\n```\n"
+                  f"![chart]({url}markdown-image.png) <img src=\"{url}html-image.png\"> [the docs]({url}link)")
+        script = os.path.join(self.s.env["HOME"], "markdown-agent.py")
+        with open(script, "w") as f:
+            f.write("import sys\nsys.stdin.read()\nprint(%r)\n" % answer)
+        self.config("assistantAgent", "custom")
+        self.config("assistantCommand", "%s %s" % (sys.executable, script))
+        self.ipc("test", "assistantAccepted", "custom")
+        self.ipc("assistant", "ask", "turn on glass")
+        st = self.wait(lambda st: st["assistant"]["asked"] == "turn on glass" and not st["assistant"]["working"] and st["assistant"]["blocks"],
+                       "the answer", timeout=30)["assistant"]
+        self.assertEqual(st["error"], "")
+        self.assertEqual(st["answer"], answer, "the answer itself (for Copy) isn't what the agent wrote")
+        blocks = st["blocks"]
+        self.assertEqual([b["type"] for b in blocks], ["paragraph", "list", "code", "paragraph"])
+        self.assertIn({"text": "Glass", "bold": True, "italic": False, "code": False, "dim": False}, blocks[0]["runs"])
+        self.assertEqual([(it["level"], it["marker"]) for it in blocks[1]["items"]], [(0, "1."), (0, "2."), (1, "•")])
+        self.assertEqual(blocks[2]["text"], "slate ipc call config set glass true")
+        # The picture is its description and the HTML its characters, escaped into Slate's markup
+        rich = st["rich"]
+        self.assertEqual(len(rich), 5, "a paragraph, three list items and the last paragraph")
+        for markup in rich:
+            self.assertEqual(set(re.findall(r"<(/?\w+)", markup)) - {"b", "/b", "i", "/i", "span", "/span"}, set(), markup)
+        self.assertIn("[image: chart]", rich[-1])
+        self.assertIn("&lt;img src=&quot;%shtml-image.png&quot;&gt;" % url, rich[-1])
+        self.assertIn("<b>Glass</b>", rich[0])
+        # Copy, on the code box
+        self.ipc("test", "novaCopyCode", "2")
+        self.wait(lambda st: st["assistant"]["copied"] == "0:code:2", "it to say it's copied")
+        pasted = ""
+        for _ in range(40):
+            code, pasted = self.s.run(["wl-paste", "--no-newline"])
+            if pasted == "slate ipc call config set glass true":
+                break
+            self.s.settle(0.1)
+        self.assertEqual(pasted, "slate ipc call config set glass true")
+        # Nothing was fetched, from the picture, the HTML or the link
+        self.s.settle(1.0)
+        self.assertEqual(hits, [], "the answer made Slate fetch something")
+        self.s.new_log_errors()
+
+    def test_kept_plain_answers(self):
+        """A conversation kept before answers had blocks still loads, its answers plain."""
+        os.makedirs(os.path.dirname(self.chat_file()), exist_ok=True)
+        with open(self.chat_file(), "w") as f:
+            json.dump({"session": "", "turns": [{"asked": "is glass on?", "answer": "Yes, **glass** is on.", "at": 1, "doneAt": 2,
+                                                 "error": None, "actions": []}]}, f)
+        self.ipc("shell", "reload")
+        self.s.settle(2.5)
+        st = self.wait(lambda st: st["assistant"]["turns"] == 1, "the kept conversation", timeout=20)["assistant"]
+        self.assertEqual((st["asked"], st["answer"], st["blocks"], st["rich"]), ("is glass on?", "Yes, **glass** is on.", [], []))
+        self.s.new_log_errors()
 
     def chat_file(self):
         return os.path.join(self.s.env["XDG_STATE_HOME"], "slate", "assistant", "chat.json")

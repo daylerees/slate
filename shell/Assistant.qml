@@ -4,8 +4,15 @@
 //   slate ipc call assistant toggle      (or open / close / stop; Super+K)
 //   slate ipc call assistant ask <text>  open and send
 // scripts/assistant.py runs the agent and says what comes back, a JSON line at a time. The
-// answer is shown as plain text, never markup (rich text would load a picture a misled
-// agent linked to). "What it did" is Slate's own record, sent by Slate's MCP server as each
+// answer's words never reach a text item that reads markup: Qt's Markdown and rich text load
+// any picture named in them (from the network or disk), so a misled agent could send what it
+// read to someone else's server. The runner reads a small, safe subset of Markdown itself
+// (scripts/safe_markdown.py: paragraphs, bold, italic, code, code boxes, lists, headings) and
+// sends it as blocks; Slate draws those with its own items, and the only markup any of them
+// sees is the few tags rich() writes around words it has escaped. Links are their words and
+// their address as text, never clickable; images are their description. An answer without
+// blocks (one kept from before, or an error) is plain text, as it always was. "What it did"
+// is Slate's own record, sent by Slate's MCP server as each
 // tool is used (did(), from AssistantGate's IPC): words Slate wrote, not the agent's.
 // It reads as a chat: what you asked on the right in the accent colour, Nova's answers on
 // the left in its own, in order. There are no "conversations" to manage: the history just
@@ -40,6 +47,56 @@ PanelWindow {
     readonly property color danger: Config.tint("#f28b8b")
     readonly property string fontFamily: Config.s.fontFamily
     FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
+    // Code in an answer: the monospaced font (Settings → Appearance), on a plate a step darker
+    // than the bubble (solid, so on glass it isn't a lighter patch laid over the bubble)
+    readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
+    readonly property color codePlate: Config.tint("#14181e")
+
+    // ---- An answer's words, as Slate's own markup -------------------------------------
+    // The blocks the runner sends (scripts/safe_markdown.py), checked again here as they arrive
+    // or are read back from the kept conversation: only the kinds Slate draws, every word a
+    // string. Anything else becomes plain words
+    function cleanRuns(rs) {
+        return (Array.isArray(rs) ? rs : []).slice(0, 4000).map(r => ({
+            text: String(r && r.text !== undefined ? r.text : ""), bold: !!(r && r.bold), italic: !!(r && r.italic),
+            code: !!(r && r.code), dim: !!(r && r.dim) }));
+    }
+    function cleanBlocks(bs) {
+        return (Array.isArray(bs) ? bs : []).slice(0, 201).filter(b => b && typeof b === "object").map(b => {
+            if (b.type === "list")
+                return { type: "list", items: (Array.isArray(b.items) ? b.items : []).slice(0, 200).filter(it => it && typeof it === "object")
+                    .map(it => ({ level: it.level === 1 ? 1 : 0, marker: String(it.marker || "•").slice(0, 12), runs: cleanRuns(it.runs) })) };
+            if (b.type === "code" || b.type === "table")
+                return { type: b.type, text: String(b.text || ""), lang: String(b.lang || "").slice(0, 20), open: !!b.open };
+            return { type: b.type === "heading" ? "heading" : "paragraph", runs: cleanRuns(b.runs) };
+        });
+    }
+    // Words made safe to show: every character that markup could start with written as itself
+    function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function hex(c) { return "#" + [c.r, c.g, c.b].map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join(""); }
+    // One block's runs as the rich text its TextEdit shows: the words escaped, then wrapped in
+    // the only tags Slate uses (b, i, and a span for code or dim words). Spaces and line
+    // breaks stay as written. strong: all of it bold (a heading)
+    function rich(runs, strong) {
+        let h = "";
+        for (const r of runs || []) {
+            let t = esc(r.text);
+            if (r.code) t = "<span style=\"font-family:'" + codeFont + "'; background-color:" + hex(codePlate) + "\"> " + t + " </span>";
+            if (r.dim) t = "<span style=\"color:" + hex(dimTextColor) + "\">" + t + "</span>";
+            if (r.italic) t = "<i>" + t + "</i>";
+            if (r.bold) t = "<b>" + t + "</b>";
+            h += t;
+        }
+        if (strong) h = "<b>" + h + "</b>";
+        return "<span style=\"white-space:pre-wrap\">" + h + "</span>";
+    }
+    // An answer's first line without its marks: for the notification when it arrives out of sight
+    function firstLine(t) {
+        const b = t && t.blocks && t.blocks.length ? t.blocks[0] : null;
+        const words = rs => (rs || []).map(r => r.text).join("");
+        const s = !b ? (t ? t.answer : "") : b.runs ? words(b.runs) : b.items ? (b.items.length ? words(b.items[0].runs) : "") : b.text;
+        return String(s || "").trim().split("\n")[0].slice(0, 160);
+    }
 
     // ---- State ---------------------------------------------------------------
     property bool shown: false
@@ -78,7 +135,7 @@ PanelWindow {
             if (!Config.s.assistantKeepChat) { root.restored = true; return; }
             try {
                 const d = JSON.parse(text());
-                const clean = t => ({ asked: String(t.asked || ""), answer: String(t.answer || ""), at: Number(t.at) || 0, doneAt: Number(t.doneAt) || 0,
+                const clean = t => ({ asked: String(t.asked || ""), answer: String(t.answer || ""), blocks: root.cleanBlocks(t.blocks), at: Number(t.at) || 0, doneAt: Number(t.doneAt) || 0,
                                       error: t.error && t.error.message ? { kind: String(t.error.kind || "failed"), message: String(t.error.message), detail: String(t.error.detail || "") } : null,
                                       actions: (t.actions || []).map(a => ({ id: a.id, text: String(a.text || ""), state: String(a.state || "") })) });
                 let list = (d.turns || []).filter(t => t && t.asked).map(clean).slice(-root.maxTurns);
@@ -104,7 +161,8 @@ PanelWindow {
     onTurnsChanged: chatSave.restart()
     onSessionChanged: chatSave.restart()
     // (at: when you asked; doneAt: when the answer was finished. Shown as "2 min ago")
-    function begin(text) { turns = turns.concat([{ asked: text, answer: "", error: null, actions: [], at: Date.now(), doneAt: 0 }]).slice(-maxTurns); }
+    // (blocks: the answer as Slate draws it, from the runner; with none, it's plain text)
+    function begin(text) { turns = turns.concat([{ asked: text, answer: "", blocks: [], error: null, actions: [], at: Date.now(), doneAt: 0 }]).slice(-maxTurns); }
     // "2 min ago", worded as on notifications, and kept fresh while the window shows
     property int tick: 0
     Timer { interval: 30000; running: root.shown; repeat: true; onTriggered: root.tick++ }
@@ -133,9 +191,23 @@ PanelWindow {
     Timer { id: copiedReset; interval: 1400; onTriggered: root.copied = "" }
     function copy(which, text) {
         if (!text) return;
-        Quickshell.execDetached(["wl-copy", text]);
+        Quickshell.execDetached(["wl-copy", "--", text]);     // (--: words starting with - are words too)
         copied = which;
         copiedReset.restart();
+    }
+    // A code box's Copy: just its code (turn and block: where it is in the conversation)
+    function copyCode(ti, bi) {
+        const b = turns[ti] && turns[ti].blocks ? turns[ti].blocks[bi] : null;
+        if (b && b.type === "code") copy(ti + ":code:" + bi, b.text);
+    }
+    // (for the tests: the markup each words item of the latest answer is given)
+    function richNow() {
+        const out = [];
+        for (const b of (cur && cur.blocks) || []) {
+            if (b.runs) out.push(rich(b.runs, b.type === "heading"));
+            for (const it of b.items || []) out.push(rich(it.runs));
+        }
+        return out;
     }
     readonly property bool on: Config.assistantOn
     // The agents there are (scripts/assistant.py detect), looked for when the window first opens
@@ -224,11 +296,12 @@ PanelWindow {
         send(t);
     }
 
-    // One line from the runner: {type: start | text | done | error, …}
+    // One line from the runner: {type: start | text | blocks | done | error, …}
     function handle(e) {
         if (!e || !e.type) return;
         if (e.type === "start") { if (e.session) session = e.session; }
         else if (e.type === "text") patch({ answer: e.fresh ? String(e.delta || "") : answer + String(e.delta || "") });
+        else if (e.type === "blocks") patch({ blocks: cleanBlocks(e.blocks) });
         else if (e.type === "done") {
             patch({ answer: String(e.text || answer) });
             if (e.session) session = e.session;
@@ -246,7 +319,7 @@ PanelWindow {
         patch({ doneAt: answeredAt });
         // Finished out of sight: an ordinary notification, which opens the window again
         if (!shown && !Config.testMode) {
-            const line = (error ? error.message : answer).split("\n")[0].slice(0, 160);
+            const line = error ? error.message.split("\n")[0].slice(0, 160) : firstLine(cur);
             if (line !== "") {
                 doneNote.command = ["notify-send", "-a", "Slate", "-i", Quickshell.shellPath("assets/icon/icon-64.png"),
                                     "-h", "string:x-slate-page:assistant", "-A", "default=Open", "Nova", line];
@@ -469,7 +542,7 @@ PanelWindow {
                         Column {
                             id: turn
                             required property int index
-                            readonly property var t: root.turns[index] || ({ asked: "", answer: "", error: null, actions: [] })
+                            readonly property var t: root.turns[index] || ({ asked: "", answer: "", blocks: [], error: null, actions: [] })
                             readonly property bool latest: index === root.turns.length - 1
                             width: talkCol.width
                             spacing: turn.t.at ? 20 : 8        // (room for the time under your bubble)
@@ -510,6 +583,8 @@ PanelWindow {
                                 id: reply
                                 readonly property bool wrong: !!turn.t.error
                                 readonly property bool waiting: turn.latest && root.working && turn.t.answer === ""
+                                // (drawn from its blocks, or shown as plain text)
+                                readonly property bool drawn: turn.t.answer !== "" && !wrong && (turn.t.blocks || []).length > 0
                                 visible: turn.t.answer !== "" || wrong || waiting || (turn.t.actions || []).length > 0
                                 anchors.left: parent.left
                                 width: Math.min(parent.width * 0.88, Math.max(replyCol.implicitWidth, 120) + 28)
@@ -553,15 +628,73 @@ PanelWindow {
                                             color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
                                         }
                                     }
+                                    // An answer without blocks (kept from before, or from a
+                                    // runner that sent none): plain text, as typed
                                     TextEdit {
-                                        visible: turn.t.answer !== "" && !reply.wrong
+                                        visible: turn.t.answer !== "" && !reply.wrong && !reply.drawn
                                         width: Math.min(implicitWidth, replyCol.inner)
-                                        text: turn.t.answer
+                                        text: visible ? turn.t.answer : ""
                                         textFormat: TextEdit.PlainText        // never markup: see the top of this file
                                         wrapMode: TextEdit.Wrap
                                         readOnly: true; selectByMouse: true
                                         color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
                                         font.family: root.fontFamily; font.pixelSize: 14
+                                    }
+                                    // The answer as Slate reads it: paragraphs and headings, lists
+                                    // with Slate's own bullets and numbers, and code in a box
+                                    Column {
+                                        visible: reply.drawn
+                                        spacing: 8
+                                        Repeater {
+                                            model: reply.drawn ? turn.t.blocks : []
+                                            Column {
+                                                id: block
+                                                required property var modelData
+                                                required property int index
+                                                readonly property string kind: modelData.type
+                                                AnswerWords {
+                                                    visible: block.kind === "paragraph" || block.kind === "heading"
+                                                    runs: visible ? block.modelData.runs : []
+                                                    heading: block.kind === "heading"
+                                                    maxWidth: replyCol.inner
+                                                }
+                                                Column {
+                                                    visible: block.kind === "list"
+                                                    spacing: 4
+                                                    Repeater {
+                                                        model: block.kind === "list" ? block.modelData.items : []
+                                                        Row {
+                                                            id: item
+                                                            required property var modelData
+                                                            leftPadding: item.modelData.level * 18
+                                                            spacing: 6
+                                                            Text {
+                                                                id: marker
+                                                                width: Math.max(implicitWidth, 10)
+                                                                text: item.modelData.marker
+                                                                textFormat: Text.PlainText
+                                                                horizontalAlignment: Text.AlignRight
+                                                                color: Config.pageColour("assistant")
+                                                                font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                                                            }
+                                                            AnswerWords {
+                                                                runs: item.modelData.runs
+                                                                maxWidth: replyCol.inner - item.leftPadding - marker.width - item.spacing
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                CodeBox {
+                                                    visible: block.kind === "code" || block.kind === "table"
+                                                    code: visible ? block.modelData.text : ""
+                                                    lang: visible ? block.modelData.lang : ""
+                                                    table: block.kind === "table"
+                                                    turnIndex: turn.index
+                                                    blockIndex: block.index
+                                                    maxWidth: replyCol.inner
+                                                }
+                                            }
+                                        }
                                     }
                                     // Thinking: three dots taking turns, as chat apps show someone
                                     // typing. (Like a spinner, it isn't a transition, so its timing
@@ -787,6 +920,100 @@ PanelWindow {
         const cmd = root.agent && root.agent.signIn ? root.agent.signIn : "claude";
         Quickshell.execDetached(["hyprctl", "dispatch",
             `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w.-]/g, "")}") end`]);
+    }
+
+    // A paragraph, heading or list item of an answer: its runs as Slate's own markup (rich():
+    // the words escaped, so the only tags here are Slate's), selectable like plain text
+    component AnswerWords: TextEdit {
+        property var runs: []
+        property bool heading: false
+        property real maxWidth: 0
+        width: Math.min(implicitWidth, maxWidth)
+        text: root.rich(runs, heading)
+        textFormat: TextEdit.RichText
+        wrapMode: TextEdit.Wrap
+        readOnly: true; selectByMouse: true
+        color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
+        font.family: root.fontFamily; font.pixelSize: 14
+    }
+
+    // Code in an answer: a box in the monospaced font, not wrapped (it scrolls sideways when
+    // it's wider, with a sideways swipe or wheel), and Copy, which copies just
+    // the code. A table is kept as its rows in the same box, without Copy
+    component CodeBox: Rectangle {
+        id: box
+        property string code
+        property string lang
+        property bool table: false
+        property int turnIndex: 0
+        property int blockIndex: 0
+        property real maxWidth: 0
+        readonly property bool done: root.copied === turnIndex + ":code:" + blockIndex
+        width: Math.min(maxWidth, Math.max(codeText.implicitWidth + 24, table ? 0 : copyBtn.width + langText.implicitWidth + 30))
+        height: codeScroll.y + codeScroll.height + 10
+        radius: Config.corner(8)
+        color: root.codePlate
+        Text {
+            id: langText
+            visible: !box.table
+            anchors { left: parent.left; leftMargin: 12; verticalCenter: copyBtn.verticalCenter }
+            text: box.lang
+            textFormat: Text.PlainText
+            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+        }
+        Rectangle {
+            id: copyBtn
+            visible: !box.table
+            anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: 4 }
+            width: copyRow.implicitWidth + 14; height: 22; radius: Config.corner(6)
+            // (solid on the solid plate, so a hover never flashes through the accent)
+            color: copyHover.hovered ? Qt.tint(root.codePlate, Config.hover) : root.codePlate
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+            Row {
+                id: copyRow
+                anchors.centerIn: parent
+                spacing: 4
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: String.fromCodePoint(box.done ? 0xEA5E : 0xEA7A)      // tick, copy
+                    color: box.done ? Config.pageColour("power") : root.dimTextColor
+                    font.family: tabler.name; font.pixelSize: 13
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: box.done ? "Copied" : "Copy"
+                    color: copyHover.hovered || box.done ? root.textColor : root.dimTextColor
+                    font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                }
+            }
+            HoverHandler { id: copyHover }
+            ClickTap { onTapped: root.copyCode(box.turnIndex, box.blockIndex) }
+        }
+        Flickable {
+            id: codeScroll
+            x: 12; y: box.table ? 9 : 30
+            width: box.width - 24; height: codeText.implicitHeight
+            contentWidth: codeText.implicitWidth
+            // (not by dragging, which selects; the wheel up and down still scrolls the conversation)
+            interactive: false
+            clip: true
+            WheelHandler {
+                target: null
+                enabled: codeScroll.contentWidth > codeScroll.width
+                orientation: Qt.Horizontal
+                onWheel: e => codeScroll.contentX = Math.max(0, Math.min(codeScroll.contentWidth - codeScroll.width,
+                                                                         codeScroll.contentX - (e.pixelDelta.x || e.angleDelta.x / 2)))
+            }
+            TextEdit {
+                id: codeText
+                text: box.code
+                textFormat: TextEdit.PlainText
+                wrapMode: TextEdit.NoWrap
+                readOnly: true; selectByMouse: true
+                color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
+                font.family: root.codeFont; font.pixelSize: 13
+            }
+        }
     }
 
     // Copy this message: a small solid chip in the bubble's top right corner while the pointer
