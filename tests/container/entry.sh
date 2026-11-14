@@ -11,6 +11,10 @@ if [ -n "${DRI_GID:-}" ]; then
     getent group "$DRI_GID" >/dev/null || groupadd -g "$DRI_GID" dri
     usermod -aG "$(getent group "$DRI_GID" | cut -d: -f1)" "$user"
 fi
+# The lock screen's tests (tests/live/test_lock.py) unlock for real, through PAM: a password to
+# type, and pam_faillock's count of wrong ones, which a user can only keep once it's theirs
+echo "$user:slate test" | chpasswd
+mkdir -p /run/faillock && install -o "$uid" -g "$gid" -m 600 /dev/null "/run/faillock/$user"
 mkdir -p /tmp/tester && chown "$uid:$gid" /tmp/tester
 export HOME=/tmp/tester USER="$user"
 exec setpriv --reuid="$uid" --regid="$gid" --init-groups "$@"

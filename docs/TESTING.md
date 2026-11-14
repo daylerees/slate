@@ -239,3 +239,9 @@ out when it's fixed.
 The Slate the live tier starts has `SLATE_TEST=1`: no sounds, welcome, startup apps, update
 checks or prompts, a fixed time on its clocks (`SLATE_TEST_TIME`), `$XDG_RUNTIME_DIR/slate-ready`
 once loaded, and the `test` IPC target. See ARCHITECTURE.md → Test mode.
+
+The lock screen is tested for real (`tests/live/test_lock.py`): the session locks, and PAM
+checks the password. `tests/container/entry.sh` gives the container's user one, and its own
+`pam_faillock` count. In test mode only, the `lock` IPC target takes a password as if typed
+(`submit`: PAM still decides) and a `faillock.conf` to read in place of the system's
+(`faillockConf`); outside it both do nothing.

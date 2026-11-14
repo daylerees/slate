@@ -26,8 +26,14 @@ the gloss sheen like the bar's containers and no outline.
 - **Password** is checked by PAM (`PamContext`, the `login` stack, incl. `pam_faillock`).
   The field is emptied on Enter; Slate drops its copy after the check and runs `gc()`.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
-  15 min it shows "Too many attempts · try again in m:ss", disables the field and stops
-  sending attempts. Wrong passwords show the tries left.
+  15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
+  sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it
+  lasts) are `pam_faillock`'s defaults: `deny`, `fail_interval` and `unlock_time` in
+  `/etc/security/faillock.conf` replace them, read when Slate starts. `deny = 0` means no
+  lockout; `unlock_time = 0` (or `never`) means it lasts until an administrator runs
+  `faillock --user … --reset`, so Slate says that instead of counting down, and looks again
+  every few seconds. PAM does the locking out: this is only what Slate shows. Options given
+  on the `pam_faillock` lines in `/etc/pam.d` aren't read.
 - **Triggers:** Super+L, the power panel (Lock / Suspend), hot corners, logind
   `Lock` requests (`loginctl lock-session`), idle, and sleep.
 - **Before sleep:** a `systemd-inhibit --mode=delay` watcher on logind's
@@ -41,7 +47,8 @@ the gloss sheen like the bar's containers and no outline.
   text console (Ctrl+Alt+F3): `slate restart` (or `~/.config/slate/bin/slate restart`) — `allow_session_lock_restore`
   lets it take the lock back.
 - **Preview** without locking: `slate ipc call lock preview lock` (checks the
-  real password, power menu only says what it would do).
+  real password, power menu only says what it would do). Locking for real closes a
+  preview, and none opens while the screen is locked.
 
 ## Login screen (greetd)
 

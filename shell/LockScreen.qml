@@ -70,16 +70,50 @@ Scope {
     function forget() { pam.pending = ""; Qt.callLater(gc); }
 
     // ---- Lockout (pam_faillock: 3 wrong passwords within 15 min → 10 min lockout) ----
-    readonly property int failDeny: 3
-    readonly property int failInterval: 900
-    readonly property int unlockTime: 600
-    property real lockedUntil: 0          // ms timestamp
+    // Those are pam_faillock's own defaults; a system that sets others in
+    // /etc/security/faillock.conf gets its own numbers (readFaillockConf), so the tries left and
+    // the countdown are the ones PAM really keeps. This is only what Slate shows and when it
+    // stops sending tries: PAM does the locking out, whatever Slate reads here.
+    //   failDeny 0:   PAM never locks the account, so neither does Slate
+    //   unlockTime 0: it never unlocks by itself, only when an administrator runs
+    //                 `faillock --user … --reset` (lockedUntil is then Infinity)
+    property int failDeny: 3
+    property int failInterval: 900
+    property int unlockTime: 600
+    // Tests: a faillock.conf of their own. Only ever looked at in test mode (the `lock` IPC's
+    // faillockConf sets it, and only there too)
+    property string testFaillockConf: ""
+    FileView {
+        path: Config.testMode && root.testFaillockConf !== "" ? root.testFaillockConf : "/etc/security/faillock.conf"
+        printErrors: false                // it needn't exist: then the defaults stand
+        onLoaded: root.readFaillockConf(text())
+        onLoadFailed: root.readFaillockConf("")
+    }
+    // Lines like "deny = 5" (or "unlock_time = never"); "#" starts a comment. Anything missing,
+    // or that isn't a number PAM would take, keeps pam_faillock's default
+    function readFaillockConf(text) {
+        const found = { deny: 3, fail_interval: 900, unlock_time: 600 };
+        for (const line of String(text || "").split("\n")) {
+            const m = line.replace(/#.*$/, "").trim().match(/^(deny|fail_interval|unlock_time)\s*=\s*(\d{1,9}|never)$/);
+            if (!m) continue;
+            if (m[2] === "never") { if (m[1] === "unlock_time") found.unlock_time = 0; }
+            else if (m[1] !== "fail_interval" || Number(m[2]) > 0) found[m[1]] = Number(m[2]);
+        }
+        failDeny = found.deny; failInterval = found.fail_interval; unlockTime = found.unlock_time;
+    }
+    property real lockedUntil: 0          // ms timestamp (Infinity: until an administrator unlocks it)
     property real now: Date.now()
     readonly property bool lockedOut: lockedUntil > now
     Timer { interval: 1000; repeat: true; running: root.lockedUntil > 0; onTriggered: root.tickLockout() }
     function tickLockout() {
         now = Date.now();
-        if (lockedUntil > 0 && now >= lockedUntil) {
+        if (lockedUntil === Infinity) {
+            // No countdown to show: nothing but an administrator ends this. Look again every few
+            // seconds while a screen is up, so the field comes back once they have
+            message = "Too many tries · an administrator needs to unlock this account";
+            messageIsError = true;
+            if ((locked || previewing) && !faillock.running && Math.floor(now / 1000) % 5 === 0) checkLockout(false);
+        } else if (lockedUntil > 0 && now >= lockedUntil) {
             lockedUntil = 0; message = ""; messageIsError = false;
         } else if (lockedUntil > 0) {
             const s = Math.ceil((lockedUntil - now) / 1000);
@@ -106,14 +140,19 @@ Scope {
                 const recent = times.filter(x => latest - x <= root.failInterval * 1000).length;
                 const live = times.filter(x => t - x <= root.failInterval * 1000).length;
                 root.now = t;
-                if (recent >= root.failDeny && latest + root.unlockTime * 1000 > t) {
-                    root.lockedUntil = latest + root.unlockTime * 1000;
+                const never = root.unlockTime <= 0;      // (never unlocks by itself)
+                if (root.failDeny > 0 && recent >= root.failDeny && (never || latest + root.unlockTime * 1000 > t)) {
+                    root.lockedUntil = never ? Infinity : latest + root.unlockTime * 1000;
                     root.busy = false;
                     root.tickLockout();
                     if (root.afterFailure) root.failed(root.message);
-                } else if (root.afterFailure) {
-                    const left = root.failDeny - live;
-                    root.fail(left > 0 && left < root.failDeny ? "That password didn't match · " + left + (left === 1 ? " try" : " tries") + " left" : "That password didn't match");
+                } else {
+                    // Unlocked by an administrator since Slate last looked: the field comes back
+                    if (root.lockedUntil > 0) { root.lockedUntil = 0; root.message = ""; root.messageIsError = false; }
+                    if (root.afterFailure) {
+                        const left = root.failDeny - live;
+                        root.fail(left > 0 && left < root.failDeny ? "That password didn't match · " + left + (left === 1 ? " try" : " tries") + " left" : "That password didn't match");
+                    }
                 }
                 root.afterFailure = false;
             }
@@ -126,7 +165,8 @@ Scope {
     function succeeded() {
         busy = false;
         lockedUntil = 0;
-        if (previewing) {
+        // (never the preview's ending while the screen is really locked: the lock comes first)
+        if (previewing && !locked) {
             message = "Welcome back"; messageIsError = false;
             previewCloseTimer.restart();
         } else {
@@ -137,7 +177,7 @@ Scope {
     // ---- Power -------------------------------------------------------------------
     function power(action) {
         const names = { suspend: "suspend", hibernate: "hibernate", reboot: "restart", poweroff: "shut down", logout: "log out" };
-        if (previewing) {                 // never act from the preview
+        if (previewing && !locked) {      // never act from the preview
             message = "Preview: would " + names[action]; messageIsError = false;
             return;
         }
@@ -231,7 +271,13 @@ Scope {
         onFinished: root.setLocked(false) }
     // fade: false for locks before sleep (and anything else that mustn't wait on a look)
     function lockNow(fade) {
+        // A real lock ends any preview: left open, the preview took the first right password
+        // for itself ("Welcome back") and the lock stayed
+        endPreview();
         if (locked) return;
+        // And any check of a password typed into the preview: one still running as the lock
+        // comes up mustn't count as the lock's own password
+        if (pam.active) { pam.abort(); forget(); }
         fadeOut.stop(); unlocking = false;
         if (fade !== false && Config.animate) {
             lockFade = 0;
@@ -343,6 +389,7 @@ Scope {
     // Tests: Caps Lock as the preview shows it (the test session never reads the keyboard's light)
     property bool testCaps: false
     Timer { id: previewCloseTimer; interval: 900; onTriggered: root.previewing = false }
+    function endPreview() { previewCloseTimer.stop(); previewing = false; testCaps = false; }
 
     PanelWindow {
         visible: root.previewing
@@ -393,11 +440,16 @@ Scope {
         target: "lock"
         function lock(): void { root.lockNow(); }
         function preview(mode: string): void {
+            if (root.locked) return;      // nothing to try out while it's really locked
             root.previewMode = mode === "login" ? "login" : "lock";
             root.previewing = true;
             root.startFresh();
         }
-        function closePreview(): void { root.previewing = false; root.testCaps = false; }
+        function closePreview(): void { root.endPreview(); }
         function previewCaps(on: bool): void { if (Config.testMode) root.testCaps = on; }
+        // Tests: a faillock.conf of their own ("" for the system's), and a password as if typed
+        // and Enter pressed. PAM checks it like any other, so it's no way past the lock
+        function faillockConf(path: string): void { if (Config.testMode) root.testFaillockConf = path; }
+        function submit(password: string): void { if (Config.testMode) root.check(password); }
     }
 }

@@ -452,7 +452,9 @@ ShellRoot {
                             workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
-                lock: { locked: lockScreen.locked, previewing: lockScreen.previewing },
+                lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, busy: lockScreen.busy, message: lockScreen.message,
+                        // (what it read from faillock.conf, and what it made of the wrong passwords so far)
+                        deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut },
                 screensaver: { open: screensaver.shown },
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
