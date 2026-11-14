@@ -10,8 +10,11 @@ backends="xdg-desktop-portal-hyprland xdg-desktop-portal-wlr"
 
 have_systemd() { command -v systemctl >/dev/null 2>&1 && systemctl --user show-environment >/dev/null 2>&1; }
 
-# (by its whole command line: a process name stops at 15 characters)
-stop_all() { for b in $backends; do pkill -u "$(id -u)" -f "$b" 2>/dev/null; done; }
+# (by its whole command line: a process name stops at 15 characters. Only the program itself,
+# at the start of the line with or without its folder: the bare name matched anything of yours
+# that mentioned it, like an editor open on its config or `journalctl -fu` following it. The
+# dot and "-wrapped" are how NixOS names a program it wraps)
+stop_all() { for b in $backends; do pkill -u "$(id -u)" -f "^([^ ]*/)?\\.?$b(-wrapped)?( |\$)" 2>/dev/null; done; }
 
 case "${1:-}" in
     off)

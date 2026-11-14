@@ -3,6 +3,7 @@ and back) and bin/slate-private-camera (the camera off for every app, run as roo
 real is stopped: systemctl and pkill are stand-ins, and the camera helper is only run as
 yourself, where it must refuse to change anything."""
 import os
+import re
 
 import slate
 from slate import Case, run
@@ -21,6 +22,11 @@ class Capture(Case):
         self.s = Stubs(self.h)
         self.s.add("pkill", code=1)
 
+    def stopped(self):
+        """The backends pkill was asked to stop: each call's pattern, tried on each backend's
+        command line as it runs."""
+        return [b for c in self.s.calls("pkill") for b in BACKENDS if re.search(c[-1], "/usr/lib/" + b)]
+
     def systemd(self, there=True):
         self.s.add("systemctl", code=0 if there else 1)
 
@@ -31,7 +37,7 @@ class Capture(Case):
         self.assertEqual(code, 0, out)
         masked = [c for c in self.s.calls("systemctl") if "mask" in c]
         self.assertEqual(masked, [["--user", "mask", "--runtime", "--now", b + ".service"] for b in BACKENDS])
-        self.assertEqual([c[-1] for c in self.s.calls("pkill")], BACKENDS)
+        self.assertEqual(self.stopped(), BACKENDS)
 
     def test_on_unmasks_them(self):
         self.systemd()
@@ -46,9 +52,26 @@ class Capture(Case):
         self.systemd(there=False)
         code, out = run(["/bin/sh", CAPTURE, "keep"], env=self.s.env, timeout=10)
         self.assertEqual(code, 0, out)
-        self.assertEqual([c[-1] for c in self.s.calls("pkill")], BACKENDS)
+        self.assertEqual(self.stopped(), BACKENDS)
         # (by the whole command line: the names are longer than a process name can be)
         self.assertTrue(all("-f" in c for c in self.s.calls("pkill")))
+
+    def test_only_the_backends_themselves_are_stopped(self):
+        """Matching by command line took anything that mentioned a backend: an editor open on
+        its config, a log being followed. Only the program itself may match."""
+        self.systemd(there=False)
+        run(["/bin/sh", CAPTURE, "keep"], env=self.s.env, timeout=10)
+        patterns = [c[-1] for c in self.s.calls("pkill")]
+        self.assertEqual(len(patterns), len(BACKENDS))
+        for b, pattern in zip(BACKENDS, patterns):
+            for line in (b, "/usr/lib/" + b, "/usr/libexec/%s --verbose" % b,
+                         "/nix/store/abc-%s-1.3/libexec/.%s-wrapped" % (b, b)):
+                self.assertTrue(re.search(pattern, line), "%s doesn't stop: %s" % (pattern, line))
+            for line in ("nvim /home/me/.config/hypr/%s.conf" % b, "nvim /etc/xdg/" + b,
+                         "journalctl --user -fu " + b, "journalctl --user -fu %s.service" % b,
+                         "grep -r %s /usr/share" % b, "/usr/lib/%s-helper" % b,
+                         "/usr/lib/xdg-desktop-portal --replace", "less /usr/share/doc/%s/README" % b):
+                self.assertFalse(re.search(pattern, line), "%s would stop: %s" % (pattern, line))
 
     def test_keep_with_systemd_leaves_it(self):
         self.systemd()
