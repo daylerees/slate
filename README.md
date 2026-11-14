@@ -48,6 +48,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages and login session in step with Slate) |
 | `packaging/` | package lists per distro, Quickshell build script |
 | `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
+| `tools/release-assets.sh` | pack a tag into the archive and checksum a release carries, which the updater checks before installing |
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
 | `tests/` | the test suite: `tests/run` (in Docker, never touches your desktop); see [docs/TESTING.md](docs/TESTING.md) |
 | `.githooks/` | pre-commit checks (the quick tests, and the login screen); turn on with `git config core.hooksPath .githooks` |

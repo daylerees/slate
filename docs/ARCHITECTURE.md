@@ -112,7 +112,14 @@ AssistantGate.qml             Slate's half of that gate (`assistant` IPC): wheth
                               allowed and what they may see, and their questions, shown with
                               PowerConfirm and held until the server reads the answer
 scripts/update.py             GitHub releases: check, list hand-changed files (against the
-                              installed .manifest), install (install.sh --update), go back
+                              installed .manifest), install (install.sh --update), go back.
+                              Installs only a proper tag (v1.2.3) newer than what's here, from
+                              addresses it builds itself (this repository's release files, with
+                              redirects only to GitHub's hosts), and only once the archive
+                              matches the SHA-256 published with the release. Both files
+                              (slate-<tag>.tar.gz and its .sha256) are made by
+                              tools/release-assets.sh and uploaded with every release; a release
+                              without them can't be installed from Settings
 bin/slate-init                the one place that knows the init system and login service: systemd, or
                               elogind with OpenRC, runit, dinit or s6. Power (suspend, restart, shut
                               down), inhibitors, date and time, whether a service runs and the command

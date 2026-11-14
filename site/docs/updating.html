@@ -44,6 +44,10 @@
       <p>When there's a new version, Settings → Updates shows <strong>What's new</strong> in it, with a link to its
         release page. Choose <strong>Update now</strong>: Slate downloads it, puts it in place and restarts on the new
         version. Your apps and windows stay open.</p>
+      <p>Before anything is unpacked or run, Slate checks the download against the checksum (a SHA-256) published
+        with the release on GitHub. If the two don't match, or the release has no checksum, Slate doesn't install it
+        and says so; your Slate stays just as it was. It only ever downloads from Slate's own releases on GitHub, and
+        only a version newer than the one you have.</p>
       <p>Your settings and your own tweaks always come along: <code>settings.json</code>, <code>hypr/</code> and
         <code>user/</code> in <code>~/.config/slate</code>.</p>
       <ul>

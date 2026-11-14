@@ -346,6 +346,10 @@ one click: it downloads the release and runs its `./install.sh --update`, which 
 version in place without questions or `sudo`. Your settings and overrides are always kept:
 `settings.json`, `hypr/` and `user/` in `~/.config/slate`.
 
+- The download is the release's own `slate-<tag>.tar.gz` from Slate's repository on GitHub, and
+  it's checked against the SHA-256 published beside it (`slate-<tag>.tar.gz.sha256`) before
+  anything is unpacked or run. One that doesn't match, a release without a checksum, or a
+  version that isn't newer than yours isn't installed, and Settings says why.
 - The version you had is kept in `~/.config/slate.previous` (one version back), and
   Settings → Updates can go back to it. Your settings and overrides stay as they are when
   you switch, and the version you leave becomes the backup, so you can switch back again.

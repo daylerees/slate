@@ -1,15 +1,25 @@
 """scripts/update.py: `modified` (Slate's own files you've changed since installing, shown in
 Settings → Updates before an update replaces them) against a scratch install, and `check`
 when its answer is still fresh (no network). Your own files (settings.json, hypr/, user/)
-are never reported."""
+are never reported. `install` and `check --force` against a stand-in for the network: only a
+proper, newer release from Slate's own repository that matches its published checksum is
+unpacked and run."""
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
+import shutil
 import sys
+import tarfile
 import time
 import unittest
+import urllib.error
+import urllib.parse
+import urllib.request
+from unittest import mock
 
 import slate
 from slate import Case, run
@@ -185,3 +195,321 @@ class Parse(Case):
             with self.subTest(text):
                 self.assertEqual(mod.parse(text), want)
         self.assertGreater(mod.parse("v0.10.0"), mod.parse("v0.9.9"))
+
+
+def load_updater():
+    spec = importlib.util.spec_from_file_location("slate_update", slate.path("shell", "scripts", "update.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def release_archive(tag, marker, who):
+    """A release as tools/release-assets.sh packs it (slate-<tag>/ with install.sh and shell/),
+    whose install.sh only notes that it ran, how, and which archive it came from."""
+    script = ('#!/bin/bash\necho "$1 %s" >> "%s"\n' % (who, marker)).encode()
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as t:
+        for name in ("slate-%s" % tag, "slate-%s/shell" % tag):
+            info = tarfile.TarInfo(name)
+            info.type, info.mode = tarfile.DIRTYPE, 0o755
+            t.addfile(info)
+        info = tarfile.TarInfo("slate-%s/install.sh" % tag)
+        info.size, info.mode = len(script), 0o755
+        t.addfile(info, io.BytesIO(script))
+    return buf.getvalue()
+
+
+class Internet:
+    """Stands in for the network, underneath urllib (so the updater's own checks of addresses
+    and redirects still run): `pages` maps an address to its bytes, or to ("to", address) for
+    a redirect; anything else is a 404. `asked` is every address fetched, in order."""
+
+    def __init__(self):
+        self.pages, self.asked = {}, []
+
+    def open(self):
+        net = self
+
+        def fake(opener, req, data=None, timeout=None):
+            url = req if isinstance(req, str) else req.full_url
+            for _ in range(5):
+                net.asked.append(url)
+                page = net.pages.get(url)
+                if page is None:
+                    raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+                if isinstance(page, bytes):
+                    return io.BytesIO(page)
+                # A redirect: asked of urllib's redirect handler, as a real one would be
+                handler = next(h for h in opener.handlers if isinstance(h, urllib.request.HTTPRedirectHandler))
+                url = handler.redirect_request(urllib.request.Request(url), None, 302, "Found", {}, page[1]).full_url
+            raise AssertionError("too many redirects")
+        return mock.patch.object(urllib.request.OpenerDirector, "open", fake)
+
+
+class Install(Case):
+    """`install`: only a proper, newer release, from Slate's own repository on GitHub, that
+    matches the checksum published with it, is unpacked and run. No real network."""
+    scratch = True
+    TAG = "v9.9.9"
+    API = "https://api.github.com/repos/daylerees/slate/releases/latest"
+    BASE = "https://github.com/daylerees/slate/releases/download"
+    ELSEWHERE = "https://downloads.example/slate.tar.gz"
+
+    def setUp(self):
+        super().setUp()
+        self.mod = load_updater()
+        self.dest = os.path.join(self.h.dir, "installed")
+        os.makedirs(self.dest)
+        self.marker = os.path.join(self.h.dir, "installer-ran")
+        for name, value in (("HERE", self.dest), ("DEST", self.dest), ("PREVIOUS", self.dest + ".previous"),
+                            ("STATE_DIR", os.path.join(self.h.dir, "state")),
+                            ("STATE", os.path.join(self.h.dir, "state", "update.json")),
+                            ("LOG", os.path.join(self.h.dir, "update.log"))):
+            setattr(self.mod, name, value)
+        self.have("v0.31.0")
+        self.net = Internet()
+        self.good = release_archive(self.TAG, self.marker, "good")
+        # What GitHub's reply calls the download: somewhere else entirely, which must never be
+        # fetched (the updater used to download and run whatever this named)
+        self.net.pages[self.ELSEWHERE] = release_archive(self.TAG, self.marker, "elsewhere")
+        self.release(self.TAG, self.good)
+
+    def have(self, version):
+        with open(os.path.join(self.dest, "VERSION"), "w") as f:
+            f.write(version + "\n" if version else "")
+
+    def release(self, tag, archive, checksum=None, reply_tag=None):
+        """Publish a release: GitHub's reply, and its two files (each behind the redirect
+        GitHub answers with). checksum: the checksum file's text, or False for none."""
+        name = "slate-%s.tar.gz" % tag
+        self.net.pages[self.API] = json.dumps({"tag_name": reply_tag if reply_tag is not None else tag, "body": "notes",
+                                               "html_url": "", "tarball_url": self.ELSEWHERE}).encode()
+        stored = "https://release-assets.githubusercontent.com/github-production-release-asset/1/"
+        self.net.pages["%s/%s/%s" % (self.BASE, tag, name)] = ("to", stored + name)
+        self.net.pages[stored + name] = archive
+        sums = "%s/%s/%s.sha256" % (self.BASE, tag, name)
+        if checksum is None:
+            checksum = "%s  %s\n" % (hashlib.sha256(archive).hexdigest(), name)
+        if checksum is False:
+            self.net.pages.pop(sums, None)
+        else:
+            self.net.pages[sums] = ("to", stored + name + ".sha256")
+            self.net.pages[stored + name + ".sha256"] = checksum.encode()
+
+    def install(self):
+        with self.net.open():
+            self.mod.install()
+        with open(self.mod.STATE) as f:
+            return json.load(f)
+
+    def ran(self):
+        if not os.path.exists(self.marker):
+            return ""
+        with open(self.marker) as f:
+            return f.read().strip()
+
+    def refused(self, saying):
+        st = self.install()
+        self.assertEqual(self.ran(), "", "the installer ran")
+        self.assertEqual(st["status"], "failed")
+        self.assertIn(saying, st["error"])
+        return st
+
+    def test_good_checksum_installs(self):
+        st = self.install()
+        self.assertEqual(self.ran(), "--update good")
+        self.assertEqual((st["status"], st["current"], st["error"]), ("done", self.TAG, ""))
+        with open(self.mod.LOG) as f:
+            self.assertIn("matched the checksum", f.read())
+
+    def test_address_in_the_reply_is_ignored(self):
+        """Only GitHub's own hosts are asked, at addresses built from the repository and the
+        tag: the reply's tarball_url isn't one of them."""
+        self.install()
+        self.assertNotIn(self.ELSEWHERE, self.net.asked)
+        for url in self.net.asked:
+            self.assertIn(urllib.parse.urlsplit(url).hostname, self.mod.HOSTS, url)
+        self.assertIn("%s/%s/slate-%s.tar.gz" % (self.BASE, self.TAG, self.TAG), self.net.asked)
+
+    def test_wrong_checksum_refused(self):
+        self.release(self.TAG, self.good, checksum="%s  slate-%s.tar.gz\n" % ("0" * 64, self.TAG))
+        self.refused("didn't match the checksum")
+
+    def test_changed_download_refused(self):
+        """The checksum is the published one; the archive that arrives is another."""
+        self.release(self.TAG, release_archive(self.TAG, self.marker, "swapped"),
+                     checksum="%s  slate-%s.tar.gz\n" % (hashlib.sha256(self.good).hexdigest(), self.TAG))
+        self.refused("didn't match the checksum")
+
+    def test_missing_checksum_refused(self):
+        """A release without a checksum isn't installed, and its archive isn't even fetched."""
+        self.release(self.TAG, self.good, checksum=False)
+        st = self.refused("Slate couldn't check this download")
+        self.assertIn("doesn't have a checksum", st["error"])
+        self.assertFalse([u for u in self.net.asked if u.endswith(".tar.gz")], self.net.asked)
+
+    def test_unreadable_checksum_refused(self):
+        self.release(self.TAG, self.good, checksum="<html>Not here</html>\n")
+        self.refused("Slate couldn't check this download")
+
+    def test_older_releases_have_no_other_way_in(self):
+        """There's no unchecked path for releases from before checksums: one that's newer than
+        what's installed but has no checksum file is refused like any other."""
+        self.have("v0.1.0")
+        self.release("v0.2.0", release_archive("v0.2.0", self.marker, "old"), checksum=False)
+        self.refused("Slate couldn't check this download")
+
+    def test_bad_tags_refused(self):
+        for tag in ("v9.9.9-rc1", "9.9.9", "v9.9", "v9.9.9.1", "v9.9.9\n", " v9.9.9", "v9.9.9/../../../x", "latest", "", 999):
+            with self.subTest(tag=tag):
+                self.net.asked.clear()
+                self.release(self.TAG, self.good, reply_tag=tag)
+                self.refused("couldn't make sense of the version")
+                self.assertEqual(self.net.asked, [self.API])
+
+    def test_not_newer_refused(self):
+        """The same version, an older one (compared as numbers: 9.10 is past 9.9) and a
+        development copy already past it."""
+        for have in ("v9.9.9", "v9.10.0", "v10.0.0", "v9.9.9-4-gabc1234"):
+            with self.subTest(have=have):
+                self.net.asked.clear()
+                self.have(have)
+                self.refused("isn't newer than the Slate you have")
+                self.assertEqual(self.net.asked, [self.API])
+
+    def test_unknown_installed_version_refused(self):
+        self.have("")
+        self.refused("couldn't tell which version you have")
+
+    def test_newer_as_numbers_installs(self):
+        self.have("v9.9.8-2-gabc1234")
+        self.assertEqual(self.install()["status"], "done")
+        self.assertEqual(self.ran(), "--update good")
+
+    def test_redirect_elsewhere_refused(self):
+        """GitHub's address for the archive sending us to another host: not followed, even
+        with a checksum that would match what's there."""
+        self.release(self.TAG, self.net.pages[self.ELSEWHERE])
+        self.net.pages["%s/%s/slate-%s.tar.gz" % (self.BASE, self.TAG, self.TAG)] = ("to", self.ELSEWHERE)
+        self.refused("led somewhere else")
+        self.assertNotIn(self.ELSEWHERE, self.net.asked)
+
+    def test_redirect_for_the_checksum_elsewhere_refused(self):
+        self.net.pages["https://downloads.example/sum"] = b"%s  x\n" % hashlib.sha256(self.good).hexdigest().encode()
+        self.net.pages["%s/%s/slate-%s.tar.gz.sha256" % (self.BASE, self.TAG, self.TAG)] = ("to", "https://downloads.example/sum")
+        self.refused("led somewhere else")
+
+    def test_redirects(self):
+        """What the redirect check lets through: https to GitHub's hosts and nothing else."""
+        follow = self.mod.GitHubOnly().redirect_request
+        req = urllib.request.Request("https://github.com/daylerees/slate/releases/download/v9.9.9/x")
+        for url in ("https://release-assets.githubusercontent.com/a/b?sig=1", "https://objects.githubusercontent.com/a"):
+            self.assertEqual(follow(req, None, 302, "Found", {}, url).full_url, url)
+        for url in ("http://release-assets.githubusercontent.com/a", "https://githubusercontent.com.example/a",
+                    "https://example.com/github.com/a", "https://raw.githubusercontent.com/a", "file:///etc/passwd",
+                    "https://github.com@example.com/a"):
+            with self.subTest(url=url):
+                with self.assertRaises(self.mod.Refused):
+                    follow(req, None, 302, "Found", {}, url)
+
+    def test_much_too_big_refused(self):
+        self.mod.MAX_BYTES = 64
+        st = self.install()
+        self.assertEqual(self.ran(), "")
+        self.assertEqual(st["status"], "failed")
+        self.assertIn("Slate couldn't download the update", st["error"])
+
+    def test_checksum_file(self):
+        h = "ab" * 32
+        for text, want in ((h + "  slate-v1.2.3.tar.gz\n", h), (h.upper() + "\n", h), (h, h), ("", ""), ("\n", ""),
+                           (h[:-1] + "  x\n", ""), (h + "0  x\n", ""), ("sha256:" + h, ""), ("x " + h, "")):
+            with self.subTest(text):
+                self.assertEqual(self.mod.checksum_in(text), want)
+
+    @unittest.skipUnless(shutil.which("git") and shutil.which("sha256sum"), "needs git and sha256sum")
+    def test_release_assets_script(self):
+        """tools/release-assets.sh packs a tag into the two files the updater asks for: its
+        checksum file reads back, matches, and the archive installs."""
+        repo = os.path.join(self.h.dir, "repo")
+        os.makedirs(os.path.join(repo, "shell"))
+        with open(os.path.join(repo, "install.sh"), "w") as f:
+            f.write('#!/bin/bash\necho "$1 packed" >> "%s"\n' % self.marker)
+        with open(os.path.join(repo, "shell", "shell.qml"), "w") as f:
+            f.write("// Slate\n")
+        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_SYSTEM=os.devnull, GIT_AUTHOR_NAME="t",
+                   GIT_AUTHOR_EMAIL="t@example.com", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com")
+        # (a repository of its own, whatever git folder the tests themselves run from)
+        for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+            env.pop(name, None)
+        for cmd in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "release"], ["tag", self.TAG]):
+            self.ok(["git"] + cmd, cwd=repo, env=env)
+        # Something uncommitted, which mustn't get in
+        with open(os.path.join(repo, "notes.txt"), "w") as f:
+            f.write("mine\n")
+        script = slate.path("tools", "release-assets.sh")
+        out = os.path.join(self.h.dir, "assets")
+        made = self.ok(["bash", script, self.TAG, out], cwd=repo, env=env).split()
+        name = "slate-%s.tar.gz" % self.TAG
+        self.assertEqual(made, [os.path.join(out, name), os.path.join(out, name + ".sha256")])
+        with open(made[0], "rb") as f:
+            archive = f.read()
+        with open(made[1]) as f:
+            checksum = f.read()
+        self.assertEqual(self.mod.checksum_in(checksum), hashlib.sha256(archive).hexdigest())
+        with tarfile.open(made[0]) as t:
+            self.assertEqual(sorted(t.getnames()), ["slate-v9.9.9", "slate-v9.9.9/install.sh", "slate-v9.9.9/shell",
+                                                    "slate-v9.9.9/shell/shell.qml"])
+        # The same tag packs to the same bytes
+        again = self.ok(["bash", script, self.TAG, os.path.join(self.h.dir, "again")], cwd=repo, env=env).split()
+        with open(again[0], "rb") as f:
+            self.assertEqual(f.read(), archive)
+        self.release(self.TAG, archive, checksum=checksum)
+        self.assertEqual(self.install()["status"], "done")
+        self.assertEqual(self.ran(), "--update packed")
+        # Not a release's tag, or one that isn't there: nothing made
+        for tag, code in (("9.9.9", 2), ("v9.9.9-rc1", 2), ("", 2), ("v1.0.0", 1)):
+            with self.subTest(tag=tag):
+                self.assertEqual(run(["bash", script, tag, os.path.join(self.h.dir, "none")], cwd=repo, env=env)[0], code)
+        self.assertFalse(os.path.exists(os.path.join(self.h.dir, "none")))
+
+
+class CheckOnline(Case):
+    """`check --force`, with the network stood in for."""
+    scratch = True
+
+    def setUp(self):
+        super().setUp()
+        self.mod = load_updater()
+        self.dest = os.path.join(self.h.dir, "installed")
+        os.makedirs(self.dest)
+        with open(os.path.join(self.dest, "VERSION"), "w") as f:
+            f.write("v0.31.0\n")
+        for name, value in (("HERE", self.dest), ("DEST", self.dest), ("PREVIOUS", self.dest + ".previous"),
+                            ("STATE_DIR", os.path.join(self.h.dir, "state")),
+                            ("STATE", os.path.join(self.h.dir, "state", "update.json"))):
+            setattr(self.mod, name, value)
+        self.net = Internet()
+
+    def check(self):
+        out = io.StringIO()
+        with self.net.open(), contextlib.redirect_stdout(out):
+            self.mod.check(True)
+        return json.loads(out.getvalue())
+
+    def test_offline_in_slates_words(self):
+        st = self.check()
+        self.assertTrue(st["error"].startswith("Slate couldn't reach GitHub ("), st["error"])
+        self.assertIs(st["newer"], False)
+
+    def test_newer_release_offered(self):
+        self.net.pages[Install.API] = json.dumps({"tag_name": "v0.32.0"}).encode()
+        st = self.check()
+        self.assertEqual((st["latest"], st["newer"], st["error"]), ("v0.32.0", True, ""))
+
+    def test_odd_tag_not_offered(self):
+        """Something that isn't a release's tag is never offered as an update."""
+        for tag in ("v0.32.0-rc1", "v0.32.0/../x", "0.32.0"):
+            with self.subTest(tag=tag):
+                self.net.pages[Install.API] = json.dumps({"tag_name": tag}).encode()
+                self.assertIs(self.check()["newer"], False)
