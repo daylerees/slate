@@ -10,8 +10,13 @@
 set -u
 here=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
 
+# Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only you
+# can open, never /tmp (the rule is Config.qml's runtimeDir; tests/unit/test_runtime_dir.py)
+RUNTIME="${XDG_RUNTIME_DIR:-}"
+[ -n "$RUNTIME" ] || { RUNTIME="${XDG_STATE_HOME:-$HOME/.local/state}/slate/run"; mkdir -p "$RUNTIME" && chmod 700 "$RUNTIME"; }
+
 # Private Mode (PrivateMode.qml) leaves this mark while it's on: no screenshots then
-if [ -e "${XDG_RUNTIME_DIR:-/tmp}/slate-private" ]; then
+if [ -e "$RUNTIME/slate-private" ]; then
     notify-send -a Slate -i "$here/../assets/icon/icon-64.png" -h string:x-slate-page:control "Screenshots are off" \
         "Private Mode is on, so Slate isn't taking screenshots. Turn it off in the control centre when you're ready." 2>/dev/null
     exit 0
@@ -74,7 +79,7 @@ take() {  # take <grim's options>: the picture, into $tmp
 # second press now does nothing: the one that's open is the one to use. Held only while
 # choosing (the lock is let go before the picture is saved or opened), so the next screenshot
 # can start straight after.
-choosing="${XDG_RUNTIME_DIR:-/tmp}/slate-screenshot.lock"
+choosing="$RUNTIME/slate-screenshot.lock"
 one_chooser() {
     if command -v flock >/dev/null 2>&1; then
         exec 9>"$choosing"

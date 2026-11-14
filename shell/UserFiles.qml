@@ -17,7 +17,7 @@ Scope {
     readonly property var hyprFiles: ["env.lua", "variables.lua", "monitors.lua", "binds.lua", "rules.lua", "autostart.lua", "hyprland.lua"]
     readonly property string hyprDir: Quickshell.shellPath("hypr")
     readonly property string userQml: Quickshell.shellPath("user/shell.qml")
-    readonly property string errorsPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate-hypr-errors.txt"
+    readonly property string errorsPath: Config.runtimeDir + "/slate-hypr-errors.txt"
     property bool ready: false        // the files exist (watching a missing file doesn't work)
 
     function notify(title, body) {

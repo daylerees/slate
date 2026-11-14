@@ -29,7 +29,7 @@ Singleton {
     // Window address (as Quickshell gives it) -> space id, for open windows that came from a
     // space; kept up to date by SpaceBadges.qml (the bar uses it for the focused window)
     property var spaceOfAddress: ({})
-    readonly property string ownersPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/space-windows.json"
+    readonly property string ownersPath: Config.runtimeDir + "/slate/space-windows.json"
     function reloadOwners() { ownersFile.reload(); }
     function spaceById(id) { return id ? list.find(s => s.id === id) ?? null : null; }
     Process {

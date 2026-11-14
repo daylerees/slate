@@ -119,7 +119,7 @@ ShellRoot {
         Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("scripts/tray-watcher.py")]);     // the tray's register (below)
         Qt.callLater(() => Qt.callLater(() => readyMark.running = true));
     }
-    Process { id: readyMark; command: ["sh", "-c", ': > "${XDG_RUNTIME_DIR:-/tmp}/slate-ready"'] }
+    Process { id: readyMark; command: ["sh", "-c", ': > "$0/slate-ready"', Config.runtimeDir] }
     // What's on screen, as JSON, for tests to check rather than reading pixels:
     //   slate ipc call test state
     IpcHandler {

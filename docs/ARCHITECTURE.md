@@ -210,6 +210,9 @@ bin/slate-system              packages (packaging/<distro>.txt, copied in), the 
                               Slate runs as root goes through it (--install, --root <helper>), and
                               it only ever hands pkexec a root-owned copy in
                               /usr/local/libexec/slate, never a script in the Slate folder
+bin/slate-system-root         the half of slate-system that runs as root: installs packages and the
+                              login session; runs only from /usr/local/libexec/slate, reading that
+                              folder's own copy of the package lists
 bin/slate-helpers-install     puts those copies there: slate-system-root (the half of slate-system
                               that installs packages), slate-session-install,
                               slate-greeter-install, slate-private-camera, and the package lists
@@ -397,6 +400,10 @@ the time in `SLATE_TEST_TIME` on its clocks (`Config.clockDate`), writes
 `$XDG_RUNTIME_DIR/slate-ready` once it has loaded, and answers `ipc call test state`.
 Anything new that starts a side effect at login (a prompt, a sound, a network check) should
 check `Config.testMode`.
+
+Slate's small runtime files live in `$XDG_RUNTIME_DIR`. When that isn't set (a bare `su`, ssh or cron
+shell), every script and `Config.runtimeDir` use `${XDG_STATE_HOME:-$HOME/.local/state}/slate/run`
+instead, made mode 0700, never a fixed name in `/tmp`.
 
 ## Hyprland integration (`~/.config/hypr/config/*.lua`)
 

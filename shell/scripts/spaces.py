@@ -45,7 +45,21 @@ import uuid
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "slate")
 STORE = os.path.join(DATA, "spaces.json")
-RUNTIME = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "slate")
+
+
+def runtime_dir():
+    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
+    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
+    d = os.environ.get("XDG_RUNTIME_DIR")
+    if d:
+        return d
+    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
+    os.makedirs(d, mode=0o700, exist_ok=True)
+    os.chmod(d, 0o700)
+    return d
+
+
+RUNTIME = os.path.join(runtime_dir(), "slate")
 LOCK = os.path.join(RUNTIME, "spaces.lock")
 # Which open windows came from which space, for the borders and badges Slate draws on them
 # (SpaceBadges.qml): {"instance": Hyprland's instance signature, "windows": {stableId: space

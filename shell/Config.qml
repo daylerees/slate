@@ -901,7 +901,7 @@ Singleton {
     // fires a moment after Slate starts, once its settings have loaded (the wallpaper can
     // change, startup apps open).
     signal atLogin()
-    readonly property string loginMarker: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate-started-"
+    readonly property string loginMarker: root.runtimeDir + "/slate-started-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "session")
     Process {
         running: true
@@ -1674,6 +1674,19 @@ Singleton {
     // windows. Your own settings for them are kept, not changed, so turning it off puts them
     // all back. Not on the login screen, which reads a copy of these settings
     readonly property bool isLoginScreen: Quickshell.shellPath("").indexOf("slate-greeter") >= 0
+    // Where Slate keeps what lasts only for this login (marks, locks, the workspaces' modes and
+    // names): $XDG_RUNTIME_DIR, which is yours alone. Should that not be set, a folder of your
+    // own that only you can open, never /tmp, where anyone on the computer could put a file of
+    // that name first. The same rule everywhere, since the scripts read and write the same
+    // files: bin/slate, bin/slate-build-hyprbars, scripts/screenshot.sh, spaces.py, voice.py,
+    // launcher-entries.py and session/hypr/hyprland.lua (tests/unit/test_runtime_dir.py)
+    readonly property bool runtimeDirOwn: !Quickshell.env("XDG_RUNTIME_DIR")
+    readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR")
+        || ((Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/slate/run")
+    Process {
+        running: root.runtimeDirOwn && !root.isLoginScreen
+        command: ["sh", "-c", 'mkdir -p "$0" && chmod 700 "$0"', root.runtimeDir]
+    }
     // Under the test suite (tests/run sets SLATE_TEST=1): no sounds, welcome, startup apps,
     // update checks or login screen prompts, so a run is quiet and the same every time
     readonly property bool testMode: Quickshell.env("SLATE_TEST") === "1"
@@ -2035,7 +2048,7 @@ Singleton {
     // Workspace id → mode, for the ones set; the rest follow the default. Kept for this Hyprland
     // session in the runtime folder (so it survives Slate reloading and restarting, and Spaces
     // can read it: scripts/spaces.py), not in Settings: workspaces come and go
-    readonly property string workspaceModesPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/workspace-modes-"
+    readonly property string workspaceModesPath: root.runtimeDir + "/slate/workspace-modes-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
     FileView { id: workspaceModesFile; path: root.workspaceModesPath; blockLoading: true; printErrors: false }
     property var workspaceModes: {
@@ -2076,7 +2089,7 @@ Singleton {
     // Slate keeps it itself rather than renaming Hyprland's workspace: Hyprland's own name is
     // what its config and other tools match on.
     readonly property int workspaceNameLimit: 20
-    readonly property string workspaceNamesPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/workspace-names-"
+    readonly property string workspaceNamesPath: root.runtimeDir + "/slate/workspace-names-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
     FileView { id: workspaceNamesFile; path: root.workspaceNamesPath; blockLoading: true; printErrors: false }
     property var workspaceNames: {
@@ -2365,7 +2378,7 @@ Singleton {
     // shows first). welcomeCheck then writes the marker; a moment's wait lets the sound system come
     // up, then the sound plays and the cover fades. The login screen loads this file too but has no
     // sounds/ (greeter/files), so the check fails there: it stays silent and doesn't fade.
-    readonly property string welcomeMarker: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/welcomed-"
+    readonly property string welcomeMarker: root.runtimeDir + "/slate/welcomed-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none")
     FileView { id: welcomeMarkerFile; path: root.welcomeMarker; blockLoading: true; printErrors: false }
     // covered until welcomeFading, then fading out

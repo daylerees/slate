@@ -28,7 +28,7 @@ Scope {
     readonly property string helper: "/usr/local/libexec/slate/slate-private-camera"
     readonly property string allowed: "/usr/local/libexec/slate/camera-allowed"
     readonly property string oldHelper: "/usr/local/libexec/slate-private-camera"
-    readonly property string mark: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate-private"
+    readonly property string mark: Config.runtimeDir + "/slate-private"
     readonly property string icon: Quickshell.shellPath("assets/icon/icon-64.png")
     property bool helperThere: false
 

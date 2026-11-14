@@ -23,7 +23,14 @@ SLATE = SLATE_DIR .. "/bin/slate"
 
 local userDir = SLATE_DIR .. "/hypr"         -- your own files (see the top of this file)
 -- Mistakes in them, for Slate to show (started empty on each load of the config)
-local errorsPath = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/slate-hypr-errors.txt"
+-- (in Slate's runtime folder, as Config.qml's runtimeDir works it out: never /tmp)
+local runtimeDir = os.getenv("XDG_RUNTIME_DIR") or ""
+if runtimeDir == "" then
+    local stateHome = os.getenv("XDG_STATE_HOME") or ""
+    if stateHome == "" then stateHome = (os.getenv("HOME") or "") .. "/.local/state" end
+    runtimeDir = stateHome .. "/slate/run"
+end
+local errorsPath = runtimeDir .. "/slate-hypr-errors.txt"
 do local e = io.open(errorsPath, "w"); if e then e:close() end end
 local function userFile(name)
     local path = userDir .. "/" .. name

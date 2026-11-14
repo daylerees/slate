@@ -56,7 +56,11 @@ stop() {
 # The cover over a restart (reloading/shell.qml): the screen fades to "Reloading Slate", Slate
 # restarts underneath, and it fades back once the new one says it's ready ($XDG_RUNTIME_DIR/
 # slate-ready). Not when nothing's running to cover for, in the tests, or with --no-cover.
-READY="${XDG_RUNTIME_DIR:-/tmp}/slate-ready"
+# Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only you
+# can open, never /tmp (the rule is Config.qml's runtimeDir; tests/unit/test_runtime_dir.py)
+RUNTIME="${XDG_RUNTIME_DIR:-}"
+[ -n "$RUNTIME" ] || { RUNTIME="${XDG_STATE_HOME:-$HOME/.local/state}/slate/run"; mkdir -p "$RUNTIME" && chmod 700 "$RUNTIME"; }
+READY="$RUNTIME/slate-ready"
 cover_up() {
     [ -f "$SLATE_DIR/reloading/shell.qml" ] || return 1
     # (at Slate's own Interface size, so its mark and words match what they cover)

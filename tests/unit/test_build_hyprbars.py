@@ -7,6 +7,9 @@ import json
 import os
 import shutil
 import stat
+import subprocess
+import sys
+import time
 
 import slate
 from slate import Case, run
@@ -205,6 +208,31 @@ class Build(BuildCase):
         st = self.status()
         self.assertEqual((st["state"], st["error"]), ("failed", "The build was interrupted"))
 
+    def test_a_second_build_leaves_the_firsts_number(self):
+        """The lock holds the running build's number, for Remove to stop it: another build
+        starting (and finding it held) used to empty the file on the way."""
+        lock = os.path.join(self.h.runtime, "slate-hyprbars-build.lock")
+        with open(lock, "w") as f:
+            f.write("12345\n")
+            f.flush()
+            fcntl.flock(f, fcntl.LOCK_EX)
+            self.assertEqual(self.build()[0], 3)
+            with open(lock) as g:
+                self.assertEqual(g.read(), "12345\n")
+        # …and a build that does run leaves only its own
+        self.assertEqual(self.build()[0], 0)
+        with open(lock) as g:
+            self.assertRegex(g.read(), r"\A\d+\n\Z")
+
+    def test_lock_is_never_in_tmp(self):
+        """Without $XDG_RUNTIME_DIR the lock goes in a folder of your own (test_runtime_dir.py)."""
+        env = {k: v for k, v in self.env.items() if k != "XDG_RUNTIME_DIR"}
+        code, out = run(["bash", SCRIPT], env=env)
+        self.assertEqual(code, 0, out)
+        own = os.path.join(self.h.state, "slate", "run")
+        self.assertTrue(os.path.exists(os.path.join(own, "slate-hyprbars-build.lock")))
+        self.assertEqual(stat.S_IMODE(os.stat(own).st_mode), 0o700)
+
     def test_unknown_option(self):
         code, out = run(["bash", SCRIPT, "--frobnicate"], env=self.env)
         self.assertEqual(code, 2)
@@ -298,6 +326,32 @@ class Remove(BuildCase):
         st = self.status()
         self.assertEqual((st["any"], st["removed"]), ("no", "no"))
         self.assertEqual(self.builds(), [])
+
+    def holder(self, name):
+        """A program holding the build's lock, with its own number in it; named as given."""
+        lock = os.path.join(self.h.runtime, "slate-hyprbars-build.lock")
+        script = os.path.join(self.h.dir, name)
+        with open(script, "w") as f:
+            f.write("import fcntl, os, sys, time\nf = open(sys.argv[1], 'w')\nfcntl.flock(f, fcntl.LOCK_EX)\n"
+                    "f.write(str(os.getpid()) + '\\n'); f.flush()\nprint('held', flush=True)\ntime.sleep(60)\n")
+        p = subprocess.Popen([sys.executable, script, lock], stdout=subprocess.PIPE, text=True)
+        self.addCleanup(p.wait)
+        self.addCleanup(p.kill)
+        self.assertEqual(p.stdout.readline().strip(), "held")
+        return p
+
+    def test_stops_only_a_build(self):
+        """Remove stops a build that's running, by the number in its lock. Whatever else that
+        number belongs to is left alone."""
+        other = self.holder("something-else.py")
+        self.remove()
+        time.sleep(0.3)
+        self.assertIsNone(other.poll(), "Remove stopped a program that isn't the build")
+        other.kill()
+        other.wait()
+        build = self.holder("slate-build-hyprbars")
+        self.remove()
+        self.assertIsNotNone(build.wait(timeout=5), "Remove left the build running")
 
     def test_building_again_clears_it(self):
         self.build()

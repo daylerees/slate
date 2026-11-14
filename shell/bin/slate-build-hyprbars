@@ -31,7 +31,11 @@ OUT="${XDG_DATA_HOME:-$HOME/.local/share}/slate/plugins"
 WORK="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprland-plugins"
 LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate/hyprbars-build.log"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/slate/hyprbars-build.json"
-LOCK="${XDG_RUNTIME_DIR:-/tmp}/slate-hyprbars-build.lock"
+# Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only you
+# can open, never /tmp (the rule is Config.qml's runtimeDir; tests/unit/test_runtime_dir.py)
+RUNTIME="${XDG_RUNTIME_DIR:-}"
+[ -n "$RUNTIME" ] || { RUNTIME="${XDG_STATE_HOME:-$HOME/.local/state}/slate/run"; mkdir -p "$RUNTIME" && chmod 700 "$RUNTIME"; }
+LOCK="$RUNTIME/slate-hyprbars-build.lock"
 LEGACY="$OUT/hyprbars.so"                   # a build from before builds were named
 # Distro packages of hyprbars (the override is only for testing)
 SYSTEM="${SLATE_HYPRBARS_SYSTEM:-/usr/lib/hyprland-plugins/hyprbars.so:/usr/lib/hyprland/plugins/hyprbars.so:/usr/local/lib/hyprland/plugins/hyprbars.so}"
@@ -146,8 +150,14 @@ case "${1:-}" in
     mkdir -p "$OUT"
     # A build that's running stops first
     if building; then
-        pid=$(cat "$LOCK" 2>/dev/null || true)
-        case "$pid" in ''|*[!0-9]*) ;; *) pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; sleep 0.5 ;; esac
+        pid=$(tail -n 1 "$LOCK" 2>/dev/null || true)
+        # (only a build of your own: the number is whatever the file says, and by now it
+        # could be another program's)
+        case "$pid" in ''|*[!0-9]*) ;; *)
+            if [ -O "/proc/$pid" ] && tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q 'slate-build-hyprbars'; then
+                pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; sleep 0.5
+            fi ;;
+        esac
     fi
     keep=""; is_loaded && keep=$(loaded_path)
     for f in "$OUT"/hyprbars*.so; do
@@ -164,9 +174,11 @@ case "${1:-}" in
 esac
 
 # ---- Build -----------------------------------------------------------------------------
-exec 9>"$LOCK"
+# (opened to add to, not to empty: a second build starting mustn't wipe the first one's
+# number before finding the lock held)
+exec 9>>"$LOCK"
 flock -n 9 || { echo "slate-build-hyprbars: already building" >&2; exit 3; }
-echo $$ >&9                                 # (for --remove, to stop it)
+: > "$LOCK"; echo $$ >&9                    # (for --remove, to stop it)
 
 read -r ver commit <<<"$(installed)" || true
 ver=${ver:-}; commit=${commit:-}

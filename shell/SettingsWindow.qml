@@ -153,7 +153,7 @@ FloatingWindow {
     // While Settings is open, its page and how far down it's scrolled are kept in the runtime
     // folder, named for this Hyprland session (so logging in again never opens it); closing it
     // forgets them. When Slate starts again with them there, Settings reopens just as it was.
-    readonly property string placeFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/settings-open-"
+    readonly property string placeFile: Config.runtimeDir + "/slate/settings-open-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
     // (restored once it has loaded: read straight away as Settings was made, it could still be
     // loading, so Settings came back on All Settings)
