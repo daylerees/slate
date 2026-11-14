@@ -52,6 +52,20 @@ class Settings(LiveCase):
                           f"{page} → {label}")
         self.ipc("settings", "close")
 
+    def test_page_asked_for_twice_in_a_row_stays(self):
+        """Settings opened on one page and straight away asked for another: it stays on the
+        second. Showing the window can report "visible" again a moment later (longer on a busy
+        machine), and that used to send it back to All Settings."""
+        for attempt in range(6):
+            with self.subTest(attempt=attempt):
+                self.ipc("settings", "close")
+                self.wait(lambda st: not st["settings"]["open"], "Settings to close")
+                self.ipc("settings", "page", "about")
+                self.ipc("settings", "page", "appearance")
+                self.s.settle(1.5)
+                self.assertEqual(self.s.state()["settings"]["section"], "appearance")
+        self.ipc("settings", "close")
+
     def test_config_roundtrip(self):
         """Each setting changed and put back (config set/get), keeping its type."""
         for typ, key in settings_types():

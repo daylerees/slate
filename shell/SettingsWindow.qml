@@ -59,15 +59,20 @@ FloatingWindow {
     // Narrow window (a small screen): the sidebar shows just its icons
     readonly property bool compact: width < 760
     visible: false
+    property bool wasVisible: false
     color: bar.barColor
     onVisibleChanged: {
         const a = Bluetooth.defaultAdapter;
         if (!visible && a && a.discovering) a.discovering = false;
         if (!visible) cancelConfirm();        // closing Settings answers an open question with Cancel
         if (!visible) dropLayer.owner = null; // and closes an open dropdown (its page is let go)
-        if (visible && !keepSection) section = "overview";
-        // Cleared a moment later, not now: showing the window can report "visible" twice,
-        // and the second would otherwise send a requested page back to All Settings
+        // Only as it opens: showing the window can report "visible" again a moment later (longer
+        // on a busy machine), and that would otherwise send a page asked for in between back
+        // to All Settings
+        const opening = visible && !wasVisible;
+        wasVisible = visible;
+        if (opening && !keepSection) section = "overview";
+        // Cleared a moment later, not now
         if (visible) keepClear.restart(); else keepSection = false;
         placeSave.restart();                  // open: where it is; closed: forgotten
     }
