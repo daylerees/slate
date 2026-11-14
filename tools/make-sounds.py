@@ -19,6 +19,9 @@
                     a quiet fifth (B5) just after it, each with a faint shimmer an octave up that
                     twinkles as it fades; settled, not questioning, about 0.55 s
 
+The volume tick itself (volume-tick.wav) isn't made by this script yet: it's the one file in
+shell/sounds/ with no generator here, and running this leaves it as it is.
+
 Run it from anywhere; it writes next to the other sounds.
 
     tools/make-sounds.py

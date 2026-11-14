@@ -47,9 +47,14 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | `shell/wallpapers/` | Slate's own wallpapers (made by `tools/make-wallpapers.py`) |
 | `shell/bin/` | helpers: `slate-session-install`, `slate-greeter-install`, `slate-greeter-sync`, `slate-greeter-check`, `slate-system` (packages, login session and root helpers in step with Slate), `slate-helpers-install` (puts the helpers root runs in `/usr/local/libexec/slate`) |
 | `packaging/` | package lists per distro, Quickshell build script |
-| `tools/sync-from-live.sh` | copy a running Slate back into `shell/` (development) |
 | `tools/release-assets.sh` | pack a tag into the archive and checksum a release carries, which the updater checks before installing |
 | `tools/check-greeter-files` | check the login screen's file list against its code (CI and the pre-commit hook run it) |
+| `tools/test-install-docker.sh` | try the installer in a clean container of a distro (`tools/test-install-docker.sh <image>`) |
+| `tools/make-sounds.py`, `tools/make-wallpapers.py` | make Slate's sounds (`shell/sounds/`) and wallpapers (`shell/wallpapers/`) |
+| `tools/build-cursors.py`, `tools/build-emoji-data.py` | rebuild Slate Cursors (`shell/cursors/`, from Bibata; `tools/cursors/` has its licence) and the emoji picker's list (`shell/data/emoji.json`, from Unicode's data) |
+| `tools/render-settings-icon.py`, `tools/render-logo.py`, `tools/render-site-marks.py` | draw Slate's mark: the Settings icon (`shell/assets/icon/`), the logo, and the site's two pictures of it |
+| `tools/docs-shots/` | takes the docs pages' pictures (`site/docs/img/`) in the test container: `tests/run --docs-shots` |
+| `tools/repro/` | small setups that reproduce bugs elsewhere that Slate works around (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#workarounds-for-bugs-elsewhere)) |
 | `tests/` | the test suite: `tests/run` (in Docker, never touches your desktop); see [docs/TESTING.md](docs/TESTING.md) |
 | `.githooks/` | pre-commit checks (the quick tests, and the login screen); turn on with `git config core.hooksPath .githooks` |
 | `docs/` | install, architecture, session, lock/login, testing, redistribution notes, conventions |
