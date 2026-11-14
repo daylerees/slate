@@ -15,6 +15,10 @@ PANELS = {
 }
 
 
+# The test session's day (FAKE_TIME), as the clock's label says it
+DATE = "Monday, 5 January 2026"
+
+
 class Bar(LiveCase):
     def test_panels_open_and_close(self):
         for name, setting in PANELS.items():
@@ -323,7 +327,7 @@ class Label(LiveCase):
         band, width = st["bar"]["band"], st["screens"][0]["width"]
         x, y = self.centre("clock")
         self.point(x, y)
-        lab = self.showing("Clock", "over the clock")
+        lab = self.showing(DATE, "over the clock")
         # Just under the bar, centred on the clock (or held in from the screen's end), on screen
         self.assertGreaterEqual(lab["y"], band["y"] + band["h"], f"not below the bar: {lab} {band}")
         self.assertLessEqual(lab["y"], band["y"] + band["h"] + 12, f"not just under the bar: {lab} {band}")
@@ -347,13 +351,29 @@ class Label(LiveCase):
         self.point(-1, -1, "leave")
         self.gone("the pointer off the bar")
 
+    def test_says_more_than_a_name(self):
+        """The clock says the whole date, as Settings → Region writes dates; a status icon says
+        how it is, not only what it is."""
+        self.at("top")
+        self.addCleanup(lambda: self.ipc("test", "barHover", ""))
+        self.ipc("test", "barHover", "clock")
+        self.showing(DATE, "the clock's whole date")
+        self.keep_setting("dateFormat")
+        self.config("dateFormat", "mdy")
+        self.showing("Monday, January 5, 2026", "the date as Region writes it")
+        self.keep_setting("barShowGameMode")
+        self.config("barShowGameMode", "true")
+        self.wait(lambda st: st["bar"]["line"]["gamemode"]["visible"], "game mode on the bar")
+        self.ipc("test", "barHover", "gamemode")
+        self.showing("Game mode: off", "game mode's state")
+
     def test_beside_a_side_bar(self):
         self.at("left")
         st = self.s.state()
         band, height = st["bar"]["band"], st["screens"][0]["height"]
         x, y = self.centre("clock")
         self.point(x, y)
-        lab = self.showing("Clock", "over the clock on a side bar")
+        lab = self.showing(DATE, "over the clock on a side bar")
         self.assertGreaterEqual(lab["x"], band["x"] + band["w"], f"not beside the bar: {lab} {band}")
         self.assertLessEqual(lab["x"], band["x"] + band["w"] + 12, lab)
         self.assertGreaterEqual(lab["y"], 0, lab)
@@ -385,7 +405,7 @@ class Label(LiveCase):
         self.addCleanup(lambda: self.ipc("popout", "close"))
         x, y = self.centre("clock")
         self.point(x, y)
-        self.showing("Clock", "over the clock")
+        self.showing(DATE, "over the clock")
         self.point(x, y, "click")
         self.assertFalse(self.label()["shown"], "the label didn't go at the click itself")
         self.gone("clicked", timeout=1)
@@ -399,7 +419,7 @@ class Label(LiveCase):
         self.assertFalse(lab["shown"], f"back without the pointer leaving the clock: {lab}")
         self.point(-1, -1, "leave")
         self.point(x, y)
-        self.showing("Clock", "the pointer back on the clock")
+        self.showing(DATE, "the pointer back on the clock")
 
     def test_tray_app_name(self):
         self.at("top")

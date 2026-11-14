@@ -318,7 +318,7 @@ class TwoScreensAt125(TwoScreensCase):
         TEST2: just under the bar in Hyprland's pixels too, and on screen in Slate's units."""
         self.addCleanup(lambda: self.ipc("test", "barHover", ""))
         self.ipc("test", "barHover", "clock")
-        st = self.wait(lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == "Clock"
+        st = self.wait(lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == "Monday, 5 January 2026"
                        and st["bar"]["label"]["opacity"] > 0.99, "the clock's label")
         lab, band = st["bar"]["label"], st["bar"]["band"]
         width = SIZES[SECOND][0] / self.scale

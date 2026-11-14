@@ -199,6 +199,7 @@ PanelWindow {
                 .map(c => { const it = Config.barItem(c.name); return it ? it.label : ""; }).filter(n => n !== "") : [];
             return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
         }
+        if (seg.tipText !== "") return seg.tipText;
         const n = seg.name;
         if (n === "" || n === "windowtitle" || n === "tray") return "";
         if (n === "windowicon") { const e = appTile.entry; if (e && e.name) return e.name; }
@@ -1486,6 +1487,7 @@ PanelWindow {
                     // every other icon on it. Its own mode or the default alike (the panel says
                     // which)
                     tint: Config.statusColour("windowmode", bar.textColor)
+                    tipText: "Window mode: " + mode.label
                     onClicked: bar.openPopout("windowmode", wsMode)
                   }
                   // The dots (each with its own hover highlight, behind it)
@@ -1764,6 +1766,8 @@ PanelWindow {
                         sample: "50"
                         label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.dnd
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
+                        tipText: !bar.notifs ? "" : bar.notifs.dnd ? "Notifications: Do Not Disturb is on"
+                            : bar.notifs.unread === 1 ? "1 new notification" : bar.notifs.unread > 1 ? bar.notifs.unread + " new notifications" : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
                     }
                     // Clipboard history: how many items it holds; click for the list
@@ -1774,6 +1778,8 @@ PanelWindow {
                         iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
                         sample: "12"; textOn: Config.s.barValueClipboard
                         label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
+                        tipText: !Config.s.clipboardHistory ? "Clipboard history is off" : Config.clipCount === 1 ? "Clipboard: 1 item"
+                            : Config.clipCount > 1 ? "Clipboard: " + Config.clipCount + " items" : "Clipboard: empty"
                         onClicked: bar.openPopout("clipboard", clipSeg)
                     }
                     // Screenshots: click for area / window / screen
@@ -1792,6 +1798,7 @@ PanelWindow {
                         pastel: "camera"              // its colour when the look is Colourful
                         iconCode: Config.cameraOn ? 0xEA9A : 0xECF0
                         tint: Config.cameraOn ? bar.accent : bar.textColor
+                        tipText: Config.cameraOn ? "Your camera is in use" : "Camera: not in use"
                         clickable: false
                     }
                     // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
@@ -1803,6 +1810,7 @@ PanelWindow {
                         sample: "Off"; textOn: Config.s.barValueGameMode
                         label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
                         tint: Config.gameMode ? bar.accent : bar.textColor
+                        tipText: Config.gameMode ? "Game mode: on" : "Game mode: off"
                         onClicked: bar.openPopout("gamemode", gameSeg)
                     }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
@@ -1814,6 +1822,7 @@ PanelWindow {
                         iconCode: 0xEBD6
                         sample: "GB"; textOn: Config.s.barValueKeyboard
                         label: Config.s.barValueKeyboard && current ? current.code : ""
+                        tipText: current ? "Keyboard: " + current.name : ""
                         onClicked: bar.openPopout("keyboard", kbSeg)
                         onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
                     }
@@ -1828,6 +1837,8 @@ PanelWindow {
                         iconCode: !on ? 0xECEB : connected.length > 0 ? 0xECEA : 0xEA37
                         sample: "5"; textOn: Config.s.barValueBluetooth
                         label: Config.s.barValueBluetooth && connected.length > 0 ? String(connected.length) : ""
+                        tipText: !on ? "Bluetooth: off" : connected.length === 1 ? "Bluetooth: " + (connected[0].name || connected[0].deviceName || "1 device connected")
+                            : connected.length > 1 ? "Bluetooth: " + connected.length + " devices connected" : "Bluetooth: on"
                         onClicked: bar.openPopout("bluetooth", btSeg)
                     }
                     Segment {
@@ -1842,6 +1853,7 @@ PanelWindow {
                         iconCode: muted || vol === 0 ? 0xF1C3 : vol > 0.5 ? 0xEB51 : 0xEB4F
                         sample: "50%"; textOn: Config.s.barValueVolume
                         label: Config.s.barValueVolume ? Math.round(vol * 100) + "%" : ""
+                        tipText: !sink ? "" : muted ? "Volume: muted" : "Volume: " + Math.round(vol * 100) + "%"
                         onClicked: bar.openPopout("volume", volSeg)
                         onWheel: delta => {
                             if (!sink || !sink.audio) return;
@@ -1865,6 +1877,7 @@ PanelWindow {
                         iconCode: onWire ? 0xF09F : !wifi && !Config.pretendWifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
                         sample: "Wi-Fi"; textOn: Config.s.barValueWifi
                         label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
+                        tipText: onWire ? "Network: wired" : net ? "Wi-Fi: " + net.name : wifi ? "Wi-Fi: not connected" : ""
                         onClicked: bar.openPopout("wifi", wifiSeg)
                     }
                     Segment {
@@ -1880,6 +1893,8 @@ PanelWindow {
                         iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
                         label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
+                        tipText: !has ? "" : "Battery: " + Math.round(pct * 100) + "%" + (dev.state === UPowerDeviceState.FullyCharged ? ", full"
+                            : charging ? ", charging" : !UPower.onBattery ? ", plugged in" : "")
                         onClicked: bar.openPopout("battery", batSeg)
                     }
 
@@ -1908,6 +1923,8 @@ PanelWindow {
                     font.pixelSize: bar.fontSize
                     font.weight: Font.Medium
                 }
+                // (the label says the whole date, whatever the clock shows)
+                tipText: Config.dateText(Config.clockDate(sysClock.date), "long")
                 onClicked: bar.openPopout("calendar", clockCap)
             }
 
@@ -2047,6 +2064,9 @@ PanelWindow {
         // space beside the icon, both sides together
         property real pad: 20
         // What the label off the bar says for it (BarLabel.qml), and what that's centred on
+        // What the label says for it in place of its name, when there's more to say: its state
+        // ("Volume: 40%"), the clock's whole date
+        property string tipText: ""
         property string tip: bar.thingTip(seg)
         property Item tipAt: null
         width: bar.vert ? bar.capsuleHeight : length >= 0 ? length : segRow.width + pad

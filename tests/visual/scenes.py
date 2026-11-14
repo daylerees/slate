@@ -346,7 +346,7 @@ def _label_says(text):
 
 _LABEL_GONE = lambda st: not st["bar"]["label"]["visible"]
 SCENES["bar-label"] = {
-    "do": [("test", "barHover", "clock")], "wait": _label_says("Clock"), "settle": 1.0,
+    "do": [("test", "barHover", "clock")], "wait": _label_says("Monday, 5 January 2026"), "settle": 1.0,
     "undo": [("test", "barHover", ""), _LABEL_GONE],
 }
 SCENES["bar-label-left"] = {
