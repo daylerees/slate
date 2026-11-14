@@ -81,6 +81,10 @@ Carousel.js              what the switcher and the overview work out the same wa
 CarouselPaths.qml        the paths their strips run along (a line, and the wheel)
 CardMotion.qml           how a card in their strips moves (hop, tilt, orbit, deck, fan)
 WindowShape.qml          a window drawn as its outline when live previews are off
+DialogBackdrop.qml       the dimmed desktop behind a dialog (confirmation, password)
+DialogCard.qml           the dialog's card: raised surface that eases in
+DialogIcon.qml           the round icon at the top of a dialog
+DialogButton.qml         a dialog's buttons (Cancel and the primary one)
 WorkspaceDots.qml       a row of workspace dots (bar, switcher, overview, on-screen display), with
 WorkspaceMarker.qml     the accent marker that glides over the one in use
 SlateMark.qml           Slate's mark, drawn as vectors (bar, dock, Slate's notifications)

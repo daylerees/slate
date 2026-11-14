@@ -65,3 +65,14 @@ class Shared(Case):
                     self.assertNotIn(own, src, f"{name} has its own copy of {own}")
                 for shared in ("CarouselPaths {", "CardMotion {", "WindowShape {", "Carousel.reps(", "Carousel.shotFor("):
                     self.assertIn(shared, src, f"{name} should use {shared}")
+
+    def test_dialogs_share_their_card(self):
+        """The confirmation window and the password window are built from the same backdrop,
+        card, round icon and buttons; neither draws its own."""
+        for name in ("PowerConfirm.qml", "PolkitAgent.qml"):
+            src = slate.read("shell", name)
+            with self.subTest(name):
+                for shared in ("DialogBackdrop {", "DialogCard {", "DialogIcon {", "DialogButton {"):
+                    self.assertIn(shared, src, f"{name} should use {shared}")
+                self.assertNotIn("component DialogButton", src)
+                self.assertNotIn("width: 56; height: 56", src)

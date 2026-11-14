@@ -109,27 +109,16 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
-
     // Dimmed desktop; click it to cancel
-    Rectangle {
-        anchors.fill: parent
-        color: "#000000"
-        opacity: 0.45 * root.fade
-        MouseArea { anchors.fill: parent; enabled: root.shown; onClicked: root.cancel() }
-    }
+    DialogBackdrop { fade: root.fade; active: root.shown; onDismissed: root.cancel() }
 
     // ---- Card --------------------------------------------------------------
-    Rectangle {
+    DialogCard {
         id: card
-        anchors.centerIn: parent
+        fade: root.fade
         width: 400
         height: content.implicitHeight + 48
-        radius: Config.corner(18)
         color: root.cardColor
-        opacity: root.fade
-        scale: 0.94 + 0.06 * root.fade
-        Shadow {}      // raised: Slate's shadow, with glass too
 
         transform: Translate { id: shakeX }
         SequentialAnimation {
@@ -139,8 +128,6 @@ PanelWindow {
             NumberAnimation { target: shakeX; property: "x"; to: -6; duration: Config.ms(60) }
             NumberAnimation { target: shakeX; property: "x"; to: 0; duration: Config.ms(60) }
         }
-
-        MouseArea { anchors.fill: parent }    // swallow clicks inside the card
 
         FocusScope {
             anchors.fill: parent
@@ -153,17 +140,11 @@ PanelWindow {
                 spacing: 0
 
                 // Icon
-                Rectangle {
+                DialogIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 56; height: 56; radius: Config.corner(28)
                     color: root.fieldColor
-                    Text {
-                        anchors.centerIn: parent
-                        text: String.fromCodePoint(0xEAE2)     // lock
-                        color: root.accent
-                        font.family: tabler.name
-                        font.pixelSize: 26
-                    }
+                    code: 0xEAE2     // lock
+                    glyph: root.accent
                 }
                 Item { width: 1; height: 16 }
                 Text {
@@ -298,6 +279,7 @@ PanelWindow {
                     DialogButton {
                         width: (parent.width - parent.spacing) / 2
                         label: "Cancel"
+                        fill: root.fieldColor; textColor: root.textColor; accentText: root.accentText
                         onClicked: root.cancel()
                     }
                     DialogButton {
@@ -305,36 +287,11 @@ PanelWindow {
                         label: root.busy ? "Checking…" : "Authenticate"
                         primary: true
                         dimmed: password.text === "" || root.busy
+                        fill: root.fieldColor; textColor: root.textColor; accentText: root.accentText
                         onClicked: root.submit()
                     }
                 }
             }
-        }
-    }
-
-    component DialogButton: Rectangle {
-        id: btn
-        property string label: ""
-        property bool primary: false
-        property bool dimmed: false
-        signal clicked()
-        height: 40
-        radius: Config.corner(10)
-        readonly property color base: primary ? Config.accentFor(hh.hovered) : root.fieldColor
-        color: primary ? base : "transparent"
-        HoverFill { base: btn.base; hovered: hh.hovered; gone: btn.primary; radius: btn.radius }
-        opacity: dimmed ? 0.55 : 1
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
-        HoverHandler { id: hh }
-        ClickTap { onTapped: btn.clicked() }
-        Text {
-            anchors.centerIn: parent
-            text: btn.label
-            color: btn.primary ? root.accentText : root.textColor
-            font.family: root.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.DemiBold
         }
     }
 }
