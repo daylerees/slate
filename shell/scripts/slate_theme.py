@@ -16,8 +16,12 @@ Every change Slate makes to an app's config is recorded in
   listitem  an item Slate added to a ;-separated list in a key file (Flatpak's overrides):
             removed, and the key with it once it's empty
   gsettings a GSettings key: your old value put back
+  whole     a small file of yours Slate replaced altogether (the X11 default pointer's
+            index.theme): what it held is put back, or the file removed if there was none
   command   a command that sets something, with the command that sets it back
 Config files are also backed up once (<file>.bak-slate-theme) before Slate first edits them.
+The pointer and the code font in other apps (Settings → Input, Settings → Appearance) are
+recorded the same way, as the apps "pointer" and "code-font" (apply-theme.py).
 A config that's a link is changed where it leads, so it stays a link; one that's read-only
 (Home Manager's, in the Nix store) is left alone.
 """
@@ -374,6 +378,11 @@ class Ctx:
         except (FileNotFoundError, ValueError):
             self.manifest = {}
         self.app = None
+        # Taking over changes Slate made before it kept a record of them (the pointer and the
+        # code font in other apps, which older versions set without asking): what was there
+        # before can't be read from the files any more, so it comes from the one-off backup
+        # where there is one, and is otherwise "nothing" (undo takes Slate's own value out)
+        self.adopting = False
         for ops in self.manifest.values():
             OWN.update(o["path"] for o in ops if o.get("path") and (o.get("new") or o["t"] in ("created", "file")))
 
@@ -389,6 +398,16 @@ class Ctx:
 
     def _has(self, op, *keys):
         return next((o for o in self._ops() if o["t"] == op and all(o.get(k) == v for k, v in keys)), None)
+
+    def _old_ini(self, path, section, key):
+        """What a key held before Slate set it. Usually what it holds now; when adopting, what
+        the backup made before Slate's first edit says (nothing, if that's only Slate's own
+        value again: the backup was made after Slate had set it)"""
+        cur = ini_get(read(path) or "", section, key)
+        if not self.adopting:
+            return cur
+        was = ini_get(read(path + ".bak-slate-theme") or "", section, key)
+        return None if was == cur else was
 
     def _record(self, op):
         """Note a change, before it's made: a file (and folders) that don't exist yet are
@@ -411,6 +430,27 @@ class Ctx:
         if not self._has("file", ("path", path)):
             self._record({"t": "file", "path": path, "empty": empty_on_undo})
         return write(path, text)
+
+    def mine(self, path):
+        """A file Slate made before it kept a record (adopting): noted, so undo removes it"""
+        if os.path.isfile(path) and not self._has("file", ("path", path)):
+            self._record({"t": "file", "path": path, "empty": False})
+
+    def whole(self, path, text):
+        """A small file Slate replaces altogether, yours or not: what it held (or that there
+        was none) is remembered and put back on undo, as long as it's still what Slate wrote"""
+        o = self._has("whole", ("path", path))
+        if not o:
+            old = None if self.adopting else read(path)
+            o = {"t": "whole", "path": path, "old": old}
+            self._record(o)
+            bak = path + ".bak-slate-theme"
+            if old and writable(path) and not os.path.exists(bak):
+                shutil.copy2(path, bak)
+        done = write(path, text)
+        if read(path) == text:
+            o["text"] = text
+        return done
 
     def start(self, path, text):
         """A starting config, only when there's none"""
@@ -447,6 +487,10 @@ class Ctx:
         if m:
             old = m.group(0)
             if old == new:
+                # (adopting: Slate's line is there already; yours is in the one-off backup)
+                was = re.search(pattern, read(path + ".bak-slate-theme") or "", flags=re.M) if self.adopting else None
+                if was and was.group(0) != new and not self._has("replace", ("path", path), ("new", new)):
+                    self._record({"t": "replace", "path": path, "old": was.group(0), "new": new})
                 return False
             if not self._has("replace", ("path", path), ("new", new)):
                 self._record({"t": "replace", "path": path, "old": old, "new": new})
@@ -463,19 +507,17 @@ class Ctx:
         return edit(path, lambda x: (text + x) if top else (x.rstrip("\n") + ("\n\n" if x.strip() else "") + text))
 
     def ini(self, path, section, key, value, sep="="):
-        t = read(path) or ""
         if not self._has("ini", ("path", path), ("section", section), ("key", key)):
             self._record({"t": "ini", "path": path, "section": section, "key": key,
-                          "old": ini_get(t, section, key), "sep": sep})
+                          "old": self._old_ini(path, section, key), "sep": sep})
         return edit(path, lambda x: set_ini_key(x, section, key, value, sep))
 
     def ini_many(self, path, items, sep="="):
         """Several ini() changes to one file, written once: items = [(section, key, value)]"""
-        t = read(path) or ""
         for section, key, _ in items:
             if not self._has("ini", ("path", path), ("section", section), ("key", key)):
                 self._record({"t": "ini", "path": path, "section": section, "key": key,
-                              "old": ini_get(t, section, key), "sep": sep})
+                              "old": self._old_ini(path, section, key), "sep": sep})
         def fn(x):
             for section, key, value in items:
                 x = set_ini_key(x, section, key, value, sep)
@@ -536,6 +578,9 @@ class Ctx:
         if only_if is not None and val.strip("'") not in only_if:
             return False
         if val.strip("'") == value:
+            # (adopting: it's Slate's already and what it was isn't known, so undo resets it)
+            if self.adopting and not self._has("gsettings", ("schema", schema), ("key", key)):
+                self._record({"t": "gsettings", "schema": schema, "key": key, "old": None})
             return False
         if not self._has("gsettings", ("schema", schema), ("key", key)):
             self._record({"t": "gsettings", "schema": schema, "key": key, "old": val.strip("'")})
@@ -661,8 +706,18 @@ def _undo_change(o, live):
                 write(path, set_ini_key(x, o["section"], o["key"], ";".join(items) + ";") if items
                       else del_ini_key(x, o["section"], o["key"]))
     elif t == "gsettings":
-        if live:
+        if live and o["old"] is None:
+            run(["gsettings", "reset", o["schema"], o["key"]])
+        elif live:
             run(["gsettings", "set", o["schema"], o["key"], o["old"]])
+    elif t == "whole":
+        x = read(path)
+        if x is not None and x == o.get("text"):       # (changed since: it's yours now, and stays)
+            if o["old"] is None:
+                os.remove(path)
+                changed.append(path)
+            else:
+                write(path, o["old"])
     elif t == "command":
         if live:
             run(o["undo"], timeout=60)

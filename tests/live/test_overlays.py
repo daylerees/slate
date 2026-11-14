@@ -1,5 +1,7 @@
 """Full-screen and floating parts: the launcher, picker, overview, window switcher, lock
 screen preview, screensaver, power confirmation and password prompt."""
+import os
+
 from live import LiveCase
 
 
@@ -235,6 +237,41 @@ class Overlays(LiveCase):
                          ("light", "false", "#e8a6b5"))
         self.ipc("welcome", "close")
         self.wait(lambda st: not st["welcome"]["open"], "the welcome to close")
+
+    def test_welcome_pointer_and_code_font_in_apps(self):
+        """The switch under "Glass or flat?": Slate's pointer and code font in your other apps
+        too. Off until chosen, and then nothing of yours is written (it used to be, at every
+        start); on, both settings go on and the X11 default pointer is written; off again (in
+        Settings, one at a time) and Slate takes it away. The window shows what's set when
+        it's opened again."""
+        index = os.path.join(self.s.env["HOME"], ".icons", "default", "index.theme")
+        for key in ("pointerInApps", "codeFontInApps"):
+            self.keep_setting(key)
+            self.config(key, "false")
+        self.keep_setting("cursorTheme")
+        self.config("cursorTheme", "Adwaita")       # (a pointer by name, whatever the session's own is)
+        self.s.settle(2.5)          # (the themes are applied a moment after a change)
+        self.assertFalse(os.path.exists(index), "the pointer was written into other apps' settings unasked")
+        self.ipc("welcome", "page", "3")
+        st = self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3, "the Glass or flat page")
+        self.assertFalse(st["welcome"]["inApps"])
+        self.ipc("welcome", "inApps", "true")
+        self.wait(lambda st: st["welcome"]["inApps"], "the switch to go on")
+        self.assertEqual((self.setting("pointerInApps"), self.setting("codeFontInApps")), ("true", "true"))
+        self.wait(lambda st: os.path.exists(index), "the pointer to reach other apps", timeout=10)
+        self.ipc("welcome", "close")
+        self.wait(lambda st: not st["welcome"]["open"], "the welcome to close")
+        # Settings → Input → Pointer in your apps, off: put back (here, there was none)
+        self.config("pointerInApps", "false")
+        self.wait(lambda st: not os.path.exists(index), "the pointer to be taken out of other apps again", timeout=10)
+        # ...and the welcome's switch stands for both, so it's off again
+        self.ipc("welcome", "page", "3")
+        st = self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3, "the Glass or flat page")
+        self.assertFalse(st["welcome"]["inApps"])
+        self.ipc("welcome", "close")
+        self.wait(lambda st: not st["welcome"]["open"], "the welcome to close")
+        errors = self.s.new_log_errors()
+        self.assertFalse(errors, errors[0][:200] if errors else "")
 
     def test_welcome_meets_nova(self):
         """The Welcome window introduces Nova on a page of its own, and its button opens

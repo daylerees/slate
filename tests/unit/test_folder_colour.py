@@ -9,6 +9,7 @@ errors, and that nothing is written outside the scratch home.
 import json
 import os
 import sys
+import unittest
 
 import slate
 from slate import Case, run
@@ -181,13 +182,55 @@ class FolderColour(Case):
         self.assertEqual(read("gtk-3.0", "settings.ini"),
                          "[Settings]\ngtk-theme-name=Adwaita\ngtk-icon-theme-name=Slate-Icons\n")
         self.assertEqual(read("gtk-4.0", "settings.ini"), "[Settings]\ngtk-icon-theme-name=Slate-Icons\n")
-        self.assertEqual(read("qt6ct", "qt6ct.conf"), "[Appearance]\nicon_theme=Slate-Icons\n")
+        self.assertFalse(os.path.exists(os.path.join(self.h.config, "qt6ct")),
+                         "made a qt6ct config for someone who doesn't use qt6ct")
+        # (your own file is kept beside it, once, before Slate first changes it)
+        self.assertEqual(read("gtk-3.0", "settings.ini.bak-slate-theme"),
+                         "[Settings]\ngtk-theme-name=Adwaita\ngtk-icon-theme-name=Papirus-Dark\n")
         self.assertEqual(read("kdeglobals"), "[General]\nColorScheme=Breeze\n\n[Icons]\nTheme=Slate-Icons\n")
         self.assertFalse(os.path.exists(os.path.join(self.h.config, "qt5ct")), "qt5ct is only changed if it's there")
         self.assertEqual(self.s.calls("gsettings"), [["get", IFACE, "icon-theme"],
                                                      ["set", IFACE, "icon-theme", "Slate-Icons"]])
         self.assertEqual(self.s.calls("dbus-send"), [["--session", "--type=signal", "/KIconLoader",
                                                       "org.kde.KIconLoader.iconChanged", "int32:0"]])
+
+    def test_qt6ct_only_for_those_who_use_it(self):
+        """qt6ct's config is written where there's a qt6ct folder (made new, or changed in its
+        own section), and not made for everyone else (test_set_points_apps_at_it)."""
+        os.makedirs(os.path.join(self.h.config, "qt6ct"))
+        code, out = self.folder("red")
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.h.config, "qt6ct", "qt6ct.conf")) as f:
+            self.assertEqual(f.read(), "[Appearance]\nicon_theme=Slate-Icons\n")
+        self.write(os.path.join(self.h.config, "qt6ct", "qt6ct.conf"),
+                   "[Appearance]\nstyle=Fusion\nicon_theme=breeze\n\n[Fonts]\nfixed=\"Mono,10\"\n")
+        code, out = self.folder("--icon-theme", "Papirus-Dark")
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.h.config, "qt6ct", "qt6ct.conf")) as f:
+            self.assertEqual(f.read(), "[Appearance]\nstyle=Fusion\nicon_theme=Papirus-Dark\n\n[Fonts]\nfixed=\"Mono,10\"\n")
+
+    @unittest.skipIf(os.geteuid() == 0, "root can write anything")
+    def test_read_only_config_left_alone(self):
+        """A read-only settings.ini (Home Manager links configs into the Nix store) used to stop
+        the script with a traceback before it reached the rest: it's left as it is, with a line
+        saying so, and the other files and GNOME's setting still follow."""
+        store = os.path.join(self.h.dir, "store")
+        self.write(os.path.join(store, "settings.ini"), "[Settings]\ngtk-icon-theme-name=Papirus-Dark\n")
+        os.chmod(os.path.join(store, "settings.ini"), 0o444)
+        os.chmod(store, 0o555)
+        self.addCleanup(os.chmod, store, 0o755)
+        os.makedirs(os.path.join(self.h.config, "gtk-3.0"))
+        os.symlink(os.path.join(store, "settings.ini"), os.path.join(self.h.config, "gtk-3.0", "settings.ini"))
+        code, out = self.folder("red")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("Traceback", out)
+        self.assertIn("gtk-3.0/settings.ini is read-only", out)
+        with open(os.path.join(store, "settings.ini")) as f:
+            self.assertEqual(f.read(), "[Settings]\ngtk-icon-theme-name=Papirus-Dark\n")
+        self.assertTrue(os.path.islink(os.path.join(self.h.config, "gtk-3.0", "settings.ini")))
+        with open(os.path.join(self.h.config, "gtk-4.0", "settings.ini")) as f:
+            self.assertEqual(f.read(), "[Settings]\ngtk-icon-theme-name=Slate-Icons\n")
+        self.assertIn(["set", IFACE, "icon-theme", "Slate-Icons"], self.s.calls("gsettings"))
 
     def test_change_colour_refreshes(self):
         """Already on Slate-Icons, a new colour: rebuilt on the same base, and gsettings switches

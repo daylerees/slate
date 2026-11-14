@@ -305,7 +305,7 @@ FloatingWindow {
         datetime: ["dateFormat", "weekStart", "temperatureUnit"],
         general: ["clipboardHistory", "nightLightTemperature", "nightLightSchedule", "nightLightFrom", "nightLightTo"],
         appearance: ["themeMode", "lightMode", "colourStyle", "accentFromWallpaper", "accentBoldness", "accent", "toneFromWallpaper", "toneBoldness", "roundedScreenCorners", "roundedElements",
-            "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "shadows", "shadowDarkness", "shadowSoftness", "shadowSpread", "shadowDistance", "shadowDirection", "fontFamily", "codeFontFamily", "uiScale"],
+            "animations", "glass", "glassOpacity", "glassBlur", "glassGloss", "glassGlossTint", "fastBlur", "blurPasses", "shadows", "shadowDarkness", "shadowSoftness", "shadowSpread", "shadowDistance", "shadowDirection", "fontFamily", "codeFontFamily", "codeFontInApps", "uiScale"],
         wallpaper: ["wallpaperFolder", "wallpaperChange", "wallpaperHideSmall", "wallpaperMinSize", "wallpaperShowSlate"],
         icons: ["iconTheme", "folderColour", "iconShape", "iconFill", "iconTileColour", "tintIcons", "iconTintStrength"],
         bar: ["barPosition", "barLayout", "barOverflow", "barStay", "barBlur", "barOpacity", "barPanelBlur", "barPanelOpacity", "barItemOpacity", "barItemHoverOpacity", "barAutoHide", "barShowControl", "barShowClock", "barShowApps", "barShowSpaces", "barShowAssistant", "barShowWorkspaces", "barShowWorkspaceName", "barShowWindowMode", "barShowTitle", "barShowTitleIcon",
@@ -319,7 +319,7 @@ FloatingWindow {
         debug: ["logLevel"],
         displays: ["mainDisplay"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
-            "mouseNaturalScroll", "cursorTheme", "cursorSize", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
+            "mouseNaturalScroll", "cursorTheme", "cursorSize", "pointerInApps", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping"],
         sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume", "answeredVolume",
             "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
@@ -3503,6 +3503,15 @@ FloatingWindow {
                     value: Config.s.cursorSize > 0 ? Config.s.cursorSize : 20
                     onPicked: v => Config.s.cursorSize = v
                 }
+                Separator {}
+                // Off until chosen (the Welcome window offers it): the pointer written into other
+                // apps' own settings, each change recorded and put back when it's switched off
+                // (scripts/apply-theme.py, as the app "pointer")
+                ToggleSetting {
+                    label: "Pointer in your apps"
+                    detail: "Sets this pointer in your other apps' own settings too (GTK, KDE and older X11 apps), so it's the same everywhere. Switch it off and Slate puts those settings back as they were"
+                    key: "pointerInApps"
+                }
             }
 
             GroupLabel { text: "More pointer styles" }
@@ -5725,10 +5734,19 @@ FloatingWindow {
                 Separator {}
                 FontSetting {
                     label: "Code font"
-                    detail: "Monospaced font for terminals and code; used when apps are themed"
+                    detail: "Monospaced font for code: Slate uses it, and your other apps can too, with the switch below"
                     key: "codeFontFamily"
                     defaultFont: "Geist Mono"
                     monoOnly: true
+                }
+                Separator {}
+                // Off until chosen (the Welcome window offers it): the code font as every app's
+                // "monospace", each change recorded and put back when it's switched off
+                // (scripts/apply-theme.py, as the app "code-font")
+                ToggleSetting {
+                    label: "Code font in your apps"
+                    detail: "Makes the code font the monospaced font of your other apps too: terminals, editors and anything else that asks for one. Switch it off and Slate puts their settings back as they were"
+                    key: "codeFontInApps"
                 }
             }
             GroupLabel { text: "Size" }

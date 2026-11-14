@@ -98,6 +98,7 @@ JsonAdapter {
     property string touchpadIgnoreWhileTyping: "" // on / off
     property int cursorSize: 0                // px (0 = not set here)
     property string cursorTheme: ""           // the pointer's theme: "" = Slate's own (Slate-Cursors), or any installed cursor theme
+    property bool pointerInApps: false        // Settings → Input: write the pointer into other apps' own settings too (GTK, KDE, X11), undone when switched off
     property string iconTheme: ""             // apps' icon theme (and Slate's tiles): "" = as set on this computer, or any installed icon theme
     property string iconThemeBefore: ""       // (the theme this computer had before one was chosen there: "" goes back to it)
     property string focusFollowsMouse: "on"   // on / off (Settings → Windows); "" leaves it to Hyprland's own config
@@ -134,6 +135,7 @@ JsonAdapter {
     property int soloWindowGap: 0             // px around a window alone on its workspace (0 = fills the screen)
     property string fontFamily: "Geist"       // interface font for the whole shell
     property string codeFontFamily: "Geist Mono"   // monospaced font, for theming apps (bundled)
+    property bool codeFontInApps: false       // Settings → Appearance: make the code font other apps' monospace too (fontconfig, Qt, KDE, GNOME), undone when switched off
 
     // Bar
     property string barPosition: "top"        // top, bottom, left or right

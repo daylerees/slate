@@ -471,7 +471,7 @@ ShellRoot {
                 screensaver: { open: screensaver.shown },
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
-                welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages },
+                welcome: { open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "", toast: notifs.toastLook() },
@@ -800,6 +800,10 @@ ShellRoot {
         cursorSize: Config.s.cursorSize,
         // ...and its theme (Settings → Input → Pointer style; "" = as the session set it)
         cursorTheme: Config.s.cursorTheme,
+        // Whether the pointer and the code font reach other apps' own settings too (Settings →
+        // Input, Settings → Appearance; off until chosen, and undone when switched off)
+        pointerInApps: Config.s.pointerInApps,
+        codeFontInApps: Config.s.codeFontInApps,
         on: Config.s.themedApps || []
     })
     onThemeJsonChanged: themeApply.restart()
@@ -823,6 +827,11 @@ ShellRoot {
                 for (const line of text.split("\n")) {
                     const m = line.match(/^(restored|lost) (\S+) (.+)$/);
                     if (m) root.themeNotice(m[1], m[2], m[3]);
+                    // "adopt pointer" / "adopt code-font": an older Slate had set that one already
+                    // (it used to, without asking), so its switch goes on and it's kept, now
+                    // recorded and undoable (the script says how it tells)
+                    if (line === "adopt pointer") Config.s.pointerInApps = true;
+                    else if (line === "adopt code-font") Config.s.codeFontInApps = true;
                 }
             }
         }

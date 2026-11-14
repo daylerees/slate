@@ -942,6 +942,8 @@ Singleton {
         if (s.cursorSize > 0) t.push(`cursor_size = ${s.cursorSize}`);
         // ("" = the session's own: Slate's, or yours from hypr/variables.lua)
         t.push(`cursor_theme = ${q(/^[\w.+-]+$/.test(s.cursorTheme) ? s.cursorTheme : "")}`);
+        // (and whether GNOME's own pointer settings follow: Settings → Input → Pointer in your apps)
+        t.push(`cursor_in_apps = ${s.pointerInApps ? "true" : "false"}`);
         if (gameMode) t.push(`animations = "off"`);          // game mode: no animations
         else if (s.animations !== "") t.push(`animations = ${q(s.animations)}`);
         const apps = { terminal: s.defaultTerminal, browser: s.defaultBrowser, file_manager: s.defaultFileManager,

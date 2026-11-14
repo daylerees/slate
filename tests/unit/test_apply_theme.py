@@ -86,16 +86,17 @@ class ApplyTheme(Case):
     # ---- applying ----
     def test_cursor_theme_from_settings(self):
         """Pointer style (Settings → Input): the theme chosen reaches GTK, X11 and KDE apps,
-        whatever the session's environment says; with none chosen, the session's own."""
+        whatever the session's environment says; with none chosen, the session's own. (With
+        "Pointer in your apps" on: InYourApps has the rest.)"""
         self.put({".config/kcminputrc": "[Mouse]\ncursorTheme=Old\n"})
         self.env["XCURSOR_THEME"] = "Slate-Cursors"
-        self.apply([], cursorTheme="Bibata-Modern-Ice", cursorSize=24)
+        self.apply([], cursorTheme="Bibata-Modern-Ice", cursorSize=24, pointerInApps=True)
         for v in ("gtk-3.0", "gtk-4.0"):
             self.assertIn("gtk-cursor-theme-name=Bibata-Modern-Ice", self.text(".config/%s/settings.ini" % v))
             self.assertIn("gtk-cursor-theme-size=24", self.text(".config/%s/settings.ini" % v))
         self.assertIn("Inherits=Bibata-Modern-Ice", self.text(".icons/default/index.theme"))
         self.assertIn("cursorTheme=Bibata-Modern-Ice", self.text(".config/kcminputrc"))
-        self.apply([], cursorTheme="")
+        self.apply([], cursorTheme="", pointerInApps=True)
         self.assertIn("gtk-cursor-theme-name=Slate-Cursors", self.text(".config/gtk-3.0/settings.ini"))
         self.assertIn("Inherits=Slate-Cursors", self.text(".icons/default/index.theme"))
 
@@ -688,6 +689,257 @@ class FlatpakAndSnapGtk(ApplyTheme):
         self.apply([])
         self.assertEqual({p for p in self.tree() if p.startswith("snap/")}, {p for p in before if p.startswith("snap/")})
         self.assertFalse(os.path.exists(self.h("snap", "firefox", "4793", ".config", "gtk-3.0")))
+
+
+IFACE = "org.gnome.desktop.interface"
+# Slate's own files for the two, as it writes them
+INDEX = "[Icon Theme]\nName=Default\nComment=Default Cursor Theme\nInherits=%s\n"
+FONTCONF = ".config/fontconfig/conf.d/60-slate-monospace.conf"
+# Your own settings for the pointer and the monospaced font, there before Slate
+YOUR_POINTER = {
+    ".config/gtk-3.0/settings.ini": "[Settings]\ngtk-theme-name=Adwaita\ngtk-cursor-theme-name=Yours\n",
+    ".config/kcminputrc": "[Mouse]\ncursorTheme=Yours\n",
+    ".config/xsettingsd/xsettingsd.conf": 'Net/ThemeName "Adwaita"\nGtk/CursorThemeName "Yours"\nGtk/CursorThemeSize 24\n',
+    ".icons/default/index.theme": "[Icon Theme]\nInherits=Yours\n",
+    ".config/qt6ct/qt6ct.conf": "[Appearance]\nstyle=Fusion\n\n[Fonts]\nfixed=\"Mono,10\"\n",
+    ".config/kdeglobals": "[General]\nfixed=Hack,10\n",
+}
+
+
+class InYourApps(Case):
+    """The pointer and the code font in other apps (Settings → Input → Pointer in your apps,
+    Settings → Appearance → Code font in your apps; the Welcome window offers both). Slate used
+    to set both at every start, asked or not, and kept no record: now each is off until chosen,
+    recorded like an app's theme, and put back when switched off. Run as the session would
+    (no SLATE_THEME_TEST), with gsettings a stub that answers and logs."""
+
+    scratch = True
+    # (ApplyTheme's helpers, without running its tests a second time)
+    apply, put, text, tree, manifest = (ApplyTheme.apply, ApplyTheme.put, ApplyTheme.text,
+                                        ApplyTheme.tree, ApplyTheme.manifest)
+
+    def setUp(self):
+        super().setUp()
+        self.s = Stubs(self.h)
+        # Only the stubs: nothing real on this computer is reached
+        self.env = dict(self.s.env, PATH=self.s.dir)
+        self.s.add("fc-list", stdout="DejaVu Sans Mono\nGeist Mono,Geist Mono Medium\n")
+        self.gnome("'Adwaita'", "24", "'Monospace 11'")
+
+    def gnome(self, theme, size, mono):
+        """What GNOME's settings hold (the stub doesn't remember what's set)."""
+        self.s.add("gsettings", by_args={"get %s cursor-theme" % IFACE: theme + "\n",
+                                         "get %s cursor-size" % IFACE: size + "\n",
+                                         "get %s monospace-font-name" % IFACE: mono + "\n"})
+
+    def sets(self):
+        return [c for c in self.s.calls("gsettings") if c[0] != "get"]
+
+    def files(self):
+        """Every file in the scratch home with what it holds, but Slate's own (its undo log, its
+        cache) and the one-off backups."""
+        out = {}
+        for rel in self.tree():
+            if not rel.endswith(".bak-slate-theme") and not rel.startswith(".cache/slate/"):
+                with open(self.h(rel), "rb") as f:
+                    out[rel] = f.read()
+        return out
+
+    def both(self, on, **over):
+        p = dict(codeFont="Geist Mono", cursorTheme="Bibata-Modern-Ice", cursorSize=32,
+                 pointerInApps=on, codeFontInApps=on)
+        p.update(over)
+        return self.apply([], **p)
+
+    def test_nothing_until_chosen(self):
+        """Off (as a new install is): not one file of yours changes, none is made, and GNOME's
+        settings are left alone, where all of it used to be written at every start."""
+        self.put(YOUR_POINTER)
+        before = self.files()
+        out = self.apply([], codeFont="Geist Mono", cursorTheme="Bibata-Modern-Ice", cursorSize=32)
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.sets(), [])
+        self.assertEqual(out.strip(), "")
+        self.assertEqual(self.manifest(), {})
+
+    def test_nothing_made_in_an_empty_home(self):
+        before = self.files()
+        self.apply([], codeFont="Geist Mono", cursorTheme="Bibata-Modern-Ice", cursorSize=32)
+        self.assertEqual(self.files(), before)
+        for rel in (".icons", ".config/gtk-3.0", ".config/gtk-4.0", ".config/fontconfig"):
+            self.assertFalse(os.path.exists(self.h(rel)), rel)
+
+    def test_on_applies_and_records(self):
+        self.put(YOUR_POINTER)
+        self.both(True)
+        for v in ("gtk-3.0", "gtk-4.0"):
+            self.assertIn("gtk-cursor-theme-name=Bibata-Modern-Ice", self.text(".config/%s/settings.ini" % v))
+            self.assertIn("gtk-cursor-theme-size=32", self.text(".config/%s/settings.ini" % v))
+        self.assertEqual(self.text(".icons/default/index.theme"), INDEX % "Bibata-Modern-Ice")
+        self.assertEqual(self.text(".config/kcminputrc"), "[Mouse]\ncursorTheme=Bibata-Modern-Ice\ncursorSize=32\n")
+        self.assertEqual(self.text(".config/xsettingsd/xsettingsd.conf"),
+                         'Net/ThemeName "Adwaita"\nGtk/CursorThemeName "Bibata-Modern-Ice"\nGtk/CursorThemeSize 32\n')
+        self.assertIn("<prefer><family>Geist Mono</family></prefer>", self.text(FONTCONF))
+        self.assertIn('fixed="Geist Mono,10,', self.text(".config/qt6ct/qt6ct.conf"))
+        self.assertIn("fixed=Geist Mono,10,", self.text(".config/kdeglobals"))
+        self.assertEqual(self.sets(), [["set", IFACE, "cursor-theme", "Bibata-Modern-Ice"],
+                                       ["set", IFACE, "cursor-size", "32"],
+                                       ["set", IFACE, "monospace-font-name", "Geist Mono 11"]])
+        # Recorded, as two apps of their own, with what was there before
+        log = self.manifest()
+        self.assertEqual(set(log), {"pointer", "code-font"})
+        self.assertIn({"t": "gsettings", "schema": IFACE, "key": "cursor-theme", "old": "Adwaita"}, log["pointer"])
+        whole = next(o for o in log["pointer"] if o["t"] == "whole")
+        self.assertEqual(whole["old"], YOUR_POINTER[".icons/default/index.theme"])
+        # ...and your files kept beside them, once
+        for rel in (".config/gtk-3.0/settings.ini", ".config/kcminputrc", ".icons/default/index.theme",
+                    ".config/qt6ct/qt6ct.conf", ".config/kdeglobals"):
+            self.assertEqual(self.text(rel + ".bak-slate-theme"), YOUR_POINTER[rel], rel)
+
+    def test_off_again_puts_everything_back(self):
+        """Switched off: every file as it was to the byte, what Slate made gone (folders too),
+        and GNOME's settings set back to what they were."""
+        self.put(YOUR_POINTER)
+        before = self.files()
+        self.both(True)
+        self.both(True, cursorTheme="Adwaita-Other")   # (changed while on: still your original that's kept)
+        seen = len(self.sets())
+        out = self.both(False)
+        self.assertIn("switched off pointer", out)
+        self.assertIn("switched off code-font", out)
+        self.assertEqual(self.files(), before)
+        self.assertFalse(os.path.exists(self.h(".config/gtk-4.0")), "the folder Slate made is still there")
+        self.assertFalse(os.path.exists(self.h(".config/fontconfig")), "the folder Slate made is still there")
+        self.assertEqual(self.sets()[seen:], [["set", IFACE, "cursor-size", "24"],
+                                              ["set", IFACE, "cursor-theme", "Adwaita"],
+                                              ["set", IFACE, "monospace-font-name", "Monospace 11"]])
+        self.assertEqual(self.manifest(), {})
+
+    def test_off_removes_what_wasnt_there(self):
+        """With nothing of yours there before, nothing is left behind: no index.theme, no
+        folders."""
+        before = self.files()
+        self.both(True)
+        self.assertEqual(self.text(".icons/default/index.theme"), INDEX % "Bibata-Modern-Ice")
+        self.both(False)
+        self.assertEqual(self.files(), before)
+        for rel in (".icons", ".config/gtk-3.0", ".config/gtk-4.0", ".config/fontconfig"):
+            self.assertFalse(os.path.exists(self.h(rel)), rel)
+
+    def test_one_at_a_time(self):
+        self.put(YOUR_POINTER)
+        before = self.files()
+        self.both(True)
+        self.both(True, pointerInApps=False)
+        self.assertEqual(self.text(".icons/default/index.theme"), YOUR_POINTER[".icons/default/index.theme"])
+        self.assertTrue(os.path.exists(self.h(FONTCONF)))
+        self.assertEqual(set(self.manifest()), {"code-font"})
+        self.both(False)
+        self.assertEqual(self.files(), before)
+
+    def test_your_later_change_is_kept(self):
+        """An index.theme you've changed since isn't Slate's to put back or remove."""
+        self.both(True)
+        self.put({".icons/default/index.theme": "[Icon Theme]\nInherits=Mine\n"})
+        self.both(False)
+        self.assertEqual(self.text(".icons/default/index.theme"), "[Icon Theme]\nInherits=Mine\n")
+
+    # ---- an install from before these were a choice ----
+    def before_the_choice(self):
+        """A home as an older Slate left it: both set at every start, nothing recorded. Your
+        gtk-3.0 settings and qt6ct font were backed up when Slate first changed them; gtk-4.0's
+        settings.ini is one Slate made."""
+        self.env["XCURSOR_THEME"] = "Slate-Cursors"
+        self.put({
+            ".config/gtk-3.0/settings.ini": "[Settings]\ngtk-theme-name=Adwaita\ngtk-cursor-theme-name=Slate-Cursors\ngtk-cursor-theme-size=20\n",
+            ".config/gtk-3.0/settings.ini.bak-slate-theme": "[Settings]\ngtk-theme-name=Adwaita\ngtk-cursor-theme-name=Yours\n",
+            ".config/gtk-4.0/settings.ini": "[Settings]\ngtk-icon-theme-name=Papirus-Dark\ngtk-cursor-theme-name=Slate-Cursors\ngtk-cursor-theme-size=20\n",
+            ".icons/default/index.theme": INDEX % "Slate-Cursors",
+            FONTCONF: "<fontconfig><!-- an older Slate's --></fontconfig>\n",
+            ".config/qt6ct/qt6ct.conf": "[Fonts]\nfixed=\"Geist Mono,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\"\n",
+            ".config/qt6ct/qt6ct.conf.bak-slate-theme": "[Fonts]\nfixed=\"Mono,10\"\n",
+        })
+        self.gnome("'Slate-Cursors'", "20", "'Geist Mono 11'")
+
+    def old(self, on):
+        return self.apply([], codeFont="Geist Mono", pointerInApps=on, codeFontInApps=on)
+
+    def test_an_older_install_keeps_them(self):
+        """The rule: nothing recorded for it, and Slate's own file for it is there (the X11
+        default pointer exactly as Slate writes it for the pointer in use; Slate's fontconfig
+        file). Then nothing is undone: "adopt" tells Slate to switch the setting on."""
+        self.before_the_choice()
+        before = self.files()
+        out = self.old(False)
+        self.assertIn("adopt pointer\n", out)
+        self.assertIn("adopt code-font\n", out)
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.sets(), [])
+        # Switched on by that: what's there is recorded, and only the font file is brought up to date
+        out = self.old(True)
+        self.assertNotIn("adopt", out)
+        self.assertEqual(set(self.manifest()), {"pointer", "code-font"})
+        self.assertEqual({k: v for k, v in self.files().items() if k != FONTCONF},
+                         {k: v for k, v in before.items() if k != FONTCONF})
+        self.assertEqual(self.sets(), [])
+        self.assertNotIn("adopt", self.old(True))
+
+    def test_an_older_install_switched_off(self):
+        """What it was before an older Slate set it isn't known, so switching off puts back
+        what the one-off backup holds for each key, and otherwise takes Slate's own out:
+        its keys, its index.theme and font file, and GNOME's settings back to their defaults."""
+        self.before_the_choice()
+        self.old(False)
+        self.old(True)
+        out = self.old(False)
+        self.assertIn("switched off pointer", out)
+        self.assertIn("switched off code-font", out)
+        self.assertNotIn("adopt", out)
+        self.assertEqual(self.text(".config/gtk-3.0/settings.ini"),
+                         "[Settings]\ngtk-theme-name=Adwaita\ngtk-cursor-theme-name=Yours\n")
+        self.assertEqual(self.text(".config/gtk-4.0/settings.ini"), "[Settings]\ngtk-icon-theme-name=Papirus-Dark\n")
+        self.assertFalse(os.path.exists(self.h(".icons/default/index.theme")))
+        self.assertFalse(os.path.exists(self.h(FONTCONF)))
+        self.assertEqual(self.text(".config/qt6ct/qt6ct.conf"), "[Fonts]\nfixed=\"Mono,10\"\n")
+        self.assertEqual(self.sets(), [["reset", IFACE, "cursor-size"],
+                                       ["reset", IFACE, "cursor-theme"],
+                                       ["reset", IFACE, "monospace-font-name"]])
+        # ...and it stays off
+        self.assertNotIn("adopt", self.old(False))
+
+    def test_not_adopted(self):
+        """Not an older Slate's: an index.theme of your own, one for another pointer than the
+        one in use, and one Slate couldn't have written (read-only)."""
+        self.env["XCURSOR_THEME"] = "Slate-Cursors"
+        for text in ("[Icon Theme]\nInherits=Slate-Cursors\n", INDEX % "Bibata-Modern-Ice"):
+            with self.subTest(text):
+                self.put({".icons/default/index.theme": text})
+                self.assertNotIn("adopt", self.old(False))
+                self.assertEqual(self.text(".icons/default/index.theme"), text)
+        if os.geteuid() != 0:
+            self.put({".icons/default/index.theme": INDEX % "Slate-Cursors"})
+            os.chmod(self.h(".icons/default/index.theme"), 0o444)
+            self.assertNotIn("adopt", self.old(False))
+
+    @unittest.skipIf(os.geteuid() == 0, "root can write anything")
+    def test_read_only_settings_left_alone(self):
+        """A settings.ini that's read-only (Home Manager's) is left as it is, said once, and
+        everything else still follows."""
+        self.put({"store/settings.ini": "[Settings]\ngtk-cursor-theme-name=Yours\n"})
+        os.chmod(self.h("store", "settings.ini"), 0o444)
+        os.chmod(self.h("store"), 0o555)
+        self.addCleanup(os.chmod, self.h("store"), 0o755)
+        os.makedirs(self.h(".config", "gtk-3.0"))
+        os.symlink(self.h("store", "settings.ini"), self.h(".config", "gtk-3.0", "settings.ini"))
+        out = self.both(True)
+        self.assertNotIn("Traceback", out)
+        self.assertIn("gtk-3.0/settings.ini is read-only", out)
+        self.assertEqual(self.text("store/settings.ini"), "[Settings]\ngtk-cursor-theme-name=Yours\n")
+        self.assertIn("gtk-cursor-theme-name=Bibata-Modern-Ice", self.text(".config/gtk-4.0/settings.ini"))
+        self.assertIn(["set", IFACE, "cursor-theme", "Bibata-Modern-Ice"], self.sets())
+        self.both(False)
+        self.assertEqual(self.text("store/settings.ini"), "[Settings]\ngtk-cursor-theme-name=Yours\n")
+        self.assertTrue(os.path.islink(self.h(".config", "gtk-3.0", "settings.ini")))
 
 
 class LinkedConfigs(ApplyTheme):

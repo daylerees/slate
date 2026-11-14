@@ -209,10 +209,14 @@ opening any of them closes bar panels (wired in `shell.qml`).
   colour, GPL-3.0; rebuilt with `tools/build-cursors.py`). The installer links it into
   `~/.local/share/icons`; the session's `variables.lua` sets `CURSOR_THEME`/`CURSOR_SIZE`
   (override them in `~/.config/slate/hypr/variables.lua`) as Hyprland's cursor and in the
-  environment, and `scripts/apply-theme.py` points GTK, Qt/KDE and X11 apps at the same theme.
+  environment. With Settings → Input → Pointer in your apps on (`pointerInApps`, off until
+  chosen; the Welcome window offers it), `scripts/apply-theme.py` points GTK, Qt/KDE and X11 apps
+  at the same theme in their own settings, recorded in the undo log as the app `pointer` and put
+  back when it's switched off.
   Settings → Input → Pointer style (`cursorTheme`, listed by `scripts/icon-themes.py`) changes
-  it while running: `slateApply` in `slate.lua` sets Hyprland's cursor, the environment and
-  gsettings ("" = the session's own), and apply-theme.py gets the name from Slate.
+  it while running: `slateApply` in `slate.lua` sets Hyprland's cursor and the environment
+  (and gsettings, only with Pointer in your apps on; "" = the session's own), and
+  apply-theme.py gets the name from Slate.
 - Icon theme: Settings → Icons → Icon theme (`iconTheme`, listed by `scripts/icon-themes.py`).
   `shell.qml` sets it for GTK, Qt and KDE with `folder-colour.py --icon-theme`, then makes the
   folder colour again on top of it. Slate's tiles follow: `Config.tileDir` is
@@ -465,9 +469,12 @@ Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon 
 Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down; the goodbye sound first;
 before a restart with "Reopen my apps" on, `spaces.py session-save` keeps the windows, and the next login's
 `spaces.py session-restore` reopens them, then the startup apps on workspaces of their own),
-`scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming and the code font — fontconfig's "monospace",
-GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when the theme, accent, code font or the
-apps switched on in Settings → App Theming change). The apps live in `scripts/slate_apps.py`
+`scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming, and, each behind its own switch, the pointer and the code font
+in other apps — fontconfig's "monospace", GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when
+the theme, accent, code font, those switches or the apps switched on in Settings → App Theming change;
+nothing of another app's is written until something is switched on. An install where an older Slate had
+already set the pointer or the code font keeps it: the script prints `adopt pointer` / `adopt code-font`,
+`shell.qml` switches the setting on, and the next run records it so it can be undone). The apps live in `scripts/slate_apps.py`
 (one function each, all off until switched on; `INFO` there gives Settings each one's description,
 website and packages per distro family, for its Install button, which runs
 `bin/slate-system --install` through pkexec). Apps with Flatpak builds (Discord's Vencord,

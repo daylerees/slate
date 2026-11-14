@@ -230,7 +230,8 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
 2. **Checks** Hyprland and Quickshell are new enough.
 3. **Fonts** — [Geist and Geist Mono](https://vercel.com/font) ship with Slate (and Slate
    loads them itself); the installer also installs each to `~/.local/share/fonts` for your
-   other apps (so terminals can use Geist Mono as the code font) unless it's installed
+   other apps (so terminals can use Geist Mono, and Settings → Appearance → Code font in your apps
+   can make it their monospaced font if you choose) unless it's installed
    already, and keeps that copy up to date on updates. Slate's icon font is bundled too.
    **Icons and cursor** — if you haven't chosen an icon theme of your own, the installer asks
    whether to use Papirus-Dark (a package; Folder colour needs it). It's asked because the icon

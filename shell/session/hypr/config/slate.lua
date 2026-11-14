@@ -58,7 +58,10 @@ function slateApply(t)
     end
 
     -- Cursor theme and size (Settings → Input → Pointer style, Pointer size): Hyprland's own,
-    -- then apps started from now on (GTK apps follow gsettings; apply-theme.py does the rest)
+    -- then apps started from now on, through the session's environment. With "Pointer in your
+    -- apps" on (cursor_in_apps), GNOME's own settings follow too, which GTK apps read
+    -- (apply-theme.py does the rest, and records what was there so it can be put back); off,
+    -- those are yours and are left alone
     -- ("" = the session's own, as variables.lua set it before Slate changed anything)
     local cursorChanged = false
     SESSION_CURSOR_THEME = SESSION_CURSOR_THEME or CURSOR_THEME
@@ -69,7 +72,7 @@ function slateApply(t)
         CURSOR_THEME = wantTheme
         hl.env("XCURSOR_THEME", CURSOR_THEME)
         hl.env("HYPRCURSOR_THEME", CURSOR_THEME)
-        hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. CURSOR_THEME)
+        if t.cursor_in_apps then hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. CURSOR_THEME) end
         cursorChanged = true
     end
     if t.cursor_size ~= nil and t.cursor_size ~= appliedCursor then
@@ -77,7 +80,7 @@ function slateApply(t)
         CURSOR_SIZE = t.cursor_size
         hl.env("XCURSOR_SIZE", tostring(CURSOR_SIZE))
         hl.env("HYPRCURSOR_SIZE", tostring(CURSOR_SIZE))
-        hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size " .. CURSOR_SIZE)
+        if t.cursor_in_apps then hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size " .. CURSOR_SIZE) end
         cursorChanged = true
     end
     if cursorChanged then hl.exec_cmd("hyprctl setcursor " .. CURSOR_THEME .. " " .. CURSOR_SIZE) end

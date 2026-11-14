@@ -1,6 +1,7 @@
 // The welcome: shown the first time Slate starts (and from Settings → About), it introduces
 // Slate and walks through a few big choices, each with a recommendation: tiling or floating
-// windows, colours (from the wallpaper), glass or flat, where the bar and dock go, and the
+// windows, colours (from the wallpaper), glass or flat (and whether Slate's pointer and code
+// font reach your other apps too), where the bar and dock go, and the
 // shortcuts; then it introduces Nova, the assistant (off, and only switched on in Settings). It's drawn in the theme in use (light or dark, the tint, glass), as it can be
 // opened again at any time.
 // Everything it sets is in Settings too. Skip (or Escape) at any point.
@@ -37,6 +38,14 @@ PanelWindow {
         finish();
         Config.slateCall("settings", "page", "assistant");
     }
+    // Slate's pointer and code font in other apps too (the switch on the "Glass or flat?" page):
+    // Settings → Input → Pointer in your apps and Settings → Appearance → Code font in your
+    // apps, together. Off until chosen; switching either off there puts those apps' settings back
+    readonly property bool inApps: Config.s.pointerInApps && Config.s.codeFontInApps
+    function setInApps(on) {
+        Config.s.pointerInApps = on;
+        Config.s.codeFontInApps = on;
+    }
     // The first time Slate starts (a moment after, once the desktop is up)
     Timer {
         interval: 2500
@@ -48,9 +57,10 @@ PanelWindow {
         function open(): void { w.open(); }
         function close(): void { w.shown = false; }
         // Straight to a page (0: the welcome … 6: Nova, 7: the keys to know), its "Glass or flat?"
-        // choice, and Nova's page's button
+        // choice and the switch under it, and Nova's page's button
         function page(n: int): void { if (!w.shown) w.open(); w.page = Math.max(0, Math.min(w.pages - 1, n)); }
         function look(name: string): void { Config.applyLook(name); }
+        function inApps(on: bool): void { w.setInApps(on); }
         function assistant(): void { w.openAssistant(); }
     }
 
@@ -519,6 +529,50 @@ PanelWindow {
                                 ClickTap { onTapped: if (!lookCard.on) Config.applyLook(lookCard.modelData.name) }
                             }
                         }
+                    }
+                    Item { width: 1; height: 2 }
+                    // Other apps: Slate's pointer and code font in them too (off until chosen here
+                    // or in Settings; a row and switch like "Theme your other apps too")
+                    Rectangle {
+                        id: inAppsRow
+                        width: parent.width; height: inAppsText.implicitHeight + 24; radius: Config.corner(12)
+                        color: w.card
+                        Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+                        Column {
+                            id: inAppsText
+                            anchors { left: parent.left; right: inAppsSwitch.left; leftMargin: 14; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                            spacing: 4
+                            Row {
+                                spacing: 8
+                                Text { text: "Slate's pointer and code font in your other apps too"; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: inAppsRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
+                                    color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
+                                    Text { id: inAppsRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                }
+                            }
+                            Text {
+                                width: parent.width; wrapMode: Text.Wrap
+                                text: "Your apps get the same pointer and monospaced font as Slate, so everything matches. This changes those apps' own settings: switch it off at any time in Settings, and Slate puts them back as they were."
+                                color: w.dim; font.family: w.font; font.pixelSize: 12
+                            }
+                        }
+                        Rectangle {
+                            id: inAppsSwitch
+                            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                            width: 42; height: 24; radius: Config.corner(12)
+                            color: w.inApps ? w.accent : w.line
+                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
+                            Rectangle {
+                                width: 18; height: 18; radius: Config.corner(9)
+                                anchors.verticalCenter: parent.verticalCenter
+                                x: w.inApps ? parent.width - width - 3 : 3
+                                color: w.inApps ? w.accentText : w.text
+                                Behavior on x { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
+                            }
+                        }
+                        ClickTap { onTapped: w.setInApps(!w.inApps) }
                     }
                 }
             }

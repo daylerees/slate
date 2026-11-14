@@ -27,7 +27,10 @@ import subprocess
 import sys
 import time
 
-HOME = os.path.expanduser("~")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slate_theme import edit, set_ini_key        # noqa: E402
+
+HOME =os.path.expanduser("~")
 DATA = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
 CFG = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")
 NAME = "Slate-Icons"
@@ -173,31 +176,22 @@ def colours(root):
 
 # ---- Pointing apps at a theme ------------------------------------------------------------
 def set_ini(path, section, key, value, create=False):
-    if not os.path.exists(path):
-        if not create:
-            return
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        open(path, "w").close()
-    lines = open(path).read().splitlines()
-    start = next((i for i, l in enumerate(lines) if l.strip() == "[%s]" % section), None)
-    if start is None:
-        lines += ([""] if lines else []) + ["[%s]" % section, "%s=%s" % (key, value)]
-    else:
-        end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("[")), len(lines))
-        for i in range(start + 1, end):
-            if re.match(r"\s*%s\s*=" % re.escape(key), lines[i]):
-                lines[i] = "%s=%s" % (key, value)
-                break
-        else:
-            lines.insert(end, "%s=%s" % (key, value))
-    with open(path, "w") as f:
-        f.write("\n".join(lines) + "\n")
+    """Set a key in an app's INI file, the careful way Slate's app theming does
+    (slate_theme.edit): written in one go, backed up once (<file>.bak-slate-theme) before
+    Slate first changes it, through a link rather than over it, and a read-only file (Home
+    Manager's) is left alone, with a line in the log, instead of stopping everything after
+    it. A file that isn't there is only made when asked (create)."""
+    if not create and not os.path.exists(path):
+        return
+    edit(path, lambda t: set_ini_key(t, section, key, value))
 
 def use_theme(name, refresh):
     run = lambda *c: subprocess.run(list(c), capture_output=True, timeout=5)
     for v in ("gtk-3.0", "gtk-4.0"):
         set_ini(os.path.join(CFG, v, "settings.ini"), "Settings", "gtk-icon-theme-name", name, create=True)
-    set_ini(os.path.join(CFG, "qt6ct", "qt6ct.conf"), "Appearance", "icon_theme", name, create=True)
+    # (qt6ct's config is made for those who use qt6ct, not for everyone else)
+    set_ini(os.path.join(CFG, "qt6ct", "qt6ct.conf"), "Appearance", "icon_theme", name,
+            create=os.path.isdir(os.path.join(CFG, "qt6ct")))
     set_ini(os.path.join(CFG, "qt5ct", "qt5ct.conf"), "Appearance", "icon_theme", name)
     set_ini(os.path.join(CFG, "kdeglobals"), "Icons", "Theme", name)
     try:

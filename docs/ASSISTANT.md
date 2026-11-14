@@ -245,7 +245,8 @@ updates anything.
   mode, questions are declined without interrupting you.
 - **Settings it can't touch.** Its own permissions; anything that holds a command or
   reaches outside Slate (default apps, startup apps, launcher commands, clipboard history,
-  log detail); folders; the lock settings; keyboard layouts, the shortcut set and what the
+  log detail, and what changes your other apps' own settings: app theming, the pointer and the
+  code font in your apps); folders; the lock settings; keyboard layouts, the shortcut set and what the
   Caps Lock and layout-switching keys do; when the computer sleeps and the screensaver
   starts, and what the power button and closing the lid do; checking for updates; your
   location; title bar style and the main display. Slate says where you can change each
