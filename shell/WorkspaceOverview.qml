@@ -11,6 +11,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "Carousel.js" as Carousel
 
 PanelWindow {
     id: ov
@@ -126,24 +127,11 @@ PanelWindow {
     // Live pictures of the windows (Settings → Workspaces → Live previews), not in game mode;
     // without them, each window's outline and app icon
     readonly property bool livePreviews: Config.s.overviewPreviews && !Config.gameMode
-    function shotFor(addr) {
-        for (let i = 0; i < shotRepeater.count; i++) {
-            const it = shotRepeater.itemAt(i);
-            if (it && it.addr === addr) return it;
-        }
-        return null;
-    }
+    function shotFor(addr) { return Carousel.shotFor(shotRepeater, "addr", addr); }
     // Where the strip (or the grid) has scrolled to, mid-move or at rest (the test IPC's state)
     function stripAt() { return isGrid ? grid.contentY : list.offset; }
     // How many of the live captures have a picture yet (the test IPC's state)
-    function previewsReady() {
-        let n = 0;
-        for (let i = 0; i < shotRepeater.count; i++) {
-            const it = shotRepeater.itemAt(i);
-            if (it && it.hasContent) n++;
-        }
-        return n;
-    }
+    function previewsReady() { return Carousel.previewsReady(shotRepeater); }
 
     // Holding Shift "lifts" the selected card; arrows then swap it along the row
     property bool shiftHeld: false
@@ -157,9 +145,7 @@ PanelWindow {
     property bool handover: false
 
     // Repeat the workspaces round the loop so the strip always feels endless
-    readonly property int reps: spaces.length < 2 || isGrid ? 1
-        : Math.max(1, Math.ceil((width + 2 * slotW) / (spaces.length * slotW)),
-                   Math.ceil(({ tilt: 9, orbit: 10, deck: 6, fan: 12 })[moveAnim] / spaces.length) || 1)     // (far enough round that the strip's ends are never seen)
+    readonly property int reps: isGrid ? 1 : Carousel.reps(spaces.length, width + 2 * slotW, slotW, moveAnim)
     readonly property var strip: {
         const out = [];
         for (let r = 0; r < reps; r++) for (const w of spaces) out.push(w);
@@ -520,36 +506,13 @@ PanelWindow {
             model: ov.isGrid ? [] : ov.strip
             currentIndex: ov.index
             readonly property real len: Math.max(1, ov.strip.length) * ov.slotW
-            // Each card's distance along the strip from the middle ("side", in pixels) and the
-            // wheel's turn there ("turn", in degrees), for the cards to lean and tilt by
-            Path {
-                id: linePath
-                startX: list.width / 2 - list.len / 2; startY: list.height / 2
-                PathAttribute { name: "side"; value: -list.len / 2 }
-                PathAttribute { name: "turn"; value: 0 }
-                PathLine { x: list.width / 2 + list.len / 2; y: list.height / 2 }
-                PathAttribute { name: "side"; value: list.len / 2 }
-                PathAttribute { name: "turn"; value: 0 }
+            // The line and the wheel's paths (each card's "side" and "turn" ride on them)
+            CarouselPaths {
+                id: paths
+                viewWidth: list.width; len: list.len; restY: list.height / 2
+                wheelFloor: ov.slotW * 1.6
             }
-            // The wheel: the strip bent round a circle below, the chosen card at the top
-            readonly property real wheelR: Math.max(len / (2 * Math.PI) * 1.02, ov.slotW * 1.6)
-            readonly property real sweep: len / wheelR * 180 / Math.PI
-            readonly property real a0: (-90 - sweep / 2) * Math.PI / 180
-            Path {
-                id: wheelPath
-                startX: list.width / 2 + list.wheelR * Math.cos(list.a0); startY: list.height / 2 + list.wheelR + list.wheelR * Math.sin(list.a0)
-                PathAttribute { name: "side"; value: -list.len / 2 }
-                PathAttribute { name: "turn"; value: -list.sweep / 2 }
-                PathAngleArc {
-                    centerX: list.width / 2; centerY: list.height / 2 + list.wheelR
-                    radiusX: list.wheelR; radiusY: list.wheelR
-                    startAngle: -90 - list.sweep / 2; sweepAngle: list.sweep
-                    moveToStart: false
-                }
-                PathAttribute { name: "side"; value: list.len / 2 }
-                PathAttribute { name: "turn"; value: list.sweep / 2 }
-            }
-            path: ov.moveAnim === "wheel" ? wheelPath : linePath
+            path: ov.moveAnim === "wheel" ? paths.wheel : paths.line
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
@@ -576,29 +539,21 @@ PanelWindow {
                     .filter(t => t && ov.geoFor(t.address))
                 // Movement (ov.moveAnim), on the strip: how far along it is from the middle, in cards
                 readonly property real side: ov.isGrid ? 0 : (PathView.side ?? 0)
-                readonly property real t: side / ov.slotW
-                // Hop: every card rises and falls once for each step the strip moves
-                readonly property real hop: ov.moveAnim === "hop" ? Math.sin(Math.PI * Math.abs(list.offset - Math.round(list.offset))) : 0
-                // Tilt: the others turned away, packed closer the further out they are, and fading
-                // out before the strip's ends (the lifted card stays as it is)
-                readonly property bool tilted: ov.moveAnim === "tilt" && !lifted && modelData.id !== ov.swapB
-                readonly property real packed: Math.sign(t) * (Math.min(Math.abs(t), 1) * 0.7 + Math.max(Math.abs(t) - 1, 0) * 0.28) * ov.slotW
+                readonly property real t: motion.t
                 // Orbit: round a flat ring seen from above the front, the far side small, dim and
                 // higher (kept to the screen's width); fan: turned about a point well below, like
                 // a hand of cards, the chosen one lifted; deck: a pile, the next ones behind it
                 readonly property string fx: ov.moveAnim
                 readonly property bool moving: !lifted && modelData.id !== ov.swapB      // (the lifted card stays as it is)
-                readonly property real th: t * 0.7
-                readonly property real orbitR: Math.min(ov.slotW * 2.3, ov.width * 0.4)
-                readonly property real fanPivot: height + height * 2.2
-                readonly property real fanStep: (ov.cardW * 0.45 / fanPivot) * 180 / Math.PI
-                readonly property real fxScale: !moving ? 1 : fx === "orbit" ? 0.45 + 0.55 * (Math.cos(th) + 1) / 2
-                    : fx === "deck" && t > 0 ? Math.max(0.5, 1 - 0.07 * t) : 1
-                readonly property real fxOpacity: !moving ? 1
-                    : tilted ? Math.max(0, Math.min(1, 3.2 - Math.abs(t)))
-                    : fx === "orbit" ? (0.35 + 0.65 * (Math.cos(th) + 1) / 2) * Math.max(0, Math.min(1, (Math.PI - Math.abs(th)) * 1.5))
-                    : fx === "deck" ? (t < 0 ? Math.max(0, 1 + t * 1.2) : Math.max(0, Math.min(1, 4.5 - t)))
-                    : fx === "fan" ? Math.max(0, Math.min(1, 5.5 - Math.abs(t))) : 1
+                CardMotion {
+                    id: motion
+                    fx: card.fx; side: card.side; slotW: ov.slotW; cardW: ov.cardW; cardHeight: card.height
+                    orbitR: Math.min(ov.slotW * 2.3, ov.width * 0.4); offset: list.offset; moving: card.moving
+                    hopLift: 50; orbitLift: 90; deckX: 60; deckYAhead: 34; deckYBehind: 20; fanLift: 40
+                }
+                readonly property real th: motion.th
+                readonly property real fxScale: motion.scale
+                readonly property real fxOpacity: motion.opacity
                 rotation: ov.moveAnim === "wheel" ? (PathView.turn ?? 0) : 0
                 // Swap motion: the lifted card keeps pace with the row (or, on the grid, goes to the
                 // other's place), the other crosses over
@@ -607,22 +562,13 @@ PanelWindow {
                     Rotation {
                         origin.x: card.width / 2; origin.y: card.height / 2
                         axis { x: 0; y: 1; z: 0 }
-                        angle: card.tilted ? -Math.max(-1, Math.min(1, card.t)) * 55 : 0
+                        angle: motion.tiltAngle
                     },
                     Rotation {
-                        origin.x: card.width / 2; origin.y: card.fanPivot
-                        angle: card.fx === "fan" && card.moving ? card.t * card.fanStep : 0
+                        origin.x: card.width / 2; origin.y: motion.fanPivot
+                        angle: motion.fanAngle
                     },
-                    Translate {
-                        x: !card.moving ? 0 : card.tilted ? card.packed - card.side
-                         : card.fx === "orbit" ? card.orbitR * Math.sin(card.th) - card.side
-                         : card.fx === "deck" ? (card.t > 0 ? card.t * 60 - card.side : card.side * 0.6)
-                         : card.fx === "fan" ? -card.side : 0
-                        y: -card.hop * 50 - (!card.moving ? 0
-                         : card.fx === "orbit" ? (1 - Math.cos(card.th)) * 90
-                         : card.fx === "deck" ? (card.t > 0 ? card.t * 34 : card.t * 20)
-                         : card.fx === "fan" ? 40 * Math.max(0, 1 - Math.abs(card.t)) : 0)
-                    },
+                    Translate { x: motion.shiftX; y: motion.shiftY },
                     Translate {
                         x: card.modelData.id === ov.swapA ? card.swapBy.x * ov.swapProg
                          : card.modelData.id === ov.swapB ? -card.swapBy.x * ov.swapProg : 0
@@ -750,13 +696,10 @@ PanelWindow {
                             }
                             // Without live previews (or in game mode): the window's shape, an outline on a
                             // soft fill, instead of its picture
-                            Rectangle {
+                            WindowShape {
                                 visible: !ov.livePreviews
                                 anchors.fill: parent
                                 radius: Config.corner(Math.max(3, ovWin.radius))
-                                color: Qt.rgba(0.07, 0.08, 0.1, 0.72)
-                                border.width: 1.5
-                                border.color: Qt.rgba(1, 1, 1, 0.35)
                             }
                             ShaderEffectSource {
                                 visible: ov.livePreviews

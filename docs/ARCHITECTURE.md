@@ -77,6 +77,10 @@ HoverFill.qml           a control's own fill giving way to the muted hover, cros
 ScrollShade.qml         the soft shadow along the top or bottom edge of a scrolling list
 ThinScrollbar.qml       the slim scrollbar used across Slate, shown only when the view overflows
 Toggle.qml            the on/off switch every window draws (Settings, the bar editor, confirmations, Welcome, the launcher)
+Carousel.js              what the switcher and the overview work out the same way: repeats, capture lookup
+CarouselPaths.qml        the paths their strips run along (a line, and the wheel)
+CardMotion.qml           how a card in their strips moves (hop, tilt, orbit, deck, fan)
+WindowShape.qml          a window drawn as its outline when live previews are off
 WorkspaceDots.qml       a row of workspace dots (bar, switcher, overview, on-screen display), with
 WorkspaceMarker.qml     the accent marker that glides over the one in use
 SlateMark.qml           Slate's mark, drawn as vectors (bar, dock, Slate's notifications)

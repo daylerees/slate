@@ -53,3 +53,15 @@ class Shared(Case):
             with self.subTest(name):
                 self.assertNotIn('" min ago"', slate.read("shell", name),
                                  f"{name} words its own 'min ago': use Config.ago")
+
+    def test_the_carousel_is_shared(self):
+        """The switcher's and the overview's strips run on the same paths, motion maths, repeat
+        count, capture lookup and window outline: only CarouselPaths.qml draws the paths, only
+        CardMotion.qml works out how a card moves, only WindowShape.qml draws an outline."""
+        for name in ("Switcher.qml", "WorkspaceOverview.qml"):
+            src = slate.read("shell", name)
+            with self.subTest(name):
+                for own in ("PathAttribute", "PathAngleArc", "fanStep", "Qt.rgba(0.07, 0.08, 0.1, 0.72)"):
+                    self.assertNotIn(own, src, f"{name} has its own copy of {own}")
+                for shared in ("CarouselPaths {", "CardMotion {", "WindowShape {", "Carousel.reps(", "Carousel.shotFor("):
+                    self.assertIn(shared, src, f"{name} should use {shared}")
