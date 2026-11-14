@@ -73,3 +73,7 @@ dev-util/pkgconf
 
 # Talking to Nova (Settings → Assistant → Voice): speech turned into text on this computer:
 # whisper.cpp is in the GURU overlay (app-accessibility/whisper-cpp); enable it to install it
+# Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
+# says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,
+# Goose, Antigravity) are your own choice and come from their makers, not from here
+# (Ollama is in the GURU overlay, not the main tree: sci-ml/ollama)

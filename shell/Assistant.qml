@@ -275,7 +275,9 @@ PanelWindow {
         field.text = "";
         runId = Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
         const cmd = ["python3", Quickshell.shellPath("scripts/assistant.py"), "run", "--agent", agent.id, "--run", runId];
-        if (Config.s.assistantModel !== "" && agent.id !== "custom") cmd.push("--model", Config.s.assistantModel);
+        // (an agent on this computer, like Ollama, takes its model from Settings → Assistant's list)
+        const model = agent.local ? Config.s.assistantLocalModel : Config.s.assistantModel;
+        if (model !== "" && agent.id !== "custom") cmd.push("--model", model);
         if (session !== "" && Date.now() - heard > followFor) session = "";       // left a while: afresh
         if (canFollowUp) cmd.push("--session", session);
         if (agent.id === "custom") {
@@ -293,7 +295,7 @@ PanelWindow {
     // What you said (NovaVoice.qml), after anything already typed in the box, sent as typing it would be
     function sendSpoken(text) { send((field.text.trim() + " " + String(text || "")).trim()); }
     property string pending: ""            // typed before the agents were found: sent once they are
-    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
+    readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. You can choose one in Settings → Assistant." })
     function stop() { if (working) runner.signal(15); }
     readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
     property int keysSeen: 0               // (for the tests: keys the box has been given)
@@ -1050,7 +1052,7 @@ PanelWindow {
         closeWindow();
         const cmd = root.agent && root.agent.signIn ? root.agent.signIn : "claude";
         Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w.-]/g, "")}") end`]);
+            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${cmd.replace(/[^\w. -]/g, "")}") end`]);
     }
 
     // A paragraph, heading or list item of an answer: its runs as Slate's own markup (rich():

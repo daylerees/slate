@@ -30,6 +30,7 @@
     system-config-printer simple-scan   # printer settings, and scanning
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
     whisper-cpp   # optional: talking to Nova, speech turned into text on this computer (Settings → Assistant → Voice)
+    # ollama      # yours to add: Nova with a model on this computer (Settings → Assistant); or services.ollama.enable = true;
     # Optional: Hyprbars title bars instead of Slate's own. Nix builds the plugin; link it where Slate looks, e.g.
     #   ln -s ${pkgs.hyprlandPlugins.hyprbars}/lib/libhyprbars.so ~/.local/share/slate/plugins/hyprbars.so
     hyprlandPlugins.hyprbars

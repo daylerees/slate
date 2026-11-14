@@ -5,7 +5,7 @@ comes back in one form whichever agent it is (docs/ASSISTANT.md).
     assistant.py detect
         the agents Slate knows (scripts/slate_agents.py), as JSON for Settings:
         [{"id", "label", "installed", "version", "signedIn", "confined", "followUps", "url",
-          "note", "signIn"}]
+          "note", "signIn", "local"}], and for Ollama (local) "running" and "models"
     assistant.py run --agent <id> --run <id> [--model <m>] [--session <s>]
                      [--command <your own>] [--bare] [--accepted <id,id>]
         the prompt on stdin; one JSON object per line on stdout:
@@ -17,6 +17,7 @@ comes back in one form whichever agent it is (docs/ASSISTANT.md).
                                               just before done
           {"type": "done", "text": …, "session": …}
           {"type": "error", "kind": …, "message": …}
+        (--model for an agent on this computer, like Ollama, is its local model)
         kinds: off (assistants aren't switched on), not-installed, not-accepted (an agent that
         keeps its own tools, not yet said yes to), signed-out, offline, timeout, stopped,
         server (Slate's MCP server couldn't be reached), failed.
@@ -149,16 +150,21 @@ def detect():
     out = []
     for a in slate_agents.AGENTS:
         installed = a.installed()
-        out.append({"id": a.id, "label": a.label, "installed": installed, "version": a.version() if installed else "",
-                    "signedIn": a.signed_in() if installed else False, "confined": a.confined,
-                    "followUps": a.follow_ups, "url": a.url, "note": a.note, "signIn": a.sign_in})
+        row = {"id": a.id, "label": a.label, "installed": installed, "version": a.version() if installed else "",
+               "signedIn": a.signed_in() if installed else False, "confined": a.confined,
+               "followUps": a.follow_ups, "url": a.url, "note": a.note, "signIn": a.sign_in, "local": a.local}
+        if a.local:
+            row.update(running=False, models=[])
+        if installed:
+            row.update(a.more())
+        out.append(row)
     print(json.dumps(out))
 
 
 def run(args):
     agent = slate_agents.by_id(args.agent)
     if agent is None:
-        return emit(type="error", kind="not-installed", message="There's no assistant set up yet. Slate can use Claude Code or a command of your own.")
+        return emit(type="error", kind="not-installed", message="There's no assistant set up yet. You can choose one in Settings → Assistant.")
     if os.environ.get("SLATE_TEST") == "1" and agent.id not in ("custom", os.environ.get("SLATE_ASSISTANT_TEST_AGENT")):
         return emit(type="error", kind="not-installed", message="Slate couldn't find %s. It may have been removed." % agent.label)
     if agent.id == "custom" and not (args.command or "").strip():
@@ -184,7 +190,7 @@ def run(args):
         return emit(type="error", kind="off" if off else "failed",
                     message="The assistant isn't switched on yet." if off else "Slate isn't taking requests for the assistant just now.")
 
-    work = os.path.join(STATE, "work")
+    work = os.path.join(STATE, "work-" + agent.id if agent.workspace else "work")
     os.makedirs(work, mode=0o700, exist_ok=True)
     words = briefing()
     mcp_env = {"SLATE_ASSISTANT_RUN": args.run, "SLATE_ASSISTANT_AGENT": agent.label}
@@ -193,10 +199,15 @@ def run(args):
     config = {"mcpServers": {"slate": {"command": SLATE, "args": ["mcp"], "env": mcp_env}}}
     info = {"model": args.model or "", "session": args.session or "", "command": args.command or "",
             "briefing": os.path.join(STATE, "briefing.md"), "context_file": os.path.join(STATE, "context.txt"),
-            "mcp_config": config, "mcp_config_file": os.path.join(STATE, "mcp.json"), "mcp_command": [SLATE, "mcp"]}
+            "mcp_config": config, "mcp_config_file": os.path.join(STATE, "mcp.json"), "mcp_command": [SLATE, "mcp"],
+            "run": args.run, "work": work, "state_dir": STATE}
     write_private(info["briefing"], words + "\n")
     write_private(info["context_file"], now + "\n")
     write_private(info["mcp_config_file"], json.dumps(config, indent=1) + "\n")
+    try:
+        agent.prepare(info)
+    except OSError:
+        return emit(type="error", kind="failed", message="Slate couldn't get %s ready to ask." % agent.label)
 
     # What goes to the agent: Slate's scene, then the person's own words, marked off from it
     if args.bare and agent.id == "custom":
@@ -206,7 +217,8 @@ def run(args):
     else:
         text = words + "\n\n" + now + "\n\n" + prompt
 
-    env = dict(os.environ, SLATE_ASSISTANT_RUN=args.run, **agent.env(info))
+    # (PWD too: an agent that asks it rather than the system where it is would start in Slate's)
+    env = dict(os.environ, SLATE_ASSISTANT_RUN=args.run, PWD=work, **agent.env(info))
     try:
         proc = subprocess.Popen(agent.command(info), cwd=work, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, start_new_session=True)
@@ -251,12 +263,18 @@ def run(args):
     err_reader = threading.Thread(target=read_err, daemon=True)
     err_reader.start()
     try:
-        proc.stdin.write(text.encode("utf-8"))
+        proc.stdin.write(agent.stdin(text).encode("utf-8"))
         proc.stdin.close()
     except OSError:
         pass
+    state = {}
+    for event in agent.opening(info):
+        if event["type"] == "start":
+            state["session"] = event.get("session", "")
+        emit(**event)
 
-    state, finished, last, until = {}, False, "", time.monotonic() + TIMEOUT
+    timeout = float(os.environ.get("SLATE_ASSISTANT_TIMEOUT") or agent.timeout)
+    finished, last, until = False, "", time.monotonic() + timeout
     while True:
         wait = max(0.05, until - time.monotonic())
         try:
@@ -297,10 +315,10 @@ def run(args):
     err_reader.join(timeout=2)  # stdout can close before the last of stderr has been read
     if finished:
         return
-    if agent.id == "custom" and code == 0:
-        text = state.get("text", "").strip()
-        answer.flush(text)
-        return emit(type="done", text=text, session="")
+    event = agent.finish(code, state, list(errors))
+    if event:
+        answer.flush(str(event.get("text") or answer.text) if event["type"] == "done" else None)
+        return emit(**event)
     answer.flush()
     if agent.id != "custom" and not agent.signed_in():
         return emit(type="error", kind="signed-out",

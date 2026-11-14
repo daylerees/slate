@@ -45,12 +45,15 @@ agent you chose does it through the same tools.
   bloom (`answered`, Settings → Sound → Nova's answer), once as the whole answer arrives. Not
   for one back within a second, with the window closed (the notification carries it), for an
   error or Stop, for the history, or in game mode.
-- **Which agent answers** is in Settings → Assistant → Agent. Claude Code is the
-  recommended one: for each prompt Slate switches off its own tools (shell, files, web) and
-  every other MCP server, so it works through Slate's alone, and nothing in your own Claude
-  Code setup is changed. **A command of your own** is run as you typed it; Slate can't limit
-  what such a command does, so choosing it asks you first. Prompts use your own account with
-  the agent, and count against it like any other.
+- **Which agent answers** is in Settings → Assistant → Agent: Claude Code, Codex, OpenCode,
+  Goose or Antigravity if you have them, **Ollama (on this computer)**, Codex with Ollama, or
+  a command of your own (see "The agents" below). For most, Slate switches off the agent's
+  own tools (shell, files, web) and every other MCP server for each prompt, so it works
+  through Slate's alone, and nothing in your own setup is changed. Antigravity and **a
+  command of your own** keep their own tools; Slate can't limit what they do, so choosing
+  one asks you first. Prompts to an agent's service use your own account with it, and count
+  against it like any other. With Ollama, a model on this computer answers and nothing
+  leaves it.
 - **What Slate adds to your words**: who the agent is here and how to behave, and a few
   lines about the moment (the time, the focused window and workspace). Settings → Assistant →
   **See what Slate adds** shows both, so nothing travels with your words that you can't read.
@@ -112,7 +115,10 @@ Slate is your choice, and what it does on your behalf is your responsibility.
 - **What leaves your computer.** Whatever a tool answers (your settings, your open windows
   and their titles, the names of your workspaces, Spaces, apps and wallpapers) goes to the
   service behind the agent you chose, under your own account with them. Slate itself sends
-  nothing anywhere.
+  nothing anywhere. With Ollama, the model is on this computer and nothing leaves it (Slate
+  only talks to Ollama at 127.0.0.1, and won't use Ollama's cloud models); Codex with
+  Ollama sends your words to the model on this computer too, though Codex itself is
+  OpenAI's program. Goose sends them to whichever provider you set it up with.
 - **What it can do.** It can change settings, move windows and open apps without asking.
   Slate asks you before anything that can't be undone.
 - **What can go wrong.** Assistants make mistakes, and can be misled by text they read, like
@@ -255,6 +261,52 @@ read your files, run `slate ipc` and skip Slate's questions altogether. So the w
 is "Slate's tools never show the assistant your screen", not "the assistant can't see your
 screen".
 
+## The agents
+
+Each is found on your PATH (or in `~/.local/bin`, `~/.npm-global/bin`, `~/bin`) when Settings
+→ Assistant opens, run one prompt at a time in a folder of Slate's own
+(`~/.local/state/slate/assistant/work`, or `work-<agent>` for one that reads its settings
+from there), stopped after two minutes (ten for a model on this computer), and read back
+into the same events. Nothing in your own setup for any of them is changed. "Confined"
+means Slate switches its own tools off for the run, so it has Slate's and nothing else.
+
+| Agent | Found as | How Slate runs it | Confined | Following on | Sign in |
+|---|---|---|---|---|---|
+| Claude Code | `claude` | `claude -p --output-format stream-json` with `--tools ""`, `--strict-mcp-config` and Slate's server, `--restricted`; the briefing as its system prompt | Yes | `--resume <session>` | `claude` |
+| Codex | `codex` | `codex exec --json -` (the prompt on stdin) with `--ignore-user-config`, `--ignore-rules` and, with `-c`: Slate's server (its tools approved, since Slate's gate asks), commands, web search, images, subagents, apps, plugins, browser, computer use, memories, hooks and bundled skills off, a read-only sandbox, approvals never; the briefing as developer instructions | Yes | `codex exec resume <thread> -` | `codex login` (`codex login status` checks) |
+| OpenCode | `opencode` | `opencode run --format json --standalone --agent nova --archived`, the prompt on stdin, started in `work-opencode` with an `opencode.json` there: Slate's server, an agent `nova` (the briefing as its system prompt) allowed Slate's tools and nothing else, and policies keeping out every other MCP server, web search and every tool but Slate's. Policies on MCP servers need OpenCode 2.2.3 or later: an older one isn't confined, and asks first | Yes (2.2.3+) | `--session <id>` | `opencode auth login` (its free models need none) |
+| Goose | `goose` | `goose run -i - --output-format stream-json --no-profile --with-extension slate:…`: none of your extensions (its developer extension has the shell and files), Slate's alone; the briefing as `--system`; `GOOSE_MODE=auto` (Slate's gate asks) | Yes, unless its provider is itself an agent with tools (Claude Code, Codex, Gemini CLI, Cursor) | the session Slate named (`slate-nova-<run>`), `--resume` | `goose configure` |
+| Antigravity | `agy` | headless: `agy --input-format stream-json --output-format stream-json`, the prompt as one message on stdin, started in `work-antigravity` with Slate's server in `.agents/mcp_config.json` there; the briefing above the first prompt | No: its terminal, files and web can only be switched off in your own `settings.json`, so it asks first. It also asks before using another program's tools and can't ask in headless mode, so allow Slate's in its settings: `mcp(slate/*)` in `permissions.allow` | `--conversation <id>` | `agy` |
+| Ollama (on this computer) | `ollama`, or its API answering on 127.0.0.1:11434 | Slate's own agent loop, `scripts/ollama-agent.py` (below) | Yes: it only has Slate's tools | its conversation, kept a day | none: `ollama pull qwen3` for a model |
+| Codex with Ollama | `codex` and Ollama | as Codex, with `--oss --local-provider ollama -m <model>`. Codex can't ask Ollama for more room, and Ollama's default (4,096 tokens) runs out after a tool or two: start Ollama with `OLLAMA_CONTEXT_LENGTH=16384` or more | Yes | No | none |
+| A command of your own | `sh -c` | as typed, the prompt on stdin, `SLATE_MCP_COMMAND`, `SLATE_MCP_CONFIG`, `SLATE_ASSISTANT_BRIEFING` and `SLATE_ASSISTANT_CONTEXT` in its environment | No: it asks first | No | — |
+
+Errors come back in Slate's words: not signed in (with the command to run), offline,
+a limit reached, Slate's server not reached, too slow, or stopped unexpectedly with the
+agent's last line.
+
+### Ollama: Slate's own agent loop
+
+`scripts/ollama-agent.py` (standard library only) talks to Ollama's HTTP API at
+127.0.0.1:11434 and nothing else:
+
+1. Picks the model: Settings → Assistant → Model (`assistantLocalModel`), or the first that
+   can use tools. Models that run on Ollama's servers (cloud models) are never listed or used.
+2. Starts `slate mcp` and speaks MCP to it as a client (`initialize`, `tools/list`), so every
+   tool call goes through Slate's gate like any other agent's.
+3. Sends `/api/chat` the briefing and the server's instructions as the system prompt, the
+   conversation so far, your words, and Slate's tools in Ollama's form, with room for all of
+   it (`num_ctx` 16,384: Slate's tools alone are some 5,000 tokens). The answer streams in.
+4. While the model asks for tools, calls each through Slate's server and hands the answer
+   back; a tool it made up, or arguments that aren't an object, go back as words. It stops
+   when the model answers in words, or after eight rounds ("the model kept using tools").
+5. Keeps the conversation for following on in `~/.local/state/slate/assistant/ollama/`
+   (only you can read it), forgotten after a day.
+
+Small models can be unreliable with tools: Settings says so, and a bigger model follows
+Slate's tools better but answers more slowly. On a processor without a graphics card's help a
+round can take minutes.
+
 ## What it did
 
 Every tool call is written to `~/.local/state/slate/assistant/activity.jsonl`, one line
@@ -325,16 +377,13 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
   (no blocks) shows its answers as plain text, as it always did. There's no setting: a command
   of your own is read the same way, since its output is no more trusted. The briefing tells
   Nova bold, a list or a code block can help, and never links, images or tables.
-- **Agents** are in `shell/scripts/slate_agents.py`. Claude Code is run one prompt at a
-  time with every tool of its own switched off and only Slate's server given (`--tools ""`,
-  `--strict-mcp-config`, `--restricted`), for that run alone: nothing in your own Claude Code
-  setup changes. "A command of your own" is run as typed with the prompt on its stdin and
-  `SLATE_MCP_COMMAND`, `SLATE_MCP_CONFIG`, `SLATE_ASSISTANT_BRIEFING` and
-  `SLATE_ASSISTANT_CONTEXT` in its environment; Slate can't limit what such a command does.
-  To add an agent, write a class there beside `Claude` (how to find it, whether it's signed
-  in, its command, how to read its output) and say honestly whether it's `confined`.
+- **Agents** are in `shell/scripts/slate_agents.py`, one class each (see "The agents"
+  below). To add one, write a class there beside `Claude` (how to find it, whether it's
+  signed in, its command, how to read its output) and say honestly whether it's `confined`.
 - **Tests:** `tests/unit/test_assistant.py` (the runner against a stand-in `claude` replaying
-  a recorded stream), `tests/unit/test_safe_markdown.py` (the subset, hostile input, every
+  a recorded stream), `tests/unit/test_assistant_agents.py` (every other agent against a
+  stand-in replaying its documented stream, and the Ollama loop against a fake Ollama and
+  Slate's real server), `tests/unit/test_safe_markdown.py` (the subset, hostile input, every
   cut of a streaming answer, the limits), `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
   fake Slate, hostile input, the log) and `tests/live/test_assistant.py` (the questions in
   the real confirmation window, and the server against a real Slate).

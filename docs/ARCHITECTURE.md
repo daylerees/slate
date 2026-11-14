@@ -84,7 +84,10 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               adds Slate's briefing and a few lines on the moment, runs the agent
                               in an empty folder with Slate's server as its tools, and turns what
                               it prints into start/text/blocks/done/error lines. scripts/slate_agents.py
-                              has the agents (Claude Code, a command of your own);
+                              has the agents (Claude Code, Codex, OpenCode, Goose, Antigravity,
+                              Ollama, a command of your own); scripts/ollama-agent.py is Slate's
+                              own agent loop for a model on this computer (Ollama's HTTP API,
+                              Slate's server spoken to as an MCP client);
                               scripts/safe_markdown.py reads the answer's small, safe subset of
                               Markdown into the blocks the window draws (no HTML, nothing fetched)
 Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,
@@ -433,6 +436,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
 | `papirus-icon-theme` | The default icon theme (Papirus-Dark); its coloured folders back Settings → Icons → Folder colour |
+| `ollama` (Fedora, openSUSE, Void, NixOS; Debian and Ubuntu: Ollama's own installer; Gentoo: GURU `sci-ml/ollama`) | Nova with a model on this computer (Settings → Assistant → Ollama), through its HTTP API on 127.0.0.1:11434 (`scripts/ollama-agent.py`, standard library only). Never installed by Slate (a large install): it's yours to add, and Settings says when it isn't there, isn't running or has no model yet. The agent CLIs Nova can use (Claude Code, Codex, OpenCode, Goose, Antigravity) are the person's own, found at run time and never installed by Slate |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).
 

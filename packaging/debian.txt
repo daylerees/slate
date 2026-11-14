@@ -91,3 +91,8 @@ qml6-module-qtquick-shapes
 
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
 v4l-utils
+
+# Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
+# says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,
+# Goose, Antigravity) are your own choice and come from their makers, not from here
+# (Debian and Ubuntu don't package Ollama: https://ollama.com/download/linux has its installer)

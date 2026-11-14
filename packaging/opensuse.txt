@@ -80,3 +80,8 @@ accountsservice
 
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
 v4l-utils
+
+# Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
+# says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,
+# Goose, Antigravity) are your own choice and come from their makers, not from here
+# ollama     (yours to add, if you want Nova to use a model on this computer: a large install, so Slate leaves it to you)

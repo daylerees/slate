@@ -93,7 +93,7 @@ Singleton {
         ["Gloss colour", "appearance", "glass gloss tint hue colour color wallpaper sheen"],
         ["Fast blur", "appearance", "blur performance smooth lag xray wallpaper"],
         ["Blur quality", "appearance", "blur passes smooth performance"],
-        ["Assistant", "assistant", "assistant ai agent agents claude chatgpt codex gemini copilot mcp server tools nova"],
+        ["Assistant", "assistant", "assistant ai agent agents claude chatgpt codex gemini copilot mcp server tools nova opencode goose antigravity ollama local model offline"],
         ["Let assistants use Slate", "assistant", "assistant ai agent switch on off enable allow mcp risks privacy"],
         ["Talk to Nova", "assistant", "voice speak talk speech dictate dictation microphone mic hold push to talk whisper transcribe nova assistant"],
         ["Speech model", "assistant", "voice speech model whisper download delete microphone talk nova"],

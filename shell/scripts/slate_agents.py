@@ -18,12 +18,29 @@ class like Claude below and put @agent above it:
                {"type": "text", "delta", "fresh"?} (fresh: a new message, replacing the one
                shown), {"type": "done", "text", "session"}, {"type": "error", "kind", "message"}.
                state is a dict the adapter may keep things in between lines.
+
+And, where an agent needs them:
+
+    workspace  True: it runs in a folder of its own (work-<id>), for the files prepare() writes
+               there (an agent that reads its settings from the folder it's started in)
+    prepare(run)  write those files: run["work"] is the folder
+    stdin(text)  what goes on its stdin (the prompt as it is, unless it wants it wrapped)
+    opening(run)  events to send as soon as it's started (a start, for an agent that names
+               its session itself)
+    finish(code, state, errors)  an event once it has exited without saying done or error
+               (errors: the last lines it wrote to stderr), or None to say it failed
+    timeout    seconds it's given (a model on this computer is slower than a service)
+    local      True: it runs a model on this computer (Settings offers its models)
 """
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
+import sys
+import urllib.error
+import urllib.request
 
 AGENTS = []
 
@@ -75,11 +92,77 @@ class Agent:
     def command(self, run):
         raise NotImplementedError
 
+    workspace = False
+    timeout = 120
+    local = False
+
     def env(self, run):
         return {}
 
     def parse(self, line, state):
         return []
+
+    def prepare(self, run):
+        pass
+
+    def stdin(self, text):
+        return text
+
+    def opening(self, run):
+        return []
+
+    def finish(self, code, state, errors):
+        return None
+
+    def more(self):
+        """Anything else Settings should know about it (detect)."""
+        return {}
+
+
+def version_in(text):
+    """The first x.y.z in what a --version printed."""
+    m = re.search(r"\d+\.\d+(?:\.\d+)?", text or "")
+    return m.group(0) if m else ""
+
+
+def at_least(version, wanted):
+    try:
+        return tuple(int(x) for x in version.split(".")) >= wanted
+    except ValueError:
+        return False
+
+
+SIGNED_OUT = re.compile(r"log ?in|logged out|authenticat|unauthori[sz]ed|\b401\b|credential|api.?key|sign(ed)? ?(in|out)|not configured|no provider", re.I)
+LIMIT = re.compile(r"quota|rate.?limit|RESOURCE_EXHAUSTED|usage limit|credits? (exhausted|ran out)|\b429\b", re.I)
+OFFLINE = re.compile(r"connection|connect\b|disconnected|error sending request|network|fetch failed|ENOTFOUND|ECONN|timed? ?out|offline|unreachable|overloaded|unavailable|\b5\d\d\b|dns", re.I)
+
+
+def trouble(agent, text, service=None):
+    """An agent's own error, in Slate's words: signed out, offline, or simply failed."""
+    text = str(text or "")
+    if LIMIT.search(text):
+        return {"type": "error", "kind": "failed", "message": "%s has reached its limit for now. Try again later." % agent.label,
+                "detail": text[-300:]}
+    if SIGNED_OUT.search(text):
+        return {"type": "error", "kind": "signed-out",
+                "message": "%s isn't signed in. Open a terminal and run %s once, then try again." % (agent.label, agent.sign_in or "it")}
+    if OFFLINE.search(text):
+        return {"type": "error", "kind": "offline",
+                "message": "Slate couldn't reach %s just now. Your question is still here: try again in a moment." % (service or agent.label)}
+    return {"type": "error", "kind": "failed", "message": "%s stopped unexpectedly." % agent.label, "detail": text[-300:]}
+
+
+def slate_server(run):
+    """Slate's MCP server as the run gives it: (command, args, env)."""
+    s = run["mcp_config"]["mcpServers"]["slate"]
+    return s["command"], list(s.get("args") or []), dict(s.get("env") or {})
+
+
+def write_json(path, data):
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=1)
 
 
 @agent
@@ -163,6 +246,522 @@ class Claude(Agent):
         return []
 
 
+def briefing_text(run):
+    try:
+        with open(run["briefing"], encoding="utf-8") as fh:
+            return fh.read().strip()
+    except (OSError, KeyError):
+        return ""
+
+
+def toml(value):
+    """A value for `codex -c key=value`, written as TOML (JSON's strings, lists and numbers are
+    TOML's too; tables are written inline)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, dict):
+        return "{" + ", ".join("%s = %s" % (json.dumps(k), toml(v)) for k, v in value.items()) + "}"
+    if isinstance(value, list):
+        return "[" + ", ".join(toml(v) for v in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
+@agent
+class Codex(Agent):
+    """OpenAI's Codex CLI, one prompt at a time (`codex exec --json`), checked against
+    codex-cli 0.169 and its configuration reference. Everything is given for the run alone with
+    -c, and --ignore-user-config leaves the person's config.toml (their MCP servers, profiles
+    and hooks) out of it, so nothing in their own setup changes; their sign-in still works.
+    Its own tools are switched off: commands (features.shell_tool), web search, images,
+    subagents, apps, plugins, browser and computer use, memories and bundled skills; what's
+    left (editing files) meets a read-only sandbox and never asks. Slate's tools run without
+    Codex asking (Slate's own gate asks), and the briefing is its developer instructions."""
+    id = "codex"
+    label = "Codex"
+    url = "https://developers.openai.com/codex/cli"
+    note = "Slate switches off its own tools, so it works through Slate's alone"
+    confined = True
+    briefing = "system"
+    sign_in = "codex login"
+    OFF = ["shell_tool", "view_image", "multi_agent", "apps", "plugins", "remote_plugin", "memories", "browser_use",
+           "computer_use", "hooks", "goals"]
+
+    def installed(self):
+        return bool(find("codex"))
+
+    def version(self):
+        code, out = output([find("codex") or "codex", "--version"])
+        return version_in(out) if code == 0 else ""
+
+    def signed_in(self):
+        code, _ = output([find("codex") or "codex", "login", "status"])
+        return code == 0
+
+    def settings(self, run):
+        cmd, args, env = slate_server(run)
+        pairs = [("mcp_servers.slate.command", cmd), ("mcp_servers.slate.args", args), ("mcp_servers.slate.env", env),
+                 ("mcp_servers.slate.required", True), ("mcp_servers.slate.default_tools_approval_mode", "approve"),
+                 ("developer_instructions", briefing_text(run)), ("approval_policy", "never"),
+                 ("sandbox_mode", "read-only"), ("web_search", "disabled"), ("skills.bundled.enabled", False)]
+        pairs += [("features." + f, False) for f in self.OFF]
+        out = []
+        for key, value in pairs:
+            out += ["-c", "%s=%s" % (key, toml(value))]
+        return out
+
+    def options(self, run):
+        opts = ["--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules"] + self.settings(run)
+        if run.get("model"):
+            opts += ["-m", run["model"]]
+        return opts
+
+    def command(self, run):
+        codex = find("codex") or "codex"
+        if run.get("session"):
+            return [codex, "exec", "resume"] + self.options(run) + [run["session"], "-"]
+        return [codex, "exec"] + self.options(run) + ["-"]
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        kind = d.get("type")
+        if kind == "thread.started":
+            state["session"] = str(d.get("thread_id") or "")
+            return [{"type": "start", "session": state["session"]}]
+        if kind in ("item.started", "item.updated", "item.completed"):
+            item = d.get("item") or {}
+            if item.get("type") != "agent_message" or not isinstance(item.get("text"), str):
+                return []
+            text, out = item["text"], {"type": "text"}
+            if item.get("id") != state.get("item"):
+                state["item"], state["sent"] = item.get("id"), ""
+                out["fresh"] = True             # a new message: the one before was said on the way
+            sent = state["sent"]
+            if not text.startswith(sent):
+                out["fresh"], sent = True, ""
+            state["sent"] = state["answer"] = text
+            if len(text) == len(sent) and not out.get("fresh"):
+                return []
+            out["delta"] = text[len(sent):]
+            return [out]
+        if kind == "turn.completed":
+            return [{"type": "done", "text": state.get("answer", ""), "session": state.get("session", "")}]
+        if kind == "turn.failed":
+            return [self.trouble(str((d.get("error") or {}).get("message") or state.get("error") or ""))]
+        if kind == "error":
+            state["error"] = str(d.get("message") or "")       # (it may still carry on: reconnecting)
+        return []
+
+    def trouble(self, text):
+        if re.search(r"\bmcp\b", text, re.I) and "slate" in text.lower():
+            return {"type": "error", "kind": "server",
+                    "message": "The assistant started but couldn't reach Slate. Restarting Slate usually fixes this."}
+        return trouble(self, text, "OpenAI")
+
+    def finish(self, code, state, errors):
+        text = state.get("error") or (errors[-1] if errors else "")
+        return self.trouble(text) if text and code != 0 else None
+
+
+@agent
+class OpenCode(Agent):
+    """OpenCode (V2), one prompt at a time (`opencode run --format json`), checked against
+    its documentation and source (2.2). It reads its settings from the folder it's started in,
+    so Slate starts it in a folder of its own with an opencode.json there (prepare): Slate's
+    server, and an agent of Slate's ("nova", with the briefing as its system prompt) whose
+    permissions deny everything but Slate's tools; policies keep every other MCP server and
+    web search out, and deny every tool but Slate's. The person's own files are untouched.
+    --standalone runs it on a private server, so it reads this folder's settings and nothing
+    is left running; --archived keeps Nova's sessions out of their lists. Policies on MCP
+    servers came in 2.2.3: an older OpenCode can't be confined, so it's marked so and asks."""
+    id = "opencode"
+    label = "OpenCode"
+    url = "https://opencode.ai"
+    note = "Slate switches off its own tools, so it works through Slate's alone"
+    briefing = "system"
+    sign_in = "opencode auth login"
+    workspace = True
+
+    @property
+    def confined(self):
+        return at_least(self.version(), (2, 2, 3))
+
+    def installed(self):
+        return bool(find("opencode"))
+
+    def version(self):
+        if "_version" not in self.__dict__:
+            code, out = output([find("opencode") or "opencode", "--version"])
+            self._version = version_in(out) if code == 0 else ""
+        return self._version
+
+    def config(self, run):
+        cmd, args, env = slate_server(run)
+
+        def only(action, allow):
+            return [{"action": action, "resource": "*", "effect": "deny"}, {"action": action, "resource": allow, "effect": "allow"}]
+        return {
+            "$schema": "https://opencode.ai/config.json",
+            "mcp": {"servers": {"slate": {"type": "local", "command": [cmd] + args, "environment": env, "codemode": False}}},
+            "default_agent": "nova",
+            "agents": {"nova": {"mode": "primary", "description": "Nova, Slate's assistant", "system": briefing_text(run),
+                                "permissions": [{"action": "*", "resource": "*", "effect": "deny"},
+                                                {"action": "slate_*", "resource": "*", "effect": "allow"}]}},
+            "policies": only("mcp.use", "slate") + [{"action": "websearch.use", "resource": "*", "effect": "deny"}]
+                        + only("tool.use", "slate_*"),
+        }
+
+    def prepare(self, run):
+        write_json(os.path.join(run["work"], "opencode.json"), self.config(run))
+
+    def command(self, run):
+        cmd = [find("opencode") or "opencode", "run", "--format", "json", "--standalone", "--agent", "nova", "--archived"]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        if run.get("session"):
+            cmd += ["--session", run["session"]]
+        return cmd
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        out = []
+        if d.get("sessionID") and "session" not in state:
+            state["session"] = str(d["sessionID"])
+            out.append({"type": "start", "session": state["session"]})
+        kind, part = d.get("type"), d.get("part") if isinstance(d.get("part"), dict) else {}
+        if kind == "text" and isinstance(part.get("text"), str):
+            ev = {"type": "text", "delta": part["text"]}
+            if part.get("messageID") != state.get("message"):
+                state["message"], state["answer"] = part.get("messageID"), ""
+                ev["fresh"] = True
+            state["answer"] += part["text"]
+            out.append(ev)
+        elif kind == "error":
+            out.append(trouble(self, str((d.get("error") or {}).get("message") or "")))
+        return out
+
+    def finish(self, code, state, errors):
+        if code == 0 and "session" in state:
+            return {"type": "done", "text": state.get("answer", ""), "session": state["session"]}
+        return trouble(self, errors[-1]) if errors else None
+
+
+@agent
+class Goose(Agent):
+    """Goose, one prompt at a time (`goose run --output-format stream-json`), checked against
+    goose 1.54 and its source. --no-profile leaves out every extension the person set up (its
+    developer extension holds the shell and files), so the only one is Slate's
+    (--with-extension); a follow-up resumes the session, which keeps that one. Sessions are
+    named by Slate ("slate-nova-<run>"), since the stream doesn't say. GOOSE_MODE=auto: in a
+    run it can't ask, and Slate's gate does the asking. Goose talks to whichever provider it's
+    set up with; one that is itself an agent with tools (Claude Code, Codex, Gemini CLI,
+    Cursor) brings those tools along, so then it isn't confined."""
+    id = "goose"
+    label = "Goose"
+    url = "https://goose-docs.ai"
+    note = "Slate switches off its own extensions, so it works through Slate's alone"
+    briefing = "system"
+    sign_in = "goose configure"
+    AGENT_PROVIDERS = ("claude-code", "codex", "gemini-cli", "cursor-agent")
+
+    @property
+    def confined(self):
+        return self.provider() not in self.AGENT_PROVIDERS
+
+    def provider(self):
+        """The provider it's set up with: GOOSE_PROVIDER, or its config.yaml."""
+        if os.environ.get("GOOSE_PROVIDER"):
+            return os.environ["GOOSE_PROVIDER"].strip()
+        home = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+        try:
+            with open(os.path.join(home, "goose", "config.yaml"), encoding="utf-8") as fh:
+                for line in fh:
+                    m = re.match(r"\s*GOOSE_PROVIDER\s*:\s*['\"]?([\w.-]+)", line)
+                    if m:
+                        return m.group(1)
+        except OSError:
+            pass
+        return ""
+
+    def installed(self):
+        return bool(find("goose"))
+
+    def version(self):
+        code, out = output([find("goose") or "goose", "--version"])
+        return version_in(out) if code == 0 else ""
+
+    def signed_in(self):
+        return bool(self.provider())
+
+    def name(self, run):
+        return run.get("session") or "slate-nova-" + re.sub(r"[^\w-]", "", run.get("run") or "run")
+
+    def command(self, run):
+        cmd = [find("goose") or "goose", "run", "-i", "-", "--output-format", "stream-json", "--no-profile",
+               "--max-turns", "25", "--system", briefing_text(run), "-n", self.name(run)]
+        if run.get("session"):
+            cmd.append("--resume")          # (with Slate's extension, as the session keeps it)
+        else:
+            server, args, _ = slate_server(run)
+            cmd += ["--with-extension", "slate:" + shlex.join([server] + args)]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        return cmd
+
+    def env(self, run):
+        # (Slate's server inherits these from Goose: the run's own id is set by the runner)
+        _, _, env = slate_server(run)
+        env.pop("SLATE_ASSISTANT_RUN", None)
+        return dict(env, GOOSE_MODE="auto")
+
+    def opening(self, run):
+        return [{"type": "start", "session": self.name(run)}]
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        kind = d.get("type")
+        if kind == "message":
+            m = d.get("message") or {}
+            out = []
+            for c in m.get("content") or []:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") in ("toolRequest", "toolResponse"):
+                    state["fresh"] = True       # what comes after the tools is a new message
+                elif c.get("type") == "text" and m.get("role") == "assistant" and isinstance(c.get("text"), str):
+                    ev = {"type": "text", "delta": c["text"]}
+                    if state.pop("fresh", False) or m.get("id") != state.get("message", m.get("id")):
+                        ev["fresh"], state["answer"] = True, ""
+                    state["message"] = m.get("id")
+                    state["answer"] = state.get("answer", "") + c["text"]
+                    out.append(ev)
+                elif c.get("type") == "error":
+                    out.append(trouble(self, "authentication" if c.get("kind") == "authentication" else str(c.get("message") or "")))
+            return out
+        if kind == "error":
+            return [trouble(self, str(d.get("error") or ""))]
+        if kind == "complete":
+            return [{"type": "done", "text": state.get("answer", ""), "session": state.get("session", "")}]
+        return []
+
+    def finish(self, code, state, errors):
+        text = " ".join(errors[-2:])
+        if code != 0 and re.search(r"No (model|provider) configured|goose configure", text):
+            return trouble(self, "not configured")
+        return None
+
+
+@agent
+class Antigravity(Agent):
+    """Google's Antigravity CLI (`agy`), in its headless mode, checked against its documentation
+    (headless mode, MCP, permissions). The prompt goes on stdin as one stream-json message.
+    Slate's server is given in the folder it's started in (.agents/mcp_config.json there:
+    its workspace configuration), so the person's own setup is untouched. Its own tools (its
+    terminal, files in its workspace, the web, its browser) can't be switched off for one run:
+    the only way is the person's own settings.json, so it keeps them, and choosing it asks
+    first. In headless mode it can't ask before using another program's tools, so Slate's
+    tools only work once allowed in its settings (mcp(slate/*)); Settings says so."""
+    id = "antigravity"
+    label = "Antigravity"
+    url = "https://antigravity.google/product/antigravity-cli"
+    note = ("Slate can't switch off its own tools. It also asks before using Slate's, and can't ask while Nova works: "
+            "allow them in its settings by adding mcp(slate/*) to permissions.allow")
+    confined = False
+    briefing = "prompt"
+    sign_in = "agy"
+    workspace = True
+
+    def installed(self):
+        return bool(find("agy"))
+
+    def version(self):
+        code, out = output([find("agy") or "agy", "--version"])
+        return version_in(out) if code == 0 else ""
+
+    def prepare(self, run):
+        cmd, args, env = slate_server(run)
+        write_json(os.path.join(run["work"], ".agents", "mcp_config.json"),
+                   {"mcpServers": {"slate": {"command": cmd, "args": args, "env": env}}})
+
+    def command(self, run):
+        cmd = [find("agy") or "agy", "--input-format", "stream-json", "--output-format", "stream-json",
+               "--disable-slash-commands"]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        if run.get("session"):
+            cmd += ["--conversation", run["session"]]
+        return cmd
+
+    def stdin(self, text):
+        return json.dumps({"event": "user", "message": {"content": text}}) + "\n"
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        kind = d.get("event")
+        if kind == "init":
+            state["session"] = str(d.get("conversation_id") or "")
+            return [{"type": "start", "session": state["session"]}]
+        if kind == "step_update":
+            s = d.get("step_update") or {}
+            if s.get("step_type") != "agent_response" or not isinstance(s.get("text_delta"), str) or not s["text_delta"]:
+                return []
+            ev = {"type": "text", "delta": s["text_delta"]}
+            if s.get("step_index") != state.get("step"):
+                state["step"] = s.get("step_index")
+                ev["fresh"] = True
+            return [ev]
+        if kind == "result":
+            r = d.get("result") or {}
+            if r.get("status") == "SUCCESS":
+                return [{"type": "done", "text": str(r.get("response") or "").rstrip("\n"),
+                         "session": str(r.get("conversation_id") or state.get("session", ""))}]
+            return [trouble(self, str(r.get("error") or r.get("status") or ""), "Google")]
+        return []
+
+    def finish(self, code, state, errors):
+        return trouble(self, " ".join(errors[-2:]), "Google") if errors and code != 0 else None
+
+
+def ollama_url():
+    return os.environ.get("SLATE_OLLAMA_URL") or "http://127.0.0.1:11434"
+
+
+def ollama_models():
+    """The models Ollama has on this computer, or None when it isn't running. Models that run
+    on someone else's server (Ollama's cloud models) are left out: they'd send what you ask
+    there. [{"name", "tools": can use tools, "size": bytes}]"""
+    try:
+        with urllib.request.urlopen(ollama_url() + "/api/tags", timeout=2) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return None
+    out = []
+    for m in (data.get("models") if isinstance(data, dict) else None) or []:
+        if not isinstance(m, dict) or not isinstance(m.get("name"), str):
+            continue
+        if m.get("remote_host") or m.get("remote_model") or re.search(r"[-:]cloud\b", m["name"]):
+            continue
+        caps = m.get("capabilities")
+        out.append({"name": m["name"], "tools": "tools" in caps if isinstance(caps, list) else True,
+                    "size": m.get("size") if isinstance(m.get("size"), int) else 0})
+    return out
+
+
+def ollama_state():
+    models = ollama_models()
+    return {"running": models is not None, "models": models or []}
+
+
+@agent
+class Ollama(Agent):
+    """A model on this computer, through Ollama's own HTTP API (127.0.0.1:11434), with Slate
+    running the agent itself (scripts/ollama-agent.py): the model gets Slate's tools and
+    nothing else, and nothing leaves the computer. No keys, no account."""
+    id = "ollama"
+    label = "Ollama (on this computer)"
+    url = "https://ollama.com/download"
+    note = "Runs a model on this computer, with Slate's tools and nothing else: nothing you ask leaves it"
+    confined = True
+    briefing = "system"
+    sign_in = "ollama pull qwen3"
+    local = True
+    timeout = 600
+
+    def installed(self):
+        return bool(find("ollama")) or ollama_models() is not None
+
+    def version(self):
+        code, out = output([find("ollama"), "--version"]) if find("ollama") else (None, "")
+        return version_in(out) if code == 0 else ""
+
+    def signed_in(self):
+        return bool(ollama_models())
+
+    def more(self):
+        return ollama_state()
+
+    def command(self, run):
+        return [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ollama-agent.py"),
+                "--model", run.get("model") or "", "--session", run.get("session") or "", "--briefing", run["briefing"],
+                "--mcp-config", run["mcp_config_file"], "--state", run.get("state_dir") or ""]
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if isinstance(d, dict) and d.get("type") in ("start", "text", "done", "error"):
+            return [d]
+        return []
+
+    def finish(self, code, state, errors):
+        return {"type": "error", "kind": "failed", "message": "Slate's helper for Ollama stopped unexpectedly.",
+                "detail": (errors[-1] if errors else "")[-300:]}
+
+
+@agent
+class CodexLocal(Codex):
+    """Codex with a model on this computer (`codex exec --oss --local-provider ollama`): no
+    OpenAI account needed. The same switches as Codex. One prompt, one answer."""
+    id = "codex-local"
+    label = "Codex with Ollama (on this computer)"
+    url = "https://ollama.com/download"
+    note = "Codex, with a model on this computer through Ollama: no account needed. Slate switches off its own tools"
+    sign_in = "ollama pull qwen3"
+    local = True
+    timeout = 600
+    follow_ups = False
+
+    def installed(self):
+        return bool(find("codex")) and (bool(find("ollama")) or ollama_models() is not None)
+
+    def signed_in(self):
+        return bool(ollama_models())
+
+    def more(self):
+        return ollama_state()
+
+    def options(self, run):
+        opts = ["--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules", "--oss",
+                "--local-provider", "ollama"] + self.settings(run)
+        model = run.get("model") or next((m["name"] for m in ollama_models() or [] if m["tools"]), "")
+        return opts + (["-m", model] if model else [])
+
+    def command(self, run):
+        return [find("codex") or "codex", "exec"] + self.options(run) + ["-"]
+
+    def trouble(self, text):
+        # (Codex can't ask Ollama for more room, as Slate's own loop does: Ollama's default of
+        # 4,096 tokens runs out after a tool or two, checked with codex-cli 0.169)
+        if re.search(r"exceeds the available context size", text, re.I):
+            return {"type": "error", "kind": "failed",
+                    "message": "Ollama gave Codex too little room for the conversation. Start Ollama with "
+                               "OLLAMA_CONTEXT_LENGTH=16384 (or more), or choose Ollama itself as the agent.",
+                    "detail": text[-300:]}
+        if OFFLINE.search(text) and re.search(r"ollama|11434|localhost|127\.0\.0\.1", text, re.I):
+            return {"type": "error", "kind": "offline", "message": "Ollama isn't running. Start it, then try again."}
+        return Codex.trouble(self, text)
+
+
 @agent
 class Custom(Agent):
     """A command of your own: Slate runs it as typed, with the prompt on its stdin, and shows
@@ -188,3 +787,8 @@ class Custom(Agent):
     def parse(self, line, state):
         state["text"] = state.get("text", "") + line + "\n"
         return [{"type": "text", "delta": line + "\n"}]
+
+    def finish(self, code, state, errors):
+        if code == 0:
+            return {"type": "done", "text": state.get("text", "").strip(), "session": ""}
+        return None
