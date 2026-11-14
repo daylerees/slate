@@ -10,7 +10,6 @@
 hyprland
 quickshell
 qt6-declarative
-qt6-shadertools
 
 # Scripts and images
 python3
@@ -41,7 +40,6 @@ libnotify
 fontconfig
 curl
 xdg-utils
-unzip
 
 # Features
 grim
@@ -53,9 +51,10 @@ brightnessctl
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 # Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen
-git
-make
-gcc
+?git
+?make
+?gcc
+?pkg-config
 ?greetd
 
 # Printing and scanning (Settings → Printers & Scanners)
@@ -68,7 +67,6 @@ gcc
 # Emoji, your account picture (AccountsService), and extras
 noto-fonts-emoji
 accountsservice
-pkg-config
 ?btop
 ?ffmpeg
 ?xdg-user-dirs

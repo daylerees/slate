@@ -3,10 +3,10 @@
 
 # Compositor and shell
 hyprland
-hyprland-guiutils
+# hyprland-guiutils: Hyprland's own dialogs (an app that's stopped responding, permission prompts). Slate doesn't call it
+?hyprland-guiutils
 quickshell
 qt6-declarative
-qt6-shadertools
 
 # Scripts and images
 python
@@ -24,7 +24,6 @@ pipewire-audio      # pw-play: volume key sound, notification chime
 ?qt6-multimedia     # click sound, and sounds without a delay
 networkmanager
 bluez
-bluez-utils
 upower
 polkit
 pam
@@ -39,13 +38,12 @@ libnotify
 fontconfig
 curl
 xdg-utils
-unzip
 
 # Features
 grim
 slurp
 hyprpicker
-uwsm
+?uwsm
 brightnessctl
 power-profiles-daemon
 adw-gtk-theme
@@ -53,9 +51,10 @@ qt6ct
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 # Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars) — Hyprland ships its headers
-git
-make
-gcc
+?git
+?make
+?gcc
+?pkgconf
 ?swash
 ?otf-geist
 ?greetd
@@ -73,7 +72,6 @@ gcc
 # Downloads and Pictures folders), pciutils (Debug → Export logs)
 noto-fonts-emoji
 accountsservice
-pkgconf
 ?btop
 ?ffmpeg
 ?xdg-user-dirs
@@ -83,7 +81,7 @@ pkgconf
 ?whisper-cpp
 
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
-v4l-utils
+?v4l-utils
 
 # Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
 # says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,

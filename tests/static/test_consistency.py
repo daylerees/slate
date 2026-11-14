@@ -414,6 +414,30 @@ class Lists(Case):
                     self.assertNotIn(name, seen, f"line {n}: {name} listed twice")
                     seen.add(name)
 
+    def test_lists_stay_tidy(self):
+        """Packages Slate never calls stay out of the lists, build tools stay optional (only
+        Hyprbars uses them, and it says what's missing), and nothing sits under a heading
+        it doesn't belong to."""
+        unused = {"unzip", "app-arch/unzip", "bluez-utils", "qt6-shadertools", "dev-qt/qtshadertools:6"}
+        build = {"git", "make", "gcc", "g++", "gcc-c++", "pkgconf", "pkg-config", "dev-vcs/git", "dev-util/pkgconf"}
+        for f in slate.files("packaging", ".txt"):
+            with self.subTest(f):
+                heading = ""
+                for line in slate.read(f).splitlines():
+                    if line.startswith("#"):
+                        heading = line
+                    code = re.sub(r"\s*#.*", "", line).strip()
+                    if not code:
+                        continue
+                    name = code.lstrip("?")
+                    self.assertNotIn(name, unused, f"{name} isn't used by Slate")
+                    if name in build:
+                        self.assertTrue(code.startswith("?"), f"{name} is only for Hyprbars: optional")
+                    if name in ("v4l-utils", "media-tv/v4l-utils"):
+                        self.assertTrue(code.startswith("?"), "the Webcam page says what's missing: optional")
+                    if name in build | {"qml6-module-qtquick-shapes"}:
+                        self.assertNotIn("Emoji", heading, f"{name} is under the wrong heading")
+
 
 class Links(html.parser.HTMLParser):
     """A page's anchors and links. A docs page's h2/h3 are anchors too: docs.js gives each an id

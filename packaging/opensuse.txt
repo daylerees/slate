@@ -1,6 +1,7 @@
 # Slate packages for openSUSE Tumbleweed. Quickshell isn't packaged: the installer builds
 # it from source (packaging/build-quickshell.sh).
 hyprland
+# hyprland-guiutils: Hyprland's own dialogs (an app that's stopped responding, permission prompts). Slate doesn't call it
 ?hyprland-guiutils
 qt6-declarative-imports
 libQt6Svg6
@@ -35,7 +36,6 @@ procps
 libnotify-tools
 fontconfig
 curl
-unzip
 xdg-utils
 
 # Features
@@ -50,10 +50,10 @@ brightnessctl
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 # Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars)
 ?hyprland-devel
-git
-make
-gcc-c++
-pkg-config
+?git
+?make
+?gcc-c++
+?pkg-config
 ?greetd
 
 # Printing and scanning (Settings → Printers & Scanners): CUPS, its printer tool, SANE with
@@ -79,7 +79,7 @@ accountsservice
 # put whisper-cli on your PATH
 
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
-v4l-utils
+?v4l-utils
 
 # Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
 # says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,

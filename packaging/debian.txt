@@ -3,6 +3,7 @@
 # "?" = optional: installed if this release has it.
 # Hyprland and Quickshell (Quickshell is built from source when the release lacks it)
 ?hyprland
+# hyprland-guiutils: Hyprland's own dialogs (an app that's stopped responding, permission prompts). Slate doesn't call it
 ?hyprland-guiutils
 ?quickshell
 
@@ -10,6 +11,7 @@
 qml6-module-qtquick
 qml6-module-qtquick-window
 qml6-module-qtquick-effects
+qml6-module-qtquick-shapes
 qml6-module-qt-labs-folderlistmodel
 qml6-module-qtqml-workerscript
 qt6-svg-plugins
@@ -45,7 +47,6 @@ procps
 libnotify-bin
 fontconfig
 curl
-unzip
 xdg-utils
 
 # Features
@@ -60,10 +61,10 @@ brightnessctl
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 # Hyprbars: optional title bars (Settings → Windows), built by Slate only when chosen (slate build-hyprbars)
 ?hyprland-dev
-git
-make
-g++
-pkgconf
+?git
+?make
+?g++
+?pkgconf
 ?greetd
 
 # Printing and scanning (Settings → Printers & Scanners): CUPS, its printer tool, SANE with
@@ -79,7 +80,6 @@ pkgconf
 # Downloads and Pictures folders), pciutils (Debug → Export logs)
 fonts-noto-color-emoji
 accountsservice
-qml6-module-qtquick-shapes
 ?btop
 ?ffmpeg
 ?xdg-user-dirs
@@ -90,7 +90,7 @@ qml6-module-qtquick-shapes
 ?whisper.cpp
 
 # Settings → Webcam: the camera's picture settings (v4l2-ctl)
-v4l-utils
+?v4l-utils
 
 # Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
 # says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,

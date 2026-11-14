@@ -414,17 +414,16 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 |---|---|
 | `hyprland` (0.57+, Lua config) | the compositor; `hyprctl` for dispatches, borders, night light shader |
 | `quickshell` (0.3.x) | runs Slate (`qs`) |
-| `qt6-declarative`, `qt6-shadertools` | QML / QtQuick.Effects; `qsb` to build `shaders/*.frag.qsb` |
+| `qt6-declarative` | QML / QtQuick.Effects (the shaders ship prebuilt as `shaders/*.frag.qsb`; whoever edits a `.frag` needs `qt6-shadertools` for `qsb`, which is a developer's tool and not in the package lists) |
 | `python`, `python-pillow` | scripts (`apply-theme.py`, `clipstore.py`, `wallpaper-accent.py` and the rest); Pillow for `appicon.py`'s tiles and `image-sizes.py` |
 | `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
 | `accountsservice` | your account picture (Settings → General, the lock and login screens) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
-| `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
-| `pipewire`, `wireplumber` (+ `pw-play`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`); `pw-record` (same package) records while you hold to talk to Nova |
+| `pipewire`, `wireplumber` (+ `pw-play` and `pw-dump`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`); `pw-record` (same package) records while you hold to talk to Nova |
 | `networkmanager` | Wi-Fi panel |
 | `bluez` | Bluetooth |
 | `upower` | battery |
@@ -443,6 +442,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 
 | Package | Feature |
 |---|---|
+| `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`; optional: without it the page says what to install) |
+| `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
 | `hyprpicker` | the colour picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
@@ -452,13 +453,13 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `pciutils` | Debug → Export logs (graphics card details) |
 | a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |
 | `swash` | opens screenshots to annotate; without it they're saved to ~/Pictures/Screenshots and copied |
-| `uwsm` | session management, with systemd only; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
+| `uwsm` (optional) | session management, with systemd only; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
 | `brightnessctl` | screen and keyboard brightness keys |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colours |
 | `xdg-desktop-portal-gtk` | Flatpak and Snap apps following light or dark (the Settings portal reads `color-scheme` from gsettings; Hyprland's own portal has no Settings) |
-| hyprbars (Hyprland plugin; `git`, `make`, `g++` to build it) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
+| hyprbars (Hyprland plugin; `git`, `make`, `g++` and `pkg-config` to build it, optional in the lists and checked by `slate build-hyprbars`, which says which is missing) | Optional title bars on every floating window (Slate's own are the default and need nothing). Built per Hyprland version, when chosen in Settings, by `slate build-hyprbars` into `~/.local/share/slate/plugins`, loaded by `session/hypr/config/hyprbars.lua` |
 | `qt6-multimedia` (Debian `qml6-module-qtmultimedia`, Fedora `qt6-qtmultimedia`, openSUSE `qt6-multimedia-imports`) | Settings → Sound → Click sound, and the other sounds without `pw-play`'s short delay (optional) |
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
