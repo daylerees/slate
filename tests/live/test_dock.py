@@ -288,15 +288,6 @@ class ManyWindowPreviews(LiveCase):
                         self.assert_on_screen(p)
         self.config("gameMode", "false")
 
-    def test_more_opens_the_app_menu(self):
-        self.open_windows(8)
-        p = self.previews("live")
-        self.assertGreater(p["more"], 0)
-        self.ipc("dock", "previewMore")
-        self.wait(lambda st: st["dock"]["menu"] == self.KEY and not st["dock"]["preview"],
-                  "the app's menu, every window in it, in place of the previews")
-
-
 class Badges(LiveCase):
     """An app's notifications badge its dock icon until you go to the app (opening the
     notification panel used to clear them, so a mail app's count vanished unseen)."""

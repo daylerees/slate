@@ -1614,7 +1614,6 @@ ShellRoot {
             }
             function closePreview(): void { win.previewApp = null; }
             // The previews' "+N" card, as clicking it does (the app's menu, every window in it)
-            function previewMore(): void { if (previewPop.wanted && previewPop.moreCount > 0) win.showAllWindows(); }
             // The Downloads stack's grid, as clicking it does:  slate ipc call dock downloads
             function downloads(): void {
                 if (!win.downloadsShown) return;
@@ -1849,14 +1848,6 @@ ShellRoot {
             previewPop.atX = p.x + (win.edge === "right" ? sw - win.width : 0);
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
         }
-        // The previews' "+N" card: the app's menu, which lists every one of its windows (the
-        // previews close as it opens)
-        function showAllWindows() {
-            const app = previewPop.shownApp;
-            const sl = app ? slots.find(o => o.kind === "app" && o.item.key === app.key) : null;
-            if (!sl) { previewApp = null; return; }
-            appMenu.openFor(sl.item, (strip.width - restWidth) / 2 + slotStart(sl.at) + base / 2);
-        }
         Connections {
             target: appMenu
             function onVisibleChanged() {
@@ -2076,15 +2067,14 @@ ShellRoot {
                         }
                     }
                     // The rest: a card of the same shape (no sheen), "+N" where the picture would
-                    // be, on the dock's own tile colour, and its caption below. Opens the app's
-                    // menu, which lists every window
+                    // be, on the dock's own tile colour, and its caption below. Only says how many:
+                    // not something to click (the app's right-click menu lists every window)
                     Rectangle {
                         id: moreCard
                         visible: previewPop.moreCount > 0
                         width: previewPop.moreW; height: previewPop.cardH
                         radius: Config.corner(8)
-                        color: moreHover.hovered ? Config.hover : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                        color: "transparent"
                         Rectangle {
                             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
                             height: parent.height - 34
@@ -2105,8 +2095,6 @@ ShellRoot {
                             color: win.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                         }
-                        HoverHandler { id: moreHover }
-                        ClickTap { hand: false; onTapped: win.showAllWindows() }
                     }
                 }
 
@@ -2150,8 +2138,7 @@ ShellRoot {
                         visible: !previewPop.live && previewPop.moreCount > 0
                         width: titleCol.width; height: previewPop.cardH
                         radius: Config.corner(8)
-                        color: moreRowHover.hovered ? Config.hover : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                        color: "transparent"
                         Rectangle {
                             id: moreRowTile
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -2172,8 +2159,6 @@ ShellRoot {
                             color: win.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                         }
-                        HoverHandler { id: moreRowHover }
-                        ClickTap { hand: false; onTapped: win.showAllWindows() }
                     }
                 }
             }
