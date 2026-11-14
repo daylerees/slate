@@ -450,7 +450,7 @@ ShellRoot {
                 sounds: Config.testSounds,
                 asking: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.title : "",
                 askingBody: powerConfirm.shown && powerConfirm.custom ? powerConfirm.custom.body : "",
-                assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
+                assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
                              blocks: nova.cur ? nova.cur.blocks || [] : [], rich: nova.richNow(), copied: nova.copied,

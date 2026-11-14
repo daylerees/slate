@@ -592,7 +592,15 @@ class Nova(LiveCase):
         self.assertFalse(self.nova()["stopShown"], "Stop showed with nothing to stop")
         self.ipc("assistant", "ask", "wait a while")
         self.wait(lambda st: st["assistant"]["working"] and st["assistant"]["stopShown"], "Stop in the box")
-        self.s.run(["wtype", "-M", "ctrl", "c", "-m", "ctrl"], check=True)     # (a real key press, through the virtual keyboard)
+        # A real key press, through a virtual keyboard: wtype makes a new one each time and
+        # presses straight away, so a key can be lost before Slate has its keymap. -s waits a
+        # moment first; and the keys the box was given say whether it arrived
+        seen = self.nova()["keysSeen"]
+        for _ in range(5):
+            self.s.run(["wtype", "-s", "300", "-M", "ctrl", "c", "-m", "ctrl"], check=True)
+            self.s.settle(0.3)
+            if self.nova()["keysSeen"] > seen:
+                break
         st = self.wait(lambda st: not st["assistant"]["working"], "Ctrl+C to stop it", timeout=15)["assistant"]
         self.assertEqual(st["error"], "", "stopping is not an error")
         self.wait(lambda st: not st["assistant"]["stopShown"], "Stop to go")

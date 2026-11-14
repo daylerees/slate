@@ -290,6 +290,7 @@ PanelWindow {
     readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. Slate can use Claude Code or a command of your own." })
     function stop() { if (working) runner.signal(15); }
     readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
+    property int keysSeen: 0               // (for the tests: keys the box has been given)
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
         const t = asked;
@@ -947,6 +948,7 @@ PanelWindow {
                     readOnly: root.working
                     onAccepted: root.send(text)
                     Keys.onPressed: e => {
+                        root.keysSeen++;
                         if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true; }
                         // Ctrl+C stops Nova while it works (with text selected, it copies as ever)
                         else if (e.key === Qt.Key_C && (e.modifiers & Qt.ControlModifier) && root.working && field.selectedText === "") { root.stop(); e.accepted = true; }
