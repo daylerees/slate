@@ -157,10 +157,15 @@ def lua(code):
 
 
 def lstr(s):
-    """A Lua string literal."""
+    """A Lua string literal: [=[…]=], with as many = as it takes for nothing in the text to
+    end it early (the text's own last characters followed by the closing bracket included:
+    "x]=" then "]=]"). Text with a control character in it is written in quotes with escapes
+    instead: Lua drops a line break at the start of a long string, and reads \\r as \\n."""
     s = str(s)
+    if re.search(r"[\x00-\x1f\x7f]", s):
+        return '"' + re.sub(r'[\\"\x00-\x1f\x7f]', lambda m: "\\" + (m.group() if m.group() in '\\"' else "%03d" % ord(m.group())), s) + '"'
     n = 1
-    while ("]" + "=" * n + "]") in s:
+    while ("]" + "=" * n + "]") in s + "]":
         n += 1
     return "[" + "=" * n + "[" + s + "]" + "=" * n + "]"
 

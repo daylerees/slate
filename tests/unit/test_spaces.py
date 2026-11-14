@@ -497,3 +497,35 @@ class WorkspaceNames(FakeHyprland, SpacesBase):
         os.remove(os.path.join(self.h.runtime, "slate", "workspace-names-test.json"))
         self.hyprland()
         self.assertEqual([w.get("name") for w in json.loads(self.spaces("snapshot"))], [None, None, None])
+
+
+class LuaStrings(Case):
+    """lstr(): text written into the Lua that Hyprland runs comes out of Lua as the same text,
+    whatever is in it (a command or a monitor's name ending the string early would leave the
+    rest of it to run as Lua)."""
+    scratch = True
+    TEXTS = ["example-editor --new-window", "address:0xb2", "", "]]", "]=]", "a]==]b]=]c", "x]", "x]=", "x]==",
+             'say "hi"', "back\\slash", "it's", "\nstarts on a new line", "two\nlines", "tab\there",
+             ']=] os.exit(1) --[=[', "café ü 日本"]
+
+    def lstr(self, text):
+        code = "import importlib.util, sys\n" \
+               "spec = importlib.util.spec_from_file_location('spaces', sys.argv[1])\n" \
+               "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\n" \
+               "sys.stdout.write(m.lstr(sys.argv[2]))"
+        c, out = run(["python3", "-c", code, SCRIPT, text], env=self.h.env)
+        self.assertEqual(c, 0, out)
+        return out
+
+    def test_ordinary_text_is_a_long_string(self):
+        self.assertEqual(self.lstr("example-editor --new-window"), "[=[example-editor --new-window]=]")
+        self.assertEqual(self.lstr("a]=]b"), "[==[a]=]b]==]")
+        # (Lua reads a bare \r in a long string as \n: written as an escape instead)
+        self.assertEqual(self.lstr("cr\rhere"), '"cr\\013here"')
+
+    def test_lua_reads_back_what_went_in(self):
+        lua = slate.need("lua", "lua5.4", "luajit")
+        for text in self.TEXTS:
+            with self.subTest(text):
+                c, out = run([lua, "-e", "io.write(%s)" % self.lstr(text)], env=self.h.env)
+                self.assertEqual((c, out), (0, text))

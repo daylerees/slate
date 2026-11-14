@@ -692,9 +692,44 @@ Singleton {
             if (cur === undefined) return;
             if (key === "barPosition") { root.moveBar(value); return; }
             if (key === "dockPosition") { root.moveDock(value); return; }
-            root.s[key] = typeof cur === "boolean" ? value === "true" : typeof cur === "number" ? Number(value) : value;
+            const v = root.settingFromText(cur, value);
+            if (v !== undefined) root.s[key] = v;
         }
         function get(key: string): string { return String(root.s[key]); }
+    }
+    // What a setting given as text (config set) becomes, going by the kind of value it holds
+    // now, or undefined when the text isn't one of those: the setting is then left alone. A
+    // switch takes only "true" or "false", a number only a real number (not "abc", which would
+    // be stored as NaN), and a list or an object only JSON for another of the same: stored as
+    // plain text, every place that reads the list (themedApps.some(…)) would stop with an error.
+    // (On the command line a list needs a space before it, ' ["a", "b"]': `qs ipc call` takes
+    // an argument that starts with [ and ends with ] apart, as several of its own)
+    function settingFromText(cur, text) {
+        if (typeof cur === "boolean") return text === "true" ? true : text === "false" ? false : undefined;
+        if (typeof cur === "number") {
+            const n = Number(text);
+            return String(text).trim() !== "" && isFinite(n) ? n : undefined;
+        }
+        if (cur !== null && typeof cur === "object") {
+            const list = v => Array.isArray(v) || (v !== null && typeof v === "object" && typeof v.length === "number");
+            let v;
+            try { v = JSON.parse(text); } catch (e) { return undefined; }
+            if (v === null || typeof v !== "object" || Array.isArray(v) !== list(cur)) return undefined;
+            return v;
+        }
+        return text;
+    }
+    // A piece of text as Lua writes one, for anything spliced into Lua that Hyprland runs
+    // (hyprctl eval / dispatch, displays.lua): in double quotes, with whatever would end the
+    // string early or mean something else to Lua written as an escape. Always this, never
+    // quotes or long brackets written round it by hand: a monitor's description, a folder's
+    // name or a command can hold a quote, a backslash or a closing bracket, and the rest of it
+    // would run as Lua. (\x22 is the double quote: a bare one in the pattern would read as the
+    // start of a string to tools/check-greeter-files)
+    function luaString(text) {
+        const quote = "\x22";
+        return quote + String(text).replace(/[\\\x22\x00-\x1f\x7f]/g, c =>
+            c === "\\" || c === quote ? "\\" + c : "\\" + ("00" + c.charCodeAt(0)).slice(-3)) + quote;
     }
 
     // ---- App icon tint: 0 (off) to 1 (fully in the accent colour); see IconTint.qml
@@ -2019,7 +2054,11 @@ Singleton {
     // Set (mode "" or the default: back to following it) and apply at once: Hyprland floats
     // or re-tiles that workspace's windows (setWorkspaceMode, windowrules.lua)
     function setWorkspaceMode(id, mode) {
-        if (id <= 0) return;
+        // (both end up in Lua that Hyprland runs, and this can be called from the command line:
+        // only a workspace's number, and only a mode Slate has, or "" for the default)
+        id = Number(id);
+        if (!Number.isInteger(id) || id <= 0) return;
+        if (mode && !windowModes.some(x => x.value === mode)) return;
         const m = Object.assign({}, workspaceModes);
         if (!mode || mode === windowMode) delete m[String(id)];
         else m[String(id)] = mode;
@@ -2027,7 +2066,7 @@ Singleton {
         Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceModesPath]);
         workspaceModesFile.setText(JSON.stringify(m));
         Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() SLATE_TITLEBARS = ${slateTitleBars}; WINDOW_MODE = "${windowMode}"; if setWorkspaceMode then setWorkspaceMode(${id}, "${m[String(id)] || ""}") end end`]);
+            `function() SLATE_TITLEBARS = ${slateTitleBars}; WINDOW_MODE = "${windowMode}"; if setWorkspaceMode then setWorkspaceMode(${id}, ${luaString(m[String(id)] || "")}) end end`]);
     }
     // ---- Each workspace's own name (the pencil on the window mode panel) -----------------
     // "Coding" in place of "Workspace 3", everywhere Slate would show the number. Kept like the

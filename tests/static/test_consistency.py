@@ -691,6 +691,33 @@ class Shaders(Case):
                 self.assertGreaterEqual(changed(qsb), changed(frag), f"{frag} changed after {os.path.basename(qsb)} was built")
 
 
+class LuaText(Case):
+    """Text that Slate writes into Lua for Hyprland (hyprctl eval / dispatch, displays.lua)
+    goes through Config.luaString: a monitor's description, a folder or a command written
+    between long brackets or quotes by hand could end the string and run as Lua."""
+    def test_no_long_brackets_by_hand(self):
+        shell = os.path.join(slate.ROOT, "shell")
+        for name in sorted(os.listdir(shell)):
+            if name.endswith(".qml"):
+                for n, line in enumerate(slate.read("shell", name).splitlines(), 1):
+                    with self.subTest(name, line=n):
+                        self.assertNotRegex(line, r"\[=+\[|\]=+\]", "a Lua long string written by hand: use Config.luaString")
+
+    def test_what_comes_from_outside_is_written_by_luastring(self):
+        displays = slate.read("shell", "Displays.qml")
+        self.assertEqual(len(re.findall(r"output = \$\{Config\.luaString\(out\)\}", displays)), 2)
+        self.assertNotRegex(displays, r"output = [^$]")
+        downloads = re.search(r"function openDownloads\(\) \{(.*?)\n        \}", slate.read("shell", "shell.qml"), re.S).group(1)
+        self.assertIn("FILE_MANAGER .. ${Config.luaString(", downloads)
+        self.assertNotRegex(downloads, r"""\.replace\(/'/g, ""\)""", "the folder's quotes dropped rather than escaped")
+        launcher = slate.read("shell", "Launcher.qml")
+        self.assertIn("Config.luaString(q(inTerminal))", launcher)
+        self.assertIn("Config.luaString(cmd)", launcher)
+        mode = re.search(r"function setWorkspaceMode\(id, mode\) \{(.*?)\n    \}", slate.read("shell", "Config.qml"), re.S).group(1)
+        self.assertIn("if (mode && !windowModes.some(x => x.value === mode)) return;", mode)
+        self.assertIn("if (!Number.isInteger(id) || id <= 0) return;", mode)
+
+
 class PrivateFiles(Case):
     """What Slate keeps that's private (the conversation with Nova, the notification history)
     is written from QML, where a file can't be made with a mode: so its folder is closed

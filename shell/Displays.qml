@@ -157,13 +157,13 @@ Scope {
     // ---- Applying ---------------------------------------------------------------
     function luaFor(desc, name, cfg, hdrCapable) {
         const out = desc ? `desc:${desc}` : name;
-        if (cfg.disabled) return `hl.monitor({ output = [==[${out}]==], disabled = true })`;
+        if (cfg.disabled) return `hl.monitor({ output = ${Config.luaString(out)}, disabled = true })`;
         // HDR only for displays that can show it (the rest are left as Hyprland has them)
         const hdr = !hdrCapable && cfg.hdr !== "on" ? ""
             : cfg.hdr === "on" ? `, cm = "hdr", bitdepth = 10, supports_hdr = 0, sdrbrightness = ${Number(cfg.sdrBrightness).toFixed(2)}, sdrsaturation = ${Number(cfg.sdrSaturation).toFixed(2)}`
             : cfg.hdr === "off" ? `, cm = "auto", bitdepth = 8, supports_hdr = -1`
             : `, cm = "auto", supports_hdr = 0`;
-        return `hl.monitor({ output = [==[${out}]==], disabled = false, mode = "${cfg.mode}", position = "${Math.round(cfg.x)}x${Math.round(cfg.y)}", `
+        return `hl.monitor({ output = ${Config.luaString(out)}, disabled = false, mode = ${Config.luaString(cfg.mode)}, position = "${Math.round(cfg.x)}x${Math.round(cfg.y)}", `
             + `scale = ${Number(cfg.scale).toFixed(6)}, transform = ${cfg.transform}${hdr} })`;
     }
     // configs: { "<monitor name>": cfg } for every monitor (unchanged ones included)

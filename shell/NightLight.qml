@@ -46,7 +46,7 @@ Scope {
         if (on) {
             Quickshell.execDetached(["mkdir", "-p", Quickshell.env("HOME") + "/.cache/slate"]);
             shaderFile.setText(shader);
-            Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = "${shaderPath}" } })`]);
+            Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = ${Config.luaString(shaderPath)} } })`]);
         } else {
             Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = "" } })`]);
         }

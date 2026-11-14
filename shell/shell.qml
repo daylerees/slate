@@ -287,6 +287,8 @@ ShellRoot {
             else if (what === "unset") Config.titleBarStyleUnset = true;      // as if the settings were from before the choice
             else Config.hyprbarsCheck();
         }
+        // A piece of text as Slate writes it into Lua for Hyprland (Config.luaString)
+        function luaString(text: string): string { return Config.luaString(text); }
         // As if this computer had no systemd or elogind (what bin/slate-init info would say), or
         // had them again ("")
         function system(logind: string): void {
@@ -720,7 +722,7 @@ ShellRoot {
         // Floating windows' title bars (hyprbars, when built): Slate's bar colour, text, font and button colours
         const bars = `if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { bar_color = "${rgba(Config.tint("#0f1216"), 1)}", `
             + `col = { text = "${rgba(Config.tint("#eef1f5"), 1)}" }, inactive_button_color = "${rgba(Config.tint("#3a424e"), 1)}", `
-            + `bar_text_font = [==[${Config.s.fontFamily}]==], bar_text_size = ${Math.round(13 * Config.uiScale)}, bar_height = ${Math.round(13 * 2.6 * Config.uiScale)}, `
+            + `bar_text_font = ${Config.luaString(Config.s.fontFamily)}, bar_text_size = ${Math.round(13 * Config.uiScale)}, bar_height = ${Math.round(13 * 2.6 * Config.uiScale)}, `
             + `bar_buttons_alignment = "${Config.s.titleButtons === "left" ? "left" : "right"}" } } }); `
             + `if HYPRBARS_IDLE then pcall(hl.config, { plugin = { hyprbars = { idle_button_color = "${rgba(Config.tint("#5a6372"), 1)}" } } }) end end; `;
         return solos + mode + bars + `ACTIVE_BORDER = { colors = { ${activeColors} }${g > 0 ? ", angle = 45" : ""} }; INACTIVE_BORDER = ${inactiveBorder}; BORDER_SIZE = ${size}; `
@@ -1442,8 +1444,12 @@ ShellRoot {
             return { glyph: 0xEAA4 };
         }
         function openDownloads() {
+            // The folder's name goes through two readers: the shell that runs the command (so
+            // it's in single quotes, a quote of its own written as '\'') and Lua before that
+            // (Config.luaString). Dropping its quotes instead opened another folder
+            const folder = "'" + downloadsDir.replace(/'/g, "'\\''") + "'";
             Quickshell.execDetached(["hyprctl", "dispatch",
-                `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. " '${downloadsDir.replace(/'/g, "")}'") end`]);
+                `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. ${Config.luaString(" " + folder)}) end`]);
         }
 
         // ---- Media (Settings → Dock → Media controls) ----------------------------------
