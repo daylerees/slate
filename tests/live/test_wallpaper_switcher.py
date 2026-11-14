@@ -143,12 +143,38 @@ class WallpaperSwitcher(LiveCase):
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green and st["wallpaperSwitcher"]["ahead"] == [blue, red],
                   "blue and red read ahead of green")
         # The small picture that stands in until a full one's in never stays once it is
-        self.wait(lambda st: not st["wallpaperSwitcher"]["standing"], "the stand-in to go once the full picture's in")
+        self.wait(lambda st: not st["wallpaperSwitcher"]["standing"] and not st["wallpaperSwitcher"]["spinning"],
+                  "the stand-in and the spinner to go once the full picture's in")
         self.ipc("wallpaperSwitcher", "cancel")
         # Closed: everything it held let go
         self.wait(lambda st: not st["wallpaperSwitcher"]["switching"] and st["wallpaperSwitcher"]["ahead"] == []
                   and st["wallpaperSwitcher"]["walls"] == [] and st["wallpaperSwitcher"]["colours"] == 0
-                  and st["wallpaperSwitcher"]["cover"] == "" and not st["wallpaperSwitcher"]["standing"], "everything let go once closed")
+                  and st["wallpaperSwitcher"]["cover"] == "" and not st["wallpaperSwitcher"]["standing"]
+                  and not st["wallpaperSwitcher"]["spinning"], "everything let go once closed")
+
+    def test_escape_right_after_a_move(self):
+        """Escape (or a move) while a picture is still being read, just after the last one came
+        in: the old one's let-go timer used to clear the slot mid-load, so the screen stayed on
+        the preview after the switcher closed. A big picture, so it's still loading then."""
+        big = os.path.join(self.folder, "d-big.png")
+        Image.effect_noise((5200, 3250), 90).convert("RGB").save(big)
+        self.addCleanup(lambda: os.path.exists(big) and os.remove(big))     # (the other tests have three)
+        red, green = self.paths[0], self.paths[1]
+        self.ipc("wallpaper", "set", big)
+        self.wait(lambda st: st["wallpaperSwitcher"]["desktop"] == big, "the big one on the desktop", timeout=20)
+        for attempt in range(3):
+            with self.subTest(attempt=attempt):
+                self.open()
+                walls = self.s.state()["wallpaperSwitcher"]["walls"]
+                self.ipc("wallpaperSwitcher", "testFlip", red, green)       # (green the moment red is in)
+                self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green, "the green one")
+                self.ipc("wallpaperSwitcher", "testFlip", red, big)         # (back to the big one, still loading)
+                self.ipc("wallpaperSwitcher", "cancel")
+                st = self.wait(lambda st: not st["wallpaperSwitcher"]["switching"], "it to close")
+                self.assertEqual(st["wallpaperSwitcher"]["saved"], big)
+                self.wait(lambda st: st["wallpaperSwitcher"]["desktop"] == big,
+                          "the desktop back on the wallpaper you had, not the one looked at", timeout=10)
+        self.assertIn(big, walls)
 
     def test_enter_keeps_it(self):
         self.open()

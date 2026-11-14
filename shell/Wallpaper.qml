@@ -17,6 +17,7 @@ Scope {
     id: root
     required property var bar                 // the main bar: the switcher takes its look
     readonly property alias switcher: switcherWin
+    property string desktopShowing: ""      // (the tests': the picture really on the first screen's desktop)
 
     IpcHandler {
         target: "wallpaper"
@@ -147,6 +148,7 @@ Scope {
                 anchors.fill: parent
                 path: Config.wallpaper
                 pixelRatio: win.modelData.devicePixelRatio || 1
+                onShowingChanged: if (win.modelData === Quickshell.screens[0]) root.desktopShowing = showing
             }
         }
     }

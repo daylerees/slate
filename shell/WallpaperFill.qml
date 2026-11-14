@@ -33,6 +33,9 @@ Item {
         // has it, so setting it again changes nothing and it would never say it's loaded. It's
         // brought in now instead (otherwise the picture stayed on the one before)
         if (back.source.toString() === wanted && back.status === Image.Ready) { bringIn(back); return; }
+        // (the spare's taken for this: the old picture's let-go, still to come, mustn't clear it
+        // mid-load, or it never came in and the screen stayed on the one before)
+        retire.stop();
         back.opacity = 0;
         back.source = wanted;
     }
@@ -93,6 +96,10 @@ Item {
     Timer {
         id: retire
         interval: Config.ms(fill.fadeMs) + 100
-        onTriggered: { const old = fill.images[1 - fill.front]; old.opacity = 0; old.source = ""; }
+        onTriggered: {
+            const old = fill.images[1 - fill.front];
+            if (old.source.toString() === fill.wanted) return;      // (the one coming in: kept)
+            old.opacity = 0; old.source = "";
+        }
     }
 }
