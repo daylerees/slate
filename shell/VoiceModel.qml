@@ -26,7 +26,8 @@ Item {
     property real progress: 0
     property string error: ""
 
-    function check() { look.running = false; look.running = true; }
+    property int checks: 0               // how many times it has looked (tests)
+    function check() { checks++; look.running = false; look.running = true; }
     function download() {
         if (fetch.running) return;
         error = ""; progress = 0;
@@ -35,7 +36,11 @@ Item {
     function cancel() { if (fetch.running) fetch.signal(15); }
     function remove() { cancel(); drop.running = true; }
 
-    Component.onCompleted: check()
+    // Only while talking to Nova is on (Settings → Assistant → Voice looks again itself when it
+    // opens, and switching it on checks); with it off nothing starts python for this
+    readonly property bool wanted: Config.s.assistantVoice
+    onWantedChanged: if (wanted) check()
+    Component.onCompleted: if (wanted) check()
     Process {
         id: look
         command: ["python3", vm.script, "status"]

@@ -1002,21 +1002,33 @@ Singleton {
     Timer {
         id: hyprPush; interval: 400; running: true
         onTriggered: {
+            // While the wallpaper switcher shows wallpapers, nothing reaches Hyprland (as with
+            // the borders and the theme: shell.qml's heldBack); one push goes when it closes
+            if (root.wallpaperSwitching) { root.hyprPushHeld = true; return; }
+            root.hyprPushHeld = false;
             // (under the tests, each push is counted and Hyprland keeps the count, so a test can
             // tell the settings have arrived: testHypr())
             if (root.testMode) root.testPushes++;
             Quickshell.execDetached(["hyprctl", "eval", root.hyprSettings + (root.testMode ? `; SLATE_TEST_PUSHES = ${root.testPushes}` : "")]);
             if (root.blurOverride) root.blurOverridden = true;
-            blurLater.restart();          // the blur may have changed: read it again
+            // The blur is read back only when something that sets it has changed since the last
+            // reading (a reload of Hyprland's config reads it too: the events handler below).
+            // Every push used to start a shell and five hyprctl calls
+            if (root.blurInputs !== root.blurReadFor) { root.blurReadFor = root.blurInputs; blurLater.restart(); }
         }
     }
+    property bool hyprPushHeld: false
+    // What hyprSettings sets about the blur, and what it was when the blur was last read
+    readonly property string blurInputs: [glass && s.glassBlur > 0 ? Math.round(s.glassBlur) : 0, s.fastBlur, s.blurPasses > 0 ? Math.round(s.blurPasses) : 0, gameMode].join()
+    property string blurReadFor: ""
+    property int testBlurReads: 0       // (tests: how many times Hyprland's blur was read)
     // Test mode: Slate's settings on their way to Hyprland (busy: a push or a reading back of
     // Hyprland's blur or rounding still to come), how many pushes have gone (Hyprland's
     // SLATE_TEST_PUSHES matches once the last has arrived), and the rounding Slate read back
     property int testPushes: 0
     function testHypr() {
-        return { busy: hyprPush.running || blurLater.running || blurProc.running || roundingLater.running || roundingProc.running,
-                 pushes: testPushes, rounding: windowRounding };
+        return { busy: hyprPush.running || hyprPushHeld || blurLater.running || blurProc.running || roundingLater.running || roundingProc.running,
+                 pushes: testPushes, rounding: windowRounding, blurReads: testBlurReads, kbReads: testKbReads };
     }
     // ---- Hyprland's events -------------------------------------------------------------
     // One handler for all of Config's (Hyprland sends many events a second while windows move),
@@ -1154,7 +1166,8 @@ Singleton {
         if (n < 2) return;
         Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", String(((i % n) + n) % n)]);
     }
-    function refreshKeyboard() { kbState.running = false; kbState.running = true; kbOptions.running = false; kbOptions.running = true; }
+    property int testKbReads: 0         // (tests: how many times the layouts were read from Hyprland)
+    function refreshKeyboard() { if (testMode) testKbReads++; kbState.running = false; kbState.running = true; kbOptions.running = false; kbOptions.running = true; }
     Process {
         id: kbState
         running: true
@@ -1192,8 +1205,13 @@ Singleton {
     // change, so hypr-options.py needn't run on every switch)
     Timer { id: kbLater; interval: 400; onTriggered: root.refreshKeyboard() }
     Timer { id: kbActiveLater; interval: 400; onTriggered: { kbState.running = false; kbState.running = true; } }
-    onKbLayoutListChanged: kbLater.restart()
-    // (both started from the Hyprland events handler above)
+    // Started by what the layouts come from: yours (set in Settings) and Hyprland's reload (the
+    // events handler above). Not by kbLayoutList, which reading them changes itself
+    Connections {
+        target: root.s
+        function onKbLayoutsChanged() { kbLater.restart(); }
+        function onKbVariantsChanged() { kbLater.restart(); }
+    }
 
     // ---- Lid and power button (Settings → Power) --------------------------------------
     // ---- What this computer can do (bin/slate-init info) -----------------------------------
@@ -1803,13 +1821,17 @@ Singleton {
             onStreamFinished: {
                 try {
                     const a = JSON.parse(text);
-                    root.hyprBlur = { enabled: !!(a[0].bool ?? a[0].int), size: a[1].int, passes: a[2].int,
-                                      contrast: a[3].float, vibrancy: a[4].float };
+                    const b = { enabled: !!(a[0].bool ?? a[0].int), size: a[1].int, passes: a[2].int,
+                                contrast: a[3].float, vibrancy: a[4].float };
+                    // (only when it differs: everything drawing the blur redraws on a new object)
+                    const o = root.hyprBlur;
+                    if (b.enabled !== o.enabled || b.size !== o.size || b.passes !== o.passes || b.contrast !== o.contrast || b.vibrancy !== o.vibrancy)
+                        root.hyprBlur = b;
                 } catch (e) {}
             }
         }
     }
-    function readBlur() { blurProc.running = false; blurProc.running = true; }
+    function readBlur() { if (testMode) testBlurReads++; blurProc.running = false; blurProc.running = true; }
     // (read again after Hyprland reloads: the Hyprland events handler starts blurLater)
     Timer { id: blurLater; interval: 600; onTriggered: root.readBlur() }
     // Glass's blur size put back to Hyprland's own (glass off, or "Hyprland's own" picked):
@@ -2189,7 +2211,7 @@ Singleton {
         mark: "" + tint("#566173") }) + "\n"
     onCoverColoursChanged: coverLater.restart()
     // (not while the wallpaper switcher is showing one: once it closes)
-    onWallpaperSwitchingChanged: if (!wallpaperSwitching) coverLater.restart()
+    onWallpaperSwitchingChanged: { if (!wallpaperSwitching) coverLater.restart(); if (!wallpaperSwitching && hyprPushHeld) hyprPush.restart(); }   // (the held-back push, hyprPush)
     Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && !root.wallpaperSwitching && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
     FileView {
         id: coverFile

@@ -546,7 +546,10 @@ ShellRoot {
                 // Talking to Nova: listening or not, why it didn't, and what's there for it
                 novaVoice: { phase: novaVoice.phase, note: novaVoice.note, on: novaVoice.on, mic: nova.micShown,
                              whisper: voiceModel.whisper !== "", model: voiceModel.model, ready: voiceModel.ready,
-                             downloading: voiceModel.downloading, progress: voiceModel.progress, error: voiceModel.error },
+                             downloading: voiceModel.downloading, progress: voiceModel.progress, error: voiceModel.error, checks: voiceModel.checks },
+                // Background work that should be idle when nothing needs it: Night light's schedule
+                // timer, Private Mode's portal watch, and the theme check for updated apps
+                idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: themeStaleTimer.running },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
@@ -589,7 +592,7 @@ ShellRoot {
             if (wallpaperLayer.switcher.shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
         }
     }
-    NightLight {}
+    NightLight { id: nightLight }
     AirplaneMode {}
     Radios {}                                 // Wi-Fi and Bluetooth through IPC, for assistants
     PrivateMode { id: privateMode; confirm: powerConfirm }
@@ -888,6 +891,7 @@ ShellRoot {
     // An update of Spotify or Discord takes Slate's theme out of it (it's patched in). Looked
     // for every few minutes while either is themed; applying the themes again puts it back
     Timer {
+        id: themeStaleTimer
         interval: 300000
         repeat: true
         running: !Config.testMode && (Config.s.themedApps || []).some(a => a === "spotify" || a === "discord")

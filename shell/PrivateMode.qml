@@ -111,8 +111,14 @@ Scope {
     }
     // A camera plugged in while it's on is covered by the helper's rule; screen sharing that
     // starts its portal again (without systemd to hold it stopped) is stopped again
+    // With systemd the portal is masked and nothing more is needed ("keep" does nothing there), so
+    // the watch runs only on another init (Config.system, asked once as Slate starts; assumed
+    // systemd until it has answered)
+    readonly property bool systemdUser: Config.system.init === "systemd"
+    readonly property bool watching: watch.running
     Timer {
-        running: root.on && !Config.testMode
+        id: watch
+        running: root.on && !Config.testMode && !root.systemdUser
         interval: 3000; repeat: true
         onTriggered: Quickshell.execDetached([Quickshell.shellPath("scripts/private-capture.sh"), "keep"])
     }

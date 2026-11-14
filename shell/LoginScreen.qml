@@ -71,7 +71,12 @@ Item {
         command: ["sh", "-c", "cat /sys/class/leds/*::capslock/brightness 2>/dev/null"]
         stdout: StdioCollector { onStreamFinished: ls.capsLock = text.split("\n").some(l => parseInt(l) > 0) }
     }
-    Timer { interval: 250; running: ls.visible && !Config.testMode; repeat: true; triggeredOnStart: true; onTriggered: if (!capsRead.running) capsRead.running = true }
+    // Read once as the screen shows, again just after any key goes down or up in the password
+    // field (that's when the light changes), and slowly in between, for a Caps Lock pressed
+    // where the field can't see it. (It used to start a shell four times a second while locked)
+    function readCaps() { if (!Config.testMode && !capsRead.running) capsRead.running = true; }
+    Timer { id: capsSoon; interval: 60; onTriggered: ls.readCaps() }       // (the light follows the key a moment later)
+    Timer { interval: 4000; running: ls.visible && !Config.testMode; repeat: true; triggeredOnStart: true; onTriggered: ls.readCaps() }
 
     // ---- Background: plain slate, then the wallpaper once it's there -----------
     Rectangle {
@@ -222,6 +227,8 @@ Item {
                         onAccepted: ls.submit()
                         onTextChanged: if (text !== "" && ls.messageIsError) { ls.message = ""; ls.messageIsError = false; }
                         Keys.onEscapePressed: { if (ls.menu !== "") ls.menu = ""; else text = ""; }
+                        Keys.onPressed: event => { capsSoon.restart(); event.accepted = false; }
+                        Keys.onReleased: event => { capsSoon.restart(); event.accepted = false; }
                     }
                     Text {
                         visible: password.text === "" && !ls.busy

@@ -86,7 +86,11 @@ Scope {
         function onNightLightFromChanged() { root.lastScheduled = null; root.checkSchedule(); }
         function onNightLightToChanged() { root.lastScheduled = null; root.checkSchedule(); }
     }
-    Timer { interval: 30000; running: true; repeat: true; triggeredOnStart: true; onTriggered: root.checkSchedule() }
+    // (only with a schedule: with none, checkSchedule has nothing to do. Changing the schedule
+    // checks straight away, above)
+    readonly property bool scheduled: schedule === "sun" || schedule === "custom"
+    readonly property bool timerRunning: scheduleTimer.running
+    Timer { id: scheduleTimer; interval: 30000; running: root.scheduled; repeat: true; triggeredOnStart: true; onTriggered: root.checkSchedule() }
 
     // A config reload resets the shader; put it back
     Connections {
