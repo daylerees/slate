@@ -137,11 +137,7 @@ Rectangle {
     Timer { interval: 30000; running: true; repeat: true; onTriggered: card.tick++ }
     function ago(t) {
         tick;
-        const s = Math.max(0, (Date.now() - t) / 1000);
-        if (s < 60) return "now";
-        if (s < 3600) return Math.floor(s / 60) + " min ago";
-        if (s < 86400) return Math.floor(s / 3600) + " h ago";
-        return Config.dateText(new Date(t), "day");
+        return Config.ago(t);
     }
 
     Item {

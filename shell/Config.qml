@@ -1335,6 +1335,18 @@ Singleton {
     // ...and the one actually in use, which the tiles are drawn from: the chosen one, else what
     // GTK apps use (read from gtk-3.0/settings.ini, so a theme set outside Slate counts too;
     // Slate's folder-colour theme counts as the theme it's made from)
+    // "2 min ago", worded as on notifications ("now", then a date after a day). `t` is in
+    // milliseconds. `wordy` is the clipboard's wording instead: "Just now", and "Yesterday" /
+    // "3 days ago" rather than a date
+    function ago(t, wordy) {
+        const s = Math.max(0, wordy ? Math.floor((Date.now() - t) / 1000) : (Date.now() - t) / 1000);
+        if (s < 60) return wordy ? "Just now" : "now";
+        if (s < 3600) return Math.floor(s / 60) + " min ago";
+        if (s < 86400) return Math.floor(s / 3600) + " h ago";
+        if (!wordy) return root.dateText(new Date(t), "day");
+        const d = Math.floor(s / 86400);
+        return d === 1 ? "Yesterday" : d + " days ago";
+    }
     readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
     readonly property string dataHome: Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share"
     FileView { id: gtkSettingsFile; path: root.isLoginScreen ? "" : root.configHome + "/gtk-3.0/settings.ini"; watchChanges: true; printErrors: false; onFileChanged: reload() }

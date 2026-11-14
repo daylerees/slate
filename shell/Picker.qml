@@ -129,14 +129,8 @@ PanelWindow {
     function clearClips() { typed = true; clips = []; clipRun(["clear"]); }
 
     function preview(text) { return text.replace(/\s+/g, " ").trim(); }
-    function ago(t) {
-        const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
-        if (s < 60) return "Just now";
-        if (s < 3600) return Math.floor(s / 60) + " min ago";
-        if (s < 86400) return Math.floor(s / 3600) + " h ago";
-        const d = Math.floor(s / 86400);
-        return d === 1 ? "Yesterday" : d + " days ago";
-    }
+    // (the clipboard's times are in seconds; Config.ago takes milliseconds)
+    function ago(t) { return Config.ago(t * 1000, true); }
     function clipDetail(e) {
         if (e.kind === "image") return "Image" + (e.w ? " · " + e.w + " × " + e.h : "") + " · " + ago(e.time);
         const lines = e.text.replace(/\s+$/, "").split("\n").length;

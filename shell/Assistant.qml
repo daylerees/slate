@@ -195,11 +195,7 @@ PanelWindow {
     function ago(t) {
         tick;
         if (!t) return "";
-        const s = Math.max(0, (Date.now() - t) / 1000);
-        if (s < 60) return "now";
-        if (s < 3600) return Math.floor(s / 60) + " min ago";
-        if (s < 86400) return Math.floor(s / 3600) + " h ago";
-        return Config.dateText(new Date(t), "day");
+        return Config.ago(t);
     }
     function patch(change) {
         if (turns.length === 0) return;
