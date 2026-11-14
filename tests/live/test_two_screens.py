@@ -159,9 +159,16 @@ class TwoScreens(TwoScreensCase):
             with self.subTest(b[0]):
                 self.assertInside(b, b[0])
                 self.assertEqual((b[1], b[2], b[3]), AT[b[0]] + (SIZES[b[0]][0],), "not along the top of its screen")
-        for ns in ("slate-wallpaper", "slate-corners"):
-            with self.subTest(ns):
-                self.assertEqual(self.layers(ns), sorted((n,) + AT[n] + SIZES[n] for n in SIZES))
+        with self.subTest("slate-wallpaper"):
+            self.assertEqual(self.layers("slate-wallpaper"), sorted((n,) + AT[n] + SIZES[n] for n in SIZES))
+        # The rounded corners are four small windows on each screen, one in each corner
+        with self.subTest("slate-corners"):
+            r = 17            # (Bar.qml: screenCornerRadius)
+            want = []
+            for n, (w, h) in SIZES.items():
+                x, y = AT[n]
+                want += [(n, x + dx, y + dy, r, r) for dx in (0, w - r) for dy in (0, h - r)]
+            self.assertEqual(self.layers("slate-corners"), sorted(want))
 
     def test_focus_dims_the_other_bar_and_moves_the_dock(self):
         """The bar on the screen without focus is dimmed; the dock is on the focused screen."""
