@@ -137,11 +137,16 @@ class WallpaperSwitcher(LiveCase):
         red, green, blue = self.paths
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == red and st["wallpaperSwitcher"]["ahead"] == [green, blue],
                   "green and blue read ahead of red")
+        # Every one's colours known ahead (scripts/wallpaper-colours.py), so the theme follows at once
+        self.wait(lambda st: st["wallpaperSwitcher"]["colours"] == 3, "every wallpaper's colours", timeout=15)
         self.ipc("wallpaperSwitcher", "next")
         self.wait(lambda st: st["wallpaperSwitcher"]["cover"] == green and st["wallpaperSwitcher"]["ahead"] == [blue, red],
                   "blue and red read ahead of green")
         self.ipc("wallpaperSwitcher", "cancel")
-        self.wait(lambda st: not st["wallpaperSwitcher"]["open"] and st["wallpaperSwitcher"]["ahead"] == [], "nothing read ahead once closed")
+        # Closed: everything it held let go
+        self.wait(lambda st: not st["wallpaperSwitcher"]["switching"] and st["wallpaperSwitcher"]["ahead"] == []
+                  and st["wallpaperSwitcher"]["walls"] == [] and st["wallpaperSwitcher"]["colours"] == 0
+                  and st["wallpaperSwitcher"]["cover"] == "", "everything let go once closed")
 
     def test_enter_keeps_it(self):
         self.open()

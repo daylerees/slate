@@ -71,6 +71,27 @@ Scope {
         thumbs = ({}); thumbsDone = false;
         thumbMaker.command = [Quickshell.shellPath("scripts/thumbnails.py")].concat(walls);
         thumbMaker.running = false; thumbMaker.running = true;
+        // Every wallpaper's colours, nearest yours first, so the theme follows each at once
+        const order = walls.map((p, i) => ({ p, d: Math.min(Math.abs(i - index), walls.length - Math.abs(i - index)) }))
+            .sort((a, b) => a.d - b.d).map(x => x.p);
+        colourMaker.command = [Quickshell.shellPath("scripts/wallpaper-colours.py")].concat(order);
+        colourMaker.running = false; colourMaker.running = true;
+    }
+    // (scripts/wallpaper-colours.py: kept on disk, so after the first time they're all there at once)
+    Process {
+        id: colourMaker
+        stdout: SplitParser {
+            onRead: line => {
+                if (!root.shown) return;
+                try {
+                    const c = JSON.parse(line);
+                    if (!Config.isHex(c.accent) || !Config.isHex(c.tone) || Config.wallpaperColourMemo[c.path]) return;
+                    const m = Object.assign({}, Config.wallpaperColourMemo);
+                    m[c.path] = { accent: c.accent, tone: c.tone };
+                    Config.wallpaperColourMemo = m;
+                } catch (e) {}
+            }
+        }
     }
     // The cards' pictures: small ones from the shared thumbnail cache (scripts/thumbnails.py),
     // made once for any that aren't there, so a card never reads a whole wallpaper. One that
@@ -115,19 +136,27 @@ Scope {
         interval: 60
         onTriggered: if (root.shown) Config.wallpaperPreview = root.selected === root.original ? "" : root.selected
     }
-    // The wallpapers to read ahead: two each way from the one chosen, nearest first, once it's
+    // The wallpapers to read ahead: three each way from the one chosen, nearest first, once it's
     // on screen (cover, below)
     property int aheadOf: -1
     readonly property var ahead: {
         if (aheadOf < 0 || walls.length < 2) return [];
         const out = [];
-        for (const d of [1, -1, 2, -2]) {
+        for (const d of [1, -1, 2, -2, 3, -3]) {
             const p = walls[(aheadOf + d + walls.length) % walls.length];
             if (p !== walls[aheadOf] && !out.includes(p)) out.push(p);
         }
         return out;
     }
-    onShownChanged: if (!shown) aheadOf = -1
+    onShownChanged: if (!shown) { aheadOf = -1; colourMaker.running = false; thumbMaker.running = false; }
+    // Once it's gone from the screen, everything it held is let go: the cards (and their small
+    // pictures), the lists, and the colours worked out. (The cover's picture and the ones read
+    // ahead are let go as it closes: their paths empty)
+    onOnScreenChanged: if (!onScreen) {
+        walls = []; index = 0; thumbs = ({}); thumbsDone = false;
+        Config.wallpaperColourMemo = ({});
+        gc();
+    }
     // (the tests': what the cover on the focused screen really shows, and a look at one then
     // straight back to another the moment the first is in, quicker than any key)
     property string coverShowing: ""
