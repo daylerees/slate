@@ -15,9 +15,13 @@ agent you chose does it through the same tools.
 ## Nova, the prompt window
 
 - **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
-  your accent colour, Nova's answers on the left as they're written (plain text), each with
+  your accent colour, Nova's answers on the left as they're written, each with
   a short list of what was done: Slate's own record, in Slate's words, not the agent's
   account of itself. It scrolls once it's long. Point at a message and a copy button appears in its top right corner.
+- **How answers look.** Most answers are a sentence or two, but one can carry a little
+  structure: steps as a list, a setting's name in bold, a command in a box with its own
+  **Copy** button (it copies just the command). Pictures and links are never loaded or
+  opened: see "Lists, bold and code in answers" below.
 - **Following on.** There are no conversations to manage. What you type within five minutes
   of the last answer follows on from it ("and a bit bigger"); left longer, Nova quietly
   starts afresh with the agent, which also keeps each prompt small. Your history stays on
@@ -234,6 +238,35 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
   lines on the moment (the time, the focused window and workspace, under the same switches as
   the tools, and never your name or home folder). The agent runs in an empty folder of its
   own and is stopped after two minutes.
+- **Lists, bold and code in answers.** An answer is written by a model that may have been
+  misled by something it read, so its words never reach a text item that reads markup. Qt's
+  Markdown, styled and rich text all fetch any picture an answer names (checked on Qt 6.12:
+  `![](https://…)`, `<img src=…>`, even a CSS background), which would send whatever is in
+  the address to someone else's server without a click. Instead the runner reads a small
+  subset of Markdown itself (`shell/scripts/safe_markdown.py`, plain Python) and sends it to
+  the window as `{"type": "blocks", …}` events (at most ten a second as the answer grows, and
+  once for the whole answer before `done`); the window draws them with its own items.
+
+  | Markdown | Shown as |
+  |---|---|
+  | Paragraphs, line breaks, `**bold**`, `*italic*`, `` `code` `` | As written, code in the monospaced font on a faint plate |
+  | Fenced code blocks | A code box (monospaced, not wrapped, scrolls sideways) with **Copy**, which copies just the code |
+  | `-`, `*`, `+` and `1.` lists, one level of nesting | Bullets and numbers drawn by Slate; deeper nesting is drawn at that level |
+  | `#` headings, any level | One bold line: answers are small |
+  | Images | "[image: its description]". Nothing is fetched, ever |
+  | Links | Their words, then the address in dim text: never clickable, but it can be selected and copied |
+  | Raw HTML and entities | The characters, as typed: `<img src=…>` shows as exactly that |
+  | Tables | Their rows as typed, in a monospaced box |
+  | Quotes, rules, footnotes, task lists | Plain words, lightly tidied |
+
+  The only markup the window's text items ever see is the few tags it writes itself (bold,
+  italic, and a span for code or dim words) around words it has escaped. An unclosed mark
+  while an answer is still arriving is plain characters, and an unclosed fence a code box
+  still filling. Past 20,000 characters or 200 blocks it stops, with "…". The message's own
+  copy button copies the answer as written, marks and all. A conversation kept from before
+  (no blocks) shows its answers as plain text, as it always did. There's no setting: a command
+  of your own is read the same way, since its output is no more trusted. The briefing tells
+  Nova bold, a list or a code block can help, and never links, images or tables.
 - **Agents** are in `shell/scripts/slate_agents.py`. Claude Code is run one prompt at a
   time with every tool of its own switched off and only Slate's server given (`--tools ""`,
   `--strict-mcp-config`, `--restricted`), for that run alone: nothing in your own Claude Code
@@ -243,6 +276,7 @@ stdin and stdout, one JSON message per line, and stops when the agent closes it.
   To add an agent, write a class there beside `Claude` (how to find it, whether it's signed
   in, its command, how to read its output) and say honestly whether it's `confined`.
 - **Tests:** `tests/unit/test_assistant.py` (the runner against a stand-in `claude` replaying
-  a recorded stream), `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
+  a recorded stream), `tests/unit/test_safe_markdown.py` (the subset, hostile input, every
+  cut of a streaming answer, the limits), `tests/unit/test_slate_mcp.py` (the protocol, the gate, every tool against a
   fake Slate, hostile input, the log) and `tests/live/test_assistant.py` (the questions in
   the real confirmation window, and the server against a real Slate).

@@ -18,6 +18,8 @@ from stubs import fixture
 import test_slate_mcp as mcp_tests
 
 SCRIPT = slate.path("shell", "scripts", "assistant.py")
+sys.path.insert(0, slate.path("shell", "scripts"))
+import safe_markdown  # noqa: E402
 
 # A claude that refuses to run unless it's confined as Slate means it to be (its own tools
 # off, Slate's server and no other, the briefing as its system prompt), keeps what it was
@@ -147,7 +149,40 @@ class Claude(Base):
         self.assertEqual("".join(e["delta"] for e in texts), done["text"])
         self.assertTrue(done["text"].startswith("I can't check that at the moment"))
         self.assertEqual(done["session"], events[0]["session"])
-        self.assertEqual([e["type"] for e in events if e["type"] not in ("text",)], ["start", "done"])
+        self.assertEqual([e["type"] for e in events if e["type"] not in ("text", "blocks")], ["start", "done"])
+
+    def test_blocks(self):
+        """The answer goes to the window as blocks too (safe_markdown.py), as it grows and once
+        more for the whole answer, just before done."""
+        events = self.ask()
+        blocks = [i for i, e in enumerate(events) if e["type"] == "blocks"]
+        self.assertTrue(blocks, "no blocks were sent")
+        last = events[blocks[-1]]
+        self.assertEqual(blocks[-1], len(events) - 2, "the whole answer's blocks don't come just before done")
+        self.assertEqual(last["blocks"], safe_markdown.parse(events[-1]["text"]))
+        # Each one is the answer so far: never ahead of the words sent before it
+        for i in blocks[:-1]:
+            so_far = "".join(e["delta"] for e in events[:i] if e["type"] == "text")
+            self.assertEqual(events[i]["blocks"], safe_markdown.parse(so_far))
+
+    def test_blocks_not_too_often(self):
+        """No more than about ten blocks a second while an answer grows: a long answer arriving
+        a word at a time doesn't send a block per word."""
+        stream = os.path.join(self.s.dir, "many.jsonl")
+        with open(STREAM) as src, open(stream, "w") as out:
+            lines = src.read().splitlines()
+            delta = next(l for l in lines if '"text_delta"' in l)
+            first = lines.index(delta)
+            # (the recorded stream with 400 more words in the middle of its answer)
+            out.write("\n".join(lines[:first + 1] + [delta.replace("I can't check", "**word**")] * 400 + lines[first + 1:]) + "\n")
+        t0 = time.monotonic()
+        events = self.ask(env={"STUB_CLAUDE_STREAM": stream})
+        took = time.monotonic() - t0
+        texts = sum(1 for e in events if e["type"] == "text")
+        sent = sum(1 for e in events if e["type"] == "blocks")
+        self.assertGreater(texts, 400)
+        self.assertLessEqual(sent, took * 10 + 3, f"{sent} blocks in {took:.1f}s")
+        self.assertEqual(events[-2]["blocks"], safe_markdown.parse(events[-1]["text"]))
 
     def test_confined(self):
         """Claude Code is started with its own tools off and only Slate's server: the fake one
@@ -296,7 +331,17 @@ class Custom(Base):
         events = self.ask("turn on glass", agent="custom", command=self.ECHO, accepted="custom")
         self.assertEqual(events[-1], {"type": "done", "session": "",
                                       "text": "got: turn on glass\n%s mcp\nfiles" % mcp_tests.SLATE})
-        self.assertEqual([e["delta"] for e in events[:-1]], ["got: turn on glass\n", "%s mcp\n" % mcp_tests.SLATE, "files\n"])
+        self.assertEqual([e["delta"] for e in events[:-1] if e["type"] == "text"], ["got: turn on glass\n", "%s mcp\n" % mcp_tests.SLATE, "files\n"])
+        self.assertEqual(events[-2], {"type": "blocks", "blocks": safe_markdown.parse(events[-1]["text"])})
+
+    def test_markdown_comes_as_blocks(self):
+        """What a command of your own prints is read as a safe subset of Markdown, like any
+        agent's answer: it's no more trusted."""
+        events = self.ask("x", agent="custom", accepted="custom",
+                          command="printf 'Steps:\\n\\n1. Open **Settings**\\n2. Run:\\n\\n```sh\\nslate restart\\n```\\n![x](http://example.invalid/a.png)\\n'")
+        kinds = [b["type"] for b in events[-2]["blocks"]]
+        self.assertEqual(kinds, ["paragraph", "list", "code", "paragraph"])
+        self.assertEqual(events[-2]["blocks"][-1]["runs"], [{"text": "[image: x]"}])
         with open(self.h(".local", "state", "slate", "assistant", "mcp.json")) as f:
             self.assertEqual(list(json.load(f)["mcpServers"]), ["slate"])
 

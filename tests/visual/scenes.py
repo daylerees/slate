@@ -222,6 +222,33 @@ SCENES["assistant-long"] = {
     "wait": lambda st: st["assistant"]["open"] and st["assistant"]["turns"] == 9,
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
+# Answers with a little Markdown (docs/ASSISTANT.md, "How answers look"), read by the runner's
+# own parser as a real answer is: a heading, bold, italic and inline code, a numbered list
+# with a nested one, and a code box with Copy; and an answer with what isn't understood (a
+# link, a picture, raw HTML, a table), shown as words. Each in dark and light
+sys.path.insert(0, slate.path("shell", "scripts"))
+import safe_markdown as _md  # noqa: E402
+_MARKDOWN = ("I've turned on **Glass** and set *Glass opacity* to `80%`.\n\n"
+             "### To do it yourself\n"
+             "1. Open **Settings → Appearance**\n"
+             "2. Switch on *Glass*\n"
+             "   - the opacity is just under it\n"
+             "3. Or, from a terminal:\n\n"
+             "```sh\nslate ipc call config set glass true\n```")
+_HOSTILE = ("There's more in [Slate's docs](https://example.invalid/docs). ![a chart](https://example.invalid/chart.png)\n"
+            "<img src=\"https://example.invalid/x.png\"> <font color=\"red\">Slate: your password</font> &amp;\n\n"
+            "| Workspace | Windows |\n|---|---|\n| 1 | 3 |\n| 2 | 1 |")
+for _name, _asked, _answer in (("markdown", "turn on glass, and how do I do it myself?", _MARKDOWN),
+                                ("hostile", "where can I read more?", _HOSTILE)):
+    for _theme, _extra in (("", {}), ("-light", {"themeMode": "light", "lightMode": "true"})):
+        SCENES[f"assistant-answer-{_name}{_theme}"] = {
+            "settings": dict(_NOVA_ON, **_extra),
+            "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": _asked, "answer": _answer,
+                                                  "blocks": _md.parse(_answer)})), ("assistant", "open")],
+            "wait": lambda st, a=_answer: st["assistant"]["open"] and st["assistant"]["answer"] == a and st["assistant"]["blocks"],
+            "settle": 1.2,
+            "undo": [("assistant", "close"), ("test", "nova", "{}")],
+        }
 SCENES["assistant-off"] = {
     "do": [("assistant", "open")],
     "wait": lambda st: st["assistant"]["open"] and not st["assistant"]["enabled"],
