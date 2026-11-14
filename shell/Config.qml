@@ -112,8 +112,8 @@ Singleton {
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper
     // Settings → Appearance → Tint boldness, as a multiplier on how much of the wallpaper's colour
-    // backgrounds take: 50% (the default) is 1×, 100% is 2×
-    readonly property real toneBold: 2 * Math.max(0, Math.min(1, Number(s.toneBoldness ?? 0.5)))
+    // backgrounds take: 50% is 1×, 100% is 2× (80% to start with)
+    readonly property real toneBold: 2 * Math.max(0, Math.min(1, Number(s.toneBoldness ?? 0.8)))
 
     // Every theme colour goes through tint():
     //  - Light mode flips the greys (dark backgrounds become light, light text

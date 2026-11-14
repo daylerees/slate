@@ -5482,7 +5482,7 @@ FloatingWindow {
                     ValueSlider {
                         per: 100
                         from: 0; to: 100; stepSize: 5; suffix: "%"
-                        value: Math.round((Config.s.toneBoldness ?? 0.5) * 100)
+                        value: Math.round((Config.s.toneBoldness ?? 0.8) * 100)
                         onMoved: v => Config.s.toneBoldness = v / 100
                     }
                 }

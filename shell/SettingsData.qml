@@ -9,11 +9,11 @@ JsonAdapter {
     // Colour, theme and wallpaper (Settings → Appearance)
     property string accent: "#8fb3e8"
     property bool accentFromWallpaper: false
-    property real accentBoldness: 0.6         // Settings → Appearance → Accent boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
+    property real accentBoldness: 0.8         // Settings → Appearance → Accent boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
     property bool lightMode: false           // light variant in use (set by themeMode)
     property string themeMode: ""            // dark, light or auto (light by day); "" = from lightMode
     property bool toneFromWallpaper: false   // tint the dark UI colours from the wallpaper
-    property real toneBoldness: 0.5          // Settings → Appearance → Tint boldness: how much colour backgrounds take (0.5 = the standard amount)
+    property real toneBoldness: 0.8          // Settings → Appearance → Tint boldness: how much colour backgrounds take (0.5 = 1×, 1 = 2×)
     property string wallpaper: ""            // image shown on the desktop, lock screen and login screen
     property string wallpaperFolder: ""      // empty = ~/Pictures
     property bool wallpaperHideSmall: true   // Settings → Appearance: leave out images too small to be wallpapers
