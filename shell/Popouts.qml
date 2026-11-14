@@ -68,7 +68,9 @@ PanelWindow {
         const f = panel && panel.testField ? panel.testField() : null;
         return { rows: rowsMade, typing: !!f && f.focus, typed: f ? f.text : "", cursor: f ? f.cursorPosition : -1,
                  order: panel && panel.testOrder ? panel.testOrder() : [],
-                 scroll: list ? Math.round(list.contentY - list.originY) : 0, count: list ? list.count : 0 };
+                 scroll: list ? Math.round(list.contentY - list.originY) : 0, count: list ? list.count : 0,
+                 // rows still fading in (or out): none once everything has settled
+                 fading: list ? Array.from(list.contentItem.children).filter(c => c.visible && c.opacity < 1).length : 0 };
     }
     property var powerConfirm: null      // centred "Shut down?" dialog (PowerConfirm.qml)
     property var dock: null              // the dock's window (shell.qml), left usable while a panel's open
@@ -3202,6 +3204,16 @@ PanelWindow {
                     onActivated: { pop.notifs.activate(modelData); pop.close(); }
                     onClosed: pop.notifs.remove(modelData)
                     onAction: id => { pop.notifs.invokeAction(modelData, id); pop.close(); }
+                }
+                // One that arrives while the panel is open slides in a little from the side and
+                // fades up as the rest make room (displaced). Not when Animations are off or in
+                // game mode: it's simply there. (The rows the panel opens with aren't animated)
+                add: Transition {
+                    enabled: Config.animate
+                    ParallelAnimation {
+                        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Config.ms(180) }
+                        NumberAnimation { property: "x"; from: 24; to: 0; duration: Config.ms(220); easing.type: Easing.OutCubic }
+                    }
                 }
                 remove: Transition { NumberAnimation { property: "opacity"; to: 0; duration: Config.ms(150) } }
                 displaced: Transition { NumberAnimation { property: "y"; duration: Config.ms(180); easing.type: Easing.OutCubic } }

@@ -129,6 +129,29 @@ class NotificationsPanel(Lists):
             self.ipc("notifications", "clear")
             self.wait(lambda st: st["lists"]["panel"]["count"] == 0, "the panel emptied")
 
+    def test_one_arriving_while_open_slides_in(self):
+        """A notification that comes while the panel is open appears in it (sliding and fading
+        in, which settles); with Animations off it's simply there, with nothing fading."""
+        self.keep_setting("barShowNotifications")
+        self.keep_setting("animations")
+        self.config("barShowNotifications", "true")
+        self.ipc("notifications", "clear")
+        self.addCleanup(lambda: self.ipc("notifications", "clear"))
+        self.notify("Already here")
+        self.open_panel("notifications")
+        self.wait(lambda st: st["lists"]["panel"]["count"] == 1, "the one in the panel")
+        self.steady(self.panel, floor=0.4)
+        with self.subTest("animated"):
+            self.config("animations", "normal")
+            self.notify("Comes in")
+            self.wait(lambda st: st["lists"]["panel"]["count"] == 2, "the new one in the panel")
+            self.wait(lambda st: st["lists"]["panel"]["fading"] == 0, "it to finish sliding in")
+        with self.subTest("animations off"):
+            self.config("animations", "off")
+            self.notify("Comes in at once")
+            self.wait(lambda st: st["lists"]["panel"]["count"] == 3 and st["lists"]["panel"]["fading"] == 0,
+                      "the new one in the panel, already there")
+
 
 class ControlTiles(Lists):
     def test_one_switch_leaves_the_other_tiles(self):
