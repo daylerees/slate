@@ -17,6 +17,7 @@ from session import in_container, log_errors
 
 PASSWORD = "correct horse"
 BROKEN = "lose the connection"
+CODE = "123456"                    # the second question's answer, with the password "second"
 REFUSED = {"type": "error", "error_type": "error", "description": "unable to send message: Connection refused (os error 111)"}
 
 
@@ -60,7 +61,11 @@ class FakeGreetd(threading.Thread):
                 req = json.loads(body)
                 self.requests.append(req)
                 t = req.get("type")
-                if t == "create_session":
+                if t == "post_auth_message_response" and req.get("response") == "second":
+                    reply = {"type": "auth_message", "auth_message_type": "visible", "auth_message": "One-time code: "}
+                elif t == "post_auth_message_response" and req.get("response") == CODE:
+                    reply = {"type": "success"}
+                elif t == "create_session":
                     reply = {"type": "auth_message", "auth_message_type": "secret", "auth_message": "Password:"}
                 elif t == "post_auth_message_response" and req.get("response") == PASSWORD:
                     reply = {"type": "success"}
@@ -156,6 +161,35 @@ class LoginScreen(LiveCase):
             self.assertNotIn("os error", shown)
             self.assertFalse(greetd.of_type("start_session"))
 
+        with self.subTest("a second question"):
+            n = len(greetd.of_type("post_auth_message_response"))
+            ipc("submit", "second")
+            for _ in range(50):
+                if ipc("asking")[1].strip() == "yes":
+                    break
+                time.sleep(0.1)
+            self.assertEqual(ipc("asking")[1].strip(), "yes", "greetd's second question wasn't shown")
+            self.assertEqual(ipc("message")[1].strip(), "One-time code:")
+            self.assertEqual(len(greetd.of_type("post_auth_message_response")), n + 1,
+                             "the password was sent again as the answer to the second question")
+            # Escape: back to a fresh password, the attempt ended
+            ipc("cancel")
+            time.sleep(0.5)
+            self.assertEqual(ipc("asking")[1].strip(), "no")
+            self.assertEqual(ipc("message")[1].strip(), "")
+            # again, answered wrongly: refused as a wrong password is, and the answer was sent
+            ipc("submit", "second")
+            for _ in range(50):
+                if ipc("asking")[1].strip() == "yes":
+                    break
+                time.sleep(0.1)
+            ipc("submit", "not the code")
+            time.sleep(1)
+            self.assertEqual(greetd.of_type("post_auth_message_response")[-1]["response"], "not the code")
+            self.assertEqual(ipc("asking")[1].strip(), "no")
+            self.assertEqual(ipc("message")[1].strip(), "That password didn't match")
+            self.assertFalse(greetd.of_type("start_session"))
+
         with self.subTest("right password"):
             ipc("submit", PASSWORD)
             for _ in range(60):
@@ -174,6 +208,9 @@ class LoginScreen(LiveCase):
         with self.subTest("no errors logged"):
             log.flush()
             errors = log_errors(open(log.name, encoding="utf-8", errors="replace").read())
+            # (greetd answers a cancelled attempt with "success", which Quickshell, having already
+            # ended it on its side, logs as unexpected: it happens when Escape ends a question)
+            errors = [e for e in errors if 'unexpected greetd response "{\\"type\\": \\"success\\"}"' not in e]
             self.assertFalse(errors, errors[0][:200] if errors else "")
 
 

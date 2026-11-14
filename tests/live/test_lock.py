@@ -1,9 +1,12 @@
 """The lock screen for real: it locks, a wrong password is refused and the right one lets you
 back in (checked by PAM, with the password tests/container/entry.sh gives the test user), a
 preview left open can't get in the way, and the lockout it shows follows faillock.conf."""
+import os
+
 from live import LiveCase
 
 PASSWORD = "slate test"            # (tests/container/entry.sh)
+CODE = "246810"                    # the second answer the test's own PAM service wants
 DEFAULTS = (3, 900, 600)           # pam_faillock's own: deny, fail_interval, unlock_time
 
 
@@ -23,6 +26,9 @@ class Lock(LiveCase):
         self.forget_failures()
         self.ipc("lock", "faillockConf", "")
         self.ipc("lock", "closePreview")
+        if self.s.state()["lock"]["asking"]:
+            self.ipc("lock", "cancel")
+        self.ipc("lock", "pamService", "", "")
         if self.s.state()["lock"]["locked"]:
             self.wait(lambda st: not st["lock"]["busy"], "the last check to end", timeout=15)
             self.ipc("lock", "submit", PASSWORD)
@@ -37,6 +43,23 @@ class Lock(LiveCase):
         self.ipc("lock", "submit", password)
         return self.wait(lambda st: not st["lock"]["busy"] and (st["lock"]["message"] or not st["lock"]["locked"]),
                          "the password to be checked", timeout=15)["lock"]
+
+    def two_questions(self):
+        """A PAM service of the test's own that asks twice, as a login with a second factor
+        does: the password (pam_unix), then pam_ftp, which asks again (its answer lands in
+        PAM_RUSER), and a check that the second answer is CODE."""
+        d = self.s.h("pam.d")
+        os.makedirs(d, exist_ok=True)
+        check = os.path.join(d, "check-code")
+        with open(check, "w", encoding="utf-8") as f:
+            f.write('#!/bin/sh\n[ "$PAM_RUSER" = "%s" ]\n' % CODE)
+        os.chmod(check, 0o755)
+        with open(os.path.join(d, "slate-two"), "w", encoding="utf-8") as f:
+            f.write("auth required pam_unix.so\n"
+                    f"auth required pam_ftp.so users={self.user}\n"
+                    f"auth required pam_exec.so quiet {check}\n"
+                    "account required pam_permit.so\n")
+        self.ipc("lock", "pamService", d, "slate-two")
 
     def conf(self, name, text):
         """A faillock.conf of the test's own, read in place of /etc/security/faillock.conf."""
@@ -58,6 +81,45 @@ class Lock(LiveCase):
         self.assertEqual(st["message"], "That password didn't match · 2 tries left")
         self.ipc("lock", "submit", PASSWORD)
         self.wait(lambda st: not st["lock"]["locked"], "the right password to unlock", timeout=15)
+
+    def test_a_second_question_is_asked_and_answered(self):
+        """A login that asks again after the password (a one-time code): the lock shows the
+        question, and the next thing typed answers it. It used to stay busy for good."""
+        self.two_questions()
+        self.lock()
+        self.ipc("lock", "submit", PASSWORD)
+        st = self.wait(lambda st: st["lock"]["asking"], "the second question", timeout=15)["lock"]
+        self.assertFalse(st["busy"], "still busy while it waits for the answer")
+        self.assertTrue(st["locked"])
+        self.assertNotEqual(st["message"], "", "the question isn't shown")
+        self.ipc("lock", "submit", CODE)
+        self.wait(lambda st: not st["lock"]["locked"], "the second answer to unlock", timeout=15)
+
+    def test_a_wrong_second_answer_is_refused_kindly(self):
+        self.two_questions()
+        self.lock()
+        self.ipc("lock", "submit", PASSWORD)
+        self.wait(lambda st: st["lock"]["asking"], "the second question", timeout=15)
+        st = self.answer("not the code")
+        self.assertTrue(st["locked"], "a wrong second answer unlocked the screen")
+        self.assertRegex(st["message"], r"^That password didn't match")
+        self.assertFalse(self.s.state()["lock"]["asking"])
+        # and a fresh attempt starts from the password again
+        self.ipc("lock", "submit", PASSWORD)
+        self.wait(lambda st: st["lock"]["asking"], "the question again", timeout=15)
+
+    def test_cancelling_the_question_goes_back_to_a_fresh_password(self):
+        self.two_questions()
+        self.lock()
+        self.ipc("lock", "submit", PASSWORD)
+        self.wait(lambda st: st["lock"]["asking"], "the second question", timeout=15)
+        self.ipc("lock", "cancel")
+        st = self.wait(lambda st: not st["lock"]["asking"], "the question to go away")["lock"]
+        self.assertFalse(st["busy"])
+        self.assertEqual(st["message"], "")
+        self.ipc("lock", "pamService", "", "")
+        self.ipc("lock", "submit", PASSWORD)
+        self.wait(lambda st: not st["lock"]["locked"], "a fresh password to unlock", timeout=15)
 
     def test_a_preview_left_open_doesnt_take_the_password(self):
         """With a preview open when the screen really locked, the first right password only

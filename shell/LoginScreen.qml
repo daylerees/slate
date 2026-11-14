@@ -25,25 +25,38 @@ Item {
     property bool showPowerMenu: true
     property bool interactive: true       // false: background only (extra monitors)
 
+    // A second question from the login (a one-time code, say): PAM's own words, shown above the
+    // field, and the next thing typed answers it. answerVisible: PAM wants it shown as it's typed
+    property bool asking: false
+    property bool answerVisible: false
     signal submitted(string password)
+    signal cancelled()                     // Escape while it asks: back to a fresh password
     signal powerAction(string action)      // suspend, hibernate, reboot, poweroff, logout
 
     function fail(text) {
-        busy = false;
+        busy = false; asking = false;
         message = text || "That password didn't match";
         messageIsError = true;
         password.text = "";
         shake.restart();
         password.forceActiveFocus();
     }
+    function ask(question, visible) {
+        busy = false; asking = true; answerVisible = visible;
+        message = question; messageIsError = false;
+        password.text = "";
+        password.forceActiveFocus();
+    }
+    // A note or complaint from PAM while it checks (no question in it)
+    function note(text, isError) { message = text; messageIsError = isError; }
     function reset() {
-        busy = false; message = ""; messageIsError = false;
+        busy = false; asking = false; message = ""; messageIsError = false;
         password.text = ""; menu = "";
         password.forceActiveFocus();
     }
     function submit() {
         if (busy || lockedOut || password.text === "") return;
-        busy = true; message = ""; messageIsError = false;
+        busy = true; asking = false; message = ""; messageIsError = false;
         const pw = password.text;
         password.text = "";               // don't keep it in the field while it's checked
         ls.submitted(pw);
@@ -216,7 +229,7 @@ Item {
                     TextInput {
                         id: password
                         anchors { left: lockIcon.right; leftMargin: 10; right: goBtn.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        echoMode: TextInput.Password
+                        echoMode: ls.asking && ls.answerVisible ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "●"
                         color: ls.text
                         selectionColor: ls.accent
@@ -226,14 +239,14 @@ Item {
                         clip: true
                         onAccepted: ls.submit()
                         onTextChanged: if (text !== "" && ls.messageIsError) { ls.message = ""; ls.messageIsError = false; }
-                        Keys.onEscapePressed: { if (ls.menu !== "") ls.menu = ""; else text = ""; }
+                        Keys.onEscapePressed: { if (ls.menu !== "") ls.menu = ""; else if (ls.asking) { text = ""; ls.asking = false; ls.message = ""; ls.cancelled(); } else text = ""; }
                         Keys.onPressed: event => { capsSoon.restart(); event.accepted = false; }
                         Keys.onReleased: event => { capsSoon.restart(); event.accepted = false; }
                     }
                     Text {
                         visible: password.text === "" && !ls.busy
                         anchors { left: password.left; verticalCenter: parent.verticalCenter }
-                        text: "Password"
+                        text: ls.asking ? "Answer" : "Password"
                         color: ls.dim
                         font.family: ls.font; font.pixelSize: 14
                     }
@@ -294,6 +307,7 @@ Item {
                         Text {
                             id: noteText
                             // PAM messages can carry their own line breaks; let them wrap to fit instead
+                            textFormat: Text.PlainText      // PAM's words, not ours: never markup
                             text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : "Caps Lock is on"
                             width: Math.min(implicitWidth, note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0))
                             wrapMode: Text.Wrap

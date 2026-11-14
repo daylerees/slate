@@ -38,6 +38,12 @@ PanelWindow {
         iconFontSource: "file://" + win.greeter.dir + "/fonts/tabler.ttf"
         onSubmitted: pw => win.greeter.submit(pw)
         onPowerAction: a => win.greeter.power(a)
-        Connections { target: win.greeter; function onFailed(t) { screen.fail(t); } }
+        onCancelled: win.greeter.cancelAsking()
+        Connections {
+            target: win.greeter
+            function onFailed(t) { screen.fail(t); }
+            function onAsked(q, v) { screen.ask(q, v); }
+            function onNoted(t, e) { screen.note(t, e); }
+        }
     }
 }

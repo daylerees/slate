@@ -95,8 +95,24 @@ ShellRoot {
     property bool messageIsError: false
     property string pending: ""
     signal failed(string text)
+    // greetd asked a second question after the password (a one-time code, say): the screen shows
+    // it, and the next thing typed is the answer, not a new attempt
+    property bool asking: false
+    signal asked(string question, bool visible)
+    signal noted(string text, bool isError)
+    // Escape on the question: end the attempt, back to a fresh password
+    function cancelAsking() {
+        asking = false; busy = false; pending = ""; message = ""; messageIsError = false;
+        if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
+        Qt.callLater(gc);
+    }
 
     function submit(password) {
+        if (asking && Greetd.state !== GreetdState.Inactive) {
+            asking = false; busy = true; message = ""; messageIsError = false;
+            Greetd.respond(password);
+            return;
+        }
         if (!Greetd.available) { fail("Slate couldn't reach the login service (greetd). Restart your computer and try again"); return; }
         busy = true; message = ""; messageIsError = false;
         pending = password;
@@ -104,7 +120,7 @@ ShellRoot {
         Greetd.createSession(user);
     }
     function fail(text) {
-        busy = false; pending = "";
+        busy = false; pending = ""; asking = false;
         message = text; messageIsError = true;
         root.failed(text);
         Qt.callLater(gc);
@@ -125,10 +141,18 @@ ShellRoot {
         target: Greetd
         function onAuthMessage(message, error, responseRequired, echoResponse) {
             if (responseRequired) {
-                Greetd.respond(root.pending);
-                root.pending = "";
-            } else if (error) {
-                root.message = message; root.messageIsError = true;   // e.g. faillock's "account locked"
+                if (root.pending !== "") {
+                    Greetd.respond(root.pending);
+                    root.pending = "";
+                } else {
+                    // A question after the password: show it, wait for the answer
+                    root.busy = false; root.asking = true;
+                    root.message = message; root.messageIsError = false;
+                    root.asked(message, echoResponse);
+                }
+            } else if (message !== "") {
+                root.message = message; root.messageIsError = error;   // e.g. faillock's "account locked"
+                root.noted(message, error);
             }
         }
         function onAuthFailure(message) {
@@ -201,5 +225,7 @@ ShellRoot {
         enabled: Quickshell.env("SLATE_GREETER_TEST") === "1"
         function submit(password: string): void { root.submit(password); }
         function message(): string { return root.message; }
+        function asking(): string { return root.asking ? "yes" : "no"; }
+        function cancel(): void { root.cancelAsking(); }
     }
 }

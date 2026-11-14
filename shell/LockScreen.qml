@@ -49,18 +49,53 @@ Scope {
     // ---- Password check ----------------------------------------------------------
     PamContext {
         id: pam
+        // (tests: a PAM service of their own, with questions to ask; set only in test mode)
+        config: Config.testMode && root.testPamService !== "" ? root.testPamService : "login"
+        configDirectory: Config.testMode && root.testPamDir !== "" ? root.testPamDir : "/etc/pam.d"
         property string pending: ""
-        onResponseRequiredChanged: if (responseRequired && pending !== "") { respond(pending); pending = ""; }
+        // Every message PAM sends, the questions too. The first question is the password we
+        // already hold; a question after it (a one-time code) is shown and waits for the
+        // next thing typed, and a plain note or complaint is shown as it comes
+        onPamMessage: {
+            if (responseRequired) {
+                if (pending !== "") { respond(pending); pending = ""; }
+                else root.ask(message, responseVisible);
+            } else if (message !== "") {
+                root.message = message; root.messageIsError = messageIsError;
+                root.noted(message, messageIsError);
+            }
+        }
         onCompleted: result => {
-            pending = "";
+            pending = ""; root.asking = false;
             if (result === PamResult.Success) root.succeeded();
             else root.checkLockout(true);     // wrong password, or locked out?
             root.forget();
         }
-        onError: err => { pending = ""; root.fail("Slate couldn't check your password. Please try again"); root.forget(); }
+        onError: err => { pending = ""; root.asking = false; root.fail("Slate couldn't check your password. Please try again"); root.forget(); }
+    }
+    property string testPamService: ""
+    property string testPamDir: ""
+    // PAM asked a second question and waits for the answer (what's typed next goes to it)
+    property bool asking: false
+    signal asked(string question, bool visible)
+    signal noted(string text, bool isError)
+    function ask(question, visible) {
+        busy = false; asking = true; message = question; messageIsError = false;
+        asked(question, visible);
+    }
+    // Escape on a question: drop the attempt, back to a fresh password
+    function cancelAsking() {
+        asking = false; message = ""; messageIsError = false;
+        if (pam.active) pam.abort();
+        forget();
     }
     function check(password) {
         if (lockedOut) return;            // trying while locked out only extends it
+        if (asking && pam.active) {       // the answer to PAM's question, not a new attempt
+            asking = false; busy = true; message = ""; messageIsError = false;
+            pam.respond(password);
+            return;
+        }
         if (pam.active) pam.abort();
         busy = true; message = ""; messageIsError = false;
         pam.pending = password;
@@ -215,7 +250,9 @@ Scope {
                 showPowerMenu: Config.s.lockScreenPowerMenu
                 onSubmitted: pw => root.check(pw)
                 onPowerAction: a => root.power(a)
-                Connections { target: root; function onFailed(t) { lockScreen.fail(t); } function onOpened() { lockScreen.reset(); } }
+                Connections { target: root; function onFailed(t) { lockScreen.fail(t); } function onOpened() { lockScreen.reset(); }
+                    function onAsked(q, v) { lockScreen.ask(q, v); } function onNoted(t, e) { lockScreen.note(t, e); } }
+                onCancelled: root.cancelAsking()
             }
         }
     }
@@ -418,7 +455,9 @@ Scope {
             showPowerMenu: root.previewMode === "login" || Config.s.lockScreenPowerMenu
             onSubmitted: pw => root.check(pw)
             onPowerAction: a => root.power(a)
-            Connections { target: root; function onFailed(t) { previewScreen.fail(t); } function onOpened() { previewScreen.reset(); } }
+            Connections { target: root; function onFailed(t) { previewScreen.fail(t); } function onOpened() { previewScreen.reset(); }
+                function onAsked(q, v) { previewScreen.ask(q, v); } function onNoted(t, e) { previewScreen.note(t, e); } }
+            onCancelled: root.cancelAsking()
         }
         // Way out of the preview
         Rectangle {
@@ -449,6 +488,8 @@ Scope {
         function previewCaps(on: bool): void { if (Config.testMode) root.testCaps = on; }
         // Tests: a faillock.conf of their own ("" for the system's), and a password as if typed
         // and Enter pressed. PAM checks it like any other, so it's no way past the lock
+        function pamService(dir: string, name: string): void { if (Config.testMode) { root.testPamDir = dir; root.testPamService = name; } }
+        function cancel(): void { if (Config.testMode) root.cancelAsking(); }
         function faillockConf(path: string): void { if (Config.testMode) root.testFaillockConf = path; }
         function submit(password: string): void { if (Config.testMode) root.check(password); }
     }
