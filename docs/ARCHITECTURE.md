@@ -22,6 +22,15 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ PolkitAgent.qml      password prompts for apps ("slate-polkit")
 ├─ NightLight.qml       warm screen via Hyprland's screen shader
 ├─ Radios.qml          Wi-Fi and Bluetooth through IPC (`wifi`, `bluetooth`), for the assistant's tools
+├─ AirplaneMode.qml     Wi-Fi, Bluetooth and mobile broadband off together, and back as they were (`airplane` IPC)
+├─ PrivateMode.qml      Private Mode (`private` IPC): microphones muted, the camera off for every app
+│                       (bin/slate-private-camera), assistants and screenshots off, screen sharing
+│                       through the portal stopped (scripts/private-capture.sh)
+├─ SwitchHardware.qml   which control centre quick switches this computer can't use (no Wi-Fi card,
+│                       no Bluetooth…), so they're left out (Config.controlSwitchMissing)
+├─ DesktopMenu.qml      every right-click menu ("slate-desktop-menu"): the desktop's, the bar's, the dock's
+├─ TrayMenu.qml         an app tray icon's own menu, drawn by Slate ("slate-tray-menu")
+├─ Welcome.qml          the Welcome window, at first start and from Settings → About ("slate-welcome")
 ├─ Notifications.qml    notification server + toasts ("slate-notifications")
 │  ├─ NotificationCard.qml
 │  └─ NotificationText.js       what a notification's message may use: bold, italic, underline, web and mail links
@@ -29,6 +38,13 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Switcher.qml         Super+Tab window switcher ("slate-switcher")
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
+│  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)
+│  ├─ Displays.qml        Settings → Displays: reads the monitors from Hyprland, applies and saves
+│  │                      them (~/.local/state/slate/displays.json and displays.lua)
+│  ├─ EdgePicker.qml      the small screen to pick the bar's or the dock's edge
+│  ├─ HotCornerPicker.qml the small screen showing what each hot corner does
+│  ├─ SwitchBoard.qml     Settings → Control Centre: the picture of the panel to drag its quick switches about
+│  └─ FolderSwatch.qml    a small folder in a colour (Settings → Icons → Folder colour)
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
@@ -52,10 +68,24 @@ shell.qml               root: creates everything below, plus the dock itself
 Config.qml              singleton: settings.json + theme helpers (accent, tint()), window
                         rounding (windowRounding, windowRadius()) for previews and borders,
                         Slate's sounds (playSound(), click())
+SettingsData.qml        every setting and its default: Config keeps one tied to settings.json and one
+                        untouched, for Restore defaults
+SettingsIndex.qml       singleton: every setting, for searching (All Settings and the launcher): a list
+                        kept by hand plus what scripts/settings-index.py reads from SettingsWindow.qml
 ClickTap.qml, ClickArea.qml  TapHandler / MouseArea that also play the click (Settings → Sound)
+HoverFill.qml           a control's own fill giving way to the muted hover, cross-faded as layers
+ScrollShade.qml         the soft shadow along the top or bottom edge of a scrolling list
+ThinScrollbar.qml       the slim scrollbar used across Slate, shown only when the view overflows
+WorkspaceDots.qml       a row of workspace dots (bar, switcher, overview, on-screen display), with
+WorkspaceMarker.qml     the accent marker that glides over the one in use
+SlateMark.qml           Slate's mark, drawn as vectors (bar, dock, Slate's notifications)
+SlateLogo.qml           Slate's logo: the detailed mark beside the word "slate"
 Spaces.qml              singleton: saved Spaces (spaces.json), runs scripts/spaces.py
 UserFiles.qml           your hypr/*.lua and user/shell.qml: made if missing, reload on save
 Screensaver.qml         idle screensaver, before the lock ("slate-screensaver")
+ScreensaverVideos.qml   its Videos style: a folder's videos, muted and crossfading (Qt Multimedia, so
+                        loaded through a Loader and only this file fails without it)
+scripts/screensaver-videos.py  downloads scenery videos for it (Settings → Screensaver → Get scenery videos)
 Updates.qml             singleton: new releases (scripts/update.py): daily check, notification,
                         install and go back (Settings → Updates)
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
@@ -63,7 +93,15 @@ SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-ba
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
+Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
+                        top of a shape; only shows with glass on
+DockGlow.qml            the dock's Glow hover effect: a ring and soft glow in the icon's colour
 IconGloss.qml           the glass sheen on an app icon's tile, the same everywhere icons show
+IconPlate.qml           the tile behind an app icon when icons don't fill their shape
+IconTint.qml            tints an app icon with the accent (Settings → Icons → Tint app icons)
+GlassFill.qml           a lock / login screen panel's glass fill (LoginScreen.qml), over
+WallBlur.qml            the wallpaper blurred the way Hyprland blurs it: behind those panels, and
+                        behind see-through windows' live previews
 WebcamPreview.qml       Settings → Webcam's live picture (Qt Multimedia; loaded only when shown)
 MenuPointer.qml         the little point on a menu's edge (dock and tray menus), drawn only outside the menu
 scripts/webcam.py       Settings → Webcam: cameras, their picture settings (v4l2-ctl), kept per
@@ -77,6 +115,27 @@ wallpapers/             Slate's own wallpapers, 4K (made by tools/make-wallpaper
 sounds/                 volume tick; notification chime, attention, click, swish, welcome and goodbye (made by tools/make-sounds.py)
 RoundImage.qml          rounded image helper
 scripts/wallpaper-accent.py   picks accent + overall tone from the wallpaper
+scripts/wallpaper-colours.py  the same for several wallpapers ahead of time, for the wallpaper switcher
+                              (kept in ~/.cache/slate/wallpaper-colours-all.json)
+scripts/thumbnails.py         small pictures of images from the shared thumbnail cache
+                              (~/.cache/thumbnails), made where missing: the wallpaper switcher's cards
+scripts/image-sizes.py        each image's pixel size in a folder, so Settings → Appearance can hide ones too
+                              small to be wallpapers
+scripts/settings-index.py     lists every setting in SettingsWindow.qml as JSON, for SettingsIndex.qml's search
+scripts/hypr-options.py       Hyprland options' current values as JSON, so Settings can show what's in
+                              use for anything not set there
+scripts/xkb-layouts.py        keyboard layouts and their variants as JSON, from xkb's own list (Settings)
+scripts/theme-packs.py        a few pointer and icon themes put in with one click: each from its makers'
+                              release, pinned to a version and checked by SHA-256
+scripts/set-avatar.sh         sets your account picture: cropped square, handed to AccountsService, and ~/.face
+scripts/netinfo.sh            connection details for the network panel (nmcli), as KEY=value lines
+scripts/camera-watch.py       tells Slate when a camera starts and stops being used (inotify on
+                              /dev/video*), for OSD.qml's indicator
+scripts/force-quit.sh         the dock menu's Force Quit: kills the apps behind the given windows (never Slate's own)
+scripts/refresh-gtk-apps.sh   restarts windowless GTK4 apps after the colours change, so their next
+                              window opens in the new ones (run by apply-theme.py and on window close)
+scripts/user-files.sh         makes the files for your own tweaks (hypr/*.lua, user/shell.qml) from
+                              data/user-files where they don't exist; never touches one that does
 scripts/slate-mcp.py          `slate mcp`: Slate's MCP server, for AI agents (ASSISTANT.md): tools that look,
                               change and (always asking) close or leave, over Slate's IPC, `hyprctl`
                               and spaces.py; standard library only. Every call goes through its gate
@@ -129,6 +188,22 @@ bin/slate-init                the one place that knows the init system and login
                               `info`, so Settings and the panels leave out or explain what can't be done
 scripts/session-services.sh   at session start: Hyprland's environment to D-Bus (and systemd); without
                               systemd, PipeWire, WirePlumber and pipewire-pulse too
+bin/slate                     the `slate` command: start, stop, restart (with the reload cover), `ipc`, `log`,
+                              `logs`, `dir`, `mcp`, `build-hyprbars`
+bin/slate-build-hyprbars      `slate build-hyprbars`: builds the optional Hyprbars plugin for the running
+                              Hyprland (see Window mode below)
+bin/slate-session-install     adds "Slate" as its own session on the login screen (sudo; --remove)
+bin/slate-greeter-install     installs or updates the Slate login screen and switches greetd to it
+                              (sudo; --revert, --code-only), after
+bin/slate-greeter-check       test-loading it without a display, so a broken copy is never installed
+bin/slate-greeter-sync        keeps the login screen's appearance in step with your desktop, without
+                              sudo: data only (settings, wallpaper, avatar, font) into /var/lib/slate-greeter
+bin/slate-private-camera      Private Mode's camera switch: the camera off for every app and back
+                              (root, through pkexec; installed once, on asking)
+bin/slate-factory-reset       Settings → Debug → Factory reset: settings and what Slate remembers moved
+                              into a dated backup folder, nothing deleted
+bin/slate-logs                `slate logs`: the recent log and system details in a text file for a bug
+                              report, without your location
 bin/slate-system              packages (packaging/<distro>.txt, copied in), the login session and
                               the root helpers in step with this version: --check, --fix (pkexec),
                               --prompt (urgent notification 25 s after start; shell.qml). Everything
@@ -296,6 +371,17 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `picker` | `clipboard`, `emoji`, `toggle <clipboard\|emoji>`, `close` |
 | `wallpaper` | `set <path>`, `get` |
 | `nightlight` | `toggle`, `on`, `off` |
+| `airplane` | `toggle`, `on`, `off` |
+| `private` | `toggle`, `on`, `off` (Private Mode) |
+| `wifi` | `list` (JSON), `power <bool>`, `connect <name>`, `disconnect` |
+| `bluetooth` | `list` (JSON), `power <bool>`, `connect <address>`, `disconnect <address>` |
+| `config` | `set <key> <value>`, `get <key>` (a setting, as the Settings window changes it) |
+| `workspacemode` | `set <id> <mode>`, `get <id>`, `setDefault <mode> <tidy>`, `notIn <mode>` (the workspaces a change of default would rearrange) |
+| `workspacename` | `set <id> <name>`, `get <id>`, `label <id>` |
+| `titlebar` | `maximise <address>` (maximise or restore, leaving room for its bar) |
+| `updates` | `check`, `install`, `revert` |
+| `voice` | `hold`, `release`, `cancel` (talking to Nova) |
+| `shell` | `reload` (what `slate restart` and `slate stop` use) |
 | `polkit` | `preview`, `previewWrong`, `close` (preview only) |
 | `power` | `confirm <logout\|reboot\|shutdown>` (asks first), `cancel` |
 | `spaces` | `restore <name>`, `list` |
@@ -423,13 +509,14 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
-| `pipewire`, `wireplumber` (+ `pw-play` and `pw-dump`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`); `pw-record` (same package) records while you hold to talk to Nova |
-| `networkmanager` | Wi-Fi panel |
+| `pipewire`, `wireplumber` (+ `pw-play` and `pw-dump`: Arch `pipewire-audio`, Debian `pipewire-bin`, Fedora `pipewire-utils`, openSUSE `pipewire-tools`) | volume, mic; volume key tick and notification chime (`sounds/`); `pw-record` (same package) records while you hold to talk to Nova; `pw-dump` (same package) says which speakers and microphones are in use, for the volume panel (`Popouts.qml`; without it none is marked) |
+| `networkmanager` (`nmcli`) | Wi-Fi panel, connection details (`scripts/netinfo.sh`), airplane mode |
 | `bluez` | Bluetooth |
 | `upower` | battery |
 | `polkit` | password prompts (`PolkitAgent.qml`), `pkexec` for login-screen updates |
 | `pam` | lock screen password check, `faillock` lockout |
 | `systemd` or `elogind`, `util-linux`, `dbus`, `glib2`, `procps-ng` | the login service: `systemctl`/`systemd-inhibit`, or `loginctl`/`elogind-inhibit` without systemd (power, sleep; through `bin/slate-init`), `setpriv`/`runuser`, `dbus-send`/`gdbus`/`gsettings`, `pgrep`/`pkill` |
+| `diffutils` (`cmp`) | whether the installed copy (Slate, the login screen, the session files) is up to date (`install.sh`, `bin/slate-greeter-sync`, `bin/slate-system`) |
 | `libnotify` | `notify-send` (login-screen update prompt, screenshot fallback) |
 | `fontconfig` | font lists in Settings, greeter font sync |
 | `curl` | weather |
@@ -447,7 +534,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
 | `hyprpicker` | the colour picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
-| `ffmpeg` (Fedora `ffmpeg-free`) | takes the sound out of downloaded screensaver videos |
+| `ffmpeg` (Fedora `ffmpeg-free`; `ffprobe` comes with it) | takes the sound out of downloaded screensaver videos |
 | `whisper-cpp` (Debian/Ubuntu `whisper.cpp`, NixOS `whisper-cpp`, Gentoo GURU `app-accessibility/whisper-cpp`; openSUSE and Void: build it) | talking to Nova (Settings → Assistant → Voice): `whisper-cli` turns what you said into text on this computer (`scripts/voice.py`). Its speech model (whisper's base, 148 MB) is downloaded by Slate only when you ask, into `~/.local/share/slate/whisper/` |
 | `xdg-user-dirs` | finding your Downloads and Pictures folders (else `~/Downloads`, `~/Pictures`) |
 | `pciutils` | Debug → Export logs (graphics card details) |

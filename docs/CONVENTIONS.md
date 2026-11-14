@@ -89,9 +89,9 @@ Hyprland's had stopped.
 
 ### Game mode covers anything costly or interrupting
 
-Game mode (the bar's button and its panel, the control centre's Game Mode switch and the
-launcher's; it has no page or row of its own in Settings: the bar's button is added in
-Settings → Menu Bar → Arrange the menu bar) turns off everything
+Game mode (the bar's button and panel, the control centre's Game Mode switch and the launcher's;
+it has no page or row of its own in Settings: the bar's button is added in Settings → Menu Bar →
+Arrange the menu bar) turns off everything
 costly to draw or distracting while playing, and puts it all back afterwards. **Any new visual
 effect, animation, live preview or interruption checks `Config.gameMode`**, or goes through
 something that already does. What it covers today:
@@ -127,19 +127,24 @@ bottom edge while there's more below, fading as that end is reached.
 ### Bar panels
 
 New panels in `shell/Popouts.qml` look like the existing ones (Wi-Fi, Bluetooth, Screenshot,
-Keyboard, Battery). Read one or two first and copy their structure:
+Keyboard, Battery). Read one or two first, and build them from the file's own inline components
+(defined together under "Shared pieces" and below it) rather than drawing the pieces again:
 
 - `Column { width: 300; spacing: 10 }` (280 only for narrow lists like Keyboard).
-- Title: a plain `Label { text: "…"; font.pixelSize: 15 }`, no icon. If the panel switches
-  something, the switch sits on the right in an `Item { height: 26 }`: the 40×22 rounded
-  `Rectangle` with a 16 px knob and a `ClickTap`, copied from the Wi-Fi or Bluetooth panel.
+- Title: `PanelTitle { text: "…" }`, a plain 15 px title, no icon, 26 px high. If the panel
+  switches something, put a `Switch` inside it, anchored to the right (`checked: …`,
+  `onToggled: …`; it is the 40×22 pill with a 16 px knob and its own `ClickTap`).
 - Status or explanation: a `Label` with `color: pop.dim; font.pixelSize: 12;
-  font.weight: Font.Normal; wrapMode: Text.Wrap`.
-- Sections: `Divider {}`, then a dim heading `Label { color: pop.dim; font.pixelSize: 12 }`,
-  then rows. Clickable rows are `RowButton`s holding an `Icon` (16 px, `pop.dim`,
-  leftMargin 10) and a `Label` with `font.weight: Font.Normal` (leftMargin 10).
-- Footer: `Divider {}`, then a `RowButton` to the related Settings page (icon 0xEB20,
-  "<Thing> settings") that closes the panel and runs `bin/slate ipc call settings page <page>`.
+  font.weight: Font.Normal; wrapMode: Text.Wrap`. (`Label` is the panels' plain-text `Text`:
+  `pop.text`, 13 px, medium weight, elided; use it for every piece of text.)
+- Sections: `Divider {}`, then `Heading { text: "…" }` (a dim 12 px `Label`), then rows.
+  Clickable rows are `RowButton`s (`selected` for the chosen one, `toggles` for something a click
+  turns off again, `danger` for something destructive) holding an `Icon { code: 0x…;
+  font.pixelSize: 16; color: pop.dim }` (leftMargin 10) and a `Label` with
+  `font.weight: Font.Normal` (leftMargin 10).
+- Footer: `Divider {}`, then a `LinkRow { code: 0xEB20; text: "<Thing> settings" }` (a
+  `RowButton` with its icon and label already placed) that closes the panel and runs
+  `bin/slate ipc call settings page <page>`.
 - Tiles (like Screenshot's, or Battery's power modes) use `pop.card`, radius 10, hover
   `Config.hoverOn(pop.card)`.
 
@@ -223,18 +228,18 @@ which of these applied:
 
 ### The assistant's UI follows the theme
 
-Anything in `Assistant.qml`, `NovaFace.qml`, Settings → Assistant, Nova's bar button or its
+Anything in `Assistant.qml`, `NovaMic.qml`, `NovaVoice.qml`, Settings → Assistant, Nova's bar button or its
 questions follows the theme, with nothing hard-coded. Before calling a change there done:
 
 - **Colours** come from the theme: `Config.tint("#…")`, `Config.surface` / `Config.raised`,
   `Config.accent`, `Config.pageColour("assistant")`, `Config.hover` / `hoverOn`,
   `Config.shadowColour`. No bare hex, "black" or "white":
-  `grep -n '"#[0-9a-fA-F]\{6,8\}"\|"black"\|"white"' shell/Assistant.qml shell/NovaFace.qml | grep -v 'Config.tint("#'`
+  `grep -n '"#[0-9a-fA-F]\{6,8\}"\|"black"\|"white"' shell/Assistant.qml shell/NovaMic.qml shell/NovaVoice.qml | grep -v 'Config.tint("#'`
   prints nothing.
 - **Light mode** and **Tint from wallpaper** follow from `tint()`; text on the accent uses the
   window's `accentText`.
 - **Colourful off**: Nova's icon and name are one colour like everything else (`pageColour`
-  falls back to the accent; `NovaFace` hides itself).
+  falls back to the accent).
 - **Glass**: no translucent shape laid over another (it shows as a lighter patch); a new
   window's namespace goes in both glass lists.
 - **Fonts**: `Config.s.fontFamily` and the bundled Tabler font, never a named font.

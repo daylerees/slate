@@ -7,7 +7,7 @@ it and switch back at login.
 ## Quick install
 
 ```sh
-git clone <repo-url> slate && cd slate
+git clone https://github.com/daylerees/slate.git && cd slate
 ./install.sh
 ```
 
@@ -20,14 +20,14 @@ Options: `./install.sh --help`.
 | Option | What it does |
 |---|---|
 | `--yes` | don't ask, answer yes to everything |
-
-Without `--yes`, a question that can't be asked (the installer was started from a script, with
-no terminal to answer in) is skipped as a no, and the installer says so: nothing that uses
-`sudo` or changes something of yours goes ahead unanswered.
 | `--login-screen` | also switch your login screen to Slate's own (greetd). Optional; read the risks in [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) first |
 | `--no-deps` | skip installing packages (you installed them yourself) |
 | `--link` | link `~/.config/slate` to this folder instead of copying (for working on Slate) |
 | `--uninstall` | remove Slate (see [Removing](#removing)) |
+
+Without `--yes`, a question that can't be asked (the installer was started from a script, with
+no terminal to answer in) is skipped as a no, and the installer says so: nothing that uses
+`sudo` or changes something of yours goes ahead unanswered.
 
 ## Requirements
 
