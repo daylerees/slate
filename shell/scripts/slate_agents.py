@@ -368,6 +368,94 @@ class Codex(Agent):
 
 
 @agent
+class OpenCode(Agent):
+    """OpenCode (V2), one prompt at a time (`opencode run --format json`), checked against
+    its documentation and source (2.2). It reads its settings from the folder it's started in,
+    so Slate starts it in a folder of its own with an opencode.json there (prepare): Slate's
+    server, and an agent of Slate's ("nova", with the briefing as its system prompt) whose
+    permissions deny everything but Slate's tools; policies keep every other MCP server and
+    web search out, and deny every tool but Slate's. The person's own files are untouched.
+    --standalone runs it on a private server, so it reads this folder's settings and nothing
+    is left running; --archived keeps Nova's sessions out of their lists. Policies on MCP
+    servers came in 2.2.3: an older OpenCode can't be confined, so it's marked so and asks."""
+    id = "opencode"
+    label = "OpenCode"
+    url = "https://opencode.ai"
+    note = "Slate switches off its own tools, so it works through Slate's alone"
+    briefing = "system"
+    sign_in = "opencode auth login"
+    workspace = True
+
+    @property
+    def confined(self):
+        return at_least(self.version(), (2, 2, 3))
+
+    def installed(self):
+        return bool(find("opencode"))
+
+    def version(self):
+        if "_version" not in self.__dict__:
+            code, out = output([find("opencode") or "opencode", "--version"])
+            self._version = version_in(out) if code == 0 else ""
+        return self._version
+
+    def config(self, run):
+        cmd, args, env = slate_server(run)
+
+        def only(action, allow):
+            return [{"action": action, "resource": "*", "effect": "deny"}, {"action": action, "resource": allow, "effect": "allow"}]
+        return {
+            "$schema": "https://opencode.ai/config.json",
+            "mcp": {"servers": {"slate": {"type": "local", "command": [cmd] + args, "environment": env, "codemode": False}}},
+            "default_agent": "nova",
+            "agents": {"nova": {"mode": "primary", "description": "Nova, Slate's assistant", "system": briefing_text(run),
+                                "permissions": [{"action": "*", "resource": "*", "effect": "deny"},
+                                                {"action": "slate_*", "resource": "*", "effect": "allow"}]}},
+            "policies": only("mcp.use", "slate") + [{"action": "websearch.use", "resource": "*", "effect": "deny"}]
+                        + only("tool.use", "slate_*"),
+        }
+
+    def prepare(self, run):
+        write_json(os.path.join(run["work"], "opencode.json"), self.config(run))
+
+    def command(self, run):
+        cmd = [find("opencode") or "opencode", "run", "--format", "json", "--standalone", "--agent", "nova", "--archived"]
+        if run.get("model"):
+            cmd += ["--model", run["model"]]
+        if run.get("session"):
+            cmd += ["--session", run["session"]]
+        return cmd
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if not isinstance(d, dict):
+            return []
+        out = []
+        if d.get("sessionID") and "session" not in state:
+            state["session"] = str(d["sessionID"])
+            out.append({"type": "start", "session": state["session"]})
+        kind, part = d.get("type"), d.get("part") if isinstance(d.get("part"), dict) else {}
+        if kind == "text" and isinstance(part.get("text"), str):
+            ev = {"type": "text", "delta": part["text"]}
+            if part.get("messageID") != state.get("message"):
+                state["message"], state["answer"] = part.get("messageID"), ""
+                ev["fresh"] = True
+            state["answer"] += part["text"]
+            out.append(ev)
+        elif kind == "error":
+            out.append(trouble(self, str((d.get("error") or {}).get("message") or "")))
+        return out
+
+    def finish(self, code, state, errors):
+        if code == 0 and "session" in state:
+            return {"type": "done", "text": state.get("answer", ""), "session": state["session"]}
+        return trouble(self, errors[-1]) if errors else None
+
+
+@agent
 class Custom(Agent):
     """A command of your own: Slate runs it as typed, with the prompt on its stdin, and shows
     whatever it prints. Where to find Slate's MCP server is in its environment. One prompt,

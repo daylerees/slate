@@ -209,3 +209,64 @@ class Codex(Base):
     def test_timeout(self):
         e = self.ask("codex", CODEX, env={"STUB_HANG": "1", "SLATE_ASSISTANT_TIMEOUT": "1.5"})[-1]
         self.assertEqual(e["kind"], "timeout")
+
+
+class OpenCode(Base):
+    def test_detect(self):
+        c = self.detect()["opencode"]
+        self.assertEqual((c["label"], c["installed"], c["version"], c["signedIn"], c["confined"], c["followUps"]),
+                         ("OpenCode", True, "2.2.6", True, True, True))
+
+    def test_an_old_one_asks_first(self):
+        """Before 2.2.3 OpenCode can't keep other MCP servers out: not called confined."""
+        self.s.env["STUB_VERSION"] = "2.1.0"
+        self.assertFalse(self.detect()["opencode"]["confined"])
+        e, = self.ask("opencode", OPENCODE)
+        self.assertEqual(e["kind"], "not-accepted")
+        self.assertEqual(self.ask("opencode", OPENCODE, accepted="opencode")[-1]["type"], "done")
+
+    def test_a_prompt(self):
+        events = self.ask("opencode", OPENCODE)
+        self.answered(events, "Glass is **off**.", "ses_4f2a1c")
+        self.assertEqual([(e["delta"], e.get("fresh", False)) for e in events if e["type"] == "text"],
+                         [("Checking.", True), ("Glass is ", True), ("**off**.", False)])
+
+    def test_confined(self):
+        """Started in a folder of its own, with Slate's settings there: Slate's server alone,
+        an agent that may use Slate's tools and nothing else, and policies to match."""
+        self.ask("opencode", OPENCODE)
+        got = self.got("opencode")
+        work = self.h(".local", "state", "slate", "assistant", "work-opencode")
+        self.assertEqual((got["cwd"], got["pwd"]), (work, work))
+        self.assertEqual(got["args"][:8], ["run", "--format", "json", "--standalone", "--agent", "nova", "--archived"][:8])
+        conf = json.loads(got["files"]["opencode.json"])
+        self.assertEqual(list(conf["mcp"]["servers"]), ["slate"])
+        server = conf["mcp"]["servers"]["slate"]
+        self.assertEqual((server["command"], server["codemode"]), ([mcp_tests.SLATE, "mcp"], False))
+        self.assertEqual(server["environment"]["SLATE_ASSISTANT_AGENT"], "OpenCode")
+        nova = conf["agents"]["nova"]
+        self.assertTrue(nova["system"].startswith("You are Nova"))
+        self.assertEqual(nova["permissions"], [{"action": "*", "resource": "*", "effect": "deny"},
+                                               {"action": "slate_*", "resource": "*", "effect": "allow"}])
+        policies = [(p["action"], p["resource"], p["effect"]) for p in conf["policies"]]
+        self.assertEqual(policies, [("mcp.use", "*", "deny"), ("mcp.use", "slate", "allow"), ("websearch.use", "*", "deny"),
+                                    ("tool.use", "*", "deny"), ("tool.use", "slate_*", "allow")])
+        self.assertNotIn("You are Nova", got["stdin"])
+        mode = os.stat(os.path.join(work, "opencode.json")).st_mode & 0o777
+        self.assertEqual(mode, 0o600)
+
+    def test_follow_up_and_model(self):
+        self.ask("opencode", OPENCODE, session="ses_4f2a1c", model="anthropic/claude-sonnet-5-5")
+        a = self.got("opencode")["args"]
+        self.assertEqual((self.after(a, "--session"), self.after(a, "--model")), ("ses_4f2a1c", "anthropic/claude-sonnet-5-5"))
+
+    def test_errors(self):
+        for message, kind in (("ProviderAuthError: no credentials for anthropic", "signed-out"),
+                              ("Unable to connect. Is the computer able to access the url?", "offline"),
+                              ("Session failed", "failed")):
+            with self.subTest(kind):
+                stream = lines({"type": "error", "timestamp": 1, "sessionID": "ses_1", "error": {"type": "unknown", "message": message}})
+                e = self.ask("opencode", stream, env={"STUB_EXIT": "1"})[-1]
+                self.assertEqual((e["type"], e["kind"]), ("error", kind))
+        e = self.ask("opencode", "", env={"STUB_EXIT": "1", "STUB_ERR": "boom"})[-1]
+        self.assertEqual((e["kind"], e["detail"]), ("failed", "boom"))
