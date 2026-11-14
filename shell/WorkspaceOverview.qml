@@ -426,7 +426,13 @@ PanelWindow {
             easing.type: Easing.InOutCubic
         }
     }
-    onFadeChanged: if (fade === 0) { zooming = false; zoomP = 0; if (!leaving) { arrived = false; arriveCheck.stop(); } }
+    // Fully gone: let go of the cards' snapshot (their windows, positions and capture list), which
+    // would otherwise sit in memory until the next time it opens (open() builds all of it afresh)
+    onFadeChanged: if (fade === 0) {
+        zooming = false; zoomP = 0;
+        if (!leaving) { arrived = false; arriveCheck.stop(); }
+        if (!shown) { spaces = []; contents = ({}); geo = ({}); shotAddrs = []; }
+    }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: Qt.rgba(0.04, 0.05, 0.06, 0.94 * fade * (1 - backdropGone))

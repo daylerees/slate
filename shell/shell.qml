@@ -491,7 +491,7 @@ ShellRoot {
                             fade: Math.round(wsOverview.fade * 100) / 100, animate: wsOverview.animate, strip: Math.round(wsOverview.stripAt() * 10000) / 10000,
                             // (the workspaces Slate knows of now: the overview shows these as it opens)
                             known: Hyprland.workspaces.values.filter(w => w.id > 0).map(w => w.id).sort((a, b) => a - b),
-                            workspaces: wsOverview.spaces.map(w => w.id), pending: wsOverview.pendingId, arrived: wsOverview.arrived,
+                            workspaces: wsOverview.spaces.map(w => w.id), cards: wsOverview.spaces.length + Object.keys(wsOverview.contents).length + wsOverview.shotAddrs.length, pending: wsOverview.pendingId, arrived: wsOverview.arrived,
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, busy: lockScreen.busy, message: lockScreen.message,

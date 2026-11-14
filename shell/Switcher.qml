@@ -165,6 +165,9 @@ PanelWindow {
     property real fade: shown ? 1 : 0
     Behavior on fade { NumberAnimation { duration: sw.quickClose ? 0 : Config.ms(200); easing.type: Easing.InOutQuad } }
     visible: shown || fade > 0
+    // Fully gone: let go of the window snapshot (and with it every card and capture), which would
+    // otherwise sit in memory until the next time it opens (open() takes a fresh one)
+    onFadeChanged: if (fade === 0 && !shown) windows = []
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore

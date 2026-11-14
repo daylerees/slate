@@ -119,6 +119,27 @@ class SwitcherAnimations(LiveCase):
                     self.assertNotEqual(self.s.hyprctl("activewindow", json_out=True).get("address"), before,
                                         "didn't go to the other window")
 
+    def test_switcher_and_overview_empty_themselves_once_closed(self):
+        """Once the window switcher and the overview are fully gone they hold no cards (their
+        snapshot of the windows and workspaces is let go), and opening them again rebuilds it."""
+        self.windows_on_two_workspaces()
+        for _ in range(2):
+            self.ipc("switcher", "next")
+            st = self.wait(lambda st: st["switcher"]["open"] and st["switcher"]["fade"] == 1, "the window switcher")
+            self.assertGreaterEqual(st["switcher"]["windows"], 2, "the switcher opened with nothing in it")
+            self.ipc("switcher", "cancel")
+            self.wait(lambda st: not st["switcher"]["open"] and st["switcher"]["fade"] == 0
+                      and st["switcher"]["windows"] == 0, "the window switcher to empty itself once closed")
+
+            self.ipc("overview", "open")
+            st = self.wait(lambda st: st["overview"]["open"] and st["overview"]["fade"] == 1, "the overview")
+            self.assertGreaterEqual(len(st["overview"]["workspaces"]), 2, "the overview opened with nothing in it")
+            self.assertGreater(st["overview"]["cards"], 0)
+            self.ipc("overview", "close")
+            self.wait(lambda st: not st["overview"]["open"] and st["overview"]["fade"] == 0
+                      and st["overview"]["workspaces"] == [] and st["overview"]["cards"] == 0,
+                      "the overview to empty itself once closed")
+
     def test_overview_grid_arrows(self):
         """On the grid, Left/Right go one along and Up/Down a row (Settings → Workspaces: Grid)."""
         self.keep_setting("overviewMoveAnimation")
