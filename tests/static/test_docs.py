@@ -106,6 +106,18 @@ class Docs(Case):
                     self.assertIn(part, p.raw, f"{i}.html is missing {part}")
                 self.assertRegex(p.raw, r"<title>[^<]+ · Slate docs</title>")
 
+    def test_tables_are_closed_and_in_the_article(self):
+        """A table's rows and cells are all closed, and it sits inside the article, so it
+        can't spill under the "On this page" list."""
+        for i, _ in nav():
+            with self.subTest(i):
+                raw = slate.read("site", "docs", i + ".html")
+                for tag in ("table", "tr", "td", "th"):
+                    self.assertEqual(len(re.findall(rf"<{tag}[\s>]", raw)), raw.count(f"</{tag}>"),
+                                     f"{i}.html: a <{tag}> isn't closed")
+                body = raw.split('<article', 1)[-1].split("</article>", 1)[0]
+                self.assertEqual(body.count("<table"), raw.count("<table"), f"{i}.html: a table is outside the article")
+
     def test_links_lead_somewhere(self):
         pages = {i: parse(i + ".html") for i, _ in nav()}
         pages["index"] = parse("index.html")

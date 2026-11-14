@@ -138,7 +138,9 @@ body.docs { background: var(--bg); }
 .doc table { width: 100%; border-collapse: collapse; margin: 0 0 22px; font-size: 15px; line-height: 1.55; }
 .doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .doc th { color: var(--dim); font-size: 13px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
-.doc td:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
+/* The first column may wrap (a long list of settings there once ran past the page and under the
+   "On this page" list), but never gets squeezed below a third of the table */
+.doc td:first-child { color: var(--text); font-weight: 500; width: 34%; min-width: 9em; }
 
 /* A picture from the site, framed */
 .doc figure { margin: 0 0 24px; }
