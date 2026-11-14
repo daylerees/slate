@@ -17,7 +17,7 @@ Scope {
     readonly property bool on: Config.s.airplaneMode
     // (mobile broadband goes through NetworkManager, where there is one; whether Slate turned
     // it off is kept beside Slate's other state, as it's a fact about this session's radios)
-    readonly property string wwanMark: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/airplane-wwan"
+    readonly property string wwanMark: Config.stateHome + "/slate/airplane-wwan"
 
     IpcHandler {
         target: "airplane"

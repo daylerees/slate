@@ -131,7 +131,7 @@ PanelWindow {
     // anywhere or put in `slate logs`, and emptied by New. The agent's own conversation
     // (session) is kept with it, so a follow-up still follows. Switched off, nothing is
     // written and what was kept is deleted
-    readonly property string chatFile: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/assistant/chat.json"
+    readonly property string chatFile: Config.stateHome + "/slate/assistant/chat.json"
     property bool restored: false
     readonly property bool keepChat: Config.s.assistantKeepChat
     onKeepChatChanged: {

@@ -1348,6 +1348,13 @@ Singleton {
         return d === 1 ? "Yesterday" : d + " days ago";
     }
     readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+    // Where Slate keeps its saved state and its cache (XDG_STATE_HOME / XDG_CACHE_HOME). Two
+    // paths still use ~/.local/state and ~/.cache directly on purpose: the dock's dock.json
+    // (shell.qml), the tiles (tileDir below), the notifications history, the launcher's list and
+    // the night light's shader. For anyone who sets those variables, moving them would lose
+    // their saved state, so they keep resolving exactly as they always have
+    readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
+    readonly property string cacheHome: Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache"
     readonly property string dataHome: Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share"
     FileView { id: gtkSettingsFile; path: root.isLoginScreen ? "" : root.configHome + "/gtk-3.0/settings.ini"; watchChanges: true; printErrors: false; onFileChanged: reload() }
     FileView { id: slateIconsFile; path: root.isLoginScreen ? "" : root.dataHome + "/icons/Slate-Icons/index.theme"; watchChanges: true; printErrors: false; onFileChanged: reload() }
@@ -1363,6 +1370,7 @@ Singleton {
         : (/^[\w.+-]+$/.test(gtkIconTheme) ? gtkIconTheme : "")
     // Each theme's tiles have folders of their own, tiles/themes/<theme>/<style>: drawn from it
     // alone (tiles from two themes never mix), and kept, so switching back is instant
+    // (~/.cache on purpose, not cacheHome: the tiles stay where they have always been)
     readonly property string tileDir: Quickshell.env("HOME") + "/.cache/slate/tiles"
         + (iconThemeInUse !== ""
             ? "/themes/" + iconThemeInUse + "/" + s.iconShape + (s.iconFill ? "" : "-whole")
@@ -1534,7 +1542,7 @@ Singleton {
     // ---- Keyboard shortcuts set (Settings → Shortcuts) ------------------------------
     // "slate", "hyprland" or "hyprland-extras": saved where binds.lua reads it
     // (~/.local/state/slate/keyset.lua), then Hyprland's config reloads to use it
-    readonly property string keysetPath: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/keyset.lua"
+    readonly property string keysetPath: root.stateHome + "/slate/keyset.lua"
     signal keysetApplied()
     function setKeyset(v) {
         if (["slate", "hyprland", "hyprland-extras"].indexOf(v) < 0) return;
@@ -1725,7 +1733,7 @@ Singleton {
     // launcher-entries.py and session/hypr/hyprland.lua (tests/unit/test_runtime_dir.py)
     readonly property bool runtimeDirOwn: !Quickshell.env("XDG_RUNTIME_DIR")
     readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR")
-        || ((Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/slate/run")
+        || (root.stateHome + "/slate/run")
     Process {
         running: root.runtimeDirOwn && !root.isLoginScreen
         command: ["sh", "-c", 'mkdir -p "$0" && chmod 700 "$0"', root.runtimeDir]
@@ -2268,7 +2276,7 @@ Singleton {
     function isHex(c) { return typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c); }
     FileView {
         id: colourCache
-        path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/wallpaper-colours.json"
+        path: root.cacheHome + "/slate/wallpaper-colours.json"
         blockLoading: true
         printErrors: false
     }
@@ -2311,7 +2319,7 @@ Singleton {
     Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && !root.wallpaperSwitching && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
     FileView {
         id: coverFile
-        path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/cover.json"
+        path: root.cacheHome + "/slate/cover.json"
         blockLoading: true
         printErrors: false
     }
@@ -2551,7 +2559,7 @@ Singleton {
     }
 
     // ---- Clipboard history (scripts/clipstore.py): how many items it holds, for the bar ----
-    readonly property string clipIndex: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/clipboard/index.json"
+    readonly property string clipIndex: root.stateHome + "/slate/clipboard/index.json"
     property int clipCount: 0
     FileView {
         path: root.clipIndex

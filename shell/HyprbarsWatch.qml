@@ -29,7 +29,7 @@ Item {
     //   chosen    Hyprbars was chosen in Settings and is being built: switch to it once loaded
     //   notNow    the Hyprland "Not now" was answered for (or the build failed for): don't ask again
     //   offered   the installed Hyprland a rebuild-before-restart was offered for
-    readonly property string notesPath: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/slate/hyprbars-notes.json"
+    readonly property string notesPath: Config.stateHome + "/slate/hyprbars-notes.json"
     FileView { id: notesFile; path: watch.notesPath; blockLoading: true; printErrors: false }
     property var notes: {
         try { const n = JSON.parse(notesFile.text() || "{}"); return n && typeof n === "object" ? n : {}; }

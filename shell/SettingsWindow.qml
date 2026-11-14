@@ -4287,7 +4287,7 @@ FloatingWindow {
             function titles(tier) { return tools.filter(t => t.tier === tier).map(t => t.title).join(" · "); }
             function toolTitle(name) { const t = tools.find(x => x.name === name); return t ? t.title : name; }
             // What assistants did (the server's activity log), newest first
-            readonly property string logPath: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/assistant/activity.jsonl"
+            readonly property string logPath: Config.stateHome + "/slate/assistant/activity.jsonl"
             property bool showAll: false
             FileView { id: activityFile; path: assistantPane.logPath; watchChanges: true; printErrors: false; onFileChanged: reload() }
             readonly property var activity: {

@@ -814,7 +814,7 @@ ShellRoot {
     onBarButtonsLuaChanged: barButtonsSync.restart()
     FileView {
         id: barButtonsFile
-        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/hyprbars.lua"
+        path: Config.stateHome + "/slate/hyprbars.lua"
         blockLoading: true
         printErrors: false
     }
@@ -1124,6 +1124,7 @@ ShellRoot {
         ]
         FileView {
             id: dockState
+            // (~/.local/state on purpose, not Config.stateHome: it stays where it has always been)
             path: Quickshell.env("HOME") + "/.local/state/slate/dock.json"
             blockLoading: true
             onLoaded: { try { const d = JSON.parse(text()); if (Array.isArray(d.pinned)) win.pinned = d.pinned; } catch (e) {} }

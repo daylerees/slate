@@ -15,7 +15,7 @@ Singleton {
     id: root
 
     readonly property string script: Quickshell.shellPath("scripts/update.py")
-    readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate/update.json"
+    readonly property string stateFile: Config.stateHome + "/slate/update.json"
 
     // What update.py last found and did
     property var state: ({})

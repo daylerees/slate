@@ -44,7 +44,7 @@ PanelWindow {
     readonly property color accent: Config.accent
     readonly property string fontFamily: Config.s.fontFamily
     readonly property string emojiFont: "Noto Color Emoji"
-    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate"
+    readonly property string stateDir: Config.stateHome + "/slate"
     readonly property string clipDir: stateDir + "/clipboard"
     readonly property string clipScript: Quickshell.shellPath("scripts/clipstore.py")
 

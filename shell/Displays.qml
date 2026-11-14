@@ -24,7 +24,7 @@ Scope {
     property var before: null
     readonly property bool pending: before !== null
 
-    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/slate"
+    readonly property string stateDir: Config.stateHome + "/slate"
 
     function refresh() { query.running = true; }
     Process {
