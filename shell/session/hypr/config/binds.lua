@@ -145,6 +145,13 @@ end
 local function slate(args) return SLATE .. " ipc call " .. args end
 -- Start apps through uwsm when the session runs under it, otherwise directly
 local launchPrefix = os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or ""
+-- A command that needs a tool not every distro installs with Slate (hyprpicker, btop): run
+-- through scripts/need.sh, which runs it as it is when the tool is there, and otherwise says
+-- what to install in a notification, so the shortcut never just does nothing. `what` is how
+-- the notification starts ("The colour picker"); no quotes in it
+local function needing(tool, what, cmd)
+    return SLATE_DIR .. "/scripts/need.sh " .. tool .. " '" .. what .. "' -- " .. cmd
+end
 
 -- Is one of Slate's overlays open and holding the keyboard? (by layer name, e.g. "slate-launcher")
 local function slateOverlayOpen(name)
@@ -266,10 +273,10 @@ hl.on("window.close", function(win)
     end
 end)
 
--- (Slate's set)
-if SLATE_KEYS then
 -- Maximise: a floating window with Slate's own title bars is maximised by Slate, leaving room
--- for its bar (titlebar maximise, TitleBar.qml); otherwise Hyprland's (which the bar can't sit on)
+-- for its bar (titlebar maximise, TitleBar.qml); otherwise Hyprland's (which the bar can't sit on).
+-- Out here with the other shared helpers, not inside Slate's set: Hyprland + Slate Extras binds
+-- Super+D to it too, and did nothing while it was only made for Slate's own set
 function maximiseSmart()
     local w = hl.get_active_window()
     if SLATE_TITLEBARS and w and w.floating then
@@ -279,6 +286,8 @@ function maximiseSmart()
     end
 end
 
+-- (Slate's set)
+if SLATE_KEYS then
 -- Window manipulation
 hl.bind(mainMod .. " + Escape",      hl.dsp.exec_cmd("hyprctl kill"))
 hl.bind(mainMod .. " + Q",           function() closeWindowSmart() end)
@@ -429,7 +438,7 @@ hl.bind(mainMod .. " + W",          function()
     local win = hl.get_active_window()
     if win then hl.dispatch(hl.dsp.window.move({ workspace = newWorkspace(win.address) })) end
 end)
-hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(launchPrefix .. TERMINAL .. " -e btop") end)
+hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(needing("btop", "The system monitor", launchPrefix .. TERMINAL .. " -e btop")) end)
 hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(slate("settings toggle")))
 hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(slate("bar panel control")))
 hl.bind(mainMod .. " + Space",       hl.dsp.exec_cmd(slate("launcher toggle")))
@@ -509,7 +518,7 @@ if SLATE_KEYS then
 -------------------
 
 -- Colour picker (copies the colour) and screenshots
-hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd("hyprpicker -a -n"))
+hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd(needing("hyprpicker", "The colour picker", "hyprpicker -a -n")))
 hl.bind("Print",               hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"))
 
@@ -667,7 +676,7 @@ if EXTRAS then
         local win = hl.get_active_window()
         if win then hl.dispatch(hl.dsp.window.move({ workspace = newWorkspace(win.address) })) end
     end)
-    hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(launchPrefix .. TERMINAL .. " -e btop") end)
+    hl.bind("CONTROL + SHIFT + Escape", function() hl.exec_cmd(needing("btop", "The system monitor", launchPrefix .. TERMINAL .. " -e btop")) end)
     hl.bind(mainMod .. " + Escape",     hl.dsp.exec_cmd("hyprctl kill"))
     hl.bind(mainMod .. " + D",          function() maximiseSmart() end)
     hl.bind(mainMod .. " + F",          hl.dsp.window.fullscreen())
@@ -678,7 +687,7 @@ if EXTRAS then
     hl.bind(mainMod .. " + L",          hl.dsp.exec_cmd(slate("lock lock")))
     hl.bind(mainMod .. " + period",     hl.dsp.exec_cmd(slate("picker toggle emoji")))
     hl.bind(mainMod .. " + SHIFT + V",  hl.dsp.exec_cmd(slate("picker toggle clipboard")))
-    hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd("hyprpicker -a -n"))
+    hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd(needing("hyprpicker", "The colour picker", "hyprpicker -a -n")))
     hl.bind(mainMod .. " + SHIFT + W",  hl.dsp.exec_cmd(slate("settings page wallpaper")))
     hl.bind(mainMod .. " + ALT + W",    hl.dsp.exec_cmd(slate("wallpaper switcher")))
     hl.bind("Print",                    hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"))

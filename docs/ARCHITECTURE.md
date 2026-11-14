@@ -420,8 +420,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | Package | Feature |
 |---|---|
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
-| `hyprpicker` | freezes the screen while picking a screenshot area (optional) |
-| `btop` | Ctrl+Shift+Esc (system monitor in a terminal) |
+| `hyprpicker` | the colour picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
+| `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
 | `ffmpeg` (Fedora `ffmpeg-free`) | takes the sound out of downloaded screensaver videos |
 | `whisper-cpp` (Debian/Ubuntu `whisper.cpp`, NixOS `whisper-cpp`, Gentoo GURU `app-accessibility/whisper-cpp`; openSUSE and Void: build it) | talking to Nova (Settings → Assistant → Voice): `whisper-cli` turns what you said into text on this computer (`scripts/voice.py`). Its speech model (whisper's base, 148 MB) is downloaded by Slate only when you ask, into `~/.local/share/slate/whisper/` |
 | `xdg-user-dirs` | finding your Downloads and Pictures folders (else `~/Downloads`, `~/Pictures`) |
