@@ -15,6 +15,9 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ PowerConfirm.qml     centred confirmation ("slate-confirm"): log out / restart / shut down,
 │                       and confirmWith() for anything else (deleting a space)
 ├─ Wallpaper.qml        desktop wallpaper, one per screen ("slate-wallpaper")
+│  ├─ WallpaperFill.qml   the picture itself, cross-fading (also the switcher's)
+│  └─ WallpaperSwitcher.qml  Super+Alt+W: the wallpaper over the windows ("slate-wallpaper-preview",
+│                       top layer) and the row ("slate-wallpaper-switcher", overlay)
 ├─ Picker.qml           clipboard history + emoji picker ("slate-picker")
 ├─ PolkitAgent.qml      password prompts for apps ("slate-polkit")
 ├─ NightLight.qml       warm screen via Hyprland's screen shader
@@ -207,6 +210,13 @@ opening any of them closes bar panels (wired in `shell.qml`).
   `~/.cache/slate/wallpaper-colours.json` (with the wallpaper they're for) and used at start-up
   until the script answers; a cache that's damaged, for another wallpaper or not colours is
   ignored and written again. The login screen doesn't use it.
+- The wallpaper switcher previews through `Config.wallpaperPreview` (what `Config.wallpaper`
+  shows while it's set), never the setting. While it's open (`Config.wallpaperSwitching`) the
+  colours follow in Slate alone: each wallpaper's are kept (`wallpaperColourMemo`) so going
+  back is instant, the colour cache isn't written, and what's slow or reaches outside Slate
+  (App theming, folder colours, title bar buttons, window borders, the login screen, the
+  reload cover) is held (`heldBack` in `shell.qml`) and runs once when it closes. The bar and
+  dock go up to the overlay layer with no input meanwhile.
 - Canvas-drawn shapes (corners, panel joins) repaint on colour change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a
   full restart after editing them.

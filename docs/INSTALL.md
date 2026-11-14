@@ -324,6 +324,7 @@ keep it.
 | Super+Alt+C | power menu |
 | Super+Z | Slate settings |
 | Super+Shift+W | wallpaper |
+| Super+Alt+W | wallpaper switcher |
 | Print / Super+Print | screenshot an area / the screen |
 | Super+P | colour picker |
 

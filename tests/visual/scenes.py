@@ -449,6 +449,15 @@ SCENES["overview-windows"] = {
     "settle": 1.5, "undo": [("overview", "close"), _STILL_GONE],
 }
 
+# The wallpaper switcher (Super+Alt+W) over windows: the wallpaper covers them so all of it is
+# seen, the row of wallpapers in the lower half, the bar and dock above it
+SCENES["wallpaper-switcher"] = {
+    "do": _STILL_OPEN + [("wallpaper", "switcher")],
+    "wait": lambda st: st["wallpaperSwitcher"]["open"] and not st["wallpaperSwitcher"]["listing"]
+    and st["wallpaperSwitcher"]["fade"] == 1,
+    "settle": 2.0, "undo": [("wallpaperSwitcher", "cancel"), lambda st: not st["wallpaperSwitcher"]["switching"], _STILL_GONE],
+}
+
 # Last: its toast stays up a few seconds. On glass, so the glossy band shows (Gloss.qml)
 SCENES["notification-glass"] = {
     "settings": {"glass": "true", "notificationSeconds": "30"},

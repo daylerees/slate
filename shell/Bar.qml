@@ -290,11 +290,14 @@ PanelWindow {
     implicitWidth: vert ? thickness + shadowPad : 0
     color: "transparent"
     WlrLayershell.namespace: "slate-bar"
-    // (above the dimming laid over the windows while the bar's being arranged: BarEditor.qml)
-    WlrLayershell.layer: Config.barArranging ? WlrLayer.Overlay : WlrLayer.Top
+    // (above the dimming laid over the windows while the bar's being arranged: BarEditor.qml;
+    // and above the wallpaper switcher, which covers the windows, seen but taking no clicks)
+    WlrLayershell.layer: Config.barArranging || Config.wallpaperSwitching ? WlrLayer.Overlay : WlrLayer.Top
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: Math.round(barHeight * zoneReveal)
-    mask: Region { item: hitArea; Region { item: scrollGrip } }
+    mask: Config.wallpaperSwitching ? noInput : barInput
+    readonly property Region barInput: Region { item: hitArea; Region { item: scrollGrip } }
+    readonly property Region noInput: Region {}
 
     // ---- Auto-hide state ---------------------------------------------------
     property bool filled: false          // one window fills the workspace (from Hyprland)
@@ -316,7 +319,7 @@ PanelWindow {
     // Reserved space follows the bar: while auto-hiding, windows get the whole screen, and when
     // the bar slides in they're pushed aside to make room (and grow back when it leaves)
     property real zoneReveal: reveal
-    property real reveal: !movingOut && (!autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible || Config.barArranging) ? 1 : 0
+    property real reveal: !movingOut && (!autoHiding || holdTimer.running || hovered || hoverTimer.running || popoutHere || trayMenuWin.visible || Config.barArranging || Config.wallpaperSwitching) ? 1 : 0
     Behavior on zoneReveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
     // (quicker out when it's moving to another edge)
     Behavior on reveal { NumberAnimation { duration: Config.ms(bar.movingOut ? 300 : bar.slideMs); easing.type: Easing.InOutCubic } }

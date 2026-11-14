@@ -55,6 +55,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + V"]                  = "Slate: Clipboard history",
     ["SUPER + period"]             = "Slate: Emoji",
     ["SUPER + SHIFT + W"]          = "Slate: Change the wallpaper",
+    ["SUPER + ALT + W"]            = "Slate: Wallpaper switcher (Left and Right to look, Enter to keep one)",
     ["SUPER + P"]                  = "Slate: Pick a colour from the screen (copied)",
     ["Print"]                      = "Slate: Screenshot of an area",
     ["SUPER + Print"]              = "Slate: Screenshot of the screen",
@@ -82,7 +83,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + W"]                  = "Workspaces: Move the window to a new workspace at the end",
     ["SUPER + CONTROL + Right"]    = "Workspaces: Move the window to the next workspace",
     ["SUPER + CONTROL + Left"]     = "Workspaces: Move the window to the previous workspace",
-    ["SUPER + Right"]              = "Workspaces: Next workspace (in a switcher: the next window or workspace)",
+    ["SUPER + Right"]              = "Workspaces: Next workspace (in a switcher: the next window, wallpaper or workspace)",
     ["SUPER + Left"]               = "Workspaces: Previous workspace (in a switcher: the previous one)",
     ["SUPER + Down"]               = "Workspaces: Workspace overview",
     ["SUPER + Up"]                 = "Workspaces: Show or hide the secret workspace",
@@ -194,6 +195,9 @@ local function ov(cmd) hl.exec_cmd(slate("overview " .. cmd)) end
 -- The window switcher (Super+Tab) is open: Super+Left/Right move through it, not the workspaces
 local function switcherIsOpen() return slateOverlayOpen("slate-switcher") end
 local function sw(cmd) hl.exec_cmd(slate("switcher " .. cmd)) end
+-- The wallpaper switcher (Super+Alt+W) is open: Super+Left/Right move through it too
+local function wallSwitcherIsOpen() return slateOverlayOpen("slate-wallpaper-switcher") end
+local function wsw(cmd) hl.exec_cmd(slate("wallpaperSwitcher " .. cmd)) end
 
 -- AZERTY fix: the number-row keys emit symbols (& é " ' ...) without Shift, so
 -- binding to the digit characters fails. Bind by physical keycode instead.
@@ -474,8 +478,9 @@ hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd("hyprpicker -a -n"))
 hl.bind("Print",               hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"))
 
--- Wallpaper (opens Slate Settings → Appearance, at the wallpapers)
+-- Wallpaper (opens Slate Settings → Appearance, at the wallpapers), and the wallpaper switcher
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(slate("settings page wallpaper")))
+hl.bind(mainMod .. " + ALT + W",   hl.dsp.exec_cmd(slate("wallpaper switcher")))
 
 -- Clipboard
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(slate("picker toggle clipboard")))
@@ -538,10 +543,10 @@ function cycleWorkspace(step)
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's
 end
 hl.bind(mainMod .. " + Right", function()
-    if switcherIsOpen() then sw("next") elseif overviewIsOpen() then ov("next") else cycleWorkspace(1) end
+    if switcherIsOpen() then sw("next") elseif wallSwitcherIsOpen() then wsw("next") elseif overviewIsOpen() then ov("next") else cycleWorkspace(1) end
 end)
 hl.bind(mainMod .. " + Left", function()
-    if switcherIsOpen() then sw("prev") elseif overviewIsOpen() then ov("prev") else cycleWorkspace(-1) end
+    if switcherIsOpen() then sw("prev") elseif wallSwitcherIsOpen() then wsw("prev") elseif overviewIsOpen() then ov("prev") else cycleWorkspace(-1) end
 end)
 
 -- Scroll through existing workspaces & monitors
@@ -582,13 +587,15 @@ if HYPR_KEYS then
     hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(slate("launcher toggle")))
     hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
     hl.bind(mainMod .. " + J", function() layoutAction() end)
-    -- Focus; with Slate's extras, they drive the window switcher or workspace overview while open
+    -- Focus; with Slate's extras, they drive the window switcher, wallpaper switcher or workspace overview while open
     hl.bind(mainMod .. " + Left", function()
         if EXTRAS and switcherIsOpen() then sw("prev")
+        elseif EXTRAS and wallSwitcherIsOpen() then wsw("prev")
         elseif EXTRAS and overviewIsOpen() then ov("prev") else focusSideways("left") end
     end)
     hl.bind(mainMod .. " + Right", function()
         if EXTRAS and switcherIsOpen() then sw("next")
+        elseif EXTRAS and wallSwitcherIsOpen() then wsw("next")
         elseif EXTRAS and overviewIsOpen() then ov("next") else focusSideways("right") end
     end)
     hl.bind(mainMod .. " + Up", function()
@@ -638,6 +645,7 @@ if EXTRAS then
     hl.bind(mainMod .. " + SHIFT + V",  hl.dsp.exec_cmd(slate("picker toggle clipboard")))
     hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd("hyprpicker -a -n"))
     hl.bind(mainMod .. " + SHIFT + W",  hl.dsp.exec_cmd(slate("settings page wallpaper")))
+    hl.bind(mainMod .. " + ALT + W",    hl.dsp.exec_cmd(slate("wallpaper switcher")))
     hl.bind("Print",                    hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"))
     hl.bind(mainMod .. " + Print",      hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"))
     -- Moving the window: around this workspace, and to the next or previous workspace

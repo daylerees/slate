@@ -98,7 +98,17 @@ Singleton {
     // the panels' colour), solid too: animated from solid to see-through, a colour passes
     // through a brighter, fuller accent on the way and settles back, a flash on every hover)
     function hoverOn(base) { return base.a > 0.99 ? Qt.tint(tint("#0f1216"), hover) : hover; }
-    property string wallpaper: s.wallpaper
+    // The wallpaper on screen: the one saved, or one the wallpaper switcher (Super+Alt+W,
+    // WallpaperSwitcher.qml) is showing for a moment, with the theme's colours following it
+    property string wallpaperPreview: ""
+    property string wallpaper: wallpaperPreview !== "" ? wallpaperPreview : s.wallpaper
+    // The wallpaper switcher is on screen: the bar and dock sit above it and take no clicks, and
+    // what's slow or reaches outside Slate (App theming, folder colours, title bar buttons,
+    // window borders, the login screen) waits until it closes, then catches up once (shell.qml)
+    property bool wallpaperSwitching: false
+    // The colours worked out for each wallpaper looked at while it's open, so going back to one
+    // (or closing it) puts them back at once rather than working them out again
+    property var wallpaperColourMemo: ({})
     property string wallpaperAccent: ""
     property string wallpaperTone: ""      // overall hue/saturation of the wallpaper
     // Settings → Appearance → Tint boldness, as a multiplier on how much of the wallpaper's colour
@@ -2082,8 +2092,19 @@ Singleton {
     readonly property string hyprLayout: windowModes.find(x => x.value === windowMode).layout
     function refreshWallpaperAccent() {
         if (wallpaper === "") return;
+        // (the wallpaper switcher: one already looked at has its colours back at once)
+        const known = wallpaperSwitching ? wallpaperColourMemo[wallpaper] : null;
+        if (known) {
+            picker.running = false;
+            wallpaperAccent = known.accent;
+            wallpaperTone = known.tone;
+            return;
+        }
         picker.forWallpaper = wallpaper;
         picker.command = [Qt.resolvedUrl("scripts/wallpaper-accent.py").toString().replace("file://", ""), wallpaper];
+        // (started afresh: one still working out an earlier wallpaper's colours would carry on
+        // with that one, and this one's would never be worked out)
+        picker.running = false;
         picker.running = true;
     }
     Process {
@@ -2092,11 +2113,21 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
-                if (/^#[0-9a-f]{6}$/i.test(lines[0])) root.wallpaperAccent = lines[0];
+                // (another wallpaper's on screen since, or it was stopped for one)
+                if (picker.forWallpaper !== root.wallpaper || !/^#[0-9a-f]{6}$/i.test(lines[0])) return;
+                root.wallpaperAccent = lines[0];
                 if (lines[1] && /^#[0-9a-f]{6}$/i.test(lines[1])) root.wallpaperTone = lines[1];
+                if (root.wallpaperSwitching) root.rememberWallpaperColours(picker.forWallpaper);
                 root.saveColourCache(picker.forWallpaper);
             }
         }
+    }
+    // The wallpaper switcher: the colours of the wallpaper on screen, kept for it
+    function rememberWallpaperColours(path) {
+        if (path === "" || !isHex(wallpaperAccent)) return;
+        const m = Object.assign({}, wallpaperColourMemo);
+        m[path] = { accent: wallpaperAccent, tone: wallpaperTone };
+        wallpaperColourMemo = m;
     }
     // The wallpaper's colours, kept between reloads: working them out takes a moment, and until
     // then the theme showed in its default colours. Only a cache for the wallpaper in use, with
@@ -2121,7 +2152,8 @@ Singleton {
         }
     }
     function saveColourCache(forWallpaper) {
-        if (isLoginScreen || forWallpaper === "" || forWallpaper !== wallpaper || !isHex(wallpaperAccent)) return;
+        // (not for one the wallpaper switcher is only showing: the cache is for the one saved)
+        if (isLoginScreen || forWallpaper === "" || forWallpaper !== wallpaper || forWallpaper !== s.wallpaper || !isHex(wallpaperAccent)) return;
         const text = JSON.stringify({ wallpaper: forWallpaper, accent: wallpaperAccent, tone: isHex(wallpaperTone) ? wallpaperTone : "" }) + "\n";
         if (colourCache.text() === text) return;
         cacheDir.running = false; cacheDir.pending = text; cacheDir.running = true;
@@ -2142,7 +2174,9 @@ Singleton {
         background: "" + tint("#0f1216"), text: "" + tint("#eef1f5"), dim: "" + tint("#8b94a3"), accent: "" + accent,
         mark: "" + tint("#566173") }) + "\n"
     onCoverColoursChanged: coverLater.restart()
-    Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
+    // (not while the wallpaper switcher is showing one: once it closes)
+    onWallpaperSwitchingChanged: if (!wallpaperSwitching) coverLater.restart()
+    Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && !root.wallpaperSwitching && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
     FileView {
         id: coverFile
         path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/slate/cover.json"
