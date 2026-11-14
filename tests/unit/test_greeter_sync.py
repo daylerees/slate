@@ -390,3 +390,16 @@ class Sync(GreeterCase):
         self.assertEqual(self.sync()[0], 0)
         with open(os.path.join(self.dest, "user.json")) as f:
             self.assertEqual(json.load(f)["name"], "tester")
+
+    def test_awkward_full_name(self):
+        """A quote, a backslash or an accent in the full name: still JSON the login screen can
+        read, with the name as it is. (It used to be pasted between quotes just as it came.)"""
+        os.makedirs(self.dest)
+        name = 'Zoë "The \\Rock\\" O\'Neil'
+        self.s.add("getent", stdout="tester:x:1000:1000:%s,,,:/home/tester:/bin/bash\n" % name)
+        code, out = self.sync()
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.dest, "user.json"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertEqual(json.loads(text), {"user": "tester", "name": name, "session": "slate", "kb_layout": "gb"})
+        self.assertIn("Zoë", text, "the name was written as escapes, not as itself")

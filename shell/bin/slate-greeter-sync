@@ -158,7 +158,12 @@ done
 name=$(getent passwd "$USER" | cut -d: -f5 | cut -d, -f1)
 if [ -n "${SLATE_SESSION:-}" ]; then session=slate
 elif pgrep -u "$USER" -f 'uwsm/signal-handler' >/dev/null 2>&1; then session=hyprland-uwsm; else session=hyprland; fi
-printf '{ "user": "%s", "name": "%s", "session": "%s", "kb_layout": "%s" }\n' "$USER" "${name:-$USER}" "$session" "$(kb_layout)" | write user.json
+# (written as JSON by Python, laid out as it always was: a full name with a quote or a
+# backslash in it used to make a file the login screen couldn't read)
+python3 -c 'import json, sys
+print("{ " + ", ".join(json.dumps(k) + ": " + json.dumps(v, ensure_ascii=False)
+                       for k, v in zip(("user", "name", "session", "kb_layout"), sys.argv[1:])) + " }")' \
+    "$USER" "${name:-$USER}" "$session" "$(kb_layout)" | write user.json
 
 # Fonts: your interface font's files (system fonts are already readable, so not those), the
 # icon font and the bundled Geist. Only what's changed is copied, and only fonts no longer
