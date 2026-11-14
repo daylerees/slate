@@ -9,7 +9,9 @@ from slate import Case, need, run, tool
 
 # qmllint warnings that mean the file is broken. Everything else it says (types it can't
 # infer for Quickshell's objects, unqualified access…) is noise for Slate's layout.
-QML_FATAL = re.compile(r"\[(syntax|import)\]$")
+QML_FATAL = re.compile(r"\[(syntax|import)\]$|Duplicate binding on property .*\[duplicate-property-binding\]$")
+# (a property set twice in one object stops Slate loading: "Property value set multiple times".
+# The same category also covers "Cannot combine value source and binding", which loads fine)
 # Slate's singletons live without a qmldir, which qmllint always notes
 QML_IGNORE = re.compile(r"not declared as singleton in qmldir")
 
