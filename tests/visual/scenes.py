@@ -397,6 +397,16 @@ SCENES["bar-label-left"] = {
     "do": [lambda st: st["barEdge"] == "left", ("!sleep", "1"), ("test", "barHover", "control")], "wait": _label_says("Control centre"), "settle": 1.0,
     "undo": [("test", "barHover", ""), _LABEL_GONE],
 }
+# The bar's More panel holding a long list (the line squeezed hard): it scrolls, with a thin
+# scrollbar and a shade along the bottom while there's more below; no window rows
+SCENES["bar-more-long"] = {
+    "settings": {"barShowCamera": "true", "barShowClipboard": "true", "barShowScreenshot": "true", "barShowGameMode": "true",
+                 "barShowWorkspaceName": "true", "barShowTray": "true", "barShowAssistant": "true"},
+    "do": [("test", "arrange", "squeeze", "1440", "", ""), ("!sleep", "1"), ("bar", "panel", "more")],
+    "wait": lambda st: st["popout"] == "more",
+    "settle": 1.0,
+    "undo": [("popout", "close"), ("test", "arrange", "squeeze", "0", "", "")],
+}
 SCENES["rename-workspace"] = {
     "do": [("workspacename", "set", "1", "Coding"), ("test", "renameWorkspace")],
     "wait": lambda st: st["asking"] == "Rename \u201cCoding\u201d",

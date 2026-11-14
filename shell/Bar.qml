@@ -92,18 +92,22 @@ PanelWindow {
     readonly property var scrollState: ({ at: Math.round(scroll), max: Math.round(scrollMax), handle: scrollGrip.visible })
     // What's in More, for its panel (Popouts.qml): a row each, in the order they left. The
     // tray is a row for each of its icons; the window's icon goes with its title
+    // The window's icon and title just wait, out of sight, until there's room for them again:
+    // not much use as a row in More
+    readonly property var notInMore: ["windowicon", "windowtitle"]
+    readonly property var inMore: overflowed.filter(id => !notInMore.includes(id))
     function moreRows() {
         const rows = [];
-        for (const id of overflowed) {
+        for (const id of inMore) {
             const it = Config.barItem(id), t = left.things[id];
-            if (!it || !t || id === "windowicon") continue;
+            if (!it || !t) continue;
             if (id === "tray") {
                 for (const tr of SystemTray.items.values)
                     rows.push({ id: id, tray: tr, label: tr.tooltipTitle || tr.title || tr.id || "App", icon: 0, image: String(tr.icon), value: "" });
                 continue;
             }
-            rows.push({ id: id, tray: null, label: id === "windowtitle" ? "Window" : it.label, icon: it.icon, image: "",
-                        value: id === "windowtitle" ? titleText.text : id === "workspaces" || id === "workspacename" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
+            rows.push({ id: id, tray: null, label: it.label, icon: it.icon, image: "",
+                        value: id === "workspaces" || id === "workspacename" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
         }
         return rows;
     }
@@ -117,9 +121,12 @@ PanelWindow {
         }
         const t = left.things[row.id];
         if (!t) return;
-        if (row.id === "workspaces") { if (popouts) popouts.close(); Config.slateCall("overview", "toggle"); }
-        else if (right) t.rightClicked();
+        if (row.id === "workspaces") { if (popouts) popouts.close(); Config.slateCall("overview", "toggle"); return; }
+        if (right) t.rightClicked();
         else t.clicked();
+        // One that opens a panel of its own has taken More's place by now; anything else (the
+        // launcher, Nova, a switch) closes More, as clicking it on the bar would leave no panel
+        if (popouts && popouts.current === "more") popouts.close();
     }
     function moreWheel(row, delta) { const t = left.things[row.id]; if (t && !row.tray) t.wheel(delta); }
     // (tests) Each thing on the line: where it is in the bar's window and whether it shows
@@ -156,6 +163,16 @@ PanelWindow {
     // (tests) The pretend pointer at x, y ("hover"), taken away ("leave"), or pressed there
     // ("click"): what it's over (the thing's name, and the dot for the workspaces), and whether
     // that's lit
+    // A press on the bar (PointHandler on the bar, and the tests' pretend one): the panel open
+    // as it began closes as it ends, once what was pressed has had its say, if it's still the one
+    // open (what was pressed didn't open another, or close it by its own button)
+    property string panelAtPress: ""
+    function pressStarted() { panelAtPress = popouts && popouts.engaged ? popouts.current : ""; }
+    function pressEnded() {
+        const was = panelAtPress;
+        panelAtPress = "";
+        if (was !== "") Qt.callLater(() => { if (popouts && popouts.current === was) popouts.close(); });
+    }
     function testPoint(x, y, what) {
         testPointer = what === "leave" ? Qt.point(-1, -1) : Qt.point(x, y);
         let name = "";
@@ -164,10 +181,14 @@ PanelWindow {
             if (t.visible && t.reach.contains(t.reach.mapFromItem(null, x, y))) { name = n; break; }
         }
         const dot = name === "workspaces" ? wsRow.dotAt(x, y) : -1;
-        if (what === "click" && name !== "") {
-            barLabel.dismiss();             // (as a real press does: Reach)
-            if (name === "workspaces") { if (dot >= 0) wsRow.spaces[dot].activate(); }
-            else left.things[name].clicked();
+        if (what === "click") {
+            pressStarted();                 // (as a real press on the bar does)
+            if (name !== "") {
+                barLabel.dismiss();         // (as a real press does: Reach)
+                if (name === "workspaces") { if (dot >= 0) wsRow.spaces[dot].activate(); }
+                else left.things[name].clicked();
+            }
+            pressEnded();
         }
         return { thing: name, dot: dot, lit: name === "workspaces" ? dot >= 0 && wsRow.litDot === dot : name !== "" && left.things[name].lit };
     }
@@ -747,6 +768,20 @@ PanelWindow {
         x: bar.vert && bar.atRight ? bar.shadowPad : 0
         y: !bar.vert && bar.atBottom ? bar.shadowPad : 0
         HoverHandler { id: overItems }
+        // A press anywhere on the bar, any button, closes an open panel, unless what was pressed
+        // opened a panel of its own (another, which has taken its place by then, or this one
+        // closed by its own button): as a press anywhere else outside it does. Only watches: the
+        // press still goes on to what's under it
+        // (on top of everything on the bar: a press taken by a button under it is offered to
+        // this first, as the label's watcher is, Reach)
+        Item {
+            anchors.fill: parent
+            z: 1000
+            PointHandler {
+                acceptedButtons: Qt.AllButtons
+                onActiveChanged: if (active) bar.pressStarted(); else bar.pressEnded()
+            }
+        }
         // Hides by sliding off its screen edge
         transform: Translate {
             x: bar.vert ? (bar.atRight ? 1 : -1) * bar.thickness * (1 - bar.reveal) : 0
@@ -1938,7 +1973,7 @@ PanelWindow {
             // something is, or while the bar's arranged, so it can be put where it's wanted
             Segment {
                 id: moreBtn
-                wanted: bar.overflowed.length > 0 || Config.barShowAll
+                wanted: bar.inMore.length > 0 || Config.barShowAll
                 iconCode: 0xEA95
                 length: bar.capsuleHeight + 8
                 onClicked: { if (bar.popouts) bar.popouts.moreBar = bar; bar.openPopout("more", moreBtn); }

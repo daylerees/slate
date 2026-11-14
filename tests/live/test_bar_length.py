@@ -17,6 +17,11 @@ class BarLength(LiveCase):
     def bar(self):
         return json.loads(self.ipc("test", "state"))["bar"]
 
+    def centre(self, name):
+        t = self.bar()["line"][name]
+        self.assertTrue(t["visible"], f"{name} isn't on the bar")
+        return t["x"] + t["w"] / 2, t["y"] + t["h"] / 2
+
     def squeeze(self, px):
         self.ipc("test", "arrange", "squeeze", str(px), "", "")
         return self.steady(self.bar, floor=0.15)   # (not a check that nothing happens: steady is enough)
@@ -314,6 +319,63 @@ class BarLength(LiveCase):
         self.ipc("test", "arrange", "more", "volume", "", "")
         self.s.wait(lambda st: st["popout"] == "volume", what="the volume panel, from More")
         self.ipc("popout", "close")
+
+    def test_a_row_that_opens_nothing_closes_more(self):
+        """A row whose thing doesn't open a panel of its own (here the camera, which only
+        shows) closes More once pressed, rather than leaving it open behind; one that does
+        opens its panel in More's place."""
+        self.keep_setting("barShowCamera")
+        self.config("barShowCamera", "true")
+        st = self.squeeze(1400)
+        self.assertIn("camera", st["overflowed"])
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("bar", "panel", "more")
+        self.s.wait(lambda st: st["popout"] == "more", what="the More panel")
+        self.ipc("test", "arrange", "more", "camera", "", "")
+        self.s.wait(lambda st: st["popout"] == "", what="More to close after a row that opens nothing")
+
+    def test_a_press_on_the_bar_closes_a_panel(self):
+        """A press anywhere on the bar closes the panel that's open, unless it opens another
+        (which takes its place) or is that panel's own button (which closes it)."""
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("bar", "panel", "volume")
+        self.s.wait(lambda st: st["popout"] == "volume", what="the volume panel")
+        # The clock: its own panel in the volume panel's place
+        x, y = self.centre("clock")
+        self.ipc("test", "barPoint", str(int(x)), str(int(y)), "click")
+        self.s.wait(lambda st: st["popout"] == "calendar", what="the calendar in the volume panel's place")
+        # A workspace dot (no panel of its own): the calendar closes
+        dots = self.bar()["line"]["workspaces"]
+        self.ipc("test", "barPoint", str(int(dots["x"] + 15)), str(int(dots["y"] + dots["h"] / 2)), "click")
+        self.s.wait(lambda st: st["popout"] == "", what="the calendar to close at a press on a workspace dot")
+        self.ipc("test", "barPoint", "-1", "-1", "leave")
+
+    def test_the_window_waits_out_of_sight(self):
+        """The window's title and icon don't go to More: they wait out of sight until there's
+        room, and More doesn't come just for them."""
+        self.ipc("settings", "open")
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.s.wait(lambda st: st["settings"]["open"], what="Settings")
+        for _ in range(50):
+            if self.bar()["line"]["windowtitle"]["visible"]:
+                break
+            self.s.settle(0.1)
+        px = 0
+        while px < 1500:
+            st = self.squeeze(px)
+            if "windowtitle" in st["overflowed"] or "windowicon" in st["overflowed"]:
+                break
+            px += 20
+        self.assertTrue(set(st["overflowed"]) & {"windowtitle", "windowicon"}, "the window never left the bar")
+        names = [r[0] for r in st["more"]]
+        self.assertNotIn("Window", names)
+        self.assertNotIn("Window icon", names)
+        if set(st["overflowed"]) <= {"windowtitle", "windowicon"}:
+            self.assertFalse(st["line"]["more"]["visible"], "More came just for the window")
+        # Squeezed hard: still never in More, though other things are
+        st = self.squeeze(1400)
+        self.assertTrue([r for r in st["more"]], "nothing went to More")
+        self.assertFalse({"Window", "Window icon"} & {r[0] for r in st["more"]})
 
     def test_more_cant_be_taken_off_the_bar(self):
         self.addCleanup(lambda: self.ipc("test", "arrange", "reset", "", "", ""))
