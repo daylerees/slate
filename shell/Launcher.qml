@@ -170,9 +170,13 @@ PanelWindow {
             if (root.testScrollStart === 0) root.testScrollStart = now;
             const t = Math.min(1, (now - root.testScrollStart) / root.testScrollMs);
             const before = Date.now();
-            list.contentY = root.testScrollFrom + (list.originY + Math.max(0, list.contentHeight - list.height) - root.testScrollFrom) * t;
+            // (never further than most of a screenful in one frame: a frame held up by a busy
+            // machine would otherwise jump over rows that were never meant to be skipped)
+            const bottom = list.originY + Math.max(0, list.contentHeight - list.height);
+            const goal = root.testScrollFrom + (bottom - root.testScrollFrom) * t;
+            list.contentY = Math.min(goal, list.contentY + list.height * 0.7);
             root.testWork.push(Date.now() - before);
-            root.testScrollEnd = t >= 1;
+            root.testScrollEnd = t >= 1 && list.contentY >= bottom - 0.5;
         }
     }
 
