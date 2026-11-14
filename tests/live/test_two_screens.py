@@ -299,6 +299,11 @@ class TwoScreensAt125(TwoScreensCase):
         rest over the scale, as the bar counts places on the desktop (Bar.qml: carried). It
         once took the whole position over the scale, 288 short of where the pointer was."""
         (x, y) = AT[SECOND]
+        # A chip is only pressed while the bar's being arranged, and the arranging panel is
+        # built only then
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.addCleanup(lambda: self.ipc("test", "arrange", "done", "", "", ""))
+        self.wait(lambda st: st["bar"]["editorBuilt"], "the arranging panel built")
         got = json.loads(self.ipc("test", "barPointer", x + 560, y + 20))
         self.assertAlmostEqual(got["x"], x + 560 / 1.25, places=2)
         self.assertAlmostEqual(got["y"], y + 20 / 1.25, places=2)
