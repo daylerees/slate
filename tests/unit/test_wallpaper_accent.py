@@ -8,6 +8,7 @@ isn't installed or can't read the image.
 import colorsys
 import os
 import re
+import subprocess
 import sys
 import unittest
 
@@ -47,8 +48,11 @@ class WallpaperAccent(Case):
         return p
 
     def accent(self, path, env=None):
-        code, out = run([sys.executable, SCRIPT, path], env=env or self.s.env)
-        self.assertEqual(code, 0, out)
+        # (what it prints and what it says to the log apart: Config.qml reads only the first)
+        done = subprocess.run([sys.executable, SCRIPT, path], env=env or self.s.env, capture_output=True,
+                              text=True, timeout=120)
+        code, out, self.said = done.returncode, done.stdout, done.stderr
+        self.assertEqual(code, 0, out + self.said)
         # Exactly two lines, each a colour Config.qml takes
         self.assertTrue(out.endswith("\n"), repr(out))
         lines = out[:-1].split("\n")
@@ -144,6 +148,27 @@ class WallpaperAccent(Case):
         """magick can't read it (not an image): the defaults."""
         self.s.add("magick", stdout="", code=1)
         self.assertEqual(self.accent("broken.png"), DEFAULTS)
+        # (and one line for Slate's log saying why)
+        self.assertEqual(len(self.said.splitlines()), 1, self.said)
+        self.assertIn("broken.png", self.said)
+
+    # --- ImageMagick 6: `convert`, and no `magick` (what some distros' imagemagick is) ---
+    def test_convert_when_theres_no_magick(self):
+        """The same call, to `convert`, gives the wallpaper's colours rather than the defaults."""
+        self.s.add("magick", missing=True)
+        self.s.add("convert", stdout="          7000: ( 80, 80, 80) #505050 gray(80)\n"
+                                     "          1000: (200,40,40) #C82828 srgb(200,40,40)\n"
+                                     "          1216: (  0,  0,  0) #000000 black\n")
+        self.assertEqual(self.accent("/wallpapers/a b.gif"), ("#e99090", "#897676"))
+        self.assertEqual(self.s.calls("convert"), [["/wallpapers/a b.gif[0]", "-resize", "96x96!", "-colors", "12",
+                                                    "-format", "%c", "histogram:info:"]])
+        self.assertEqual(self.said, "")
+
+    def test_magick_preferred_to_convert(self):
+        self.s.add("magick", stdout="   9216: (30,60,200) #1e3cc8 srgb(30,60,200)\n")
+        self.s.add("convert", stdout="")
+        self.assertEqual(self.accent("x.png")[0], "#8c9dee")
+        self.assertEqual(self.s.calls("convert"), [])
 
     def test_not_an_image(self):
         self.real()
@@ -159,3 +184,5 @@ class WallpaperAccent(Case):
         self.s.add("convert", missing=True)
         p = self.image("blue.png", (32, 32), (30, 60, 200))
         self.assertEqual(self.accent(p), DEFAULTS)
+        self.assertEqual(len(self.said.splitlines()), 1, self.said)
+        self.assertIn("ImageMagick isn't installed", self.said)

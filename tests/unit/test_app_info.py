@@ -47,10 +47,11 @@ class AppInfo(Case):
     def test_family(self):
         cases = {'ID=cachyos\nID_LIKE=arch\n': "arch", 'ID=ubuntu\nID_LIKE="debian"\n': "debian",
                  'ID=fedora\n': "fedora", 'ID="opensuse-tumbleweed"\nID_LIKE="opensuse suse"\n': "opensuse",
-                 'ID=nixos\n': "nixos", 'ID=gentoo\n': "",
-                 # Artix is Arch without systemd: apps install under the same names (pacman).
-                 # Void and Gentoo: Slate doesn't know their names for the apps, so no Install button
-                 'ID=artix\nID_LIKE=arch\n': "arch", 'ID=void\n': ""}
+                 'ID=nixos\n': "nixos", 'ID=gentoo\n': "gentoo",
+                 # The family is what install.sh and slate-system say it is (slate-system
+                 # --install used to refuse Artix, which this called "arch"): which names the
+                 # apps install under is detect()'s business, below
+                 'ID=artix\nID_LIKE=arch\n': "artix", 'ID=void\n': "void", 'ID=slackware\n': ""}
         for text, want in cases.items():
             with self.subTest(want or "unknown"):
                 path = os.path.join(self.h.home, "os-release")
@@ -61,10 +62,22 @@ class AppInfo(Case):
 
     def test_detect_gives_this_distros_packages(self):
         fam = slate_apps.family()
+        fam = slate_apps.PACKAGES_AS.get(fam, fam)
         for a in slate_apps.detect():
             with self.subTest(a["id"]):
                 self.assertEqual(set(a), {"id", "label", "detail", "installed", "about", "url", "packages", "desktop"})
                 self.assertEqual(a["packages"], slate_apps.INFO[a["id"]][2].get(fam, ""))
+
+    def test_detect_on_artix_void_and_gentoo(self):
+        """Artix is Arch without systemd: apps install under the same names (pacman). Void and
+        Gentoo: Slate doesn't know their names for the apps, so no Install button."""
+        real = slate_apps.family
+        self.addCleanup(setattr, slate_apps, "family", real)
+        for fam, like in (("artix", "arch"), ("void", None), ("gentoo", None)):
+            slate_apps.family = lambda fam=fam: fam
+            for a in slate_apps.detect():
+                with self.subTest(fam + " " + a["id"]):
+                    self.assertEqual(a["packages"], slate_apps.INFO[a["id"]][2].get(like, ""))
 
     def test_install_refuses_bad_names(self):
         """Nothing that isn't a plain package name reaches the package manager (or the password prompt)."""

@@ -3,25 +3,44 @@
 
 Prints two lines: an accent colour (#rrggbb), the most prominent vivid colour with its
 lightness and saturation set to suit the dark theme (like the default #8fb3e8), then the
-wallpaper's overall tone (for tinting Slate's greys). Uses ImageMagick (magick). Copied to
-the login screen too (greeter/files), so it imports nothing of Slate's own.
+wallpaper's overall tone (for tinting Slate's greys). Uses ImageMagick: `magick`
+(version 7), or `convert` where the distro still ships version 6, which has no `magick`.
+Copied to the login screen too (greeter/files), so it imports nothing of Slate's own.
 """
 import colorsys
 import math
 import re
+import shutil
 import subprocess
 import sys
 
 if len(sys.argv) != 2:
     sys.exit(__doc__.split("\n")[0])
 img = sys.argv[1]
-try:
-    # A huge or broken image can keep magick busy: give up after 30 s (the defaults below)
-    out = subprocess.run(["magick", img + "[0]", "-resize", "96x96!", "-colors", "12",
-                          "-format", "%c", "histogram:info:"], capture_output=True, text=True,
-                         timeout=30).stdout
-except (OSError, subprocess.SubprocessError):
-    out = ""
+# ImageMagick 7 is `magick`; ImageMagick 6 (still what some distros install as "imagemagick")
+# only has `convert`, which takes the same arguments in the same order
+magick = shutil.which("magick") or shutil.which("convert")
+out, problem = "", ""
+if not magick:
+    problem = "ImageMagick isn't installed (no magick or convert command)"
+else:
+    try:
+        # A huge or broken image can keep magick busy: give up after 30 s (the defaults below)
+        done = subprocess.run([magick, img + "[0]", "-resize", "96x96!", "-colors", "12",
+                               "-format", "%c", "histogram:info:"], capture_output=True, text=True,
+                              timeout=30)
+        out = done.stdout
+        if done.returncode != 0:
+            said = done.stderr.strip().splitlines()
+            problem = "%s couldn't read %s%s" % (magick, img, ": " + said[-1] if said else "")
+    except subprocess.TimeoutExpired:
+        problem = "%s took too long over %s" % (magick, img)
+    except (OSError, subprocess.SubprocessError) as e:
+        problem = "%s couldn't be run: %s" % (magick, e)
+if problem:
+    # One line for Slate's log, so default colours with "Accent from wallpaper" on can be
+    # explained; the defaults are still printed below
+    print("wallpaper-accent: " + problem + "; using the default colours", file=sys.stderr)
 best, best_score = None, -1
 hx = hy = wsat = wtot = 0.0
 for line in out.splitlines():

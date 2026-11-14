@@ -1351,17 +1351,24 @@ DESKTOP = {
 
 
 def family(os_release="/etc/os-release"):
-    """arch, debian, fedora, opensuse, nixos or "" (as install.sh and slate-system decide)"""
-    ids = []
+    """artix, void, gentoo, arch, debian, fedora, opensuse, nixos or "": the distro family,
+    exactly as install.sh and slate-system decide it (tests/unit/test_distro_family.py holds
+    the three to the same answers)"""
+    found = {"ID": [], "ID_LIKE": []}
     try:
         with open(os_release, encoding="utf-8") as f:
             for line in f:
                 k, _, v = line.strip().partition("=")
-                if k in ("ID", "ID_LIKE"):
-                    ids += v.strip('"').split()
+                if k in found:
+                    found[k] = v.strip("\"'").split()
     except OSError:
         pass
-    groups = {"arch": ("arch", "cachyos", "endeavouros", "manjaro", "garuda"),
+    # ID first, then what it's like, whichever order the file has them in (as the shell does)
+    ids = found["ID"] + found["ID_LIKE"]
+    # In the order install.sh tries them: Artix says it's like Arch, but has no systemd and
+    # its own package list, so it comes before "arch"
+    groups = {"artix": ("artix",), "void": ("void",), "gentoo": ("gentoo",),
+              "arch": ("arch", "cachyos", "endeavouros", "manjaro", "garuda"),
               "debian": ("debian", "ubuntu", "linuxmint", "pop", "elementary", "zorin"),
               "fedora": ("fedora", "rhel", "centos", "nobara", "ultramarine"),
               "opensuse": ("suse", "sles"), "nixos": ("nixos",)}
@@ -1372,10 +1379,17 @@ def family(os_release="/etc/os-release"):
     return ""
 
 
+# Whose package names a family installs the apps under, where INFO has none of its own: Artix
+# is Arch without systemd, and has the apps under Arch's names (pacman). Void and Gentoo have
+# no names in INFO, so no Install button
+PACKAGES_AS = {"artix": "arch"}
+
+
 def detect():
     """[{id, label, detail, installed, about, url, packages, desktop}] for Settings; packages:
     what installs it here ("" when this distro doesn't have it); desktop: its desktop entries"""
     fam = family()
+    fam = PACKAGES_AS.get(fam, fam)
     out = []
     for a in APPS:
         try:

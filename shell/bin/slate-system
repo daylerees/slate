@@ -120,7 +120,8 @@ install() {
         [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]] || { echo "slate-system: bad package name: $p" >&2; return 1; }
     done
     case "$FAMILY" in
-        arch|debian|fedora|opensuse) ;;
+        # (every family the --as-root half above can install for)
+        arch|artix|void|debian|fedora|opensuse) ;;
         nixos) echo "slate-system: on NixOS, add it to your configuration" >&2; return 1 ;;
         *) echo "slate-system: don't know how to install packages here" >&2; return 1 ;;
     esac
@@ -173,12 +174,15 @@ else
     rm -f "$asked"      # cancelled or failed: ask again next time
     names=$(printf '%s\n' "$todo" | sed -n 's/^package //p' | paste -sd ' ')
     case "$FAMILY" in
-        arch) cmd="sudo pacman -S $names" ;; debian) cmd="sudo apt install $names" ;;
+        arch|artix) cmd="sudo pacman -S --needed $names" ;; void) cmd="sudo xbps-install -S $names" ;;
+        debian) cmd="sudo apt install $names" ;;
         fedora) cmd="sudo dnf install $names" ;; opensuse) cmd="sudo zypper install $names" ;; *) cmd="" ;;
     esac
     [ -n "$names" ] || cmd=""
     printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-session-install"
+    # (no command Slate knows for this system: leave the line out rather than end on "run:")
+    hint=""; [ -n "$cmd" ] && hint="To finish by hand, run: $cmd"
     notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \
-        "To finish by hand, run: $cmd"
+        "$hint"
 fi
 exit 0
