@@ -97,7 +97,8 @@ if [ "${1:-}" = "--as-root" ]; then
             *) echo "slate-system: don't know how to install packages here" >&2; rc=1 ;;
         esac
     fi
-    if [ "$session" -eq 1 ]; then "$SRC/bin/slate-session-install" || rc=1; fi
+    # (told which Slate folder this is: it isn't ~/.config/slate when XDG_CONFIG_HOME is set)
+    if [ "$session" -eq 1 ]; then "$SRC/bin/slate-session-install" "$SRC" || rc=1; fi
     exit $rc
 fi
 
@@ -179,7 +180,7 @@ else
         fedora) cmd="sudo dnf install $names" ;; opensuse) cmd="sudo zypper install $names" ;; *) cmd="" ;;
     esac
     [ -n "$names" ] || cmd=""
-    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-session-install"
+    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-session-install $SRC"
     # (no command Slate knows for this system: leave the line out rather than end on "run:")
     hint=""; [ -n "$cmd" ] && hint="To finish by hand, run: $cmd"
     notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \

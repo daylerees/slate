@@ -450,7 +450,7 @@ if [ "$UPDATE" -eq 1 ]; then
         if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$DEST/bin/slate-system" --fix >/dev/null 2>&1; then
             ok "Updated the login session"
         else
-            warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install"
+            warn "This version changes the login session; to finish: sudo $DEST/bin/slate-session-install $DEST"
         fi
     fi
 fi
@@ -465,9 +465,10 @@ fi
 step "5. \"Slate\" on the login screen"
 echo "  Adds two files: /usr/local/bin/slate-session and /usr/share/wayland-sessions/slate.desktop"
 if ask "Add the Slate session (uses sudo)?"; then
-    sudo "$DEST/bin/slate-session-install" | sed 's/^/  /'
+    # (told where Slate is: with XDG_CONFIG_HOME set it isn't ~/.config/slate)
+    sudo "$DEST/bin/slate-session-install" "$DEST" | sed 's/^/  /'
 else
-    warn "Skipped. Later: sudo $DEST/bin/slate-session-install"
+    warn "Skipped. Later: sudo $DEST/bin/slate-session-install $DEST"
 fi
 
 # ---- 6. Slate's login screen (optional) -----------------------------------------------

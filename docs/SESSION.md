@@ -63,6 +63,11 @@ sudo ~/.config/slate/bin/slate-session-install            # add / update
 sudo ~/.config/slate/bin/slate-session-install --remove   # remove
 ```
 
+If Slate isn't in `~/.config/slate` (`XDG_CONFIG_HOME` is set), name its folder:
+`sudo <folder>/bin/slate-session-install <folder>` (`install.sh` and Slate's own prompt do).
+The folder has to be yours, and the two files are read with your permissions, not root's; a
+link in their place is refused.
+
 Only the launcher and the login entry need root. Changes to the config under
 `session/hypr/` apply at the next login, or straight away with `hyprctl reload`
 inside the Slate session.

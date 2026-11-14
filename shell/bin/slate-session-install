@@ -2,6 +2,9 @@
 # Add "Slate" as its own session on the login screen. Run with sudo:
 #   sudo ~/.config/slate/bin/slate-session-install            add / update the Slate session
 #   sudo ~/.config/slate/bin/slate-session-install --remove   take it off the login screen
+#   sudo <Slate folder>/bin/slate-session-install <Slate folder>
+#                                         when Slate isn't in ~/.config/slate (XDG_CONFIG_HOME
+#                                         is set); install.sh and slate-system pass it for you
 #
 # Installs two small files and nothing else:
 #   /usr/local/bin/slate-session                  starts Hyprland with Slate's config
@@ -26,12 +29,38 @@ OWNER="${SUDO_USER:-}"
 [ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec (slate-system)
 [ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
 HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
-SRC="$HOMEDIR/.config/slate/session"
-[ -f "$SRC/hypr/hyprland.lua" ] || { echo "Can't find $SRC/hypr/hyprland.lua" >&2; exit 1; }
+asowner() { runuser -u "$OWNER" -- "$@"; }
+
+# Your Slate folder: the one named, else ~/.config/slate. Root is about to install files from
+# it, so it's looked at with your own permissions (never root's), has to be a real folder, and
+# has to be yours: a path that leads into someone else's folder is left alone.
+FOLDER="${1:-$HOMEDIR/.config/slate}"
+case "$FOLDER" in -*) echo "Unknown option: $FOLDER" >&2; exit 1 ;; esac
+SLATE=$(asowner realpath -e -- "$FOLDER" 2>/dev/null) && asowner test -d "$SLATE" \
+    || { echo "Can't find your Slate folder at $FOLDER" >&2; exit 1; }
+[ "$(asowner stat -c %U -- "$SLATE" 2>/dev/null)" = "$OWNER" ] \
+    || { echo "Not installed: $SLATE isn't $OWNER's own folder, so nothing was taken from it." >&2; exit 1; }
+SRC="$SLATE/session"
+asowner test -f "$SRC/hypr/hyprland.lua" || { echo "Can't find $SRC/hypr/hyprland.lua" >&2; exit 1; }
 command -v start-hyprland >/dev/null || echo "Warning: start-hyprland not found; is Hyprland installed?" >&2
 
-install -D -m 755 -o root -g root "$SRC/slate-session" "$BIN"
-install -D -m 644 -o root -g root "$SRC/slate.desktop" "$ENTRY"
+# The two files are read with your own permissions into a folder only root can see, and
+# installed from there: read as root, a link in your folder could have pulled a private file
+# (one only root may read) into /usr/local/bin for everyone to read. Links are refused
+# outright, and both files are fetched before either is installed, so a refusal changes nothing.
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+fetch() {    # fetch <file in session/>
+    if asowner test -L "$SRC/$1"; then
+        echo "Not installed: $SRC/$1 is a link, not Slate's own file. Nothing was changed." >&2; exit 1
+    fi
+    asowner cat -- "$SRC/$1" > "$tmp/$1" || { echo "Can't read $SRC/$1; is your copy of Slate complete?" >&2; exit 1; }
+}
+fetch slate-session
+fetch slate.desktop
+
+install -D -m 755 -o root -g root "$tmp/slate-session" "$BIN"
+install -D -m 644 -o root -g root "$tmp/slate.desktop" "$ENTRY"
 
 echo "Done. Pick \"Slate\" on the login screen next time you log in."
 echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): ~/.config/slate/hypr/"

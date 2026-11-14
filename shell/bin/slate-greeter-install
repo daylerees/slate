@@ -76,13 +76,32 @@ put() {    # put <source> <dest> <mode>
 # The login screen's files (greeter/files): <installed path> <source>, skipping "-" lines
 code_files() { readas "$SRC/greeter/files" | sed 's/#.*//' | awk 'NF >= 2 && $1 != "-" && $1 != "+" { print $1, $2 }'; }
 
+# That list comes from your folder, where anything running as you could have changed it, and
+# root is about to make folders and files from its names. So every line is checked first, and
+# one that could land outside the login screen's own folder stops the install before anything
+# is written. An installed path is plain letters, digits, ".", "_", "-" and "/", never
+# absolute, with no ".." or empty part; a source stays inside your Slate folder too.
+safe_source() {    # safe_source <source, relative to your Slate folder>
+    case "/$1/" in //*|*//*|*/../*) return 1 ;; esac
+}
+safe_name() {    # safe_name <installed path>
+    [[ "$1" =~ ^[A-Za-z0-9._/-]+$ ]] && safe_source "$1"
+}
+files=$(code_files)
+while read -r name src; do
+    [ -n "$name" ] || continue
+    safe_name "$name" || { echo "Not installed: greeter/files lists \"$name\", which isn't a path inside the login screen's folder. Nothing was changed." >&2; exit 1; }
+    safe_source "$src" || { echo "Not installed: greeter/files lists \"$src\", which isn't a file inside your Slate folder. Nothing was changed." >&2; exit 1; }
+done <<< "$files"
+
 stage=$(mktemp -d /usr/local/share/.slate-greeter.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
 while read -r name src; do
+    [ -n "$name" ] || continue
     install -d -m 755 "$stage/$(dirname "$name")"
     mode=644; runuser -u "$OWNER" -- test -x "$SRC/$src" && mode=755
     put "$SRC/$src" "$stage/$name" "$mode"
-done < <(code_files)
+done <<< "$files"
 # Keyboard layout: recorded by slate-greeter-sync (from your running Hyprland)
 layout=$(grep -oP '"kb_layout":\s*"\K[A-Za-z0-9_,-]+' "$DATA/user.json" 2>/dev/null | head -1 || true)
 readas "$SRC/greeter/hyprland.lua" | sed "s/__KB_LAYOUT__/${layout:-us}/" > "$stage/hyprland.lua"; chmod 644 "$stage/hyprland.lua"
