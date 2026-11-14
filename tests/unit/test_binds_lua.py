@@ -268,6 +268,20 @@ class BindsLua(Case):
                 self.assertGreater(len(bound), 30, "the binds weren't made")
                 self.assertEqual(failed, [])
 
+    def test_keypad_zoom_keys_are_described_as_zoom(self):
+        """Super + keypad plus/minus (code:86 / code:82) once read "Focus monitor 73/77" and
+        "Go to workspace 73/77": only codes 10-19 (the number row) are numbered."""
+        for keyset in ("slate", "hyprland-extras"):
+            shortcuts = self.shortcuts(keyset)
+            for keys, word in (("SUPER + code:86", "Zoom in"), ("SUPER + code:82", "Zoom out")):
+                with self.subTest(keyset=keyset, keys=keys):
+                    self.assertIn(word, shortcuts[keys][0][0])
+        for keyset in KEYSETS:
+            for keys, binds in self.shortcuts(keyset).items():
+                m = re.match(r"^.* \+ code:(\d+)$", keys)
+                if m and not 10 <= int(m.group(1)) <= 19:
+                    self.assertNotRegex(binds[0][0] or "", r"\d", f"{keyset}: {keys} is numbered")
+
     def test_a_shortcut_in_two_sets_does_the_same_in_both(self):
         """Hyprland + Slate Extras is Hyprland's shortcuts plus Slate's on the keys they leave
         free: what a shared shortcut does is written once in binds.lua, and this keeps a
@@ -281,11 +295,6 @@ class BindsLua(Case):
         for keys, binds in hyprlands.items():
             if keys not in also_drive_switchers:
                 self.assertEqual(extras.get(keys), binds, f"{keys}: Hyprland's own, changed in the Extras")
-        # The keypad zoom keys are given a number-key description, a different wrong one in each
-        # set (a known bug in the description lookup, not in what the keys do): compare only
-        # what they do.
-        keypad = {"SUPER + code:82", "SUPER + code:86"}
-        what = lambda keys, binds: [b[1] for b in binds] if keys in keypad else binds
         slates_in_extras = 0
         for keys, binds in extras.items():
             if keys in hyprlands:
@@ -294,7 +303,7 @@ class BindsLua(Case):
             self.assertIn(slate_keys, slates, f"{keys}: in the Extras but not in Slate's set")
             if keys in moved:
                 self.assertIn(slate_keys, hyprlands, f"{keys}: moved, but its place isn't Hyprland's")
-            self.assertEqual(what(keys, binds), what(keys, slates[slate_keys]), f"{keys}: differs from Slate's set")
+            self.assertEqual(binds, slates[slate_keys], f"{keys}: differs from Slate's set")
             slates_in_extras += 1
         self.assertGreater(slates_in_extras, 25)
 

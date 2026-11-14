@@ -60,6 +60,8 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + Print"]              = "Slate: Screenshot of the screen",
     ["SUPER + Minus"]              = "Slate: Zoom out",
     ["SUPER + Plus"]               = "Slate: Zoom in",
+    ["SUPER + code:82"]            = "Slate: Zoom out (keypad -)",
+    ["SUPER + code:86"]            = "Slate: Zoom in (keypad +)",
     ["SUPER + Q"]                  = "Windows: Close the window",
     ["SUPER + Escape"]             = "Windows: Force-quit an app (click its window)",
     ["SUPER + Tab"]                = "Windows: Switch windows (hold Super)",
@@ -180,12 +182,13 @@ do
     local bind = hl.bind
     hl.bind = function(keys, action, opts)
         -- Its description for Settings → Shortcuts. The number-key ones are worked out from
-        -- the keys (code:10 is the 1 key … code:19 the 0 key)
+        -- the keys (code:10 is the 1 key … code:19 the 0 key; other codes, like the keypad's
+        -- + and -, have their own entry above)
         local desc = inSlateBinds and DESCRIPTIONS[keys] or nil
         if inSlateBinds and not desc then
             local mods, code = keys:match("^(.-) %+ code:(%d+)$")
             local what = mods and DIGIT_DESCRIPTIONS[mods]
-            if what then desc = string.format(what, tonumber(code) == 19 and 10 or tonumber(code) - 9) end
+            if what and tonumber(code) >= 10 and tonumber(code) <= 19 then desc = string.format(what, tonumber(code) == 19 and 10 or tonumber(code) - 9) end
         end
         if desc and not (opts and opts.description) then
             opts = opts or {}
