@@ -523,7 +523,9 @@ class Wallpapers(Case):
                 p = os.path.join(folder, f"slate-{n}.png")
                 with Image.open(p) as im:
                     self.assertEqual((im.format, im.size, im.mode), ("PNG", (3840, 2160), "RGB"))
-                self.assertLess(os.path.getsize(p), 4_000_000, "too big to ship")
+                # The tool writes them itself (save_png, every row "Sub"-filtered); saved by
+                # Pillow they come out around 2.5 MB each, so this catches that coming back
+                self.assertLess(os.path.getsize(p), 2_000_000, "bigger than the tool makes it")
 
 
 class Pointer(Case):

@@ -29,7 +29,13 @@ one step in 256 over a hundred pixels or more, and each step shows as an edge. S
 is rounded up or down by a fixed fine pattern (an 8 × 8 ordered dither), which makes each
 small patch average out to the exact colour in between. They're PNGs because JPEG undoes
 this: it rounds colour in blocks, and its bands were three times worse than no dithering at
-all. The pattern, unlike random grain, repeats, so the PNGs stay around 2.5 MB each.
+all. The pattern, unlike random grain, repeats, so the PNGs stay small: around 1.7 MB each.
+
+They're written by save_png() below rather than by Pillow, which is what keeps them that
+small: every row is stored as the difference between each pixel and the one to its left (PNG's
+"Sub" filter), which suits a repeating pattern over slow gradients; Pillow's own choice of
+filter per row came out about 40% bigger. It's the same picture, pixel for pixel (lossless),
+and needs no outside tool like oxipng, only Python's zlib.
 
 Needs numpy and Pillow. Run it from anywhere; it writes next to the other wallpapers.
 
@@ -37,7 +43,9 @@ Needs numpy and Pillow. Run it from anywhere; it writes next to the other wallpa
     tools/make-wallpapers.py ember mist     just these
 """
 import os
+import struct
 import sys
+import zlib
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -186,6 +194,36 @@ def bayer(n):
     return (m + 0.5) / m.size
 
 
+def save_png(image, path):
+    """Write an RGB picture as a PNG, as small as it'll go without losing anything.
+
+    Every row uses the Sub filter (each byte minus the one a pixel to its left), then the lot
+    is deflated as hard as zlib can. Tried against the others on these pictures: no filter,
+    Up, Average, Paeth, the best of the five per row, and Pillow's optimize=True (which picks
+    a filter per row by a rule of thumb) all came out bigger, most of them by a quarter or
+    more. Only the three chunks a PNG must have are written; the pictures carry no colour
+    profile or gamma, so they're shown as sRGB, as before."""
+    pixels = np.asarray(image.convert("RGB"), dtype=np.uint8)
+    height, width, channels = pixels.shape
+    left = np.zeros_like(pixels)
+    left[:, 1:] = pixels[:, :-1]
+    rows = np.empty((height, 1 + width * channels), dtype=np.uint8)
+    rows[:, 0] = 1                                        # the filter each row uses: Sub
+    rows[:, 1:] = (pixels - left).reshape(height, width * channels)    # wraps at 256, as PNG wants
+    squeeze = zlib.compressobj(9, zlib.DEFLATED, 15, 9)
+    data = squeeze.compress(rows.tobytes()) + squeeze.flush()
+
+    def chunk(kind, body):
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body))
+
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n")
+        # 8 bits a channel, colour type 2 (RGB), deflate, the standard filters, not interlaced
+        f.write(chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)))
+        f.write(chunk(b"IDAT", data))
+        f.write(chunk(b"IEND", b""))
+
+
 DITHER = np.tile(bayer(8), (H // 8, W // 8)).astype(np.float32)[..., None]
 MARKS = mark_masks()
 
@@ -199,7 +237,7 @@ def main():
         # With Slate's mark, and plain
         for mark, file in ((True, f"slate-{name}.png"), (False, f"slate-{name}-plain.png")):
             path = os.path.join(OUT, file)
-            render(name, mark).save(path, "PNG", optimize=True)
+            save_png(render(name, mark), path)
             print(f"{os.path.relpath(path)}  {os.path.getsize(path) // 1024} KB")
 
 
