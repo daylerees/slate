@@ -149,6 +149,9 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               Ollama, a command of your own); scripts/ollama-agent.py is Slate's
                               own agent loop for a model on this computer (Ollama's HTTP API,
                               Slate's server spoken to as an MCP client);
+                              scripts/slate_common.py is what the scripts that run as you share: a
+                              private file write, the prompt file's blocks and a capped, checksummed
+                              download (root helpers never import it, they keep their own);
                               scripts/safe_markdown.py reads the answer's small, safe subset of
                               Markdown into the blocks the window draws (no HTML, nothing fetched)
 Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,

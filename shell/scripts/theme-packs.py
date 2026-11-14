@@ -16,7 +16,6 @@ A theme that's already there is replaced. Pointer style and Icons list them stra
 Exit codes: 0 done; 1 something went wrong (said on stderr); 2 bad arguments.
 SLATE_THEME_PACKS (a JSON file of packs in the same shape) replaces the list, for tests.
 """
-import hashlib
 import json
 import os
 import shutil
@@ -24,8 +23,10 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import urllib.request
 import zipfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slate_common import download_to  # noqa: E402
 
 HOME = os.path.expanduser("~")
 DATA = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
@@ -135,19 +136,10 @@ def fetch(url, dest):
     """Download url to dest (at most MAX_BYTES), returning its SHA-256."""
     if not (url.startswith("https://") or url.startswith("file://")):
         raise RuntimeError("only https downloads are used")
-    h, got = hashlib.sha256(), 0
-    req = urllib.request.Request(url, headers={"User-Agent": "Slate theme packs"})
-    with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as out:
-        while True:
-            chunk = r.read(1 << 16)
-            if not chunk:
-                break
-            got += len(chunk)
-            if got > MAX_BYTES:
-                raise RuntimeError("the download was much bigger than expected")
-            h.update(chunk)
-            out.write(chunk)
-    return h.hexdigest()
+    got, digest, over = download_to(url, dest, MAX_BYTES, "Slate theme packs", 60)
+    if over:
+        raise RuntimeError("the download was much bigger than expected")
+    return digest
 
 
 def inside(base, path):

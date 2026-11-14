@@ -42,6 +42,8 @@ import sys
 import urllib.error
 import urllib.request
 
+from slate_common import write_private_json
+
 AGENTS = []
 
 
@@ -159,10 +161,7 @@ def slate_server(run):
 
 
 def write_json(path, data):
-    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=1)
+    write_private_json(path, data)
 
 
 @agent

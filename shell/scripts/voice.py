@@ -26,7 +26,6 @@ locale (LANG) where whisper knows it, and worked out by itself otherwise.
 whisper.cpp is optional (packaging/*.txt). Its program is whisper-cli (whisper.cpp 1.7.4 and
 later, every distro's package); older packages call it whisper-cpp or whisper.cpp.
 """
-import hashlib
 import json
 import os
 import re
@@ -37,7 +36,9 @@ import subprocess
 import sys
 import time
 import urllib.error
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slate_common import download_to  # noqa: E402
 
 MODEL = {
     "name": "ggml-base.bin",
@@ -141,27 +142,21 @@ def download(url=None, size=None, sha256=None, dest=None, every=0.25):
     os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
     part = dest + ".part"
     signal.signal(signal.SIGTERM, _stop)
-    done, last = 0, 0.0
-    digest = hashlib.sha256()
+    state = {"last": 0.0, "total": size}
+
+    def opened(r):
+        state["total"] = int(r.headers.get("Content-Length") or 0) or size
+        say(type="progress", done=0, total=state["total"])
+
+    def progress(got):
+        now = time.monotonic()
+        if now - state["last"] >= every:
+            state["last"] = now
+            say(type="progress", done=got, total=state["total"])
+
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Slate"})
-        with urllib.request.urlopen(req, timeout=30) as r, open(part, "wb") as f:
-            total = int(r.headers.get("Content-Length") or 0) or size
-            say(type="progress", done=0, total=total)
-            while True:
-                chunk = r.read(1 << 16)
-                if not chunk:
-                    break
-                f.write(chunk)
-                digest.update(chunk)
-                done += len(chunk)
-                if done > size:
-                    break
-                now = time.monotonic()
-                if now - last >= every:
-                    last = now
-                    say(type="progress", done=done, total=total)
-        if done != size or digest.hexdigest() != sha256:
+        done, hexdigest, _over = download_to(url, part, size, "Slate", 30, opened, progress)
+        if done != size or hexdigest != sha256:
             os.remove(part)
             say(type="error", kind="checksum",
                 message="The speech model Slate downloaded wasn't the one it expected, so it wasn't kept. You can try again.")

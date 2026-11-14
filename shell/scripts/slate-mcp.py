@@ -52,6 +52,7 @@ import uuid
 HERE = os.path.dirname(os.path.abspath(__file__))
 SLATE_DIR = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+from slate_common import prompt_blocks  # noqa: E402
 import spaces  # noqa: E402  (hyprctl's replies, desktop entries, saved Spaces: the same code Spaces uses)
 
 SLATE = os.environ.get("SLATE_COMMAND") or os.path.join(SLATE_DIR, "bin", "slate")
@@ -1883,19 +1884,9 @@ def instructions():
     """What an agent using the server is told about Slate: the [shared] and [server]
     blocks of data/assistant-prompt.md."""
     try:
-        text = read_shell(os.path.join("data", "assistant-prompt.md"))
+        return prompt_blocks(os.path.join(SLATE_DIR, "data", "assistant-prompt.md"), ("shared", "server"))
     except OSError:
         return ""
-    blocks, who, lines = [], None, []
-    for line in text.splitlines() + ["[end]"]:
-        m = re.match(r"\[(\w+)\]\s*$", line)
-        if m:
-            if who in ("shared", "server") and "".join(lines).strip():
-                blocks.append(" ".join(l.strip() for l in lines if l.strip()))     # (one paragraph each)
-            who, lines = m.group(1), []
-        else:
-            lines.append(line)
-    return "\n\n".join(blocks)
 
 
 def server_info():

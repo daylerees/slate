@@ -53,6 +53,7 @@ SLATE_DIR = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import safe_markdown  # noqa: E402
 import slate_agents  # noqa: E402
+from slate_common import prompt_blocks, write_private  # noqa: E402
 
 SLATE = os.environ.get("SLATE_COMMAND") or os.path.join(SLATE_DIR, "bin", "slate")
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "assistant")
@@ -97,20 +98,9 @@ def server():
 def briefing():
     """Who the agent is here: the [nova] and [shared] blocks of data/assistant-prompt.md."""
     try:
-        with open(os.path.join(SLATE_DIR, "data", "assistant-prompt.md"), encoding="utf-8") as fh:
-            text = fh.read()
+        return prompt_blocks(os.path.join(SLATE_DIR, "data", "assistant-prompt.md"), ("nova", "shared"))
     except OSError:
         return ""
-    blocks, who, lines = [], None, []
-    for line in text.splitlines() + ["[end]"]:
-        m = re.match(r"\[(\w+)\]\s*$", line)
-        if m:
-            if who in ("nova", "shared") and "".join(lines).strip():
-                blocks.append(" ".join(l.strip() for l in lines if l.strip()))
-            who, lines = m.group(1), []
-        else:
-            lines.append(line)
-    return "\n\n".join(blocks)
 
 
 def plain(value, limit=120):
@@ -137,13 +127,6 @@ def context(mcp):
         lines.append("Focused window: %s%s" % (plain(win["app"], 60), title))
     lines.append("Game mode: %s; Do Not Disturb: %s; night light: %s" % (on(st["gameMode"]), on(st["doNotDisturb"]), on(st["nightLight"])))
     return "<slate-context>\n" + "\n".join(lines) + "\n</slate-context>"
-
-
-def write_private(path, text):
-    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(text)
 
 
 def detect():
