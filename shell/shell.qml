@@ -377,7 +377,9 @@ ShellRoot {
                             // Settings greyed out for another one, with what each says it needs
                             // (SettingRow's needs), and the setting last gone to (goTo)
                             waiting: settings && settings.visible ? settings.waitingRows().map(r => ({ label: r.label, needs: r.needs })) : [],
-                            found: settings && settings.foundItem ? String(settings.foundItem.label || "") : "" },
+                            found: settings && settings.foundItem ? String(settings.foundItem.label || "") : "",
+                            // (the agents Settings → Assistant offers, once it's looked)
+                            agents: settings ? settings.assistantAgentsSeen : [] },
                 launcher: { open: appLauncher.shown, visible: appLauncher.visible, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || ""),
                             // How it opened and scrolled (launcherScroll): frame times, the time spent moving

@@ -374,3 +374,239 @@ class Antigravity(Base):
                 stream = lines({"event": "result", "result": {"conversation_id": "", "status": "ERROR", "response": "", "error": error}})
                 e = self.ask("antigravity", stream, accepted="antigravity", env={"STUB_EXIT": "1"})[-1]
                 self.assertEqual((e["type"], e["kind"]), ("error", kind))
+
+
+class FakeOllama:
+    """Ollama's HTTP API as far as Slate uses it: /api/tags lists `models`, and each /api/chat
+    streams the next of `replies` (a list of messages; a message with tool_calls asks for
+    tools). What was asked is kept in `asked`."""
+
+    def __init__(self, models, replies):
+        self.models, self.replies, self.asked = models, list(replies), []
+        fake = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def send(self, code, body):
+                self.send_response(code)
+                self.send_header("Content-Type", "application/x-ndjson")
+                self.end_headers()
+                self.wfile.write(body.encode("utf-8"))
+
+            def do_GET(self):
+                if self.path == "/api/tags":
+                    return self.send(200, json.dumps({"models": fake.models}))
+                self.send(404, "{}")
+
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                fake.asked.append(body)
+                reply = fake.replies.pop(0) if len(fake.replies) > 1 else fake.replies[0]
+                chunks = []
+                words = reply.get("content", "")
+                for i in range(0, len(words), 6):           # (a few words at a time, as it streams)
+                    chunks.append({"model": body["model"], "message": {"role": "assistant", "content": words[i:i + 6]}, "done": False})
+                if reply.get("tool_calls"):
+                    chunks.append({"model": body["model"], "message": {"role": "assistant", "content": "", "tool_calls": reply["tool_calls"]}, "done": False})
+                chunks.append({"model": body["model"], "message": {"role": "assistant", "content": ""}, "done": True, "done_reason": "stop"})
+                self.send(200, "".join(json.dumps(c) + "\n" for c in chunks))
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = "http://127.0.0.1:%d" % self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+MODELS = [{"name": "qwen3:8b", "model": "qwen3:8b", "size": 5225388164, "capabilities": ["completion", "tools", "thinking"]},
+          {"name": "gemma3:1b", "model": "gemma3:1b", "size": 815319791, "capabilities": ["completion"]},
+          {"name": "gpt-oss:120b-cloud", "model": "gpt-oss:120b-cloud", "remote_model": "gpt-oss:120b", "remote_host": "https://ollama.com:443",
+           "size": 384, "capabilities": ["completion", "tools"]}]
+
+
+def call(name, **args):
+    return {"id": "call_1", "function": {"index": 0, "name": name, "arguments": args}}
+
+
+class Ollama(Base):
+    def setUp(self):
+        super().setUp()
+        self.s.add("ollama", missing=True)
+
+    def serve(self, replies, models=MODELS):
+        fake = FakeOllama(models, replies)
+        self.addCleanup(fake.close)
+        self.s.env["SLATE_OLLAMA_URL"] = fake.url
+        return fake
+
+    def test_detect(self):
+        """Its models, without those that run on Ollama's servers; and whether it's running."""
+        a = self.detect()["ollama"]
+        self.assertEqual((a["installed"], a["running"], a["signedIn"]), (False, False, False))
+        self.serve([{}])
+        a = self.detect()["ollama"]
+        self.assertEqual((a["installed"], a["running"], a["signedIn"], a["confined"], a["local"]), (True, True, True, True, True))
+        self.assertEqual([(m["name"], m["tools"]) for m in a["models"]], [("qwen3:8b", True), ("gemma3:1b", False)])
+        self.serve([{}], models=[])
+        a = self.detect()["ollama"]
+        self.assertEqual((a["running"], a["signedIn"], a["models"]), (True, False, []))
+
+    def test_a_tool_round(self):
+        """The model asks for a tool; Slate calls it through its own server (and gate), hands the
+        answer back, and the model's words are the answer."""
+        fake = self.serve([{"content": "Let me look.", "tool_calls": [call("settings_get", key="glass")]},
+                           {"content": "Glass is **off** at the moment."}])
+        events = self.ask("ollama")
+        session = events[0]["session"]
+        self.assertRegex(session, r"^[0-9a-f]{32}$")
+        self.answered(events, "Glass is **off** at the moment.", session)
+        texts = [e for e in events if e["type"] == "text"]
+        self.assertTrue(texts[0]["fresh"])
+        self.assertEqual("".join(e["delta"] for e in texts), "Let me look.Glass is **off** at the moment.")
+        self.assertEqual([e.get("fresh", False) for e in texts if e["delta"].startswith("Glass")], [True])
+        first, second = fake.asked
+        self.assertEqual(first["model"], "qwen3:8b", "the first model that can use tools")
+        self.assertTrue(first["stream"])
+        self.assertEqual(first["messages"][0]["role"], "system")
+        self.assertTrue(first["messages"][0]["content"].startswith("You are Nova"))
+        self.assertIn("Find a setting with settings_search", first["messages"][0]["content"])
+        self.assertEqual(first["messages"][-1]["role"], "user")
+        self.assertTrue(first["messages"][-1]["content"].endswith("</slate-context>\n\nis glass on?"))
+        names = [t["function"]["name"] for t in first["tools"]]
+        self.assertIn("settings_set", names)
+        self.assertEqual(first["tools"][0]["type"], "function")
+        self.assertIn("properties", first["tools"][names.index("settings_get")]["function"]["parameters"])
+        said = second["messages"][-1]
+        self.assertEqual((said["role"], said["tool_name"]), ("tool", "settings_get"))
+        self.assertEqual(json.loads(said["content"])["value"], True)
+        self.assertEqual(second["messages"][-2]["tool_calls"][0]["function"]["name"], "settings_get")
+        # Through Slate's own server: the gate was asked, and the activity log has it
+        self.assertEqual([(a["tool"], a["who"]) for a in self.activity()], [("settings_get", "Ollama (on this computer)")])
+
+    def test_a_change_through_the_gate(self):
+        self.serve([{"tool_calls": [call("settings_set", key="glass", value=False)]}, {"content": "Glass is off."}])
+        self.assertEqual(self.ask("ollama", prompt="turn off glass")[-1]["text"], "Glass is off.")
+        self.assertEqual(self.setting("glass"), False)
+
+    def test_a_plain_answer_and_a_follow_up(self):
+        fake = self.serve([{"content": "Hello. What can I do on your desktop?"}])
+        events = self.ask("ollama", prompt="hi", model="gemma3:1b")
+        session = events[-1]["session"]
+        self.assertEqual(events[-1]["text"], "Hello. What can I do on your desktop?")
+        self.assertEqual(fake.asked[0]["model"], "gemma3:1b")
+        kept = self.h(".local", "state", "slate", "assistant", "ollama", session + ".json")
+        self.assertEqual(os.stat(kept).st_mode & 0o777, 0o600)
+        # A follow-up carries the conversation on, and keeps its session
+        events = self.ask("ollama", prompt="and again", session=session)
+        self.assertEqual(events[0]["session"], session)
+        msgs = fake.asked[-1]["messages"]
+        self.assertEqual([m["role"] for m in msgs], ["system", "user", "assistant", "user"])
+        self.assertTrue(msgs[1]["content"].endswith("hi"))
+        # One that's been forgotten starts afresh
+        events = self.ask("ollama", prompt="x", session="0" * 32)
+        self.assertNotEqual(events[0]["session"], "0" * 32)
+
+    def test_not_running(self):
+        e, = self.ask("ollama")
+        self.assertEqual((e["kind"], e["message"]), ("not-installed", "Slate couldn't find Ollama (on this computer). It may have been removed."))
+        self.s.add("ollama", stdout="ollama version is 0.40.16")      # (installed, but not running)
+        e, = self.ask("ollama")
+        self.assertEqual(e["kind"], "offline")
+        self.assertTrue(e["message"].startswith("Ollama isn't running."))
+
+    def test_no_models(self):
+        self.serve([{}], models=[])
+        e, = self.ask("ollama")
+        self.assertEqual(e["kind"], "not-installed")
+        self.assertIn("ollama pull qwen3", e["message"])
+        self.serve([{}])
+        e, = self.ask("ollama", model="llama9")
+        self.assertIn("doesn't have llama9", e["message"])
+
+    def test_never_a_cloud_model(self):
+        """A model that runs on Ollama's servers would take what you ask off the computer."""
+        fake = self.serve([{"content": "hi"}])
+        e, = self.ask("ollama", model="gpt-oss:120b-cloud")
+        self.assertEqual(e["kind"], "not-installed")
+        self.assertIn("runs on Ollama's servers", e["message"])
+        self.assertEqual(fake.asked, [])
+
+    def test_round_cap(self):
+        """A model that keeps calling tools is stopped after a few rounds."""
+        fake = self.serve([{"tool_calls": [call("settings_get", key="glass")]}])
+        e = self.ask("ollama", env={"SLATE_OLLAMA_ROUNDS": "3"})[-1]
+        self.assertEqual((e["type"], e["kind"]), ("error", "failed"))
+        self.assertIn("stopped it after 3 rounds", e["message"])
+        self.assertEqual(len(fake.asked), 3)
+
+    def test_odd_tool_calls(self):
+        """A tool that doesn't exist, or arguments that aren't an object, go back as words."""
+        fake = self.serve([{"tool_calls": [call("run_shell", command="ls")]},
+                           {"tool_calls": [{"function": {"name": "settings_get", "arguments": "[1]"}}]},
+                           {"content": "Sorry."}])
+        self.assertEqual(self.ask("ollama")[-1]["text"], "Sorry.")
+        self.assertTrue(fake.asked[1]["messages"][-1]["content"].startswith("There's no tool called run_shell."))
+        self.assertEqual(fake.asked[2]["messages"][-1]["content"], "Error: the arguments have to be a JSON object.")
+        self.assertEqual(self.activity(), [])
+
+    def test_slate_off(self):
+        """While assistants are off, nothing is sent to the model."""
+        fake = self.serve([{"content": "hi"}])
+        self.put_state(enabled=False)
+        self.assertEqual(self.ask("ollama")[0]["kind"], "off")
+        self.assertEqual(fake.asked, [])
+
+    def test_never_in_test_mode(self):
+        fake = self.serve([{"content": "hi"}])
+        e, = self.ask("ollama", env={"SLATE_TEST": "1"})
+        self.assertEqual(e["kind"], "not-installed")
+        self.assertEqual(fake.asked, [])
+
+
+class CodexLocal(Base):
+    def test_a_prompt(self):
+        fake = FakeOllama(MODELS, [{}])
+        self.addCleanup(fake.close)
+        self.s.env["SLATE_OLLAMA_URL"] = fake.url
+        self.s.add("ollama", stdout="ollama version is 0.40.16")
+        a = self.detect()["codex-local"]
+        self.assertEqual((a["installed"], a["signedIn"], a["followUps"], a["local"]), (True, True, False, True))
+        events = self.ask("codex-local", CODEX)
+        self.assertEqual(events[-1]["type"], "done")
+        args = self.got("codex")["args"]
+        self.assertEqual(args[args.index("--local-provider") - 1:args.index("--local-provider") + 2], ["--oss", "--local-provider", "ollama"])
+        self.assertEqual(self.after(args, "-m"), "qwen3:8b")
+        self.assertIn("features.shell_tool=false", args)
+        self.assertEqual(fake.asked, [], "Codex talks to Ollama itself")
+        # Ollama's default room runs out after a tool or two (seen with codex-cli 0.169 and qwen3:8b)
+        small = '{"error":{"message":"request (4264 tokens) exceeds the available context size (4096 tokens), try increasing it"}}'
+        e = self.ask("codex-local", lines({"type": "thread.started", "thread_id": "t"}, {"type": "turn.failed", "error": {"message": small}}))[-1]
+        self.assertEqual(e["kind"], "failed")
+        self.assertIn("OLLAMA_CONTEXT_LENGTH", e["message"])
+
+
+class Detect(Base):
+    def test_every_agent(self):
+        a = self.detect()
+        self.assertEqual(list(a), ["claude", "codex", "opencode", "goose", "antigravity", "ollama", "codex-local", "custom"])
+        self.assertEqual({k: v["confined"] for k, v in a.items()},
+                         {"claude": True, "codex": True, "opencode": True, "goose": True, "antigravity": False,
+                          "ollama": True, "codex-local": True, "custom": False})
+        for k, v in a.items():
+            if k != "custom":
+                self.assertTrue(v["url"].startswith("https://"), k)
+                self.assertTrue(v["note"] and v["signIn"], k)
+        self.assertEqual([k for k, v in a.items() if v["local"]], ["ollama", "codex-local"])
+
+    def test_none_installed(self):
+        for name in VERSIONS:
+            os.remove(os.path.join(self.s.dir, name))
+            self.s.add(name, missing=True)
+        self.s.add("ollama", missing=True)
+        a = self.detect()
+        for k in ("codex", "opencode", "goose", "antigravity", "ollama", "codex-local"):
+            self.assertEqual((a[k]["installed"], a[k]["signedIn"]), (False, False), k)

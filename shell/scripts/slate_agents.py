@@ -641,6 +641,127 @@ class Antigravity(Agent):
         return trouble(self, " ".join(errors[-2:]), "Google") if errors and code != 0 else None
 
 
+def ollama_url():
+    return os.environ.get("SLATE_OLLAMA_URL") or "http://127.0.0.1:11434"
+
+
+def ollama_models():
+    """The models Ollama has on this computer, or None when it isn't running. Models that run
+    on someone else's server (Ollama's cloud models) are left out: they'd send what you ask
+    there. [{"name", "tools": can use tools, "size": bytes}]"""
+    try:
+        with urllib.request.urlopen(ollama_url() + "/api/tags", timeout=2) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return None
+    out = []
+    for m in (data.get("models") if isinstance(data, dict) else None) or []:
+        if not isinstance(m, dict) or not isinstance(m.get("name"), str):
+            continue
+        if m.get("remote_host") or m.get("remote_model") or re.search(r"[-:]cloud\b", m["name"]):
+            continue
+        caps = m.get("capabilities")
+        out.append({"name": m["name"], "tools": "tools" in caps if isinstance(caps, list) else True,
+                    "size": m.get("size") if isinstance(m.get("size"), int) else 0})
+    return out
+
+
+def ollama_state():
+    models = ollama_models()
+    return {"running": models is not None, "models": models or []}
+
+
+@agent
+class Ollama(Agent):
+    """A model on this computer, through Ollama's own HTTP API (127.0.0.1:11434), with Slate
+    running the agent itself (scripts/ollama-agent.py): the model gets Slate's tools and
+    nothing else, and nothing leaves the computer. No keys, no account."""
+    id = "ollama"
+    label = "Ollama (on this computer)"
+    url = "https://ollama.com/download"
+    note = "Runs a model on this computer, with Slate's tools and nothing else: nothing you ask leaves it"
+    confined = True
+    briefing = "system"
+    sign_in = "ollama pull qwen3"
+    local = True
+    timeout = 600
+
+    def installed(self):
+        return bool(find("ollama")) or ollama_models() is not None
+
+    def version(self):
+        code, out = output([find("ollama"), "--version"]) if find("ollama") else (None, "")
+        return version_in(out) if code == 0 else ""
+
+    def signed_in(self):
+        return bool(ollama_models())
+
+    def more(self):
+        return ollama_state()
+
+    def command(self, run):
+        return [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ollama-agent.py"),
+                "--model", run.get("model") or "", "--session", run.get("session") or "", "--briefing", run["briefing"],
+                "--mcp-config", run["mcp_config_file"], "--state", run.get("state_dir") or ""]
+
+    def parse(self, line, state):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            return []
+        if isinstance(d, dict) and d.get("type") in ("start", "text", "done", "error"):
+            return [d]
+        return []
+
+    def finish(self, code, state, errors):
+        return {"type": "error", "kind": "failed", "message": "Slate's helper for Ollama stopped unexpectedly.",
+                "detail": (errors[-1] if errors else "")[-300:]}
+
+
+@agent
+class CodexLocal(Codex):
+    """Codex with a model on this computer (`codex exec --oss --local-provider ollama`): no
+    OpenAI account needed. The same switches as Codex. One prompt, one answer."""
+    id = "codex-local"
+    label = "Codex with Ollama (on this computer)"
+    url = "https://ollama.com/download"
+    note = "Codex, with a model on this computer through Ollama: no account needed. Slate switches off its own tools"
+    sign_in = "ollama pull qwen3"
+    local = True
+    timeout = 600
+    follow_ups = False
+
+    def installed(self):
+        return bool(find("codex")) and (bool(find("ollama")) or ollama_models() is not None)
+
+    def signed_in(self):
+        return bool(ollama_models())
+
+    def more(self):
+        return ollama_state()
+
+    def options(self, run):
+        opts = ["--json", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules", "--oss",
+                "--local-provider", "ollama"] + self.settings(run)
+        model = run.get("model") or next((m["name"] for m in ollama_models() or [] if m["tools"]), "")
+        return opts + (["-m", model] if model else [])
+
+    def command(self, run):
+        return [find("codex") or "codex", "exec"] + self.options(run) + ["-"]
+
+    def trouble(self, text):
+        # (Codex can't ask Ollama for more room, as Slate's own loop does: Ollama's default of
+        # 4,096 tokens runs out after a tool or two, checked with codex-cli 0.169)
+        if re.search(r"exceeds the available context size", text, re.I):
+            return {"type": "error", "kind": "failed",
+                    "message": "Ollama gave Codex too little room for the conversation. Start Ollama with "
+                               "OLLAMA_CONTEXT_LENGTH=16384 (or more), or choose Ollama itself as the agent.",
+                    "detail": text[-300:]}
+        if OFFLINE.search(text) and re.search(r"ollama|11434|localhost|127\.0\.0\.1", text, re.I):
+            return {"type": "error", "kind": "offline", "message": "Ollama isn't running. Start it, then try again."}
+        return Codex.trouble(self, text)
+
+
 @agent
 class Custom(Agent):
     """A command of your own: Slate runs it as typed, with the prompt on its stdin, and shows

@@ -69,3 +69,8 @@ dev-util/pkgconf
 ?x11-misc/xdg-user-dirs
 ?sys-apps/pciutils
 ?media-tv/v4l-utils
+
+# Nova with a model on this computer (Settings → Assistant → Ollama): optional, and Nova
+# says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,
+# Goose, Antigravity) are your own choice and come from their makers, not from here
+# (Ollama is in the GURU overlay, not the main tree: sci-ml/ollama)

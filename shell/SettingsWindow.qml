@@ -329,7 +329,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck"],
-        assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
+        assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantLocalModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
     })
@@ -385,13 +385,15 @@ FloatingWindow {
             + "so if anything's wrong, nothing changes. You'll see it at your next logout or restart.",
         button: "Update", code: 0xEAE2
     })
+    property var assistantAgentsSeen: []      // (the agents Settings → Assistant found: for the tests)
     // Settings → Assistant → Let assistants use Slate. Switching on doesn't switch it on: it
     // shows the risks first, in plain words, and only "Switch on" does it, recording which
     // version of them was accepted (Config.assistantOn needs both). Best efforts, said as such
     readonly property string assistantDocs: "https://github.com/daylerees/slate/blob/master/docs/ASSISTANT.md#before-you-switch-it-on"
     readonly property string assistantRisks: (Config.assistantRisksChanged ? "Something's changed about the assistant since you switched it on, so here it is again.<br><br>" : "Before you do, here's what it means.<br><br>")
         + "<b>What leaves your computer.</b> What you type, and what Slate tells the assistant about your desktop "
-        + "(your settings, your open windows and their titles), goes to the service behind the agent you choose, under your own account with them.<br><br>"
+        + "(your settings, your open windows and their titles), goes to the service behind the agent you choose, under your own account with them. "
+        + "With Ollama, a model on this computer answers, and nothing leaves it.<br><br>"
         + "<b>What it can do.</b> It can change settings and move windows without asking. Slate asks you before anything that can't be undone.<br><br>"
         + "<b>What can go wrong.</b> Assistants make mistakes, and can be misled by text they read, like the title of a web page. "
         + "Slate does its best to limit the harm, but it can't promise what an assistant will do, least of all one that keeps tools of its own.<br><br>"
@@ -4232,7 +4234,10 @@ FloatingWindow {
             }
             // The agents there are (scripts/assistant.py detect), and the one a prompt would go to
             property var agents: []
+            onAgentsChanged: win.assistantAgentsSeen = agents.map(a => ({ id: a.id, label: a.label, installed: a.installed, running: !!a.running,
+                                                                       models: (a.models || []).map(m => m.name) }))
             Process {
+                id: detectProc
                 running: true
                 command: ["python3", Quickshell.shellPath("scripts/assistant.py"), "detect"]
                 stdout: StdioCollector { onStreamFinished: { try { assistantPane.agents = JSON.parse(text); } catch (e) {} } }
@@ -4266,7 +4271,7 @@ FloatingWindow {
             function copy(what, text) { Quickshell.execDetached(["wl-copy", text]); copied = what; copiedReset.restart(); }
 
             IntroText {
-                text: "Ask an AI agent you already use, like Claude Code or Codex, to change a setting, move a window or tell you what's where. "
+                text: "Ask an AI agent you already use, like Claude Code or Codex, or a model on this computer through Ollama, to change a setting, move a window or tell you what's where. "
                     + "It works through Slate's own tools, and Slate asks you before anything that can't be undone. "
                     + "Nova is Slate's own way to ask: press Super+K, type what you want, and your agent does it."
             }
@@ -4280,7 +4285,7 @@ FloatingWindow {
                         : Config.assistantRisksChanged
                         ? "Something's changed about the assistant, so it's paused. Switch it on again to read what's new."
                         : "What Slate tells an assistant about your desktop (your settings, your open windows and their titles) is sent to the service behind the agent you use, "
-                        + "under your own account with them. Slate itself sends nothing anywhere. Slate does its best to keep an assistant within these limits, "
+                        + "under your own account with them. With Ollama, it stays on this computer. Slate itself sends nothing anywhere. Slate does its best to keep an assistant within these limits, "
                         + "but it can't promise what one will do, so using it is your choice and your responsibility."
                     // (Private Mode keeps it off: Sound's Private Mode row turns that off)
                     needsMet: !Config.s.privateMode
@@ -4298,7 +4303,7 @@ FloatingWindow {
                     settingKey: "assistantAgent"
                     detail: assistantPane.inUse === "" ? "Nova needs an agent to ask. Choose the one you use, and what it needs shows here"
                         : assistantPane.inUse === "custom" ? "Slate runs your command as you typed it, with what you ask on its input. What it can see and do beyond Slate's tools is up to the command"
-                        : assistantPane.chosen ? (assistantPane.chosen.confined ? "Recommended: " : "Keeps its own tools: ") + assistantPane.chosen.note
+                        : assistantPane.chosen ? (assistantPane.chosen.confined ? "" : "Keeps its own tools: ") + assistantPane.chosen.note
                         : "Slate couldn't find this one. It may have been removed"
                     value: assistantPane.inUse
                     options: [{ value: "", label: "None" }]
@@ -4316,18 +4321,43 @@ FloatingWindow {
                 SettingRow {
                     visible: !!assistantPane.chosen
                     readonly property var a: assistantPane.chosen
+                    // (a model on this computer: Ollama running, with a model, rather than signed in)
+                    readonly property bool idle: !!a && a.local && a.installed && !a.running
                     label: a ? a.label : ""
-                    detail: !a ? "" : a.installed && a.signedIn ? "Ready" : a.installed ? "Not signed in. Open a terminal and run " + a.signIn + " once" : "Not installed yet"
+                    detail: !a ? "" : a.installed && a.signedIn ? "Ready"
+                        : !a.installed ? "Not installed yet"
+                        : idle ? "Ollama isn't running. Start it (ollama serve in a terminal, or its service), then check again"
+                        : a.local ? "No models yet. Open a terminal and run " + a.signIn + " to get one, then check again"
+                        : "Not signed in. Open a terminal and run " + a.signIn + " once"
                     Button {
-                        visible: !!parent.a && !(parent.a.installed && parent.a.signedIn)
+                        visible: !!parent.a && !(parent.a.installed && parent.a.signedIn) && !parent.idle
                         primary: true
-                        label: parent.a && !parent.a.installed ? "Get it" : "Sign in"
+                        label: parent.a && !parent.a.installed ? "Get it" : parent.a && parent.a.local ? "Get a model" : "Sign in"
                         onClicked: { if (!parent.a.installed) Qt.openUrlExternally(parent.a.url); else assistantPane.signIn(parent.a.signIn); }
                     }
+                    Button {
+                        visible: !!parent.a && !(parent.a.installed && parent.a.signedIn)
+                        label: "Check again"
+                        onClicked: { detectProc.running = false; detectProc.running = true; }
+                    }
                 }
-                Separator { visible: !!assistantPane.chosen }
+                // A model on this computer (Ollama): one of those it has
+                Separator { visible: !!assistantPane.chosen && assistantPane.chosen.local }
+                DropdownSetting {
+                    visible: !!assistantPane.chosen && assistantPane.chosen.local
+                    label: "Model"
+                    settingKey: "assistantLocalModel"
+                    detail: "Small models can be unreliable with tools: a bigger one follows Slate's tools better, but answers more slowly"
+                    value: Config.s.assistantLocalModel
+                    noneLabel: Config.s.assistantLocalModel
+                    options: [{ value: "", label: "The first that can use tools" }]
+                        .concat(((assistantPane.chosen && assistantPane.chosen.models) || [])
+                            .map(m => ({ value: m.name, label: m.tools ? m.name : m.name + " (can't use tools)" })))
+                    onPicked: v => Config.s.assistantLocalModel = v
+                }
+                Separator { visible: !!assistantPane.chosen && !assistantPane.chosen.local }
                 SettingRow {
-                    visible: !!assistantPane.chosen
+                    visible: !!assistantPane.chosen && !assistantPane.chosen.local
                     label: "Model"
                     settingKey: "assistantModel"
                     detail: "For agents that let you pick one. Empty: the agent's own choice"

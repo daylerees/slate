@@ -270,7 +270,9 @@ PanelWindow {
         field.text = "";
         runId = Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
         const cmd = ["python3", Quickshell.shellPath("scripts/assistant.py"), "run", "--agent", agent.id, "--run", runId];
-        if (Config.s.assistantModel !== "" && agent.id !== "custom") cmd.push("--model", Config.s.assistantModel);
+        // (an agent on this computer, like Ollama, takes its model from Settings → Assistant's list)
+        const model = agent.local ? Config.s.assistantLocalModel : Config.s.assistantModel;
+        if (model !== "" && agent.id !== "custom") cmd.push("--model", model);
         if (session !== "" && Date.now() - heard > followFor) session = "";       // left a while: afresh
         if (canFollowUp) cmd.push("--session", session);
         if (agent.id === "custom") {
