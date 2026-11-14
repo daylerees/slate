@@ -18,6 +18,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Picker.qml           clipboard history + emoji picker ("slate-picker")
 ├─ PolkitAgent.qml      password prompts for apps ("slate-polkit")
 ├─ NightLight.qml       warm screen via Hyprland's screen shader
+├─ Radios.qml          Wi-Fi and Bluetooth through IPC (`wifi`, `bluetooth`), for the assistant's tools
 ├─ Notifications.qml    notification server + toasts ("slate-notifications")
 │  └─ NotificationCard.qml
 ├─ Launcher.qml         app launcher + calculator ("slate-launcher")

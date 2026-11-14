@@ -73,6 +73,15 @@ elif a[:2] == ["settings", "changed"]:
     out = json.dumps(state.get("changed", {{}}).get(a[2], {{"changed": -1, "restarts": False}}))
 elif a[:2] == ["launcher", "launch"]:
     out = "ok"
+elif a[:2] in (["wifi", "list"], ["bluetooth", "list"]):
+    out = json.dumps(state.get(a[0], {{"available": False}}))
+elif a[0] in ("wifi", "bluetooth"):
+    out = "ok"
+elif a[:2] == ["dock", "pinned"]:
+    out = json.dumps(state.get("pinned", []))
+elif a[:2] == ["dock", "emptyTrash"] and not state.get("trashStays"):
+    import shutil
+    shutil.rmtree(os.path.join(os.environ["HOME"], ".local", "share", "Trash", "files"))
 elif a[:2] == ["bar", "arrangement"]:
     out = json.dumps(state.get("bar", {{"layout": [{{"items": ["clock"], "collapse": "needed", "collapseAt": "end"}}, "space"],
                                        "offBar": [], "leaveFirst": [], "alwaysStay": ["clock"], "slatesOwn": True}}))
@@ -100,11 +109,11 @@ LOOKS = ["status", "settings_search", "settings_get", "windows_list", "workspace
 CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arrange", "app_open", "window_focus", "window_move",
            "window_state", "workspace_go", "workspace_mode", "workspace_rename", "space_restore", "space_save",
            "wallpaper_set", "wallpaper_next", "volume_set", "brightness_set", "media_control", "do_not_disturb",
-           "screenshot", "lock_screen", "screensaver_start"]
-ASKS = ["window_close", "space_delete", "settings_restore_defaults", "session"]
+           "wifi", "bluetooth", "dock_pin", "screenshot", "lock_screen", "screensaver_start"]
+ASKS = ["window_close", "space_delete", "waste_basket_empty", "settings_restore_defaults", "session"]
 # What Slate may be asked while only looking
 READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"], ["notifications", "list"],
-         ["osd", "volumeGet"], ["media", "info"])
+         ["osd", "volumeGet"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"])
 # Arguments each tool accepts, for the tests that call every one
 ARGS = {
     "settings_search": {"query": "glass"}, "settings_get": {"key": "glass"},
@@ -118,7 +127,16 @@ ARGS = {
     "media_control": {"action": "toggle"}, "do_not_disturb": {"on": True}, "screenshot": {"what": "screen"},
     "window_close": {"address": "0xa1"}, "space_delete": {"name": "Work"}, "session": {"action": "shutdown"},
     "settings_restore_defaults": {"page": "dock"},
+    "wifi": {"action": "connect", "network": "Home"}, "bluetooth": {"action": "connect", "device": "Headphones"},
+    "dock_pin": {"id": "com.example.Editor", "pinned": True},
 }
+# Slate's radios, as Radios.qml lists them: Wi-Fi on, at Home, with a saved network and a
+# new one in range (the new one is never listed); Bluetooth on, with paired headphones
+WIFI = {"available": True, "on": True, "wired": False, "connected": "Cafe",
+        "networks": [{"name": "Cafe", "connected": True, "signal": 80}, {"name": "Home", "connected": False, "signal": 40}]}
+BLUETOOTH = {"available": True, "on": True, "devices": [
+    {"name": "Headphones", "address": "AA:BB:CC:DD:EE:01", "connected": False},
+    {"name": "Mouse", "address": "AA:BB:CC:DD:EE:02", "connected": True, "battery": 70}]}
 
 
 def request(method, params=None, mid=1, meta=META):
@@ -163,7 +181,9 @@ class Base(Case):
         os.chmod(qs, os.stat(qs).st_mode | stat.S_IXUSR)
         self.slate_is(SETTINGS)
         self.state = {"status": dict(STATUS), "answer": "yes", "volume": json.dumps({"volume": 35, "muted": False}),
-                      "changed": {"dock": {"changed": 2, "restarts": False}}}
+                      "changed": {"dock": {"changed": 2, "restarts": False}},
+                      "wifi": json.loads(json.dumps(WIFI)), "bluetooth": json.loads(json.dumps(BLUETOOTH)),
+                      "pinned": ["com.example.Terminal", "gone-app"]}
         self.put_state()
         self.clients = json.loads(fixture_text("spaces", "clients.json"))
         self.hyprland()
@@ -1213,6 +1233,168 @@ class SettingsTools(Base):
         for key in list(mcp.NAMED) + list(mcp.HIDDEN) + list(mcp.PRIVATE) + list(mcp.PATHS):
             with self.subTest("listed " + key):
                 self.assertIn(key, keys, f"{key} is listed in slate-mcp.py but isn't a setting any more")
+
+
+class RadiosAndDock(Base):
+    """Wi-Fi, Bluetooth, the dock's pins and the waste basket: through Slate's own IPC
+    (Radios.qml, the dock's), only ever with what Slate listed."""
+    RUN = {"SLATE_ASSISTANT_RUN": "r1", "SLATE_ASSISTANT_AGENT": "Claude Code"}
+
+    def acted(self):
+        return [c for c in self.qs_calls() if c[:2] not in READS and c[0] != "assistant"]
+
+    def did(self):
+        return [(d["text"], d["state"]) for d in (json.loads(c[2]) for c in self.qs_calls("assistant", "did"))]
+
+    def test_looking(self):
+        """No action: what's there, and nothing is changed, asked or listed as a change."""
+        self.put_state(askChanges=True)
+        got = [self.tool(name, {}, env=self.RUN) for name in ("wifi", "bluetooth", "dock_pin")]
+        self.assertEqual([err for _, err in got], [False] * 3)
+        self.assertEqual(got[0][0], {"on": True, "connected": "Cafe", "wired": False, "saved": [
+            {"name": "Cafe", "connected": True, "signal": 80}, {"name": "Home", "connected": False, "signal": 40}]})
+        self.assertEqual(got[1][0], {"on": True, "paired": [{"name": "Headphones", "connected": False},
+                                                           {"name": "Mouse", "connected": True, "battery": 70}]})
+        self.assertNotIn("AA:BB", json.dumps(got[1][0]), "a device's address was given out")
+        self.assertEqual(got[2][0], {"pinned": [{"id": "com.example.Terminal", "name": "Terminal"},
+                                                {"id": "gone-app", "name": "gone-app"}]})
+        self.assertEqual((self.acted(), self.asked(), self.did()), ([], [], []))
+
+    def test_wifi(self):
+        for args, want, did in (({"action": "off"}, ["wifi", "power", "false"], "Turn Wi-Fi off"),
+                                ({"action": "connect", "network": "home"}, ["wifi", "connect", "Home"], "Connect to “Home”"),
+                                ({"action": "disconnect"}, ["wifi", "disconnect"], "Disconnect from “Cafe”")):
+            with self.subTest(args["action"]):
+                got, err = self.tool("wifi", args, env=self.RUN)
+                self.assertFalse(err, got)
+                self.assertEqual(self.acted()[-1], want)
+                self.assertEqual(self.did()[-1], (did, "done"))
+        # Already so: nothing to do
+        got, err = self.tool("wifi", {"action": "on"})
+        self.assertIn("already on", got["note"])
+        got, err = self.tool("wifi", {"action": "connect", "network": "Cafe"})
+        self.assertIn("already connected", got["note"])
+        self.assertEqual(len(self.acted()), 3)
+
+    def test_wifi_only_saved_networks(self):
+        """A network that isn't saved (or isn't there) is never connected to, whatever it's called."""
+        for network in ("Neighbours", "", "Home; rm -rf ~", "../Home"):
+            with self.subTest(network):
+                text, err = self.tool("wifi", {"action": "connect", "network": network})
+                self.assertTrue(err)
+                self.assertIn("connected to before", text)
+        self.state["wifi"]["on"] = False
+        self.put_state()
+        text, err = self.tool("wifi", {"action": "connect", "network": "Home"})
+        self.assertTrue(err)
+        self.assertIn("Wi-Fi is off", text)
+        self.assertEqual((self.acted(), self.asked()), ([], []))
+
+    def test_no_wifi_or_bluetooth(self):
+        self.state["wifi"] = {"available": False, "wired": True}
+        self.state["bluetooth"] = {"available": False}
+        self.put_state()
+        self.assertEqual(self.tool("wifi", {})[0], {"available": False, "wired": True, "note": "This computer has no Wi-Fi."})
+        self.assertIn("no Bluetooth", self.tool("bluetooth", {})[0]["note"])
+        for name in ("wifi", "bluetooth"):
+            text, err = self.tool(name, {"action": "on"})
+            self.assertTrue(err)
+        self.assertEqual(self.acted(), [])
+
+    def test_bluetooth(self):
+        for args, want, did in (({"action": "connect", "device": "Headphones"}, ["bluetooth", "connect", "AA:BB:CC:DD:EE:01"], "Connect Headphones"),
+                                ({"action": "disconnect", "device": "mouse"}, ["bluetooth", "disconnect", "AA:BB:CC:DD:EE:02"], "Disconnect Mouse"),
+                                ({"action": "off"}, ["bluetooth", "power", "false"], "Turn Bluetooth off")):
+            with self.subTest(args["action"]):
+                got, err = self.tool("bluetooth", args, env=self.RUN)
+                self.assertFalse(err, got)
+                self.assertEqual(self.acted()[-1], want)
+                self.assertEqual(self.did()[-1], (did, "done"))
+        text, err = self.tool("bluetooth", {"action": "connect", "device": "Someone's speaker"})
+        self.assertTrue(err)
+        self.assertIn("already paired", text)
+        got, err = self.tool("bluetooth", {"action": "connect", "device": "Mouse"})
+        self.assertIn("already connected", got["note"])
+        self.assertEqual(len(self.acted()), 3)
+
+    def test_asks_when_every_change_is_asked_about(self):
+        self.put_state(askChanges=True)
+        self.tool("wifi", {"action": "connect", "network": "Home"})
+        self.tool("bluetooth", {"action": "on"})
+        self.tool("dock_pin", {"id": "com.example.Terminal", "pinned": False})
+        self.assertEqual([(q["title"], q["button"], q["danger"]) for q in self.asked()],
+                         [("Connect to “Home”?", "Connect", False), ("Unpin Terminal from the dock?", "Unpin", False)],
+                         "asked about Bluetooth, which was already on")
+        self.assertEqual(self.asked()[0]["body"], "Your assistant (TestAgent) is asking to connect to this Wi-Fi "
+                                                  "network, one you've connected to before.")
+
+    def test_dock_pin(self):
+        for args, want, did in (({"id": "com.example.Editor", "pinned": True}, ["dock", "pin", "com.example.Editor", "true"], "Pin Editor to the dock"),
+                                ({"id": "gone-app", "pinned": False}, ["dock", "pin", "gone-app", "false"], "Unpin gone-app from the dock")):
+            with self.subTest(args["id"]):
+                got, err = self.tool("dock_pin", args, env=self.RUN)
+                self.assertFalse(err, got)
+                self.assertEqual(self.acted()[-1], want)
+                self.assertEqual(self.did()[-1], (did, "done"))
+        got, err = self.tool("dock_pin", {"id": "com.example.Terminal", "pinned": True})
+        self.assertIn("already pinned", got["note"])
+        for args in ({"id": "hidden-tool", "pinned": True}, {"id": "firefox --private", "pinned": True},
+                     {"id": "gone-app", "pinned": True}, {"id": "com.example.Editor"}, {"pinned": False}):
+            with self.subTest(json.dumps(args)):
+                text, err = self.tool("dock_pin", args)
+                self.assertTrue(err, text)
+        self.assertEqual(len(self.acted()), 2)
+
+    def trash(self, n):
+        files = self.h(".local", "share", "Trash", "files")
+        os.makedirs(files, exist_ok=True)
+        for i in range(n):
+            open(os.path.join(files, "old-%d.txt" % i), "w").close()
+
+    def test_waste_basket(self):
+        """Always asked, in the dock's own words, and Slate empties it as the dock does."""
+        got, err = self.tool("waste_basket_empty", {})
+        self.assertIn("already empty", got["note"])
+        self.assertEqual(self.asked(), [], "asked about an empty waste basket")
+        self.trash(3)
+        got, err = self.tool("waste_basket_empty", {}, env=self.RUN)
+        self.assertFalse(err, got)
+        self.assertEqual(got, {"emptied": 3})
+        q, = self.asked()
+        self.assertEqual(q, {"title": "Empty the waste basket?", "button": "Empty", "danger": True,
+                             "body": "Your assistant (Claude Code) is asking to empty the waste basket. The 3 items in it "
+                                     "will be deleted for good. Just so you know, this can't be undone."})
+        self.assertEqual(self.acted(), [["dock", "emptyTrash"]])
+        self.assertEqual(self.did(), [("Empty the waste basket", "asking"), ("Empty the waste basket", "done")])
+        self.assertFalse(os.path.exists(self.h(".local", "share", "Trash", "files")))
+
+    def test_waste_basket_that_stays(self):
+        """Slate couldn't empty it (gio without gvfs, say): said so, not "emptied"."""
+        self.trash(2)
+        self.state["trashStays"] = True
+        self.put_state()
+        text, err = self.tool("waste_basket_empty", {})
+        self.assertTrue(err)
+        self.assertIn("couldn't empty the waste basket: 2 things are still in it", text)
+
+    def test_waste_basket_no(self):
+        self.trash(1)
+        self.state["answer"] = "no"
+        self.put_state()
+        text, err = self.tool("waste_basket_empty", {})
+        self.assertTrue(err)
+        self.assertIn("The item in it will be deleted for good", self.asked()[0]["body"])
+        self.assertEqual(self.acted(), [])
+
+    def test_slate_from_before(self):
+        """A Slate running from before these were added says to restart it."""
+        mcp = self.module()
+        self.assertTrue(all(n in mcp.BY_NAME for n in ("wifi", "bluetooth", "dock_pin")))
+        self.state["wifi"] = "Target not found."
+        self.put_state()
+        text, err = self.tool("wifi", {})
+        self.assertTrue(err)
+        self.assertIn("needs restarting", text)
 
 
 class WhatItDid(Base):

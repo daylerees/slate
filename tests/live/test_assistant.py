@@ -160,6 +160,69 @@ class Assistant(LiveCase):
         self.assertEqual(self.ipc("launcher", "launch", "no-such-app"), "unknown")
         self.assertFalse(self.s.state()["launcher"]["open"])
 
+    def test_radios_and_dock(self):
+        """What the wifi, bluetooth, dock_pin and waste_basket_empty tools use (Radios.qml and
+        the dock's IPC), and the server using it. The container has no NetworkManager or
+        BlueZ, so here Wi-Fi and Bluetooth say there's none, and nothing can be turned on or
+        connected."""
+        for target in ("wifi", "bluetooth"):
+            with self.subTest(target):
+                st = json.loads(self.ipc(target, "list"))
+                self.assertLessEqual({"available", "on"}, set(st))
+                if not st["available"]:
+                    self.assertFalse(st["on"])
+                    self.assertEqual(self.ipc(target, "power", "true"), "none")
+                    self.assertEqual(self.ipc(target, "connect", "Home"), "off")
+        # Pinning, as the dock's menu does: at the end, and off again
+        before = json.loads(self.ipc("dock", "pinned"))
+        self.assertEqual(before, self.s.state()["dock"]["pinned"])
+
+        def restore():
+            for k in json.loads(self.ipc("dock", "pinned")):
+                self.ipc("dock", "pin", k, "false")
+            for k in before:
+                self.ipc("dock", "pin", k, "true")
+        self.addCleanup(restore)
+        self.ipc("dock", "pin", "slate-test-app", "true")
+        self.wait(lambda st: st["dock"]["pinned"][-1:] == ["slate-test-app"], "the app pinned at the end")
+        self.ipc("dock", "pin", "slate-test-app", "false")
+        self.wait(lambda st: "slate-test-app" not in st["dock"]["pinned"], "the app unpinned")
+        # Through the server
+        self.switch_on()
+        text, err = self.tool("wifi", {})
+        self.assertFalse(err, text)
+        want = "foot" not in before
+        text, err = self.tool("dock_pin", {"id": "foot", "pinned": want})
+        self.assertFalse(err, text)
+        self.wait(lambda st: ("foot" in st["dock"]["pinned"]) == want, "foot pinned or unpinned")
+        # The waste basket: Slate's own question, then emptied as the dock does (or, where
+        # gio can't, said so)
+        trash = self.s.h(".local", "share", "Trash")
+        for d in ("files", "info"):
+            os.makedirs(os.path.join(trash, d), exist_ok=True)
+        thrown = os.path.join(trash, "files", "old.txt")
+        open(thrown, "w").close()
+        with open(os.path.join(trash, "info", "old.txt.trashinfo"), "w") as f:
+            f.write("[Trash Info]\nPath=/tmp/old.txt\nDeletionDate=2026-01-05T09:00:00\n")
+        self.addCleanup(lambda: [os.remove(p) for p in (thrown, os.path.join(trash, "info", "old.txt.trashinfo"))
+                                 if os.path.exists(p)])
+        p = subprocess.Popen(self.server(), env=self.s.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        self.addCleanup(p.kill)
+        p.stdin.write(json.dumps(call("waste_basket_empty", {})) + "\n")
+        p.stdin.flush()
+        st = self.wait(lambda st: st["asking"] == "Empty the waste basket?", "Slate's question")
+        self.assertIn("The item in it will be deleted for good. Just so you know, this can't be undone.", st["askingBody"])
+        self.assertTrue(os.path.exists(thrown), "emptied before the answer")
+        self.ipc("test", "answer", "true")
+        r = json.loads(p.stdout.readline())["result"]
+        if r["isError"]:
+            self.assertIn("couldn't empty the waste basket", r["content"][0]["text"])
+            self.assertTrue(os.path.exists(thrown))
+        else:
+            self.assertFalse(os.path.exists(thrown))
+        p.stdin.close()
+        p.wait(timeout=10)
+
     def test_theme_through_the_server(self):
         """The assistant changing the theme keeps the light switch in step, as Settings does,
         and plain `config set` is left as it was (each setting on its own)."""

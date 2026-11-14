@@ -74,7 +74,8 @@ codex mcp add slate -- ~/.config/slate/bin/slate mcp</code></pre>
       <h3>Looking</h3>
       <p>These only read, and never ask: Slate's status (the theme, volume, battery, the focused window and so on),
         finding and reading settings, your open windows, workspaces, saved Spaces, installed apps, wallpapers, what's
-        playing, and your recent notifications (only while you allow it, below).</p>
+        playing, whether Wi-Fi and Bluetooth are on (with your saved networks in range and your paired devices), the
+        apps pinned to the dock, and your recent notifications (only while you allow it, below).</p>
 
       <h3>Changing</h3>
       <p>These can be undone, so they happen straight away, unless you've asked Slate to ask about every change:</p>
@@ -88,6 +89,9 @@ codex mcp add slate -- ~/.config/slate/bin/slate mcp</code></pre>
         <li>Opening or saving a Space (saving over one asks first)</li>
         <li>Changing the wallpaper to one of yours or Slate's</li>
         <li>Volume, brightness, play and pause, Do Not Disturb</li>
+        <li>Turning Wi-Fi or Bluetooth on or off, connecting to a Wi-Fi network you've saved, connecting or
+          disconnecting a paired Bluetooth device. Never a new network or a new device: those need you</li>
+        <li>Pinning an app to the dock, or unpinning one</li>
         <li>Taking a screenshot for you, as <kbd>Print</kbd> does. The assistant is only told it's done: it never gets
           the picture, or where it was saved</li>
         <li>Locking the screen, starting the screensaver</li>
@@ -95,8 +99,8 @@ codex mcp add slate -- ~/.config/slate/bin/slate mcp</code></pre>
 
       <h3>Always asking</h3>
       <p>These can't be undone or could lose work, so Slate asks you every time, in its own confirmation window, and
-        no setting turns the question off: closing a window, deleting a Space, restoring a Settings page's defaults
-        (except Assistant and Security, which are yours to restore), and logging out, restarting, shutting down or
+        no setting turns the question off: closing a window, deleting a Space, emptying the waste basket,
+        restoring a Settings page's defaults (except Assistant and Security, which are yours to restore), and logging out, restarting, shutting down or
         sleeping.</p>
 
       <h3>What there's no tool for</h3>

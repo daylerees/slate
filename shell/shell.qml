@@ -485,6 +485,7 @@ ShellRoot {
     Wallpaper {}
     NightLight {}
     AirplaneMode {}
+    Radios {}                                 // Wi-Fi and Bluetooth through IPC, for assistants
     PrivateMode { id: privateMode; confirm: powerConfirm }
     SwitchHardware {}
     PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
@@ -1535,6 +1536,13 @@ ShellRoot {
                 if (i < 0) return;
                 appMenu.openFor({ moreGrid: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
             }
+            // The pinned apps' ids, in order, and pinning one (at the end) or unpinning it, as
+            // its menu's Pin to Dock does (for assistants: scripts/slate-mcp.py's dock_pin)
+            function pinned(): string { return JSON.stringify(win.pinned); }
+            function pin(key: string, on: bool): void { if (key && win.pinned.includes(key) !== on) win.setPinned(key, on); }
+            // Empty the Waste Basket, as its menu's Empty does once you've said yes (the
+            // assistant's waste_basket_empty asks in Slate's words first)
+            function emptyTrash(): void { win.emptyTrash(); }
         }
 
         // ---- Right-click menu ----------------------------------------------

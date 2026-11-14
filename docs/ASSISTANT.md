@@ -153,6 +153,9 @@ to ask about every change.
 | `space_restore`, `space_save` | Opens a saved Space, or saves workspaces as one (saving over a Space asks first) |
 | `wallpaper_set`, `wallpaper_next` | Changes the wallpaper, to a picture from `wallpapers_list` only |
 | `volume_set`, `brightness_set`, `media_control`, `do_not_disturb` | As named |
+| `wifi` | With no action: whether Wi-Fi is on, the network it's on, and your saved networks in range (networks you haven't saved are never listed). Turns it on or off, connects to a saved network, or disconnects (either can cut off an agent that works over the internet, Nova included). Never a new network: that needs its password, from you |
+| `bluetooth` | With no action: whether Bluetooth is on, and your paired devices (connected or not, and a connected one's battery). Turns it on or off, connects or disconnects a paired device. Never pairs a new one |
+| `dock_pin` | With no arguments: the apps pinned to the dock. Pins an app (by its id from `apps_list`) at the end, or unpins one, as its menu on the dock does |
 | `screenshot` | Takes a screenshot for you, as Print does. The assistant is told "Done": it never gets the picture, or where it was saved |
 | `lock_screen`, `screensaver_start` | As named |
 
@@ -163,6 +166,7 @@ and no setting turns the question off.
 |---|---|
 | `window_close` | "Close Firefox?" |
 | `space_delete` | "Delete “Work”?" |
+| `waste_basket_empty` | "Empty the waste basket?", in the dock's own words (with how many things are in it); Slate empties it as the dock's Empty Waste Basket does |
 | `settings_restore_defaults` | "Restore Dock defaults?": every setting on one Settings page back to how Slate starts out, as the page's Restore defaults does. Not for Assistant or Security: those are yours to restore |
 | `session` | "Shut down?", "Restart?", "Log out?" or "Sleep?" |
 
