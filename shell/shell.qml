@@ -1152,6 +1152,9 @@ ShellRoot {
                 return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
             }
             x: box.x; y: box.y; width: box.w; height: box.h
+            // (on top of the dock's icons and buttons: a press one of them takes is offered to
+            // what's above it first, so beneath them this never saw a press on an icon)
+            z: 1000
             // A press on the dock closes an open bar panel, as a press anywhere else outside it
             // does (the panel leaves the dock to take the pointer: Popouts.qml). Only watches:
             // the press still goes on to what's under it
