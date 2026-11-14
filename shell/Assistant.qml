@@ -102,7 +102,8 @@ PanelWindow {
     property bool shown: false
     property bool working: false
     // The conversation, oldest first: [{ asked, answer, error, actions }] (error: { kind,
-    // message, detail } when it went wrong; actions: what it did, [{ id, text, state }]).
+    // message, detail } when it went wrong; actions: what it did, [{ id, text, state }], with
+    // { key, before, after, undone } on a setting it changed: keptAction).
     // The last one is the exchange in hand
     property var turns: []
     readonly property int maxTurns: 50       // (the last 100 messages: 50 of yours, 50 answers)
@@ -137,7 +138,7 @@ PanelWindow {
                 const d = JSON.parse(text());
                 const clean = t => ({ asked: String(t.asked || ""), answer: String(t.answer || ""), blocks: root.cleanBlocks(t.blocks), at: Number(t.at) || 0, doneAt: Number(t.doneAt) || 0,
                                       error: t.error && t.error.message ? { kind: String(t.error.kind || "failed"), message: String(t.error.message), detail: String(t.error.detail || "") } : null,
-                                      actions: (t.actions || []).map(a => ({ id: a.id, text: String(a.text || ""), state: String(a.state || "") })) });
+                                      actions: (t.actions || []).filter(a => a && typeof a === "object").map(a => root.keptAction(a)) });
                 let list = (d.turns || []).filter(t => t && t.asked).map(clean).slice(-root.maxTurns);
                 // (one that was still being answered when Slate stopped)
                 list = list.map(t => t.answer === "" && !t.error ? Object.assign(t, { answer: "Stopped." }) : t);
@@ -345,11 +346,55 @@ PanelWindow {
         if (!d || d.run !== runId || runId === "") return;
         const list = actions.slice();
         const i = list.findIndex(a => a.id === d.id);
-        const item = { id: d.id, text: String(d.text || ""), state: String(d.state || "") };
+        const item = keptAction(d);
         if (i >= 0) list[i] = item; else list.push(item);
         patch({ actions: list.slice(-12) });
     }
     readonly property var stateWords: ({ asking: "Waiting for you", declined: "you said no", "no answer": "no answer", refused: "Slate said no", failed: "didn't work" })
+    // One row of the list, as kept: { id, text, state }, and for a setting it changed (the
+    // server's settings_set) its key, the value before and the value it was given, for Undo;
+    // undone once it's been put back
+    function keptAction(a) {
+        const item = { id: a.id, text: String(a.text || ""), state: String(a.state || "") };
+        if (undoKey(a.key) !== "" && a.before !== undefined && a.after !== undefined
+                && typeof a.before === typeof Config.s[a.key] && typeof a.after === typeof Config.s[a.key])
+            Object.assign(item, { key: a.key, before: a.before, after: a.after, undone: !!a.undone });
+        return item;
+    }
+    // A key Undo may set: one of Slate's settings, never the assistant's own or Private Mode
+    // (the server can't change those anyway). "" otherwise
+    function undoKey(k) {
+        k = String(k || "");
+        if (!/^[A-Za-z][A-Za-z0-9]*$/.test(k) || Config.s[k] === undefined || typeof Config.s[k] === "object") return "";
+        if (k.startsWith("assistant") || ["barShowAssistant", "privateMode", "privateRestore"].indexOf(k) >= 0) return "";
+        return k;
+    }
+    function sameValue(a, b) { return typeof a === "number" ? Math.abs(a - Number(b)) < 1e-9 : a === b; }
+    // Undo shows on a setting it changed, until it's put back, and only while the setting
+    // still has the value Nova gave it: changed again since, by you or anyone, there's nothing to undo
+    function undoable(a) {
+        return !!a && a.state === "done" && !a.undone && a.key !== undefined && undoKey(a.key) !== "" && sameValue(Config.s[a.key], a.after);
+    }
+    // Put it back as Settings would (the same special cases as the server's settings_set and
+    // `config set`), then the row says it's undone (turn: its place in the conversation)
+    function undo(ti, ai) {
+        const t = turns[ti];
+        const a = t && t.actions ? t.actions[ai] : null;
+        if (!undoable(a)) return;
+        const k = a.key, v = a.before;
+        if (k === "windowMode") Config.setDefaultMode(v, false);     // (workspaces in use keep the mode they have)
+        else if (k === "barPosition") Config.moveBar(v);
+        else if (k === "dockPosition") Config.moveDock(v);
+        else {
+            Config.s[k] = v;
+            if (k === "themeMode" && (v === "dark" || v === "light")) Config.s.lightMode = v === "light";
+        }
+        const list = t.actions.slice();
+        list[ai] = Object.assign({}, a, { undone: true });
+        const all = turns.slice();
+        all[ti] = Object.assign({}, t, { actions: list });
+        turns = all;
+    }
 
     Process {
         id: runner
@@ -771,8 +816,11 @@ PanelWindow {
                                             Row {
                                                 id: actionRow
                                                 required property var modelData
+                                                required property int index
                                                 readonly property bool ok: modelData.state === "done"
                                                 readonly property bool waiting: modelData.state === "asking"
+                                                readonly property bool undone: ok && !!modelData.undone
+                                                readonly property bool canUndo: root.undoable(modelData)
                                                 spacing: 8
                                                 // (the mark and the spinner are two items, so a tick or cross
                                                 // never keeps the angle the spinner stopped at)
@@ -782,8 +830,8 @@ PanelWindow {
                                                     Text {
                                                         anchors.centerIn: parent
                                                         visible: !actionRow.waiting
-                                                        text: String.fromCodePoint(actionRow.ok ? 0xEA5E : 0xEB55)      // tick, cross
-                                                        color: actionRow.ok ? Config.pageColour("power") : root.danger
+                                                        text: String.fromCodePoint(actionRow.undone ? 0xEB77 : actionRow.ok ? 0xEA5E : 0xEB55)      // put back, tick, cross
+                                                        color: actionRow.undone ? root.dimTextColor : actionRow.ok ? Config.pageColour("power") : root.danger
                                                         font.family: tabler.name; font.pixelSize: 14
                                                     }
                                                     Text {
@@ -797,11 +845,31 @@ PanelWindow {
                                                     }
                                                 }
                                                 Text {
-                                                    width: Math.min(implicitWidth, replyCol.inner - 24)
-                                                    text: actionRow.modelData.text + (actionRow.ok ? "" : (actionRow.waiting ? " · " : ": ") + (root.stateWords[actionRow.modelData.state] || ""))
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    width: Math.min(implicitWidth, replyCol.inner - 24 - (undoButton.visible ? undoButton.width + 8 : 0))
+                                                    text: actionRow.modelData.text + (actionRow.undone ? " · undone" : actionRow.ok ? "" : (actionRow.waiting ? " · " : ": ") + (root.stateWords[actionRow.modelData.state] || ""))
                                                     textFormat: Text.PlainText; elide: Text.ElideRight
                                                     color: actionRow.ok ? root.dimTextColor : root.textColor
                                                     font.family: root.fontFamily; font.pixelSize: 13
+                                                }
+                                                // Undo, for a setting it changed: puts back the value it had before
+                                                Rectangle {
+                                                    id: undoButton
+                                                    visible: actionRow.canUndo
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    width: undoLabel.implicitWidth + 16; height: 22
+                                                    radius: Config.corner(6)
+                                                    color: "transparent"
+                                                    HoverFill { base: "transparent"; hovered: undoHover.hovered; radius: parent.radius }
+                                                    Text {
+                                                        id: undoLabel
+                                                        anchors.centerIn: parent
+                                                        text: "Undo"
+                                                        color: root.textColor
+                                                        font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                                    }
+                                                    HoverHandler { id: undoHover }
+                                                    ClickTap { onTapped: root.undo(turn.index, actionRow.index) }
                                                 }
                                             }
                                         }

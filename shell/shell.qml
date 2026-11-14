@@ -324,7 +324,7 @@ ShellRoot {
             // (history: earlier exchanges, shown above this one)
             // (at / doneAt: when asked and answered, ms; left out, no time is shown)
             // (blocks: the answer as the runner reads it, scripts/safe_markdown.py; left out, it's plain text)
-            const turn = h => ({ asked: h.asked || "", answer: h.answer || "", blocks: nova.cleanBlocks(h.blocks), actions: h.actions || [], error: h.error || null, at: h.at || 0, doneAt: h.doneAt || 0 });
+            const turn = h => ({ asked: h.asked || "", answer: h.answer || "", blocks: nova.cleanBlocks(h.blocks), actions: (h.actions || []).map(a => nova.keptAction(a)), error: h.error || null, at: h.at || 0, doneAt: h.doneAt || 0 });
             nova.turns = (st.history || []).map(turn).concat(st.asked ? [turn(st)] : []);
             nova.working = !!st.working;
             if (st.session !== undefined) nova.session = st.session;      // (the agent's thread, as a past answer left it)
@@ -334,6 +334,8 @@ ShellRoot {
         function sounds(): void { Config.testSounds = []; }
         // A code box's Copy in the latest answer, as clicking it does (block: its place among the blocks)
         function novaCopyCode(block: int): void { nova.copyCode(nova.turns.length - 1, block); }
+        // Undo on a row of what the latest answer did, as clicking it does (action: its place in the list)
+        function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.endDrag(); win.testHover = false; }
@@ -452,6 +454,8 @@ ShellRoot {
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
                              blocks: nova.cur ? nova.cur.blocks || [] : [], rich: nova.richNow(), copied: nova.copied,
+                             // (whether each row of what it did offers Undo just now)
+                             undo: nova.actions.map(a => nova.undoable(a)),
                              button: Config.s.barShowAssistant && Config.assistantOn,
                              enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 // Slate's settings reaching Hyprland (Config.testHypr)

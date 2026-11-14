@@ -18,6 +18,12 @@ agent you chose does it through the same tools.
   your accent colour, Nova's answers on the left as they're written, each with
   a short list of what was done: Slate's own record, in Slate's words, not the agent's
   account of itself. It scrolls once it's long. Point at a message and a copy button appears in its top right corner.
+- **Undo.** A setting Nova changed has **Undo** at the end of its row, which puts back the
+  value it had before, as Settings would (Slate does it itself, not the agent). It's there
+  while the setting still has the value Nova gave it: change it again yourself and there's
+  nothing to undo. Once it's put back, the row says "undone". The server sends the setting's
+  key, the value before and the value it was given with the row (`tell()` for `settings_set`),
+  and they're kept with the chat history.
 - **How answers look.** Most answers are a sentence or two, but one can carry a little
   structure: steps as a list, a setting's name in bold, a command in a box with its own
   **Copy** button (it copies just the command). Pictures and links are never loaded or

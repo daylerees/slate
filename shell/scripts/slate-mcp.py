@@ -444,12 +444,16 @@ def doing(text):
 
 def tell(state):
     """Tell the prompt window what this call came to (asking, done, declined…). Only in a
-    run it started, and only for tools that change something: looking isn't listed."""
+    run it started, and only for tools that change something: looking isn't listed. A
+    setting changed (settings_set, done) also carries its key, the value before and the value
+    it was given ("key", "before", "after"), for the row's Undo, which Slate does itself."""
     if not RUN or CALL.get("tier") == "look":
         return
+    row = {"run": RUN, "id": CALL.get("n", 0), "state": state, "text": CALL.get("did") or CALL.get("title", "")}
+    if state == "done" and "undo" in CALL:
+        row.update(CALL["undo"])
     try:
-        ipc("assistant", "did", json.dumps({"run": RUN, "id": CALL.get("n", 0), "state": state,
-                                            "text": CALL.get("did") or CALL.get("title", "")}))
+        ipc("assistant", "did", json.dumps(row))
     except NotRunning:
         pass
 
@@ -1056,6 +1060,8 @@ def settings_set(key, value):
         if key == "themeMode" and new in ("dark", "light"):     # (the switch the theme is drawn from, as Settings sets it)
             ipc("config", "set", "lightMode", "true" if new == "light" else "false")
     out = {"key": key, "name": name, "before": before, "now": value_now(s)}
+    # (for the prompt window's Undo: Slate puts it back itself, while it still has this value)
+    CALL["undo"] = {"key": key, "before": before, "after": out["now"]}
     if key in AT_START:
         out["note"] = "It takes effect the next time Slate starts."
     return out

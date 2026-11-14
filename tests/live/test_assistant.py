@@ -551,6 +551,48 @@ class Nova(LiveCase):
                 self.assertEqual(st["session"], want)
                 self.assertEqual(st["turns"], 2, "the history went with the thread")
 
+    def test_undo_a_setting(self):
+        """A setting Nova changed can be put back from its row: Undo sets the value before as
+        Settings would, the row says it's undone (and is kept so), and the button goes. Changed
+        again since, or one of the assistant's own, there's no Undo."""
+        for key in ("dockIconSize", "themeMode", "lightMode"):
+            self.keep_setting(key)
+        self.config("barClockSeconds", "true")
+        self.config("dockIconSize", "48")
+        self.config("themeMode", "light")
+        self.config("lightMode", "true")
+        rows = [{"id": 1, "text": "Turn Show seconds on", "state": "done", "key": "barClockSeconds", "before": False, "after": True},
+                {"id": 2, "text": "Set Icon size to 48", "state": "done", "key": "dockIconSize", "before": 32, "after": 48},
+                {"id": 3, "text": "Set Theme to \"light\"", "state": "done", "key": "themeMode", "before": "dark", "after": "light"},
+                {"id": 4, "text": "Close Terminal", "state": "done"},
+                {"id": 5, "text": "Turn Glass on", "state": "declined", "key": "glass", "before": False, "after": True},
+                {"id": 6, "text": "Turn Ask on", "state": "done", "key": "assistantAskChanges", "before": True, "after": False}]
+        self.ipc("test", "nova", json.dumps({"asked": "seconds, a bigger dock and light", "answer": "Done.", "actions": rows}))
+        self.wait(lambda st: st["assistant"]["undo"] == [True, True, True, False, False, False], "Undo on the settings it changed")
+        self.ipc("test", "novaUndo", "0")
+        st = self.wait(lambda st: st["assistant"]["undo"][0] is False, "the first Undo to go")["assistant"]
+        self.assertEqual(self.setting("barClockSeconds"), "false", "Undo didn't put the setting back")
+        self.assertTrue(st["actions"][0]["undone"], "the row doesn't say it's undone")
+        # The theme goes back with the switch it's drawn from, as Settings sets it
+        self.ipc("test", "novaUndo", "2")
+        self.wait(lambda st: st["assistant"]["undo"][2] is False, "the theme's Undo to go")
+        self.assertEqual((self.setting("themeMode"), self.setting("lightMode")), ("dark", "false"))
+        # Changed again since: nothing to undo, and Undo (if it were pressed) leaves it alone
+        self.config("dockIconSize", "40")
+        self.wait(lambda st: st["assistant"]["undo"][1] is False, "Undo to go once the setting has changed")
+        self.ipc("test", "novaUndo", "1")
+        self.s.settle(0.3)
+        self.assertEqual(self.setting("dockIconSize"), "40", "Undo changed a setting changed since")
+        self.assertFalse(self.nova()["actions"][1].get("undone"), "a row said undone that wasn't")
+        # The assistant's own settings never take Undo, whatever the row says
+        self.assertNotIn("key", self.nova()["actions"][5])
+        # Undone is kept with the conversation
+        self.s.settle(1.2)
+        with open(self.chat_file()) as f:
+            kept = json.load(f)["turns"][-1]["actions"]
+        self.assertEqual([(a.get("key"), bool(a.get("undone"))) for a in kept[:3]],
+                         [("barClockSeconds", True), ("dockIconSize", False), ("themeMode", True)])
+
     def test_did_only_from_this_run(self):
         """What it did comes from Slate's server for the run in hand: anything else is ignored."""
         self.ipc("test", "nova", json.dumps({"asked": "x", "working": True}))
