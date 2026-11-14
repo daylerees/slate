@@ -17,7 +17,7 @@ login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
        dbus-run-session if there's no session bus yet)
          ├─ ~/.config/slate/hypr/env.lua, variables.lua        (yours, first)
          ├─ Slate's config: colors, variables, animations, autostart, decorations,
-         │  inputs, binds, misc, monitors, windowrules, workspaces
+         │  hyprbars, inputs, binds, misc, monitors, windowrules, workspaces, slate
          ├─ ~/.config/slate/hypr/monitors.lua, binds.lua, rules.lua,
          │  autostart.lua, hyprland.lua                        (yours, last; they win)
          └─ autostart: slate

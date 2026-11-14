@@ -1,4 +1,5 @@
 -- Colours for the Slate session's Hyprland config: Slate's palette, as hex RGBA.
+-- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 -- Window borders follow the theme at runtime: Slate (shell.qml) replaces ACTIVE_BORDER and
 -- INACTIVE_BORDER with the current accent and bar colour whenever the theme changes, so the
 -- values here only show until Slate has started.

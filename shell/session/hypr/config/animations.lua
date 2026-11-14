@@ -1,4 +1,5 @@
 -- Animations: https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
+-- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 -- Slate's own overlays (launcher, switcher, panels…) animate themselves; these are for
 -- windows and workspaces.
 
@@ -21,7 +22,7 @@ local ANIM_OFF = false
 -- (SLATE_ANIM_SLOW: the tests slow every animation down by that much, to take pictures partway)
 local function sp(x) return x * ANIM_SCALE * (SLATE_ANIM_SLOW or 1) end
 
--- The fixed animations (windows, workspaces, the special workspace), at the current speed
+-- The fixed animations (windows, workspaces, the secret workspace), at the current speed
 local function defineLeaves()
     -- Windows
     hl.animation({ leaf = "global",              enabled = true, speed = sp(3), bezier = "quick" })
@@ -34,7 +35,7 @@ local function defineLeaves()
     -- below: by default the incoming one slides and fades in over the outgoing one, which
     -- stays put, solid, until the new one has all but covered it, then fades away under it)
     hl.animation({ leaf = "workspaces",          enabled = true, speed = sp(5), bezier = "quick", style = "slide" })
-    -- Special workspace (scratchpad): slides down from above and fades in over what's
+    -- The secret workspace (Hyprland calls it the special workspace): slides down from above and fades in over what's
     -- underneath; closing reverses it
     hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })
     hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })

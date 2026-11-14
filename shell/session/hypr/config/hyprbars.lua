@@ -1,4 +1,5 @@
 -- Hyprbars: optional title bars for floating windows (Settings → Windows → Title bars), from a
+-- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 -- Hyprland plugin. Slate's own title bars are the default and need none of this. Slate builds
 -- hyprbars with `slate build-hyprbars` (into ~/.local/share/slate/plugins); a distro package
 -- of it works too. Shown only on floating workspaces with Hyprbars chosen (windowrules.lua);

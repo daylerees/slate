@@ -1,4 +1,5 @@
 -- Look and feel: gaps, borders, rounding, opacity, dimming and blur.
+-- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 -- (Animations are in animations.lua; colours in colors.lua.)
 
 hl.config({
@@ -38,11 +39,11 @@ hl.config({
         -- Dim the windows that don't have focus, so the focused one stands out
         dim_inactive = true,
         dim_strength = 0.5,
-        dim_special = 0.3,                 -- dim what's behind the special workspace
+        dim_special = 0.3,                 -- dim what's behind the secret workspace
         blur = {
             size = 5,
             passes = 4,
-            special = true,                -- blur behind the special workspace too
+            special = true,                -- blur behind the secret workspace too
         },
         -- A soft drop shadow under floating windows (settings, dialogs); tiled windows
         -- have none (windowrules.lua)
