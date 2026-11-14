@@ -101,8 +101,10 @@ class NovaVoice(LiveCase):
         press = self.hold_key(2.5)
         st = self.wait(lambda st: st["novaVoice"]["phase"] == "listening", "it to listen while the key's held", timeout=5)
         self.assertTrue(st["assistant"]["open"])
-        self.assertEqual(len(self.calls("pw-record")), 1, "the microphone wasn't opened")
-        self.assertTrue(self.recordings(), "nothing being recorded while held")
+        # (Slate starts voice.py, which starts pw-record: "listening" can show a moment before the
+        # microphone has opened, under a busy full run; it has well within the key's 2.5 s)
+        self.wait(lambda st: len(self.calls("pw-record")) == 1 and self.recordings(), "the microphone to open while the key's held", timeout=2)
+        self.assertEqual(len(self.calls("pw-record")), 1, "the microphone was opened more than once")
         press.join(timeout=10)
         st = self.wait(lambda st: st["assistant"]["asked"] == "Show seconds on the clock.", "what was said to be sent", timeout=15)
         self.assertEqual(st["novaVoice"]["phase"], "")

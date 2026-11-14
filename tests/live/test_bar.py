@@ -261,6 +261,13 @@ class WorkspaceName(LiveCase):
         self.wait(lambda st: not st["bar"]["line"]["workspacename"]["visible"], "it to be off the bar to start with")
         ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
         self.addCleanup(lambda: (self.go(ws), self.ipc("workspacename", "set", str(ws), "")))
+        # A window on it, so it's still there to come back to: an empty workspace closes when
+        # left, and its name goes with it (as it should). In a full run earlier tests can leave
+        # the one in use empty, and "Coding" was gone on coming back
+        self.addCleanup(self.close_windows)
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.wait(lambda st: any(c.get("mapped") and c["workspace"]["id"] == ws for c in self.s.hyprctl("clients", json_out=True)),
+                  "a window on the workspace", timeout=15)
         # (put on the bar as Edit layout's pool does)
         self.ipc("test", "arrange", "shown", "workspacename", "true", "")
         self.shown(f"Workspace {ws}", "no name of its own")
