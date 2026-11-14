@@ -1,5 +1,5 @@
 """bin/slate-logs: the file people attach to public bug reports. It leaves out the location,
-a command of the person's own and the display's name (which has its serial number), and writes
+a command of the person's own and the main display's serial number (its name stays), and writes
 the home folder as ~ everywhere, so none of those is in the file, while the other settings
 and the log are."""
 import json
@@ -18,6 +18,9 @@ class Logs(Case):
     def setUp(self):
         super().setUp()
         self.s = Stubs(self.h)
+        MON = json.dumps([{"name": "DP-1", "make": "Dell Inc.", "model": "U2720Q",
+                           "description": "Dell Inc. U2720Q SERIAL4242"}])
+        self.s.add("hyprctl", by_args={"monitors -j": MON})
         self.env = self.s.env
         self.install = os.path.join(self.h.dir, "slate")
         os.makedirs(self.install)
@@ -51,26 +54,40 @@ class Logs(Case):
 
     def test_nothing_private_is_in_the_file(self):
         text = self.export()
-        for secret in ("Hidden Place", "51.5072", "-0.1276", "hunter2", "my-agent", "SERIAL4242", "Dell Inc."):
+        for secret in ("Hidden Place", "51.5072", "-0.1276", "hunter2", "my-agent", "SERIAL4242"):
             self.assertNotIn(secret, text)
         self.assertNotIn(self.h.home, text)
         self.assertNotIn(self.user, text)
 
-    def test_says_only_whether_they_are_set(self):
-        text = self.export()
-        self.assertIn('"assistantCommand": "(set)"', text)
-        self.assertIn('"mainDisplay": "(set)"', text)
+    def test_says_only_whether_the_command_is_set(self):
+        self.assertIn('"assistantCommand": "(set)"', self.export())
 
-    def test_not_set_says_so(self):
+    def test_main_display_keeps_its_name_not_its_serial(self):
+        self.assertIn('"mainDisplay": "Dell Inc. U2720Q"', self.export())
+
+    def test_serial_left_out_when_the_display_isnt_connected(self):
+        self.s.add("hyprctl", by_args={"monitors -j": "[]"})
+        text = self.export()
+        self.assertIn('"mainDisplay": "Dell Inc. U2720Q"', text)
+        self.assertNotIn("SERIAL4242", text)
+
+    def test_a_port_name_is_kept(self):
+        self.setting(mainDisplay="DP-1")
+        self.assertIn('"mainDisplay": "DP-1"', self.export())
+
+    def setting(self, **changes):
         p = os.path.join(self.install, "settings.json")
         with open(p) as f:
             s = json.load(f)
-        s.update(assistantCommand="", mainDisplay="")
+        s.update(changes)
         with open(p, "w") as f:
             json.dump(s, f)
+
+    def test_not_set_says_so(self):
+        self.setting(assistantCommand="", mainDisplay="")
         text = self.export()
         self.assertIn('"assistantCommand": "(not set)"', text)
-        self.assertIn('"mainDisplay": "(not set)"', text)
+        self.assertIn('"mainDisplay": ""', text)
 
     def test_home_becomes_a_tilde_everywhere(self):
         text = self.export()

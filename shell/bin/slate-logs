@@ -2,9 +2,9 @@
 # Save Slate's recent log and some system details to a text file, to attach to a bug report.
 # Prints the file's path. Run as `slate logs`, or from Settings → Debug → Export recent logs.
 #
-# Leaves out your location (latitude, longitude, place name), and says only whether the command
-# of your own for Nova and your main display (its description holds the monitor's serial number)
-# are set. Your home folder is written as ~ throughout, so your user name isn't in the file. The
+# Leaves out your location (latitude, longitude, place name), says only whether the command of
+# your own for Nova is set, and leaves out the serial number of your main display (its name stays,
+# it helps to find a bug). Your home folder is written as ~ throughout, so your user name isn't in the file. The
 # log itself can still name apps, windows and files, so the file says to look it over before
 # sharing it.
 SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
@@ -45,17 +45,29 @@ section() { printf '\n===== %s =====\n' "$1"; }
     hyprctl monitors 2>/dev/null | grep -E '^Monitor|^\s+[0-9]+x[0-9]+@|scale:' | sed 's/^\s*/  /'
     lspci 2>/dev/null | grep -iE 'vga|3d|display' | sed 's/^/  GPU: /'
 
-    section "Settings (location, your own command and your display's name left out)"
+    section "Settings (location, your own command and your display's serial number left out)"
     python3 -c '
 import json, os, re, sys
 s = json.load(open(sys.argv[1]))
 for k in ("latitude", "longitude", "locationName"):
     s.pop(k, None)
-# A command of your own, and a monitor description (it carries the serial number): only
-# whether they are set
-for k in ("assistantCommand", "mainDisplay"):
-    if k in s:
-        s[k] = "(set)" if s[k] else "(not set)"
+# A command of your own: only whether it is set
+if "assistantCommand" in s:
+    s["assistantCommand"] = "(set)" if s["assistantCommand"] else "(not set)"
+# The main display is saved as its monitor description ("make model serial"). The name helps to
+# find a bug; the serial number identifies one particular screen, so only that is left out
+d = s.get("mainDisplay")
+if d:
+    try:
+        mons = json.loads(sys.argv[2])
+    except ValueError:
+        mons = []
+    m = next((m for m in mons if m.get("description") == d), None)
+    if m and (m.get("make") or m.get("model")):
+        d = ("%s %s" % (m.get("make", ""), m.get("model", ""))).strip()
+    elif len(d.split()) >= 3:
+        d = d.rsplit(None, 1)[0]
+    s["mainDisplay"] = d
 home = os.environ.get("HOME", "").rstrip("/")
 pat = re.compile(re.escape(home) + r"(?=/|$)") if home else None
 def tidy(v):
@@ -63,7 +75,7 @@ def tidy(v):
     if isinstance(v, list): return [tidy(x) for x in v]
     if isinstance(v, dict): return {tidy(k): tidy(x) for k, x in v.items()}
     return v
-print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" 2>/dev/null || echo "(couldn't read settings.json)"
+print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" "$(hyprctl monitors -j 2>/dev/null)" 2>/dev/null || echo "(couldn't read settings.json)"
 
     section "Slate's log (last $LINES lines)"
     if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour | untilde
