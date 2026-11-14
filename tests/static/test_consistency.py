@@ -259,6 +259,37 @@ class Settings(Case):
                 with self.subTest(f"bin/slate:{n}"):
                     self.assertIn("QT_SCALE_FACTOR", line, "a Slate window is started without the Interface size")
 
+    def test_title_bar_converts_once_at_the_edge(self):
+        """TitleBar.qml draws on a window Hyprland places, and places it from the pointer: it
+        mentioned Config.uiScale (so the test above passed) while using Hyprland's pixels as
+        Slate's units throughout, which only works at 100%. Its rule now: what's read from
+        Hyprland is divided by the scale as it's read, what's sent goes through toHypr(), and
+        nothing drawn is multiplied by the scale (Qt already does that)."""
+        src = slate.read("shell", "TitleBar.qml")
+        code = [l.split("//")[0] for l in src.splitlines()]
+        for name, read in (("winX", r"\(o\.at\[0\] - mon\.x\) / s"), ("winY", r"\(o\.at\[1\] - mon\.y\) / s"),
+                           ("winW", r"o\.size\[0\] / s"), ("winH", r"o\.size\[1\] / s")):
+            with self.subTest(name):
+                line = next((l for l in code if re.search(rf"readonly property real {name}:", l)), "")
+                self.assertRegex(line, read, f"{name} is the window's place from Hyprland: divide it by the scale")
+        for n, line in enumerate(code, 1):
+            # A place or size handed to Hyprland from the bar's own (Slate's) numbers
+            if re.search(r"slateDragMove|slateDragResize|cursor\.move", line):
+                with self.subTest(f"TitleBar.qml:{n}"):
+                    numbers = re.findall(r"\$\{([^}]*)\}", line.split('("${address}"', 1)[-1])
+                    self.assertTrue(numbers, "no place sent?")
+                    for expr in numbers:
+                        # (toHypr on the line itself, or a value the lines just above made with it)
+                        made = any(re.search(rf"\b{re.escape(v)} = toHypr\(", "\n".join(code[max(0, n - 6):n]))
+                                   for v in re.findall(r"[A-Za-z_]\w*", expr))
+                        self.assertTrue("toHypr(" in expr or made,
+                                        f"{expr} goes to Hyprland in Slate's units: toHypr() it")
+            # A size multiplied by the scale is drawn twice as scaled (the scale is `s` here);
+            # only toHypr itself and the bar's height in Hyprland's pixels may
+            if re.search(r"\*\s*(tb\.)?s\b(?!\.)", line) and "function toHypr" not in line and "property int barPx" not in line:
+                with self.subTest(f"TitleBar.qml:{n}"):
+                    self.fail(f"multiplied by the Interface size, which Qt already applies: {line.strip()}")
+
     def test_rounded_corners_go_through_config(self):
         """Settings → Appearance → Rounded UI elements squares everything, which works because
         every corner is written Config.corner(radius). A corner given as a plain number would

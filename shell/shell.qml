@@ -60,6 +60,7 @@ ShellRoot {
         function maximise(address: string): void { Config.titleBarMaximise(address); }
     }
     Variants {
+        id: titleBars
         model: Config.anyFloating && Config.slateTitleBars ? Quickshell.screens : []
         TitleBar { required property var modelData; screen: modelData }
     }
@@ -172,6 +173,14 @@ ShellRoot {
         // Hot corners: is this point (Hyprland's pixels, as `hyprctl cursorpos` says) in that
         // corner ("topLeft", "bottomRight"…) of the main display? (what unlocking asks)
         function hotCorner(corner: string, x: real, y: real): bool { return hotCorners.pointIn(corner, x, y); }
+        // Slate's title bar that's showing: where it's drawn (Slate's units on its screen), as
+        // JSON, after a pretend pointer on it if asked ("press", "move", "release"…: TitleBar.qml's
+        // testPointer; "" only looks)
+        function titleBar(what: string, x: real, y: real): string {
+            const t = titleBars.instances.find(t => t.shown);
+            if (t && what !== "") t.testPointer(what, x, y);
+            return JSON.stringify(t ? t.testState() : null);
+        }
         // Arranging the bar: a chip in the pool pressed with the pointer at x, y (Hyprland's
         // pixels, as `hyprctl cursorpos` says): where that is on the desktop, as the bar counts it
         function barPointer(x: real, y: real): string {

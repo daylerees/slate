@@ -14,6 +14,7 @@ import unittest
 from live import LiveCase
 from session import Session, OUTPUT, SECOND, in_container
 from test_bar import PANELS
+from test_title_bars import TitleBarChecks
 
 SIZES = {OUTPUT: (1440, 900), SECOND: (1280, 800)}
 AT = {OUTPUT: (0, 0), SECOND: (1440, 0)}          # in Hyprland's pixels
@@ -343,3 +344,36 @@ class TwoScreensAt125(TwoScreensCase):
         self.assertInside(self.wait_layer("slate-overview", SECOND), SECOND)
         self.ipc("overview", "close")
         self.wait(lambda st: not st["overview"]["open"])
+
+
+class TitleBarsOnTwoScreensAt125(TitleBarChecks, TwoScreensCase):
+    """Slate's own title bars (TitleBar.qml, one per screen) on a window on TEST2 at 125%
+    Interface size: the bar's drawn in Slate's units from TEST2's own corner, on a window
+    Hyprland places in its pixels from the desktop's, 1440 along."""
+    settings = {"uiScale": 1.25}
+    scale = 1.25
+
+    def setUp(self):
+        super().setUp()
+        self.close_windows()
+        for key in ("windowMode", "titleBarStyle"):
+            self.keep_setting(key)
+        self.config("titleBarStyle", "slate")
+        self.config("windowMode", "floating")
+
+    def window_on_the_second_screen(self):
+        self.focus(SECOND)
+        w = self.floating_foot()
+        self.assertEqual(self.monitor_of(w)["name"], SECOND, "the new window didn't open on TEST2")
+        self.bar_on(w)
+        return w
+
+    def test_bar_sits_on_a_window_on_the_second_screen(self):
+        w = self.window_on_the_second_screen()
+        self.assertBarOnWindow(w["address"])
+
+    def test_dragging_on_the_second_screen(self):
+        self.check_drag(self.window_on_the_second_screen(), to=(610, 420))
+
+    def test_corner_resize_on_the_second_screen(self):
+        self.check_corner_resize(self.window_on_the_second_screen(), to=(900, 250))

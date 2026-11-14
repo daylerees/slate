@@ -91,13 +91,23 @@ PanelWindow {
     // corner stays put)
     property string sizing: ""                       // "left" or "right" while a corner's held
     property bool sized: false                       // dragged past a few pixels
-    readonly property real minW: Math.round(160 * s)
-    readonly property real minH: Math.round(90 * s)
+    readonly property real minW: 160
+    readonly property real minH: 90
     property point dragAt: Qt.point(0, 0)            // where the drag has asked for the window
-    readonly property real winX: dragging ? dragAt.x : (o && o.at && mon ? o.at[0] - mon.x : 0)
-    readonly property real winY: dragging ? dragAt.y : (o && o.at && mon ? o.at[1] - mon.y : 0)
-    readonly property real winW: o && o.size ? o.size[0] : 0
-    readonly property real winH: o && o.size ? o.size[1] : 0
+    // Two kinds of numbers meet in this file. Hyprland's pixels: a window's `at` and `size`,
+    // the monitor's place and size (`o`, `mon`, `clients`), and everything sent to Hyprland.
+    // Slate's units, which Qt draws `s` times larger (Settings → Appearance → Interface size):
+    // everything drawn here and every pointer position. They're converted once, where they
+    // meet: what's read from Hyprland is divided by `s` just below, and what's sent goes
+    // through toHypr(). Everything between (winX…, dragAt, handle, the bar) is Slate's units
+    // on this screen, so sizes are plain numbers, never multiplied by `s`: Qt does that.
+    // (They can be fractions: a window 333 of Hyprland's pixels along is at 266.4 at 125%)
+    readonly property real s: Config.uiScale || 1
+    function toHypr(v) { return Math.round(v * s); }
+    readonly property real winX: dragging ? dragAt.x : (o && o.at && mon ? (o.at[0] - mon.x) / s : 0)
+    readonly property real winY: dragging ? dragAt.y : (o && o.at && mon ? (o.at[1] - mon.y) / s : 0)
+    readonly property real winW: o && o.size ? o.size[0] / s : 0
+    readonly property real winH: o && o.size ? o.size[1] / s : 0
     // On this screen, floating, not full screen or maximised, on the workspace showing here
     readonly property bool wanted: !!o && !!mon && o.floating === true && (o.fullscreen || 0) === 0
         && o.monitor === mon.id && (o.pinned || (!!o.workspace && o.workspace.id === wsId))
@@ -141,14 +151,17 @@ PanelWindow {
     Component.onCompleted: { Hyprland.refreshMonitors(); query(); if (barWanted) fadeIn.restart(); }
 
     // ---- Look -------------------------------------------------------------------------
-    readonly property real s: Config.uiScale || 1
-    readonly property real barH: Math.round(13 * 2.6 * s)
+    // The bar's height in Hyprland's pixels: the same number Hyprland is told to keep clear
+    // above a floating window (SLATE_TITLEBAR_HEIGHT, shell.qml), and here in Slate's units
+    readonly property int barPx: Math.round(13 * 2.6 * s)
+    readonly property real barH: barPx / s
     // The window's corners: Hyprland draws its border just outside it, the outer edge's curve
     // the rounding plus the border. The bar sits on that edge and wraps round its top corners
     // (none for a window Slate's maximised: it fills the screen, with only the bar above it)
     readonly property bool flat: !!o && Config.titleBarRestore[String(o.address)] !== undefined
-    readonly property real border: flat ? 0 : Math.max(0, Math.min(12, Config.s.windowBorderSize))
-    readonly property real r: flat ? 0 : Config.windowRounding + border
+    // (the border's width and the rounding are Hyprland's settings, in its pixels)
+    readonly property real border: flat ? 0 : Math.max(0, Math.min(12, Config.s.windowBorderSize)) / s
+    readonly property real r: flat ? 0 : Config.windowRounding / s + border
     // A little see-through (Hyprland blurs what's behind it: windowrules.lua)
     readonly property color barColor: Qt.rgba(barSolid.r, barSolid.g, barSolid.b, 0.85)
     readonly property color barSolid: Config.tint("#0f1216")
@@ -194,47 +207,12 @@ PanelWindow {
         // Drag to move the window; double-click to maximise. (A drag area: silent)
         MouseArea {
             anchors.fill: parent
-            property point grab: Qt.point(0, 0)
-            property point start: Qt.point(0, 0)
             // (positions on the screen: the bar itself moves under the pointer as the window does)
-            onPressed: mouse => {
-                tb.dragAt = Qt.point(tb.winX, tb.winY);
-                const p = mapToItem(null, mouse.x, mouse.y);
-                grab = Qt.point(p.x, p.y);
-                start = tb.dragAt;
-                tb.moved = false;
-                tb.dragging = true;
-            }
+            onPressed: mouse => { const p = mapToItem(null, mouse.x, mouse.y); tb.dragPress(p.x, p.y); }
             // While moving, the handle stands in for the pointer
             cursorShape: tb.moved ? Qt.BlankCursor : Qt.ArrowCursor
-            onPositionChanged: mouse => {
-                if (!tb.dragging) return;
-                const p = mapToItem(null, mouse.x, mouse.y), px = p.x, py = p.y;
-                if (!tb.moved) {
-                    if (Math.abs(px - grab.x) + Math.abs(py - grab.y) < 4) return;   // (a click so far)
-                    // Start: the pointer to the middle of the window, the handle with it
-                    tb.unflatten();
-                    tb.moved = true;
-                    const cx = Math.round(tb.winX + tb.winW / 2), cy = Math.round(tb.winY + tb.winH / 2);
-                    tb.handle = Qt.point(cx, cy);
-                    tb.dragAt = Qt.point(tb.winX, tb.winY);
-                    if (tb.mon) Hyprland.dispatch(`function() hl.dispatch(hl.dsp.cursor.move({ x = ${cx + tb.mon.x}, y = ${cy + tb.mon.y} })) end`);
-                    return;
-                }
-                // The window's middle follows the pointer (kept clear of the screen's top, room
-                // for the bar)
-                tb.handle = Qt.point(px, py);
-                tb.dragAt = Qt.point(px - tb.winW / 2, Math.max(tb.barH + tb.border, py - tb.winH / 2));
-                tb.move();          // (pointer movement comes once a frame at most: no need to hold it back)
-            }
-            onReleased: {
-                if (!tb.dragging) return;
-                if (tb.moved) tb.move();
-                tb.dragging = false;
-                tb.moved = false;
-                Hyprland.dispatch("function() slateDragEnd() end");
-                tb.query();
-            }
+            onPositionChanged: mouse => { const p = mapToItem(null, mouse.x, mouse.y); tb.dragTo(p.x, p.y); }
+            onReleased: tb.dragRelease()
             onDoubleClicked: tb.maximise()
         }
 
@@ -245,7 +223,7 @@ PanelWindow {
                 id: corner
                 required property string modelData
                 readonly property bool atLeft: modelData === "left"
-                readonly property real grip: Math.max(tb.r, Math.round(18 * tb.s))
+                readonly property real grip: Math.max(tb.r, 18)
                 x: atLeft ? 0 : bar.width - grip; y: 0
                 width: grip; height: grip
                 z: 2
@@ -256,41 +234,9 @@ PanelWindow {
                     id: cornerHover
                     cursorShape: corner.atLeft ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
                 }
-                property point grab: Qt.point(0, 0)
-                property point from: Qt.point(0, 0)              // the window's corner, as it started
-                property rect geo: Qt.rect(0, 0, 0, 0)           // the window, as it started
-                onPressed: mouse => {
-                    const p = mapToItem(null, mouse.x, mouse.y);
-                    grab = Qt.point(p.x, p.y);
-                    geo = Qt.rect(tb.winX, tb.winY, tb.winW, tb.winH);
-                    tb.sized = false;
-                    tb.sizing = modelData;
-                }
-                onPositionChanged: mouse => {
-                    if (tb.sizing === "") return;
-                    const p = mapToItem(null, mouse.x, mouse.y);
-                    if (!tb.sized) {
-                        if (Math.abs(p.x - grab.x) + Math.abs(p.y - grab.y) < 4) return;
-                        // Start: the bar steps aside, the pointer to the window's corner
-                        tb.unflatten();
-                        tb.sized = true;
-                        from = Qt.point(atLeft ? geo.x : geo.x + geo.width, geo.y);
-                        if (tb.mon) Hyprland.dispatch(`function() hl.dispatch(hl.dsp.cursor.move({ x = ${Math.round(from.x + tb.mon.x)}, y = ${Math.round(from.y + tb.mon.y)} })) end`);
-                        return;
-                    }
-                    const dx = p.x - from.x, dy = p.y - from.y;
-                    const w = Math.max(tb.minW, atLeft ? geo.width - dx : geo.width + dx);
-                    // (kept clear of the screen's top, room for the bar)
-                    const top = Math.max(tb.barH + tb.border, geo.y + dy);
-                    const h = Math.max(tb.minH, geo.y + geo.height - top);
-                    tb.resize(atLeft ? geo.x + geo.width - w : geo.x, geo.y + geo.height - h, w, h);
-                }
-                onReleased: {
-                    if (tb.sizing === "") return;
-                    const done = tb.sized;
-                    tb.sizing = ""; tb.sized = false;
-                    if (done) { Hyprland.dispatch("function() slateDragEnd() end"); tb.query(); }
-                }
+                onPressed: mouse => { const p = mapToItem(null, mouse.x, mouse.y); tb.sizePress(modelData, p.x, p.y); }
+                onPositionChanged: mouse => { const p = mapToItem(null, mouse.x, mouse.y); tb.sizeTo(p.x, p.y); }
+                onReleased: tb.sizeRelease()
             }
         }
 
@@ -303,7 +249,7 @@ PanelWindow {
             Image {
                 id: titleIcon
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.round(16 * tb.s); height: width
+                width: 16; height: width
                 readonly property var entry: tb.o ? Config.appEntry(tb.o.class || "") : null
                 source: entry ? "file://" + Config.tilePath(entry.id) + "?v=" + Config.tileVersion : ""
                 visible: source !== ""
@@ -316,7 +262,7 @@ PanelWindow {
                 textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                 text: tb.o ? (tb.o.title || tb.o.class || "") : ""
                 color: tb.textColor
-                font.family: Config.s.fontFamily; font.pixelSize: Math.round(13 * tb.s); font.weight: Font.Medium
+                font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
                 elide: Text.ElideRight
             }
         }
@@ -333,7 +279,7 @@ PanelWindow {
                 delegate: Rectangle {
                     id: btn
                     required property var modelData
-                    width: Math.round(18 * tb.s); height: width; radius: Config.corner(width / 2)
+                    width: 18; height: width; radius: Config.corner(width / 2)
                     readonly property bool danger: modelData.act === "close"
                     color: btnArea.containsMouse ? (danger ? Config.tint("#f28b8b") : Config.accent) : Config.tint("#3a424e")
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -344,7 +290,7 @@ PanelWindow {
                         opacity: btnArea.containsMouse ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                         color: Config.tint("#12151a")
-                        font.family: tabler.name; font.pixelSize: Math.round(12 * tb.s)
+                        font.family: tabler.name; font.pixelSize: 12
                     }
                     ClickArea {
                         id: btnArea
@@ -371,9 +317,9 @@ PanelWindow {
     // The move handle: a small rounded square with the move arrows, under the pointer
     Rectangle {
         id: handleBox
-        readonly property real size: Math.round(44 * tb.s)
+        readonly property real size: 44
         x: tb.handle.x - size / 2; y: tb.handle.y - size / 2
-        width: size; height: size; radius: Config.corner(Math.round(12 * tb.s))
+        width: size; height: size; radius: Config.corner(12)
         color: tb.barColor
         border.width: 1; border.color: Config.glass ? Config.glassEdge : Config.tint("#2a313c")
         opacity: tb.moved ? 1 : 0
@@ -384,11 +330,98 @@ PanelWindow {
             anchors.centerIn: parent
             text: String.fromCodePoint(0xF22F)          // arrows-move
             color: tb.textColor
-            font.family: tabler.name; font.pixelSize: Math.round(22 * tb.s)
+            font.family: tabler.name; font.pixelSize: 22
         }
     }
 
     // ---- Doing things -----------------------------------------------------------------
+    // Dragging the bar, by where the pointer is on this screen (the bar's MouseArea; the tests
+    // drive the same three through the `test` IPC target, there being no pointer to move)
+    property point dragGrab: Qt.point(0, 0)
+    function dragPress(px, py) {
+        dragAt = Qt.point(winX, winY);
+        dragGrab = Qt.point(px, py);
+        moved = false;
+        dragging = true;
+    }
+    function dragTo(px, py) {
+        if (!dragging) return;
+        if (!moved) {
+            if (Math.abs(px - dragGrab.x) + Math.abs(py - dragGrab.y) < 4) return;   // (a click so far)
+            // Start: the pointer to the middle of the window, the handle with it
+            unflatten();
+            moved = true;
+            // (a whole pixel of Hyprland's, which is where the pointer can be put)
+            const cx = toHypr(winX + winW / 2), cy = toHypr(winY + winH / 2);
+            handle = Qt.point(cx / s, cy / s);
+            dragAt = Qt.point(winX, winY);
+            if (mon) Hyprland.dispatch(`function() hl.dispatch(hl.dsp.cursor.move({ x = ${cx + mon.x}, y = ${cy + mon.y} })) end`);
+            return;
+        }
+        // The window's middle follows the pointer (kept clear of the screen's top, room
+        // for the bar)
+        handle = Qt.point(px, py);
+        dragAt = Qt.point(px - winW / 2, Math.max(barH + border, py - winH / 2));
+        move();          // (pointer movement comes once a frame at most: no need to hold it back)
+    }
+    function dragRelease() {
+        if (!dragging) return;
+        if (moved) move();
+        dragging = false;
+        moved = false;
+        Hyprland.dispatch("function() slateDragEnd() end");
+        query();
+    }
+    // Resizing from a top corner ("left" or "right"), likewise
+    property point sizeGrab: Qt.point(0, 0)
+    property point sizeFrom: Qt.point(0, 0)              // the window's corner, as it started
+    property rect sizeGeo: Qt.rect(0, 0, 0, 0)           // the window, as it started
+    function sizePress(side, px, py) {
+        sizeGrab = Qt.point(px, py);
+        sizeGeo = Qt.rect(winX, winY, winW, winH);
+        sized = false;
+        sizing = side;
+    }
+    function sizeTo(px, py) {
+        if (sizing === "") return;
+        const atLeft = sizing === "left", geo = sizeGeo;
+        if (!sized) {
+            if (Math.abs(px - sizeGrab.x) + Math.abs(py - sizeGrab.y) < 4) return;
+            // Start: the bar steps aside, the pointer to the window's corner
+            unflatten();
+            sized = true;
+            sizeFrom = Qt.point(atLeft ? geo.x : geo.x + geo.width, geo.y);
+            if (mon) Hyprland.dispatch(`function() hl.dispatch(hl.dsp.cursor.move({ x = ${toHypr(sizeFrom.x) + mon.x}, y = ${toHypr(sizeFrom.y) + mon.y} })) end`);
+            return;
+        }
+        const dx = px - sizeFrom.x, dy = py - sizeFrom.y;
+        const w = Math.max(minW, atLeft ? geo.width - dx : geo.width + dx);
+        // (kept clear of the screen's top, room for the bar)
+        const top = Math.max(barH + border, geo.y + dy);
+        const h = Math.max(minH, geo.y + geo.height - top);
+        resize(atLeft ? geo.x + geo.width - w : geo.x, geo.y + geo.height - h, w, h);
+    }
+    function sizeRelease() {
+        if (sizing === "") return;
+        const done = sized;
+        sizing = ""; sized = false;
+        if (done) { Hyprland.dispatch("function() slateDragEnd() end"); query(); }
+    }
+    // (the tests) where the bar is drawn on this screen, in Slate's units, and what it's doing;
+    // and a pretend pointer on it: "press", "move", "release" (the bar), "pressLeft",
+    // "pressRight", "size", "sizeEnd" (its corners), at x, y on this screen in Slate's units
+    function testState() {
+        return { screen: screen ? screen.name : "", address: address, shown: shown, moved: moved, sized: sized,
+                 x: bar.x, y: bar.y, w: bar.width, h: bar.height, handle: [handle.x, handle.y] };
+    }
+    function testPointer(what, x, y) {
+        if (what === "press") dragPress(x, y);
+        else if (what === "move") dragTo(x, y);
+        else if (what === "release") dragRelease();
+        else if (what === "pressLeft" || what === "pressRight") sizePress(what === "pressLeft" ? "left" : "right", x, y);
+        else if (what === "size") sizeTo(x, y);
+        else if (what === "sizeEnd") sizeRelease();
+    }
     // Moving or resizing a maximised window: it's not maximised any more, so its frame's back
     function unflatten() {
         if (!flat) return;
@@ -397,15 +430,15 @@ PanelWindow {
         Config.titleBarRestore = r;
         Hyprland.dispatch(`function() slateFlat("${address}", false) end`);
     }
-    // Resizing it: its top left and size (this screen's coordinates)
+    // Resizing it: its top left and size (Slate's units on this screen; sent in Hyprland's pixels)
     function resize(x, y, w, h) {
         if (!mon || address === "") return;
-        Hyprland.dispatch(`function() slateDragResize("${address}", ${Math.round(x + mon.x)}, ${Math.round(y + mon.y)}, ${Math.round(w)}, ${Math.round(h)}) end`);
+        Hyprland.dispatch(`function() slateDragResize("${address}", ${toHypr(x) + mon.x}, ${toHypr(y) + mon.y}, ${toHypr(w)}, ${toHypr(h)}) end`);
     }
-    // Moving the window to where the drag has got (Hyprland coordinates)
+    // Moving the window to where the drag has got (sent in Hyprland's pixels)
     function move() {
         if (!mon || address === "") return;
-        const x = Math.round(dragAt.x + mon.x), y = Math.round(dragAt.y + mon.y);
+        const x = toHypr(dragAt.x) + mon.x, y = toHypr(dragAt.y) + mon.y;
         Hyprland.dispatch(`function() slateDragMove("${address}", ${x}, ${y}) end`);
     }
     function maximise() { if (address !== "") Config.titleBarMaximise(address); }
@@ -422,8 +455,9 @@ PanelWindow {
         const sc = mon.scale || 1, turned = (mon.transform || 0) % 2 === 1;
         const W = (turned ? mon.height : mon.width) / sc, H = (turned ? mon.width : mon.height) / sc;
         const res = mon.reserved || [0, 0, 0, 0];                 // left, top, right, bottom
-        const x = mon.x + res[0], y = mon.y + res[1] + barH;
-        const w = W - res[0] - res[2], h = H - res[1] - res[3] - barH;
+        // (all of this is in Hyprland's pixels, the bar's height too)
+        const x = mon.x + res[0], y = mon.y + res[1] + barPx;
+        const w = W - res[0] - res[2], h = H - res[1] - res[3] - barPx;
         const key = String(c.address);
         const saved = Config.titleBarRestore[key];
         const near = (a, b) => Math.abs(a - b) <= 3;
