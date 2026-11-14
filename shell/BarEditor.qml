@@ -196,7 +196,6 @@ PanelWindow {
                 opacity: swHover.hovered ? 0.35 : 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
             }
-            Gloss { radius: parent.radius }   // glass: a sheen
             Rectangle {
                 width: 18; height: 18; radius: Config.corner(9)
                 anchors.verticalCenter: parent.verticalCenter

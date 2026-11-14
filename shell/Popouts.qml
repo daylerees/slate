@@ -740,9 +740,10 @@ PanelWindow {
             visible: parent.editCode !== 0
             anchors { left: titleLabel.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
             width: 24; height: 24
-            Rectangle { anchors.fill: parent; radius: Config.corner(6); color: titleEditArea.containsMouse ? pop.card : "transparent" }
+            Rectangle { anchors.fill: parent; radius: Config.corner(6); color: titleEditHover.hovered ? Config.hover : "transparent" }
             Icon { anchors.centerIn: parent; code: parent.parent.editCode; font.pixelSize: 16; color: pop.accent }
-            ClickArea { id: titleEditArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: parent.parent.editClicked() }
+            HoverHandler { id: titleEditHover }
+            ClickArea { anchors.fill: parent; onClicked: parent.parent.editClicked() }
         }
     }
 
@@ -3149,8 +3150,9 @@ PanelWindow {
                     RowButton {
                         visible: notifView.list.length > 0
                         width: 30; height: 28
+                        danger: true
                         onClicked: if (pop.notifs) pop.notifs.clearAll()
-                        Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.dim }
+                        Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
                     }
                 }
             }
