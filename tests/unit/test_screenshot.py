@@ -2,6 +2,7 @@
 open used to start another on top of it, each one dimming the screen further (a bug). Only
 one chooser may be open; once it's done, the next screenshot starts as usual."""
 import os
+import shutil
 import subprocess
 import time
 
@@ -112,3 +113,119 @@ class PrivateMode(Case):
         code, out = run(["/bin/sh", SCRIPT, "screen"], env=self.s.env, timeout=10)
         self.assertEqual(code, 0, out)
         self.assertEqual(len(self.s.calls("grim")), 1)
+
+
+class Failures(Case):
+    """A screenshot that can't be taken or saved says so in a notification: the panel has
+    closed by then, so it used to look as if nothing had happened. Pressing Esc in the chooser
+    is not a failure, and stays silent."""
+    scratch = True
+
+    def setUp(self):
+        super().setUp()
+        self.mktemp = shutil.which("mktemp")
+        self.s = Stubs(self.h)
+        for name in ("grim", "wl-copy", "notify-send"):
+            self.s.add(name)
+        self.s.add("slurp", stdout="10,10 100x80\n")
+        self.s.add("hyprctl", stdout="[]")
+        self.s.add("hyprpicker", missing=True)
+        self.s.add("swash", missing=True)
+        self.folder = self.h("Pictures", "Screenshots")
+
+    def tool(self, name, text):
+        """A stand-in written here, for what Stubs can't do (saying something on stderr)."""
+        p = os.path.join(self.s.dir, name)
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\necho called >> '%s.called'\n%s\n" % (p, text))
+        os.chmod(p, 0o755)
+
+    def shot(self, mode):
+        return run(["/bin/sh", SCRIPT, mode], env=self.s.env, timeout=10)
+
+    def said(self):
+        """The notifications sent, as (title, body)."""
+        return [tuple(c[-2:]) for c in self.s.calls("notify-send")]
+
+    def saved(self):
+        return os.listdir(self.folder) if os.path.isdir(self.folder) else []
+
+    def test_all_well_says_saved(self):
+        code, out = self.shot("region")
+        self.assertEqual(code, 0, out)
+        self.assertEqual([t for t, b in self.said()], ["Screenshot saved"])
+        self.assertEqual(len(self.saved()), 1)
+
+    def test_grim_not_installed(self):
+        self.s.add("grim", missing=True)
+        for mode in ("region", "window", "screen"):
+            with self.subTest(mode):
+                self.assertEqual(self.shot(mode)[0], 1)
+        self.assertEqual(self.s.calls("slurp"), [], "the chooser opened with nothing to take the picture")
+        said = self.said()
+        self.assertEqual([t for t, b in said], ["Slate couldn't take the screenshot"] * 3)
+        self.assertTrue(all('Install the "grim" package' in b for t, b in said), said)
+
+    def test_slurp_not_installed(self):
+        """No chooser: an area or a window can't be picked, and the whole screen still can."""
+        self.s.add("slurp", missing=True)
+        for mode in ("region", "window"):
+            with self.subTest(mode):
+                self.assertEqual(self.shot(mode)[0], 1)
+        self.assertEqual(self.s.calls("grim"), [])
+        said = self.said()
+        self.assertEqual([t for t, b in said], ["Slate couldn't take the screenshot"] * 2)
+        self.assertTrue(all('Install the "slurp" package' in b for t, b in said), said)
+        code, out = self.shot("screen")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.saved()), 1)
+
+    def test_escape_in_the_chooser_is_silent(self):
+        """Esc: slurp says "selection cancelled" and stops. That's a choice, not a failure."""
+        self.tool("slurp", "echo 'selection cancelled' >&2\nexit 1")
+        code, out = self.shot("region")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.said(), [])
+        self.assertEqual(self.s.calls("grim"), [])
+        self.assertEqual(self.saved(), [])
+
+    def test_chooser_fails(self):
+        self.tool("slurp", "echo 'failed to connect to a wayland display' >&2\nexit 1")
+        code, out = self.shot("region")
+        self.assertEqual(code, 1, out)
+        (title, body), = self.said()
+        self.assertEqual(title, "Slate couldn't take the screenshot")
+        self.assertIn("slurp", body)
+        self.assertIn("failed to connect to a wayland display", body)
+        self.assertEqual(self.s.calls("grim"), [])
+
+    def test_grim_fails(self):
+        self.tool("grim", "echo 'compositor doesn’t support the screen capture protocol' >&2\nexit 1")
+        for mode in ("region", "screen"):
+            with self.subTest(mode):
+                self.assertEqual(self.shot(mode)[0], 1)
+        said = self.said()
+        self.assertEqual([t for t, b in said], ["Slate couldn't take the screenshot"] * 2)
+        self.assertTrue(all("screen capture protocol" in b for t, b in said), said)
+        self.assertEqual(self.saved(), [])
+        self.assertEqual(self.s.calls("wl-copy"), [], "a picture that wasn't taken was copied")
+
+    def test_cannot_save(self):
+        """The folder can't be made (something else has its name): said, and still copied."""
+        with open(self.h("Pictures"), "w") as f:
+            f.write("not a folder")
+        code, out = self.shot("screen")
+        self.assertEqual(code, 1, out)
+        (title, body), = self.said()
+        self.assertEqual(title, "Slate couldn't save the screenshot")
+        self.assertIn(self.folder, body)
+        self.assertEqual(len(self.s.calls("wl-copy")), 1)
+
+    def test_mktemp_without_gnu_options(self):
+        """Not every mktemp takes --suffix (BSD's and busybox's don't)."""
+        self.tool("mktemp", 'case "$*" in *--*) echo "mktemp: unknown option" >&2; exit 1 ;; esac\n'
+                            'exec "%s" "$@"' % self.mktemp)
+        code, out = self.shot("screen")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.saved()), 1)
+        self.assertEqual([t for t, b in self.said()], ["Screenshot saved"])
