@@ -438,6 +438,9 @@ ShellRoot {
                             // rows drawn out of place
                             frames: appLauncher.testFrames, work: appLauncher.testWork, scrolled: appLauncher.testScrolled(),
                             openMs: appLauncher.testOpenMs, scrolling: appLauncher.testScrolling,
+                            // What it has done so far: its rows put in step with the results, and its
+                            // list of recent files read (neither while it's closed)
+                            syncs: appLauncher.testSyncs, recentReads: appLauncher.testRecentReads,
                             apps: (appLauncher.results || []).filter(r => !r.kind && !r.calc && !r.setting && !r.action).length,
                             tileVersion: Config.tileVersion },
                 // App icons: still being drawn or their colours noted (busy), and how many colours are known

@@ -98,8 +98,15 @@ PanelWindow {
         list.positionViewAtBeginning();
         openedAt = Date.now();
         shown = true;
+        // The recent files changed while it was closed (or weren't there to read): read now
+        if (recentStale) { recentStale = false; recentView.reload(); }
     }
     function closeLauncher() { shown = false; }
+    // Once it's gone from the screen (its fade over, so the text isn't seen to vanish), what was
+    // typed is cleared, as the next opening would anyway. Left there, the closed launcher went
+    // on searching for it: every window title that changed anywhere (a browser's tab, a
+    // terminal) made the results, and every row, again
+    onVisibleChanged: if (!visible) search.text = ""
 
     // ---- Test mode: how it opens and scrolls (tests/live/test_launcher_scroll.py) ----------
     // How long from openLauncher to the end of the first frame after it (ms); then, during a
@@ -116,6 +123,11 @@ PanelWindow {
     property real testScrollStart: 0
     property real testScrollMs: 0
     property bool testScrollEnd: false
+    // How often the rows were brought into step with the results, and how often the list of
+    // recent files was read: neither should move while the launcher's closed
+    // (tests/live/test_launcher_idle.py)
+    property int testSyncs: 0
+    property int testRecentReads: 0
     readonly property bool testScrolling: testScrollMs > 0
     onShownChanged: if (shown && Config.testMode) { testOpenMs = -1; testFrameAt = 0; }
     function testScroll(ms) {
@@ -393,6 +405,7 @@ PanelWindow {
     onGridModeChanged: { resultModel.clear(); syncResults(); }     // a layout's rows are made for it
     function syncResults() {
         const keys = resultKeys;
+        if (Config.testMode) testSyncs++;
         // Closed, the rows are simply made again in order. The apps arrive in several goes as
         // Slate starts, and the list, handed all those inserts and moves while it wasn't being
         // drawn, laid its rows out wrongly the first time it opened: rows were skipped and the
@@ -498,13 +511,21 @@ PanelWindow {
     // ---- Files and folders (Settings → Launcher → Files and folders) -------------------
     // Files you opened recently (the desktop's own list, which most apps add to) and folders
     // in your home by name (up to three deep, not hidden ones)
+    // Read as Slate starts, so the first opening has them, and after that only while the
+    // launcher's open: a change while it's closed is noted (recentStale) and the list read when
+    // it next opens, rather than the whole file read and picked through each time any app adds
+    // to it. (A list that couldn't be read, not being there yet, is tried again the same way)
     property var recentFiles: []
+    property bool recentStale: false
     FileView {
+        id: recentView
         path: Config.s.launcherFiles ? (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/recently-used.xbel" : ""
         printErrors: false
         watchChanges: true
-        onFileChanged: reload()
+        onFileChanged: { if (root.shown) reload(); else root.recentStale = true; }
+        onLoadFailed: root.recentStale = true
         onLoaded: {
+            if (Config.testMode) root.testRecentReads++;
             const out = [], seen = new Set();
             const re = /<bookmark\s+href="file:\/\/([^"]+)"[^>]*?modified="([^"]+)"/g;
             const found = [];
@@ -521,7 +542,9 @@ PanelWindow {
         id: folderFind
         stdout: StdioCollector { onStreamFinished: root.foundFolders = text.split("\n").filter(l => l !== "") }
     }
-    // Looked for a moment after typing stops (find, standard everywhere)
+    // Looked for a moment after typing stops (find, standard everywhere). Hidden folders aren't
+    // gone into at all (-prune), rather than walked and left out of what's printed: ~/.cache
+    // and ~/.local/share are most of what's in a home folder
     Timer {
         id: folderSoon
         interval: 180
@@ -529,7 +552,7 @@ PanelWindow {
             const q = root.query.replace(/[*?\[\]\\]/g, "");
             if (q.length < 2) { root.foundFolders = []; return; }
             folderFind.running = false;
-            folderFind.command = ["sh", "-c", 'find "$HOME" -mindepth 1 -maxdepth 3 -type d -not -path "*/.*" -iname "*$1*" 2>/dev/null | head -n 4', "sh", q];
+            folderFind.command = ["sh", "-c", 'find "$HOME" -mindepth 1 -maxdepth 3 -name ".*" -prune -o -type d -iname "*$1*" -print 2>/dev/null | head -n 4', "sh", q];
             folderFind.running = true;
         }
     }
