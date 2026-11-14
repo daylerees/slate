@@ -210,6 +210,47 @@ class Settings(Case):
                                       f"{k} starts at {defaults[k]}, which its slider can't show: its row needs defaultText")
         self.assertGreater(seen, 25, "far fewer slider rows found than Settings has")
 
+    def test_switched_off_settings_say_what_they_need(self):
+        """A setting greyed out because another one is off (Accent boldness without Accent
+        colour from wallpaper, say) says which one, with a way there: its row's needsMet,
+        needs, needsPage and needsLabel (SettingRow), rather than an `enabled:` or a dimming
+        of its own tied to Config.s, which once left people wondering why a slider wouldn't
+        move. Each one leads to a page that exists and a setting with that name."""
+        src = settings_window()
+        lines = src.splitlines()
+        # Properties worked out from settings (`readonly property bool applies: Config.s.…`)
+        derived = set(re.findall(r"^\s*(?:readonly\s+)?property\s+\w+\s+(\w+)\s*:[^\n]*Config\.s\.", src, re.M))
+        tied = re.compile(r"Config\.s\.|\b(?:%s)\b" % "|".join(map(re.escape, derived)) if derived else r"Config\.s\.")
+        for n, line in enumerate(lines, 1):
+            code = line.split("//")[0]
+            # (on a line of its own, or inline: `Toggle { checked: …; enabled: … }`)
+            for m in re.finditer(r"(?:^|[{;])\s*(enabled|opacity)\s*:([^;}]*)", code):
+                # (an opacity that dims, not a hover fill fading in: 0.4 against 1)
+                dims = m.group(1) == "enabled" or re.search(r"\?\s*(0?\.\d+|1)\s*:\s*(0?\.\d+|1)\b", m.group(2))
+                if dims and tied.search(m.group(2)):
+                    with self.subTest(f"SettingsWindow.qml:{n}"):
+                        self.fail(f"SettingsWindow.qml:{n}: greyed out by a setting without saying which: "
+                                  f"give its row needsMet and needs instead ({line.strip()[:90]})")
+        labels = set(re.findall(r'\b(?:label|text):\s*"([^"]+)"', src))
+        pages = set(settings_pages())
+        found = 0
+        for n, line in enumerate(lines, 1):
+            if not re.match(r"\s*needsMet\s*:", line):
+                continue
+            found += 1
+            near = "\n".join(lines[max(0, n - 6):n + 6])
+            with self.subTest(f"SettingsWindow.qml:{n}"):
+                needs = re.search(r"\bneeds\s*:(.*)", near)
+                self.assertTrue(needs and re.search(r'"[^"]+"', needs.group(1)), f"line {n}: needsMet without needs saying what")
+                page = re.search(r'\bneedsPage\s*:\s*"(\w+)"', near)
+                self.assertTrue(page, f"line {n}: no needsPage to go to")
+                self.assertIn(page.group(1), pages, f"line {n}: needsPage {page.group(1)!r} isn't a Settings page")
+                to = re.search(r"\bneedsLabel\s*:([^;\n]*)", near)
+                self.assertTrue(to, f"line {n}: no needsLabel to go to")
+                for name in re.findall(r'(?<![=!]=)\s"([^"]+)"', " " + to.group(1)):
+                    self.assertIn(name, labels, f"line {n}: needsLabel {name!r} isn't a setting's name")
+        self.assertGreaterEqual(found, 6, "fewer dependent settings found than Settings has")
+
     def test_setting_names_unique(self):
         src = slate.read("shell", "SettingsData.qml")
         names = re.findall(r"^\s*property\s+[\w<>]+\s+(\w+)\s*:", src, re.M)

@@ -157,6 +157,12 @@ New or changed pages in `SettingsWindow.qml` match the existing ones:
   button), never a separate button at the bottom.
 - The exception is All Settings (the grid of pages): no label over its grid and no Restore
   defaults.
+- A setting that only works while another is on (or off) is greyed out by its row, never by an
+  `enabled:` or dimming of its own: `needsMet` (whether it can be used), `needs` (the line
+  saying which, "Needs Glass to be on") and `needsPage` / `needsLabel` (where that setting is,
+  as `win.goTo` takes them; the line goes there when clicked). A sub-option that only makes
+  sense right under its switch can be hidden instead (`visible:`).
+  `tests/static/test_consistency.py::test_switched_off_settings_say_what_they_need` enforces it.
 
 **The changed-from-default hint.** A row with a `settingKey` shows a dot once changed, with a
 hint giving the default (`SettingRow.defaultShown`). It must match the default as the control

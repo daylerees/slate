@@ -245,6 +245,22 @@ FloatingWindow {
         placeFound();
         Qt.callLater(() => { placeFound(); foundFade.restart(); });
     }
+    // For the tests: the settings on this page greyed out for another one (SettingRow's needs),
+    // and following one's line to what it needs, as clicking it does
+    function waitingRows() {
+        const out = [];
+        const walk = it => {
+            if (!it || !it.visible) return;
+            if (it.waiting === true && it.needs !== undefined) out.push(it);
+            for (const c of it.children) walk(c);
+        };
+        walk(pageLoader.item);
+        return out;
+    }
+    function followNeeds(label) {
+        const row = waitingRows().find(r => r.label === label);
+        if (row && row.needsPage !== "") goTo(row.needsPage, row.needsLabel);
+    }
     // The found setting, kept in view and lit up while the highlight shows. Things above it on
     // the page can finish loading after the jump (pictures, lists) and push it down, so this
     // follows it, rather than staying where it first was (which left it lit too high)
@@ -1236,6 +1252,16 @@ FloatingWindow {
         // row can't work it out (a switch: On/Off; a slider: its value, as the slider shows it)
         property string settingKey: ""
         property string defaultText: ""
+        // A setting that only works while another one is on (or off): needsMet says whether it
+        // is, and needs says which, in a short line under the description while it isn't
+        // ("Needs Glass to be on"). Meanwhile the row greys out, but the line stays clickable
+        // and goes to that setting (needsPage and needsLabel, as win.goTo takes them)
+        property string needs: ""
+        property bool needsMet: true
+        property string needsPage: ""
+        property string needsLabel: ""
+        readonly property bool waiting: needs !== "" && !needsMet
+        readonly property real waitOpacity: waiting ? 0.4 : 1
         readonly property bool changed: settingKey !== "" && Config.defaultOf(settingKey) !== undefined
             && !Config.sameValue(Config.s[settingKey], Config.defaultOf(settingKey))
         readonly property string defaultShown: {
@@ -1265,16 +1291,59 @@ FloatingWindow {
                 // (room left after the name for the changed-from-default dot)
                 width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 20 : 0))
                 text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
+                opacity: settingRow.waitOpacity
+                Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             }
-            Text { width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
+            Text {
+                width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+                opacity: settingRow.waitOpacity
+                Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+            }
+            // What it's waiting for, and the way there: a quiet link, the muted hover under the pointer
+            Item {
+                id: needsLine
+                objectName: "needsLine"
+                visible: settingRow.waiting
+                readonly property bool linked: settingRow.needsPage !== ""
+                x: -6
+                width: needsRow.implicitWidth + 12; height: needsRow.implicitHeight + 6
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Config.corner(6)
+                    color: needsLine.linked && needsHover.hovered ? Config.hover : "transparent"
+                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                }
+                Row {
+                    id: needsRow
+                    anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                    spacing: 5
+                    Text {
+                        width: Math.min(implicitWidth, labels.width - 24)
+                        text: settingRow.needs; color: win.dim; font.family: win.font; font.pixelSize: 12; elide: Text.ElideRight
+                    }
+                    Text {
+                        visible: needsLine.linked
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: win.glyph(0xEA1F)          // an arrow: it goes there
+                        color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12
+                    }
+                }
+                HoverHandler { id: needsHover }
+                ClickTap { enabled: needsLine.linked; onTapped: win.goTo(settingRow.needsPage, settingRow.needsLabel) }
+            }
             Row {
                 id: belowSlot
                 spacing: 8
                 topPadding: visibleChildren.length > 0 ? 8 : 0
+                enabled: !settingRow.waiting
+                opacity: settingRow.waitOpacity
+                Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             }
         }
         Item {
             id: belowRightSlot
+            enabled: !settingRow.waiting
+            opacity: settingRow.waitOpacity
             anchors { right: parent.right; rightMargin: 16 }
             y: labels.y + belowSlot.y + belowSlot.topPadding
             height: Math.max(0, belowSlot.height - belowSlot.topPadding)
@@ -1319,6 +1388,9 @@ FloatingWindow {
             id: controlSlot
             anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
             width: childrenRect.width; height: childrenRect.height
+            enabled: !settingRow.waiting
+            opacity: settingRow.waitOpacity
+            Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
         }
     }
     // A setting that's a plain switch for one of Slate's settings: key is its name in
@@ -1661,6 +1733,11 @@ FloatingWindow {
         property var value
         signal picked(var value)
         property string settingKey: ""          // (as SettingRow's: the changed-from-default mark)
+        // (as SettingRow's: the setting this one only works with)
+        property string needs: ""
+        property bool needsMet: true
+        property string needsPage: ""
+        property string needsLabel: ""
         readonly property var current: options.find(o => o.value === value) ?? null
         // Shown when the value isn't one of the options (it isn't offered in the list itself)
         property string noneLabel: ""
@@ -1672,6 +1749,8 @@ FloatingWindow {
           label: dropdown.label
           detail: dropdown.detail
           settingKey: dropdown.settingKey
+          needs: dropdown.needs; needsMet: dropdown.needsMet
+          needsPage: dropdown.needsPage; needsLabel: dropdown.needsLabel
           defaultText: {
               const d = dropdown.settingKey !== "" ? Config.defaultOf(dropdown.settingKey) : undefined;
               const o = d === undefined ? null : dropdown.options.find(x => x.value === d);
@@ -3513,9 +3592,11 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     label: "Mute the microphone"
-                    detail: Config.s.privateMode ? "Muted while Private Mode is on" : ""
+                    // (Private Mode keeps it muted: its own row, at the top of this page, turns it off)
+                    needsMet: !Config.s.privateMode
+                    needs: "Muted while Private Mode is on"
+                    needsPage: "sound"; needsLabel: "Private Mode is on"
                     Toggle {
-                        enabled: !Config.s.privateMode
                         checked: !!(soundPane.source && soundPane.source.audio && soundPane.source.audio.muted)
                         onToggled: v => { if (soundPane.source && soundPane.source.audio) soundPane.source.audio.muted = v; }
                     }
@@ -4200,7 +4281,11 @@ FloatingWindow {
                         : "What Slate tells an assistant about your desktop (your settings, your open windows and their titles) is sent to the service behind the agent you use, "
                         + "under your own account with them. Slate itself sends nothing anywhere. Slate does its best to keep an assistant within these limits, "
                         + "but it can't promise what one will do, so using it is your choice and your responsibility."
-                    Toggle { checked: Config.assistantOn; enabled: !Config.s.privateMode; onToggled: v => win.assistantSwitch(v) }
+                    // (Private Mode keeps it off: Sound's Private Mode row turns that off)
+                    needsMet: !Config.s.privateMode
+                    needs: "Needs Private Mode to be off"
+                    needsPage: "sound"; needsLabel: "Private Mode is on"
+                    Toggle { checked: Config.assistantOn; onToggled: v => win.assistantSwitch(v) }
                     below: [Button { visible: Config.assistantOn; label: "Read the risks again"; onClicked: win.assistantReadRisks() }]
                 }
             }
@@ -5149,10 +5234,9 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     // Only for the wallpaper's colour
-                    readonly property bool applies: Config.s.accentFromWallpaper
-                    opacity: applies ? 1 : 0.4
-                    enabled: applies
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                    needsMet: Config.s.accentFromWallpaper
+                    needs: "Needs Accent colour from wallpaper to be on"
+                    needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
                     label: "Accent boldness"
                     settingKey: "accentBoldness"
                     detail: "How vivid the wallpaper's colour is: from soft, as picked, to bold. Text on it stays readable"
@@ -5166,10 +5250,11 @@ FloatingWindow {
                 Separator {}
                 Column {
                     width: parent.width
-                    opacity: Config.s.accentFromWallpaper ? 0.4 : 1
-                    enabled: !Config.s.accentFromWallpaper
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                    // Only for a colour of your own
                     SettingRow {
+                        needsMet: !Config.s.accentFromWallpaper
+                        needs: "Needs Accent colour from wallpaper to be off"
+                        needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
                         label: "Accent colour"
                         settingKey: "accent"
                         detail: "Used for highlights across the bar, dock, launcher and panels"
@@ -5194,6 +5279,9 @@ FloatingWindow {
                     Separator {}
                     SettingRow {
                         id: customRow
+                        needsMet: !Config.s.accentFromWallpaper
+                        needs: "Needs Accent colour from wallpaper to be off"
+                        needsPage: "appearance"; needsLabel: "Accent colour from wallpaper"
                         label: "Custom colour"
                         settingKey: "accent"
                         detail: "Slide to pick a shade, or type a hex code"
@@ -5284,9 +5372,9 @@ FloatingWindow {
                 }
                 Separator {}
                 SettingRow {
-                    opacity: Config.s.toneFromWallpaper ? 1 : 0.4
-                    enabled: Config.s.toneFromWallpaper
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                    needsMet: Config.s.toneFromWallpaper
+                    needs: "Needs Background tint from wallpaper to be on"
+                    needsPage: "appearance"; needsLabel: "Background tint from wallpaper"
                     label: "Tint boldness"
                     settingKey: "toneBoldness"
                     detail: "How much of the wallpaper's colour the backgrounds take, in light and dark mode. 50% is the standard amount"
@@ -6009,14 +6097,12 @@ FloatingWindow {
                 Separator {}
                 SettingRow {
                     // Only for icons on a tile: filled icons and original ones have none
-                    readonly property bool applies: !Config.s.iconFill && Config.s.iconShape !== "original"
-                    opacity: applies ? 1 : 0.4
-                    enabled: applies
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                    needsMet: !Config.s.iconFill && Config.s.iconShape !== "original"
+                    needs: Config.s.iconShape === "original" ? "Needs a Shape other than Original" : "Needs Fill the shape to be off"
+                    needsPage: "icons"; needsLabel: Config.s.iconShape === "original" ? "Shape" : "Fill the shape"
                     label: "Tiles in the icon's colour"
                     settingKey: "iconTileColour"
-                    detail: applies ? "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
-                        : "For icons on a tile: turn off Fill the shape (and pick a shape other than Original) to use it"
+                    detail: "The tile behind each icon takes a deep shade of the icon's own main colour, rather than the theme's. Grey icons keep the theme's tile"
                     Toggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
                 }
                 Separator {}
