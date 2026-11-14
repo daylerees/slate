@@ -287,6 +287,23 @@ class BindsLua(Case):
             slates_in_extras += 1
         self.assertGreater(slates_in_extras, 25)
 
+    def test_scrolling_goes_the_same_way_with_and_without_control(self):
+        """Scrolling down is the next workspace and up the previous one (Hyprland's own way),
+        with Super and with Super + Ctrl alike: one of them once went the other way. (Hyprland's
+        own set has only the plain one, and it steps through every workspace: "e".)"""
+        for keyset, keys_steps in (
+                ("slate", (("SUPER + mouse_down", "m+1"), ("SUPER + mouse_up", "m-1"),
+                           ("SUPER + CONTROL + mouse_down", "m+1"), ("SUPER + CONTROL + mouse_up", "m-1"))),
+                ("hyprland", (("SUPER + mouse_down", "e+1"), ("SUPER + mouse_up", "e-1"))),
+                ("hyprland-extras", (("SUPER + mouse_down", "e+1"), ("SUPER + mouse_up", "e-1")))):
+            shortcuts = self.shortcuts(keyset)
+            for keys, step in keys_steps:
+                with self.subTest(keyset=keyset, keys=keys):
+                    binds = shortcuts.get(keys)
+                    self.assertIsNotNone(binds, f"{keys} isn't bound")
+                    did = " ".join(what for _, _, what in binds[0][1][2])
+                    self.assertIn(step, did, f"{keys}: the wrong way ({did})")
+
     def test_super_d_maximises_in_slates_set_and_the_extras(self):
         for keyset, there in (("slate", True), ("hyprland-extras", True), ("hyprland", False)):
             with self.subTest(keyset=keyset):

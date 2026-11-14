@@ -689,8 +689,8 @@ if SLATE_KEYS then
     end)
 
     -- Scroll through this monitor's workspaces
-    hl.bind(mainMod .. " + mouse_down",           hl.dsp.focus({ workspace = "m-1" }))
-    hl.bind(mainMod .. " + mouse_up",             hl.dsp.focus({ workspace = "m+1" }))
+    hl.bind(mainMod .. " + mouse_down",           hl.dsp.focus({ workspace = "m+1" }))
+    hl.bind(mainMod .. " + mouse_up",             hl.dsp.focus({ workspace = "m-1" }))
     hl.bind(mainMod .. " + CONTROL + mouse_up",   hl.dsp.focus({ workspace = "m-1" }))
     hl.bind(mainMod .. " + CONTROL + mouse_down", hl.dsp.focus({ workspace = "m+1" }))
 
