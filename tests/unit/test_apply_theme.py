@@ -4,6 +4,7 @@ colours, switching an app off puts your own config back exactly (the undo log), 
 PATH of stubs only, so which apps count as installed is up to the test."""
 import json
 import os
+import shutil
 import sys
 import unittest
 
@@ -306,6 +307,70 @@ class ApplyTheme(Case):
         self.assertEqual(self.text(".config/kdeglobals"), mine)
 
 
+class QtCt(ApplyTheme):
+    """Qt apps: qt6ct (Qt 6) and qt5ct (Qt 5) each get Slate's colour scheme when they're here,
+    in their own format (qt5ct's has no accent: 21 colours, not 22), and switching Qt off puts
+    both configs back. A Kvantum style is left as you chose it."""
+    QT5 = "[Appearance]\ncolor_scheme_path=/usr/share/qt5ct/colors/airy.conf\ncustom_palette=false\nstyle=kvantum\n"
+
+    def scheme(self, rel):
+        rows = {}
+        for line in self.text(rel).splitlines():
+            k, _, v = line.partition("=")
+            if k.endswith("_colors"):
+                rows[k] = [x.strip() for x in v.split(",")]
+        return rows
+
+    def test_both_themed_and_put_back(self):
+        self.put({".config/qt6ct/qt6ct.conf": YOURS[".config/qt6ct/qt6ct.conf"], ".config/qt5ct/qt5ct.conf": self.QT5})
+        before = self.tree()
+        self.apply(["qt"])
+        for name, n in (("qt6ct", 22), ("qt5ct", 21)):
+            with self.subTest(name):
+                rel = ".config/%s/colors/slate.conf" % name
+                rows = self.scheme(rel)
+                self.assertEqual(sorted(rows), ["active_colors", "disabled_colors", "inactive_colors"])
+                for k, row in rows.items():
+                    self.assertEqual(len(row), n, k)
+                    self.assertTrue(all(len(x) == 7 and x.startswith("#") for x in row), row)
+                self.assertEqual(rows["active_colors"][0], COLOURS["text"])     # window text
+                self.assertEqual(rows["active_colors"][10], COLOURS["bg"])      # window
+                self.assertEqual(rows["active_colors"][13], ACCENT)             # highlighted text
+                conf = self.text(".config/%s/%s.conf" % (name, name))
+                self.assertIn("color_scheme_path=%s" % self.h(rel), conf)
+                self.assertIn("custom_palette=true", conf)
+        # Kvantum stays your style
+        self.assertIn("style=kvantum", self.text(".config/qt5ct/qt5ct.conf"))
+        self.apply([])
+        self.assertEqual(self.text(".config/qt6ct/qt6ct.conf"), YOURS[".config/qt6ct/qt6ct.conf"])
+        self.assertEqual(self.text(".config/qt5ct/qt5ct.conf"), self.QT5)
+        self.assertEqual({f for f in self.tree() - before if not f.endswith(".bak-slate-theme")}, set())
+        self.assertEqual(self.manifest(), {})
+
+    def test_only_the_one_thats_here(self):
+        """With only qt5ct, no qt6ct folder is made (and the other way round)."""
+        self.put({".config/qt5ct/qt5ct.conf": self.QT5})
+        self.apply(["qt"])
+        self.assertTrue(os.path.exists(self.h(".config/qt5ct/colors/slate.conf")))
+        self.assertFalse(os.path.exists(self.h(".config/qt6ct")))
+        self.apply([])
+        self.assertFalse(os.path.exists(self.h(".config/qt5ct/colors")))
+        self.assertEqual(self.text(".config/qt5ct/qt5ct.conf"), self.QT5)
+        shutil.rmtree(self.h(".config/qt5ct"))
+        self.s.add("qt6ct")
+        self.apply(["qt"])
+        self.assertTrue(os.path.exists(self.h(".config/qt6ct/colors/slate.conf")))
+        self.assertFalse(os.path.exists(self.h(".config/qt5ct")))
+
+    def test_light_placeholder(self):
+        """Placeholder text is the dim colour in light mode, in both."""
+        self.put({".config/qt6ct/qt6ct.conf": "", ".config/qt5ct/qt5ct.conf": ""})
+        self.apply(["qt"], light=True, bg="#f6f7f9", text="#1b1f24")
+        for name in ("qt6ct", "qt5ct"):
+            with self.subTest(name):
+                self.assertEqual(self.scheme(".config/%s/colors/slate.conf" % name)["active_colors"][20], COLOURS["dim"])
+
+
 class Apps(Case):
     """`--apps`: what Settings → App Theming lists."""
     scratch = True
@@ -346,6 +411,19 @@ class Apps(Case):
         with open(self.h(".mozilla", "firefox", "profiles.ini"), "w") as f:
             f.write("[Profile0]\nPath=abc.default\n")
         self.assertEqual(found(), ["bat", "firefox", "gtk", "kde", "kitty", "qt", "vscode"])
+
+    def test_qt5ct_alone_counts(self):
+        """Qt apps count as installed with only qt5ct, as a program or a config folder."""
+        for how in ("program", "folder"):
+            with self.subTest(how):
+                s = Stubs(self.h)
+                if how == "program":
+                    s.add("qt5ct")
+                else:
+                    os.makedirs(self.h(".config", "qt5ct"))
+                qt = next(a for a in self.apps(dict(s.env, PATH=s.dir)) if a["id"] == "qt")
+                self.assertTrue(qt["installed"])
+                self.assertIn("qt5ct", qt["desktop"])
 
 
 class DiscordFlatpak(ApplyTheme):

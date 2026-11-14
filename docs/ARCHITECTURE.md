@@ -443,5 +443,5 @@ Vencord's installer left, kept in `~/.local/state/slate/vencord-app.asar`) and p
 undo log (`~/.local/state/slate/app-theming.json`) so switching an app off puts its config back, and backs
 config files up once (`.bak-slate-theme`). Open apps reload live where they can: kitty SIGUSR1, Ghostty
 SIGUSR2, Helix SIGUSR1, btop SIGUSR2, cava SIGUSR2, alacritty by itself, GTK by switching the theme name
-away and back, qt6ct via its config folder, KDE via the `KGlobalSettings.notifyChange` signal.
+away and back, qt6ct and qt5ct via their config folders, KDE via the `KGlobalSettings.notifyChange` signal.
 `scripts/clipstore.py` is fed by `wl-paste --watch`.
