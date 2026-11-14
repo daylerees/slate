@@ -36,7 +36,7 @@
       <table>
         <tr><th>Kind</th><th>Apps</th></tr>
         <tr><td>Desktop apps</td><td>GTK apps (Files, Text Editor, Calculator and other GNOME and GTK apps), Qt apps
-          (through qt6ct), KDE apps (Dolphin, Kate and others), GNOME Text Editor, Firefox (toolbars, tabs and menus),
+          (through qt6ct, and qt5ct for older Qt 5 apps), KDE apps (Dolphin, Kate and others), GNOME Text Editor, Firefox (toolbars, tabs and menus),
           Discord (Vesktop, Vencord and Equicord), Spotify (with Spicetify) and Obsidian (a CSS snippet in each vault)</td></tr>
         <tr><td>Terminals</td><td>kitty, Alacritty, Ghostty, foot and WezTerm. Each gets a see-through starting config if it
           has none.</td></tr>
@@ -75,6 +75,13 @@
       </table>
       <p>A few apps can't wear Slate's colours, whichever way they're installed:</p>
       <ul>
+        <li><strong>Qt apps styled with Kvantum</strong> keep your Kvantum theme. Kvantum draws with its own pictures
+          and colours, so Slate leaves the theme you chose alone. To have Slate's colours instead, pick Fusion as the
+          style in qt6ct (and qt5ct).</li>
+        <li><strong>Qt apps only read qt6ct and qt5ct when your session asks them to</strong>, with
+          <code>QT_QPA_PLATFORMTHEME</code>. Many distributions set it for you. If yours doesn't, add
+          <code>hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")</code> to <code>~/.config/slate/hypr/env.lua</code>: that one
+          name reaches both, as qt6ct answers to it too. Apps you open after that follow Slate.</li>
         <li><strong>Qt apps from Flatpak, Snap or an AppImage</strong> bring their own Qt without qt6ct, so they keep
           their own look. KDE apps from Flatpak do follow Slate, through KDE's colours.</li>
         <li><strong>Chrome, Chromium and other Electron apps</strong> follow light or dark, but not your accent. Discord,

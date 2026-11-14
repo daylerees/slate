@@ -203,7 +203,17 @@ def gtk_reload(ctx):
         run([os.path.join(SHELL_DIR, "scripts", "refresh-gtk-apps.sh")])
 
 
-@app("qt", "Qt apps", "Apps that use qt6ct for their look", lambda: have("qt6ct") or isdir(CFG, "qt6ct"))
+# Qt 6 apps take their look from qt6ct, Qt 5 apps from qt5ct (when QT_QPA_PLATFORMTHEME names
+# it: "qt5ct" reaches both, as qt6ct answers to that name too). Each is themed when it's here.
+# Apps styled with Kvantum keep their Kvantum theme: it draws with its own pictures and sets its
+# own colours over the palette, so Slate leaves your choice of theme alone.
+QT_CT = ("qt6ct", "qt5ct")
+
+def qt_ct_here(name):
+    return have(name) or isdir(CFG, name)
+
+@app("qt", "Qt apps", "Apps that use qt6ct or qt5ct for their look (a Kvantum theme keeps its own)",
+     lambda: any(qt_ct_here(n) for n in QT_CT))
 def qt(ctx):
     c = ctx.c
     # windowText,button,light,midlight,dark,mid,text,brightText,buttonText,base,window,shadow,
@@ -212,26 +222,32 @@ def qt(ctx):
     roles = [c["text"], c["bg"], "#ffffff", "#cacaca", "#9f9f9f", "#b8b8b8", c["text"], "#ffffff",
              c["text"], c["bg"], c["bg"], c["shadow"], c["selection"], c["accent"], c["secondary"],
              c["accent"], c["surface"], c["bg"], c["surface"], c["text"], c["text"] if not c["light"] else c["dim"], c["accent"]]
-    row = ", ".join(roles)
-    path = cfg("qt6ct", "colors", "slate.conf")
-    ctx.file(path, "[ColorScheme]\n# %s\n"
-             "# windowText,button,light,midlight,dark,mid,text,brightText,buttonText,base,window,shadow,highlight,"
-             "highlightedText,link,linkVisited,alternateBase,noRole,toolTipBase,toolTipText,placeholderText,accent\n"
-             "active_colors=%s\ndisabled_colors=%s\ninactive_colors=%s\n" % (GEN, row, row, row))
-    conf = cfg("qt6ct", "qt6ct.conf")
-    if os.path.exists(conf):
-        ctx.ini_many(conf, [("Appearance", "color_scheme_path", path), ("Appearance", "custom_palette", "true")])
+    names = ("windowText,button,light,midlight,dark,mid,text,brightText,buttonText,base,window,shadow,highlight,"
+             "highlightedText,link,linkVisited,alternateBase,noRole,toolTipBase,toolTipText,placeholderText,accent")
+    for name in QT_CT:
+        if not qt_ct_here(name):
+            continue
+        # Qt 5 has no accent role: qt5ct's own schemes have the first 21
+        n = 22 if name == "qt6ct" else 21
+        row = ", ".join(roles[:n])
+        path = cfg(name, "colors", "slate.conf")
+        ctx.file(path, "[ColorScheme]\n# %s\n# %s\nactive_colors=%s\ndisabled_colors=%s\ninactive_colors=%s\n"
+                 % (GEN, ",".join(names.split(",")[:n]), row, row, row))
+        conf = cfg(name, name + ".conf")
+        if os.path.exists(conf):
+            ctx.ini_many(conf, [("Appearance", "color_scheme_path", path), ("Appearance", "custom_palette", "true")])
 
 @reloads("qt")
 def qt_reload(ctx):
-    conf = cfg("qt6ct", "qt6ct.conf")
-    if touched("qt6ct") and os.path.exists(conf):
-        # qt6ct apps watch the folder: replace qt6ct.conf (same contents) to nudge them
-        t = read(conf)
-        tmp = conf + ".slate-tmp"
-        with open(tmp, "w") as f:
-            f.write(t)
-        os.replace(tmp, conf)
+    for name in QT_CT:
+        conf = cfg(name, name + ".conf")
+        if touched(name) and os.path.exists(conf):
+            # qt6ct and qt5ct apps watch the folder: replace the .conf (same contents) to nudge them
+            t = read(conf)
+            tmp = conf + ".slate-tmp"
+            with open(tmp, "w") as f:
+                f.write(t)
+            os.replace(tmp, conf)
 
 
 def kde_groups(c):
@@ -1313,7 +1329,7 @@ INFO = {
 # Each app's desktop entries (the first one found is what Settings' Open button starts), for
 # its native, Flatpak and other builds. Apps with none to open (GTK, KDE, bat, fzf) aren't here.
 DESKTOP = {
-    "qt": ["qt6ct"],
+    "qt": ["qt6ct", "qt5ct"],
     "kitty": ["kitty"],
     "alacritty": ["Alacritty", "alacritty"],
     "ghostty": ["com.mitchellh.ghostty"],

@@ -5,7 +5,7 @@
 -- config; if something in it is wrong, Slate shows the error in a notification.
 --
 -- Examples (remove the "--" to use one):
--- hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")      -- Qt apps use qt6ct's settings
+-- hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")      -- Qt apps use qt6ct's settings (Qt 5 apps qt5ct's)
 -- hl.env("MOZ_ENABLE_WAYLAND", "1")            -- Firefox on Wayland
 -- hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 -- hl.env("GDK_SCALE", "2")
