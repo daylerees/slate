@@ -73,7 +73,7 @@ JsonAdapter {
     property string folderColour: "default"    // file manager folders: default, auto (from the wallpaper) or a Papirus colour
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
     property bool shadows: true               // shadows under everything raised: Slate's surfaces and floating windows (Settings → Appearance → Shadows)
-    property real shadowDarkness: 1           // how dark at their darkest, 0–1 (light mode: half that; glass: kept below where Hyprland blurs)
+    property real shadowDarkness: 0.5         // how dark at their darkest, 0–1 (light mode: half that; glass: kept below where Hyprland blurs)
     property real shadowSoftness: 6           // px of soft edge (0: hard)
     property real shadowSpread: 2             // px the full darkness reaches past the surface
     property real shadowDistance: 2           // px from the surface
