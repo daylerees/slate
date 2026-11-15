@@ -70,7 +70,7 @@ ShellRoot {
     // time: opening one closes the others
     Launcher {
         id: appLauncher
-        notifs: notifs
+        notifs: root.dockNotifs              // (not `notifs: notifs`: that reads the launcher's own property)
         onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
     }
     // Nova, the assistant's prompt window (Super+K): one of the things only one of shows at a time
@@ -702,12 +702,18 @@ ShellRoot {
     SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown || wallpaperLayer.switcher.shown }
 
     // The dock (Dock.qml). It reaches only these parts of Slate
+    // (handed over through the root: inside `Dock { }`, `popouts: popouts` would read the
+    // dock's own new property and hand it null, which froze an auto-hiding dock)
+    readonly property var dockPopouts: popouts
+    readonly property var dockNotifs: notifs
+    readonly property var dockLauncher: appLauncher
+    readonly property var dockConfirm: powerConfirm
     Dock {
         id: win
-        popouts: popouts
-        notifs: notifs
-        appLauncher: appLauncher
-        powerConfirm: powerConfirm
+        popouts: root.dockPopouts
+        notifs: root.dockNotifs
+        appLauncher: root.dockLauncher
+        powerConfirm: root.dockConfirm
         settingsWindow: () => root.settingsWindow()
     }
 }

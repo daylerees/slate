@@ -903,6 +903,21 @@ class DefaultWindowModeGoesThroughOneDoor(Case):
         self.assertFalse(bad, "set the default window mode with Config.setDefaultMode: " + ", ".join(bad))
 
 
+class NoSelfBindings(Case):
+    """`popouts: popouts` inside `Dock { }` reads the Dock's own `popouts` property, not the
+    outer object with that id (an object's own properties come before the document's ids), so it
+    hands over null. That froze the dock with auto-hide on (2026-11-15), and left the launcher
+    without notifications. Pass such things through a property of another name."""
+    def test_no_name_bound_to_itself(self):
+        bad = []
+        pat = re.compile(r"^\s+([A-Za-z_]\w*):\s*\1\s*(//.*)?$")
+        for f in slate.files("shell", ".qml"):
+            for n, line in enumerate(slate.read(f).split("\n"), 1):
+                if pat.match(line):
+                    bad.append("%s:%d: %s" % (os.path.relpath(f, slate.path("shell")), n, line.strip()))
+        self.assertFalse(bad, "a property bound to itself (it reads its own value, not the outer id): " + "; ".join(bad))
+
+
 class OutsideTextIsPlain(Case):
     """Words another program chose (a window's title, a notification, a Wi-Fi network's or a
     Bluetooth device's name, a track, a tray menu, a file's name, what you copied) are shown as
