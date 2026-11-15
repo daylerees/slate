@@ -106,16 +106,24 @@ BORDERED_WINDOWS = {"Launcher.qml": 1, "Assistant.qml": 1, "Switcher.qml": 1, "P
 class WindowBorders(Case):
     def test_slates_windows_share_the_window_border(self):
         """The border round Slate's own windows (the launcher, Nova, the switchers, the pickers,
-        the bar's arranging panel) is one shared definition: a softer accent than Hyprland's
-        active border, as wide as Settings → Windows → Window borders (in Hyprland's pixels, so
-        divided by the Interface size), none without glass."""
+        the bar's arranging panel) is one shared definition, drawn as Hyprland draws the active
+        window's (the same colours and glass sheen, from one function both use), as wide as
+        Settings → Windows → Window borders (in Hyprland's pixels, so divided by the Interface
+        size), none without glass."""
         cfg = slate.read("shell", "Config.qml")
-        self.assertRegex(cfg, r"readonly property color windowBorder: Qt\.rgba\(accent\.r, accent\.g, accent\.b,")
+        self.assertRegex(cfg, r"readonly property var activeBorderSheen: borderSheen\(accent, 0\.6,")
+        self.assertRegex(cfg, r"readonly property var windowBorderColours: activeBorderSheen\.")
         self.assertRegex(cfg, r"readonly property real windowBorderWidth: glass \? [^\n]*s\.windowBorderSize[^\n]*/ uiScale : 0")
+        look = slate.read("shell", "HyprlandLook.qml")
+        self.assertIn("sheen(Config.activeBorderSheen)", look, "Hyprland's active border isn't the shared sheen")
+        self.assertNotIn("toWhite", look, "Hyprland's border sheen worked out on its own")
+        ring = slate.read("shell", "WindowBorder.qml")
+        self.assertIn("Config.windowBorderColours", ring)
+        self.assertIn("Config.windowBorderWidth", ring)
         for f, n in BORDERED_WINDOWS.items():
             src = slate.read("shell", f)
             with self.subTest(f):
-                pairs = re.findall(r"border\.width: Config\.windowBorderWidth\b[^\n]*\n\s*border\.color: Config\.windowBorder\b", src)
-                self.assertEqual(len(pairs), n, "not the shared window border")
+                self.assertEqual(len(re.findall(r"\bWindowBorder \{ radius: parent\.radius \}", src)), n, "not the shared window border")
+                self.assertNotRegex(src, r"border\.(width|color): Config\.windowBorder", "a plain border instead of the shared one")
                 self.assertNotIn("Config.glassEdge", src, "a border of its own")
                 self.assertNotRegex(src, r"border\.width: Config\.glass \? 1 : 0", "a border of its own")

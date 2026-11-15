@@ -325,8 +325,7 @@ Scope {
                     opacity: root.fade
                     scale: 0.97 + 0.03 * root.fade
                     // Glass: the wallpaper blurred behind, as Hyprland blurs it
-                    border.width: Config.windowBorderWidth      // glass: the window border (Config)
-                    border.color: Config.windowBorder
+                    WindowBorder { radius: parent.radius }   // glass: the window border (Config)
                     Shadow {}
                     WallBlur {
                         z: -1

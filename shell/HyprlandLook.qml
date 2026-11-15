@@ -24,13 +24,12 @@ Scope {
         // touch deeper at the far corner (how strong follows Glass → Gloss). Hyprland's angles
         // put the first colour at the left for 0°, the top for 90°: 45° is the top left.
         // Without glass (or in game mode), flat
-        const toWhite = (c, k) => Qt.rgba(c.r + (1 - c.r) * k, c.g + (1 - c.g) * k, c.b + (1 - c.b) * k, 1);
+        // (Config.borderSheen: shared with Slate's own windows, WindowBorder.qml)
         const g = Config.glassGloss ? Math.min(1, Config.glossAmount) : 0;
-        const sheen = (base, a, light, soft, deep) => [rgba(toWhite(base, light * g), Math.min(1, a + 0.3 * g)), rgba(toWhite(base, soft * g), a),
-            rgba(base, a), rgba(base, a), rgba(base, a), rgba(base, a), rgba(Qt.darker(base, 1 + deep * g), a)].map(c => `"${c}"`).join(", ");
-        const activeColors = g > 0 ? sheen(Config.accent, 0.6, 0.75, 0.3, 0.2) : `"${active}"`;
+        const sheen = (pairs) => pairs.map(p => `"${rgba(p[0], p[1])}"`).join(", ");
+        const activeColors = g > 0 ? sheen(Config.activeBorderSheen) : `"${active}"`;
         const inactiveBorder = g > 0
-            ? `{ colors = { ${sheen(Config.tint("#0f1216"), 0.85, 0.3, 0.1, 0)} }, angle = 45 }`
+            ? `{ colors = { ${sheen(Config.borderSheen(Config.tint("#0f1216"), 0.85, 0.3, 0.1, 0))} }, angle = 45 }`
             : `"${inactive}"`;
         const size = Math.max(0, Math.min(12, Config.s.windowBorderSize));   // Settings → Windows
         const dim = Math.max(0, Math.min(80, Config.s.inactiveDim)) / 100;   // Settings → Windows

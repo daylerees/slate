@@ -150,6 +150,8 @@ DockBacking.qml         the dock's glass behind a magnified tile, where it rises
 Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
                         top of a shape; only shows with glass on
 DockGlow.qml            the dock's Glow hover effect: a ring and soft glow in the icon's colour
+WindowBorder.qml        the border round Slate's own glass windows (launcher, Nova, switchers), drawn as
+                        Hyprland draws the active window's, sheen included
 IconGloss.qml           the glass sheen on an app icon's tile, the same everywhere icons show
 IconPlate.qml           the tile behind an app icon when icons don't fill their shape
 IconTint.qml            tints an app icon with the accent (Settings → Icons → Tint app icons)

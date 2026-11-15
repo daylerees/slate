@@ -1911,13 +1911,26 @@ Singleton {
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0
     readonly property real glossTint: Math.max(0, Math.min(1, Number(s.glassGlossTint)))
+    // A window border's sheen, as Hyprland draws one with glass and gloss (HyprlandLook): seven
+    // colours spread evenly along a 45° gradient from the top left, a bright catch fading within
+    // the first sixth or so into the colour itself, a touch deeper at the far corner (how strong
+    // follows Glass → Gloss). Without gloss, the colour all the way. [opaque colour, alpha] pairs
+    function borderSheen(base, a, light, soft, deep) {
+        const g = glassGloss ? Math.min(1, glossAmount) : 0;
+        if (g <= 0) return Array(7).fill([base, a]);
+        const toWhite = (c, k) => Qt.rgba(c.r + (1 - c.r) * k, c.g + (1 - c.g) * k, c.b + (1 - c.b) * k, 1);
+        return [[toWhite(base, light * g), Math.min(1, a + 0.3 * g)], [toWhite(base, soft * g), a],
+            [base, a], [base, a], [base, a], [base, a], [Qt.darker(base, 1 + deep * g), a]];
+    }
+    // Hyprland's active window border, so Slate's own windows can have the very same
+    readonly property var activeBorderSheen: borderSheen(accent, 0.6, 0.75, 0.3, 0.2)
     // The border round Slate's own glass windows (the launcher, Nova, the switchers, the
-    // pickers, the bar's arranging panel): the accent, softer than on Hyprland's active window
-    // (0.6 there), and as wide as Settings → Windows → Window borders makes tiled windows'.
-    // That width is in Hyprland's pixels, so it's divided by the Interface size to match on
-    // screen; 0 turns it off here too. Without glass (or in game mode) there's none.
-    // Use both together: `border.width: Config.windowBorderWidth; border.color: Config.windowBorder`
-    readonly property color windowBorder: Qt.rgba(accent.r, accent.g, accent.b, s.lightMode ? 0.4 : 0.32)
+    // pickers, the bar's arranging panel): drawn as Hyprland draws the active window's (the
+    // same colours and sheen: WindowBorder.qml), and as wide as Settings → Windows → Window
+    // borders makes tiled windows'. That width is in Hyprland's pixels, so it's divided by the
+    // Interface size to match on screen; 0 turns it off here too. Without glass (or in game
+    // mode) there's none. Use `WindowBorder { radius: parent.radius }` inside the window's panel
+    readonly property var windowBorderColours: activeBorderSheen.map(p => Qt.rgba(p[0].r, p[0].g, p[0].b, p[1]))
     readonly property real windowBorderWidth: glass ? Math.max(0, Math.min(12, Number(s.windowBorderSize) || 0)) / uiScale : 0
     // The bright edge round the title bars' move handle: a bright, light shade of the theme's
     // accent, so it belongs to the colours in use. (A grey accent has no colour to give: it
