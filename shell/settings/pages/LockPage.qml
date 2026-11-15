@@ -39,7 +39,7 @@ Column {
             label: "Lock before sleep"
             // (Slate hears that the computer's about to sleep from systemd or elogind)
             needsMet: Config.hasLogind
-            needs: "Slate can't tell when this computer goes to sleep. It needs systemd or elogind, and neither is running"
+            needs: "Needs systemd or elogind, and neither is running"
             detail: "Lock the screen whenever the computer suspends or hibernates"
             key: "lockBeforeSleep"
         }

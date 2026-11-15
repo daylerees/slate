@@ -67,9 +67,9 @@ Column {
             // Without systemd, changing it needs a service that provides the same thing
             // (openrc-settingsd does). Without one it's shown, greyed, with why
             needsMet: dateTimePane.canSet
-            needs: "Slate can't change the time zone here. This computer has no time service (openrc-settingsd provides one)"
+            needs: "Needs a time service, like openrc-settingsd"
             detail: dateTimePane.canSet ? "Where you are, for the clock; type to search"
-                : "Slate can't change this here. Your clock follows the system's own setting"
+                : "Slate can't change this here: your clock follows the system's own setting"
             searchable: true
             options: dateTimePane.zones
             value: dateTimePane.zone

@@ -36,7 +36,7 @@ Column {
                 : "With another screen connected, only the laptop's own screen turns off"
             // (holding the system's own handling back needs systemd or elogind: Config.system)
             needsMet: Config.canInhibit
-            needs: "Slate can't manage the lid here. It needs systemd or elogind, and neither is running"
+            needs: "Needs systemd or elogind, and neither is running"
             options: [{ value: "", label: "System default" }, { value: "suspend", label: "Suspend" }, { value: "lock", label: "Lock the screen" },
                       { value: "screenoff", label: "Turn the screen off" }, { value: "nothing", label: "Do nothing" }]
                 .filter(o => o.value !== "suspend" || Config.canSuspend)
@@ -48,7 +48,7 @@ Column {
             label: "Power button"
             settingKey: "powerKeyAction"
             needsMet: Config.canInhibit
-            needs: "Slate can't manage the power button here. It needs systemd or elogind, and neither is running"
+            needs: "Needs systemd or elogind, and neither is running"
             detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
             options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                       { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]

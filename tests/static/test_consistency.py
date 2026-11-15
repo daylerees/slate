@@ -447,6 +447,17 @@ class Settings(Case):
                     self.assertIn(name, labels, f"line {n}: needsLabel {name!r} isn't a setting's name")
         self.assertGreaterEqual(found, 6, "fewer dependent settings found than Settings has")
 
+    def test_needs_lines_fit(self):
+        """A grayed-out row's line saying what it needs is one short line, cut off with "…" past
+        that: "Slate can't manage the power button here. It needs systemd or elogind, and
+        neither is running" showed as "…It needs systemd or elogind,…". Kept to what fits."""
+        import glob
+        for path in sorted(glob.glob(os.path.join(slate.ROOT, "shell", "settings", "**", "*.qml"), recursive=True)):
+            src = open(path, encoding="utf-8").read()
+            for m in re.finditer(r'\bneeds:\s*"([^"]+)"', src):
+                with self.subTest(f"{os.path.basename(path)}: {m.group(1)[:40]}"):
+                    self.assertLessEqual(len(m.group(1)), 52, "too long for its line: it's cut off")
+
     def test_setting_names_unique(self):
         src = slate.read("shell", "SettingsData.qml")
         names = re.findall(r"^\s*property\s+[\w<>]+\s+(\w+)\s*:", src, re.M)
