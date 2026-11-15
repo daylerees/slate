@@ -7,6 +7,7 @@
 
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 
@@ -170,6 +171,38 @@ Item {
                 anchors { fill: parent; margins: 8 }
                 radius: Config.corner(width / 2)
                 color: Config.raised(ls.field)
+            }
+            // A thin ring in the accent round the picture (3 px, in the frame's border), with a
+            // light catch along 45° from the top left, as on the window borders' sheen: lighter
+            // there, the accent itself towards the bottom right. As round as the picture is.
+            Shape {
+                id: avatarRing
+                readonly property real line: 3
+                readonly property color lit: Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.5))
+                readonly property color soft: Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.15))
+                anchors { fill: parent; margins: 8 - line }
+                preferredRendererType: Shape.CurveRenderer
+                ShapePath {
+                    strokeWidth: -1
+                    strokeColor: "transparent"
+                    fillRule: ShapePath.OddEvenFill
+                    fillGradient: LinearGradient {
+                        x1: 0; y1: 0
+                        x2: avatarRing.width; y2: avatarRing.height
+                        GradientStop { position: 0; color: avatarRing.lit }
+                        GradientStop { position: 0.45; color: avatarRing.soft }
+                        GradientStop { position: 1; color: Config.accent }
+                    }
+                    PathRectangle {
+                        width: avatarRing.width; height: avatarRing.height
+                        radius: Config.corner(avatarRing.width / 2)
+                    }
+                    PathRectangle {
+                        x: avatarRing.line; y: avatarRing.line
+                        width: avatarRing.width - avatarRing.line * 2; height: avatarRing.height - avatarRing.line * 2
+                        radius: Config.corner((avatarRing.width - avatarRing.line * 2) / 2)
+                    }
+                }
             }
             Image { id: avatarImg; source: ls.avatar ? "file://" + ls.avatar : ""; visible: false; asynchronous: true }
             RoundImage {

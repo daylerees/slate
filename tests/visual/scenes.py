@@ -474,6 +474,8 @@ _SQUARE = {"roundedElements": "false"}
 SCENES["square-panel-control"] = dict(SCENES["panel-control"], settings=_SQUARE)
 SCENES["square-settings-appearance"] = dict(SCENES["settings-appearance"], settings=_SQUARE)
 SCENES["square-launcher"] = dict(SCENES["launcher"], settings=_SQUARE)
+# The lock screen's account picture and its accent ring go square with the rest
+SCENES["square-lock-preview"] = dict(SCENES["lock-preview"], settings=_SQUARE)
 # (before the notification scene below: its pop-up stays for the scenes after it)
 
 # Something playing: the dock's media controls, with the track's cover, Previous / Pause / Next
