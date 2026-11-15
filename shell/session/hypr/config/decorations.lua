@@ -50,10 +50,10 @@ hl.config({
         -- (Slate's one shadow at its default settings, the same as under its own surfaces;
         -- Slate sets it from Settings → Appearance → Shadows: Config.hyprShadow)
         shadow = {
-            range = 22,
+            range = 8,
             render_power = 2,
             offset = { 0, 2 },
-            color = "rgba(0a0c10ac)",
+            color = "rgba(0a0c10ff)",
         },
     },
 })

@@ -640,7 +640,7 @@ Singleton {
     readonly property real shadowEffectBlur: Math.min(1, shadowReach / 32)   // the same, for Qt's MultiEffect (of a blurMax of 32 px)
     // How dark at its darkest: softer in light mode, and on glass always below the point where
     // Hyprland blurs behind Slate's surfaces (glassCut), or the shadow would be blurred glass too
-    readonly property real shadowStrength: Math.min(Math.max(0.05, Math.min(1, Number(s.shadowDarkness) || 0.7)) * (s.lightMode ? 0.5 : 1), glass ? glassCut - 0.04 : 1)
+    readonly property real shadowStrength: Math.min(Math.max(0.05, Math.min(1, Number(s.shadowDarkness) || 1)) * (s.lightMode ? 0.5 : 1), glass ? glassCut - 0.04 : 1)
     // The same colour at a given strength, for the shades at the ends of scrolling lists
     // (more that way) and anything else that's a shadow drawn by hand
     function shade(alpha) { return Qt.rgba(shadowColour.r, shadowColour.g, shadowColour.b, alpha); }
