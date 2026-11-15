@@ -491,6 +491,59 @@ class OtherFlatpaks(ApplyTheme):
         self.assertTrue(os.path.exists(self.h(base + "/abc.default/chrome/userChrome.css")))
 
 
+class Chromium(ApplyTheme):
+    """Chromium and the browsers built on it get their own GTK look (which follows Slate's GTK
+    colors): a setting in each profile's Preferences. The browser writes that file back when
+    it closes, so one that's open is left alone and noted, and `--stale` asks for it again once
+    it has closed. Switching it off puts back what the profile had."""
+    DIR = ".config/chromium"
+
+    def setUp(self):
+        super().setUp()
+        self.put({self.DIR + "/Local State": "{}",
+                  self.DIR + "/Default/Preferences": json.dumps({"extensions": {"theme": {"id": ""}}, "x": 1}),
+                  self.DIR + "/Profile 1/Preferences": json.dumps({"x": 2})})
+
+    def prefs(self, profile="Default"):
+        return json.loads(self.text(self.DIR + "/" + profile + "/Preferences"))
+
+    def stale(self):
+        code, out = run([sys.executable, SCRIPT, "--stale", json.dumps(dict(COLOURS, on=["chromium"]))], env=self.env)
+        self.assertEqual(code, 0, out)
+        return out.split()
+
+    def test_every_profile_takes_the_gtk_look(self):
+        self.apply(["chromium"])
+        for p in ("Default", "Profile 1"):
+            self.assertEqual(self.prefs(p)["extensions"]["theme"]["system_theme"], 1, p)
+        self.assertEqual(self.prefs()["x"], 1, "the rest of the profile changed")
+        self.assertEqual(self.stale(), [])
+
+    def test_an_open_browser_waits_until_it_closes(self):
+        os.symlink("host-123", self.h(self.DIR + "/SingletonLock"))
+        self.apply(["chromium"])
+        self.assertNotIn("system_theme", self.prefs()["extensions"]["theme"], "changed while open: it'd write over it")
+        self.assertEqual(self.stale(), [], "asked again while it's still open")
+        os.remove(self.h(self.DIR + "/SingletonLock"))
+        self.assertEqual(self.stale(), ["chromium"])
+        self.apply(["chromium"])
+        self.assertEqual(self.prefs()["extensions"]["theme"]["system_theme"], 1)
+        self.assertEqual(self.stale(), [])
+
+    def test_switching_it_off_puts_the_profile_back(self):
+        before = {p: self.prefs(p) for p in ("Default", "Profile 1")}
+        self.apply(["chromium"])
+        self.apply([])
+        for p, was in before.items():
+            self.assertEqual(self.prefs(p), was, p)
+
+    def test_flatpak(self):
+        base = ".var/app/org.chromium.Chromium/config/chromium"
+        self.put({base + "/Local State": "{}", base + "/Default/Preferences": "{}"})
+        self.apply(["chromium"])
+        self.assertEqual(json.loads(self.text(base + "/Default/Preferences"))["extensions"]["theme"]["system_theme"], 1)
+
+
 class LostToAnUpdate(ApplyTheme):
     """Spotify and Discord are themed through a patch in the app's own files (Spicetify,
     Vencord), which an update of the app replaces: the theme went with it and nothing put it

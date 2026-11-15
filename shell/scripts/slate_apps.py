@@ -1311,6 +1311,66 @@ def firefox(ctx):
         ctx.line(os.path.join(p, "user.js"), 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);')
 
 
+# Chromium and the browsers built on it: their own "GTK" look (Settings → Appearance → Mode →
+# GTK in the browser), which takes its colors from GTK, so it follows Slate's GTK theme.
+# It's a setting in each profile's Preferences, which the browser writes back over when it
+# closes, so it's only changed while that browser isn't running; one that was open is noted,
+# and Slate's check every few minutes (stale) changes it once it's closed
+CHROMIUMS = ["chromium", "google-chrome", "google-chrome-beta", "google-chrome-unstable",
+             "BraveSoftware/Brave-Browser", "vivaldi", "microsoft-edge", "thorium"]
+CHROMIUM_FLATPAKS = [("org.chromium.Chromium", "chromium"), ("com.google.Chrome", "google-chrome"),
+                     ("com.brave.Browser", "BraveSoftware/Brave-Browser"), ("com.vivaldi.Vivaldi", "vivaldi"),
+                     ("com.microsoft.Edge", "microsoft-edge"), ("io.github.ungoogled_software.ungoogled_chromium", "chromium")]
+# Chromium's ui::SystemTheme: 0 its own, 1 GTK, 2 Qt (extensions.theme.system_theme)
+CHROMIUM_GTK = 1
+CHROMIUM_PENDING = os.path.join(STATE, "slate", "chromium-pending.json")
+
+def chromium_dirs():
+    """Each Chromium-family browser's own folder (its "user data"), that it has set up"""
+    out = [cfg(n) for n in CHROMIUMS if os.path.isfile(cfg(n, "Local State"))]
+    for app_id, n in CHROMIUM_FLATPAKS:
+        d = flatpak(app_id, "config", n)
+        if d and os.path.isfile(os.path.join(d, "Local State")):
+            out.append(d)
+    return out
+
+def chromium_profiles(d):
+    return sorted(p for p in glob.glob(os.path.join(d, "*", "Preferences")) if os.path.isfile(p))
+
+def chromium_running(d):
+    # (a running browser keeps a SingletonLock link in its folder, gone once it closes)
+    return os.path.lexists(os.path.join(d, "SingletonLock"))
+
+def chromium_pending():
+    try:
+        with open(CHROMIUM_PENDING, encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError):
+        return set()
+
+def chromium_set_pending(dirs):
+    os.makedirs(os.path.dirname(CHROMIUM_PENDING), exist_ok=True)
+    with open(CHROMIUM_PENDING, "w", encoding="utf-8") as f:
+        json.dump(sorted(dirs), f)
+
+@app("chromium", "Chromium", "Its GTK look, which follows Slate's colors through GTK; set while it's closed",
+     lambda: bool(chromium_dirs()))
+def chromium(ctx):
+    pending = set()
+    for d in chromium_dirs():
+        if chromium_running(d):
+            pending.add(d)
+            continue
+        for prefs in chromium_profiles(d):
+            ctx.jsonpath(prefs, ["extensions", "theme", "system_theme"], CHROMIUM_GTK)
+    chromium_set_pending(pending)
+
+@stale("chromium")
+def chromium_stale():
+    """One that was open when the theme was applied, and has closed since"""
+    return any(not chromium_running(d) for d in chromium_pending() if os.path.isdir(d))
+
+
 # ---- For Settings → App Theming: what each app is, its website, and its packages ------------
 # Packages by distro family (as install.sh and slate-system work it out), only where the
 # distro's own repositories have it; elsewhere Settings just links to the website. NixOS is
@@ -1352,6 +1412,9 @@ INFO = {
     "discord": ("Discord with Vencord's themes and plugins", "https://vesktop.dev", {}),
     "spotify": ("Themes and extensions for Spotify", "https://spicetify.app", {}),
     "obsidian": ("Notes in plain Markdown files", "https://obsidian.md", {"arch": "obsidian"}),
+    "chromium": ("Google's open web browser, and those built on it (Chrome, Brave, Vivaldi, Edge)",
+                 "https://www.chromium.org", {"arch": "chromium", "debian": "chromium", "fedora": "chromium",
+                                              "opensuse": "chromium"}),
     "firefox": ("Mozilla's web browser", "https://www.mozilla.org/firefox/",
                 {"arch": "firefox", "debian": "firefox-esr", "fedora": "firefox", "opensuse": "MozillaFirefox"}),
 }
@@ -1378,6 +1441,8 @@ DESKTOP = {
     "spotify": ["spotify", "spotify-launcher", "com.spotify.Client"],
     "obsidian": ["obsidian", "md.obsidian.Obsidian"],
     "firefox": ["firefox", "org.mozilla.firefox", "firefox-esr"],
+    "chromium": ["chromium", "org.chromium.Chromium", "google-chrome", "com.google.Chrome", "brave-browser",
+                 "com.brave.Browser", "vivaldi-stable", "com.vivaldi.Vivaldi", "microsoft-edge", "com.microsoft.Edge"],
 }
 
 

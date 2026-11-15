@@ -647,7 +647,7 @@ already set the pointer or the code font keeps it: the script prints `adopt poin
 website and packages per distro family, for its Install button, which runs
 `bin/slate-system --install` through pkexec). Apps with Flatpak builds (Discord's Vencord,
 Vesktop, VS Code, VSCodium, Zed, Helix, Neovim, WezTerm, zathura, GNOME Text Editor, Firefox,
-Obsidian) are themed in their Flatpak's own folders too (`~/.var/app/<id>/config` or `data`:
+Chromium and its family, Obsidian) are themed in their Flatpak's own folders too (`~/.var/app/<id>/config` or `data`:
 `flatpak()` and `config_dirs()`). Flatpak GTK and KDE apps are given read-only access to your
 `gtk-3.0`, `gtk-4.0` and `kdeglobals` through an entry in Flatpak's overrides for all apps
 (`$FLATPAK_USER_DIR` or `~/.local/share/flatpak/overrides/global`, what `flatpak override --user

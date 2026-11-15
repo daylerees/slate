@@ -534,6 +534,29 @@ class Ctx:
             self._record({"t": "jsonc", "path": path, "key": key, "old": old})
         return edit(path, lambda x: jsonc_set(x, key, raw)[0])
 
+    def jsonpath(self, path, keys, value):
+        """Set a value deep in a plain JSON file (keys: the path to it), written back compact as
+        Chromium keeps its Preferences; what it held (or that it had none) is put back on undo"""
+        try:
+            data = json.loads(read(path) or "{}")
+        except ValueError:
+            return False
+        node, made = data, None             # made: how deep the path already went (None: all of it)
+        for i, k in enumerate(keys[:-1]):
+            nxt = node.get(k)
+            if not isinstance(nxt, dict):
+                nxt = node[k] = {}
+                made = i if made is None else made
+            node = nxt
+        had = keys[-1] in node
+        if had and node[keys[-1]] == value:
+            return False
+        if not self._has("jsonpath", ("path", path), ("keys", keys)):
+            self._record({"t": "jsonpath", "path": path, "keys": keys, "had": had, "old": node.get(keys[-1]),
+                          "made": made})
+        node[keys[-1]] = value
+        return edit(path, lambda _: json.dumps(data, separators=(",", ":")))
+
     def jsonlist(self, path, keys, item, match=None):
         """Add item to the list at keys (a path into a plain JSON file; [] = the file is the list)"""
         try:
@@ -607,6 +630,10 @@ class Ctx:
         return bool(ops)
 
 
+def _has_values(d):
+    """Whether a dict holds anything but empty dicts"""
+    return any(not isinstance(v, dict) or _has_values(v) for v in d.values())
+
 def _list(text, section, key):
     return [i for i in (ini_get(text, section, key) or "").split(";") if i]
 
@@ -678,6 +705,30 @@ def _undo_change(o, live):
         x = read(path)
         if x is not None:
             write(path, jsonc_remove(x, o["key"]) if o["old"] is None else jsonc_set(x, o["key"], o["old"])[0])
+    elif t == "jsonpath":
+        x = read(path)
+        if x is not None:
+            data = json.loads(x)
+            node = data
+            for k in o["keys"][:-1]:
+                node = node.get(k)
+                if not isinstance(node, dict):
+                    return
+            if o["had"]:
+                node[o["keys"][-1]] = o["old"]
+            else:
+                node.pop(o["keys"][-1], None)
+                # (and the sections Slate made for it, if nothing else went in them)
+                made = o.get("made")
+                if made is not None:
+                    parent = data
+                    for k in o["keys"][:made]:
+                        parent = parent.get(k, {})
+                    if parent.get(o["keys"][made]) and not _has_values(parent[o["keys"][made]]):
+                        parent.pop(o["keys"][made])
+                    elif parent.get(o["keys"][made]) == {}:
+                        parent.pop(o["keys"][made])
+            write(path, json.dumps(data, separators=(",", ":")))
     elif t == "jsonlist":
         x = read(path)
         if x is not None:
