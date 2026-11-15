@@ -2,7 +2,10 @@
 // rounded track with a rounded thumb in the accent colour, shown only when the view overflows. Hover widens the
 // thumb; drag it, or click the track, to scroll.
 //   ThinScrollbar { flick: myList; color: theme text colour; anchors { top: …; bottom: …; right: … } }
-// It's 10 px wide to be easy to grab; the track and thumb are centred in that.
+// It's 10 px wide in the layout, the track and thumb centred in that, and can be grabbed a
+// little beyond it (reach: 4 px each side, 18 px in all), in the gap views leave beside it.
+// That wider strip only takes presses and drags (and hover, to show the bar); a wheel over it
+// still scrolls the list.
 // Views give it room only while it shows: when everything fits, rows use the full width
 // and an 8 px gap before it (e.g. rightMargin: flick.contentHeight <= flick.height ? 14 : 28,
 // scrollbar leftMargin: 8; or content width - 18 with the scrollbar at the right edge).
@@ -18,6 +21,7 @@ Item {
     width: 10
     readonly property real range: flick ? flick.contentHeight - flick.height : 0
     readonly property bool active: hover.hovered || drag.pressed
+    property real reach: 4              // how far past each side it can still be grabbed (px)
 
     Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -38,10 +42,10 @@ Item {
         Behavior on width { NumberAnimation { duration: Config.ms(100) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
     }
-    HoverHandler { id: hover }
     MouseArea {
         id: drag
-        anchors.fill: parent
+        anchors { fill: parent; leftMargin: -sb.reach; rightMargin: -sb.reach }
+        HoverHandler { id: hover }
         preventStealing: true           // keep the drag once started, even if the pointer drifts off
         property real grab: 0           // where on the thumb it was picked up
         function scrollTo(my) {

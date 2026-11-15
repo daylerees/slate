@@ -40,6 +40,25 @@ class Scrolling(Case):
             self.assertNotRegex(src, r"width: 1\s*\n\s*height: Math\.max\(16, track", f"{f} draws a scrollbar of its own")
 
 
+    def test_scrollbar_is_grabbed_wider_than_it_is_drawn(self):
+        """The scrollbar stays thin on screen (a 3 px track, a 4–6 px thumb) but can be grabbed
+        across 18 px: its 10 px in the layout and 4 more each side. The wider strip takes presses
+        and hover only (no hoverEnabled, no wheel), so the list beside it keeps its wheel."""
+        src = slate.read("shell", "ThinScrollbar.qml")
+        width = int(re.search(r"^    width: (\d+)", src, re.M).group(1))
+        reach = float(re.search(r"property real reach: ([\d.]+)", src).group(1))
+        # (the track's and the thumb's widths, as drawn)
+        drawn = re.findall(r"^\s{8}width: (?:sb\.active \? )?(\d+)(?: : (\d+))?", src, re.M)
+        self.assertEqual(len(drawn), 2, "the track and the thumb not found")
+        self.assertLessEqual(max(int(x) for m in drawn for x in m if x), 6, "the scrollbar is drawn thicker than before")
+        self.assertGreaterEqual(width + 2 * reach, 16, "the scrollbar is hard to grab")
+        area = src[src.index("MouseArea {"):]
+        self.assertRegex(area, r"leftMargin: -sb\.reach; rightMargin: -sb\.reach", "the grab area doesn't reach past the bar")
+        self.assertIn("HoverHandler { id: hover }", area, "hovering the wider strip doesn't show the bar")
+        self.assertNotIn("hoverEnabled", area)
+        self.assertNotIn("onWheel", area)
+
+
 class TitleBarHover(Case):
     def test_title_bar_buttons_use_the_muted_hover(self):
         """Hovering is the muted hover (red for close), never the active colour or a solid red."""
