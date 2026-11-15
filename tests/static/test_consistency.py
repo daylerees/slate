@@ -334,8 +334,7 @@ class Settings(Case):
                 if depth == 0:
                     return src[i:end]
             self.fail(f"{start}: block not closed")
-        wall = slate.read("shell", "SettingsWindow.qml")
-        tile = block(wall, "component WallTile: Item {")
+        tile = slate.read("shell", "settings", "WallTile.qml")
         cases = [
             ("RoundImage's Image", block(slate.read("shell", "RoundImage.qml"), "Image {")),
             ("Drifting", block(slate.read("shell", "Screensaver.qml"), "component Drifting: Image {")),

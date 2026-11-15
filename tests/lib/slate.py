@@ -24,7 +24,26 @@ def qml_names():
     return out + ["panels/" + n for n in sorted(os.listdir(os.path.join(SHELL, "panels"))) if n.endswith(".qml")]
 
 
+def settings_source():
+    """The Settings app's QML as one text: every file in shell/settings/ (its building blocks,
+    then the pages in shell/settings/pages/), in name order, then SettingsWindow.qml. Settings
+    is split over those files, and the tests that look at how it's written read it all."""
+    parts = []
+    for d, dirs, names in os.walk(path("shell", "settings")):
+        dirs.sort()
+        parts += [os.path.join(d, n) for n in sorted(names) if n.endswith(".qml")]
+    parts.append(path("shell", "SettingsWindow.qml"))
+    out = []
+    for p in parts:
+        with open(p, encoding="utf-8") as f:
+            out.append(f.read())
+    return "\n".join(out)
+
+
 def read(*parts):
+    """A file's text. SettingsWindow.qml reads as the whole Settings app (settings_source)."""
+    if parts == ("shell", "SettingsWindow.qml"):
+        return settings_source()
     with open(path(*parts), encoding="utf-8") as f:
         return f.read()
 

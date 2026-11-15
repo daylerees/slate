@@ -3,7 +3,7 @@
 it never falls out of date. Prints JSON [{"page", "label", "detail", "group", "key"}, …].
     settings-index.py <SettingsWindow.qml>
 
-Each page is a `Component { id: <name>Page`; a setting is anything with `label: "…"` (its
+Each page is a `Component { id: <name>Page` (in settings/pages/, one file each); a setting is anything with `label: "…"` (its
 `detail: "…"` is the next one before another label), under the latest `GroupLabel` heading.
 Labels and details that are worked out in code rather than written as plain text are left
 out (or, for a detail, left empty).
@@ -13,9 +13,18 @@ tools (slate-mcp.py), which find a setting by what Settings calls it: the first
 `Config.s.<key>` the row shows or sets (`key: "…"`, `checked:`, `value:`,
 `Config.s.<key> = …`) before the next row; "" when the row isn't one setting, or sets it
 some other way."""
-import json, re, sys
+import json, os, re, sys
 
 src = open(sys.argv[1], encoding="utf-8").read()
+
+# Each page is a file in settings/pages/ next to the window (`Component { id: generalPage;
+# GeneralPage {} }`): read it back in where it's used, as the Component it used to be written as
+def page_file(m):
+    path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[1])), "settings", "pages", m.group(2) + ".qml")
+    with open(path, encoding="utf-8") as f:
+        body = f.read()
+    return "    Component {\n        id: " + m.group(1) + "\n" + body
+src = re.sub(r"^    Component \{ id: (\w+Page); (\w+) \{\} \}$", page_file, src, flags=re.M)
 
 # Which page id each component is: sourceComponent: ({ general: generalPage, … })
 mapping = re.search(r"sourceComponent:\s*\(\{(.*?)\}\)", src, re.S)
