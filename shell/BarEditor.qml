@@ -63,7 +63,9 @@ PanelWindow {
     readonly property string side: bar.side
     readonly property bool vert: side === "left" || side === "right"
     // (a little further off while the bar has its scroll handle under it)
-    readonly property real off: bar.barHeight + (bar.scrollMax > 0 ? 24 : 12)
+    // (always room for the bar's scroll handle under it: going by whether the bar had anything to
+    // scroll, which flips while the bar eases into arranging, the panel juddered as it came in)
+    readonly property real off: bar.barHeight + 24
     // (how far it eases in from, towards the bar)
     readonly property real slide: 14 * (1 - fade)
     visible: shown || fade > 0

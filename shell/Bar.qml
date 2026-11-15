@@ -760,7 +760,9 @@ PanelWindow {
         // takes the pointer (the window's mask), and left its full size while out of sight it
         // swallowed every click in a strip just under the bar, where a floating window's title
         // sits when the window is pushed up against the bar
-        visible: Config.barArranging && bar.scrollMax > 0
+        // (and only once the bar has eased into arranging: measured while it eases, the line
+        // ran over for a moment, and the handle flickered in and out under the bar)
+        visible: Config.barArranging && bar.arrangeLook >= 1 && bar.scrollMax > 0
         readonly property real thick: 14                    // (its hit area: the handle's drawn slimmer within it)
         readonly property real travel: Math.max(1, bar.lineLength - handle.length)
         x: bar.vert ? (bar.atRight ? bar.width - bar.barHeight - thick - 2 : bar.barHeight + 2) : bar.sidePadding + bar.previewShift
