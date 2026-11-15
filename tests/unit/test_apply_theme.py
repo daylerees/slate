@@ -484,6 +484,23 @@ class OtherFlatpaks(ApplyTheme):
         self.assertTrue(os.path.exists(self.h(ext)))
         self.assertIn('"workbench.colorTheme": "Slate"', self.text(self.fp("com.visualstudio.code", "config/Code/User/settings.json")))
 
+    def test_firefox_new_and_old_names(self):
+        """Firefox 160 renamed the variables for the focused address bar, the toolbars, the
+        selected tab and the menus, and only the top bar and the resting address bar took
+        Slate's colors. Both names are set (ESR keeps the old), on the menus and fields too."""
+        self.put({".mozilla/firefox/profiles.ini": "[Profile0]\nPath=abc.default\n", ".mozilla/firefox/abc.default/prefs.js": ""})
+        self.apply(["firefox"])
+        css = self.text(".mozilla/firefox/abc.default/chrome/slate.css")
+        for old, new in (("--toolbar-field-focus-background-color", "--toolbar-field-background-color-focus"),
+                         ("--toolbar-bgcolor", "--toolbar-background-color"),
+                         ("--tab-selected-bgcolor", "--tab-background-color-selected"),
+                         ("--arrowpanel-background", "--panel-background-color")):
+            self.assertIn(old + ":", css)
+            self.assertIn(new + ":", css)
+        head = css.split("{", 1)[0]
+        for where in ("menupopup", "panel", "#urlbar", ".tabbrowser-tab", "toolbar"):
+            self.assertIn(where, head, f"the colors aren't set on {where} itself")
+
     def test_firefox_flatpak(self):
         base = self.fp("org.mozilla.firefox", ".mozilla/firefox")
         self.put({base + "/profiles.ini": "[Profile0]\nPath=abc.default\n", base + "/abc.default/prefs.js": "// prefs\n"})
