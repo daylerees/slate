@@ -9,13 +9,14 @@
 <meta property="og:description" content="Aesthetically pleasing yet understated, opinionated yet configurable, desktop environment for Linux.">
 <meta property="og:image" content="assets/icon.png">
 <link rel="icon" href="assets/icon.png">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
 
 <header class="top">
   <a class="brand" href="#"><img src="assets/logo.png?v=7" alt="Slate" height="34"></a>
-  <nav>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
     <a href="index.html">Home</a>
     <a href="docs/install.html">Install</a>
     <a href="docs/index.html">Docs</a>
@@ -463,6 +464,6 @@ cd slate
   <p><a href="features.html">Every feature</a> · <a href="docs/index.html">Docs</a> · <a href="docs/index.html">Docs</a> · <a href="changelog.html">Changelog</a> · <a href="https://github.com/daylerees/slate">github.com/daylerees/slate</a></p>
 </footer>
 
-<script src="site.js?v=3" defer></script>
+<script src="site.js?v=4" defer></script>
 </body>
 </html>

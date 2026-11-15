@@ -64,6 +64,7 @@ a:hover { text-decoration: underline; }
 }
 /* Once content scrolls up under it (site.js) */
 .top.covering { box-shadow: 0 4px 18px rgba(0, 0, 0, .22); }
+.brand { display: inline-flex; align-items: center; min-height: 44px; }
 .brand img { display: block; height: 34px; width: auto; }
 nav { display: flex; align-items: center; gap: 22px; }
 nav a { color: var(--dim); font-weight: 500; font-size: 15px; }
@@ -466,8 +467,6 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
   .row, .row.flip { grid-template-columns: 1fr; gap: 24px; }
   .row.flip .copy { order: 0; }
   /* Phones: flat, with no blurred glow, so the clips play smoothly */
-  /* The example bar: room for the power button */
-  .bar-demo .val { display: none; }
   .tilt { perspective: none; }
   .tilt::before { display: none; }
   .tilt img, .flip .tilt img, .tilt video, .flip .tilt video,
@@ -475,13 +474,44 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
     transform: none; transition: none;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 12px 28px -12px rgba(0, 0, 0, .6);
   }
-  .top nav a:not(.button) { display: none; }
   .what .cols { grid-template-columns: 1fr; gap: 16px; }
   main section { padding: 52px 16px; }
   .hero { padding-top: 56px; }
   .hero-mark { height: 96px; margin-bottom: 22px; }
-  .bar-demo .title, .bar-demo .clock, .bar-demo .tray, .bar-demo .app,
-  .bar-demo .status span:nth-of-type(n+3), .bar-demo .status b:nth-of-type(n+2) { display: none; }
+}
+
+/* ---- The menu button (phones) ----
+   Hidden until site.js says it can work (html.js): without it, the links just stay in the header,
+   wrapping onto a second line, and the header scrolls with the page. */
+.nav-toggle {
+  display: none; width: 44px; height: 44px; margin: -4px -8px -4px 0; padding: 0; border-radius: 10px;
+  align-items: center; justify-content: center; cursor: pointer;
+  background: transparent; border: 1px solid transparent; color: var(--text);
+}
+.nav-toggle:hover { background: var(--card); }
+.nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.nav-toggle .bars { display: grid; gap: 4px; }
+.nav-toggle .bars i { display: block; width: 20px; height: 2px; border-radius: 1px; background: currentColor; transition: transform .18s ease, opacity .18s ease; }
+.nav-toggle[aria-expanded="true"] .bars i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] .bars i:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] .bars i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+@media (prefers-reduced-motion: reduce) { .nav-toggle .bars i { transition: none; } }
+@media (max-width: 860px) {
+  .top nav { flex-wrap: wrap; justify-content: flex-end; gap: 4px 16px; }
+  html:not(.js) .top { position: static; flex-wrap: wrap; }
+  html.js .nav-toggle { display: inline-flex; }
+  html.js .top nav {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 16px 16px;
+    background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 14px 28px rgba(0, 0, 0, .3);
+  }
+  html.js .top nav.open { display: flex; }
+  html.js .top nav a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 16px; }
+  html.js .top nav a:hover { background: var(--card); }
+  .jump a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+  .docs-pager .edit { display: flex; align-items: center; min-height: 44px; }
+  html.js .top nav .button.small { margin-top: 6px; justify-content: center; border: 1px solid var(--line); }
 }
 
 /* ---- Every feature (features.html) ---- */
@@ -529,10 +559,21 @@ footer .ai .ti { color: var(--accent); margin-right: 4px; }
 .fp + footer { margin-top: 72px; }
 .all-features { margin-top: 24px; text-align: center; }
 
-/* Narrow phones: the example bar also drops its apps button */
-@media (max-width: 400px) {
-  .bar-demo .apps { display: none; }
+/* The example bar on narrower screens drops its less interesting parts one step at a time, so what is
+   left always fits at its real size. In order: the Wi-Fi name and the tray, the window's title,
+   Bluetooth and sound, the window's tile, the battery, the window mode, Apps and Nova, the status
+   readings, and last the Spaces button. The slate mark, the workspaces, the clock and power stay. */
+@media (max-width: 960px) { .bar-demo .val, .bar-demo .tray { display: none; } }
+@media (max-width: 840px) { .bar-demo .title { display: none; } .bar-demo .app { padding: 0 4px; } }
+@media (max-width: 780px) {
+  .bar-demo .status span:nth-of-type(n+3):nth-of-type(-n+4), .bar-demo .status b:nth-of-type(n+2):nth-of-type(-n+3) { display: none; }
 }
+@media (max-width: 660px) { .bar-demo .app { display: none; } }
+@media (max-width: 620px) { .bar-demo .status span:nth-of-type(5), .bar-demo .status b:nth-of-type(4) { display: none; } }
+@media (max-width: 560px) { .bar-demo .ws .item:nth-of-type(2), .bar-demo .ws b:nth-of-type(2) { display: none; } }
+@media (max-width: 520px) { .bar-demo .group:not(.ws) { display: none; } }
+@media (max-width: 440px) { .bar-demo .status { display: none; } }
+@media (max-width: 360px) { .bar-demo .ws .item:first-of-type, .bar-demo .ws b:first-of-type { display: none; } }
 
 /* Changelog */
 .cl-release h2 { flex-wrap: wrap; }

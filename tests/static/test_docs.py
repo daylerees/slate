@@ -189,6 +189,25 @@ def shipped_files():
     return out
 
 
+class SiteHeader(Case):
+    """Every page of the site (the home page, features, changelog and each docs page) has the header
+    with its menu button, which opens the links on phones, and loads site.js, which makes it work."""
+
+    def test_every_page_has_the_menu_button(self):
+        site = slate.path("site")
+        pages = [os.path.join(site, f) for f in os.listdir(site) if f.endswith(".html")]
+        pages += [os.path.join(DOCS, f) for f in os.listdir(DOCS) if f.endswith(".html")]
+        self.assertGreater(len(pages), 30)
+        for page in pages:
+            with self.subTest(os.path.relpath(page, site)):
+                with open(page, encoding="utf-8") as f:
+                    raw = f.read()
+                self.assertIn('<header class="top">', raw)
+                self.assertRegex(raw, r'<button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav"')
+                self.assertIn('<nav id="site-nav"', raw)
+                self.assertIn("site.js", raw, "site.js is what opens the menu")
+
+
 class Architecture(Case):
     """docs/ARCHITECTURE.md's list of what Slate is made of keeps up with the files: it once
     left out a third of them (the menus, the Welcome window, most helpers), since nothing said

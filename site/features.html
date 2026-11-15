@@ -6,13 +6,14 @@
 <title>Every feature · Slate</title>
 <meta name="description" content="The full list of what Slate does: the menu bar, dock, launcher, window management, notifications, theming, displays, input, sound, power, lock and login, and every keyboard shortcut.">
 <link rel="icon" href="assets/icon.png">
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
 
 <header class="top">
   <a class="brand" href="index.html"><img src="assets/logo.png?v=7" alt="Slate" height="34"></a>
-  <nav>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
     <a href="index.html">Home</a>
     <a href="docs/install.html">Install</a>
     <a href="docs/index.html">Docs</a>
@@ -828,6 +829,6 @@
   <p><a href="index.html">Overview</a> · <a href="docs/index.html">Docs</a> · <a href="docs/index.html">Docs</a> · <a href="changelog.html">Changelog</a> · <a href="https://github.com/daylerees/slate">github.com/daylerees/slate</a></p>
 </footer>
 
-<script src="site.js?v=3" defer></script>
+<script src="site.js?v=4" defer></script>
 </body>
 </html>

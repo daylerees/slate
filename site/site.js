@@ -124,3 +124,29 @@
   });
   addEventListener("hashchange", () => { current = location.hash.slice(1); });
 })();
+
+// The menu button for phone widths: opens the header's links as a panel under it. Escape or a
+// click outside closes it (focus goes back to the button), and so does picking a link or
+// growing the window back to desktop width. Without this script the links stay in the header.
+(() => {
+  document.documentElement.classList.add("js");
+  const button = document.querySelector(".nav-toggle");
+  const nav = document.getElementById("site-nav");
+  if (!button || !nav) return;
+  const set = open => {
+    nav.classList.toggle("open", open);
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+    button.setAttribute("aria-label", open ? "Close menu" : "Menu");
+  };
+  button.addEventListener("click", () => set(!nav.classList.contains("open")));
+  nav.addEventListener("click", e => { if (e.target.closest("a")) set(false); });
+  addEventListener("keydown", e => {
+    if (e.key !== "Escape" || !nav.classList.contains("open")) return;
+    set(false);
+    button.focus();
+  });
+  document.addEventListener("click", e => {
+    if (nav.classList.contains("open") && !e.target.closest(".top")) set(false);
+  });
+  matchMedia("(min-width: 761px)").addEventListener("change", e => { if (e.matches) set(false); });
+})();

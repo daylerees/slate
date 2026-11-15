@@ -225,7 +225,7 @@ body.docs { background: var(--bg); }
   display: none;
   align-items: center; gap: 8px;
   margin: 0 0 18px;
-  padding: 8px 12px;
+  padding: 8px 12px; min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--surface);
