@@ -233,7 +233,11 @@ class Tooltips(Case):
         self.assertIn("radius: Config.corner(6)", src)
         self.assertIn('Config.surface(Config.tint("#0f1216"))', src, "not the bar's and the dock's colour")
         self.assertIn("Gloss { radius: parent.radius }", src, "no sheen with glass")
-        self.assertRegex(src, r"(?m)^    Shadow \{\}", "not raised with Slate's shadow, as other raised surfaces are")
+        self.assertRegex(src, r"(?m)^    Shadow \{ visible: tip\.shadowed \}", "not raised with Slate's shadow, as other raised surfaces are")
+        # ...except in the dock's window with its blur, where Hyprland blurs behind anything at
+        # all (dockGlassCut), and the shadow's soft edge showed as a large clear frame
+        dock = slate.read("shell", "Dock.qml")
+        self.assertRegex(dock, r"Tooltip \{[^}]*?shadowed: !Config\.glass \|\| !Config\.s\.dockBlur", "the dock's tooltip keeps a shadow Hyprland blurs behind")
         self.assertNotRegex(src, r"DropShadow|MultiEffect|shadowEnabled", "a shadow of its own instead of Shadow.qml")
         self.assertIn("textFormat: Text.PlainText", src, "a tooltip often shows a name another program chose")
         self.assertIn("font.family: Config.s.fontFamily", src)

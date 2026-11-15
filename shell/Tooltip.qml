@@ -19,6 +19,10 @@ Rectangle {
     // as glass laid over glass shows as a lighter patch. Over the desktop (the dock's, the
     // bar's) it's the glass surface, and Hyprland blurs behind it
     property bool solid: false
+    // Raised with Slate's shadow, unless where it's drawn Hyprland blurs behind anything at all
+    // (the dock's window, with glass and its blur: dockGlassCut), where the shadow's whole soft
+    // edge would be blurred glass, a large clear frame round it
+    property bool shadowed: true
     readonly property real padX: 8
     readonly property real padY: 4
 
@@ -27,7 +31,7 @@ Rectangle {
     radius: Config.corner(6)
     color: solid ? Config.tint("#0f1216") : Config.surface(Config.tint("#0f1216"))     // the bar's and the dock's
     Gloss { radius: parent.radius }   // glass: a sheen
-    Shadow {}                         // raised: Slate's shadow (Settings → Appearance; off in game mode)
+    Shadow { visible: tip.shadowed }  // raised: Slate's shadow (Settings → Appearance; off in game mode)
 
     Text {
         id: words

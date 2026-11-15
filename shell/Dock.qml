@@ -2220,6 +2220,7 @@ PanelWindow {
             // App name above the icon under the pointer (Tooltip.qml: the look every tooltip shares)
             Tooltip {
                 id: label
+                shadowed: !Config.glass || !Config.s.dockBlur     // (see Tooltip: the dock blurs behind any shadow)
                 readonly property string says: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                     : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                     : win.moreIndex >= 0 && win.hoveredIndex === win.moreIndex
