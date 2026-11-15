@@ -1008,7 +1008,7 @@ PanelWindow {
                          Qt.Key_Left, Qt.Key_Right, Qt.Key_Home, Qt.Key_End].includes(event.key)) { root.picked = true; root.keyPicked = true; }
                     // Space on a file you've moved to with the keys: Quick Look. (Before that, or
                     // on anything else, it's a space in the search)
-                    if (event.key === Qt.Key_Space && event.modifiers === Qt.NoModifier && root.keyPicked
+                    if (event.key === Qt.Key_Space && !(event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) && root.keyPicked
                         && root.lookAt(root.results[list.currentIndex])) { event.accepted = true; return; }
                     const n = list.count;
                     const i = list.currentIndex;

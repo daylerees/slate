@@ -109,7 +109,7 @@ def info(path):
     else:
         mime, label = content_type(path, name)
     kind = kind_of(path, name, mime, is_dir)
-    if not label:
+    if not label or mime == "application/octet-stream":       # (GLib calls that "unknown")
         label = {"image": "Picture", "pdf": "PDF document", "video": "Video", "audio": "Audio",
                  "text": "Text", "folder": "Folder"}.get(kind, (extension(name).upper() + " file") if extension(name) else "File")
     width = height = 0

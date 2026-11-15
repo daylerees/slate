@@ -66,6 +66,7 @@ PanelWindow {
         files = l;
         index = Math.max(0, Math.min(l.length - 1, at || 0));
         shown = true;
+        Qt.callLater(() => keys.forceActiveFocus());     // (the keys, again each time it opens)
         load();
     }
     function close() {
@@ -120,6 +121,9 @@ PanelWindow {
     readonly property bool mediaMissing: mediaKind && mediaLoader.status === Loader.Error
     readonly property bool mediaFailed: mediaKind && !!mediaLoader.item && mediaLoader.item.failed
     readonly property bool pdfEmpty: kind === "pdf" && pagesDone && pages.length === 0
+    // (the keys stay its own as one view gives way to the next: Qt let go of them as the views
+    // changed, and Left, Right, Space and Escape stopped doing anything after the first step)
+    onViewChanged: if (shown) keys.forceActiveFocus()
     readonly property string view: !info ? (gone ? "details" : "loading")
         : kind === "image" && !imageFailed ? "image"
         : kind === "text" ? "text"
@@ -183,7 +187,8 @@ PanelWindow {
     readonly property size bodySize: {
         switch (view) {
         case "image": return picture.status === Image.Ready ? fit(picture.fullWidth, picture.fullHeight) : lastImage;
-        case "text": return Qt.size(Math.min(maxBodyW, 820), maxBodyH);
+        // (as tall as the text, up to the room there is: a short note gets a small card)
+        case "text": return Qt.size(Math.min(maxBodyW, 820), Math.min(maxBodyH, Math.max(160, Math.ceil(textHeight) + 4)));
         case "pdf": return Qt.size(Math.min(maxBodyW, 780), maxBodyH);
         case "video": {
             const n = mediaLoader.item ? mediaLoader.item.naturalSize : Qt.size(0, 0);
@@ -196,6 +201,10 @@ PanelWindow {
     // (stepping from one picture to the next, the card keeps the last one's size until the
     // next is ready, rather than shrinking to nothing in between)
     property size lastImage: Qt.size(480, 320)
+    // (the text's height, noted as it changes rather than bound: it depends on the width, which
+    // the card's size sets)
+    property real textHeight: 0
+    function noteTextHeight() { textHeight = textFlick.contentHeight; }   // (a moment later: not while the card's size is being worked out)
 
     // ---- Window ------------------------------------------------------------
     property real fade: shown ? 1 : 0
@@ -206,7 +215,12 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-quicklook"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // The keyboard, taken a moment after it shows: opened from the launcher (which lets go of it as
+    // this shows), taken in that same moment it went to the window behind instead, and keys were lost
+    WlrLayershell.keyboardFocus: shown && keysReady ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    property bool keysReady: false
+    onShownChanged: if (!shown) keysReady = false
+    Timer { interval: 60; running: root.shown && !root.keysReady; onTriggered: { root.keysReady = true; keys.forceActiveFocus(); } }
 
     Connections {
         target: Config
@@ -217,6 +231,7 @@ PanelWindow {
     DialogBackdrop { fade: root.fade; active: root.shown; onDismissed: root.close() }
 
     FocusScope {
+        id: keys
         anchors.fill: parent
         focus: root.shown
         Keys.onPressed: e => {
@@ -276,7 +291,7 @@ PanelWindow {
             anchors { left: parent.left; right: parent.right; top: parent.top }
             height: root.headHeight
             Column {
-                anchors { left: parent.left; leftMargin: 18; right: counter.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: 18; right: root.files.length > 1 ? counter.left : openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                 spacing: 1
                 Text {
                     id: headName
@@ -300,7 +315,6 @@ PanelWindow {
                 id: counter
                 visible: root.files.length > 1
                 anchors { right: openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                width: visible ? implicitWidth : 0
                 text: (root.index + 1) + " of " + root.files.length
                 color: root.dimTextColor
                 font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
@@ -335,7 +349,12 @@ PanelWindow {
                 anchors.fill: parent
                 visible: root.view === "image"
                 source: root.kind === "image" && root.shown ? root.fileUrl(root.path) : ""
-                sourceSize: Qt.size(Math.round(root.maxBodyW * root.dpr), Math.round(root.maxBodyH * root.dpr))
+                // (the size it's shown at: Qt scales a picture up to sourceSize too, so it's the fitted
+                // size, from the file's own, read by quicklook.py; the room there is when that isn't known)
+                sourceSize: root.info && root.info.width > 0
+                    ? Qt.size(Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).width * root.dpr),
+                              Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).height * root.dpr))
+                    : Qt.size(Math.round(root.maxBodyW * root.dpr), Math.round(root.maxBodyH * root.dpr))
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 cache: false
@@ -351,6 +370,7 @@ PanelWindow {
                 color: root.tileColor
                 Flickable {
                     id: textFlick
+                    onContentHeightChanged: Qt.callLater(root.noteTextHeight)
                     anchors { fill: parent; margins: 2; rightMargin: textFlick.contentHeight > textFlick.height ? 16 : 2 }
                     contentWidth: width
                     contentHeight: textEdit.implicitHeight + (cutNote.visible ? cutNote.height + 8 : 0)

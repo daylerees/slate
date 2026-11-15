@@ -7,7 +7,7 @@ import shutil
 
 from live import LiveCase
 
-ODD = '<b>notes</b> & "quotes" #1?.txt'       # (markup, an ampersand, a quote, # and ?)
+ODD = '<b>notes<i> & "quotes" #1?.txt'       # (markup, an ampersand, a quote, # and ?: no slash, it can't be in a name)
 
 
 class QuickLook(LiveCase):
@@ -43,8 +43,11 @@ class QuickLook(LiveCase):
                          and st["quicklook"]["view"] != "loading", f"Quick Look on {os.path.basename(path)}")["quicklook"]
 
     def key(self, *args):
-        """A real key press (wtype: -s waits a moment for its keymap)."""
-        self.s.run(["wtype", "-s", "300", *args], check=True)
+        """A real key press (wtype: -s waits a moment for its keymap). Each wtype is a new
+        virtual keyboard, and its first key can arrive before Slate has its keymap and be lost
+        (it was, now and then, for a key to a window that had only just taken the keyboard):
+        a Shift first, which nothing here minds, takes that place."""
+        self.s.run(["wtype", "-s", "300", "-k", "Shift_L", *args], check=True)
 
     def closed(self, what="Quick Look to close"):
         self.wait(lambda st: not st["quicklook"]["open"], what)
@@ -56,7 +59,7 @@ class QuickLook(LiveCase):
         st = self.look(p)
         self.assertEqual(st["view"], "image")
         st = self.wait(lambda st: st["quicklook"]["image"] is not None, "the picture drawn")["quicklook"]
-        self.assertEqual(st["image"], [640, 480], "a picture that fits is shown at its own size")
+        self.assertEqual(st["image"], [640, 480], f"a picture that fits is shown at its own size: {st}")
         self.assertIn("640 × 480", st["details"])
         self.assertEqual(st["name"], "beach.png")
         self.screenshot("quicklook-picture")
@@ -160,18 +163,18 @@ class QuickLook(LiveCase):
         self.ipc("launcher", "search", "zephyr")
         st = self.wait(lambda st: "zephyr-two.png" in st["launcher"]["results"] and "zephyr-one.txt" in st["launcher"]["results"],
                        "the two files", timeout=10)["launcher"]
-        # Moved to with the keys (the newest first: the picture), Space shows it
-        down = st["results"].index("zephyr-two.png")
-        self.key(*(["-k", "Down"] * down if down else ["-k", "Down", "-k", "Up"]))
-        self.wait(lambda st: st["launcher"]["current"] == down, "the picture picked with the keys")
-        self.key("-k", "space")
-        st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "image", "Quick Look on the picture")["quicklook"]
-        self.assertEqual(st["path"], second)
+        # Moved to with the keys (the text file, after the newer picture), Space shows it
+        down = st["results"].index("zephyr-one.txt")
+        self.assertGreater(down, 0)
+        # (one wtype for both: a second, straight after, lost its keys to the launcher)
+        self.key(*["-k", "Down"] * down, "-k", "space")
+        st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "text", "Quick Look on the text file")["quicklook"]
+        self.assertEqual(st["path"], first)
         self.assertEqual(st["count"], 2, "the other file in the results, to step to")
         self.assertEqual(self.s.state()["launcher"]["query"], "zephyr", "Space went into the search too")
-        # Right: the next file in the results
-        self.key("-k", "Right")
-        self.wait(lambda st: st["quicklook"]["path"] == first and st["quicklook"]["view"] == "text", "the next file")
+        # Left: the file before it in the results
+        self.key("-k", "Left")
+        self.wait(lambda st: st["quicklook"]["path"] == second and st["quicklook"]["view"] == "image", "the file before it")
         # Escape: Quick Look closes, the launcher stays, with the keyboard back
         self.key("-k", "Escape")
         self.closed()
@@ -186,8 +189,8 @@ class QuickLook(LiveCase):
         self.ipc("launcher", "open")
         self.ipc("launcher", "search", "quokka")
         self.wait(lambda st: st["launcher"]["results"][:1] == ["quokka.txt"], "the file first", timeout=10)
-        self.key("-k", "space")
-        self.wait(lambda st: st["launcher"]["query"] == "quokka ", "a space in the search")
+        self.key("-k", "space", "x")          # (the query is trimmed: a letter after, so the space shows)
+        self.wait(lambda st: st["launcher"]["query"] == "quokka x", "a space in the search")
         self.assertFalse(self.s.state()["quicklook"]["open"])
 
     # ---- From the dock ----------------------------------------------------------------------
