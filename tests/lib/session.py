@@ -336,6 +336,12 @@ class Session:
         if self.alive():
             return False
         self.save_logs()
+        # ...and under a name of its own: the next session on this display writes slate.log
+        # again, and a crash seen once in a repeated run was left with nothing to say why
+        try:
+            shutil.copy(self.log_path(), os.path.join(self.out, time.strftime("slate-died-%H%M%S.log")))
+        except OSError:
+            pass
         return True
 
     # ---- helpers ------------------------------------------------------------------------
