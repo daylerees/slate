@@ -388,6 +388,11 @@ ShellRoot {
         // units), let go. centre: as double-clicking the header does
         function novaDrag(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); }
         function novaCentre(): void { nova.centre(); }
+        // Resize it by its edges (edges: "l", "r", "t", "b", or a corner's two), as dragging them
+        // does: pressed, moved by dx, dy (Slate's units), let go. Reset: as it comes, as
+        // double-clicking an edge does
+        function novaResize(edges: string, dx: real, dy: real): void { nova.resizeStart(); nova.resizeBy(edges, dx, dy); nova.resizeEnd(); }
+        function novaSizeReset(): void { nova.sizeAsItComes(); }
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.testDrop(); }
@@ -521,7 +526,9 @@ ShellRoot {
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
                              blocks: nova.cur ? nova.cur.blocks || [] : [], blocksMade: nova.blocksMade, rich: nova.richNow(), copied: nova.copied,
                              // (where the card is, its size, and the window's: dragged by its header)
-                             panel: { x: nova.panelX, y: nova.panelY, w: nova.panelWidth, h: nova.panelHeight, homeX: nova.homeX, homeY: nova.homeY, screenW: nova.width, screenH: nova.height },
+                             panel: { x: nova.panelX, y: nova.panelY, w: nova.panelWidth, h: nova.panelHeight, talk: nova.talkHeight, homeX: nova.homeX, homeY: nova.homeY, screenW: nova.width, screenH: nova.height,
+                                      area: [nova.area.x, nova.area.y, nova.area.width, nova.area.height], minW: nova.minW, maxW: nova.maxW,
+                                      minTalk: nova.minTalk, maxTalk: nova.maxTalk, resizing: nova.resizing },
                              // (whether each row of what it did offers Undo just now)
                              undo: nova.actions.map(a => nova.undoable(a)),
                              button: Config.s.barShowAssistant && Config.assistantOn,

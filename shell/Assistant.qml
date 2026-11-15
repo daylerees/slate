@@ -32,7 +32,9 @@ PanelWindow {
     id: root
 
     // ---- Look: the launcher's ------------------------------------------------
-    readonly property real panelWidth: Math.max(300, Math.min(560, width - 32))
+    // (as it comes, or as wide as you've made it: wantW, below)
+    readonly property real panelWidth: wantW > 0 ? Math.round(Math.max(Math.min(minW, area.width - 2 * edgeGap), Math.min(wantW, maxW, area.width - 2 * edgeGap)))
+                                                 : Math.max(300, Math.min(560, width - 32))
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18
     // (at its own opacity with glass: Settings → Assistant → Glass)
@@ -262,7 +264,7 @@ PanelWindow {
         }
     }
     function openWindow() {
-        if (!shown) centre();           // (it opens in the middle, as Settings does)
+        if (!shown) { centre(); resizeEnd(); }   // (it opens in the middle, as Settings does)
         screen = Config.focusedScreen;
         openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         openedAt = Date.now();
@@ -318,6 +320,7 @@ PanelWindow {
     readonly property real panelX: panel.x                  // (for the tests: where the card is)
     readonly property real panelY: panel.y
     readonly property real panelHeight: panel.height
+    readonly property real talkHeight: talkBox.height       // (and how tall its conversation is)
     property int keysSeen: 0               // (for the tests: keys the box has been given)
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
@@ -492,8 +495,10 @@ PanelWindow {
     readonly property real homeX: Math.round((width - panelWidth) / 2)
     readonly property real homeY: Math.round(Math.max(24, (height - 520) / 2))
     readonly property int edgeGap: 8
-    function clampX(x) { return Math.round(Math.max(edgeGap, Math.min(width - panelWidth - edgeGap, x))); }
-    function clampY(y) { return Math.round(Math.max(edgeGap, Math.min(height - panel.height - edgeGap, y))); }
+    // Where on the screen it may be (Slate's units, in this window): all of it
+    readonly property rect area: Qt.rect(0, 0, width, height)
+    function clampX(x) { return Math.round(Math.max(area.x + edgeGap, Math.min(area.x + area.width - panelWidth - edgeGap, x))); }
+    function clampY(y) { return Math.round(Math.max(area.y + edgeGap, Math.min(area.y + area.height - panel.height - edgeGap, y))); }
     function centre() { offX = 0; offY = 0; }
     // A drag: from where the card is when it starts, by dx, dy (what the header does, and the tests)
     property point dragFrom: Qt.point(0, 0)
@@ -503,11 +508,81 @@ PanelWindow {
         offY = clampY(homeY + dragFrom.y + dy) - homeY;
     }
 
+    // ---- Its size --------------------------------------------------------------
+    // Its edges and corners resize it, as a window's do: wider or narrower (wantW), and its
+    // conversation taller or shorter (wantTalk; the rest of the card keeps its size). Slate's
+    // units; 0: as it comes (the launcher's width, the conversation growing with what's said up
+    // to its share of the screen). Never smaller than minW by minTalk nor wider than maxW, and
+    // wholly in the area, as dragging is. Kept from one opening to the next and after Slate
+    // restarts (sizeFile: nothing personal, just two numbers); a double-click on an edge puts it
+    // back as it comes
+    property real wantW: 0
+    property real wantTalk: 0
+    readonly property real minW: 400
+    readonly property real maxW: 1200
+    readonly property real minTalk: 120
+    // (the conversation's most: the screen's height less the rest of the card, about 200)
+    readonly property real maxTalk: Math.max(minTalk, area.height - 2 * edgeGap - 200)
+    property bool resizing: false
+    property var sizeFrom: null
+    // A resize: from the card as it is when it starts, its edges ("l", "r", "t", "b", or a
+    // corner's two) moved by dx, dy (what the edges do, and the tests)
+    function resizeStart() {
+        sizeFrom = { x: panel.x, y: panel.y, w: panel.width, h: panel.height, talk: talkBox.height };
+        resizing = true;
+    }
+    function resizeBy(edges, dx, dy) {
+        const f = sizeFrom, a = area, g = edgeGap;
+        if (!f) return;
+        let x = f.x, y = f.y;
+        if (edges.indexOf("l") >= 0 || edges.indexOf("r") >= 0) {
+            const left = edges.indexOf("l") >= 0;
+            // (as far as the screen's edge on the side being dragged)
+            const room = left ? f.x + f.w - (a.x + g) : a.x + a.width - g - f.x;
+            const w = Math.round(Math.max(Math.min(minW, room), Math.min(maxW, room, f.w + (left ? -dx : dx))));
+            if (left) x = f.x + f.w - w;
+            wantW = w;
+        }
+        if ((edges.indexOf("t") >= 0 || edges.indexOf("b") >= 0) && talkBox.visible) {
+            const top = edges.indexOf("t") >= 0;
+            const rest = f.h - f.talk;
+            const room = Math.min(maxTalk, (top ? f.y + f.h - (a.y + g) : a.y + a.height - g - f.y) - rest);
+            const t = Math.round(Math.max(Math.min(minTalk, room), Math.min(room, f.talk + (top ? -dy : dy))));
+            if (top) y = f.y + f.h - (rest + t);
+            wantTalk = t;
+        }
+        // (the opposite edges stay where they were)
+        offX = x - homeX;
+        offY = y - homeY;
+    }
+    function resizeEnd() {
+        if (!resizing) return;
+        resizing = false;
+        sizeFrom = null;
+        saveSize();
+    }
+    function sizeAsItComes() { wantW = 0; wantTalk = 0; saveSize(); }
+    readonly property string sizeFile: Config.stateHome + "/slate/assistant-size.json"
+    FileView {
+        id: sizeStore
+        path: root.sizeFile
+        blockLoading: true
+        printErrors: false
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                root.wantW = Math.max(0, Number(d.width) || 0);
+                root.wantTalk = Math.max(0, Number(d.talk) || 0);
+            } catch (e) {}
+        }
+    }
+    function saveSize() { sizeStore.setText(JSON.stringify({ width: wantW, talk: wantTalk })); }
+
     Rectangle {
         id: panel
         width: root.panelWidth
         height: body.implicitHeight + 28
-        Behavior on height { enabled: root.shown; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: root.shown && !root.resizing; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
         x: root.clampX(root.homeX + root.offX)
         y: root.clampY(root.homeY + root.offY)
         radius: Config.corner(18)
@@ -630,7 +705,9 @@ PanelWindow {
                 id: talkBox
                 visible: root.on
                 width: parent.width
-                height: Math.min(talkCol.implicitHeight, Math.max(120, root.height - 320), 420)
+                // (as tall as you've made it, or growing with what's said up to its share)
+                height: root.wantTalk > 0 ? Math.max(root.minTalk, Math.min(root.wantTalk, root.maxTalk))
+                                          : Math.min(talkCol.implicitHeight, Math.max(120, root.height - 320), 420)
                 readonly property bool overflows: talk.contentHeight > talk.height + 1
             Flickable {
                 id: talk
@@ -1129,6 +1206,52 @@ PanelWindow {
                     }
                     PillButton { visible: !root.working && !root.error; icon: 0xEB20; label: "Settings"; onPressed: root.openSettings() }
                 }
+            }
+        }
+
+        // ---- Its edges and corners: drag one to resize it ----
+        // A strip along each edge, half in the card and half out (a corner's square bigger),
+        // over what's in the card, with the pointer showing which way it resizes. Silent, as
+        // dragging is; a double-click puts it back as it comes. Not the conversation's height
+        // while it's switched off (only its width: there's no conversation to show)
+        Repeater {
+            model: ["l", "r", "t", "b", "tl", "tr", "bl", "br"]
+            delegate: MouseArea {
+                id: grip
+                required property string modelData
+                readonly property bool l: modelData.indexOf("l") >= 0
+                readonly property bool r: modelData.indexOf("r") >= 0
+                readonly property bool t: modelData.indexOf("t") >= 0
+                readonly property bool b: modelData.indexOf("b") >= 0
+                readonly property bool corner: modelData.length === 2
+                readonly property real reach: 5           // (past the edge, and as far in)
+                readonly property real cornerSize: 16
+                readonly property real panelW: panel.width
+                readonly property real panelH: panel.height
+                visible: talkBox.visible || !(t || b)
+                z: 2
+                x: l ? -reach : r ? panelW - (corner ? cornerSize : reach) : cornerSize
+                y: t ? -reach : b ? panelH - (corner ? cornerSize : reach) : cornerSize
+                width: corner ? cornerSize + reach : (l || r) ? reach * 2 : panelW - cornerSize * 2
+                height: corner ? cornerSize + reach : (t || b) ? reach * 2 : panelH - cornerSize * 2
+                // (hover on: without it the arrow only showed while the button was held)
+                hoverEnabled: true
+                cursorShape: !corner ? ((l || r) ? Qt.SizeHorCursor : Qt.SizeVerCursor)
+                    : (l === t) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
+                property point grab: Qt.point(0, 0)
+                // (places on the screen: the edge moves with the card under the pointer)
+                onPressed: mouse => {
+                    grab = mapToItem(null, mouse.x, mouse.y);
+                    root.resizeStart();
+                }
+                onPositionChanged: mouse => {
+                    if (!pressed) return;
+                    const p = mapToItem(null, mouse.x, mouse.y);
+                    root.resizeBy(modelData, p.x - grab.x, p.y - grab.y);
+                }
+                onReleased: root.resizeEnd()
+                onCanceled: root.resizeEnd()
+                onDoubleClicked: root.sizeAsItComes()
             }
         }
     }

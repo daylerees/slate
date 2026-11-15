@@ -10,7 +10,12 @@ import sys
 import threading
 import time
 
+import atexit
+import unittest
+
 from live import LiveCase
+from pointer import Pointer
+from session import Session, in_container
 
 META = {"io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": {},
         "io.modelcontextprotocol/clientInfo": {"name": "Tester", "version": "1"}}
@@ -857,3 +862,121 @@ class CameraNote(LiveCase):
         self.assertEqual(self.s.state()["osd"]["label"], "Camera on · Firefox")
         self.ipc("test", "camera", "false", "")
         self.wait(lambda st: st["osd"]["label"] == "Camera off", "the note to say the camera's off")
+
+
+class NovaWindowChecks:
+    """Moving and resizing Nova's window with a real pointer (tests/lib/pointer.py: pressed,
+    moved and let go through Hyprland, as a mouse does, not a test hook, so whatever lies over
+    the title or an edge would show). `scale` is the Interface size the session runs at: the
+    state is in Slate's units, the pointer in Hyprland's pixels."""
+    scale = 1
+
+    def open_nova(self):
+        for key in ("assistantEnabled", "assistantRisksAccepted", "glass"):
+            self.keep_setting(key)
+        self.config("assistantRisksAccepted", "1")
+        self.config("assistantEnabled", "true")
+        self.config("glass", "true")          # (with its border and sheen over the card)
+        self.addCleanup(lambda: self.ipc("assistant", "close"))
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
+        return self.steady(lambda: self.s.state()["assistant"]["panel"])
+
+    def pointer(self):
+        return Pointer(self.s.env, self.s.width, self.s.height)
+
+    def px(self, x, y):
+        """A place in Slate's units, in Hyprland's pixels (one screen, at 0, 0)."""
+        return (round(x * self.scale), round(y * self.scale))
+
+    def test_dragged_by_its_title_with_the_pointer(self):
+        """Pressed on Nova's title, moved and let go, the window follows the pointer."""
+        home = self.open_nova()
+        grab = (home["x"] + 120, home["y"] + 28)
+        with self.pointer() as ptr:
+            ptr.drag(self.px(*grab), self.px(grab[0] - 160, grab[1] + 96))
+        p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to follow the pointer")["assistant"]["panel"]
+        self.assertAlmostEqual(p["x"], home["x"] - 160, delta=2)
+        self.assertAlmostEqual(p["y"], home["y"] + 96, delta=2)
+
+    def test_resized_by_its_edges_with_the_pointer(self):
+        """Its edges and corners resize it, the opposite edges staying put: the right edge makes
+        it wider, the bottom left corner narrower (no narrower than its least) with a taller
+        conversation. Never past its limits or off the screen, and it keeps its size when it's
+        opened again (in the middle, as ever)."""
+        self.addCleanup(lambda: self.ipc("test", "novaSizeReset"))
+        home = self.open_nova()
+        mid = home["y"] + home["h"] / 2
+        with self.pointer() as ptr:
+            ptr.drag(self.px(home["x"] + home["w"], mid), self.px(home["x"] + home["w"] + 100, mid))
+        self.wait(lambda st: st["assistant"]["panel"]["w"] > home["w"], "it to get wider")
+        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.assertAlmostEqual(p["w"], home["w"] + 100, delta=2)
+        self.assertAlmostEqual(p["x"], home["x"], delta=2, msg="its left edge moved")
+        self.assertFalse(p["resizing"])
+        with self.pointer() as ptr:
+            ptr.drag(self.px(p["x"] + 1, p["y"] + p["h"] - 1), self.px(p["x"] + 400, p["y"] + p["h"] + 150))
+        self.wait(lambda st: st["assistant"]["panel"]["w"] < p["w"], "it to get narrower")
+        q = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.assertEqual(q["w"], q["minW"], "it went narrower than its least")
+        self.assertAlmostEqual(q["x"] + q["w"], p["x"] + p["w"], delta=2, msg="its right edge moved")
+        self.assertAlmostEqual(q["talk"], max(q["minTalk"], p["talk"] + 150), delta=2)
+        self.assertAlmostEqual(q["h"] - q["talk"], p["h"] - p["talk"], delta=1, msg="more than the conversation grew")
+        self.assertAlmostEqual(q["y"], p["y"], delta=2, msg="its top moved")
+
+        # As far as it goes each way: within its limits and wholly on the screen
+        def inside(c):
+            a = c["area"]
+            self.assertGreaterEqual(c["x"], a[0] + 8 - 1, c)
+            self.assertGreaterEqual(c["y"], a[1] + 8 - 1, c)
+            self.assertLessEqual(c["x"] + c["w"], a[0] + a[2] - 8 + 1, c)
+            self.assertLessEqual(c["y"] + c["h"], a[1] + a[3] - 8 + 1, c)
+        for edges, dx, dy in (("r", 10000, 0), ("l", -10000, 0), ("t", 0, -10000), ("b", 0, 10000)):
+            self.ipc("test", "novaResize", edges, dx, dy)
+            c = self.steady(lambda: self.s.state()["assistant"]["panel"])
+            inside(c)
+            self.assertLessEqual(c["w"], c["maxW"])
+            self.assertLessEqual(c["talk"], c["maxTalk"])
+        self.assertGreater(c["w"], q["w"])
+        self.assertGreater(c["talk"], q["talk"])
+        for edges, dx, dy in (("l", 10000, 0), ("b", 0, -10000)):
+            self.ipc("test", "novaResize", edges, dx, dy)
+        c = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        inside(c)
+        self.assertEqual((c["w"], c["talk"]), (c["minW"], c["minTalk"]), "it went smaller than its least")
+
+        # Kept: closed and opened again, the same size, in the middle
+        self.ipc("test", "novaResize", "br", 120, 80)
+        kept = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.ipc("assistant", "close")
+        self.wait(lambda st: not st["assistant"]["open"])
+        self.ipc("assistant", "open")
+        self.wait(lambda st: st["assistant"]["open"])
+        again = self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.assertEqual((again["w"], again["talk"]), (kept["w"], kept["talk"]), "it didn't keep its size")
+        self.assertEqual((again["x"], again["y"]), (again["homeX"], again["homeY"]), "it didn't open in the middle")
+        # (and as it comes again, as a double-click on an edge puts it)
+        self.ipc("test", "novaSizeReset")
+        self.wait(lambda st: st["assistant"]["panel"]["w"] == home["w"], "it to go back as it comes")
+
+
+class NovaWindow(NovaWindowChecks, LiveCase):
+    pass
+
+
+class NovaWindowAt125(NovaWindow):
+    """All of the above at 125% Interface size, in a Slate of its own."""
+    scale = 1.25
+
+    @classmethod
+    def setUpClass(cls):
+        if not in_container():
+            raise unittest.SkipTest("live tests run in the test container")
+        Session.stop_shared()
+        cls.s = Session(settings={"uiScale": 1.25})
+        atexit.register(cls.s.stop)
+        cls.s.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.s.stop()

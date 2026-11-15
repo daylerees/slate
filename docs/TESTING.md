@@ -218,6 +218,10 @@ as its own check.
   `mainScreen`, `popoutScreen`, `dock.screen`…) and Hyprland's from `hyprctl layers`
   (which monitor each of Slate's windows is on, and where); `s.screenshot(path, output=SECOND)`
   takes the second screen.
+  A real pointer, pressing, moving and letting go as a mouse does (hyprctl's movecursor gives
+  no hover or buttons): `with Pointer(s.env, s.width, s.height) as p: p.drag((x, y), (x2, y2))`
+  from `tests/lib/pointer.py`, in Hyprland's pixels (Hyprland's virtual pointer). Use it where
+  a test hook would skip what lies over the thing pressed (Nova's title and edges).
 - **visual**: add a scene to `tests/visual/scenes.py`, then
   `tests/run --tier visual --filter <scene>` (it fails: no approved picture yet), check
   `tests/out/visual/<scene>.actual.png`, and `tests/run --approve <scene>`. A scene's steps

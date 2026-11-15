@@ -41,6 +41,12 @@ agent you chose does it through the same tools.
   it back in the middle. It's a layer that covers the screen, so the card moves inside it
   (`offX`/`offY` in `Assistant.qml`), kept wholly on the screen as it grows or the screen or
   Interface size changes. Closing it forgets where it was: it opens in the middle, as Settings does.
+- **Resizing it.** Its edges and corners resize it, the opposite edges staying put: its width
+  (`wantW`, 400 to 1200) and the conversation's height (`wantTalk`, from 120 to the screen's
+  height less the rest of the card), wholly on the screen. 0 is "as it comes" (the launcher's
+  width, a conversation that grows with what's said); a double-click on an edge goes back to
+  it. The size is kept across openings and restarts in `~/.local/state/slate/assistant-size.json`
+  (two numbers, nothing personal).
 - **Closing it.** Escape or a click outside hides the window and the work carries on: the
   bar button shows it, and a notification brings the answer when it's done. **Stop**, at the end of
   the box while Nova works, ends it, and so does Ctrl+C there (with nothing selected).

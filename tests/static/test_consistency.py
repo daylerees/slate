@@ -918,8 +918,15 @@ class PrivateFiles(Case):
                 m = re.search(r"""command: \["sh", "-c", '([^']+)', %s\]\s*onExited: \{(.*?)\n    \}""" % re.escape(prop), src, re.S)
                 self.assertTrue(m, "no command closing the folder of " + prop)
                 script, after = m.groups()
-                # Every write is after that command has finished, and is followed by the file's chmod
-                self.assertEqual(src.count(".setText("), 1, "a write that doesn't wait for the folder")
+                # Every write is after that command has finished, and is followed by the file's chmod.
+                # (Its writes: those of the one FileView reading it. Another FileView in the same
+                # file, for something that isn't private, like Nova's size, is its own business)
+                views = re.findall(r"FileView \{\s*id: (\w+)\s*path: ([^\n]*)", src)
+                private = [v for v, path in views if prop in path]
+                self.assertEqual(len(private), 1, f"{len(private)} FileViews read {prop}")
+                self.assertTrue(all(prop.split(".")[-1] not in path for v, path in views if v not in private),
+                                "another FileView reads the private file")
+                self.assertEqual(src.count(private[0] + ".setText("), 1, "a write that doesn't wait for the folder")
                 self.assertRegex(after, r"""(?s)\.setText\(.*?\);\s*Quickshell\.execDetached\(\["chmod", "600", %s\]\)""" % re.escape(prop))
                 # The command: the folder made, or one that was open to others closed
                 old = os.umask(0o022)
