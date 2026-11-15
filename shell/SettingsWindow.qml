@@ -2170,15 +2170,10 @@ FloatingWindow {
                         id: acctPic
                         x: 16; width: 60; height: 60
                         anchors.verticalCenter: parent.verticalCenter
-                        Rectangle {
-                            anchors.fill: parent; radius: Config.corner(width / 2)
-                            color: win.outline
-                            visible: acctImg.status !== Image.Ready
-                            Text { anchors.centerIn: parent; text: win.glyph(0xEF68); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 34 }
-                        }
                         RoundImage {
                             id: acctImg
                             anchors.fill: parent; radius: Config.corner(width / 2)
+                            fallback: true      // no account picture: the themed person icon
                             source: Config.avatarUrl
                             saturation: acctHover.hovered || Config.avatarBusy ? -1 : 0
                             brightness: acctHover.hovered || Config.avatarBusy ? -0.45 : 0

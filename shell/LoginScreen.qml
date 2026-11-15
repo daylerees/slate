@@ -170,19 +170,13 @@ Item {
                 anchors { fill: parent; margins: 8 }
                 radius: Config.corner(width / 2)
                 color: Config.raised(ls.field)
-                Text {
-                    anchors.centerIn: parent
-                    visible: avatarImg.status !== Image.Ready
-                    text: ls.glyph(0xEB4D)
-                    color: ls.dim
-                    font.family: tabler.name; font.pixelSize: 56
-                }
             }
             Image { id: avatarImg; source: ls.avatar ? "file://" + ls.avatar : ""; visible: false; asynchronous: true }
             RoundImage {
                 anchors { fill: parent; margins: 8 }
                 radius: Config.corner(width / 2)
-                visible: avatarImg.status === Image.Ready
+                fallback: true      // no account picture: the themed person icon
+                fontSource: ls.iconFontSource
                 source: avatarImg.source
             }
         }

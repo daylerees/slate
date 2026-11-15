@@ -112,3 +112,14 @@ class AirplaneMode(LiveCase):
                         break
                     self.s.settle(0.1)
                 self.assertEqual(self.setting("airplaneMode"), "true" if want == "on" else "false")
+
+
+class AccountPicture(LiveCase):
+    """With no account picture (the tests' account has none), the control centre shows the themed
+    person icon beside the name, not an empty space."""
+    def test_person_icon_without_a_picture(self):
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("bar", "panel", "control")
+        self.wait(lambda st: st["popout"] == "control", "the control centre")
+        self.wait(lambda st: st["lists"]["panel"]["avatarFallback"] is not None, "the profile card")
+        self.assertTrue(self.s.state()["lists"]["panel"]["avatarFallback"], "no person icon without a picture")

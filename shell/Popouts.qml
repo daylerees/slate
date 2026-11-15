@@ -68,6 +68,7 @@ PanelWindow {
         const f = panel && panel.testField ? panel.testField() : null;
         return { rows: rowsMade, typing: !!f && f.focus, typed: f ? f.text : "", cursor: f ? f.cursorPosition : -1,
                  order: panel && panel.testOrder ? panel.testOrder() : [],
+                 avatarFallback: panel && panel.testAvatarFallback !== undefined ? panel.testAvatarFallback : null,
                  scroll: list ? Math.round(list.contentY - list.originY) : 0, count: list ? list.count : 0,
                  // rows still fading in (or out): none once everything has settled
                  fading: list ? Array.from(list.contentItem.children).filter(c => c.visible && c.opacity < 1).length : 0 };
@@ -2754,6 +2755,7 @@ PanelWindow {
             width: 470
             spacing: 12
             readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
+            readonly property bool testAvatarFallback: avatar.showingFallback   // (the test state's avatarFallback)
 
             // Profile
             Rectangle {
@@ -2814,6 +2816,7 @@ PanelWindow {
                     width: 56; height: 56; radius: Config.corner(28)
                     anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                     source: Config.avatarUrl
+                    fallback: true      // no account picture: the themed person icon
                     // Hover: greyed and dimmed with a pencil; click to change the picture
                     saturation: avatarHover.hovered ? -1 : 0
                     brightness: avatarHover.hovered ? -0.45 : 0

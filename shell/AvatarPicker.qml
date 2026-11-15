@@ -322,14 +322,8 @@ FloatingWindow {
                 color: Config.raised(Config.tint("#1d222a"))
                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
                 border.width: 1; border.color: Config.tint("#2a313c")
-                Text {
-                    visible: pk.chosen === ""
-                    anchors.centerIn: parent
-                    text: pk.glyph(0xEF68)          // user
-                    color: pk.dim; font.family: pk.iconFont; font.pixelSize: 64
-                }
                 RoundImage {
-                    visible: pk.chosen !== ""
+                    fallback: true      // nothing picked yet: the themed person icon
                     anchors { fill: parent; margins: 3 }
                     radius: Config.corner(width / 2)
                     source: pk.chosen ? "file://" + pk.chosen : ""
