@@ -39,6 +39,57 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.32.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.32.0 <time datetime="2026-11-15">15 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Resize the dock from a divider.</strong> Drag one of the dock's dividers up or down to make the icons larger or smaller. The resize arrow shows when you rest on a divider, and you can start dragging straight away.</li>
+        <li><strong>A new look out of the box.</strong> A new Slate takes its accent color and background tint from your wallpaper, and its shadows are softer and wider. Your own settings stay as they are.</li>
+        <li><strong>One look for every tooltip.</strong> The dock's names, the menu bar's labels and Settings' "Default: …" hints now look alike, with Slate's shadow.</li>
+        <li><strong>Window borders for Slate's own windows.</strong> The launcher, Nova, the switchers, the pickers and the bar's arranging panel draw their border just as Hyprland draws your active window's. That means the same accent and, with glass, the same sheen, and they follow Settings → Windows → Window borders.</li>
+        <li><strong>Hover that keeps up.</strong> Every highlight under the pointer now comes and goes at once, as the launcher's does, in menus, panels, Settings, the dock and the menu bar.</li>
+        <li><strong>The accent lights up under the pointer</strong> on switches that are on, tiles that are on, connected devices and primary buttons, so you can see a click will do something.</li>
+        <li><strong>The menu bar stays usable</strong> while the launcher, Nova, a menu or a dock panel is open.</li>
+        <li><strong>New notifications slide into the bell panel</strong> if it's open when they arrive.</li>
+        <li><strong>A themed person icon</strong> where your account has no picture.</li>
+        <li><strong>The pointer and code font in other apps</strong> are now a choice, offered in Welcome, and undone again on factory reset and uninstall.</li>
+        <li><strong>Hyprbars</strong> waits calmly when there's no release that fits your Hyprland yet. It offers to build the unreleased version, and asks first.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Right-click menus with glass:</strong> no more light gap between a menu and its arrow.</li>
+        <li><strong>The dock:</strong> More's glass backing no longer shows with Glass off.</li>
+        <li><strong>Security and privacy:</strong> Root helpers run from a root-owned folder, and names and links from your home folder are checked before root uses them. Updates check the release's checksum before installing. Text from other programs, like notifications, release notes and the login screen's messages, shows as plain text. Clipboard history, notifications and Nova's chats can be read only by you. Exported logs leave out commands, home paths and your display's serial number. Temporary files stay out of /tmp.</li>
+        <li><strong>The lock and login screens:</strong> A preview can't take your password. Lockout follows your system's settings. A second login question no longer gets stuck. A password typed before the account is known is kept. If greetd isn't installed, the login screen setup says so instead of stopping without a word.</li>
+        <li><strong>Nova</strong> refuses settings that change keys, sleep, the power button or update checks.</li>
+        <li><strong>Displays:</strong> the old mode comes back if Settings closes before you keep a change.</li>
+        <li><strong>Title bars</strong> are placed and dragged correctly at every Interface size.</li>
+        <li><strong>Shortcuts:</strong> Super+scroll and Super+Ctrl+scroll go the same way through workspaces. Shortcuts say what to install when something they need is missing.</li>
+        <li><strong>Settings:</strong> Search finds every setting again. Settings stays on the page you asked for. Restore defaults now covers scenery quality. A grayed-out setting's line saying what your computer lacks (systemd or elogind, a time service) now fits instead of being cut off.</li>
+        <li><strong>Install:</strong> Installing carries on without systemd services, and asks before changing your icons. Remembers "try anyway" for updates, and puts the icon theme back on uninstall. Wallpaper colors work with ImageMagick 6, and app installs work on Artix and Void.</li>
+        <li><strong>Smaller fixes:</strong> A VPN whose name has a colon in it now shows. A notification's action no longer closes it twice. A screenshot that can't be taken or saved now says so. CUPS that doesn't answer no longer hangs Settings. LibreOffice Calc is no longer caught by a window rule. Terminal apps in Spaces start inside their terminal. The launcher copies answers that start with a minus.</li>
+        <li><strong>Consistency:</strong> Every scrolling view has its shades, scrollbar and smooth scrolling. Every dialog asks in Slate's own confirmation window. Places that didn't follow the theme now do.</li>
+        <li><strong>Spelling:</strong> Slate now uses American spelling in everything you read.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>Faster and lighter:</strong> Less background work when nothing needs it. Settings, Welcome and the bar editor are built when first opened. The launcher does nothing while closed. Smaller pictures are decoded near the size they're drawn. The glass sheen is one shader. The screen corners are four small windows. The bundled wallpapers are smaller, with no loss.</li>
+        <li><strong>xdg-desktop-portal-hyprland</strong> is now required in every package list, and packages Slate doesn't use were dropped.</li>
+        <li>Much of Slate's code was split into smaller files (the dock, Settings' pages, the bar's panels), with no change to how it looks.</li>
+        <li><strong>Known issue:</strong> closing several windows at once while live window previews show them (New Space, the overview) can, very rarely, still close Slate. This comes from a bug in Quickshell's window capture, which we've reported; Slate's workaround makes it rare. If it happens to you, your apps and windows stay open: press Super + Return for a terminal and type <code>slate</code> to bring Slate back.</li>
+        <li><strong>Heads-up for the next updates:</strong> checked against today's Arch packages, two menu bar layout tests (an expanded container with little room) and one log warning fail. They pass with the packages this release was tested on. They'll be looked at before a Qt or Quickshell update brings them to you.</li>
+        <li>The full test suite passed (97,711 checks) on the packages this release was tested with.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.31.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.31.0 <time datetime="2026-11-14">14 November 2026</time></h2>
   <div class="cl-grid">
