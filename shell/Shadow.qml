@@ -43,7 +43,7 @@ Item {
     property string fadeEdge: ""
     property real fadeFrom: 0
     property real fadeOver: 12
-    // A menu's pointer (MenuPointer.qml), as part of the surface: the square it's cut from,
+    // A menu's pointer (MenuSurface.qml), as part of the surface: the square it's cut from,
     // turned 45°, with its centre at pointAt (in this item's coordinates) and sides pointSize
     // long (0: none). The shadow follows it, and none lies under it to show through
     property point pointAt: Qt.point(0, 0)

@@ -241,6 +241,9 @@ ShellRoot {
             topBar.menu.close();
             if (row && row.run) row.run();
         }
+        // ...opened from any point, towards any side (top, bottom, left, right), as the desktop's
+        // and the bar's open it; where its card landed is state's barMenu.at
+        function barMenuAt(x: real, y: real, edge: string): void { topBar.menu.openFrom(x, y, edge, 14); }
         // The camera in use, as camera-watch.py would say (the test machine has none)
         function camera(on: bool, apps: string): void {
             Config.cameraApps = apps === "" ? [] : apps.split(",");
@@ -439,6 +442,7 @@ ShellRoot {
                 control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,
                            rects: Config.controlSwitchRects(Config.controlSwitches.length, 200, 300).map(q => [q.x, q.y, q.width, q.height]) },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
+                           at: [topBar.menu.cardAt.x, topBar.menu.cardAt.y], pixelRatio: topBar.menu.screen ? topBar.menu.screen.devicePixelRatio : 1,
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label),
                            edge: topBar.menu.edge, atY: topBar.menu.atY, gap: topBar.menu.gap, barHeight: topBar.barHeight },

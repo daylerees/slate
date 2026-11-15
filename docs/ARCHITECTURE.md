@@ -163,7 +163,7 @@ GlassFill.qml           a lock / login screen panel's glass fill (LoginScreen.qm
 WallBlur.qml            the wallpaper blurred the way Hyprland blurs it: behind those panels, and
                         behind see-through windows' live previews
 WebcamPreview.qml       Settings → Webcam's live picture (Qt Multimedia; loaded only when shown)
-MenuPointer.qml         the little point on a menu's edge (dock and tray menus), drawn only outside the menu
+MenuSurface.qml         a menu's card and the little point on its edge, filled as one shape (no seam with glass)
 scripts/webcam.py       Settings → Webcam: cameras, their picture settings (v4l2-ctl), kept per
                         camera and put back at login; which apps use the camera
 scripts/tray-watcher.py the tray's register (org.kde.StatusNotifierWatcher), run apart from Slate

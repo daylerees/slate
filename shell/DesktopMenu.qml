@@ -37,6 +37,11 @@ PanelWindow {
     // Where it points, and from which of its sides
     property real atX: 0
     property real atY: 0
+    // On the screen's own pixels: the point comes in fractions of one (the pointer, a bar of a
+    // fractional height), and a card placed between pixels drew its edge and its pointer's as
+    // two half-see-through rows, a light seam between them with glass
+    function px(v) { const r = dm.screen && dm.screen.devicePixelRatio > 0 ? dm.screen.devicePixelRatio : 1; return Math.round(v * r) / r; }
+    readonly property point cardAt: Qt.point(main.x, main.y)      // (for tests)
     property string edge: "top"
     property real gap: 0
 
@@ -187,15 +192,17 @@ PanelWindow {
         width: dm.menuWidth
         height: col.implicitHeight + 16
         radius: Config.corner(12)
-        color: dm.bgColor
+        color: "transparent"                 // (drawn by its surface, with its point)
+        // The card and its point (if it has one: the main card), as one shape
+        property string pointEdge: ""
+        property real pointAlong: 0
+        MenuSurface { id: surface; edge: card.pointEdge; along: card.pointAlong; color: dm.bgColor; radius: card.radius }
         // (faded away, not hidden, while something's carried out of it: hidden, what it was
         // pressed on would let go of the pointer)
         opacity: dm.lifted ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
-        // (its pointer, if it has one: part of its shape, for the shadow; centre and side)
-        property point pointAt: Qt.point(0, 0)
-        property real pointSize: 0
-        Shadow { pointAt: card.pointAt; pointSize: card.pointSize }   // raised: Slate's shadow, with glass too
+        // (its pointer, if it has one: part of its shape, for the shadow too)
+        Shadow { pointAt: surface.pointAt; pointSize: surface.pointSize }   // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
         // (the pointer reaching the submenu keeps it open)
         HoverHandler { onHoveredChanged: if (hovered && card.sub) dm.want(dm.subIndex, dm.subRowY) }
@@ -302,23 +309,15 @@ PanelWindow {
             return e;
         }
         readonly property bool across: side === "top" || side === "bottom"
-        x: Math.max(8, Math.min(dm.width - width - 8,
-            side === "left" ? dm.atX + dm.gap : side === "right" ? dm.atX - dm.gap - width : dm.atX - width / 2))
-        y: Math.max(8, Math.min(dm.height - height - 8,
-            side === "top" ? dm.atY + dm.gap : side === "bottom" ? dm.atY - dm.gap - height : dm.atY - height / 2))
+        x: dm.px(Math.max(8, Math.min(dm.width - width - 8,
+            side === "left" ? dm.atX + dm.gap : side === "right" ? dm.atX - dm.gap - width : dm.atX - width / 2)))
+        y: dm.px(Math.max(8, Math.min(dm.height - height - 8,
+            side === "top" ? dm.atY + dm.gap : side === "bottom" ? dm.atY - dm.gap - height : dm.atY - height / 2)))
         // The pointer: on the side facing the point, at it (sliding along the side to stay on
         // it when the menu is held in from the screen's edge), clear of the rounded corners
-        pointSize: pointer.size
-        pointAt: pointer.edge === "top" ? Qt.point(pointer.along, 0) : pointer.edge === "bottom" ? Qt.point(pointer.along, height)
-               : pointer.edge === "left" ? Qt.point(0, pointer.along) : Qt.point(width, pointer.along)
-        MenuPointer {
-            id: pointer
-            parent: main                  // (on the card's edge, not among what's shown above the items)
-            edge: main.side
-            along: main.across ? Math.max(18, Math.min(main.width - 18, dm.atX - main.x))
-                               : Math.max(18, Math.min(main.height - 18, dm.atY - main.y))
-            color: main.color
-        }
+        pointEdge: main.side
+        pointAlong: main.across ? Math.max(18, Math.min(main.width - 18, dm.atX - main.x))
+                                : Math.max(18, Math.min(main.height - 18, dm.atY - main.y))
     }
     // The submenu: beside its item, its first row level with it; on the left when there's no
     // room on the right; kept on the screen
@@ -328,7 +327,7 @@ PanelWindow {
         list: dm.subItems
         visible: dm.subItems.length > 0
         readonly property bool roomRight: main.x + main.width + 4 + width + 8 <= dm.width
-        x: roomRight ? main.x + main.width + 4 : Math.max(8, main.x - width - 4)
-        y: Math.max(8, Math.min(dm.height - height - 8, main.y + dm.subRowY))
+        x: dm.px(roomRight ? main.x + main.width + 4 : Math.max(8, main.x - width - 4))
+        y: dm.px(Math.max(8, Math.min(dm.height - height - 8, main.y + dm.subRowY)))
     }
 }

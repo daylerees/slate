@@ -72,18 +72,19 @@ PanelWindow {
         y: Math.max(8, Math.min(tm.height - height - 8,
             edge === "top" ? tm.anchorY + 14 : edge === "bottom" ? tm.anchorY - height - 14 : tm.anchorY - height / 2))
         radius: Config.corner(12)
-        color: tm.bgColor
-        Shadow {}                // raised: Slate's shadow, with glass too
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
-
-        // Pointer to the icon, on the side facing the bar (as on the dock's menus)
-        MenuPointer {
+        color: "transparent"     // (drawn by its surface, with its point)
+        // The card and its pointer to the icon, on the side facing the bar, as one shape
+        MenuSurface {
+            id: surface
             edge: menuBox.edge
             along: menuBox.sideBar
-                ? Math.max(18, Math.min(parent.height - 18, tm.anchorY - parent.y))
-                : Math.max(18, Math.min(parent.width - 18, tm.anchorX - parent.x))
-            color: parent.color
+                ? Math.max(18, Math.min(menuBox.height - 18, tm.anchorY - menuBox.y))
+                : Math.max(18, Math.min(menuBox.width - 18, tm.anchorX - menuBox.x))
+            color: tm.bgColor
+            radius: menuBox.radius
         }
+        Shadow { pointAt: surface.pointAt; pointSize: surface.pointSize }   // raised: Slate's shadow, with glass too
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }   // clicks inside don't close
 
         // The rows, scrolling when the menu is taller than the screen allows (long menus from
         // some apps), otherwise just as they are

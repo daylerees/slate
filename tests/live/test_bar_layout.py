@@ -293,6 +293,21 @@ class BarLayout(LiveCase):
         self.assertEqual(m["gap"], 14, "opened like the desktop's menu, not pointing at the bar")
         self.assertEqual(m["atY"], m["barHeight"], "not hanging from the bar's edge")
 
+    def test_menu_sits_on_whole_pixels(self):
+        """A menu opened from a point between pixels (the pointer's position comes in fractions,
+        a bar can be a fractional height) is placed on the screen's own pixels, whichever side it
+        opens towards. Placed between them, its edge and its arrow's were drawn as two
+        half-see-through rows, and with glass a light seam showed between the menu and its arrow."""
+        self.addCleanup(lambda: self.ipc("test", "menuKey", "Escape"))
+        for edge, x, y in (("top", 600.37, 200.61), ("bottom", 600.37, 500.61), ("left", 300.29, 300.43), ("right", 900.29, 300.43)):
+            with self.subTest(edge):
+                self.ipc("test", "menuKey", "Escape")
+                self.ipc("test", "barMenuAt", str(x), str(y), edge)
+                m = self.s.wait(lambda st: st["barMenu"]["open"] and st["barMenu"]["edge"] == edge, what=f"the menu towards {edge}")["barMenu"]
+                r = m["pixelRatio"]
+                for v in m["at"]:
+                    self.assertAlmostEqual(v * r, round(v * r), places=3, msg=f"the menu between pixels: {m['at']} at {r}x")
+
     # ---- nothing left blank ---------------------------------------------------------------------
     def blanks(self, name):
         """The things showing on the bar that have nothing drawn where they are. (Pictured once
