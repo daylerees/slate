@@ -10,6 +10,8 @@ the lock screen (`WlSessionLock`).
 ```
 shell.qml               root: creates everything below, plus the dock itself
 ├─ Bar.qml              top bar (layer "slate-bar")
+├─ BarArranger.qml      the drag-to-arrange area over the bar while its layout is edited
+├─ TrayIcon.qml         one tray icon's picture, measured and sized to match the others
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
 │  ├─ Weather.qml       the weather from Open-Meteo for Settings' location (every 30 min), held for
