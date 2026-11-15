@@ -406,12 +406,16 @@ class Nova(LiveCase):
         self.ipc("test", "novaDrag", "-120", "60")
         p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to move")["assistant"]["panel"]
         self.assertEqual((p["x"], p["y"]), (home["x"] - 120, home["y"] + 60))
-        # Too far, either way: it stops at the screen's edges, whole, and below the menu bar
-        # (what Hyprland keeps clear for it, as for floating windows)
+        # Too far, either way: it stops at the screen's edges, whole. While it's held, as a
+        # floating window (Settings), it can go over the menu bar; let go, it slides back below
+        # it (what Hyprland keeps clear for it, as for floating windows)
         top = self.s.monitor()["reserved"][1]
         self.assertGreater(top, 0, "nothing kept clear for the bar")
-        self.ipc("test", "novaDrag", "-10000", "-10000")
+        self.ipc("test", "novaDragHold", "-10000", "-10000")
         p = self.wait(lambda st: st["assistant"]["panel"]["x"] < home["x"] - 120)["assistant"]["panel"]
+        self.assertEqual((p["x"], p["y"]), (8, 8), "held, it wasn't free to go over the bar as a floating window is")
+        self.ipc("test", "novaDragEnd")
+        p = self.wait(lambda st: st["assistant"]["panel"]["y"] == top + 8, "it to slide back below the bar")["assistant"]["panel"]
         self.assertEqual((p["x"], p["y"]), (8, top + 8))
         self.ipc("test", "novaDrag", "10000", "10000")
         self.wait(lambda st: st["assistant"]["panel"]["x"] > home["x"])

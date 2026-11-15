@@ -386,7 +386,10 @@ ShellRoot {
         function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
         // Drag Nova's window by its header, as the pointer would: pressed, moved by dx, dy (Slate's
         // units), let go. centre: as double-clicking the header does
-        function novaDrag(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); }
+        function novaDrag(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); nova.dragEnd(); }
+        // ...held there, not let go yet (novaDragEnd lets go)
+        function novaDragHold(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); }
+        function novaDragEnd(): void { nova.dragEnd(); }
         function novaCentre(): void { nova.centre(); }
         // Resize it by its edges (edges: "l", "r", "t", "b", or a corner's two), as dragging them
         // does: pressed, moved by dx, dy (Slate's units), let go. Reset: as it comes, as

@@ -512,12 +512,24 @@ PanelWindow {
     function clampX(x) { return Math.round(Math.max(area.x + edgeGap, Math.min(area.x + area.width - panelWidth - edgeGap, x))); }
     function clampY(y) { return Math.round(Math.max(area.y + edgeGap, Math.min(area.y + area.height - panel.height - edgeGap, y))); }
     function centre() { offX = 0; offY = 0; }
-    // A drag: from where the card is when it starts, by dx, dy (what the header does, and the tests)
+    // A drag: from where the card is when it starts, by dx, dy (what the header does, and the
+    // tests). As a floating window does (Settings): anywhere on the screen while it's dragged,
+    // over the bar too, then slid back off it once let go (stopped at the bar's edge instead,
+    // it moved differently from every other window)
+    property bool dragging: false
+    function clampScreenX(x) { return Math.round(Math.max(edgeGap, Math.min(width - panelWidth - edgeGap, x))); }
+    function clampScreenY(y) { return Math.round(Math.max(edgeGap, Math.min(height - panel.height - edgeGap, y))); }
     property point dragFrom: Qt.point(0, 0)
-    function dragStart() { Hyprland.refreshMonitors(); dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); }
+    function dragStart() { Hyprland.refreshMonitors(); dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); dragging = true; }
     function dragBy(dx, dy) {
-        offX = clampX(homeX + dragFrom.x + dx) - homeX;
-        offY = clampY(homeY + dragFrom.y + dy) - homeY;
+        offX = clampScreenX(homeX + dragFrom.x + dx) - homeX;
+        offY = clampScreenY(homeY + dragFrom.y + dy) - homeY;
+    }
+    function dragEnd() {
+        if (!dragging) return;
+        dragging = false;                    // (the card slides back into the area: panel's Behaviors)
+        offX = clampX(homeX + offX) - homeX;
+        offY = clampY(homeY + offY) - homeY;
     }
 
     // ---- Its size --------------------------------------------------------------
@@ -596,8 +608,11 @@ PanelWindow {
         width: root.panelWidth
         height: body.implicitHeight + 28
         Behavior on height { enabled: root.shown && !root.resizing; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
-        x: root.clampX(root.homeX + root.offX)
-        y: root.clampY(root.homeY + root.offY)
+        x: root.dragging ? root.clampScreenX(root.homeX + root.offX) : root.clampX(root.homeX + root.offX)
+        y: root.dragging ? root.clampScreenY(root.homeY + root.offY) : root.clampY(root.homeY + root.offY)
+        // (let go over the bar, it slides back under it, as a floating window does)
+        Behavior on x { enabled: root.shown && !root.dragging && !root.resizing; NumberAnimation { duration: Config.ms(250); easing.type: Easing.OutCubic } }
+        Behavior on y { enabled: root.shown && !root.dragging && !root.resizing; NumberAnimation { duration: Config.ms(250); easing.type: Easing.OutCubic } }
         radius: Config.corner(18)
         color: root.barColor
         opacity: root.fade
@@ -636,6 +651,8 @@ PanelWindow {
                         moved = true;
                         root.dragBy(p.x - grab.x, p.y - grab.y);
                     }
+                    onReleased: root.dragEnd()
+                    onCanceled: root.dragEnd()
                     onDoubleClicked: root.centre()
                 }
                 Row {
