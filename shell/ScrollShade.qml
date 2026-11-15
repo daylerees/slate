@@ -11,12 +11,24 @@ Rectangle {
     // How strong, times the usual: deeper on a surface as dark as the shade itself (a dark
     // menu), where it shows only by fading what's under it into the surface
     property real depth: 1
-    height: 18
+    // It follows Settings → Appearance → Shadows like every other shadow: their color, how dark
+    // (the usual strength at the default 70%), how far it reaches (spread and softness: 18 px at
+    // the defaults) and how much of that is solid before it fades (the spread). But not the
+    // switch: with shadows off it stays, as it says there's more to scroll to.
+    // (Distance and direction don't apply: it lies along the edge it's for)
+    readonly property real darkness: Math.max(0.05, Math.min(1, Number(Config.s.shadowDarkness) || 0.7)) / 0.7
+    readonly property real reach: Config.shadowSpread + Config.shadowReach
+    readonly property real solid: reach > 0 ? Config.shadowSpread / reach : 0
+    readonly property color dark: Config.shade(Math.min(1, (Config.s.lightMode ? (atBottom ? 0.14 : 0.12) : (atBottom ? 0.38 : 0.32)) * depth * darkness))
+    height: Math.max(4, Math.round(18 * reach / 22))
     topLeftRadius: Config.corner(atBottom ? 0 : cornerRadius); topRightRadius: Config.corner(atBottom ? 0 : cornerRadius)
     bottomLeftRadius: Config.corner(atBottom ? cornerRadius : 0); bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
     opacity: Math.max(0, Math.min(1, distance / 24))
+    // (dark at the edge it's for, solid for the spread's share, then fading out)
     gradient: Gradient {
-        GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : Config.shade(Math.min(1, (Config.s.lightMode ? 0.12 : 0.32) * scrollShade.depth)) }
-        GradientStop { position: 1; color: scrollShade.atBottom ? Config.shade(Math.min(1, (Config.s.lightMode ? 0.14 : 0.38) * scrollShade.depth)) : "transparent" }
+        GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : scrollShade.dark }
+        GradientStop { position: scrollShade.atBottom ? 1 - scrollShade.solid : scrollShade.solid
+                       color: scrollShade.dark }
+        GradientStop { position: 1; color: scrollShade.atBottom ? scrollShade.dark : "transparent" }
     }
 }

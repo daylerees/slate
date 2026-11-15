@@ -269,3 +269,14 @@ class Tooltips(Case):
                 with self.subTest(f, at=b[:80]):
                     self.assertFalse(words, f"{f} draws a tooltip of its own: use Tooltip")
         self.assertGreater(seen, 3, "the check has stopped finding what it looks through")
+
+
+class ScrollShadesFollowShadows(Case):
+    def test_scroll_shades_take_the_shadow_settings_but_not_the_switch(self):
+        """The shades at a scrolling list's ends follow Settings → Appearance → Shadows like the
+        rest (color, darkness, spread and softness), but stay with shadows switched off: they
+        say there's more to scroll to. They once had a look of their own."""
+        src = slate.read("shell", "ScrollShade.qml")
+        for need in ("Config.shade(", "Config.s.shadowDarkness", "Config.shadowSpread", "Config.shadowReach"):
+            self.assertIn(need, src, f"the scroll shades don't follow {need}")
+        self.assertNotRegex(src, r"shadowsOn|s\.shadows\b", "the scroll shades go with shadows switched off")
