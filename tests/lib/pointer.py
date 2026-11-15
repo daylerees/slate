@@ -98,6 +98,7 @@ class Pointer:
 
     # ---- what a test does ---------------------------------------------------------------
     def move(self, x, y):
+        x, y = max(0, min(self.width - 1, x)), max(0, min(self.height - 1, y))     # (on the screen)
         self._send(self.ptr, 1, struct.pack("<IIIII", self._ms(), int(x), int(y), self.width, self.height))
         self._send(self.ptr, 4, b"")                             # frame
         self._roundtrip()

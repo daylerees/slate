@@ -406,10 +406,13 @@ class Nova(LiveCase):
         self.ipc("test", "novaDrag", "-120", "60")
         p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to move")["assistant"]["panel"]
         self.assertEqual((p["x"], p["y"]), (home["x"] - 120, home["y"] + 60))
-        # Too far, either way: it stops at the screen's edges, whole
+        # Too far, either way: it stops at the screen's edges, whole, and below the menu bar
+        # (what Hyprland keeps clear for it, as for floating windows)
+        top = self.s.monitor()["reserved"][1]
+        self.assertGreater(top, 0, "nothing kept clear for the bar")
         self.ipc("test", "novaDrag", "-10000", "-10000")
         p = self.wait(lambda st: st["assistant"]["panel"]["x"] < home["x"] - 120)["assistant"]["panel"]
-        self.assertEqual((p["x"], p["y"]), (8, 8))
+        self.assertEqual((p["x"], p["y"]), (8, top + 8))
         self.ipc("test", "novaDrag", "10000", "10000")
         self.wait(lambda st: st["assistant"]["panel"]["x"] > home["x"])
         p = self.steady(lambda: self.s.state()["assistant"]["panel"])
@@ -898,6 +901,35 @@ class NovaWindowChecks:
         p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to follow the pointer")["assistant"]["panel"]
         self.assertAlmostEqual(p["x"], home["x"] - 160, delta=2)
         self.assertAlmostEqual(p["y"], home["y"] + 96, delta=2)
+
+    def test_kept_off_the_menu_bar(self):
+        """Dragged by its title up past the menu bar, it stops at the bar's edge (what Hyprland
+        keeps clear for the bar, the rule floating windows follow), and the same with the bar at
+        the bottom (dragged down) or on the left (dragged left), at any Interface size."""
+        self.keep_setting("barPosition")
+        for edge, toward in (("top", (0, -2000)), ("bottom", (0, 2000)), ("left", (-2000, 0))):
+            with self.subTest(edge):
+                self.config("barPosition", edge)
+                self.wait(lambda st: st["barEdge"] == edge)
+                # (once Hyprland keeps the bar's edge clear)
+                side = {"left": 0, "top": 1, "bottom": 3}[edge]
+                self.s._until(lambda: self.s.monitor()["reserved"][side] > 0, 8, f"nothing kept clear for the bar on the {edge}")
+                self.s.settle(0.5)
+                res = [v / self.scale for v in self.s.monitor()["reserved"]]
+                self.ipc("assistant", "close")
+                self.wait(lambda st: not st["assistant"]["open"])
+                home = self.open_nova()
+                grab = (home["x"] + 120, home["y"] + 28)
+                with self.pointer() as ptr:
+                    ptr.drag(self.px(*grab), self.px(max(1, grab[0] + toward[0]), max(1, grab[1] + toward[1])))
+                self.wait(lambda st: (st["assistant"]["panel"]["x"], st["assistant"]["panel"]["y"]) != (home["x"], home["y"]), "the window to move")
+                p = self.steady(lambda: self.s.state()["assistant"]["panel"])
+                if edge == "top":
+                    self.assertAlmostEqual(p["y"], res[1] + 8, delta=1.5, msg=f"over the bar: {p}")
+                elif edge == "bottom":
+                    self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - res[3] - 8, delta=1.5, msg=f"over the bar: {p}")
+                else:
+                    self.assertAlmostEqual(p["x"], res[0] + 8, delta=1.5, msg=f"over the bar: {p}")
 
     def test_resized_by_its_edges_with_the_pointer(self):
         """Its edges and corners resize it, the opposite edges staying put: the right edge makes

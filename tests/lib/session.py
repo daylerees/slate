@@ -255,6 +255,11 @@ class Session:
         except SessionError:
             return []
 
+    def monitor(self, name=OUTPUT):
+        """Hyprland's own record of one test output (reserved: the edges it keeps clear, as left,
+        top, right, bottom in its pixels)."""
+        return next((m for m in self.monitors() if m["name"] == name), {"reserved": [0, 0, 0, 0]})
+
     def ipc(self, target, function, *args, timeout=20):
         """slate ipc call <target> <function> [args]; returns its output (stripped)."""
         code, out = self.run(["qs", "-p", self.slate_dir, "ipc", "call", target, function] + [str(a) for a in args],

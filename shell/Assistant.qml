@@ -266,6 +266,7 @@ PanelWindow {
     function openWindow() {
         if (!shown) { centre(); resizeEnd(); }   // (it opens in the middle, as Settings does)
         screen = Config.focusedScreen;
+        Hyprland.refreshMonitors();
         openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         openedAt = Date.now();
         shown = true;
@@ -488,21 +489,32 @@ PanelWindow {
     // In the middle, as the launcher, or where you've dragged it by its header (offX/offY:
     // how far from the middle, in Slate's own units). Closing it forgets that: it opens in the
     // middle again, as Settings does, and a double-click on the header puts it back there.
-    // Always wholly on the screen, kept there as the screen or the interface size changes
+    // Always wholly on the screen and off the menu bar (area, below), kept there as the screen,
+    // the bar or the interface size changes
     // (the window covers the screen: the card moves inside it, Hyprland can't move a layer)
     property real offX: 0
     property real offY: 0
     readonly property real homeX: Math.round((width - panelWidth) / 2)
     readonly property real homeY: Math.round(Math.max(24, (height - 520) / 2))
     readonly property int edgeGap: 8
-    // Where on the screen it may be (Slate's units, in this window): all of it
-    readonly property rect area: Qt.rect(0, 0, width, height)
+    // Where on the screen it may be (Slate's units, in this window): the screen less what
+    // Hyprland keeps clear for the menu bar (its reserved edges), so it never goes over or past
+    // the bar, wherever the bar is: the rule floating windows follow (slateKeepUnderBar and
+    // slateFitFloating in windowrules.lua, from the same reserved edges). Hyprland's pixels,
+    // over the Interface size; looked at again as it opens and as a drag or resize starts
+    readonly property var hyprMonitor: root.screen ? Hyprland.monitorFor(root.screen) : null
+    readonly property var reserved: {
+        const r = hyprMonitor && hyprMonitor.lastIpcObject ? hyprMonitor.lastIpcObject.reserved : null;
+        return r && r.length === 4 ? r.map(v => Math.max(0, Number(v) || 0) / Config.uiScale) : [0, 0, 0, 0];
+    }
+    readonly property rect area: Qt.rect(reserved[0], reserved[1], Math.max(0, width - reserved[0] - reserved[2]),
+                                         Math.max(0, height - reserved[1] - reserved[3]))
     function clampX(x) { return Math.round(Math.max(area.x + edgeGap, Math.min(area.x + area.width - panelWidth - edgeGap, x))); }
     function clampY(y) { return Math.round(Math.max(area.y + edgeGap, Math.min(area.y + area.height - panel.height - edgeGap, y))); }
     function centre() { offX = 0; offY = 0; }
     // A drag: from where the card is when it starts, by dx, dy (what the header does, and the tests)
     property point dragFrom: Qt.point(0, 0)
-    function dragStart() { dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); }
+    function dragStart() { Hyprland.refreshMonitors(); dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); }
     function dragBy(dx, dy) {
         offX = clampX(homeX + dragFrom.x + dx) - homeX;
         offY = clampY(homeY + dragFrom.y + dy) - homeY;
@@ -528,6 +540,7 @@ PanelWindow {
     // A resize: from the card as it is when it starts, its edges ("l", "r", "t", "b", or a
     // corner's two) moved by dx, dy (what the edges do, and the tests)
     function resizeStart() {
+        Hyprland.refreshMonitors();
         sizeFrom = { x: panel.x, y: panel.y, w: panel.width, h: panel.height, talk: talkBox.height };
         resizing = true;
     }

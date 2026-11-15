@@ -39,8 +39,9 @@ agent you chose does it through the same tools.
   deletes what was kept; the history is then forgotten whenever Slate restarts.
 - **Moving it.** Drag the header (Nova's name) to move the window; a double-click there puts
   it back in the middle. It's a layer that covers the screen, so the card moves inside it
-  (`offX`/`offY` in `Assistant.qml`), kept wholly on the screen as it grows or the screen or
-  Interface size changes. Closing it forgets where it was: it opens in the middle, as Settings does.
+  (`offX`/`offY` in `Assistant.qml`), kept wholly on the screen and off the menu bar (the
+  edges Hyprland keeps clear for it, `area`: the rule floating windows follow) as it grows or
+  the screen, the bar or Interface size changes. Closing it forgets where it was: it opens in the middle, as Settings does.
 - **Resizing it.** Its edges and corners resize it, the opposite edges staying put: its width
   (`wantW`, 400 to 1200) and the conversation's height (`wantTalk`, from 120 to the screen's
   height less the rest of the card), wholly on the screen. 0 is "as it comes" (the launcher's
