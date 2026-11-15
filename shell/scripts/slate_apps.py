@@ -139,6 +139,39 @@ def gtk_css(c, version):
             "@define-color theme_unfocused_base_color @window_bg_color;",
             "@define-color theme_unfocused_selected_bg_color @accent_bg_color;",
             "@define-color theme_unfocused_selected_fg_color @accent_fg_color;"]
+    # Every other named color the theme (adw-gtk3) has, from Slate's palette too: several
+    # are its own fixed grays, black and white (thumbnails, panels, header-bar borders,
+    # shades), and apps that read GTK's colors by name, like Chromium in its GTK look, showed
+    # those in places (the address bar's dropdown) instead of Slate's
+    shade = "0.07" if c["light"] else "0.36"
+    rest = [
+        ("theme_bg_color", "@window_bg_color"), ("theme_fg_color", "@window_fg_color"),
+        ("theme_base_color", "@view_bg_color"), ("theme_text_color", "@view_fg_color"),
+        ("content_view_bg", "@view_bg_color"), ("text_view_bg", "@view_bg_color"),
+        ("insensitive_bg_color", c["surface"]), ("insensitive_fg_color", mix(c["text"], c["bg"], 0.5)),
+        ("insensitive_base_color", "@view_bg_color"),
+        ("unfocused_insensitive_color", mix(c["text"], c["bg"], 0.25)),
+        ("borders", c["divider"]), ("unfocused_borders", c["divider"]),
+        ("panel_bg_color", c["bg"]), ("panel_fg_color", c["text"]),
+        ("thumbnail_bg_color", c["surface"]), ("thumbnail_fg_color", c["text"]),
+        ("headerbar_border_color", c["divider"]),
+        ("shade_color", "rgba(0, 0, 0, %s)" % shade), ("headerbar_shade_color", "rgba(0, 0, 0, %s)" % shade),
+        ("headerbar_darker_shade_color", "rgba(0, 0, 0, %s)" % shade), ("sidebar_shade_color", "rgba(0, 0, 0, %s)" % shade),
+        ("card_shade_color", "rgba(0, 0, 0, %s)" % shade), ("popover_shade_color", "rgba(0, 0, 0, %s)" % shade),
+        ("scrollbar_outline_color", "rgba(0, 0, 0, %s)" % shade),
+        ("success_color", c["secondary"]), ("success_bg_color", mix(c["surface"], c["secondary"], 0.15)),
+        ("success_fg_color", c["secondary"]),
+        ("warning_color", c["tertiary"]), ("warning_bg_color", mix(c["surface"], c["tertiary"], 0.25)),
+        ("warning_fg_color", c["tertiary"]),
+        ("error_color", c["error"]), ("destructive_color", c["error"]),
+        ("wm_title", "@window_fg_color"), ("wm_unfocused_title", mix(c["text"], c["bg"], 0.5)),
+        ("wm_bg_a", "@window_bg_color"), ("wm_bg_b", "@window_bg_color"),
+        ("wm_button_hover_color_a", c["surface"]), ("wm_button_hover_color_b", c["surface"]),
+        ("wm_button_active_color_a", c["surface"]), ("wm_button_active_color_b", c["surface"]),
+        ("wm_button_active_color_c", c["surface"]),
+    ]
+    out += ["", "/* The theme's other named colors, from Slate's palette (none of its own grays) */"]
+    out += ["@define-color %s %s;" % d for d in rest]
     if version == 4:
         out += ["", ":root {"]
         for d in defs:
