@@ -95,45 +95,31 @@ class Dock(LiveCase):
         self.wait(lambda st: st["dock"]["dividerCursor"] in ("vertical", "horizontal"), "the resize cursor after a pause")
         self.ipc("test", "dockDividerHover", "false")
         self.assertEqual(self.s.state()["dock"]["dividerCursor"], "arrow")
-        # Dragging: the drawn dock is scaled to preview the size, but the window and the layout
-        # stay exactly as they were (a window that changed at every pixel juddered, hopped off
-        # the edge and lost the press); the setting is saved once, when it's let go
+        # Dragging: the dock is laid out at the size the drag has reached as it goes (a scaled
+        # picture of it grew its borders, sheen and shadow, so it changed once let go), while the
+        # window stays exactly as it was (a resized layer drew the dock far above the edge for a
+        # frame on the press, and not at all on the release); the setting is saved once, when let go
         before = self.s.state()["dock"]
-        self.assertEqual(before["previewScale"], 1)
         self.ipc("test", "dockDividerDrag", "10")
-        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["previewScale"] > 1.2, "the dock previewed larger")
-        self.assertAlmostEqual(st["dock"]["previewScale"], 50 / 40, places=2)
-        for k in ("base", "length"):
-            self.assertEqual(st["dock"][k], before[k], f"the dock's {k} changed during the drag")
-        # (the window itself grew once, as the drag began, so the pointer can't leave it: see
-        # test_divider_drag_keeps_the_pointer)
-        grown = st["dock"]["windowSize"]
-        self.assertGreaterEqual(grown, before["windowSize"])
+        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["base"] >= 49, "the dock laid out larger")["dock"]
+        self.assertEqual(st["base"], 50)
+        self.assertGreater(st["length"], before["length"])
+        self.assertEqual(st["windowSize"], before["windowSize"], "the window changed size as the drag began")
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
         # Dragged on, far past the divider: still resizing, still the same window
         self.ipc("test", "dockDividerDrag", "500")
-        st = self.wait(lambda st: st["dock"]["previewScale"] > 1.55, "the dock previewed at its largest")
-        self.assertTrue(st["dock"]["resizing"])
-        self.assertEqual(st["dock"]["windowSize"], grown)
+        st = self.wait(lambda st: st["dock"]["base"] >= 64, "the dock at its largest")["dock"]
+        self.assertTrue(st["resizing"])
+        self.assertEqual(st["windowSize"], before["windowSize"])
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
         self.ipc("test", "dockDividerDrag", "10")
-        self.wait(lambda st: abs(st["dock"]["previewScale"] - 1.25) < 0.01, "back to 50")
-        # The picture is captured at the largest size the drag can reach, so it only shrinks
-        tex, size = st["dock"]["textureSize"], st["dock"]["dockSize"]
-        want = min(3, 64 / before["base"], 8192 / max(size))
-        self.assertGreaterEqual(tex[0], int(size[0] * want) - 1, "the preview is captured too small and would be blown up")
+        during = self.wait(lambda st: st["dock"]["base"] == 50, "back to 50")["dock"]
         self.ipc("test", "dockDividerDrop")
-        # Let go: the picture stays on while the new size is laid out, then drops, then the window shrinks
-        seen = []
-        def watch(st):
-            d = st["dock"]; seen.append((d["cached"], d["base"] >= 49, d["windowSize"]))
-            return not d["cached"]
-        self.wait(watch, "the picture dropped", timeout=10)
-        self.assertTrue(any(c and b for c, b, _ in seen) or len(seen) == 1, f"the picture was dropped before the new size was laid out: {seen}")
-        st = self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
+        # Let go: saved, and the dock stays exactly as it was drawn during the drag
+        st = self.wait(lambda st: not st["dock"]["resizing"], "the drag over")["dock"]
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "50")
-        self.assertEqual(st["dock"]["previewScale"], 1)
-        self.wait(lambda st: st["dock"]["base"] >= 49, "the icons at their new size")
+        for k in ("base", "length", "windowSize"):
+            self.assertEqual(st[k], during[k], f"the dock's {k} changed as the drag was let go")
         # Clamped to the range Settings has
         self.ipc("test", "dockDividerDrag", "500")
         self.ipc("test", "dockDividerDrop")
@@ -145,8 +131,8 @@ class Dock(LiveCase):
     def test_divider_drag_keeps_the_pointer(self):
         """A divider drag keeps the pointer over the dock's window all the way: its input area
         covers the whole window (the compositor ended the press as the pointer left the dock's
-        own), the window grows once as the drag starts and goes back once it's let go (not at
-        every move), the drawn dock is kept as one picture while it's scaled, and an auto-hiding
+        own), the window never changes size (a resized layer drew the dock in the wrong place for
+        a frame), and an auto-hiding
         dock stays shown through it with a window open."""
         self.keep_setting("dockIconSize")
         self.keep_setting("dockAutoHide")
@@ -163,13 +149,11 @@ class Dock(LiveCase):
         self.addCleanup(close_ours)
         self.wait(lambda st: st["dock"]["busy"] and not st["dock"]["shown"], "the dock hidden over a window", timeout=30)
         rest = self.s.state()["dock"]
-        self.assertFalse(rest["cached"])
         self.ipc("test", "dockDividerDrag", "5")
         st = self.wait(lambda st: st["dock"]["resizing"], "the drag begun")["dock"]
         self.assertTrue(st["shown"], "the dock hid itself during the drag")
-        self.assertTrue(st["cached"], "the dock isn't kept as one picture while scaled")
         grown = st["windowSize"]
-        self.assertGreater(grown, rest["windowSize"])
+        self.assertEqual(grown, rest["windowSize"], "the window changed size as the drag began")
         st = self.wait(lambda st: st["dock"]["inputSize"] == st["dock"]["windowBox"] or
                        (st["dock"]["inputSize"][0] >= st["dock"]["windowBox"][0] - 1 and st["dock"]["inputSize"][1] >= st["dock"]["windowBox"][1] - 1),
                        "the input area covering the window")["dock"]
@@ -180,8 +164,11 @@ class Dock(LiveCase):
             self.assertTrue(st["shown"])
         self.ipc("test", "dockDividerDrop")
         self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
-        self.wait(lambda st: not st["dock"]["cached"], "the picture dropped once the new size is drawn")
-        self.wait(lambda st: st["dock"]["windowSize"] < grown, "the window back to its size")
+        # …and the input area back to the dock's own at once: a whole-window one a moment
+        # longer magnified the dock under a pointer far above it
+        st = self.s.state()["dock"]
+        self.assertLess(st["inputSize"][1], st["windowBox"][1] - 1, "the input area still covers the window")
+        self.assertEqual(self.s.state()["dock"]["windowSize"], grown, "the window changed size as the drag ended")
 
     def test_preview_delay_and_switch(self):
         """Settings → Dock: Window previews (a switch), and how long to rest on an app before

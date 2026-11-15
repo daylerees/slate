@@ -70,20 +70,14 @@ PanelWindow {
     // wouldn't fit along the screen's edge (a short screen, a side dock, lots of apps open),
     // with room left at the ends for the dock's padding and the magnified icons. Each slot
     // counts at its real width in icons (what's playing is several, a divider a fraction)
-    // The icon size asked for: always Settings' (Dock → Icon size). While a divider is dragged
-    // the size the drag has reached is kept here, and only previewed (previewScale, below):
-    // the window and the layout stay as they are, so the compositor has nothing to re-lay out
-    // at every pixel and the press is never lost. It's saved when it's let go
+    // The icon size asked for: Settings' (Dock → Icon size), or while a divider is dragged the
+    // size the drag has reached. The dock is laid out at it as it goes (the window never changes
+    // size, so that's only a redraw, as magnifying is); Settings' is saved once, when it's let go.
+    // (A scaled picture of the dock was tried: its borders, sheen and shadow grew with it, so it
+    // never matched the real dock)
     property real resizeSize: -1                            // -1: no drag
     readonly property bool resizing: resizeSize >= 0
-    // After the drag is let go, the picture and the big window stay for a moment while the dock
-    // is laid out at its new size (stage 1: picture and window kept; stage 2: the picture
-    // dropped, the window still big; then the window shrinks), so no frame shows the old size,
-    // a jump, or anything drawn above the dock. -1: not settling; else the size that was let go
-    property real settleSize: -1
-    property int settleStage: 0                             // 0: none, 1: picture kept, 2: window kept
-    readonly property bool previewing: resizing || settleStage > 0
-    readonly property real iconSetting: Config.s.dockIconSize
+    readonly property real iconSetting: resizing ? resizeSize : Config.s.dockIconSize
     readonly property real iconsLong: {
         let n = 0;
         for (let i = 0; i < count; i++) n += slotWidth(i);
@@ -92,10 +86,6 @@ PanelWindow {
     // The most the icons can be where they're fitted in along the edge
     readonly property real fitSize: (roomLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)
     readonly property real base: Math.max(16, Math.min(iconSetting, fitSize))
-    // While a divider is dragged: how much larger (or smaller) the drawn dock is than at rest, so
-    // it grows away from the screen's edge (the dock is scaled about its edge). What it'll be
-    // once let go (the fit applies to it as to any size), over what it is now
-    readonly property real previewScale: previewing ? Math.max(16, Math.min(resizing ? resizeSize : settleSize, fitSize)) / base : 1
     // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
     // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
     // magnify ("glowmagnify"), or none
@@ -198,13 +188,16 @@ PanelWindow {
     // How far the dock reaches out from its edge: magnified icons and room for their labels
     readonly property real reach: Math.ceil(base * maxScale + padding * 2 + 40)
     // The window is taller still, so an app dragged up far enough to unpin it stays over it (the
-    // dock only gets the pointer while it's over its window). Only a drag takes the pointer there
-    readonly property real restThickness: reach + Math.ceil(Math.max(120, base * 2.5)) + 40
-    // While a divider is dragged the window is taller still (half the screen across, once, as the
-    // drag starts, and back as it's let go; never per move): the pointer stays over the dock's
-    // input area however far the drag goes, so the compositor never sees it leave and ends the
-    // press. The dock stays drawn at the screen's edge: the strip hangs from the edge
-    readonly property real thickness: previewing ? Math.max(restThickness, Math.round((vertical ? (screen ? screen.width : 0) : (screen ? screen.height : 0)) / 2)) : restThickness
+    // dock only gets the pointer while it's over its window). Only a drag takes the pointer there.
+    // It's sized for the largest icons Settings allows, whatever the size now, so changing the
+    // size (a divider drag, the slider) never resizes the window: a resized layer showed one frame
+    // with the dock drawn far above the edge (growing) or not at all (shrinking). The empty part
+    // is see-through and takes no clicks (the input area is the dock's own, below)
+    readonly property real largestIcon: 64                  // (Settings → Dock → Icon size's top)
+    readonly property real restThickness: Math.ceil(largestIcon * maxScale + padding * 2 + 40) + Math.ceil(Math.max(120, largestIcon * 2.5)) + 40
+    // A divider drag's input area covers all of it, so the press is kept however far the drag
+    // goes (the drag's whole range is 36 px)
+    readonly property real thickness: restThickness
     anchors { top: edge !== "bottom"; bottom: edge !== "top"; left: edge !== "right"; right: edge !== "left" }
     implicitHeight: vertical ? 0 : thickness
     implicitWidth: vertical ? thickness : 0
@@ -1785,26 +1778,12 @@ PanelWindow {
             win.fileDrag = false;
         }
     }
-    readonly property real captureFactor: Math.max(1, Math.min(3, 64 / Math.max(16, base), 8192 / Math.max(1, width, height)))
-    // Two short waits (a few frames each, not an animation) between the stages above
-    Timer {
-        id: settleTimer
-        interval: 50
-        onTriggered: {
-            if (win.settleStage === 1) { win.settleStage = 2; settleTimer.restart(); }
-            else { win.settleStage = 0; win.settleSize = -1; }
-        }
-    }
     property bool dividerCursor: false       // the pointer has rested on a divider (or is dragging it)
     function endResize() {
         if (!resizing) return;
         const size = resizeSize;
-        // The new size first, with the picture and the window as they are until it's drawn
-        settleSize = size;
-        settleStage = 1;
-        if (size !== Config.s.dockIconSize) Config.s.dockIconSize = size;
+        if (size !== Config.s.dockIconSize) Config.s.dockIconSize = size;   // (the same size: no jump)
         resizeSize = -1;
-        settleTimer.restart();
         dividerCursor = false;
     }
     // Click on dock item i (0 = the apps button)
@@ -1951,8 +1930,8 @@ PanelWindow {
             x: (strip.width - width) / 2
             // (while dragging: the whole window, so the app can be carried anywhere above the dock)
             // (and while a divider is dragged: the same, so the press is never lost off the dock)
-            width: win.dragKey !== "" || win.previewing ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
-            height: !win.shown ? 2 : win.dragKey !== "" || win.previewing ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight)
+            width: win.dragKey !== "" || win.resizing ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
+            height: !win.shown ? 2 : win.dragKey !== "" || win.resizing ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight)
             y: strip.height - height
         }
 
@@ -1961,19 +1940,8 @@ PanelWindow {
         Item {
             id: dock
             anchors.fill: parent
-            // While a divider is dragged the drawn dock (shadow, sheen, glass) is kept as one
-            // picture and only that is scaled, so each move costs a transform, not a redraw
-            layer.enabled: win.resizing || win.settleStage === 1
-            layer.smooth: true
-            layer.mipmap: true
-            // Captured at the largest size the drag can reach (64 px icons, at most 3 times, and
-            // within the GPU's limit), so the preview only ever shrinks the picture, never blurs it
-            layer.textureSize: layer.enabled ? Qt.size(Math.ceil(width * win.captureFactor), Math.ceil(height * win.captureFactor)) : Qt.size(0, 0)
-            // (scaled about the dock's edge for a divider drag's preview, then slid for hiding)
-            transform: [
-                Scale { origin.x: strip.width / 2; origin.y: strip.height; xScale: win.previewScale; yScale: win.previewScale },
-                Translate { y: win.offset }
-            ]
+            // (slid for hiding)
+            transform: Translate { y: win.offset }
 
             Rectangle {
                 id: bg
@@ -2812,9 +2780,9 @@ PanelWindow {
             // scrollbar starts (menu coordinates), and how strong each shade is now
             grid: appMenu.gridFlick ? appMenu.gridState() : null,
             hoverEffect: win.hoverEffect, made: win.madeOf,
-            shown: win.shown, resizing: win.resizing, previewScale: Math.round(win.previewScale * 1000) / 1000, windowSize: Math.round(win.thickness),
+            shown: win.shown, resizing: win.resizing, windowSize: Math.round(win.thickness),
             inputSize: [Math.round(maskBox.width), Math.round(maskBox.height)], windowBox: [Math.round(win.width), Math.round(win.height)],
-            cached: dock.layer.enabled, settling: win.settleStage, textureSize: [dock.layer.textureSize.width, dock.layer.textureSize.height], dockSize: [Math.round(dock.width), Math.round(dock.height)], busy: win.workspaceBusy,
+            busy: win.workspaceBusy,
             dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
             fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
             glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
