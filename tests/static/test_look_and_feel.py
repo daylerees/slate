@@ -24,7 +24,7 @@ class Scrolling(Case):
                 v = m.group(1)
                 view = rf"(?:{v}|root\.view\(\))" if f == "Picker.qml" else v
                 with self.subTest(f"{f}: {v}"):
-                    self.assertRegex(src, rf"SmoothWheel\s*\{{\s*flick:\s*{v}\b", "no smooth wheel")
+                    self.assertRegex(src, rf"SmoothWheel\s*\{{\s*(?:id:\s*\w+;?\s*)?flick:\s*{v}\b", "no smooth wheel")
                     self.assertRegex(src, rf"ThinScrollbar\s*\{{[^}}]{{0,200}}?flick:\s*{view}", "no scrollbar")
                     # (one shade at the top, one at the bottom: each says how far it is from its end)
                     self.assertGreaterEqual(len(re.findall(rf"distance:[^\n]*{view}\.contentY", src)), 2, "shades missing")

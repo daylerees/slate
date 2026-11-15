@@ -202,6 +202,12 @@ ShellRoot {
         // on its row does
         function wifi(nets: string): void { popouts.pretendWifi(nets); }
         function wifiPassword(name: string): void { popouts.askForPassword(name); }
+        // Settings' page scrolled by a mouse wheel turned this many notches quickly (+ = down), as
+        // its SmoothWheel takes them
+        function settingsWheel(notches: int): void {
+            const w = root.settingsWindow();
+            for (let i = 0; i < Math.abs(notches); i++) w.scrollWheel.wheelBy(notches > 0 ? -120 : 120);
+        }
         // The notifications panel's list scrolled to a place (px from its top)
         function listScroll(y: real): void { popouts.scrollList(y); }
         // ...and one of them closed, as its card's close button does (0: the newest)
@@ -414,7 +420,8 @@ ShellRoot {
                 popoutBox: popouts.panelBox,
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
                             changed: settings ? settings.changedHere : 0,
-                            scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
+                            scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
+                            thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
                             checking: settings ? settings.checking : 0,
                             // Settings greyed out for another one, with what each says it needs
                             // (SettingRow's needs), and the setting last gone to (goTo)

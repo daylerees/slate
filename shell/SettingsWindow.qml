@@ -37,6 +37,7 @@ FloatingWindow {
     // shared dropdown layer and the scrolling page by these names
     readonly property alias drop: dropLayer
     readonly property alias scrollView: scroller
+    readonly property alias scrollWheel: scrollWheel     // (tests: a wheel turned over the page)
     title: "Slate Settings"
     // 880×620, or less on a small screen (Hyprland centres it at the size it asks for)
     readonly property var fitScreen: Config.focusedScreen
@@ -851,7 +852,7 @@ FloatingWindow {
                 contentHeight: pageLoader.item ? pageLoader.item.implicitHeight + 22 : 0
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                SmoothWheel { flick: scroller }
+                SmoothWheel { id: scrollWheel; flick: scroller }
                 onContentYChanged: { dropLayer.owner = null; if (win.visible) placeSave.restart(); }      // an open dropdown would drift away
                 Loader {
                     id: pageLoader

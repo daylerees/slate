@@ -1,6 +1,7 @@
 // Smooth wheel and touchpad scrolling for a Flickable/ListView (Qt's own is stiff and steppy).
-//  - Mouse wheel: each notch sets where the list is heading and it eases there; quick notches
-//    go further.
+//  - Mouse wheel: each notch sets where the list is heading and it eases there: a quarter of
+//    what shows (100 to 240 px, so a tall page doesn't crawl beside a touchpad), and
+//    quick notches go further.
 //  - Touchpad: follows the fingers closely, then glides on when they lift, slowing gradually.
 // The list is moved once per drawn frame, easing towards where it's heading, so uneven input
 // (a touchpad reports at its own rate, not the screen's) comes out as even motion. Anything
@@ -15,7 +16,15 @@ WheelHandler {
     id: wh
     required property Flickable flick
     property bool horizontal: false
-    property real notch: 110             // how far one mouse-wheel notch goes (px)
+    // How far one mouse-wheel notch goes (px): a quarter of the view, 100 px at least (a small
+    // menu still moves a few rows) and 240 at most. (Once 110 px everywhere, which felt slow
+    // beside a touchpad on a tall page.) Hyprland has no mouse scroll speed of its own to follow
+    // (input:scroll_factor reaches us already, in angleDelta); touchpads' (Settings → Input →
+    // Touchpad → Scroll speed) comes in the same way, in pixelDelta.
+    property real notch: Math.max(100, Math.min(240, (horizontal ? flick.width : flick.height) * 0.25))
+    property real burstGap: 120          // ms: notches closer than this are a quick spin…
+    property real burstGrowth: 1.3       // …each whole notch going this much further than the last…
+    property real burstMax: 3.5          // …up to this many notches' worth
     property real touchpadSpeed: 1.6     // the list moves this many times as far as the fingers
     property real wheelEase: 0.075       // seconds: how softly a notch eases in (time constant)
     property real fingerEase: 0.022      // seconds: touchpad, just evens out its reports
@@ -47,6 +56,7 @@ WheelHandler {
     property real lastEvent: 0
     property real lastNotch: 0
     property real burst: 1         // quick notches build up to going further
+    property real spun: 0          // how far this quick spin has turned (angleDelta, one way)
 
     // Start from where the list is, unless this is carrying on from our own movement
     function sync() {
@@ -80,13 +90,25 @@ WheelHandler {
             if (e.phase === Qt.ScrollEnd) release();
             else if (e.phase === Qt.NoScrollPhase) lift.restart();   // no end reported: a pause counts
         } else if (ad !== 0) {
-            // Mouse wheel: each notch moves where it's heading
-            burst = now - lastNotch < 90 ? Math.min(2.5, burst * 1.2) : 1;
-            lastNotch = now;
-            fingers = gliding = false;
-            velocity = 0;
-            goal = clamp(goal - ad / 120 * notch * burst);
+            wheelBy(ad, now);
+            return;
         }
+        anim.start();
+    }
+
+    // Mouse wheel: each notch (120 of angleDelta; a high-resolution wheel sends parts of one)
+    // moves where it's heading. (Tests call it too, as a wheel would: the test IPC's wheel.)
+    function wheelBy(ad, now) {
+        if (now === undefined) { now = Date.now(); sync(); if (flick.flicking) flick.cancelFlick(); }
+        // (counted in whole notches, so a high-resolution wheel's parts of one don't build it up;
+        // turning back starts again)
+        if (now - lastNotch >= burstGap || (spun !== 0 && Math.sign(ad) !== Math.sign(spun))) spun = 0;
+        burst = Math.min(burstMax, Math.pow(burstGrowth, Math.floor(Math.abs(spun) / 120)));
+        spun += ad;
+        lastNotch = now;
+        fingers = gliding = false;
+        velocity = 0;
+        goal = clamp(goal - ad / 120 * notch * burst);
         anim.start();
     }
 
