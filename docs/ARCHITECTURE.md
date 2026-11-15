@@ -101,6 +101,8 @@ AppTile.qml             an app's icon tile by desktop id (Spaces panel)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
+Dock.qml                the dock: pinned apps, windows, magnifying, previews, menus, drag and drop; its test
+                        hooks (test…) are what shell.qml's `test` IPC target calls
 DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
 Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
                         top of a shape; only shows with glass on

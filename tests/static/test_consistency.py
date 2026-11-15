@@ -644,8 +644,8 @@ class Pointer(Case):
                 self.assertEqual(taps, arrows, f"every ClickTap in {f} needs hand: false (menus keep the arrow)")
 
     def test_dock_keeps_the_arrow(self):
-        src = slate.read("shell", "shell.qml")
-        m = re.search(r"ClickArea \{\s*id: mouse\b(.*?)\n        \}", src, re.S)
+        src = slate.read("shell", "Dock.qml")
+        m = re.search(r"ClickArea \{\s*id: mouse\b(.*?)\n    \}", src, re.S)
         self.assertTrue(m, "the dock's pointer area (ClickArea id: mouse) has moved")
         self.assertIn("cursorShape: Qt.ArrowCursor", m.group(1))
         for card in ("liveCard", "titleCard"):
@@ -783,7 +783,7 @@ class LuaText(Case):
         displays = slate.read("shell", "Displays.qml")
         self.assertEqual(len(re.findall(r"output = \$\{Config\.luaString\(out\)\}", displays)), 2)
         self.assertNotRegex(displays, r"output = [^$]")
-        downloads = re.search(r"function openDownloads\(\) \{(.*?)\n        \}", slate.read("shell", "shell.qml"), re.S).group(1)
+        downloads = re.search(r"function openDownloads\(\) \{(.*?)\n    \}", slate.read("shell", "Dock.qml"), re.S).group(1)
         self.assertIn("FILE_MANAGER .. ${Config.luaString(", downloads)
         self.assertNotRegex(downloads, r"""\.replace\(/'/g, ""\)""", "the folder's quotes dropped rather than escaped")
         launcher = slate.read("shell", "Launcher.qml")
@@ -936,8 +936,8 @@ class OutsideTextIsPlain(Case):
         ("LoginScreen.qml", "text: ls.message !== \"\" ? ls.message"),   # what the login said (PAM)
         ("LoginScreen.qml", "text: pill.label"),                        # a session's name
         ("LoginScreen.qml", "text: parent.parent.modelData.label"),     # …and its menu row
-        ("shell.qml", "text: label.text.charAt(0)"),         # the dock's label: an app's name, a window's or track's title
-        ("shell.qml", "text: dl.modelData.name"),            # a download's name
+        ("Dock.qml", "text: label.text.charAt(0)"),         # the dock's label: an app's name, a window's or track's title
+        ("Dock.qml", "text: dl.modelData.name"),            # a download's name
         ("Launcher.qml", "text: row.calc ? row.detail"),     # an app's own description, a file's folder
         ("BarEditor.qml", "text: barChip.label"),            # a tray icon's name
         ("SettingsWindow.qml", "text: label; color: win.text"),      # SettingRow: rows named after apps, devices, downloads
