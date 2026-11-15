@@ -237,11 +237,14 @@ class Shadows(LiveCase):
         straight down moves it down, and it doesn't grow at the panel's sides (it used to: the
         distance was added to the spread all round)."""
         from PIL import Image
-        for key in ("shadowDistance", "shadowDirection", "glass", "shadows"):
+        for key in ("shadowDistance", "shadowDirection", "glass", "shadows", "shadowSoftness", "shadowSpread"):
             self.keep_setting(key)
         self.config("glass", "false")
         self.config("shadows", "true")
         self.config("shadowDirection", "0")
+        # (a reach of its own, not the defaults': where to look below depends on it)
+        self.config("shadowSoftness", "16")
+        self.config("shadowSpread", "6")
         self.ipc("bar", "panel", "calendar")
         self.addCleanup(lambda: self.ipc("popout", "close"))
         shots = {}
