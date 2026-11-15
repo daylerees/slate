@@ -293,6 +293,7 @@ shaders/dither.frag(.qsb)     Slate's own wallpapers: scaled to the screen on th
 shaders/shadow.frag(.qsb)     Shadow.qml's cut-out shadow, worked out per pixel (no blur pass)
 shaders/gloss.frag(.qsb)      Gloss.qml's bright edge and band, worked out per pixel (no offscreen layers)
 shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows brightened back (PreviewShape.qml)
+shaders/glow.frag(.qsb)       DockGlow.qml's ring and glow, worked out per pixel; with the dock's glass blurring, the glow is added light, which Hyprland doesn't blur behind
 WindowPreview.qml             every live window preview (overview, switcher, dock, New Space): frames
                               asked for by Slate, not Quickshell's live mode (see Workarounds below)
 reloading/              the "Reloading Slate" cover `slate restart` shows: a small Quickshell

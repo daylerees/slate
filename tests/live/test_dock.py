@@ -296,6 +296,86 @@ class Dock(LiveCase):
         self.assertTrue(all(a == 0 for a in st["dock"]["tilt"]))
         self.assertTrue(all(f == 1 for f in st["dock"]["fade"]))
 
+    def test_glow_leaves_the_wallpaper_sharp(self):
+        """The Glow hover effect on glass, with the dock's blur on. Hyprland blurs behind the
+        dock wherever anything at all is drawn (Config.dockGlassCut), so the glow's soft falloff
+        was a patch of blurred glass round the icon, with a hard edge where the falloff ended (a
+        bug). Over a finely striped wallpaper the stripes must stay sharp through the glow:
+        only the icon's tile and the ring just outside it may hide them."""
+        import numpy as np
+        from PIL import Image
+        for key in ("dockHoverEffect", "glass", "dockBlur", "iconFill"):
+            self.keep_setting(key)
+        self.close_windows()
+        old = self.ipc("wallpaper", "get")
+        stripes = self.s.h("Pictures", "stripes.png")
+        w, h = self.s.width, self.s.height
+        row = np.array([(40, 40, 50) if (x // 3) % 2 else (100, 100, 110) for x in range(w)], dtype=np.uint8)
+        Image.fromarray(np.repeat(row[None, :, :], h, axis=0)).save(stripes)
+        self.ipc("wallpaper", "set", stripes)
+        self.addCleanup(lambda: self.ipc("wallpaper", "set", old))
+        self.addCleanup(lambda: self.ipc("test", "dockHover", "-1"))
+        self.s.wait(lambda st: self.ipc("wallpaper", "get") == stripes, what="the striped wallpaper")
+        self.config("glass", "true")
+        self.config("dockBlur", "true")
+        self.config("iconFill", "false")
+        slots = self.s.state()["dock"]["slots"]
+        first = next(i for i, x in enumerate(slots) if x["kind"] == "app")
+
+        def contrast(img):
+            """Per pixel: how far the colours spread within the 6 px across it (the stripes'
+            period), the most of any channel. Sharp stripes: 60; blurred: next to nothing."""
+            a = np.asarray(img.convert("RGB")).astype(int)
+            lo, hi = a[:, :-5].copy(), a[:, :-5].copy()
+            for k in range(1, 6):
+                lo, hi = np.minimum(lo, a[:, k:a.shape[1] - 5 + k]), np.maximum(hi, a[:, k:a.shape[1] - 5 + k])
+            return (hi - lo).max(axis=2)
+
+        for effect in ("glow", "glowmagnify"):
+            with self.subTest(effect):
+                self.config("dockHoverEffect", effect)
+                self.ipc("test", "dockHover", "-1")
+                self.wait(lambda st: all(g == 0 for g in st["dock"]["glow"]), "no glow")
+                self.s.settle(3)        # (the crossfade to the wallpaper, and glass's blur made the first time)
+                before = Image.open(self.screenshot(f"dock-glow-{effect}-off"))
+                plain = contrast(before)
+                self.ipc("test", "dockHover", str(first))
+                st = self.wait(lambda st: st["dock"]["glow"][first] > 0.9, "the glow")
+                self.s.settle(1)
+                after = Image.open(self.screenshot(f"dock-glow-{effect}"))
+                lit = contrast(after)
+                # The glow still shows (as light over the sharp stripes)
+                brighter = (np.asarray(after.convert("L")).astype(int) - np.asarray(before.convert("L")).astype(int))[:, :-5]
+                self.assertGreater(int(((brighter > 10) & (plain >= 50) & (lit >= 50)).sum()), 100, "no glow to be seen")
+                # Where the stripes were sharp without the glow and are gone with it, row by row:
+                # the widest stretch may be the tile and its ring (with a pixel or two for their
+                # smoothed edges), not the glow's reach beyond them
+                tile = st["dock"]["base"] * st["dock"]["scale"][first]
+                ring = tile + 2 * (max(2, tile * 0.06) + max(1.5, tile * 0.04))
+                lost = (plain >= 50) & (lit < 25)
+                widest = 0
+                for r in lost:
+                    run = best = 0
+                    for v in r:
+                        run = run + 1 if v else 0
+                        best = max(best, run)
+                    widest = max(widest, best)
+                self.assertLessEqual(widest, ring + 8,
+                                     f"the stripes were blurred {widest} px across round a {tile:.0f} px icon "
+                                     f"(its ring is {ring:.0f} px): the glow is a patch of blurred glass")
+
+        # Without glass the glow is drawn as usual, and shows too
+        self.config("glass", "false")
+        self.ipc("test", "dockHover", "-1")
+        self.wait(lambda st: all(g == 0 for g in st["dock"]["glow"]), "no glow")
+        self.s.settle(1)
+        before = np.asarray(Image.open(self.screenshot("dock-glow-flat-off")).convert("L")).astype(int)
+        self.ipc("test", "dockHover", str(first))
+        self.wait(lambda st: st["dock"]["glow"][first] > 0.9, "the glow")
+        self.s.settle(1)
+        after = np.asarray(Image.open(self.screenshot("dock-glow-flat")).convert("L")).astype(int)
+        self.assertGreater(int(((after - before) > 10).sum()), 1000, "no glow to be seen without glass")
+
     def test_positions(self):
         old = self.keep_setting("dockPosition")
         for edge in ("left", "right", "bottom"):
