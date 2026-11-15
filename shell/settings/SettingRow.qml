@@ -134,23 +134,14 @@ Item {
         HoverHandler { id: dotHover; margin: 10; cursorShape: Qt.PointingHandCursor }
         ClickTap { margin: 10; onTapped: Config.resetKeys([settingRow.settingKey]) }
     }
-    Rectangle {
+    // (Slate's tooltip, Tooltip.qml; solid, as it lies over the page rather than the desktop)
+    Tooltip {
         visible: changedDot.visible && dotHover.hovered
         z: 2
+        solid: true
         x: changedDot.x + 18
         y: changedDot.y + changedDot.height / 2 - height / 2
-        width: tipText.implicitWidth + 14; height: tipText.implicitHeight + 8
-        radius: Config.corner(6)
-        // The theme's own shades (Config.tint: light or dark, and the wallpaper's tint)
-        color: Config.tint("#262c35")
-        border.width: 1; border.color: Config.tint("#3d4553")
-        Text {
-            id: tipText
-            anchors.centerIn: parent
-            text: "Default: " + settingRow.defaultShown + "  ·  click to use it"
-            color: win.text
-            font.family: win.font; font.pixelSize: 11
-        }
+        text: "Default: " + settingRow.defaultShown + "  ·  click to use it"
     }
     Item {
         id: controlSlot

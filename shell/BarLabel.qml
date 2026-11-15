@@ -85,7 +85,7 @@ PanelWindow {
     readonly property string side: bar.side
     readonly property bool vert: side === "left" || side === "right"
     readonly property real gap: 6                     // off the bar's edge
-    readonly property real room: 28                   // for the shadow round it
+    readonly property real room: 28                   // spare room round it
     readonly property real maxWidth: 260
     readonly property real ends: 8                    // kept this far in from the screen's ends
     screen: bar.screen
@@ -106,40 +106,17 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     visible: shown || box.opacity > 0.001
 
-    // ---- Look: a small capsule in the bar's colours ------------------------------------------
-    // (the bar's capsule colour laid on its own surface colour, as one fill: glass shows through,
-    // and Hyprland blurs behind it as behind the OSD)
-    function over(t, b) {
-        const a = t.a + b.a * (1 - t.a);
-        if (a <= 0) return Qt.rgba(0, 0, 0, 0);
-        const mix = (x, y) => (x * t.a + y * b.a * (1 - t.a)) / a;
-        return Qt.rgba(mix(t.r, b.r), mix(t.g, b.g), mix(t.b, b.b), a);
-    }
-    Rectangle {
+    // ---- Look: Slate's tooltip (Tooltip.qml), the same as the dock's -------------------------
+    Tooltip {
         id: box
-        width: Math.min(lw.maxWidth, words.implicitWidth + 18)
-        height: words.implicitHeight + 8
+        maxWidth: lw.maxWidth
+        text: lw.says
         x: !lw.vert ? Math.max(lw.ends, Math.min(lw.width - width - lw.ends, lw.at.x - width / 2))
             : lw.side === "left" ? lw.gap : lw.width - lw.gap - width
         y: lw.vert ? Math.max(lw.ends, Math.min(lw.height - height - lw.ends, lw.at.y - height / 2))
             : lw.side === "top" ? lw.gap : lw.height - lw.gap - height
-        radius: Config.corner(lw.bar.capsuleRadius)
-        color: lw.over(lw.bar.capsuleColor, lw.bar.barColor)
         opacity: lw.shown ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(lw.fadeMs); easing.type: Easing.OutCubic } }
-        Shadow {}                                     // raised: Slate's shadow
-        Text {
-            id: words
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, lw.maxWidth - 18)
-            elide: Text.ElideRight
-            textFormat: Text.PlainText        // never markup: a tray icon's or a device's own name
-            text: lw.says
-            color: lw.bar.textColor
-            font.family: lw.bar.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Normal
-        }
     }
 
     // (tests) Where it is on its screen, what it says, and whether it's showing

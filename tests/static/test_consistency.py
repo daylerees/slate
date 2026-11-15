@@ -982,7 +982,7 @@ class OutsideTextIsPlain(Case):
     ALSO = [
         ("Bar.qml", "text: wsName.says"),                    # a workspace's name
         ("Bar.qml", "text: seg.drawnLabel"),                 # a Wi-Fi network's name, a keyboard layout's
-        ("BarLabel.qml", "text: lw.says"),                   # a tray icon's tooltip, a Bluetooth device's name
+        ("Tooltip.qml", "text: tip.text"),                   # every tooltip: an app's name, a tray icon's, a Bluetooth device's
         ("DesktopMenu.qml", "text: row.modelData.label"),    # "Show <player>", a window's title, an app's name
         ("TrayMenu.qml", "text: entryRow.e && !entryRow.sep ? String(entryRow.e.text)"),   # apps' own menus
         ("NotificationCard.qml", "text: modelData.text"),    # an app's word for its button
@@ -993,7 +993,6 @@ class OutsideTextIsPlain(Case):
         ("LoginScreen.qml", "text: ls.message !== \"\" ? ls.message"),   # what the login said (PAM)
         ("LoginScreen.qml", "text: pill.label"),                        # a session's name
         ("LoginScreen.qml", "text: parent.parent.modelData.label"),     # …and its menu row
-        ("Dock.qml", "text: label.text.charAt(0)"),         # the dock's label: an app's name, a window's or track's title
         ("Dock.qml", "text: dl.modelData.name"),            # a download's name
         ("Launcher.qml", "text: row.calc ? row.detail"),     # an app's own description, a file's folder
         ("BarEditor.qml", "text: barChip.label"),            # a tray icon's name
@@ -1006,6 +1005,8 @@ class OutsideTextIsPlain(Case):
     ]
     # Text you type into has no markup to read
     TYPED = {"TextInput", "TextEdit", "TextField"}
+    # Slate's own components whose words are plain inside them (Tooltip.qml: named in ALSO, so checked)
+    PLAIN = {"Tooltip"}
     # The login screen's files that draw nothing from outside (LoginScreen.qml, which shows the
     # login's message and this computer's account names, is checked like the rest)
     LOGIN_SCREEN = {"Config.qml", "SettingsData.qml", "RoundImage.qml", "WallBlur.qml", "Gloss.qml", "GlassFill.qml"}
@@ -1072,7 +1073,7 @@ class OutsideTextIsPlain(Case):
         kind, item = self.item_at(src, at)
         line = src[src.rfind("\n", 0, at) + 1:src.find("\n", at)].strip()[:120]
         where = f"{name}:{src.count(chr(10), 0, at) + 1}"
-        if kind in self.TYPED or kind in self.plain_kinds(src):
+        if kind in self.TYPED or kind in self.PLAIN or kind in self.plain_kinds(src):
             return
         if "NotificationText.safeBody(" in line:
             self.assertIn("textFormat: Text.StyledText", item, where)

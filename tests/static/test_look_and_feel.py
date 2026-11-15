@@ -206,3 +206,60 @@ class DockBackings(Case):
                     if vis:
                         self.assertRegex(vis.group(1), r"&& Config\.glass\s*$", "a DockBacking that shows without glass")
         self.assertIn("visible: Config.glass", slate.read("shell", "DockBacking.qml"))
+
+
+class Tooltips(Case):
+    """Every tooltip is Slate's one Tooltip (Tooltip.qml), the dock's look: the menu bar's label
+    once was a capsule of its own in a smaller font, and Settings' a bordered box in another."""
+
+    # The tooltips there are, and a line inside each that shows it's the shared Tooltip
+    HOSTS = [("shell/Dock.qml", "id: label"), ("shell/BarLabel.qml", "id: box"),
+             ("shell/settings/SettingRow.qml", "visible: changedDot.visible && dotHover.hovered")]
+
+    @staticmethod
+    def blocks(src, kind):
+        """Each `kind { … }` item in src, whole (matched by brackets)."""
+        for m in re.finditer(rf"(?<![\w.]){kind}\s*\{{", src):
+            depth = 0
+            for j in range(m.end() - 1, len(src)):
+                depth += {"{": 1, "}": -1}.get(src[j], 0)
+                if depth == 0:
+                    yield src[m.start():j + 1]
+                    break
+
+    def test_the_tooltip_has_the_docks_look(self):
+        src = slate.read("shell", "Tooltip.qml")
+        self.assertRegex(src, r"(?m)^Rectangle \{", "a tooltip is a box")
+        self.assertIn("radius: Config.corner(6)", src)
+        self.assertIn('Config.surface(Config.tint("#0f1216"))', src, "not the bar's and the dock's colour")
+        self.assertIn("Gloss { radius: parent.radius }", src, "no sheen with glass")
+        self.assertIn("textFormat: Text.PlainText", src, "a tooltip often shows a name another program chose")
+        self.assertIn("font.family: Config.s.fontFamily", src)
+        self.assertIn("font.pixelSize: 13", src)
+
+    def test_every_tooltip_is_the_shared_one(self):
+        for f, line in self.HOSTS:
+            with self.subTest(f):
+                src = slate.read(*f.split("/"))
+                self.assertTrue(any(line in b for b in self.blocks(src, "Tooltip")), f"{f}'s tooltip isn't a Tooltip")
+
+    def test_no_tooltip_drawn_by_hand(self):
+        """A box shown while something's pointed at, holding only words and taking no clicks, is a
+        tooltip, and is drawn with Tooltip rather than a Rectangle and Text of its own."""
+        seen = 0
+        for f in slate.files("shell", ".qml", skip=("shell/greeter",)):
+            if f == "shell/Tooltip.qml":
+                continue
+            with open(slate.path(f), encoding="utf-8") as fh:    # (each file once: not Settings read whole)
+                src = fh.read()
+            for b in self.blocks(src, "Rectangle"):
+                shown = "\n".join(l for l in b.splitlines() if re.match(r"\s*(visible|opacity):", l))
+                if not re.search(r"\.hovered\b|hoveredIndex", shown):
+                    continue
+                seen += 1
+                if re.search(r"HoverHandler|ClickTap|TapHandler|MouseArea|ClickArea|Rectangle \{|Image \{|Icon\b", b[1:]):
+                    continue
+                words = [t for t in self.blocks(b, "Text") if "fromCodePoint" not in t]
+                with self.subTest(f, at=b[:80]):
+                    self.assertFalse(words, f"{f} draws a tooltip of its own: use Tooltip")
+        self.assertGreater(seen, 3, "the check has stopped finding what it looks through")

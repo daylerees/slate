@@ -115,6 +115,8 @@ HoverFill.qml           a control's own fill giving way to the muted hover, cros
 ScrollShade.qml         the soft shadow along the top or bottom edge of a scrolling list
 ThinScrollbar.qml       the slim scrollbar used across Slate, shown only when the view overflows
 Toggle.qml            the on/off switch every window draws (Settings, the bar editor, confirmations, Welcome, the launcher)
+Tooltip.qml             every tooltip's bubble (the dock's, the menu bar's label, Settings' changed-setting hint): one
+                        look, each host placing and showing it
 Carousel.js              what the switcher and the overview work out the same way: repeats, capture lookup
 CarouselPaths.qml        the paths their strips run along (a line, and the wheel)
 CardMotion.qml           how a card in their strips moves (hop, tilt, orbit, deck, fan)

@@ -155,9 +155,6 @@ PanelWindow {
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dotColor: Config.tint("#c5ccd6")
     readonly property color activeDotColor: Config.accent
-    readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
-    readonly property int fontWeight: Font.Medium   // bar font weight 500
-    readonly property real fontSize: 13             // matches the bar text
 
     // ---- Window --------------------------------------------------------
     // Which screen edge (Settings → Dock → Position; bottom becomes top when the bar is at
@@ -2220,10 +2217,10 @@ PanelWindow {
                 }
             }
 
-            // App name above the icon under the pointer
-            Rectangle {
+            // App name above the icon under the pointer (Tooltip.qml: the look every tooltip shares)
+            Tooltip {
                 id: label
-                readonly property string text: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
+                readonly property string says: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                     : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
                     : win.moreIndex >= 0 && win.hoveredIndex === win.moreIndex
                         ? "More · " + win.moreItems.length + (win.moreItems.length === 1 ? " app" : " apps")
@@ -2235,28 +2232,14 @@ PanelWindow {
                         ? (win.slotAt(win.hoveredIndex).item.entry?.name ?? win.slotAt(win.hoveredIndex).item.key) : "")
                 readonly property real iconSize: win.hoveredIndex >= 0 ? win.base * win.scaleAt(win.hoveredIndex) : 0
                 readonly property real slotLength: win.hoveredIndex >= 0 ? iconSize * win.slotWidth(win.hoveredIndex) : 0
+                text: says.charAt(0).toUpperCase() + says.slice(1)   // kitty -> Kitty
                 // (not while dragging: the dragged app says so itself, dragPop)
                 visible: win.hoveredIndex >= 0 && win.hover > 0.9 && text !== "" && !appMenu.visible && win.dragKey === ""
-                width: labelText.implicitWidth + 16
-                height: labelText.implicitHeight + 8
-                radius: Config.corner(6)
-                color: win.bgColor
-                Gloss { radius: parent.radius }   // glass: a sheen
                 x: row.x + win.cellX(Math.max(0, win.hoveredIndex)) + slotLength / 2 - width / 2
                 // On a side dock the label is turned upright, so its width runs across the strip
                 readonly property real across: win.vertical ? width : height
                 y: row.y + row.height - iconSize - 8 - across / 2 - height / 2
                 transform: Matrix4x4 { matrix: win.upright(label.width, label.height) }
-                Text {
-                    id: labelText
-                    anchors.centerIn: parent
-                    textFormat: Text.PlainText        // never markup: an app's name, a window's or a track's title
-                    text: label.text.charAt(0).toUpperCase() + label.text.slice(1)   // kitty -> Kitty
-                    color: win.textColor
-                    font.family: win.fontFamily
-                    font.weight: win.fontWeight
-                    font.pixelSize: win.fontSize
-                }
             }
         }
     }

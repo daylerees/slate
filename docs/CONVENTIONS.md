@@ -137,6 +137,25 @@ bottom edge while there's more below, fading as that end is reached.
 - With them: `ThinScrollbar` (with room for it only while it shows) and `SmoothWheel`.
 - Check a picture scrolled partway before calling a new scrolling view done.
 
+### Tooltips are `Tooltip`
+
+Every tooltip (the small label saying what the pointer's over) is a `Tooltip { text: … }`
+(`shell/Tooltip.qml`), with the dock's look: the bar's and the dock's surface color, a
+`Config.corner(6)` radius, the glass sheen, and the bar's font at 13 px, medium weight, as plain
+text. The host only places it and decides when it shows (the dock's at once over an icon, the
+menu bar's after a short rest with a `Config.ms` fade, in a window of its own).
+
+- Never a `Rectangle` and `Text` of its own, nor its own colors, size or padding: a new
+  tooltip copies one of those hosts.
+- One that lies over Slate's own content rather than the desktop (Settings' changed-setting
+  hint) sets `solid: true`, since glass over glass shows as a lighter patch.
+- `maxWidth` for one that could be long (a tray app's name): the words end in "…".
+- `tests/static/test_look_and_feel.py::Tooltips` checks the hosts use it and that nothing
+  else draws a box of words shown on hover.
+
+**Why:** the menu bar's label and Settings' hint had drifted into looks of their own (a capsule
+in a smaller font, a bordered box); tooltips read as one thing wherever they appear.
+
 ### Bar panels
 
 A panel is a file of its own in `shell/panels/` (`WifiPanel.qml`, `BatteryPanel.qml`…): a root
