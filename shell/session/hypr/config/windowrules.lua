@@ -178,8 +178,9 @@ hl.layer_rule({ name = "screenshot-freeze", match = { namespace = "^(hyprpicker|
 hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titlebar$" }, blur = true, ignore_alpha = 0.3 })
 
 -- Slate Settings (Super+Z): floats in the middle of the screen, at the size it asks for
--- (880×620 times the interface size), kept within the screen by the floating-window limit above
-hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true })
+-- (880×620 times the interface size), kept within the screen by the floating-window limit
+-- above, and pinned: open, it stays with you on every workspace, as Nova does (below)
+hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true, pin = true })
 -- Nova, Slate's assistant (Super+K, Assistant.qml): a window of Slate's own, by its app id and
 -- title. Floats in the middle of the screen at the size it asks for (the size you last left
 -- it at), pinned so it's on whichever workspace you're looking at. It has its own header to
@@ -189,8 +190,9 @@ hl.window_rule({ name = "slate-nova", match = { class = "^(slate-settings)$", ti
 function slateIsNova(w)
     return w ~= nil and w.class == "slate-settings" and w.title == "Nova"
 end
--- Choosing your account picture (Settings → General): a dialog of Slate's own
-hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true })
+-- Choosing your account picture (Settings → General): a dialog of Slate's own, pinned with
+-- Settings so it's never left behind it (pinned windows are drawn over the others)
+hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true, pin = true })
 
 -- Window mode. Settings → Windows sets the default (WINDOW_MODE), and each workspace can have
 -- its own (WORKSPACE_MODES[id], from the menu bar's workspace indicator): tiling, master,

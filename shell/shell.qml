@@ -615,8 +615,9 @@ ShellRoot {
     // window exists, building it when there's something to show
     IpcHandler {
         target: "settings"
-        // (open on another workspace, toggle brings it here rather than closing it out of sight)
-        function toggle(): void { const w = root.settingsWindow(); if (w.visible && !w.isHere()) w.show(); else w.visible = !w.visible; }
+        // (open behind another window, or with the keyboard elsewhere, toggle brings it to the front
+        // rather than closing it; it's closed when it's the window you're in)
+        function toggle(): void { const w = root.settingsWindow(); if (w.visible && !w.isFocused()) w.show(); else w.visible = !w.visible; }
         function open(): void { root.settingsWindow().show(); }
         // (nothing to close if it was never built)
         function close(): void { if (settingsLoader.item) settingsLoader.item.visible = false; }

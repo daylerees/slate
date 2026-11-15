@@ -44,7 +44,7 @@ agent you chose does it through the same tools.
   Settings → Assistant → Glass's blur is off: the `slate-nova-no-blur` window rule). Let go
   over the menu bar, it slides back below it, as any floating window does
   (`slateKeepUnderBar`). It opens in the middle of the screen and is pinned (`windowrules.lua`),
-  so it stays with you when you go to another workspace. It isn't one of your windows: the
+  so it stays with you when you go to another workspace, as Settings does. It isn't one of your windows: the
   window switcher, the overview, the dock, the launcher's window search, the bar's title,
   workspace counts and the assistant's own `windows_list` leave it out (`Config.isNova`,
   `slateIsNova`, `spaces.is_nova`). Opening it closes the launcher and the bar's panels so it

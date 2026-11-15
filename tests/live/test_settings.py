@@ -133,6 +133,46 @@ class Settings(LiveCase):
         self.wait(lambda st: not st["welcome"]["built"], "the welcome to be let go")
 
 
+class SettingsWindowGoesWithYou(LiveCase):
+    """Settings is pinned (windowrules.lua): open, it goes with you to every workspace, and
+    asking for it (Super+Z: settings toggle) brings it to the front when you're elsewhere and
+    closes it when you're in it."""
+
+    def client(self):
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c.get("title") == "Slate Settings" and c.get("mapped"):
+                return c
+        return None
+
+    def go(self, ws):
+        self.s.hyprctl("dispatch", f"function() hl.dispatch(hl.dsp.focus({{ workspace = {ws} }})) end")
+        self.s._until(lambda: self.s.monitor()["activeWorkspace"]["id"] == ws, 5, f"workspace {ws}")
+
+    def focused(self):
+        return (self.s.hyprctl("activewindow", json_out=True) or {}).get("title") == "Slate Settings"
+
+    def test_pinned_and_with_you(self):
+        self.go(1)
+        self.addCleanup(lambda: self.go(1))
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "open")
+        self.wait(lambda st: st["settings"]["open"], "Settings")
+        self.s._until(lambda: self.client() is not None, 8, "the Settings window")
+        c = self.client()
+        self.assertTrue(c["floating"], "Settings isn't floating")
+        self.assertTrue(c["pinned"], "Settings isn't pinned")
+        self.go(2)
+        self.s._until(lambda: self.client()["workspace"]["id"] == 2, 5, "Settings to come along to workspace 2")
+        self.assertTrue(self.s.state()["settings"]["open"], "Settings closed going to another workspace")
+        # Asked for again when it's open: brought to the front with the keyboard, not closed;
+        # asked for when it's the window you're in: closed
+        self.ipc("settings", "open")
+        self.s._until(lambda: self.focused(), 5, "Settings to have the keyboard")
+        self.assertTrue(self.s.state()["settings"]["open"])
+        self.ipc("settings", "toggle")
+        self.wait(lambda st: not st["settings"]["open"], "Settings to close when you're in it")
+
+
 class SubPages(LiveCase):
     """Wallpaper and Icons are pages of their own (from Appearance's top): opened by name over
     IPC (the desktop's "Change wallpaper…" and the dock's menu use it), and searchable."""

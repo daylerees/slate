@@ -195,19 +195,17 @@ FloatingWindow {
         section = page;
         show();
     }
-    // Show Settings. Already open on another workspace: it moves to the one you're on (and
-    // takes the focus), rather than staying out of sight there
+    // Show Settings. It's pinned (windowrules.lua), so open it's with you on every workspace;
+    // behind another window or with the keyboard elsewhere, it comes to the front
     function show() {
         if (!visible) { visible = true; return; }
-        const ws = Hyprland.focusedWorkspace;
-        if (!ws || ws.id < 1 || isHere()) return;        // (not to the secret workspace)
-        const window = "title:^(Slate Settings)$";
-        Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.window.move({ workspace = ${ws.id}, window = "${window}", follow = false })); hl.dispatch(hl.dsp.focus({ window = "${window}" })) end`]);
+        if (isFocused()) return;
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.focus({ window = "title:^(Slate Settings)$" })) end`]);
     }
-    // Whether Settings is on the workspace you're looking at
-    function isHere() {
-        const mine = Hyprland.toplevels.values.find(t => t.title === "Slate Settings");
-        return !mine || !mine.workspace || !Hyprland.focusedWorkspace || mine.workspace.id === Hyprland.focusedWorkspace.id;
+    // Whether Settings is the window you're in
+    function isFocused() {
+        const t = Hyprland.activeToplevel;
+        return !!t && t.title === "Slate Settings";
     }
     function showFound() {
         const label = findLabel || foundRetryLabel;
