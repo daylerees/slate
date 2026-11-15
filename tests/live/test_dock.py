@@ -95,13 +95,30 @@ class Dock(LiveCase):
         self.wait(lambda st: st["dock"]["dividerCursor"] in ("vertical", "horizontal"), "the resize cursor after a pause")
         self.ipc("test", "dockDividerHover", "false")
         self.assertEqual(self.s.state()["dock"]["dividerCursor"], "arrow")
-        # Dragging: the icons follow live, the setting only when let go
+        # Dragging: the drawn dock is scaled to preview the size, but the window and the layout
+        # stay exactly as they were (a window that changed at every pixel juddered, hopped off
+        # the edge and lost the press); the setting is saved once, when it's let go
+        before = self.s.state()["dock"]
+        self.assertEqual(before["previewScale"], 1)
         self.ipc("test", "dockDividerDrag", "10")
-        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["base"] >= 49, "the icons larger as it's dragged")
+        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["previewScale"] > 1.2, "the dock previewed larger")
+        self.assertAlmostEqual(st["dock"]["previewScale"], 50 / 40, places=2)
+        for k in ("windowSize", "base", "length"):
+            self.assertEqual(st["dock"][k], before[k], f"the dock's {k} changed during the drag")
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
+        # Dragged on, far past the divider: still resizing, still the same window
+        self.ipc("test", "dockDividerDrag", "500")
+        st = self.wait(lambda st: st["dock"]["previewScale"] > 1.55, "the dock previewed at its largest")
+        self.assertTrue(st["dock"]["resizing"])
+        self.assertEqual(st["dock"]["windowSize"], before["windowSize"])
+        self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
+        self.ipc("test", "dockDividerDrag", "10")
+        self.wait(lambda st: abs(st["dock"]["previewScale"] - 1.25) < 0.01, "back to 50")
         self.ipc("test", "dockDividerDrop")
-        self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
+        st = self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "50")
+        self.assertEqual(st["dock"]["previewScale"], 1)
+        self.wait(lambda st: st["dock"]["base"] >= 49, "the icons at their new size")
         # Clamped to the range Settings has
         self.ipc("test", "dockDividerDrag", "500")
         self.ipc("test", "dockDividerDrop")

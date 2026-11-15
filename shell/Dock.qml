@@ -70,19 +70,25 @@ PanelWindow {
     // wouldn't fit along the screen's edge (a short screen, a side dock, lots of apps open),
     // with room left at the ends for the dock's padding and the magnified icons. Each slot
     // counts at its real width in icons (what's playing is several, a divider a fraction)
-    // The icon size asked for: Settings' (Dock → Icon size), or while a divider is being dragged
-    // the size the drag has reached (kept here, and saved only when it's let go, so the file
-    // isn't rewritten at every pixel)
+    // The icon size asked for: always Settings' (Dock → Icon size). While a divider is dragged
+    // the size the drag has reached is kept here, and only previewed (previewScale, below):
+    // the window and the layout stay as they are, so the compositor has nothing to re-lay out
+    // at every pixel and the press is never lost. It's saved when it's let go
     property real resizeSize: -1                            // -1: no drag
     readonly property bool resizing: resizeSize >= 0
-    readonly property real iconSetting: resizing ? resizeSize : Config.s.dockIconSize
+    readonly property real iconSetting: Config.s.dockIconSize
     readonly property real iconsLong: {
         let n = 0;
         for (let i = 0; i < count; i++) n += slotWidth(i);
         return n;
     }
-    readonly property real base: Math.max(16, Math.min(iconSetting,
-        (roomLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)))
+    // The most the icons can be where they're fitted in along the edge
+    readonly property real fitSize: (roomLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)
+    readonly property real base: Math.max(16, Math.min(iconSetting, fitSize))
+    // While a divider is dragged: how much larger (or smaller) the drawn dock is than at rest, so
+    // it grows away from the screen's edge (the dock is scaled about its edge). What it'll be
+    // once let go (the fit applies to it as to any size), over what it is now
+    readonly property real previewScale: resizing ? Math.max(16, Math.min(resizeSize, fitSize)) / base : 1
     // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
     // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
     // magnify ("glowmagnify"), or none
@@ -1926,7 +1932,11 @@ PanelWindow {
         Item {
             id: dock
             anchors.fill: parent
-            transform: Translate { y: win.offset }
+            // (scaled about the dock's edge for a divider drag's preview, then slid for hiding)
+            transform: [
+                Scale { origin.x: strip.width / 2; origin.y: strip.height; xScale: win.previewScale; yScale: win.previewScale },
+                Translate { y: win.offset }
+            ]
 
             Rectangle {
                 id: bg
@@ -2765,7 +2775,8 @@ PanelWindow {
             // scrollbar starts (menu coordinates), and how strong each shade is now
             grid: appMenu.gridFlick ? appMenu.gridState() : null,
             hoverEffect: win.hoverEffect, made: win.madeOf,
-            resizing: win.resizing, dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
+            resizing: win.resizing, previewScale: Math.round(win.previewScale * 1000) / 1000, windowSize: Math.round(win.thickness),
+            dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
             fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
             glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
             lift: win.slots.map(x => Math.round(win.liftAt(x.at))),
