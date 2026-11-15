@@ -119,7 +119,7 @@ class SpacesSave(Case):
 
 # Slate's own windows with a glass border (the panel each one draws), and how many each draws
 BORDERED_WINDOWS = {"Launcher.qml": 1, "Switcher.qml": 1, "Picker.qml": 1,
-                    "WallpaperSwitcher.qml": 1, "BarEditor.qml": 2}
+                    "WallpaperSwitcher.qml": 1, "BarEditor.qml": 1}
 
 
 class WindowBorders(Case):

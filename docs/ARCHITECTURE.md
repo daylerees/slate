@@ -221,7 +221,7 @@ Shadow.qml                    the shadow under anything raised (panels, menus, t
                               (Config.shadowColour), drawn by shaders/shadow.frag with the surface's own
                               shape cut out of it, so glass can have shadows too. Floating windows get
                               Hyprland's shadow made to look the same (Config.hyprShadow). Off in game mode
-BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
+BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor", drawn with the bar panels' pieces in panels/: the pool, the picked thing's options, and a second view for what leaves first when it doesn't fit), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
 Assistant.qml                 Nova's window (a floating window titled "Nova", Super+K; kept out of the
                               lists of your windows by Config.isNova): runs scripts/assistant.py
                               for a prompt, shows the answer (drawn from the runner's blocks:
@@ -424,7 +424,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
   container someone has opened is counted open (its `settledLength`), so room is made for it
   the same way, and none of its own things leave for More; it's closed only once it no longer
   collapses after a fit, never by the fit's own trials (which once closed it straight away).
-  That last order is **menu item priority**: `BarEditor.qml`'s second window (Set priority,
+  That last order is **menu item priority**: `BarEditor.qml`'s second view (Set priority,
   `Config.barPrioritising`) lists it backwards, highest priority first, without what always
   stays (`Config.barStay`), and saves a dragged row with `Config.barSetOverflow`.
 - **Reload notices** (`shell.qml`): Quickshell's own reload popup is hidden; Slate sends a

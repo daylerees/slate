@@ -622,6 +622,22 @@ for _name, _edge in (("bar-shorter", "top"), ("bar-shorter-left", "left")):
         "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
     }
 
+# Arranging, with something picked on the bar: a container's options (Spaces, the window mode and
+# the workspace dots: how it collapses, its button and Split up) beside what isn't on the bar;
+# and Set priority's view of the same panel
+SCENES["bar-arranging-picked"] = {
+    "do": [("notifications", "clear"), ("test", "arrange", "start", "", "", ""),
+           lambda st: st["bar"]["editor"], ("test", "arrange", "pick", "2", "", "")],
+    "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"] and st["bar"]["picked"] == 2,
+    "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
+}
+SCENES["bar-arranging-priority"] = {
+    "do": [("notifications", "clear"), ("test", "arrange", "start", "", "", ""),
+           lambda st: st["bar"]["editor"], ("test", "arrange", "priority", "open", "", "")],
+    "wait": lambda st: st["bar"]["arranging"] and st["bar"]["priority"]["open"],
+    "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
+}
+
 # The bar being arranged (Settings → Menu Bar → Edit layout) with glass switched on in the same
 # instant: every item on it drawn (three were once left undrawn when the two came together).
 # Both are sent at once, two IPC calls side by side, not one after the other as "settings" and
