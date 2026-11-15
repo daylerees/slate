@@ -39,6 +39,45 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.33.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.33.0 <time datetime="2026-11-15">15 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Nova is a real window now.</strong> It drags, resizes and slides back under the menu bar exactly as Settings does, with Hyprland's own border and shadow, and it remembers its size. It stays open while you use the launcher or the bar's panels, and steps aside while you arrange the bar.</li>
+        <li><strong>Settings and Nova come with you.</strong> Both stay with you on every workspace. Asking for one brings it to the front, and neither makes a workspace look in use.</li>
+        <li><strong>A calmer way to arrange the menu bar.</strong> Edit layout now eases the bar into its editable look and back with no flashing. Its panel is rebuilt in the style of the bar's own panels, and things you drop glide into place.</li>
+        <li><strong>Pressed menu bar items.</strong> Whatever opened the panel that's open shows pressed, in a deep shade of your accent, until the panel closes.</li>
+        <li><strong>Slate starts itself again after a crash.</strong> It tells you it did, and keeps a short crash report for Settings → Debug. If it keeps crashing, it stops trying and tells you how to start it.</li>
+        <li><strong>Chromium follows your theme.</strong> App Theming can now switch Chromium, Chrome, Brave, Vivaldi and Edge to their GTK look, in Slate's colors, with thin scrollbars. The address bar keeps Chromium's own gray while you type in it.</li>
+        <li><strong>The lock and login screens</strong> show your picture in an accent ring that the glass shows through.</li>
+        <li><strong>Shadows everywhere follow your settings.</strong> Floating windows like Settings now match the panels and menus at every setting. The scroll shades at the ends of lists follow them too. Shadows also start a little crisper and lighter.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Firefox 160:</strong> the toolbars, the active tab, the address bar and every menu take Slate's colors again.</li>
+        <li><strong>Glass:</strong> no more dark line round menus and panels, and no blurred patch round the dock's glow.</li>
+        <li><strong>Screenshots:</strong> a screenshot of the dock is no longer ghosted.</li>
+        <li><strong>Workspaces:</strong> Floating windows slide away with their workspace instead of sometimes staying put. Clicking the last, empty workspace's dot switches the way Super+Left/Right does. Windows keep their rounded corners while switching workspaces.</li>
+        <li><strong>Scrolling:</strong> a mouse wheel notch goes further in Slate's lists, and scrollbars are easier to grab.</li>
+        <li><strong>The lock screen:</strong> a wrong password is told once, without a flash of "Slate couldn't check your password".</li>
+        <li><strong>Keyboard layouts:</strong> putting Keyboard layouts back to its default from the command line now reaches Hyprland too.</li>
+        <li><strong>Live window previews:</strong> previews pause for a moment after a window closes. This makes a crash in Quickshell's window capture, when several windows close at once, much rarer (reported upstream).</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The test suite and its tools got sharper along the way: a crashed session keeps its log, and the screenshot and preview tests run against stand-ins where the container has no pointer.</li>
+        <li>The full test suite passed (99,471 checks) on the packages this release was tested with.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.32.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.32.0 <time datetime="2026-11-15">15 November 2026</time></h2>
   <div class="cl-grid">
