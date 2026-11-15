@@ -164,6 +164,11 @@ class SettingsWindowGoesWithYou(LiveCase):
         self.go(2)
         self.s._until(lambda: self.client()["workspace"]["id"] == 2, 5, "Settings to come along to workspace 2")
         self.assertTrue(self.s.state()["settings"]["open"], "Settings closed going to another workspace")
+        # ...and like Nova, it doesn't make the workspace it's on look in use (its dot), nor
+        # count there (a new or spare workspace)
+        if not self.s.hyprctl("clients", json_out=True) or all(c.get("workspace", {}).get("id") != 2 or c.get("title") == "Slate Settings"
+                                                               for c in self.s.hyprctl("clients", json_out=True)):
+            self.assertNotIn(2, self.s.state()["bar"]["dots"]["occupied"], "Settings made the workspace it's on look in use")
         # Asked for again when it's open: brought to the front with the keyboard, not closed;
         # asked for when it's the window you're in: closed
         self.ipc("settings", "open")

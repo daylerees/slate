@@ -16,13 +16,13 @@ hl.workspace_rule({ workspace = "3", monitor = MONITOR1, default = true })
 hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
 hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
 
--- How many windows a workspace has, leaving out Nova's (Slate's own, pinned to whichever
--- workspace you're looking at: slateIsNova in windowrules.lua), which never makes one in use
+-- How many windows a workspace has, leaving out Slate's pinned ones (Nova and Settings, on
+-- whichever workspace you're looking at: slateIsPinned in windowrules.lua), which never make one in use
 function slateWindowCount(w)
     local n = w.windows or 0
-    if n > 0 and slateIsNova then
+    if n > 0 and slateIsPinned then
         for _, win in ipairs(hl.get_workspace_windows(w.id) or {}) do
-            if slateIsNova(win) then n = n - 1 end
+            if slateIsPinned(win) then n = n - 1 end
         end
     end
     return n
@@ -47,7 +47,7 @@ function besideWorkspace(dir)
     local function shiftFrom(from)
         for id = maxId, from, -1 do
             for _, win in ipairs(hl.get_workspace_windows(id) or {}) do
-                if not slateIsNova(win) then
+                if not (slateIsPinned and slateIsPinned(win)) then
                     hl.dispatch(hl.dsp.window.move({ workspace = id + 1, window = "address:" .. win.address, follow = false }))
                 end
             end

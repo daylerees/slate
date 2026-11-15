@@ -313,7 +313,7 @@ local pendingClose = nil
 local function otherWindowsOn(wsId, exceptAddr)
     local n = 0
     for _, w in ipairs(hl.get_windows()) do
-        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.id == wsId and not slateIsNova(w) then
+        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.id == wsId and not slateIsPinned(w) then
             n = n + 1
         end
     end

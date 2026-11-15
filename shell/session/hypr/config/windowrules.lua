@@ -190,6 +190,12 @@ hl.window_rule({ name = "slate-nova", match = { class = "^(slate-settings)$", ti
 function slateIsNova(w)
     return w ~= nil and w.class == "slate-settings" and w.title == "Nova"
 end
+-- Slate's own windows pinned to every workspace (Nova, Settings, its picture chooser): none
+-- counts on a workspace (the same titles are Config.pinnedTitles)
+SLATE_PINNED_TITLES = { ["Nova"] = true, ["Slate Settings"] = true, ["Choose a picture"] = true }
+function slateIsPinned(w)
+    return w ~= nil and w.class == "slate-settings" and SLATE_PINNED_TITLES[w.title] == true
+end
 -- Choosing your account picture (Settings → General): a dialog of Slate's own, pinned with
 -- Settings so it's never left behind it (pinned windows are drawn over the others)
 hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true, pin = true })

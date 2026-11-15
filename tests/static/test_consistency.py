@@ -222,6 +222,21 @@ class Settings(Case):
                     with self.subTest(os.path.relpath(os.path.join(root, name), shell) + ": Config." + fn):
                         self.assertIn(fn, have, f"Config.{fn}() is called here, but Config.qml has no such function")
 
+    def test_slates_pinned_windows_are_the_same_list_everywhere(self):
+        """Slate's own windows on every workspace (Nova, Settings, its picture chooser) never
+        count on one: the titles in Config.pinnedTitles and windowrules.lua's SLATE_PINNED_TITLES
+        are the same, and each of them is pinned by a window rule."""
+        cfg = slate.read("shell", "Config.qml")
+        lua = slate.read("shell", "session", "hypr", "config", "windowrules.lua")
+        q = re.search(r'pinnedTitles: \[novaTitle, ([^\]]*)\]', cfg)
+        self.assertTrue(q, "Config.pinnedTitles has moved")
+        qml = {"Nova"} | set(re.findall(r'"([^"]+)"', q.group(1)))
+        l = re.search(r"SLATE_PINNED_TITLES = \{([^}]*)\}", lua)
+        self.assertTrue(l, "SLATE_PINNED_TITLES has moved")
+        self.assertEqual(qml, set(re.findall(r'\["([^"]+)"\]', l.group(1))))
+        for title in qml:
+            self.assertRegex(lua, r'title = "\^\(%s\)\$"[^\n]*pin = true' % re.escape(title), f"{title} isn't pinned")
+
     def test_novas_window_is_told_apart_the_same_everywhere(self):
         """Nova's window is a real window of Slate's, told apart from your windows by Slate's app
         id and its title: in QML (Config.isNova, and the title Assistant.qml gives it), in

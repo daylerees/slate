@@ -2032,6 +2032,18 @@ Singleton {
     // Hyprland's (a toplevel, or its details from hyprctl) or a Wayland toplevel. (The same
     // test is slateIsNova in windowrules.lua and is_nova in scripts/spaces.py)
     readonly property string novaTitle: "Nova"
+    // Slate's own windows pinned to every workspace: Nova, Settings and its picture chooser.
+    // None of them makes a workspace in use or is counted on one (the dots, new and spare
+    // workspaces, which workspaces a mode change reaches); Settings is still yours to switch to.
+    // (The same titles are slateIsPinned's in windowrules.lua)
+    readonly property var pinnedTitles: [novaTitle, "Slate Settings", "Choose a picture"]
+    function isPinnedSlate(t) {
+        if (!t || pinnedTitles.indexOf(t.title) < 0) return false;
+        const o = t.lastIpcObject;
+        const cls = t.appId !== undefined ? t.appId : t.class !== undefined ? t.class
+            : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
+        return cls === "slate-settings" || cls === "" || cls === undefined || cls === null;
+    }
     function isNova(t) {
         if (!t || t.title !== novaTitle) return false;
         const o = t.lastIpcObject;
@@ -2303,7 +2315,7 @@ Singleton {
     // they follow, or one of their own)
     function workspacesNotIn(v) {
         return Hyprland.workspaces.values.filter(w => w.id > 0 && workspaceMode(w.id) !== v
-            && (w.toplevels?.values ?? []).some(t => !isNova(t))).map(w => w.id);
+            && (w.toplevels?.values ?? []).some(t => !isPinnedSlate(t))).map(w => w.id);
     }
     // Change the default. tidy: every workspace takes the new mode, those with a mode of their
     // own included (they go back to following the default), and their windows are rearranged.

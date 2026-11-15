@@ -544,7 +544,8 @@ PanelWindow {
     // that was kept from one made again)
     property var trayTest: ({ made: 0, measured: 0 })
     readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
-                                              firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width } : null
+                                              firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width,
+                                              occupied: Hyprland.workspaces.values.filter(w => w.id > 0 && wsRow.occupied(w)).map(w => w.id) } : null
     // (and the bell's unread count beside it, "" for none)
     readonly property string bellText: bellBtn.label
 
