@@ -1045,7 +1045,7 @@ Singleton {
         id: hyprPush; interval: 400; running: true
         onTriggered: {
             // While the wallpaper switcher shows wallpapers, nothing reaches Hyprland (as with
-            // the borders and the theme: shell.qml's heldBack); one push goes when it closes
+            // the borders and the theme: UpdateHold.qml's heldBack); one push goes when it closes
             if (root.wallpaperSwitching) { root.hyprPushHeld = true; return; }
             root.hyprPushHeld = false;
             // (under the tests, each push is counted and Hyprland keeps the count, so a test can

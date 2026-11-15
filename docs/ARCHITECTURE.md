@@ -103,6 +103,11 @@ SpaceBadge.qml          one space badge (icon on colour): window corners, switch
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
 Dock.qml                the dock: pinned apps, windows, magnifying, previews, menus, drag and drop; its test
                         hooks (test…) are what shell.qml's `test` IPC target calls
+UpdateHold.qml          holds back what's slow or reaches outside Slate while the wallpaper switcher is looking (heldBack)
+GreeterSync.qml         keeps the login screen in step with the wallpaper and settings; offers its and the system's updates
+HyprlandLook.qml        window borders, gaps, window mode and title bar colours pushed to Hyprland; its config errors
+AppTheming.qml          other apps follow the theme: folder colour, icon theme, App Theming and its notices
+ReloadNotices.qml       Slate's own notices for a reload that worked or failed
 DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
 Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
                         top of a shape; only shows with glass on
@@ -347,7 +352,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
   colors follow in Slate alone: each wallpaper's are kept (`wallpaperColourMemo`) so going
   back is instant, the color cache isn't written, and what's slow or reaches outside Slate
   (App theming, folder colors, title bar buttons, window borders, the login screen, the
-  reload cover) is held (`heldBack` in `shell.qml`) and runs once when it closes. The bar and
+  reload cover) is held (`heldBack` in `UpdateHold.qml`) and runs once when it closes. The bar and
   dock go up to the overlay layer with no input meanwhile.
 - Canvas-drawn shapes (corners, panel joins) repaint on color change via a `fill`
   property + `onFillChanged: requestPaint()`. Hot reload doesn't repaint Canvas — do a

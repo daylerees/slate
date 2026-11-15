@@ -7,7 +7,7 @@
 // Looking is light: only Slate's own colours change (Config.wallpaperPreview), never its
 // settings, and nothing reloads. What's slow or reaches outside Slate (App theming, folder
 // colours, title bar buttons, window borders, the login screen) waits until it closes, and
-// then happens once, for the one kept (shell.qml: heldBack).
+// then happens once, for the one kept (UpdateHold.qml: heldBack).
 //
 // The bar and dock stay in sight above it (they go up a layer meanwhile: Bar.qml and the dock
 // in shell.qml) but take no clicks.
