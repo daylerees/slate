@@ -177,11 +177,14 @@ class Shadows(LiveCase):
                     "glass", "lightMode", "shadows"):
             self.keep_setting(key)
         self.addCleanup(lambda: settings_in_hyprland(self))
+        # (the fade compared with no distance: moved, the shape itself shows, checked below)
         for key, value in (("glass", "false"), ("lightMode", "false"), ("shadows", "true"), ("shadowDarkness", "0.7"),
-                           ("shadowDistance", "5"), ("shadowDirection", "90")):
+                           ("shadowDistance", "0"), ("shadowDirection", "90")):
             self.config(key, value)
-        # (softness, spread): the defaults, all soft, a little of both, and a hard edge
-        for soft, spread in ((16, 6), (24, 0), (8, 2), (0, 6)):
+        # (softness, spread): the defaults, all soft, a little of both, a hard edge, and a dark
+        # band with a short soft edge (it was spread over the whole width, far softer than the
+        # panels', 2026-11-15)
+        for soft, spread in ((16, 6), (24, 0), (8, 2), (0, 6), (1, 3)):
             with self.subTest(softness=soft, spread=spread):
                 self.config("shadowSoftness", str(soft))
                 self.config("shadowSpread", str(spread))
@@ -198,11 +201,27 @@ class Shadows(LiveCase):
                             for d in range(0, 4 * (spread + soft + 2)) if not (sharp and abs(d / 4 - spread) < 1))
                 self.assertLess(worst, 0.05, f"Hyprland's shadow (range {rng}, power {power}, sharp {sharp}, "
                                              f"alpha {alpha:.2f}) is up to {worst:.2f} off Slate's: {colour}")
-                # Direction 90°: moved 5 px to the left, as Slate's are (Config.shadowDX/DY)
+                # Moved (direction 90°, 5 px to the left, as Slate's are: Config.shadowDX/DY), the
+                # shape itself shows, where Slate's is at full strength: so is Hyprland's (it was
+                # lowered to match the faint edge, and Settings' shadow was half the panels')
+                self.config("shadowDistance", "5")
+                settings_in_hyprland(self)
+                c = self.option("color")
+                moved = int(str(c.get("gradient", c.get("str", "0"))).split()[0], 16) if "int" not in c else int(c["int"])
+                self.assertAlmostEqual(((moved >> 24) & 0xFF) / 255, 0.7, delta=0.01, msg="the moved shadow isn't at full strength")
                 off = self.option("offset")
                 text = off.get("custom", off.get("vec2", off.get("str", "")))
                 nums = [float(n) for n in re.findall(r"-?[\d.]+", str(text))]
                 self.assertEqual([round(n) for n in nums[:2]], [-5, 0], f"Hyprland's shadow isn't moved as Slate's: {off}")
+                self.config("shadowDistance", "0")
+        # No spread or softness, only a distance: still a shadow (the shape, moved), as Slate's
+        # are; Hyprland's was switched off, and Settings had none beside panels that had one
+        self.config("shadowSoftness", "0")
+        self.config("shadowSpread", "0")
+        self.config("shadowDistance", "5")
+        settings_in_hyprland(self)
+        o = self.option("enabled")
+        self.assertTrue(bool(int(o.get("bool", o.get("int", 0)))), "no shadow under floating windows with only a distance")
         # With glass, Slate keeps its shadows lighter (below where Hyprland blurs behind its
         # surfaces): floating windows' too, or theirs are the darker ones
         def alpha():

@@ -658,17 +658,26 @@ Singleton {
     // (range / (1.4 × soft))² where Slate's never quite reaches full (as at the defaults); and
     // where Slate's stays full for a while (much spread, little softness) the power that's half
     // as dark at the same place (1 or 2: Hyprland takes whole numbers). Softness under 1 px is
-    // a hard edge, Hyprland's sharp shadow, as wide as the spread
+    // a hard edge, Hyprland's sharp shadow, as wide as the spread. So is one whose solid part is
+    // at least as long as its fade (spread ≥ 1.8 × softness: softness 1 and spread 3, say):
+    // Slate's is a dark band with a short soft edge, half dark about at the spread, and
+    // Hyprland's fade spread over the whole width looked far softer than the panels' and menus'
     readonly property var hyprShadow: {
         const S = shadowSpread, B = shadowReach, k = uiScale;
-        const sharp = B < 1;
+        const sharp = B < 1 || S >= 1.8 * B;
         const R = sharp ? S : S + B;
         const flat = sharp || R > 1.4 * B;
         const power = sharp ? 1 : !flat ? 2
             : Math.max(1, Math.min(2, Math.round(Math.log(0.5) / Math.log(1.4 * B / (Math.SQRT2 * R)))));
-        const alpha = shadowStrength * (flat ? 1 : Math.pow(R / (1.4 * B), 2));
+        // (with a distance, what shows most is the shape moved: Slate's is at full strength
+        // there, and Hyprland's is its colour's alpha, so that stays full; lowered to match
+        // the faint edge, Settings' shadow was half as dark as the panels')
+        const moved = Math.abs(shadowDX) + Math.abs(shadowDY) > 0;
+        const alpha = shadowStrength * (flat || moved ? 1 : Math.pow(R / (1.4 * B), 2));
         return {
-            on: shadowsOn && R > 0,
+            // (no spread or softness but a distance is still a shadow: the shape, moved; it was
+            // switched off, and floating windows had none while panels and menus had one)
+            on: shadowsOn && (R > 0 || Math.abs(shadowDX) + Math.abs(shadowDY) > 0),
             range: Math.max(1, Math.round(R * k)),
             power: power,
             sharp: sharp,
