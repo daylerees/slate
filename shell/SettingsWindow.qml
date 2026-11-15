@@ -963,8 +963,7 @@ FloatingWindow {
             color: win.popupFill
             border.width: 1; border.color: win.outline
             opacity: dropLayer.visible ? 1 : 0
-            layer.enabled: true
-            layer.effect: PopupShadow {}
+            Shadow {}       // Slate's one shadow, as under every other menu
             MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
             // Searchable: type to filter; Up/Down, Enter to pick, Escape to close
             Rectangle {

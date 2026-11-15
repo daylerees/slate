@@ -411,6 +411,7 @@ ShellRoot {
                                               dots: b.dotsState, bell: b.bellText })),
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
+                popoutBox: popouts.panelBox,
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,

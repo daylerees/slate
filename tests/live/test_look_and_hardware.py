@@ -151,6 +151,100 @@ class Shadows(LiveCase):
         self.config("shadows", "true")
         self.assertTrue(self.until(1), "Hyprland's shadows didn't come back")
 
+    # Shadow.qml's shadow (shaders/shadow.frag) at d px outside the surface it's moved from, at
+    # its darkest 1 (the static test Shadows.test_falloff_is_as_modelled keeps this in step)
+    @staticmethod
+    def slate_alpha(d, spread, soft):
+        soft = max(soft, 0.5)
+        t = min(1.0, max(0.0, (d - spread + soft * 0.4) / (soft * 1.4)))
+        return (1 - t) ** 2
+
+    # Hyprland's (its shadow.glsl): ((range - d) / range)^render_power, or solid to range if sharp
+    @staticmethod
+    def hypr_alpha(d, rng, power, sharp):
+        if d >= rng:
+            return 0.0
+        return 1.0 if sharp else ((rng - d) / rng) ** power
+
+    def option(self, name):
+        return self.s.hyprctl("getoption", "decoration:shadow:" + name, json_out=True)
+
+    def test_floating_windows_shadow_looks_like_slates(self):
+        """Hyprland's shadow under floating windows (Settings, dialogs) is drawn to look like
+        Slate's own for the same settings: as dark, as soft, as far out and moved the same way.
+        It looked very different once (its own falloff, and darker than Slate's on glass)."""
+        for key in ("shadowSoftness", "shadowSpread", "shadowDistance", "shadowDirection", "shadowDarkness",
+                    "glass", "lightMode", "shadows"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: settings_in_hyprland(self))
+        for key, value in (("glass", "false"), ("lightMode", "false"), ("shadows", "true"), ("shadowDarkness", "0.7"),
+                           ("shadowDistance", "5"), ("shadowDirection", "90")):
+            self.config(key, value)
+        # (softness, spread): the defaults, all soft, a little of both, and a hard edge
+        for soft, spread in ((16, 6), (24, 0), (8, 2), (0, 6)):
+            with self.subTest(softness=soft, spread=spread):
+                self.config("shadowSoftness", str(soft))
+                self.config("shadowSpread", str(spread))
+                settings_in_hyprland(self)
+                rng = int(self.option("range")["int"])
+                power = int(self.option("render_power")["int"])
+                o = self.option("sharp")
+                sharp = bool(int(o.get("bool", o.get("int", 0))))
+                colour = self.option("color")
+                # (reported as a gradient, "aarrggbb 0deg")
+                argb = int(str(colour.get("gradient", colour.get("str", "0"))).split()[0], 16) if "int" not in colour else int(colour["int"])
+                alpha = ((argb >> 24) & 0xFF) / 255
+                worst = max(abs(self.hypr_alpha(d / 4, rng, power, sharp) * alpha - self.slate_alpha(d / 4, spread, soft) * 0.7)
+                            for d in range(0, 4 * (spread + soft + 2)) if not (sharp and abs(d / 4 - spread) < 1))
+                self.assertLess(worst, 0.05, f"Hyprland's shadow (range {rng}, power {power}, sharp {sharp}, "
+                                             f"alpha {alpha:.2f}) is up to {worst:.2f} off Slate's: {colour}")
+                # Direction 90°: moved 5 px to the left, as Slate's are (Config.shadowDX/DY)
+                off = self.option("offset")
+                text = off.get("custom", off.get("vec2", off.get("str", "")))
+                nums = [float(n) for n in re.findall(r"-?[\d.]+", str(text))]
+                self.assertEqual([round(n) for n in nums[:2]], [-5, 0], f"Hyprland's shadow isn't moved as Slate's: {off}")
+        # With glass, Slate keeps its shadows lighter (below where Hyprland blurs behind its
+        # surfaces): floating windows' too, or theirs are the darker ones
+        def alpha():
+            c = self.option("color")
+            return int(str(c.get("gradient", "0")).split()[0], 16) >> 24
+        plain = alpha()
+        self.config("glass", "true")
+        settings_in_hyprland(self)
+        self.assertLess(alpha(), plain, "floating windows' shadows stay as dark with glass, Slate's don't")
+
+    def test_a_panels_shadow_moves_with_the_distance(self):
+        """A panel under the bar casts its shadow the way every other surface does: a distance
+        straight down moves it down, and it doesn't grow at the panel's sides (it used to: the
+        distance was added to the spread all round)."""
+        from PIL import Image
+        for key in ("shadowDistance", "shadowDirection", "glass", "shadows"):
+            self.keep_setting(key)
+        self.config("glass", "false")
+        self.config("shadows", "true")
+        self.config("shadowDirection", "0")
+        self.ipc("bar", "panel", "calendar")
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        shots = {}
+        for distance in (0, 16):
+            self.config("shadowDistance", str(distance))
+            st = self.steady(lambda: json.loads(self.ipc("test", "state"))["popoutBox"], floor=0.6)
+            self.assertEqual(json.loads(self.ipc("test", "state"))["popout"], "calendar")
+            self.s.settle(0.4)
+            shots[distance] = Image.open(self.screenshot(f"panel-shadow-distance-{distance}")).convert("L")
+        box = st
+        x0, x1, y0, y1 = box["x"], box["x"] + box["width"], box["y"], box["y"] + box["height"]
+
+        def diff(points):
+            return sum(abs(shots[0].getpixel(p) - shots[16].getpixel(p)) for p in points) / len(points)
+        # Beside the panel, halfway down: the same with the distance as without
+        side = [(x, y) for y in range(y0 + box["height"] // 3, y1 - box["height"] // 3, 4)
+                for x in list(range(x0 - 40, x0 - 2)) + list(range(x1 + 2, x1 + 40)) if 0 <= x < shots[0].width]
+        # Under it, past where it reaches with no distance (spread 6 + softness 16): darker
+        below = [(x, y) for y in range(y1 + 24, y1 + 32) for x in range(x0 + 30, x1 - 30, 4)]
+        self.assertGreater(diff(below), 3, "the distance didn't move the panel's shadow down")
+        self.assertLess(diff(side), 1, "the panel's shadow grew at its sides with a distance straight down")
+
 
 class HyprlandGetsSettings(LiveCase):
     """Settings that Slate hands to Hyprland's own config (slateApply in slate.lua)."""

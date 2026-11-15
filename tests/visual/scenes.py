@@ -181,6 +181,15 @@ for _p in settings_pages():
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
+# Every shadow the same way with a long distance straight down (Settings → Appearance → Shadows):
+# moved down, not grown at the sides. A panel under the bar (its shadow used to widen all
+# round), Settings (Hyprland's shadow, drawn to match Slate's), the launcher and a menu
+_FAR = {"shadowDistance": "16", "shadowDirection": "0"}
+SCENES["shadow-distance-panel"] = dict(SCENES["panel-calendar"], settings=dict(SCENES["panel-calendar"].get("settings", {}), **_FAR))
+SCENES["shadow-distance-settings"] = dict(SCENES["settings-sound"], settings=_FAR)
+SCENES["shadow-distance-launcher"] = dict(SCENES["launcher"], settings=_FAR)
+SCENES["shadow-distance-menu"] = dict(SCENES["dock-menu"], settings=_FAR)
+
 # A panel on glass: its shadow lies round it and the curved joins to the bar, never under them
 # (it showed through as darker corners)
 SCENES["panel-calendar-glass"] = {

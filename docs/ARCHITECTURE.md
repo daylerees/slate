@@ -71,7 +71,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │     ├─ Building blocks (shell/settings/): SettingRow.qml (label, description and a control; says what it
 │     │  needs), Group.qml and GroupLabel.qml (a card of rows under its heading), PageTitle.qml,
 │     │  IntroText.qml, Footnote.qml, Separator.qml, IconButton.qml, Button.qml, FieldFrame.qml,
-│     │  PopupShadow.qml, FirstLook.qml (a process a page runs to see how things stand),
+│     │  FirstLook.qml (a process a page runs to see how things stand),
 │     │  ToggleSetting.qml and SettingToggle.qml (the switches), ValueSlider.qml, SoundSetting.qml,
 │     │  DropdownSetting.qml, FontSetting.qml, ChoiceSetting.qml, SearchPicker.qml, ListItemRow.qml,
 │     │  ThemePacks.qml, WallTile.qml (a wallpaper's thumbnail)
@@ -218,9 +218,9 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               Markdown into the blocks the window draws (no HTML, nothing fetched)
 Shadow.qml                    the shadow under anything raised (panels, menus, the launcher, notifications,
                               Nova, the bar): one look, dark with a light tint of the theme
-                              (Config.shadowColour, also sent to Hyprland for floating windows), drawn by
-                              shaders/shadow.frag with the surface's own shape cut out of it, so glass
-                              can have shadows too. Off in game mode
+                              (Config.shadowColour), drawn by shaders/shadow.frag with the surface's own
+                              shape cut out of it, so glass can have shadows too. Floating windows get
+                              Hyprland's shadow made to look the same (Config.hyprShadow). Off in game mode
 BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
 Assistant.qml                 Nova's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
                               for a prompt, shows the answer (drawn from the runner's blocks:

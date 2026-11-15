@@ -24,12 +24,18 @@ Item {
     property real bottomRightRadius: radius
     property real bottomLeftRadius: radius
     // Its look is Slate's one shadow (Settings → Appearance → Shadows: Config.shadowReach, the
-    // spread, the direction and distance), the same everywhere: only a surface hanging off an
-    // edge (a panel under the bar) sets which way it falls, away from that edge
+    // spread, the direction and distance), the same everywhere, floating windows' included
+    // (Hyprland's, Config.hyprShadow): the surface's shape, moved by the distance the way the
+    // direction says, grown by the spread and softened. Never the distance as spread: that
+    // grows it at the sides as well
     readonly property real blur: Config.shadowReach      // how soft its edge is (px)
-    property real spread: Config.shadowSpread            // how far its full darkness reaches past the surface (px)
-    property real dropX: Config.shadowDX                 // where it sits, from the surface
-    property real dropY: Config.shadowDY
+    readonly property real spread: Config.shadowSpread   // how far its full darkness reaches past the surface (px)
+    readonly property real dropX: Config.shadowDX        // where it sits, from the surface
+    readonly property real dropY: Config.shadowDY
+    // A surface hanging off one of its edges ("top" / "bottom" / "left" / "right": a panel off
+    // the bar), whose shape carries on past that edge into what it hangs from: moved by the
+    // distance, its shadow still reaches that edge, with no gap or curl at the joins there
+    property string attachEdge: ""
     property real strength: 1          // 1: Slate's usual; a small surface can ask for less
     // A rounded rectangle taken out of the surface (in this item's coordinates; none if it has
     // no width), for a surface that isn't a box: the menu bar with its flared corners is a
@@ -93,6 +99,8 @@ Item {
                                                      root.fadeFrom, root.fadeOver)
         readonly property vector4d point: Qt.vector4d(root.pointAt.x + root.reach, root.pointAt.y + root.reach, root.pointSize, 0)
         readonly property real spread: root.spread
+        readonly property vector4d attach: Qt.vector4d(root.attachEdge === "left" ? 1 : root.attachEdge === "right" ? -1 : 0,
+                                                       root.attachEdge === "top" ? 1 : root.attachEdge === "bottom" ? -1 : 0, 0, 0)
         readonly property vector4d joinA: Qt.vector4d(root.joinA.x + root.reach, root.joinA.y + root.reach, root.joinA.width, root.joinA.height)
         readonly property vector4d joinB: Qt.vector4d(root.joinB.x + root.reach, root.joinB.y + root.reach, root.joinB.width, root.joinB.height)
         readonly property vector4d joinC: Qt.vector4d(root.joinCentreA.x + root.reach, root.joinCentreA.y + root.reach,

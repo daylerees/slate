@@ -36,6 +36,10 @@ layout(std140, binding = 0) uniform buf {
                         // it is; none if x and y are 0): the menu bar's, under a panel's. Only what
                         // this one adds over it is drawn, so where they meet it's as dark as the
                         // darker of the two, not both
+    vec4 attach;        // the surface hangs off one of its edges (a panel off the bar): x, y the way
+                        // in from that edge, as fade's (0, 0: none). Its shape carries on past that
+                        // edge as it is there, so moved by the distance it still reaches the edge
+                        // (rather than leaving a gap, or curling round the joins' ends there)
 };
 
 // Distance to a rounded rectangle centred on the origin (negative inside)
@@ -81,7 +85,13 @@ float shape(vec2 q) {
 void main() {
     vec2 q = qt_TexCoord0 * size;
     float surface = shape(q);
-    float shade = (edge.x != 0.0 || edge.y != 0.0 ? dot(q - drop, edge.xy) - edge.z : shape(q - drop)) - spread;
+    // The shadow is the surface's shape moved by the distance (drop) and grown by the spread
+    vec2 p = q - drop;
+    if (attach.x > 0.0) p.x = max(p.x, box.x + 0.5);
+    else if (attach.x < 0.0) p.x = min(p.x, box.x + box.z - 0.5);
+    else if (attach.y > 0.0) p.y = max(p.y, box.y + 0.5);
+    else if (attach.y < 0.0) p.y = min(p.y, box.y + box.w - 0.5);
+    float shade = (edge.x != 0.0 || edge.y != 0.0 ? dot(p, edge.xy) - edge.z : shape(p)) - spread;
     // Darkest just inside the shadow's own edge, about half at the edge, gone at `blur`
     float soft = max(blur, 0.5);                    // (no softness at all: still a smooth edge)
     float t = clamp((shade + soft * 0.4) / (soft * 1.4), 0.0, 1.0);
@@ -97,7 +107,7 @@ void main() {
     }
     float alpha = tint.a * a * qt_Opacity;
     if (under.x != 0.0 || under.y != 0.0) {
-        float us = dot(q, under.xy) - under.z - spread;
+        float us = dot(q - drop, under.xy) - under.z - spread;     // (moved and grown as this one is)
         float ut = clamp((us + soft * 0.4) / (soft * 1.4), 0.0, 1.0);
         float ua = (1.0 - ut) * (1.0 - ut) * under.w;
         alpha = max(0.0, (alpha - ua) / max(0.001, 1.0 - ua));

@@ -632,9 +632,8 @@ Singleton {
     readonly property real shadowReach: Math.max(0, Math.min(24, Number(s.shadowSoftness) || 0))   // px of soft edge
     readonly property real shadowSpread: Math.max(0, Math.min(10, Number(s.shadowSpread) || 0))    // px of full darkness past the surface
     readonly property real shadowDrop: Math.max(0, Math.min(16, Number(s.shadowDistance) || 0))    // px from the surface
-    // Which way it falls (degrees clockwise from straight down), as an offset: what most
-    // surfaces use. (A surface hanging off an edge, like a panel under the bar, falls away from
-    // its edge by shadowDrop instead)
+    // Which way it falls (degrees clockwise from straight down), as an offset: the same for
+    // every surface, a panel hanging off the bar and the bar itself included (Shadow.qml)
     readonly property real shadowAngle: (Number(s.shadowDirection) || 0) * Math.PI / 180
     readonly property real shadowDX: Math.round(-Math.sin(shadowAngle) * shadowDrop * 10) / 10
     readonly property real shadowDY: Math.round(Math.cos(shadowAngle) * shadowDrop * 10) / 10
@@ -648,6 +647,35 @@ Singleton {
     readonly property string shadowHex: {
         const h = v => Math.round(v * 255).toString(16).padStart(2, "0");
         return h(shadowColour.r) + h(shadowColour.g) + h(shadowColour.b);
+    }
+    // Hyprland's shadow under floating windows (Settings, dialogs, apps), drawn to look like
+    // Shadow.qml's for the same settings. In Hyprland's pixels (what's handed to it is
+    // multiplied by uiScale, as Slate's own are scaled by the Interface size).
+    // Shadow.qml (shaders/shadow.frag): at d px outside the surface, moved by the distance, it's
+    // ((spread + soft - d) / (1.4 × soft))², at most full, gone at spread + soft. Hyprland's is
+    // ((range - d) / range)^render_power at most full at the window's edge, its colour's alpha
+    // at its darkest. So: range = spread + soft and a power of 2, with the alpha lowered by
+    // (range / (1.4 × soft))² where Slate's never quite reaches full (as at the defaults); and
+    // where Slate's stays full for a while (much spread, little softness) the power that's half
+    // as dark at the same place (1 or 2: Hyprland takes whole numbers). Softness under 1 px is
+    // a hard edge, Hyprland's sharp shadow, as wide as the spread
+    readonly property var hyprShadow: {
+        const S = shadowSpread, B = shadowReach, k = uiScale;
+        const sharp = B < 1;
+        const R = sharp ? S : S + B;
+        const flat = sharp || R > 1.4 * B;
+        const power = sharp ? 1 : !flat ? 2
+            : Math.max(1, Math.min(2, Math.round(Math.log(0.5) / Math.log(1.4 * B / (Math.SQRT2 * R)))));
+        const alpha = shadowStrength * (flat ? 1 : Math.pow(R / (1.4 * B), 2));
+        return {
+            on: shadowsOn && R > 0,
+            range: Math.max(1, Math.round(R * k)),
+            power: power,
+            sharp: sharp,
+            offsetX: Math.round(shadowDX * k * 10) / 10,
+            offsetY: Math.round(shadowDY * k * 10) / 10,
+            colour: "rgba(" + shadowHex + Math.round(Math.max(0, Math.min(1, alpha)) * 255).toString(16).padStart(2, "0") + ")"
+        };
     }
 
     // ---- Assistants (Settings → Assistant, docs/ASSISTANT.md) -------------------------------
@@ -996,8 +1024,6 @@ Singleton {
             // again when its opacity changes; then switched on or off
             + glassRules
             + `SLATE_GLASS_V = 3`
-            // Floating windows' shadow in the theme's shadow colour (Shadow.qml uses the same)
-            + `; hl.config({ decoration = { shadow = { color = "rgba(${shadowHex}${Math.round(Math.max(0.05, Math.min(1, Number(s.shadowDarkness) || 0.7)) * (s.lightMode ? 0.5 : 1) * 255).toString(16).padStart(2, "0")})" } } })`
             + (glass && s.glassBlur > 0 ? `; hl.config({ decoration = { blur = { size = ${Math.round(s.glassBlur)} } } })` : "")
             // Rounded UI elements off: windows are square too. (Put back to the config's own
             // rounding, 10, only if Slate was what squared them)
@@ -1006,9 +1032,10 @@ Singleton {
             // Blur (Settings → Appearance → Blur): only the wallpaper (fast), and how many passes
             + `; hl.config({ decoration = { blur = { xray = ${s.fastBlur ? "true" : "false"} } } })`
             + (s.blurPasses > 0 ? `; hl.config({ decoration = { blur = { passes = ${Math.round(s.blurPasses)} } } })` : "")
-            // Floating windows' shadows: Slate's look (shadowReach, shadowDrop, a hard falloff), or
-            // none (Settings → Appearance → Shadows, game mode)
-            + `; hl.config({ decoration = { shadow = { enabled = ${shadowsOn ? "true" : "false"}, range = ${Math.max(1, Math.round(shadowReach + shadowSpread))}, render_power = ${shadowReach <= 4 ? 4 : 3}, offset = { ${shadowDX}, ${shadowDY} } } } })`
+            // Floating windows' shadows: Slate's one shadow, drawn by Hyprland (hyprShadow: the
+            // same colour, darkness, softness, spread, distance and direction), or none
+            // (Settings → Appearance → Shadows, game mode)
+            + `; hl.config({ decoration = { shadow = { enabled = ${hyprShadow.on ? "true" : "false"}, range = ${hyprShadow.range}, render_power = ${hyprShadow.power}, sharp = ${hyprShadow.sharp ? "true" : "false"}, offset = { ${hyprShadow.offsetX}, ${hyprShadow.offsetY} }, color = "${hyprShadow.colour}" } } })`
             // Game mode: no blur or shadows behind anything, and every window fully opaque
             + (gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
             // ...terminals too, which draw their own see-through background (kitty's

@@ -490,7 +490,7 @@ Column {
             visible: Config.s.shadows
             label: "Spread"
             settingKey: "shadowSpread"
-            detail: "How far their full darkness reaches past the edge, before it fades. Not on floating windows"
+            detail: "How far their full darkness reaches past the edge, before it fades"
             ValueSlider { from: 0; to: 10; stepSize: 1; suffix: " px"; value: Config.s.shadowSpread; onMoved: v => Config.s.shadowSpread = v }
         }
         Separator { visible: Config.s.shadows }

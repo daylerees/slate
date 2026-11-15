@@ -721,8 +721,7 @@ class WindowPreviews(Case):
 class Shadows(Case):
     """One shadow look everywhere (Settings → Appearance → Shadows)."""
     def test_no_shadow_sets_its_own_look(self):
-        """A Shadow takes its softness and distance from Config: only a surface hanging off an
-        edge sets which way it falls (dropX/dropY to 0, with spread), never its own blur."""
+        """A Shadow takes its softness and distance from Config, never a blur of its own."""
         bad = []
         for f in slate.files("shell", ".qml"):
             for n, line in enumerate(slate.read(f).splitlines(), 1):
@@ -741,7 +740,46 @@ class Shadows(Case):
         for prop in ("Config.shadowReach", "Config.shadowSpread", "Config.shadowDX", "Config.shadowDY"):
             self.assertIn(prop, shadow)
         self.assertIn("spread", slate.read("shell", "shaders", "shadow.frag"))
-        self.assertRegex(config, r"shadow = \{ enabled = \$\{shadowsOn", "Hyprland's shadows don't follow the switch")
+        self.assertRegex(config, r"shadow = \{ enabled = \$\{hyprShadow\.on", "Hyprland's shadows don't follow the switch")
+
+    def test_distance_moves_never_spreads(self):
+        """Every Shadow is moved by the distance the way the direction says, and grown by the
+        spread alone: Shadow.qml's spread and drop are Config's and can't be set (a panel's and
+        the bar's added the distance to the spread, so a distance straight down grew a panel's
+        shadow at its sides too). A surface hanging off an edge says so (attachEdge) instead."""
+        shadow = slate.read("shell", "Shadow.qml")
+        for prop, value in (("spread", "Config.shadowSpread"), ("dropX", "Config.shadowDX"), ("dropY", "Config.shadowDY")):
+            self.assertRegex(shadow, rf"readonly property real {prop}: {re.escape(value)}\b", f"Shadow's {prop} isn't fixed to {value}")
+        for f in slate.files("shell", ".qml"):
+            self.assertNotRegex(slate.read(f), r"shadowSpread \+ Config\.shadowDrop|shadowDrop \+ Config\.shadowSpread",
+                                f"{f}: the distance added to the spread")
+        self.assertIn('attachEdge: pop.sideways ? pop.side : pop.fromBottom ? "bottom" : "top"', slate.read("shell", "Popouts.qml"))
+        frag = slate.read("shell", "shaders", "shadow.frag")
+        self.assertIn("vec2 p = q - drop;", frag, "the shadow isn't the shape moved by the distance")
+        self.assertIn("dot(q - drop, under.xy)", frag, "the bar's shadow under a panel's isn't moved as the bar's is")
+
+    def test_hyprland_shadow_from_the_same_settings(self):
+        """Hyprland's shadow under floating windows is worked out from the same values as
+        Shadow.qml's (Config.hyprShadow), in Hyprland's pixels, and handed over whole: range,
+        power, sharpness, offset and colour (the live test Shadows checks it looks the same)."""
+        config = slate.read("shell", "Config.qml")
+        m = re.search(r"readonly property var hyprShadow: \{(.*?)\n    \}\n", config, re.S)
+        self.assertTrue(m, "Config.hyprShadow has moved")
+        body = m.group(1)
+        for value in ("shadowSpread", "shadowReach", "shadowStrength", "shadowDX", "shadowDY", "shadowHex", "shadowsOn", "uiScale"):
+            self.assertRegex(body, rf"\b{value}\b", f"Hyprland's shadow doesn't follow {value}")
+        line = next((l for l in config.splitlines() if "shadow = { enabled" in l), "")
+        for part in ("range = ${hyprShadow.range}", "render_power = ${hyprShadow.power}", "sharp = ${hyprShadow.sharp",
+                     "offset = { ${hyprShadow.offsetX}, ${hyprShadow.offsetY} }", 'color = "${hyprShadow.colour}"'):
+            self.assertIn(part, line)
+        self.assertNotRegex(config, r"shadow = \{ color = ", "a second shadow colour handed to Hyprland")
+
+    def test_falloff_is_as_modelled(self):
+        """The live test of Hyprland's shadow models Shadow.qml's falloff: these lines are it."""
+        frag = slate.read("shell", "shaders", "shadow.frag")
+        self.assertIn("float soft = max(blur, 0.5);", frag)
+        self.assertIn("float t = clamp((shade + soft * 0.4) / (soft * 1.4), 0.0, 1.0);", frag)
+        self.assertIn("float a = (1.0 - t) * (1.0 - t);", frag)
 
     def test_qt_shadows_follow_the_switch(self):
         """Qt's own shadows (MultiEffect, RectangularShadow) are off when Slate's are."""

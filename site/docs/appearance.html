@@ -127,13 +127,14 @@
         <tr><td>Shadows</td><td>On to start with. Off, everything sits flat.</td></tr>
         <tr><td>Darkness</td><td>How dark they are at their darkest (half as dark in light mode).</td></tr>
         <tr><td>Softness</td><td>How gently their edge fades away. 0 is a crisp edge.</td></tr>
-        <tr><td>Spread</td><td>How far their full darkness reaches past the edge before it fades. It doesn't apply to floating windows.</td></tr>
+        <tr><td>Spread</td><td>How far their full darkness reaches past the edge before it fades.</td></tr>
         <tr><td>Distance</td><td>How far they sit from what casts them. 0 is all round, like a glow.</td></tr>
         <tr><td>Direction</td><td>Which way they fall: 0° is straight down, 90° to the left, 180° up and 270° to the right.</td></tr>
       </table>
       <p>As you move a slider, every shadow on screen changes with it, floating windows' too, so you can judge it in place.</p>
       <ul>
-        <li>The menu bar's shadow, and its panels', always fall away from the bar, whichever edge it's on and whatever direction you set.</li>
+        <li>Floating windows' shadows are drawn by Hyprland, made to look like the rest for the same settings.</li>
+        <li>The menu bar and its panels follow the same direction as everything else, and their shadows are moved by the distance, never widened by it. With the bar at the bottom and shadows falling down, theirs mostly tuck under the bar.</li>
         <li>With glass on, shadows stay a little lighter than the darkness you set, so the glass doesn't blur them.</li>
         <li>In game mode, shadows are off. Your settings are kept for when it ends.</li>
       </ul>

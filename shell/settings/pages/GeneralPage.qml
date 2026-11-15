@@ -199,8 +199,7 @@ Column {
                         // Solid, so the page under it doesn't show through
                         color: win.popupFill
                         border.width: 1; border.color: win.outline
-                        layer.enabled: true
-                        layer.effect: PopupShadow {}
+                        Shadow {}       // Slate's one shadow, as under every other menu
                         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
                         Column {
                             id: locPopCol

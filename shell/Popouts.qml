@@ -278,11 +278,10 @@ PanelWindow {
             z: 0
             topLeftRadius: body.topLeftRadius; topRightRadius: body.topRightRadius
             bottomLeftRadius: body.bottomLeftRadius; bottomRightRadius: body.bottomRightRadius
-            // Grown all round by the distance, not moved by it (as the bar's is): moved, it
-            // curled at the joins' ends where they meet the bar
-            dropX: 0
-            dropY: 0
-            spread: Config.shadowSpread + Config.shadowDrop
+            // Moved by the distance like every other shadow (grown all round by it instead, it
+            // spread out at the sides too), its shape carried on into the bar, so it still meets
+            // the bar with no gap or curl at the joins' ends
+            attachEdge: pop.sideways ? pop.side : pop.fromBottom ? "bottom" : "top"
             // (fainter than where the blur behind the panel starts, as the bar's own is under its)
             strength: Config.panelShadowShare
             // The curved joins either side of it, where it leaves the bar, as part of its shape:
@@ -317,6 +316,9 @@ PanelWindow {
     // A panel opened from the bar's first or last button (in Slate's own arrangement the
     // control centre and the power menu; whichever buttons you've put there) sits flush
     // against the start / end of the screen, rounded only on its one corner out in the screen
+    // Where the open panel is on its screen (Slate's px), for the tests: its shadow's place
+    readonly property var panelBox: ({ x: Math.round(margins.left + panelArea.x + body.x), y: Math.round(margins.top + panelArea.y + body.y),
+                                       width: Math.round(panelArea.width), height: Math.round(panelArea.height) })
     readonly property bool atScreenStart: edge === "start"
     readonly property bool atScreenEnd: edge === "end"
     Item {

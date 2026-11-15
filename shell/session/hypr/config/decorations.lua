@@ -47,13 +47,13 @@ hl.config({
         },
         -- A soft drop shadow under floating windows (settings, dialogs); tiled windows
         -- have none (windowrules.lua)
-        -- (close under the window: a small drop, so it isn't all below the bottom edge.
-        -- Slate sets its colour, a dark shade lightly tinted by the theme: Config.shadowColour)
+        -- (Slate's one shadow at its default settings, the same as under its own surfaces;
+        -- Slate sets it from Settings → Appearance → Shadows: Config.hyprShadow)
         shadow = {
-            range = 24,
-            render_power = 3,
-            offset = { 0, 3 },
-            color = "rgba(0a0c1078)",
+            range = 22,
+            render_power = 2,
+            offset = { 0, 2 },
+            color = "rgba(0a0c10ac)",
         },
     },
 })
