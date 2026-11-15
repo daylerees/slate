@@ -5,8 +5,9 @@ gestures' own functions are called, as Hyprland calls them when one ends.)"""
 from live import LiveCase
 
 DIRECTIONS = ("horizontal", "up", "down", "pinchin", "pinchout")
-# Made to start with (pinching out does nothing until chosen)
-DEFAULT = ("horizontal", "up", "down", "pinchin")
+# Made to start with, in Hyprland's names (pinching out does nothing until chosen; Slate's pinch
+# in, fingers coming together, is Hyprland's "pinchout", as it names them by zoom)
+DEFAULT = ("horizontal", "up", "down", "pinchout")
 
 
 class Gestures(LiveCase):
@@ -71,7 +72,7 @@ class Gestures(LiveCase):
         self.config("gestureFingers", "3")
         self.config("gestureLeft", "workspace")
         self.config("gestureRight", "workspace")
-        self.until(lambda: self.made(3) and not self.has(3, "pinchout"), "Slate's gestures, pinch out left free")
+        self.until(lambda: self.made(3) and not self.has(3, "pinchin"), "Slate's gestures, pinch out left free")
         self.config("gestureRight", "none")
         self.config("gestureUp", "none")
         self.config("gesturePinchOut", "desktop")

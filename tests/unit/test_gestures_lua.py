@@ -20,6 +20,8 @@ from slate import Case, run
 
 GESTURES = slate.path("shell", "session", "hypr", "config", "gestures.lua")
 SLATE_CMD = "/s/bin/slate ipc call "
+# Slate's pinch in is fingers coming together, which Hyprland calls "pinchout" (it names them by zoom)
+HYPRLAND_DIRECTION = {"pinchin": "pinchout", "pinchout": "pinchin"}
 
 STUB = r"""
 local function note(...) print(table.concat({ ... }, "\t")) end
@@ -118,11 +120,12 @@ class GesturesLua(Case):
 
     def test_made_with_the_fingers_chosen(self):
         """By default: left and right together (Hyprland's swipe), up, down and pinch in. Pinch out does nothing
-        to start with, so it's left free."""
+        to start with, so it's left free. Slate's pinch in (fingers coming together) is Hyprland's
+        "pinchout": Hyprland names pinches by zoom, and they were the wrong way round."""
         lines = self.do('slate(3)')
         self.assertEqual(lines, [["GESTURE", "3", "horizontal", "workspace"], ["GESTURE", "3", "up", "function"],
-                                 ["GESTURE", "3", "down", "function"], ["GESTURE", "3", "pinchin", "function"]])
-        self.assertEqual(self.made(self.do('slate(4)'), 4), ["horizontal", "up", "down", "pinchin"])
+                                 ["GESTURE", "3", "down", "function"], ["GESTURE", "3", "pinchout", "function"]])
+        self.assertEqual(self.made(self.do('slate(4)'), 4), ["horizontal", "up", "down", "pinchout"])
 
     def gestures(self, lines):
         """What Slate made: {direction: what it does there}."""
@@ -158,7 +161,7 @@ class GesturesLua(Case):
 
     def test_nothing_leaves_the_direction_free(self):
         lines = self.do('slate(3, { left = "none", right = "none", up = "none", pinchout = "desktop" })')
-        self.assertEqual(self.made(lines), ["down", "pinchin", "pinchout"])
+        self.assertEqual(self.made(lines), ["down", "pinchout", "pinchin"])
         lines = self.do('slate(3, { up = "none", down = "none", pinchin = "none", pinchout = "none" })')
         self.assertEqual(self.made(lines), ["horizontal"])
         # ...and taken away when it becomes "Nothing"
@@ -223,8 +226,9 @@ class GesturesLua(Case):
                                           ("launcher", "launcher open", "slate-launcher")):
                 with self.subTest(direction=direction, action=action):
                     setup = f'slate(3, {{ {direction} = "{action}" }}); '
-                    self.assertEqual(self.commands(self.do(setup + f'swipe(3, "{direction}")')), [opened])
-                    self.assertEqual(self.commands(self.do(f'OPEN["{layer}"] = true; ' + setup + f'swipe(3, "{direction}")')),
+                    hypr = HYPRLAND_DIRECTION.get(direction, direction)
+                    self.assertEqual(self.commands(self.do(setup + f'swipe(3, "{hypr}")')), [opened])
+                    self.assertEqual(self.commands(self.do(f'OPEN["{layer}"] = true; ' + setup + f'swipe(3, "{hypr}")')),
                                      [opened.replace("open", "close")])
 
     def test_any_gesture_closes_what_is_open_first(self):

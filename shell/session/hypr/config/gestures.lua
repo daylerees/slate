@@ -122,6 +122,10 @@ local CLASHES = {
     pinchin    = { "pinchin", "pinch" },
     pinchout   = { "pinchout", "pinch" },
 }
+-- Slate's pinch in is fingers coming together; Hyprland names pinches by zoom, so its "pinchin" is
+-- fingers spreading apart. Anything handed to Hyprland (or compared with yours) goes through this.
+local HYPR_DIRECTION = { pinchin = "pinchout", pinchout = "pinchin" }
+local function hyprDirection(d) return HYPR_DIRECTION[d] or d end
 local function clashes(fingers, direction)
     for _, d in ipairs(CLASHES[direction]) do
         if theirs[fingers] and theirs[fingers][d] then return true end
@@ -150,7 +154,7 @@ function setGestures(t)
         local both = a.left == "workspace" and a.right == "workspace" and not clashes(fingers, "horizontal")
         if both then wanted[#wanted + 1] = { "horizontal", "workspace" } end
         for _, d in ipairs(DIRECTIONS) do
-            if not (both and SIDEWAYS[d]) and a[d] ~= "none" and not clashes(fingers, d) then
+            if not (both and SIDEWAYS[d]) and a[d] ~= "none" and not clashes(fingers, hyprDirection(d)) then
                 wanted[#wanted + 1] = { d, a[d] == "workspace" and "workspace" or "slate" }
             end
         end
@@ -169,7 +173,7 @@ function setGestures(t)
     for _, w in ipairs(wanted) do
         local d = w[1]
         local action = w[2] == "workspace" and "workspace" or function() gesture(d) end
-        SLATE_HL_GESTURE({ fingers = fingers, direction = d, action = action })
-        made[#made + 1] = { fingers = fingers, direction = d }
+        SLATE_HL_GESTURE({ fingers = fingers, direction = hyprDirection(d), action = action })
+        made[#made + 1] = { fingers = fingers, direction = hyprDirection(d) }
     end
 end
