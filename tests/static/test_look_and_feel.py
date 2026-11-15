@@ -56,8 +56,7 @@ class Questions(Case):
     def test_updates_confirm_in_slates_confirmation_window(self):
         """Updating over your changes and going back are asked with win.ask (PowerConfirm), not
         by a second click on the same button."""
-        src = slate.read("shell", "SettingsWindow.qml")
-        page = src[src.index("id: updatesPage"):src.index("id: webcamPage")]
+        page = slate.read("shell", "settings", "pages", "UpdatesPage.qml")
         self.assertNotIn("confirmUpdate", page)
         self.assertNotIn("confirmRevert", page)
         self.assertNotRegex(page, r"(?i)click again")

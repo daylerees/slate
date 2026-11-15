@@ -63,7 +63,26 @@ shell.qml               root: creates everything below, plus the dock itself
 │  ├─ EdgePicker.qml      the small screen to pick the bar's or the dock's edge
 │  ├─ HotCornerPicker.qml the small screen showing what each hot corner does
 │  ├─ SwitchBoard.qml     Settings → Control Centre: the picture of the panel to drag its quick switches about
-│  └─ FolderSwatch.qml    a small folder in a colour (Settings → Icons → Folder colour)
+│  ├─ FolderSwatch.qml    a small folder in a colour (Settings → Icons → Folder colour)
+│  └─ settings/           the rest of Settings, a file each (the window keeps the page map, the sidebar,
+│     │                   search, the dropdown layer and the questions). Every file reaches the window as
+│     │                   SettingsHost.win (SettingsHost.qml, which the window sets as it's built)
+│     ├─ SettingsHost.qml   singleton: the Settings window, for the files below
+│     ├─ Building blocks (shell/settings/): SettingRow.qml (label, description and a control; says what it
+│     │  needs), Group.qml and GroupLabel.qml (a card of rows under its heading), PageTitle.qml,
+│     │  IntroText.qml, Footnote.qml, Separator.qml, IconButton.qml, Button.qml, FieldFrame.qml,
+│     │  PopupShadow.qml, FirstLook.qml (a process a page runs to see how things stand),
+│     │  ToggleSetting.qml and SettingToggle.qml (the switches), ValueSlider.qml, SoundSetting.qml,
+│     │  DropdownSetting.qml, FontSetting.qml, ChoiceSetting.qml, SearchPicker.qml, ListItemRow.qml,
+│     │  ThemePacks.qml, WallTile.qml (a wallpaper's thumbnail)
+│     └─ pages/           one file per page, named for it (shell/settings/pages/): OverviewPage.qml,
+│        GeneralPage.qml, AppearancePage.qml, WallpaperPage.qml, IconsPage.qml, AppThemingPage.qml,
+│        BarPage.qml, ControlPage.qml, DockPage.qml, LauncherPage.qml, SpacesPage.qml,
+│        DisplaysPage.qml, InputPage.qml, SoundPage.qml, PowerPage.qml, ShortcutsPage.qml,
+│        AppsPage.qml, StartupPage.qml, DateTimePage.qml, ScreenshotsPage.qml, WindowsPage.qml,
+│        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
+│        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
+│        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
@@ -90,7 +109,7 @@ Config.qml              singleton: settings.json + theme helpers (accent, tint()
 SettingsData.qml        every setting and its default: Config keeps one tied to settings.json and one
                         untouched, for Restore defaults
 SettingsIndex.qml       singleton: every setting, for searching (All Settings and the launcher): a list
-                        kept by hand plus what scripts/settings-index.py reads from SettingsWindow.qml
+                        kept by hand plus what scripts/settings-index.py reads from SettingsWindow.qml and its pages
 ClickTap.qml, ClickArea.qml  TapHandler / MouseArea that also play the click (Settings → Sound)
 HoverFill.qml           a control's own fill giving way to the muted hover, cross-faded as layers
 ScrollShade.qml         the soft shadow along the top or bottom edge of a scrolling list
@@ -156,7 +175,7 @@ scripts/thumbnails.py         small pictures of images from the shared thumbnail
                               (~/.cache/thumbnails), made where missing: the wallpaper switcher's cards
 scripts/image-sizes.py        each image's pixel size in a folder, so Settings → Appearance can hide ones too
                               small to be wallpapers
-scripts/settings-index.py     lists every setting in SettingsWindow.qml as JSON, for SettingsIndex.qml's search
+scripts/settings-index.py     lists every setting in Settings (SettingsWindow.qml and settings/pages/) as JSON, for SettingsIndex.qml's search
 scripts/hypr-options.py       Hyprland options' current values as JSON, so Settings can show what's in
                               use for anything not set there
 scripts/xkb-layouts.py        keyboard layouts and their variants as JSON, from xkb's own list (Settings)

@@ -28,12 +28,13 @@ def settings_window():
 
 
 def settings_page_sources():
-    """Each Settings page's own QML: {page id: the text of its `Component { id: <name>Page`}."""
+    """Each Settings page's own QML: {page id: the text of its file in shell/settings/pages/},
+    found through the window's `Component { id: <name>Page; <Type> {} }` for it."""
     src = settings_window()
     block = js_object_block(src, src.index("sourceComponent: ({"))
     pages = {comp: page for page, comp in re.findall(r"(\w+):\s*(\w+Page)\b", block)}
-    parts = re.split(r"Component \{\n\s*id:\s*(\w+Page)\s*\n", src)
-    return {pages[comp]: body for comp, body in zip(parts[1::2], parts[2::2]) if comp in pages}
+    types = dict(re.findall(r"^    Component \{ id: (\w+Page); (\w+) \{\} \}$", src, re.M))
+    return {pages[comp]: slate.read("shell", "settings", "pages", typ + ".qml") for comp, typ in types.items() if comp in pages}
 
 
 def curated_search_entries():

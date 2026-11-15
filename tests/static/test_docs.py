@@ -182,6 +182,11 @@ def shipped_files():
     for f in sorted(os.listdir(slate.SHELL)):
         if f.endswith((".qml", ".js")):
             out.append((f, "shell/" + f))
+    # Settings' building blocks and pages: a file each, listed by name
+    for folder in ("settings", os.path.join("settings", "pages")):
+        for f in sorted(os.listdir(os.path.join(slate.SHELL, folder))):
+            if f.endswith(".qml"):
+                out.append((f, f"shell/{folder}/{f}"))
     for folder in ("bin", "scripts", "panels"):
         for f in sorted(os.listdir(os.path.join(slate.SHELL, folder))):
             if os.path.isfile(os.path.join(slate.SHELL, folder, f)):
