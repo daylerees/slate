@@ -489,7 +489,10 @@ instead, made mode 0700, never a fixed name in `/tmp`.
   Super+A notifications; Super+Alt+C power; Super+Z settings; Super+L lock; media,
   volume, brightness and keyboard-backlight keys → `osd`.
 - `animations.lua` — `fadeTo(dispatcher)` (crossfade) and `instantTo(dispatcher)` used
-  when switching from a Slate overlay, so the switch starts from that screen.
+  when switching from a Slate overlay, so the switch starts from that screen;
+  `switchWorkspace(dispatcher, from, to)` for Super+Left/Right (`cycleWorkspace`) and the bar's
+  dots (`goToWorkspace(id)`, binds.lua), which slides the windows away (`slideAwayTo`) to an
+  empty workspace or from one with a floating window.
 - `workspaces.lua` — `newWorkspace(movingAddr)` (the number after the last workspace with
   windows: Super+W, Super+Return in the launcher) and `besideWorkspace(dir)` for "open on a
   new workspace left/right".

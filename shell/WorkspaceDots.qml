@@ -13,6 +13,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 
 Item {
     id: wd
@@ -44,6 +45,12 @@ Item {
             if (c && c.visible && c.reach.contains(c.reach.mapFromItem(null, x, y))) return i;
         }
         return -1;
+    }
+    // Go to dot i's workspace, with the same animation as Super+Left/Right (goToWorkspace,
+    // binds.lua: to an empty workspace the windows slide away rather than fading where they are)
+    function go(i) {
+        const ws = spaces && i >= 0 && i < spaces.length ? spaces[i] : null;
+        if (ws) Hyprland.dispatch(`function() goToWorkspace(${ws.id}) end`);
     }
     // The dot itself (for something to point at it: the menu bar's label)
     function dotItem(i) { return i >= 0 && i < dotsRep.count ? dotsRep.itemAt(i) : null; }
@@ -152,7 +159,7 @@ Item {
                 ClickArea {
                     anchors.fill: parent
                     enabled: wd.interactive && cell.seen > 0.5
-                    onClicked: cell.modelData.activate()
+                    onClicked: wd.go(cell.index)
                 }
             }
             readonly property alias reach: dotReach

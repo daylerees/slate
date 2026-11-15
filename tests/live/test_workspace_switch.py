@@ -1,5 +1,6 @@
 """Switching workspace with the slide (Super+Left/Right): the desktop never shows between the
 workspace leaving and the one arriving, and windows are square while they move."""
+import json
 import os
 import tempfile
 import time
@@ -301,34 +302,40 @@ class FloatingSlides(SplitSlides):
                                    f'hl.dispatch(hl.dsp.window.move({{ x = {x}, y = {y}, window = "{win}" }})) end')
         self.laid_out()
 
-    def still_there(self, im):
-        """How much of the floating window's middle row is it, where it was before the switch."""
-        x, y, w, h = self.FLOAT
-        red = lambda p: p[0] > 60 and p[0] > 2 * max(p[1], p[2])
+    def still_there(self, im, where=None, lead=0):
+        """How much of a window's middle row is it (the floating one's, by default: red, as
+        colour `lead` leads), where it was before the switch."""
+        x, y, w, h = where or self.FLOAT
+        coloured = lambda p: p[lead] > 60 and p[lead] > 2 * max(p[i] for i in range(3) if i != lead)
         xs = range(x + 20, x + w - 20, 4)
-        return sum(1 for px in xs if red(im.getpixel((px, y + h // 2)))) / len(xs)
+        return sum(1 for px in xs if coloured(im.getpixel((px, y + h // 2)))) / len(xs)
 
-    def slowed_slide(self, start, switch):
-        """A picture partway through the switch `switch` (Lua) makes from workspace `start`,
-        slowed ten times, and how much of the floating window is still where it was in it."""
+    def slowed_slide(self, start, switch, where=None, lead=0):
+        """A picture partway through the switch `switch` makes from workspace `start` (Lua, or a
+        Python function that makes it), slowed ten times, and how much of a window (still_there)
+        is still where it was in it."""
         self.go_to_workspace(start)
         self.sliding_back()
         self.s.hyprctl("eval", 'hl.config({ animations = { enabled = true } }); SLATE_ANIM_SLOW = 10; setWorkspaceAnimation("slidefade")')
         self.slow_slide()
         d = tempfile.mkdtemp()
         before = Image.open(self.s.screenshot(os.path.join(d, "before.png"))).convert("RGB")
-        self.assertGreater(self.still_there(before), 0.9, "the floating window isn't where it was put")
-        self.s.hyprctl("dispatch", f"function() {switch} end")
+        self.assertGreater(self.still_there(before, where, lead), 0.9, "the window isn't where it was put")
+        if callable(switch):
+            switch()
+        else:
+            self.s.hyprctl("dispatch", f"function() {switch} end")
         self.s.settle(1.5)                       # (partway through the slowed slide, about 5 s)
         mid = Image.open(self.s.screenshot(os.path.join(d, "mid.png"))).convert("RGB")
         self.s.settle(4.0)                       # (the slide's end: Hyprland doesn't say when it's over)
-        return mid, self.still_there(mid)
+        return mid, self.still_there(mid, where, lead)
 
-    def setup_workspaces(self):
-        """A tiled window with a floating one over it on workspace 1, a tiled one on 2."""
+    def setup_workspaces(self, keep_empty=False):
+        """A tiled window with a floating one over it on workspace 1, a tiled one on 2 (and an
+        empty one after them, with keep_empty)."""
         self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); SLATE_ANIM_SLOW = nil; setWorkspaceAnimation("slidefade")'))
         self.keep_setting("keepEmptyWorkspace")
-        self.config("keepEmptyWorkspace", "false")
+        self.config("keepEmptyWorkspace", "true" if keep_empty else "false")
         self.close_windows()
         self.coloured(1, "other")
         self.floating(1)
@@ -347,3 +354,37 @@ class FloatingSlides(SplitSlides):
                     mid.save(os.path.join(self.s.out, f"floating-{what}.png"))
                 self.assertLess(left, 0.5, f"partway through, the floating window was still where it was ({left:.0%} of it)")
 
+
+
+class BarDotSlides(FloatingSlides):
+    """A click on a workspace dot on the menu bar switches as Super+Left/Right do. Clicking the
+    empty last one, the windows stayed where they were and faded at the end of the switch (the
+    workspace left is held solid until the new one has covered it, and nothing came in), where
+    the keys slide them away (Dayle, 2026-11-15)."""
+    test_a_floating_window_leaves_with_its_workspace = None
+    TILED = (100, 300, 1240, 300)         # (a strip across the middle, which a tiled window fills)
+
+    def click_dot(self, ws):
+        """A click on workspace ws's dot, as a real one goes (Bar.qml testPoint)."""
+        st = self.s.state()["bar"]
+        ids = sorted(w["id"] for w in self.s.hyprctl("workspaces", json_out=True) if w["id"] > 0)
+        self.assertEqual(st["dots"]["count"], len(ids), f"the bar doesn't have a dot for each workspace: {st['dots']}")
+        dots = st["line"]["workspaces"]
+        i = ids.index(ws)
+        got = json.loads(self.ipc("test", "barPoint", str(int(dots["x"] + 8 + 7 + i * 19)), str(int(dots["y"] + dots["h"] / 2)), "click"))
+        self.ipc("test", "barPoint", "-1", "-1", "leave")
+        self.assertEqual((got["thing"], got["dot"]), ("workspaces", i), got)
+
+    def test_a_dot_slides_as_the_keys_do(self):
+        self.setup_workspaces(keep_empty=True)
+        self.wait(lambda st: st["bar"]["dots"]["count"] == 3, "three dots on the bar (the last workspace empty)", timeout=10)
+        # The empty last workspace: the tiled window slides away
+        mid, left = self.slowed_slide(2, lambda: self.click_dot(3), self.TILED, lead=1)
+        if left > 0.5:
+            mid.save(os.path.join(self.s.out, "dot-to-empty.png"))
+        self.assertLess(left, 0.5, f"partway to the empty workspace, the window was still where it was ({left:.0%} of it)")
+        # From a workspace with a floating window: it leaves with its workspace
+        mid, left = self.slowed_slide(1, lambda: self.click_dot(2))
+        if left > 0.5:
+            mid.save(os.path.join(self.s.out, "dot-from-floating.png"))
+        self.assertLess(left, 0.5, f"partway through, the floating window was still where it was ({left:.0%} of it)")

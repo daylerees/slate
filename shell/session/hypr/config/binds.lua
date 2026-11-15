@@ -668,6 +668,15 @@ function cycleWorkspace(step)
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's
 end
 
+-- Go to workspace id as Super+Left/Right do (the menu bar's dots): the same animation, sliding
+-- the windows away to an empty workspace, and in the direction of the numbers (never wrapping)
+function goToWorkspace(id)
+    local current = hl.get_active_workspace()
+    local go = hl.dsp.focus({ workspace = id })
+    hl.config({ animations = { workspace_wraparound = false } })
+    if current and switchWorkspace then switchWorkspace(go, current.id, id) else hl.dispatch(go) end
+end
+
 -- (Slate's set)
 if SLATE_KEYS then
     -- Focus a monitor

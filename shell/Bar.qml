@@ -199,7 +199,7 @@ PanelWindow {
             pressStarted();                 // (as a real press on the bar does)
             if (name !== "") {
                 barLabel.dismiss();         // (as a real press does: Reach)
-                if (name === "workspaces") { if (dot >= 0) wsRow.spaces[dot].activate(); }
+                if (name === "workspaces") { if (dot >= 0) wsRow.go(dot); }
                 else left.things[name].clicked();
             }
             pressEnded();
