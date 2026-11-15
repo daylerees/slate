@@ -382,6 +382,9 @@ ShellRoot {
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
         function dockDrop(): void { win.testDrop(); }
+        function dockDividerDrag(px: real): void { win.testDividerDrag(px); }
+        function dockDividerDrop(): void { win.testDividerDrop(); }
+        function dockDividerHover(on: bool): void { win.testDividerHover(on); }
         // Drag an app out of More's grid (open: dock more) as the pointer would, held over slot i
         // of the dock (as the slots are now; -1: off its start), `up` pixels up from its middle:
         // handed to the grid's own carrying (win.carryFromMore) as a place on the screen (the

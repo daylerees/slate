@@ -70,12 +70,18 @@ PanelWindow {
     // wouldn't fit along the screen's edge (a short screen, a side dock, lots of apps open),
     // with room left at the ends for the dock's padding and the magnified icons. Each slot
     // counts at its real width in icons (what's playing is several, a divider a fraction)
+    // The icon size asked for: Settings' (Dock → Icon size), or while a divider is being dragged
+    // the size the drag has reached (kept here, and saved only when it's let go, so the file
+    // isn't rewritten at every pixel)
+    property real resizeSize: -1                            // -1: no drag
+    readonly property bool resizing: resizeSize >= 0
+    readonly property real iconSetting: resizing ? resizeSize : Config.s.dockIconSize
     readonly property real iconsLong: {
         let n = 0;
         for (let i = 0; i < count; i++) n += slotWidth(i);
         return n;
     }
-    readonly property real base: Math.max(16, Math.min(Config.s.dockIconSize,
+    readonly property real base: Math.max(16, Math.min(iconSetting,
         (roomLength - 48 - padding * 2 - (count - 1) * spacing) / Math.max(1, iconsLong)))
     // What pointing at the dock does (Settings → Dock → Hover effect): magnify, tilt, both
     // ("both": magnify and tilt), fade, fade and magnify ("fademagnify"), glow, glow and
@@ -309,7 +315,7 @@ PanelWindow {
     // first: the dock lists them in the order they opened), and only then, as a last
     // resort, your pinned apps (the first pinned first). The Apps button, Downloads and the
     // Waste Basket stay. Worked out from the apps and the room, never from base or slots
-    readonly property real foldFloor: Math.min(24, Config.s.dockIconSize)
+    readonly property real foldFloor: Math.min(24, iconSetting)
     function iconsIn(list, compact) {
         let n = 0;
         for (const o of list) n += o.kind === "media" ? (vertical || compact ? 1 : mediaArt ? 3.2 : 2.4) : o.kind === "divider" ? dividerWide : 1;
@@ -555,7 +561,8 @@ PanelWindow {
         pointerX = sx - (strip.width - restWidth) / 2;
     }
     // Magnification stays frozen while the right-click menu is open
-    property real hover: (mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag || testHover ? 1 : 0
+    // (and not while a divider is dragged: the icons hold still, with no previews, as it resizes)
+    property real hover: !resizing && ((mouse.containsMouse && shown) || appMenu.visible || dragKey !== "" || fileDrag || testHover) ? 1 : 0
     property bool testHover: false      // the test suite pointing at a slot (ipc call test dockHover <slot>)
     Behavior on hover { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
 
@@ -1674,6 +1681,62 @@ PanelWindow {
             win.clickItem(win.hoveredIndex, m.button === Qt.RightButton);
         }
     }
+    // The dock's dividers are a handle: drag one away from the screen's edge to make the icons
+    // larger, towards it to make them smaller (Settings → Dock → Icon size, saved on letting go).
+    // Over one the pointer turns into a resize arrow, once it's rested there a moment. Silent: a
+    // drag, not a click. A press anywhere else falls through to `mouse` below
+    MouseArea {
+        id: resizer
+        z: 10.5
+        anchors.fill: maskBox
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton
+        cursorShape: win.dividerCursor ? (win.vertical ? Qt.SizeHorCursor : Qt.SizeVerCursor) : Qt.ArrowCursor
+        property real startCross: 0
+        property real startSize: 0
+        // Where the pointer is across the dock, on the screen (moves with the pointer, not the window)
+        function cross(m) {
+            const p = win.toScreen(resizer.mapToItem(win.contentItem, m.x, m.y));
+            return win.vertical ? p.x : p.y;
+        }
+        // Is the pointer on a divider (a few pixels either side too, to make it easy to grab)?
+        function overDivider(m) {
+            const p = strip.mapFromItem(resizer, m.x, m.y);
+            if (p.y < bg.y || p.y > bg.y + bg.height) return false;
+            let start = row.x;
+            for (let i = 0; i < win.count; i++) {
+                const end = start + win.base * win.slotWidth(i) * win.scaleAt(i);
+                const wide = win.isDivider(i) ? 6 : 0;
+                if (p.x >= start - wide && p.x <= end + wide) return win.isDivider(i);
+                start = end + win.spacing;
+            }
+            return false;
+        }
+        Timer { id: rest; interval: 300; onTriggered: win.dividerCursor = true }
+        function startRest() { rest.restart(); }
+        function stopRest() { rest.stop(); }
+        onPositionChanged: m => {
+            if (pressed) {
+                const grow = win.edge === "bottom" || win.edge === "right" ? startCross - cross(m) : cross(m) - startCross;
+                win.resizeSize = Math.max(28, Math.min(64, Math.round(startSize + grow)));
+            } else if (overDivider(m)) {
+                if (!win.dividerCursor) rest.restart();      // (still moving: not yet at rest)
+            } else {
+                rest.stop();
+                win.dividerCursor = false;
+            }
+        }
+        onExited: { if (!pressed) { rest.stop(); win.dividerCursor = false; } }
+        onPressed: m => {
+            if (!overDivider(m)) { m.accepted = false; return; }
+            startCross = cross(m);
+            startSize = Config.s.dockIconSize;
+            win.resizeSize = startSize;
+            win.dividerCursor = true;
+        }
+        onReleased: win.endResize()
+        onCanceled: win.endResize()
+    }
     // Files dragged over the dock (from a file manager): it shows and magnifies as for the
     // pointer, and they're dropped on the slot under them (see win.dropFiles)
     DropArea {
@@ -1690,6 +1753,14 @@ PanelWindow {
             if (d.hasUrls && win.dropFiles(win.hoveredIndex, d.urls)) d.acceptProposedAction();
             win.fileDrag = false;
         }
+    }
+    property bool dividerCursor: false       // the pointer has rested on a divider (or is dragging it)
+    function endResize() {
+        if (!resizing) return;
+        const size = resizeSize;
+        if (size !== Config.s.dockIconSize) Config.s.dockIconSize = size;
+        resizeSize = -1;
+        dividerCursor = false;
     }
     // Click on dock item i (0 = the apps button)
     // ---- Launching: the icon bounces until the app's first window shows -----
@@ -2625,6 +2696,18 @@ PanelWindow {
         win.dragScreen = win.toScreen(strip.mapToItem(win.contentItem, pt.x, pt.y));
         win.dragTo(pt);
     }
+    // Drag a divider as the pointer would: `px` pixels away from the screen's edge (negative:
+    // towards it), from the icon size Settings has; testDividerDrop lets go (saves)
+    function testDividerDrag(px) {
+        if (!resizing) resizeSize = Config.s.dockIconSize;
+        resizeSize = Math.max(28, Math.min(64, Math.round(Config.s.dockIconSize + px)));
+        dividerCursor = true;
+    }
+    function testDividerDrop() { endResize(); }
+    // The pointer resting on a divider (or leaving it): the resize cursor shows after a pause
+    function testDividerHover(on) {
+        if (!on) { resizer.stopRest(); dividerCursor = false; } else resizer.startRest();
+    }
     function testDrop() { win.endDrag(); win.testHover = false; }
     // Drag an app out of More's grid (open: dock more), held over slot i of the dock
     function testDragMore(key, i, up) {
@@ -2671,6 +2754,7 @@ PanelWindow {
             // scrollbar starts (menu coordinates), and how strong each shade is now
             grid: appMenu.gridFlick ? appMenu.gridState() : null,
             hoverEffect: win.hoverEffect, made: win.madeOf,
+            resizing: win.resizing, dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
             fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
             glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
             lift: win.slots.map(x => Math.round(win.liftAt(x.at))),

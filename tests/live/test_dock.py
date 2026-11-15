@@ -82,6 +82,34 @@ class Dock(LiveCase):
         self.wait(lambda st: st["dock"]["menu"] == "other", "the Downloads grid")
         self.ipc("dock", "closeMenu")
 
+    def test_divider_drag_resizes_the_dock(self):
+        """Dragging a divider away from the screen's edge makes the icons larger (towards it,
+        smaller), within Settings' range, saved only when let go; the resize cursor shows over a
+        divider only after the pointer has rested there a moment."""
+        self.keep_setting("dockIconSize")
+        self.config("dockIconSize", "40")
+        self.addCleanup(lambda: (self.ipc("test", "dockDividerHover", "false"), self.ipc("test", "dockDividerDrop")))
+        # Resting on a divider: the arrow at first, the resize cursor after the pause
+        self.ipc("test", "dockDividerHover", "true")
+        self.assertEqual(self.s.state()["dock"]["dividerCursor"], "arrow")
+        self.wait(lambda st: st["dock"]["dividerCursor"] in ("vertical", "horizontal"), "the resize cursor after a pause")
+        self.ipc("test", "dockDividerHover", "false")
+        self.assertEqual(self.s.state()["dock"]["dividerCursor"], "arrow")
+        # Dragging: the icons follow live, the setting only when let go
+        self.ipc("test", "dockDividerDrag", "10")
+        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["base"] >= 49, "the icons larger as it's dragged")
+        self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
+        self.ipc("test", "dockDividerDrop")
+        self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
+        self.assertEqual(self.ipc("config", "get", "dockIconSize"), "50")
+        # Clamped to the range Settings has
+        self.ipc("test", "dockDividerDrag", "500")
+        self.ipc("test", "dockDividerDrop")
+        self.wait(lambda st: self.ipc("config", "get", "dockIconSize") == "64", "the largest size")
+        self.ipc("test", "dockDividerDrag", "-500")
+        self.ipc("test", "dockDividerDrop")
+        self.wait(lambda st: self.ipc("config", "get", "dockIconSize") == "28", "the smallest size")
+
     def test_preview_delay_and_switch(self):
         """Settings → Dock: Window previews (a switch), and how long to rest on an app before
         they show, down to Instant. (0 used to mean off: now it's at once, and the switch is off.)"""
