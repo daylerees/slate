@@ -147,6 +147,10 @@ HyprlandLook.qml        window borders, gaps, window mode and title bar colours 
 AppTheming.qml          other apps follow the theme: folder colour, icon theme, App Theming and its notices
 ReloadNotices.qml       Slate's own notices for a reload that worked or failed
 DockBacking.qml         the dock's glass behind a magnified tile, where it rises above the dock
+DockPreviews.qml        the dock's window previews: an app's windows as live pictures or titles, "+N" for the rest
+DockGrid.qml            the scrolling grid in a dock menu (More's apps, Downloads' files): shades, scrollbar, wheel
+DockButton.qml          the dock's own buttons (launcher, More, Downloads, Waste Basket): a symbol on an icon tile
+DockBadge.qml           an app's badge on the dock: its unread count or "!" as a pill on the icon's corner
 Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
                         top of a shape; only shows with glass on
 DockGlow.qml            the dock's Glow hover effect: a ring and soft glow in the icon's colour

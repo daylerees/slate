@@ -645,8 +645,9 @@ class Pointer(Case):
         m = re.search(r"ClickArea \{\s*id: mouse\b(.*?)\n    \}", src, re.S)
         self.assertTrue(m, "the dock's pointer area (ClickArea id: mouse) has moved")
         self.assertIn("cursorShape: Qt.ArrowCursor", m.group(1))
+        previews = slate.read("shell", "DockPreviews.qml")
         for card in ("liveCard", "titleCard"):
-            self.assertRegex(src, r"ClickTap \{ hand: false; onTapped: \{ %s\." % card)
+            self.assertRegex(previews, r"ClickTap \{ hand: false; onTapped: \{ %s\." % card)
 
     def test_hand_is_the_default(self):
         self.assertRegex(slate.read("shell", "ClickTap.qml"), r"property bool hand: true")

@@ -1,7 +1,9 @@
 // The dock: a macOS-style dock on the focused screen (shell.qml's header says what it does).
-// Everything in it is private to this file; shell.qml hands in the few pieces of Slate it
-// reaches (the properties just under `id`), and the test suite's hooks are the test… functions
-// at the end, which shell.qml's `test` IPC target calls.
+// Everything in it is private to this file and its own pieces (DockPreviews, DockGrid,
+// DockButton, DockBadge, DockBacking, DockGlow; those that need the dock are handed it as
+// `dock`); shell.qml hands in the few pieces of Slate it reaches (the properties just under
+// `id`), and the test suite's hooks are the test… functions at the end, which shell.qml's
+// `test` IPC target calls.
 import QtQuick
 import Qt.labs.folderlistmodel
 import QtQuick.Effects
@@ -1039,223 +1041,10 @@ PanelWindow {
         }
     }
 
-    PanelWindow {
+    DockPreviews {
         id: previewPop
-        screen: win.screen
-        property real atX: 0          // by the icon, just off the dock (screen coordinates)
-        property real atY: 0
-        // Open for this app; fading in and out (the last app's windows stay on it while it fades)
-        readonly property bool wanted: !!win.previewApp && win.previewApp.windows.length > 0 && win.dragKey === ""
-        property var shownApp: null
-        onWantedChanged: if (wanted) shownApp = win.previewApp
-        Connections { target: win; function onPreviewAppChanged() { if (previewPop.wanted) previewPop.shownApp = win.previewApp; } }
-        readonly property var wins: shownApp ? shownApp.windows : []
-        property real fade: wanted ? 1 : 0
-        Behavior on fade { NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }
-        onFadeChanged: if (fade === 0 && !wanted) shownApp = null
-        visible: wanted || fade > 0
-        anchors { top: true; bottom: true; left: true; right: true }
-        exclusionMode: ExclusionMode.Ignore
-        color: "transparent"
-        WlrLayershell.namespace: "slate-dock-previews"
-        WlrLayershell.layer: WlrLayer.Overlay
-        // Only the panel takes the pointer, and nothing once it's going
-        mask: wanted ? boxRegion : noRegion
-        Region { id: boxRegion; item: previewBox }
-        Region { id: noRegion }
-
-        // A card's size: live pictures are wider than title-only cards
-        readonly property real cardW: win.previewMode === "live" ? 220 : 200
-        readonly property real cardH: win.previewMode === "live" ? 160 : 48
-        // At most six cards, and never more than fit beside the icon (along the screen for
-        // live pictures, from the icon to the screen's far side when the dock's on one; down
-        // the screen for titles). An app with more windows than that shows as many as fit
-        // with room for one more card, which says how many it has besides and opens the
-        // app's menu, where every one of its windows is listed
-        readonly property int cap: 6
-        readonly property real moreW: 110            // the live "+N" card: narrower than a picture
-        readonly property bool live: win.previewMode === "live"
-        readonly property real room: live
-            ? (win.edge === "left" ? width - atX - 8 : win.edge === "right" ? atX - 8 : width - 16) - 16
-            : height - 16 - 12
-        readonly property bool capped: wins.length > cap
-            || (live ? wins.length * (cardW + 8) - 8 : wins.length * (cardH + 4) - 4) > room
-        // How many windows get a card, the "+N" card standing in for the rest
-        readonly property int fitCount: !capped ? wins.length
-            : Math.max(1, Math.min(cap - 1, live ? Math.floor((room - moreW) / (cardW + 8))
-                                                 : Math.floor((room + 4) / (cardH + 4)) - 1))
-        // The first ones, in the dock's order, the window you're in always among them
-        readonly property var shownWins: {
-            if (!capped) return wins;
-            const s = wins.slice(0, fitCount);
-            const now = wins.find(w => w.activated);
-            if (now && !s.includes(now)) s[s.length - 1] = now;
-            return s;
-        }
-        readonly property int moreCount: wins.length - shownWins.length
-
-        Rectangle {
-            id: previewBox
-            width: previewPop.live ? previewRow.implicitWidth + 16 : previewPop.cardW + 16
-            height: previewPop.live ? previewPop.cardH + 16 : titleCol.implicitHeight + 12
-            x: Math.max(8, Math.min(previewPop.width - width - 8,
-                win.edge === "left" ? previewPop.atX : win.edge === "right" ? previewPop.atX - width : previewPop.atX - width / 2))
-            y: Math.max(8, Math.min(previewPop.height - height - 8,
-                win.edge === "bottom" ? previewPop.atY - height : win.edge === "top" ? previewPop.atY : previewPop.atY - height / 2))
-            radius: Config.corner(12)
-            color: win.bgColor
-            opacity: previewPop.fade
-            Shadow {}                // raised: Slate's shadow, with glass too
-            // Grows out of the icon as it fades in, and back into it as it fades out
-            transform: Scale {
-                origin.x: Math.max(0, Math.min(previewBox.width, previewPop.atX - previewBox.x))
-                origin.y: Math.max(0, Math.min(previewBox.height, previewPop.atY - previewBox.y))
-                xScale: 0.82 + 0.18 * previewPop.fade
-                yScale: xScale
-            }
-            Gloss { radius: parent.radius }   // glass: a sheen
-            HoverHandler {
-                onHoveredChanged: { win.previewHeld = hovered; if (!hovered) previewLeave.restart(); }
-            }
-
-            // Live: the windows side by side, then "+N" for the rest
-            Row {
-                id: previewRow
-                visible: previewPop.live
-                x: 8; y: 8
-                spacing: 8
-                Repeater {
-                    model: previewPop.live ? previewPop.shownWins : []
-                    delegate: Rectangle {
-                        id: liveCard
-                        required property var modelData
-                        width: previewPop.cardW; height: previewPop.cardH
-                        radius: Config.corner(8)
-                        color: liveHover.hovered ? Config.hover : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                        Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
-                        WindowPreview {
-                            id: liveShot
-                            readonly property real ratio: sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 10
-                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
-                            width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
-                            height: width / ratio
-                            window: previewPop.visible ? liveCard.modelData : null
-                            running: previewPop.wanted          // (still while it fades out)
-                            // Rounded, and brightened back if Hyprland dims it (it isn't focused)
-                            layer.enabled: true
-                            layer.effect: PreviewShape { radius: Config.corner(6); gain: Config.undimGain(liveCard.modelData.activated, liveCard.modelData.appId) }
-                        }
-                        Text {
-                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
-                            horizontalAlignment: Text.AlignHCenter
-                            textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
-                            text: liveCard.modelData.title || ""
-                            elide: Text.ElideRight
-                            color: liveCard.modelData.activated ? win.activeDotColor : win.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                        }
-                        HoverHandler { id: liveHover }
-                        ClickTap { hand: false; onTapped: { liveCard.modelData.activate(); win.previewApp = null; } }
-                    }
-                }
-                // The rest: a card of the same shape (no sheen), "+N" where the picture would
-                // be, on the dock's own tile colour, and its caption below. Only says how many:
-                // not something to click (the app's right-click menu lists every window)
-                Rectangle {
-                    id: moreCard
-                    visible: previewPop.moreCount > 0
-                    width: previewPop.moreW; height: previewPop.cardH
-                    radius: Config.corner(8)
-                    color: "transparent"
-                    Rectangle {
-                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
-                        height: parent.height - 34
-                        radius: Config.corner(6)
-                        color: win.tileColor
-                        Text {
-                            anchors.centerIn: parent
-                            text: "+" + previewPop.moreCount
-                            color: win.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 22; font.weight: Font.Medium
-                        }
-                    }
-                    Text {
-                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 8; bottomMargin: 6 }
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "More windows"
-                        elide: Text.ElideRight
-                        color: win.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                    }
-                }
-            }
-
-            // Titles: the windows one above another, each with the app's icon, then a row
-            // for the rest in the same way
-            Column {
-                id: titleCol
-                visible: !previewPop.live
-                x: 6; y: 6
-                width: previewBox.width - 12
-                spacing: 4
-                Repeater {
-                    model: !previewPop.live ? previewPop.shownWins : []
-                    delegate: Rectangle {
-                        id: titleCard
-                        required property var modelData
-                        width: titleCol.width; height: previewPop.cardH
-                        radius: Config.corner(8)
-                        color: titleHover.hovered ? Config.hover : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
-                        Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
-                        AppTile {
-                            id: titleIcon
-                            anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: 28; height: 28
-                            app: win.previewApp ? (win.previewApp.entry ? win.previewApp.entry.id : win.previewApp.key) : ""
-                        }
-                        Text {
-                            anchors { left: titleIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                            textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
-                            text: titleCard.modelData.title || ""
-                            elide: Text.ElideRight
-                            color: titleCard.modelData.activated ? win.activeDotColor : win.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
-                        }
-                        HoverHandler { id: titleHover }
-                        ClickTap { hand: false; onTapped: { titleCard.modelData.activate(); win.previewApp = null; } }
-                    }
-                }
-                Rectangle {
-                    id: moreRow
-                    visible: !previewPop.live && previewPop.moreCount > 0
-                    width: titleCol.width; height: previewPop.cardH
-                    radius: Config.corner(8)
-                    color: "transparent"
-                    Rectangle {
-                        id: moreRowTile
-                        anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                        width: 28; height: 28
-                        radius: Config.corner(6)
-                        color: win.tileColor
-                        Text {
-                            anchors.centerIn: parent
-                            text: "+" + previewPop.moreCount
-                            color: win.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                        }
-                    }
-                    Text {
-                        anchors { left: moreRowTile.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                        text: "More windows"
-                        elide: Text.ElideRight
-                        color: win.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
-                    }
-                }
-            }
-        }
+        dock: win
+        onLeft: previewLeave.restart()
     }
 
     DesktopMenu {
@@ -1414,118 +1203,83 @@ PanelWindow {
         // dock to pin it there (win.pickFromMore)
         Component {
             id: moreGrid
-            Flickable {
-                id: moreScroll
-                width: appMenu.menuWidth - 16
-                height: Math.min(moreGridItems.height, 3 * 92)
-                contentHeight: moreGridItems.height
-                interactive: contentHeight > height
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-                SmoothWheel { flick: moreScroll }
-                readonly property Item cells: moreGridItems
-                readonly property Item topShade: moreTopShade
-                readonly property Item bottomShade: moreBottomShade
-                readonly property Item bar: moreBar
-                Component.onCompleted: appMenu.gridFlick = moreScroll
-                Component.onDestruction: if (appMenu.gridFlick === moreScroll) appMenu.gridFlick = null
-                // (over the cells only, the scrollbar beside them left clear)
-                ScrollShade { id: moreTopShade; z: 3; y: moreScroll.contentY; width: moreGridItems.width; cornerRadius: appMenu.gridCorner
-                              height: 28; depth: appMenu.gridShadeDepth; distance: moreScroll.contentY }
-                ScrollShade { id: moreBottomShade; z: 3; atBottom: true; y: moreScroll.contentY + moreScroll.height - height; width: moreGridItems.width
-                              height: 28; depth: appMenu.gridShadeDepth; cornerRadius: appMenu.gridCorner
-                              distance: moreScroll.contentHeight - moreScroll.height - moreScroll.contentY }
-                ThinScrollbar { id: moreBar; z: 3; flick: moreScroll; color: win.textColor; x: moreScroll.width - width; y: moreScroll.contentY; height: moreScroll.height }
-                Grid {
-                    id: moreGridItems
-                    columns: 4
-                    Repeater {
-                        model: appMenu.moreList
-                        delegate: Item {
-                            id: moreApp
-                            required property var modelData
-                            width: 88; height: 92
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: Config.corner(8)
-                                color: moreHover.hovered ? Config.hover : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+            DockGrid {
+                menu: appMenu; dock: win
+                model: appMenu.moreList
+                delegate: Item {
+                    id: moreApp
+                    required property var modelData
+                    width: 88; height: 92
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Config.corner(8)
+                        color: moreHover.hovered ? Config.hover : "transparent"
+                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                    }
+                    AppTile {
+                        id: moreIcon
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 8; width: 52; height: 52
+                        app: moreApp.modelData.key
+                    }
+                    // Its count, as on the dock
+                    DockBadge {
+                        info: win.badgeFor(moreApp.modelData)
+                        color: win.activeDotColor
+                        glossy: false
+                        height: 18; pad: 9; textSize: 11
+                        x: moreIcon.x + moreIcon.width - width * 0.75; y: moreIcon.y - height * 0.25
+                    }
+                    Text {
+                        id: moreName
+                        anchors { top: moreIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
+                        horizontalAlignment: Text.AlignHCenter
+                        textFormat: Text.PlainText        // never markup: an app's name
+                        text: moreApp.modelData.entry?.name ?? moreApp.modelData.key
+                        elide: Text.ElideRight
+                        color: win.textColor
+                        font.family: Config.s.fontFamily; font.pixelSize: 11
+                    }
+                    // Running: the dock's short bar under the name (the accent for the one you're in)
+                    Rectangle {
+                        readonly property bool focusedApp: moreApp.modelData.windows.some(w => w.activated)
+                        visible: moreApp.modelData.windows.length > 0
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: parent.height - 6
+                        width: 12; height: 3; radius: Config.corner(1.5)
+                        color: focusedApp ? win.activeDotColor : win.dotColor
+                    }
+                    HoverHandler { id: moreHover }
+                    // A click opens it; moved as far as starts a drag on the dock, it's
+                    // the dock's drag from then on. (A MouseArea, as the bar's pool
+                    // chips are: the click plays for a click, never at the end of a drag)
+                    MouseArea {
+                        anchors.fill: parent
+                        preventStealing: true          // (the grid doesn't scroll instead)
+                        property point pressedAt
+                        property bool dragged: false
+                        onPressed: m => { pressedAt = Qt.point(m.x, m.y); dragged = false; }
+                        onPositionChanged: m => {
+                            if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > win.dragThreshold) {
+                                dragged = true;
+                                win.pickFromMore(moreApp.modelData.key);
                             }
-                            AppTile {
-                                id: moreIcon
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: 8; width: 52; height: 52
-                                app: moreApp.modelData.key
-                            }
-                            // Its count, as on the dock
-                            Rectangle {
-                                readonly property var badge: win.badgeFor(moreApp.modelData)
-                                readonly property string text: badge.count > 99 ? "99+" : badge.count > 0 ? String(badge.count) : badge.urgent ? "!" : ""
-                                visible: text !== ""
-                                height: 18; width: Math.max(height, moreAppBadge.implicitWidth + 9)
-                                radius: Config.corner(height / 2)
-                                x: moreIcon.x + moreIcon.width - width * 0.75; y: moreIcon.y - height * 0.25
-                                color: win.activeDotColor
-                                Text {
-                                    id: moreAppBadge
-                                    anchors.centerIn: parent
-                                    text: parent.text
-                                    color: Config.tint("#12151a")
-                                    font.family: Config.s.fontFamily; font.weight: Font.DemiBold; font.pixelSize: 11
-                                }
-                            }
-                            Text {
-                                id: moreName
-                                anchors { top: moreIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
-                                horizontalAlignment: Text.AlignHCenter
-                                textFormat: Text.PlainText        // never markup: an app's name
-                                text: moreApp.modelData.entry?.name ?? moreApp.modelData.key
-                                elide: Text.ElideRight
-                                color: win.textColor
-                                font.family: Config.s.fontFamily; font.pixelSize: 11
-                            }
-                            // Running: the dock's short bar under the name (the accent for the one you're in)
-                            Rectangle {
-                                readonly property bool focusedApp: moreApp.modelData.windows.some(w => w.activated)
-                                visible: moreApp.modelData.windows.length > 0
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: parent.height - 6
-                                width: 12; height: 3; radius: Config.corner(1.5)
-                                color: focusedApp ? win.activeDotColor : win.dotColor
-                            }
-                            HoverHandler { id: moreHover }
-                            // A click opens it; moved as far as starts a drag on the dock, it's
-                            // the dock's drag from then on. (A MouseArea, as the bar's pool
-                            // chips are: the click plays for a click, never at the end of a drag)
-                            MouseArea {
-                                anchors.fill: parent
-                                preventStealing: true          // (the grid doesn't scroll instead)
-                                property point pressedAt
-                                property bool dragged: false
-                                onPressed: m => { pressedAt = Qt.point(m.x, m.y); dragged = false; }
-                                onPositionChanged: m => {
-                                    if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > win.dragThreshold) {
-                                        dragged = true;
-                                        win.pickFromMore(moreApp.modelData.key);
-                                    }
-                                    if (dragged) win.carryFromMore(mapToItem(null, m.x, m.y));
-                                }
-                                onReleased: if (dragged) win.dropFromMore()
-                                onCanceled: if (dragged) win.dropFromMore()
-                                onClicked: {
-                                    if (dragged) return;
-                                    const it = moreApp.modelData;
-                                    Config.click();
-                                    appMenu.closeMenu();
-                                    win.openApp(it);
-                                }
-                            }
-                            ClickTap {
-                                hand: false
-                                acceptedButtons: Qt.RightButton
-                                onTapped: { const it = moreApp.modelData, x = appMenu.alongX; appMenu.closeMenu(); appMenu.openFor(it, x); }
-                            }
+                            if (dragged) win.carryFromMore(mapToItem(null, m.x, m.y));
                         }
+                        onReleased: if (dragged) win.dropFromMore()
+                        onCanceled: if (dragged) win.dropFromMore()
+                        onClicked: {
+                            if (dragged) return;
+                            const it = moreApp.modelData;
+                            Config.click();
+                            appMenu.closeMenu();
+                            win.openApp(it);
+                        }
+                    }
+                    ClickTap {
+                        hand: false
+                        acceptedButtons: Qt.RightButton
+                        onTapped: { const it = moreApp.modelData, x = appMenu.alongX; appMenu.closeMenu(); appMenu.openFor(it, x); }
                     }
                 }
             }
@@ -1545,99 +1299,73 @@ PanelWindow {
                     color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
                     font.family: Config.s.fontFamily; font.pixelSize: 13
                 }
-                Flickable {
-                    id: dlScroll
+                DockGrid {
+                    menu: appMenu; dock: win
                     visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length > 0
-                    width: dlCol.width
-                    height: Math.min(dlGrid.height, 3 * 92)        // three rows; the rest scroll
-                    contentHeight: dlGrid.height
-                    interactive: contentHeight > height
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
-                    SmoothWheel { flick: dlScroll }
-                    readonly property Item cells: dlGrid
-                    readonly property Item topShade: dlTopShade
-                    readonly property Item bottomShade: dlBottomShade
-                    readonly property Item bar: dlBar
-                    Component.onCompleted: appMenu.gridFlick = dlScroll
-                    Component.onDestruction: if (appMenu.gridFlick === dlScroll) appMenu.gridFlick = null
-                    // (as More's: over the cells only, the scrollbar beside them left clear)
-                    ScrollShade { id: dlTopShade; z: 3; y: dlScroll.contentY; width: dlGrid.width; cornerRadius: appMenu.gridCorner
-                                  height: 28; depth: appMenu.gridShadeDepth; distance: dlScroll.contentY }
-                    ScrollShade { id: dlBottomShade; z: 3; atBottom: true; y: dlScroll.contentY + dlScroll.height - height; width: dlGrid.width
-                                  height: 28; depth: appMenu.gridShadeDepth; cornerRadius: appMenu.gridCorner
-                                  distance: dlScroll.contentHeight - dlScroll.height - dlScroll.contentY }
-                    ThinScrollbar { id: dlBar; z: 3; flick: dlScroll; color: win.textColor; x: dlScroll.width - width; y: dlScroll.contentY; height: dlScroll.height }
-                    Grid {
-                    id: dlGrid
-                    columns: 4
-                    Repeater {
-                        model: appMenu.app && appMenu.app.downloadsGrid ? win.recentDownloads : []
-                        delegate: Item {
-                            id: dl
-                            required property var modelData
-                            readonly property var kind: win.downloadKind(modelData)
-                            width: 88; height: 92
+                    model: appMenu.app && appMenu.app.downloadsGrid ? win.recentDownloads : []
+                    delegate: Item {
+                        id: dl
+                        required property var modelData
+                        readonly property var kind: win.downloadKind(modelData)
+                        width: 88; height: 92
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Config.corner(8)
+                            // Under the pointer: the muted hover, flat
+                            color: dlHover.hovered ? Config.hover : "transparent"
+                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                        }
+                        // The file: a picture as itself, anything else as its kind on a tile
+                        Item {
+                            id: dlIcon
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            y: 8; width: 52; height: 52
                             Rectangle {
                                 anchors.fill: parent
-                                radius: Config.corner(8)
-                                // Under the pointer: the muted hover, flat
-                                color: dlHover.hovered ? Config.hover : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(90) } }
+                                visible: !dl.kind.image || dlThumb.status !== Image.Ready
+                                radius: Config.corner(10)
+                                color: win.tileColor
+                                Gloss { radius: parent.radius; glassHint: true }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: String.fromCodePoint(dl.kind.glyph || 0xEB0A)
+                                    color: win.textColor
+                                    font.family: "slate-tabler-icons"; font.pixelSize: 24
+                                }
                             }
-                            // The file: a picture as itself, anything else as its kind on a tile
+                            Image {
+                                id: dlThumb
+                                anchors.fill: parent
+                                visible: !!dl.kind.image && status === Image.Ready
+                                source: dl.kind.image ? "file://" + dl.modelData.path : ""
+                                sourceSize: Qt.size(128, 128)
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                layer.enabled: visible
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: dlThumbMask }
+                            }
                             Item {
-                                id: dlIcon
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: 8; width: 52; height: 52
-                                Rectangle {
-                                    anchors.fill: parent
-                                    visible: !dl.kind.image || dlThumb.status !== Image.Ready
-                                    radius: Config.corner(10)
-                                    color: win.tileColor
-                                    Gloss { radius: parent.radius; glassHint: true }
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: String.fromCodePoint(dl.kind.glyph || 0xEB0A)
-                                        color: win.textColor
-                                        font.family: "slate-tabler-icons"; font.pixelSize: 24
-                                    }
-                                }
-                                Image {
-                                    id: dlThumb
-                                    anchors.fill: parent
-                                    visible: !!dl.kind.image && status === Image.Ready
-                                    source: dl.kind.image ? "file://" + dl.modelData.path : ""
-                                    sourceSize: Qt.size(128, 128)
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    layer.enabled: visible
-                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: dlThumbMask }
-                                }
-                                Item {
-                                    id: dlThumbMask
-                                    anchors.fill: parent
-                                    visible: false
-                                    layer.enabled: true
-                                    Rectangle { anchors.fill: parent; radius: Config.corner(8) }
-                                }
-                            }
-                            Text {
-                                anchors { top: dlIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
-                                horizontalAlignment: Text.AlignHCenter
-                                textFormat: Text.PlainText        // never markup: a file's name
-                                text: dl.modelData.name
-                                elide: Text.ElideMiddle
-                                color: win.textColor
-                                font.family: Config.s.fontFamily; font.pixelSize: 11
-                            }
-                            HoverHandler { id: dlHover }
-                            ClickTap {
-                                hand: false
-                                onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
+                                id: dlThumbMask
+                                anchors.fill: parent
+                                visible: false
+                                layer.enabled: true
+                                Rectangle { anchors.fill: parent; radius: Config.corner(8) }
                             }
                         }
-                    }
+                        Text {
+                            anchors { top: dlIcon.bottom; topMargin: 6; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
+                            horizontalAlignment: Text.AlignHCenter
+                            textFormat: Text.PlainText        // never markup: a file's name
+                            text: dl.modelData.name
+                            elide: Text.ElideMiddle
+                            color: win.textColor
+                            font.family: Config.s.fontFamily; font.pixelSize: 11
+                        }
+                        HoverHandler { id: dlHover }
+                        ClickTap {
+                            hand: false
+                            onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
+                        }
                     }
                 }
                 Rectangle {
@@ -2035,57 +1763,11 @@ PanelWindow {
                 height: win.base * win.maxScale
 
                 // Launcher button (Settings → Dock → Apps button)
-                Item {
-                    id: launcherCell
-                    opacity: win.fadeAt(win.launcherIndex)
+                DockButton {
+                    dock: win
                     visible: win.launcherIndex >= 0
-                    readonly property real s: win.scaleAt(win.launcherIndex)
-                    width: win.base * s
-                    height: row.height
-                    transform: [
-                        Matrix4x4 { matrix: win.tiltMatrix(launcherCell.width, launcherCell.height, win.tiltAt(win.launcherIndex)) },
-                        Translate { y: -win.liftAt(win.launcherIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
-                    ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
-                    Item {
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: width
-                        id: launchTile
-                        transform: Matrix4x4 { matrix: win.upright(launchTile.width, launchTile.height) }
-                        DockGlow {
-                            strength: win.glowAt(win.launcherIndex)
-                            radius: Config.iconCornerFor(width)
-                        }
-                        // The same shape as the app icons (a tile when they're shown as they come)
-                        IconPlate {
-                            anchors.fill: parent
-                            drawSize: win.base * win.maxScale      // drawn once, magnified size
-                            shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
-                            fill: false
-                            color: win.tileColor
-                            opacity: Config.dockTileOpacity
-                        }
-                        // Glass: a sheen, rounded like the tile
-                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
-                        // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
-                        Column {
-                            id: burger
-                            opacity: Config.dockIconOpacity
-                            anchors.centerIn: parent
-                            anchors.alignWhenCentered: false
-                            readonly property real w: win.symbolRef
-                            scale: parent.width / w
-                            spacing: w * 0.075
-                            Repeater {
-                                model: 3
-                                Rectangle {
-                                    width: burger.w * 0.42; height: burger.w * 0.07
-                                    radius: Config.corner(height / 2)
-                                    color: win.textColor
-                                }
-                            }
-                        }
-                    }
+                    at: win.launcherIndex
+                    dockTop: bg.y - row.y
                 }
 
                 // What's playing (see win.mediaShown): the album art cut to the icons' shape (or the
@@ -2400,59 +2082,14 @@ PanelWindow {
                         // More: the apps that don't fit (foldPlan), as a stack like Downloads',
                         // with three dots on it, as the menu bar's More has; a badge when any app
                         // in it has one
-                        DockBacking {
+                        DockButton {
+                            dock: win
                             visible: cell.isMore
-                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width)
-                        }
-                        Item {
-                            id: moreTile
-                            visible: cell.isMore
-                            anchors.bottom: parent.bottom
-                            width: parent.width; height: width
-                            transform: Matrix4x4 { matrix: win.upright(moreTile.width, moreTile.height) }
-                            DockGlow {
-                                strength: win.glowAt(cell.slot.at)
-                                radius: Config.iconCornerFor(width)
-                            }
-                            IconPlate {
-                                anchors.fill: parent
-                                drawSize: win.base * win.maxScale
-                                shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
-                                fill: false
-                                color: win.tileColor
-                                opacity: Config.dockTileOpacity
-                            }
-                            Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
-                            Text {
-                                opacity: Config.dockIconOpacity
-                                anchors.centerIn: parent
-                                text: String.fromCodePoint(0xEA95)       // dots
-                                color: win.textColor
-                                font.family: "slate-tabler-icons"
-                                font.pixelSize: Math.round(win.symbolRef * 0.5)
-                                scale: parent.width / win.symbolRef
-                                anchors.alignWhenCentered: false
-                            }
-                            Rectangle {
-                                readonly property string text: cell.badge.count > 99 ? "99+" : cell.badge.count > 0 ? String(cell.badge.count)
-                                    : cell.badge.urgent ? "!" : ""
-                                visible: cell.isMore && text !== ""
-                                z: 2
-                                height: Math.round(parent.height * 0.38)
-                                width: Math.max(height, moreBadgeText.implicitWidth + height * 0.5)
-                                radius: Config.corner(height / 2)
-                                x: parent.width - width * 0.75; y: -height * 0.25
-                                color: win.activeDotColor
-                                Gloss { radius: parent.radius }
-                                Text {
-                                    id: moreBadgeText
-                                    anchors.centerIn: parent
-                                    text: parent.text
-                                    color: Config.tint("#12151a")
-                                    font.family: Config.s.fontFamily; font.weight: Font.DemiBold
-                                    font.pixelSize: Math.round(parent.height * 0.62)
-                                }
-                            }
+                            standalone: false
+                            at: cell.slot.at
+                            dockTop: bg.y - row.y
+                            glyph: 0xEA95       // dots
+                            badgeInfo: cell.badge
                         }
 
                         DockBacking {
@@ -2528,25 +2165,10 @@ PanelWindow {
                             }
                             // An unread count (or "!" when the app asks for attention): a pill on the
                             // icon's top corner, in the accent, with glass's sheen
-                            Rectangle {
-                                readonly property string text: cell.badge.count > 99 ? "99+" : cell.badge.count > 0 ? String(cell.badge.count)
-                                    : cell.badge.urgent ? "!" : ""
-                                visible: text !== ""
+                            DockBadge {
                                 z: 2
-                                height: Math.round(parent.height * 0.38)
-                                width: Math.max(height, badgeText.implicitWidth + height * 0.5)
-                                radius: Config.corner(height / 2)
-                                x: parent.width - width * 0.75; y: -height * 0.25
+                                info: cell.badge
                                 color: win.activeDotColor
-                                Gloss { radius: parent.radius }
-                                Text {
-                                    id: badgeText
-                                    anchors.centerIn: parent
-                                    text: parent.text
-                                    color: Config.tint("#12151a")
-                                    font.family: Config.s.fontFamily; font.weight: Font.DemiBold
-                                    font.pixelSize: Math.round(parent.height * 0.62)
-                                }
                             }
                         }
 
@@ -2581,95 +2203,22 @@ PanelWindow {
                     visible: win.dragKey !== ""
                 }
                 // Downloads: a stack, the folder-and-arrow on a tile like the launcher button's
-                Item {
-                    id: downloadsCell
-                    opacity: win.fadeAt(win.downloadsIndex)
+                DockButton {
+                    dock: win
                     visible: win.downloadsShown
-                    readonly property real s: win.scaleAt(win.downloadsIndex)
-                    width: win.base * s
-                    height: row.height
-                    transform: [
-                        Matrix4x4 { matrix: win.tiltMatrix(downloadsCell.width, downloadsCell.height, win.tiltAt(win.downloadsIndex)) },
-                        Translate { y: -win.liftAt(win.downloadsIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
-                    ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
-                    Item {
-                        id: downloadsTile
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: width
-                        transform: Matrix4x4 { matrix: win.upright(downloadsTile.width, downloadsTile.height) }
-                        DockGlow {
-                            strength: win.glowAt(win.downloadsIndex)
-                            radius: Config.iconCornerFor(width)
-                        }
-                        IconPlate {
-                            anchors.fill: parent
-                            drawSize: win.base * win.maxScale
-                            shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
-                            fill: false
-                            color: win.tileColor
-                            opacity: Config.dockTileOpacity
-                        }
-                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
-                        Text {
-                            opacity: Config.dockIconOpacity
-                            anchors.centerIn: parent
-                            text: String.fromCodePoint(0xF912)       // folder-down
-                            color: win.textColor
-                            font.family: "slate-tabler-icons"
-                            font.pixelSize: Math.round(win.symbolRef * 0.5)
-                            scale: parent.width / win.symbolRef
-                            anchors.alignWhenCentered: false
-                        }
-                    }
+                    at: win.downloadsIndex
+                    dockTop: bg.y - row.y
+                    glyph: 0xF912       // folder-down
                 }
 
                 // The waste basket: the bin on a tile like the launcher button's (and Downloads'),
                 // outlined while empty and filled once something's in it
-                Item {
-                    id: trashCell
-                    opacity: win.fadeAt(win.trashIndex)
+                DockButton {
+                    dock: win
                     visible: win.trashShown
-                    readonly property real s: win.scaleAt(win.trashIndex)
-                    width: win.base * s
-                    height: row.height
-                    transform: [
-                        Matrix4x4 { matrix: win.tiltMatrix(trashCell.width, trashCell.height, win.tiltAt(win.trashIndex)) },
-                        Translate { y: -win.liftAt(win.trashIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
-                    ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
-                    Item {
-                        id: trashTile
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: width
-                        transform: Matrix4x4 { matrix: win.upright(trashTile.width, trashTile.height) }
-                        DockGlow {
-                            strength: win.glowAt(win.trashIndex)
-                            radius: Config.iconCornerFor(width)
-                        }
-                        IconPlate {
-                            anchors.fill: parent
-                            drawSize: win.base * win.maxScale      // drawn once, magnified size
-                            shape: Config.s.iconShape === "original" ? "tile" : Config.s.iconShape
-                            fill: false
-                            color: win.tileColor
-                            opacity: Config.dockTileOpacity
-                        }
-                        // Glass: a sheen, rounded like the tile
-                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
-                        // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
-                        // once there's something in it
-                        Text {
-                            opacity: Config.dockIconOpacity
-                            anchors.centerIn: parent
-                            text: String.fromCodePoint(win.trashCount > 0 ? 0xF783 : 0xEB41)     // trash-filled / trash
-                            color: win.textColor
-                            font.family: "slate-tabler-icons"
-                            font.pixelSize: Math.round(win.symbolRef * 0.5)
-                            scale: parent.width / win.symbolRef
-                            anchors.alignWhenCentered: false
-                        }
-                    }
+                    at: win.trashIndex
+                    dockTop: bg.y - row.y
+                    glyph: win.trashCount > 0 ? 0xF783 : 0xEB41     // trash-filled / trash
                 }
             }
 
@@ -2788,7 +2337,7 @@ PanelWindow {
             preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
             // The previews: cards shown, the "+N" card's count, the panel's place and the screen's size
             previews: previewPop.wanted ? { cards: previewPop.shownWins.length, more: previewPop.moreCount, mode: win.previewMode,
-                                            box: [Math.round(previewBox.x), Math.round(previewBox.y), Math.round(previewBox.width), Math.round(previewBox.height)],
+                                            box: [Math.round(previewPop.box.x), Math.round(previewPop.box.y), Math.round(previewPop.box.width), Math.round(previewPop.box.height)],
                                             screen: [Math.round(previewPop.width), Math.round(previewPop.height)] } : null,
             base: Math.round(win.base * 100) / 100, length: Math.round(win.restWidth + win.padding * 2), room: Math.round(win.roomLength),
             more: win.moreItems.map(it => it.key), mediaCompact: win.foldPlan.compact,
