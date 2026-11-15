@@ -1,4 +1,4 @@
--- Settings made in Slate's Settings window: keyboard, mouse and touchpad, focus, cursor
+-- Settings made in Slate's Settings window: keyboard, mouse and touchpad (and its gestures), focus, cursor
 -- size, animations, default apps, and what the lid and power button do.
 --
 -- Slate calls slateApply({ ... }) when it starts, when this config reloads and whenever
@@ -84,6 +84,9 @@ function slateApply(t)
         cursorChanged = true
     end
     if cursorChanged then hl.exec_cmd("hyprctl setcursor " .. CURSOR_THEME .. " " .. CURSOR_SIZE) end
+
+    -- Touchpad gestures: { on, fingers (3 or 4), down ("desktop" or "launcher") } (gestures.lua)
+    if t.gestures ~= nil and setGestures then setGestures(t.gestures.on, t.gestures.fingers, t.gestures.down) end
 
     -- Animations: "normal", "fast" or "off" (animations.lua)
     if t.animations ~= nil and setAnimationSpeed then setAnimationSpeed(t.animations) end

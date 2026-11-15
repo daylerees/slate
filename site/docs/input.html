@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Keyboard, mouse and touchpad · Slate docs</title>
-<meta name="description" content="Keyboard layouts and switching between them, Caps Lock, key repeat, pointer speed and style, the touchpad, and gestures in Slate.">
+<meta name="description" content="Keyboard layouts and switching between them, Caps Lock, key repeat, pointer speed and style, the touchpad, and touchpad gestures in Slate.">
 <link rel="icon" href="../assets/icon.png">
 <link rel="stylesheet" href="../style.css?v=31">
 <link rel="stylesheet" href="docs.css?v=2">
@@ -90,14 +90,28 @@
           (<a href="night-light.html#game-mode">Game mode</a>).</td></tr>
       </table>
 
-      <h3>Gestures</h3>
-      <p>Slate sets up a few touchpad gestures for you:</p>
+      <h2>Gestures</h2>
+      <p>Swipe or pinch with several fingers on the touchpad to move around. The <strong>Gestures</strong> section
+        appears with the touchpad's:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Touchpad gestures</td><td>Turns the gestures below on or off. On to start with.</td></tr>
+        <tr><td>Fingers</td><td>Three or four. Two are always left for scrolling.</td></tr>
+        <tr><td>Swiping down</td><td><strong>Show the desktop</strong> moves your windows aside, or <strong>Open the
+          launcher</strong> opens it.</td></tr>
+      </table>
       <ul>
-        <li><strong>Four fingers left or right</strong> moves between workspaces.</li>
-        <li><strong>Three fingers up</strong> makes the window full screen.</li>
-        <li><strong>Three fingers down</strong> closes the window.</li>
-        <li><strong>Three fingers left</strong> floats the window, or tiles it again.</li>
+        <li><strong>Sideways</strong> moves to the next or previous workspace. The workspaces follow your fingers, so you
+          can stop halfway and go back.</li>
+        <li><strong>Up</strong> opens the <a href="workspaces.html">workspace overview</a>.</li>
+        <li><strong>Down</strong> shows the desktop, or opens the launcher. With the overview or the launcher open, it
+          closes it instead.</li>
+        <li><strong>Pinch in</strong> opens the launcher, and pinching out closes it.</li>
       </ul>
+      <p>While the desktop is showing, swipe up or down again to bring your windows back. They also come back as they
+        were when you open a window, go to another workspace or pick one of them in the dock.</p>
+      <p>Gestures keep working in <a href="night-light.html#game-mode">game mode</a>. A gesture of your own in your
+        Hyprland config, on the same fingers and direction, is kept, and Slate leaves its own out.</p>
 
       <h2>Your own input settings</h2>
       <p>Anything Settings doesn't cover, like settings for one particular device, can go in your own Hyprland config

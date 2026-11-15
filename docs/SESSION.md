@@ -42,6 +42,7 @@ login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
 | `~/.local/state/slate/keyset.lua` | written by Settings → Shortcuts: `KEYSET = "slate"`, `"hyprland"` (Hyprland's default shortcuts) or `"hyprland-extras"` (those plus Slate's on free keys); read by `binds.lua`, which then binds that set |
 | `~/.local/state/slate/displays.lua` | written by Settings → Displays (loaded by `monitors.lua`; your `hyprland.lua` loads later and wins) |
 | `config/slate.lua` | `slateApply({...})`: Slate sends the keyboard, mouse, touchpad, focus, cursor, animation, default-app, lid and power-button settings changed in Settings (only those; the rest stay as your files set them). Putting one back with Restore defaults reloads the config |
+| `config/gestures.lua` | the touchpad gestures (Settings → Input → Gestures), made by `slateApply` through `setGestures(on, fingers, down)`; one of yours (made in your files, which load later) on the same fingers and direction is kept, and Slate's left out |
 
 Your files are made by Slate (`scripts/user-files.sh`, at startup and by the installer)
 with instructions inside, only where they don't exist yet, and the installer keeps them

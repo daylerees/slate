@@ -934,6 +934,7 @@ VALUES = {
     "mouseAccel": ["", "adaptive", "flat"],
     "mouseNaturalScroll": ON_OFF, "touchpadNaturalScroll": ON_OFF, "touchpadTapToClick": ON_OFF,
     "touchpadIgnoreWhileTyping": ON_OFF, "focusFollowsMouse": ON_OFF,
+    "gestureSwipeDown": ["desktop", "launcher"],
     "animations": ["", "normal", "fast", "off"],
     "colourStyle": ["monotone", "colourful"],
     "workspaceAnimation": ["slidefade", "slidefadevert", "slide", "slidevert", "crossfade", "none"],
@@ -973,6 +974,7 @@ RANGES = {
     "nightLightTemperature": (2500, 6000), "uiScale": (0.75, 1.5), "iconTintStrength": (20, 100),
     "windowBorderSize": (0, 12), "inactiveDim": (0, 80), "keyRepeatDelay": (150, 1000), "keyRepeatRate": (10, 80),
     "mouseSpeed": (-1, 1), "touchpadScrollSpeed": (0.1, 2), "cursorSize": (16, 64),
+    "gestureFingers": (3, 4),
     "windowGap": (0, 32), "soloWindowGap": (0, 32),
     "dockIconSize": (28, 64), "shadowDarkness": (0.1, 1), "shadowSoftness": (0, 24), "shadowSpread": (0, 10), "shadowDistance": (0, 16), "shadowDirection": (0, 345), "dockMagnification": (1, 2.5), "dockSpread": (1, 5), "dockOpacity": (0, 1), "notificationOpacity": (0, 1), "launcherOpacity": (0, 1), "notificationHoverOpacity": (0, 1), "dockTileOpacity": (0, 1), "dockIconOpacity": (0, 1), "barOpacity": (0, 1), "barPanelOpacity": (0, 1), "barItemOpacity": (0, 1), "barItemHoverOpacity": (0, 1), "dockPreviewDelay": (0, 3),
     "launcherColumns": (3, 10), "launcherRows": (2, 8),
@@ -1007,6 +1009,7 @@ SWITCHES = {
     "launcherFiles", "launcherConvert", "launcherEmoji", "launcherWeb", "switcherPreviews",
     "switcherAppIcons", "workspaceSwitchName", "wrapWorkspaces", "overviewAppIcons",
     "overviewPreviews", "screensaverClock", "glass", "fastBlur", "idleRespectInhibitors",
+    "touchpadGestures",
 }
 # Settings that only take effect the next time Slate starts
 AT_START = {"uiScale"}

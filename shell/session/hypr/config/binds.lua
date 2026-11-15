@@ -165,8 +165,9 @@ local function app(cmd, what)
     return launchPrefix .. cmd
 end
 
--- Is one of Slate's overlays open and holding the keyboard? (by layer name, e.g. "slate-launcher")
-local function slateOverlayOpen(name)
+-- Is one of Slate's overlays open and holding the keyboard? (by layer name, e.g. "slate-launcher";
+-- gestures.lua asks too)
+function slateOverlayOpen(name)
     for _, l in ipairs(hl.get_layers({ namespace = name }) or {}) do
         if l.mapped and (l.keyboard_interactivity or 0) > 0 then return true end
     end

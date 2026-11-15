@@ -270,4 +270,40 @@ Column {
             }
         }
     }
+
+    // Swiping with three or four fingers (session/hypr/config/gestures.lua, through Config.hyprSettings)
+    GroupLabel { visible: inputPane.hasTouchpad; text: "Gestures" }
+    Group {
+        visible: inputPane.hasTouchpad
+        ToggleSetting {
+            label: "Touchpad gestures"
+            detail: "Swipe sideways to change workspace, following your fingers, and up for the workspace overview. Pinch in for the launcher"
+            key: "touchpadGestures"
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Fingers"
+            settingKey: "gestureFingers"
+            detail: "How many fingers a gesture takes"
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: [{ value: 3, label: "Three" }, { value: 4, label: "Four" }]
+            value: Config.s.gestureFingers === 4 ? 4 : 3
+            onPicked: v => Config.s.gestureFingers = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Swiping down"
+            settingKey: "gestureSwipeDown"
+            detail: Config.s.gestureSwipeDown === "launcher" ? "Opens the launcher. Swipe up to close it again"
+                : "Moves your windows aside to show the desktop. Swipe up, or down again, to bring them back"
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: [{ value: "desktop", label: "Show the desktop" }, { value: "launcher", label: "Open the launcher" }]
+            value: Config.s.gestureSwipeDown === "launcher" ? "launcher" : "desktop"
+            onPicked: v => Config.s.gestureSwipeDown = v
+        }
+    }
 }

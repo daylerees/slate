@@ -96,6 +96,9 @@ JsonAdapter {
     property string touchpadNaturalScroll: "" // on / off
     property string touchpadTapToClick: ""    // on / off
     property string touchpadIgnoreWhileTyping: "" // on / off
+    property bool touchpadGestures: true      // swiping with several fingers (session/hypr/config/gestures.lua)
+    property int gestureFingers: 3            // how many: 3 or 4
+    property string gestureSwipeDown: "desktop" // swiping down: "desktop" (show it) or "launcher"
     property int cursorSize: 0                // px (0 = not set here)
     property string cursorTheme: ""           // the pointer's theme: "" = Slate's own (Slate-Cursors), or any installed cursor theme
     property bool pointerInApps: false        // Settings → Input: write the pointer into other apps' own settings too (GTK, KDE, X11), undone when switched off
