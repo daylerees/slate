@@ -252,6 +252,8 @@ class WindowRules(Case):
         layer = {r["rule"]["name"]: r["rule"]["match"]["namespace"] for r in rules if r["kind"] == "layer"}
         named = {}
         for rule, pattern in layer.items():
+            if not pattern.startswith("^slate-"):
+                continue                   # (another program's layers: the screenshot tools')
             m = re.fullmatch(r"\^slate-\(([^()]*)\)\$", pattern)
             named[rule] = {"slate-" + n for n in m.group(1).split("|")} if m else {pattern.strip("^$")}
         for rule, names in named.items():
@@ -261,3 +263,14 @@ class WindowRules(Case):
         for n in sorted(made - named.get("slate-overlays", set())):
             with self.subTest(layer=n):
                 self.fail(f"{n} isn't in the slate-overlays rule: Hyprland adds its own fade to it")
+
+    def test_screenshot_freeze_comes_and_goes_at_once(self):
+        """scripts/screenshot.sh takes the picture from the frozen screen (hyprpicker) as soon
+        as the chooser (slurp, whose layer is "selection") has gone. Hyprland fading either in
+        or out put the chooser's shade, or the screen behind the freeze, into the picture."""
+        rules, _ = self.load("variables.lua", "windowrules.lua")
+        for ns in ("hyprpicker", "selection"):
+            with self.subTest(ns):
+                self.assertTrue(any(r["kind"] == "layer" and r["rule"].get("no_anim") is True
+                                    and re.fullmatch(r["rule"]["match"]["namespace"], ns) for r in rules),
+                                f"no layer rule takes Hyprland's fade off {ns}")

@@ -1,0 +1,9 @@
+#!/bin/sh
+# A stand-in for hyprpicker's freeze (`hyprpicker -r -z`, as scripts/screenshot.sh runs it) in
+# the live tests: the test session has no pointer, and hyprpicker won't start without one. It
+# does what hyprpicker does there: takes a picture of the screen, then shows it on a layer of
+# its own over everything (namespace "hyprpicker"), until it's stopped.
+here=$(cd "$(dirname "$0")" && pwd)
+export SLATE_TEST_FROZEN="${XDG_RUNTIME_DIR:-/tmp}/slate-test-frozen.png"
+grim "$SLATE_TEST_FROZEN" || exit 1
+exec qs -p "$here/shell.qml"

@@ -168,6 +168,10 @@ hl.layer_rule({
   match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar)$" },
   no_anim = true,
 })
+-- Screenshots (scripts/screenshot.sh) freeze the screen with hyprpicker and choose with slurp
+-- ("selection"), then take the picture from the frozen screen as soon as the chooser's gone:
+-- both come and go at once, so the chooser's shade isn't still fading out in the picture
+hl.layer_rule({ name = "screenshot-freeze", match = { namespace = "^(hyprpicker|selection)$" }, no_anim = true })
 -- Slate's own title bars (TitleBar.qml) are a little see-through: what's behind them (windows
 -- included) is blurred, but only where they're drawn (their layer covers the whole screen,
 -- the rest of it clear)
