@@ -44,6 +44,11 @@ Rules:
   darken on the way) and the hover is a `HoverFill` (only its `gone` fades), as `RowButton`
   and the Settings sidebar do. The lit accent keeps its fade.
   `tests/static/test_look_and_feel.py::HoverTracksThePointer` checks it.
+- **Pressed, on the menu bar.** A thing on the bar that opens a panel shows pressed from the
+  moment it's pressed until its panel closes (opening included, or the hover flashed between
+  the two): the accent much darker (`bar.pressFill`, about a seventh of its brightness) in the
+  hover's shape, solid, at once like the hover. One thing at a time: whichever opened the open
+  panel (`bar.openedFrom`). `tests/live/test_bar.py::test_a_thing_shows_pressed_while_its_panel_is_open`.
 - Text and icons on an active-color fill switch to `accentText` and cross-fade
   (`Behavior on color` with `Config.ms`).
 - An accepted exception: a space's chosen icon uses the space's own color.

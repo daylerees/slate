@@ -37,6 +37,20 @@ class Bar(LiveCase):
         self.ipc("bar", "panel", "calendar")
         self.wait(lambda st: st["popout"] == "calendar", "the calendar to replace the control center")
 
+    def test_a_thing_shows_pressed_while_its_panel_is_open(self):
+        """A thing on the bar shows pressed (the accent, much darker) from the press, for as long
+        as its panel is open, and only it; it goes back once the panel closes."""
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        line = lambda st: st["bar"]["line"]
+        self.assertFalse(any(t["active"] for t in line(self.s.state()).values()), "something showed pressed with no panel open")
+        self.ipc("bar", "panel", "calendar")
+        st = self.wait(lambda st: st["popout"] == "calendar" and line(st)["clock"]["active"], "the clock to show pressed with its panel open")
+        self.assertEqual([n for n, t in line(st).items() if t["active"]], ["clock"], "something else showed pressed too")
+        self.ipc("bar", "panel", "control")
+        st = self.wait(lambda st: st["popout"] == "control" and not line(st)["clock"]["active"], "the clock to stop showing pressed")
+        self.ipc("popout", "close")
+        self.wait(lambda st: st["popout"] == "" and not any(t["active"] for t in line(st).values()), "pressed to go with the panel")
+
     def test_bar_positions(self):
         """The bar moves to each edge and back, staying on screen as a layer."""
         old = self.keep_setting("barPosition")

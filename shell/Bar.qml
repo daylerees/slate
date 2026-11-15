@@ -146,7 +146,7 @@ PanelWindow {
         for (const name in left.things) {
             const t = left.things[name], p = t.mapToItem(null, 0, 0);
             out[name] = { visible: t.visible, text: t.plain ? (t.slimText ? "" : t.drawnLabel) : name === "workspacename" ? wsNameText.text : "", opacity: t.opacity, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(t.width), h: Math.round(t.height),
-                          lit: t.lit, box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
+                          lit: t.lit, active: !!t.active, box: t.shell ? t.shell.index : -1, boxOpen: t.shell ? t.shell.openness : -1, parentVisible: t.parent ? t.parent.visible : false };
         }
         return out;
     }
@@ -263,7 +263,16 @@ PanelWindow {
         const p = item.mapToItem(content, item.width / 2, item.height / 2);   // from the screen edge
         // (a button that isn't showing has no place to go by: the panel opens as it always did)
         popouts.toggle(name, p.x, p.y, bar.screen, item.visible ? outermost(item) : undefined);
+        openedFrom = item;
+        openedName = name;
     }
+    // The thing whose panel is open (it shows pressed for as long as it is: Segment.active)
+    property Item openedFrom: null
+    property string openedName: ""
+    // Pressed (the pointer held down on it, or its panel open): the accent, much darker, in
+    // the hover's shape. Shown at once, as the hover is
+    readonly property color pressFill: Qt.rgba(accent.r * 0.14, accent.g * 0.14, accent.b * 0.14, 1)
+    readonly property real pressStrength: 1
     // With more than one screen, the bars on screens without focus are dimmed
     readonly property bool dimmed: Quickshell.screens.length > 1 && !!screen
         && !(Hyprland.focusedMonitor && Hyprland.focusedMonitor.name === screen.name)
@@ -1800,13 +1809,20 @@ PanelWindow {
             id: segReach
             tip: seg.tip
             tipAt: seg.tipAt
-            ClickTap { enabled: seg.clickable; onTapped: seg.clicked() }
+            ClickTap { id: segTap; enabled: seg.clickable; onTapped: seg.clicked() }
             ClickTap { enabled: seg.clickable; acceptedButtons: Qt.RightButton; onTapped: seg.rightClicked() }
             WheelHandler { onWheel: e => seg.wheel(e.angleDelta.y) }
         }
         property alias reach: segReach
         readonly property bool lit: hover && segReach.hovered
-        // Hover fill: solid at the group's rounded ends, fading out at the
+        // Pressed: held down, or its panel open (bar.openedFrom; More's while its panel is)
+        // (from the press on: the panel is "pending" until its first frame is drawn, a moment
+        // after the click; counted only once "current", the hover flashed between the two)
+        readonly property bool active: clickable && (segTap.pressed
+            || (bar.openedFrom === seg && !!bar.popouts && bar.popouts.screen === bar.screen
+                && bar.openedName !== "" && (bar.popouts.current === bar.openedName || bar.popouts.pending === bar.openedName)))
+        readonly property color fillColor: active ? bar.pressFill : bar.hoverFill
+        // Hover fill (and the pressed one): solid at the group's rounded ends, fading out at the
         // square sides that meet a separator
         Rectangle {
             id: segFill
@@ -1814,16 +1830,16 @@ PanelWindow {
             readonly property real fade: Math.min(0.45, 12 / Math.max(1, width))   // ~12px soft edge
             gradient: Gradient {
                 orientation: bar.vert ? Gradient.Vertical : Gradient.Horizontal
-                GradientStop { position: 0.0; color: seg.first ? bar.hoverFill : "transparent" }
-                GradientStop { position: segFill.fade; color: bar.hoverFill }
-                GradientStop { position: 1 - segFill.fade; color: bar.hoverFill }
-                GradientStop { position: 1.0; color: seg.last ? bar.hoverFill : "transparent" }
+                GradientStop { position: 0.0; color: seg.first ? seg.fillColor : "transparent" }
+                GradientStop { position: segFill.fade; color: seg.fillColor }
+                GradientStop { position: 1 - segFill.fade; color: seg.fillColor }
+                GradientStop { position: 1.0; color: seg.last ? seg.fillColor : "transparent" }
             }
             topLeftRadius: Config.corner(seg.first ? bar.capsuleRadius : 0)
             bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0)
             topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0)
             bottomRightRadius: Config.corner(seg.last ? bar.capsuleRadius : 0)
-            opacity: seg.lit ? bar.hoverStrength : 0                         // (at once: CONVENTIONS, the muted hover)
+            opacity: seg.active ? bar.pressStrength : seg.lit ? bar.hoverStrength : 0   // (at once: CONVENTIONS, the muted hover)
         }
         // Picked, while the bar's being arranged: lit in the accent colour, with an outline
         Rectangle {
