@@ -17,6 +17,13 @@ def path(*parts):
     return os.path.join(ROOT, *parts)
 
 
+def qml_names():
+    """Slate's own QML files under shell/ by name: the ones in shell/ itself, then the bar panels'
+    in shell/panels/ as "panels/<name>" (read with read("shell", name))."""
+    out = [n for n in sorted(os.listdir(SHELL)) if n.endswith(".qml")]
+    return out + ["panels/" + n for n in sorted(os.listdir(os.path.join(SHELL, "panels"))) if n.endswith(".qml")]
+
+
 def read(*parts):
     with open(path(*parts), encoding="utf-8") as f:
         return f.read()

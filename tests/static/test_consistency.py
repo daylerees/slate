@@ -271,15 +271,12 @@ class Settings(Case):
             ("HotCornerPicker.qml", "color: corner.on ? hp.accent"),       # its glyph
             ("Launcher.qml", "color: toggleSwitch.on ? (row.onAccent"),    # the switch's knob
             ("NovaMic.qml", "color: mic.lit ? mic.accentText"),            # its glyph
-            ("Popouts.qml", "color: wsCard.on ? pop.accent"),              # a number badge
+            ("panels/SpacesPanel.qml", "color: wsCard.on ? pop.accent"),              # a number badge
             ("SettingsWindow.qml", "color: on ? win.accent"),              # chosen options, segments
             ("Welcome.qml", "color: on ? w.accent"),                       # the chosen theme option
         }
         line_re = re.compile(r"^\s*color:\s*([\w.!]+)\s*\?(.*)$")
-        shell = os.path.join(slate.ROOT, "shell")
-        for name in sorted(os.listdir(shell)):
-            if not name.endswith(".qml"):
-                continue
+        for name in slate.qml_names():
             for n, line in enumerate(slate.read("shell", name).splitlines(), 1):
                 m = line_re.match(line)
                 if not m or m.group(1).split(".")[-1] not in ("checked", "primary", "on", "lit"):

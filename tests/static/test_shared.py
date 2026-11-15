@@ -9,7 +9,7 @@ SHELL = slate.path("shell")
 
 
 def qml_files():
-    return [n for n in sorted(os.listdir(SHELL)) if n.endswith(".qml")]
+    return slate.qml_names()
 
 
 class Shared(Case):

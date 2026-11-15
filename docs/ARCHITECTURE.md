@@ -18,6 +18,13 @@ shell.qml               root: creates everything below, plus the dock itself
 │                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
 │                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
 │                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/ForecastDay.qml
+│                       and one file for each panel, loaded when it opens: panels/VolumePanel.qml,
+│                       panels/WifiPanel.qml, panels/KeyboardPanel.qml, panels/ClipboardPanel.qml,
+│                       panels/ScreenshotPanel.qml, panels/BluetoothPanel.qml,
+│                       panels/BatteryPanel.qml, panels/GameModePanel.qml, panels/MorePanel.qml,
+│                       panels/WindowModePanel.qml, panels/CalendarPanel.qml,
+│                       panels/SessionPanel.qml, panels/ControlPanel.qml,
+│                       panels/SpacesPanel.qml, panels/NotificationsPanel.qml
 ├─ PowerConfirm.qml     centred confirmation ("slate-confirm"): log out / restart / shut down,
 │                       and confirmWith() for anything else (deleting a space)
 ├─ Wallpaper.qml        desktop wallpaper, one per screen ("slate-wallpaper")

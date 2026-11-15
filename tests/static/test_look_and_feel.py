@@ -1,13 +1,16 @@
 """Places that must follow docs/CONVENTIONS.md "Look and feel", found by reading the code:
 scrolling views get shades, a scrollbar and smooth wheel; the title bar's buttons hover with
 the muted hover, not the active colour; questions go through Slate's confirmation window."""
+import os
 import re
 
 import slate
 from slate import Case
 
 # Files whose scrolling views were brought in line (the others keep their own checks)
-SCROLLING = ["Popouts.qml", "TrayMenu.qml", "Picker.qml", "SettingsWindow.qml", "AvatarPicker.qml", "BarEditor.qml"]
+SCROLLING = ["Popouts.qml"] + ["panels/" + n for n in os.listdir(slate.path("shell", "panels")) if n.endswith("Panel.qml")] + ["TrayMenu.qml", "Picker.qml", "SettingsWindow.qml", "AvatarPicker.qml", "BarEditor.qml"]
+
+SCROLLING_PANELS = ["Popouts.qml"] + [f for f in SCROLLING if f.startswith("panels/")]
 
 
 class Scrolling(Case):
@@ -30,7 +33,7 @@ class Scrolling(Case):
     def test_no_hand_drawn_shades_or_scrollbars(self):
         """The shades and the bar are the shared ScrollShade and ThinScrollbar, never drawn again
         in a panel (Spaces, the notifications) or a dropdown (a 1 px bar)."""
-        for f in ("Popouts.qml", "SettingsWindow.qml"):
+        for f in SCROLLING_PANELS + ["SettingsWindow.qml"]:
             src = slate.read("shell", f)
             self.assertNotIn("Config.shade(Config.s.lightMode ? 0.12 : 0.32)", src, f"{f} draws a scroll shade of its own")
             self.assertNotIn("GradientStop { position: 0.0; color: pop.bg }", src, f"{f} draws a scroll shade of its own")
@@ -92,5 +95,5 @@ class Sliders(Case):
 
 class SpacesSave(Case):
     def test_save_lights_the_accent_under_the_pointer(self):
-        src = slate.read("shell", "Popouts.qml")
+        src = slate.read("shell", "panels", "SpacesPanel.qml")
         self.assertRegex(src, r"spacesView\.canSave \? \(spSaveHover\.hovered \? Config\.accentLit : pop\.accent\)")
