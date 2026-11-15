@@ -74,8 +74,8 @@ JsonAdapter {
     property bool roundedScreenCorners: true  // rounded screen corners + curves under the bar
     property bool shadows: true               // shadows under everything raised: Slate's surfaces and floating windows (Settings → Appearance → Shadows)
     property real shadowDarkness: 0.7         // how dark at their darkest, 0–1 (light mode: half that; glass: kept below where Hyprland blurs)
-    property real shadowSoftness: 10          // px of soft edge (0: hard)
-    property real shadowSpread: 2             // px the full darkness reaches past the surface
+    property real shadowSoftness: 16          // px of soft edge (0: hard)
+    property real shadowSpread: 6             // px the full darkness reaches past the surface
     property real shadowDistance: 2           // px from the surface
     property int shadowDirection: 0           // degrees the shadow falls, clockwise from straight down
     property bool roundedElements: true       // rounded corners on everything Slate draws, and on windows (off: all hard squares; app icons and workspace dots keep their own shapes)
