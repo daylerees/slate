@@ -741,27 +741,71 @@ class Shadows(Case):
         self.assertFalse(bad, "shadowEnabled: true (use Config.shadowsOn): " + ", ".join(bad))
 
 
+def shader_is_stale(root, frag, qsb):
+    """Whether `frag` changed after `qsb` was built from it, by where each one stands in git:
+    committed (when it was committed), staged for the commit being made, or edited in the
+    working tree (its file time). File times only count for files edited by hand: a commit
+    being made (a cherry-pick, a checkout) writes the working files in whatever order it
+    likes, so their times say nothing about which was built first, and comparing them used
+    to refuse a commit now and then."""
+    def where(rel):
+        # (rank, time): 0 = committed, 1 = staged, 2 = edited since; the time orders within a rank
+        try:
+            st = subprocess.run(["git", "-C", root, "status", "--porcelain", "--", rel],
+                                capture_output=True, text=True, check=True).stdout
+            if st[1:2].strip() or st.startswith("?"):
+                return 2, os.path.getmtime(os.path.join(root, rel))
+            if st.strip():
+                return 1, 0
+            t = subprocess.run(["git", "-C", root, "log", "-1", "--format=%ct", "--", rel],
+                               capture_output=True, text=True, check=True).stdout.strip()
+            return 0, int(t) if t else os.path.getmtime(os.path.join(root, rel))
+        except (OSError, subprocess.CalledProcessError):
+            return 2, os.path.getmtime(os.path.join(root, rel))
+    return where(frag) > where(qsb)
+
+
 class Shaders(Case):
     def test_built_from_source(self):
         """Every shaders/*.frag has its .qsb, built after the source last changed."""
-        def changed(rel):
-            # A file edited but not committed counts as changed now
-            try:
-                st = subprocess.run(["git", "-C", slate.ROOT, "status", "--porcelain", "--", rel],
-                                    capture_output=True, text=True, check=True).stdout
-                if st.strip():
-                    return os.path.getmtime(slate.path(rel))
-                t = subprocess.run(["git", "-C", slate.ROOT, "log", "-1", "--format=%ct", "--", rel],
-                                   capture_output=True, text=True, check=True).stdout.strip()
-                return int(t) if t else os.path.getmtime(slate.path(rel))
-            except (OSError, subprocess.CalledProcessError):
-                return os.path.getmtime(slate.path(rel))
-
         for frag in slate.files("shell/shaders", ".frag", ".vert"):
             with self.subTest(frag):
                 qsb = frag + ".qsb"
                 self.assertTrue(os.path.exists(slate.path(qsb)), f"{qsb} is missing (build it with qsb)")
-                self.assertGreaterEqual(changed(qsb), changed(frag), f"{frag} changed after {os.path.basename(qsb)} was built")
+                self.assertFalse(shader_is_stale(slate.ROOT, frag, qsb), f"{frag} changed after {os.path.basename(qsb)} was built")
+
+    def test_staleness_check_ignores_checkout_order(self):
+        """A commit being made (a cherry-pick) writes the source after its built file now and
+        then: that's no reason to refuse it; a source really edited after the build still is."""
+        import tempfile
+        from unittest import mock
+        # (inside git's pre-commit hook GIT_INDEX_FILE names the real index: a scratch
+        # repository must not see it)
+        clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        with tempfile.TemporaryDirectory() as root, mock.patch.dict(os.environ, clean, clear=True):
+            def git(*a):
+                subprocess.run(["git", "-C", root, "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                               check=True, capture_output=True)
+            git("init", "-q")
+            f, q = os.path.join(root, "a.frag"), os.path.join(root, "a.frag.qsb")
+            for path, text in ((q, "built 1"), (f, "source 1")):      # the source written last
+                open(path, "w").write(text)
+            git("add", ".")
+            self.assertFalse(shader_is_stale(root, "a.frag", "a.frag.qsb"), "both staged, the source written later")
+            git("commit", "-q", "-m", "one")
+            self.assertFalse(shader_is_stale(root, "a.frag", "a.frag.qsb"), "both committed together")
+            for path, text in ((q, "built 2"), (f, "source 2")):
+                open(path, "w").write(text)
+            git("add", ".")
+            os.utime(q, (1, 1))                                  # the built file looks older
+            self.assertFalse(shader_is_stale(root, "a.frag", "a.frag.qsb"), "both staged for one commit")
+            git("commit", "-q", "-m", "two")
+            open(f, "w").write("source 3")
+            self.assertTrue(shader_is_stale(root, "a.frag", "a.frag.qsb"), "the source edited, the built file not")
+            open(q, "w").write("built 3")
+            self.assertFalse(shader_is_stale(root, "a.frag", "a.frag.qsb"), "rebuilt after the edit")
+            os.utime(q, (1, 1))
+            self.assertTrue(shader_is_stale(root, "a.frag", "a.frag.qsb"), "edited after it was built")
 
 
 class LuaText(Case):
