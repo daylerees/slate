@@ -12,6 +12,8 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Bar.qml              top bar (layer "slate-bar")
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
+│  ├─ Weather.qml       the weather from Open-Meteo for Settings' location (every 30 min), held for
+│  │                    the clock panel and the control centre
 │  ├─ PanelHost.qml     singleton holding the Popouts window, so the pieces in panels/ can read
 │  │                    its colours and fonts
 │  └─ panels/           the pieces the panels share, one file each: panels/Label.qml,
