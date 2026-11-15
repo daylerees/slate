@@ -34,8 +34,10 @@ Rules:
   `RowButton`/`LinkRow` and on menu rows. A new destructive control must set it; a
   confirmation's red primary button is already solid red.
 - **The muted hover comes and goes at once**, with the pointer, as the launcher's highlight
-  does: no `Behavior on color` (or opacity fade) on a fill that's `Config.hover`,
-  `Config.hoverDanger` or `Config.hoverOn(…)`. A fade on every row's hover left a trail of
+  does, for every hover state anywhere in Slate, new ones included (menus, panels, Settings,
+  the dock, the menu bar, the login screen): no `Behavior on color` (or opacity fade) on a
+  fill that's `Config.hover`, `Config.hoverDanger`, `Config.hoverOn(…)` or the bar's
+  `hoverStrength` overlay. A fade on every row's hover left a trail of
   half-lit rows behind a pointer moving down a menu, a panel or Settings' sidebar, and read as
   lag. Where a row can also be selected, the row's own color fades the active color in and
   out (from `Qt.rgba(accent.r, accent.g, accent.b, 0)`, not `"transparent"`, so it doesn't

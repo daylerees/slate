@@ -331,11 +331,20 @@ Item {
         width: label ? pillRow.implicitWidth + 30 : 44
         radius: Config.corner(22)
         readonly property color fill: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
-        color: Config.glass ? "transparent" : fill
+        // The active color fades in and out; the hover comes and goes at once (CONVENTIONS, the
+        // muted hover): laid over it, below
+        readonly property color base: active ? ls.accent : ls.frame
+        color: Config.glass ? "transparent" : base
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
         GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }
+        Rectangle {
+            anchors.fill: parent
+            radius: pill.radius
+            visible: !Config.glass && !pill.active && pillHover.hovered
+            color: Config.hoverOn(ls.frame)
+        }
         Row {
             id: pillRow
             anchors.centerIn: parent

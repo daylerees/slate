@@ -157,10 +157,10 @@ def _binding(text, prop):
 
 
 class HoverTracksThePointer(Case):
-    # The login screen's files (shell/greeter/files) are left as they are: any change there makes
-    # Slate offer to update the login screen
-    SKIP = ("shell/greeter",)
-    SKIP_FILES = ("shell/LoginScreen.qml",)
+    # Everywhere: the menu bar's hovers and the login screen's too (an exception there once let
+    # the bar's fade). Nothing is skipped
+    SKIP = ()
+    SKIP_FILES = ()
 
     def test_the_muted_hover_never_fades(self):
         """Under the pointer the muted hover is there at once and gone at once, as the launcher's
@@ -181,7 +181,7 @@ class HoverTracksThePointer(Case):
                         self.assertNotIn("Behavior on color", text, "the muted hover fades: drop the fade, or put the hover in a HoverFill")
                     # (a hover drawn as the accent at the hover's strength, shown by opacity)
                     o = _binding(text, "opacity")
-                    if "Config.hoverStrength" in o and ".hovered" in o:
+                    if re.search(r"\b(Config\.|bar\.|wd\.)?hoverStrength\b", o) and re.search(r"\.hovered\b|\blit\b", o):
                         self.assertNotIn("Behavior on opacity", text, "the muted hover fades in and out")
 
     def test_hover_fill_fades_only_with_selection(self):

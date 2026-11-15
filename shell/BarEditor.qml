@@ -272,8 +272,7 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: root.bar.hoverFill
-            opacity: barChip.lit ? root.bar.hoverStrength : 0
-            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+            opacity: barChip.lit ? root.bar.hoverStrength : 0               // (at once: CONVENTIONS, the muted hover)
         }
         Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
         Row {

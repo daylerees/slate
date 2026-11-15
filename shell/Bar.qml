@@ -1715,8 +1715,7 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: bar.hoverFill
-            opacity: cap.hoverTint && capReach.hovered ? bar.hoverStrength : 0
-            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+            opacity: cap.hoverTint && capReach.hovered ? bar.hoverStrength : 0   // (at once: CONVENTIONS, the muted hover)
         }
         Gloss { radius: cap.radius; }          // glass: a sheen
         // (pointed at across the bar's whole depth, as the things in it are)
@@ -1825,8 +1824,7 @@ PanelWindow {
             bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0)
             topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0)
             bottomRightRadius: Config.corner(seg.last ? bar.capsuleRadius : 0)
-            opacity: seg.lit ? bar.hoverStrength : 0
-            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+            opacity: seg.lit ? bar.hoverStrength : 0                         // (at once: CONVENTIONS, the muted hover)
         }
         // Picked, while the bar's being arranged: lit in the accent colour, with an outline
         Rectangle {
@@ -2056,8 +2054,7 @@ PanelWindow {
         bottomLeftRadius: Config.corner((bar.vert ? endLast : endFirst) ? bar.capsuleRadius : 0)
         topRightRadius: Config.corner((bar.vert ? endFirst : endLast) ? bar.capsuleRadius : 0)
         bottomRightRadius: Config.corner(endLast ? bar.capsuleRadius : 0)
-        opacity: lit ? bar.hoverStrength : 0
-        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        opacity: lit ? bar.hoverStrength : 0                                 // (at once: CONVENTIONS, the muted hover)
     }
 
     // A dashed outline round its parent (a Rectangle: it takes its rounding), for the things

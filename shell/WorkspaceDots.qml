@@ -128,8 +128,7 @@ Item {
                 width: s; height: s
                 radius: Config.dotRadius(s)
                 color: wd.hoverFill
-                opacity: cell.lit ? wd.hoverStrength : 0
-                Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                opacity: cell.lit ? wd.hoverStrength : 0                     // (at once: CONVENTIONS, the muted hover)
             }
             Rectangle {
                 anchors.centerIn: parent
