@@ -141,9 +141,11 @@ bottom edge while there's more below, fading as that end is reached.
 
 Every tooltip (the small label saying what the pointer's over) is a `Tooltip { text: … }`
 (`shell/Tooltip.qml`), with the dock's look: the bar's and the dock's surface color, a
-`Config.corner(6)` radius, the glass sheen, and the bar's font at 13 px, medium weight, as plain
-text. The host only places it and decides when it shows (the dock's at once over an icon, the
-menu bar's after a short rest with a `Config.ms` fade, in a window of its own).
+`Config.corner(6)` radius, the glass sheen, Slate's shadow (`Shadow {}`, as on every raised
+surface), and the bar's font at 13 px, medium weight, as plain text. The host only places it,
+leaves `Config.shadowReach` of room round it for the shadow, and decides when it shows (the
+dock's at once over an icon, the menu bar's after a short rest with a `Config.ms` fade, in a
+window of its own).
 
 - Never a `Rectangle` and `Text` of its own, nor its own colors, size or padding: a new
   tooltip copies one of those hosts.

@@ -85,7 +85,7 @@ PanelWindow {
     readonly property string side: bar.side
     readonly property bool vert: side === "left" || side === "right"
     readonly property real gap: 6                     // off the bar's edge
-    readonly property real room: 28                   // spare room round it
+    readonly property real room: 28                   // for the shadow round it
     readonly property real maxWidth: 260
     readonly property real ends: 8                    // kept this far in from the screen's ends
     screen: bar.screen

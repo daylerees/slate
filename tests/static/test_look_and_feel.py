@@ -233,6 +233,8 @@ class Tooltips(Case):
         self.assertIn("radius: Config.corner(6)", src)
         self.assertIn('Config.surface(Config.tint("#0f1216"))', src, "not the bar's and the dock's colour")
         self.assertIn("Gloss { radius: parent.radius }", src, "no sheen with glass")
+        self.assertRegex(src, r"(?m)^    Shadow \{\}", "not raised with Slate's shadow, as other raised surfaces are")
+        self.assertNotRegex(src, r"DropShadow|MultiEffect|shadowEnabled", "a shadow of its own instead of Shadow.qml")
         self.assertIn("textFormat: Text.PlainText", src, "a tooltip often shows a name another program chose")
         self.assertIn("font.family: Config.s.fontFamily", src)
         self.assertIn("font.pixelSize: 13", src)

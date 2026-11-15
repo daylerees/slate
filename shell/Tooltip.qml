@@ -1,6 +1,7 @@
 // A tooltip: the small label saying what the pointer's over. One look everywhere, the dock's
 // (an app's name over its icon): a rounded box in the bar's and the dock's colour, glossy with
-// glass, its words in the bar's font at 13 px. Every tooltip in Slate draws this bubble; where
+// glass, with Slate's shadow under it, its words in the bar's font at 13 px. A host needs
+// Config.shadowReach of room round it for the shadow. Every tooltip in Slate draws this bubble; where
 // it goes, when it shows and how it fades stay with whatever hosts it (the dock's label, the
 // label off the menu bar, a changed setting's dot in Settings):
 //   Tooltip { text: "Downloads"; x: …; y: …; visible: … }
@@ -26,6 +27,7 @@ Rectangle {
     radius: Config.corner(6)
     color: solid ? Config.tint("#0f1216") : Config.surface(Config.tint("#0f1216"))     // the bar's and the dock's
     Gloss { radius: parent.radius }   // glass: a sheen
+    Shadow {}                         // raised: Slate's shadow (Settings → Appearance; off in game mode)
 
     Text {
         id: words
