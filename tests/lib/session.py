@@ -58,8 +58,11 @@ def log_errors(text):
     return [l.strip() for l in text.splitlines()
             if LOG_ERROR.search(l) and not ENVIRONMENT_NOISE.search(l) and not KNOWN_ISSUES.search(l)]
 # What counts as an error in the log
+# (and a crash: bin/slate's keeper starts Slate again and notes it, so a test that crashed
+# Slate would otherwise pass once it's back)
 LOG_ERROR = re.compile(r"\bERROR\b|TypeError|ReferenceError|Binding loop|SyntaxError|is not a type|"
-                       r"Failed to load configuration|Cannot assign|Unable to assign|is not defined")
+                       r"Failed to load configuration|Cannot assign|Unable to assign|is not defined|"
+                       r"Slate stopped unexpectedly")
 
 
 def in_container():

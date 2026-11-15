@@ -3,6 +3,8 @@ import json
 import os
 import re
 import shutil
+import signal
+import time
 
 from live import LiveCase
 
@@ -160,3 +162,28 @@ class YourHyprlandFiles(LiveCase):
         save(good)
         self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings reloaded", "the notice that it's well again")
         self.assertEqual(self.steady(history, floor=1.5), before + 2)
+
+
+class ComingBack(LiveCase):
+    def test_slate_comes_back_after_a_crash(self):
+        """A crashed Slate is started again by itself (bin/slate's keeper), within a few seconds,
+        and says so once it's back; the log says why, and a test that crashed it would fail."""
+        before = self.s.slate_pid()
+        ready = os.path.join(self.s.h.runtime, "slate-ready")
+        os.kill(int(before), signal.SIGSEGV)
+        end = time.monotonic() + 20
+        while time.monotonic() < end:
+            now = self.s.slate_pid()
+            if now and now != before and os.path.exists(ready):
+                break
+            time.sleep(0.2)
+        now = self.s.slate_pid()
+        self.assertTrue(now and now != before and os.path.exists(ready), "Slate didn't come back after a crash")
+        self.wait(lambda st: st["notifications"]["latest"] == "Slate restarted", "the notice that it's back", timeout=15)
+        out = self.s.hyprctl("layers")
+        for ns in ("slate-bar", "slate-dock"):
+            self.assertIn(f"namespace: {ns}", out)
+        errors = self.s.new_log_errors()
+        self.assertTrue(any("Slate stopped unexpectedly (signal SEGV" in e for e in errors), errors)
+        self.assertFalse([e for e in errors if "Slate stopped unexpectedly" not in e], errors)
+        self.ipc("notifications", "clear")

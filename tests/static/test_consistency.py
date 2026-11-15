@@ -255,10 +255,17 @@ class Settings(Case):
                     self.assertIn("Config.uiScale", src,
                                   f"{name} takes a position from Hyprland but never uses Config.uiScale")
         launcher = slate.read("shell", "bin", "slate")
+        started = 0
         for n, line in enumerate(launcher.splitlines(), 1):
-            if re.search(r"setsid qs\b.*-p ", line):
+            # (every qs that runs a config: started detached, or by the keeper that restarts
+            # Slate after a crash; not `qs list`, `qs kill` or an ipc call to one that's running)
+            if re.search(r"\bqs (-n )?-p ", line) and not re.search(r"\bipc\b", line):
+                started += 1
                 with self.subTest(f"bin/slate:{n}"):
                     self.assertIn("QT_SCALE_FACTOR", line, "a Slate window is started without the Interface size")
+        # (Slate itself, with and without a scale, and the reload cover, the same: so the
+        # pattern above still finds them when a line is written another way)
+        self.assertGreaterEqual(started, 4, "bin/slate's qs launches weren't found")
 
     def test_accent_fills_on_pressable_controls_light_under_the_pointer(self):
         """The lit accent (CONVENTIONS, "The lit accent"): a switch that's on, a primary button,

@@ -113,6 +113,8 @@ if [ "$UNINSTALL" -eq 1 ]; then
                 && ok "Removed Slate's root helpers"
         fi
     fi
+    # (slate stop first: it stops what would start Slate again after a crash, too)
+    [ -x "$DEST/bin/slate" ] && "$DEST/bin/slate" stop >/dev/null 2>&1 || true
     have qs && qs kill -p "$DEST" >/dev/null 2>&1 || true
     [ -L "$BIN_LINK" ] && rm "$BIN_LINK" && ok "Removed the slate command"
     data="${XDG_DATA_HOME:-$HOME/.local/share}"

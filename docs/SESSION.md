@@ -20,7 +20,7 @@ login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
          │  hyprbars, inputs, binds, misc, monitors, windowrules, workspaces, slate
          ├─ ~/.config/slate/hypr/monitors.lua, binds.lua, rules.lua,
          │  autostart.lua, hyprland.lua                        (yours, last; they win)
-         └─ autostart: slate
+         └─ autostart: slate ─▶ the keeper (`slate _keep`) ─▶ qs -p ~/.config/slate
 ```
 
 ## Files
@@ -85,3 +85,14 @@ inside the Slate session.
 - App launches use `uwsm app --` only when the session runs under uwsm.
 - If the Slate session fails to start, pick another session at login, or check
   `journalctl --user -b -u 'wayland-wm@*'` (uwsm) for errors.
+- Slate itself (Quickshell) runs under a small keeper that `slate` starts: a shell waiting on
+  it, so it costs nothing while Slate runs, and with no systemd unit, so it works the same
+  everywhere. If Slate crashes (a crash signal, SIGKILL from running out of memory, or an error
+  exit) the keeper starts it again a second later and, once it's loaded, a notification says
+  so. What was asked for doesn't: `slate stop` and `slate restart --full` (factory reset,
+  uninstalling) stop the keeper first; a clean exit, SIGTERM or SIGHUP (`qs kill`, shutting
+  down) is left alone; and so is Slate going with the session (logging out: the keeper checks
+  Hyprland is still there). Three crashes within a minute and it stops trying: Hyprland's own
+  notification says so, the log (`~/.cache/slate.log`) says when and why (the signal or exit
+  code), and `slate` tries again. Quickshell's own crash handler is off under the keeper, so
+  only one thing ever starts Slate again (it would also show a window of its own).
