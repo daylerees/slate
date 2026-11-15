@@ -482,7 +482,8 @@ ShellRoot {
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, busy: lockScreen.busy, message: lockScreen.message, asking: lockScreen.asking, messageIsError: lockScreen.messageIsError,
                         // (what it read from faillock.conf, and what it made of the wrong passwords so far)
-                        deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut },
+                        deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut,
+                        failuresShown: lockScreen.failuresShown },
                 screensaver: { open: screensaver.shown },
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },

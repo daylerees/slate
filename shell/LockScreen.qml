@@ -66,12 +66,24 @@ Scope {
             }
         }
         onCompleted: result => {
+            if (result === PamResult.Error) return;   // (onError has it: it comes first)
             pending = ""; root.asking = false;
             if (result === PamResult.Success) root.succeeded();
             else root.checkLockout(true);     // wrong password, or locked out?
             root.forget();
         }
-        onError: err => { pending = ""; root.asking = false; root.fail("Slate couldn't check your password. Please try again"); root.forget(); }
+        // An error is followed by completed(Error), and both used to answer: "couldn't check"
+        // first, then "didn't match" once faillock had been read, so for a moment (longer on a
+        // busy computer) the wrong words showed. One answer now, from here. TryAuthFailed is PAM
+        // saying no with a code other than a plain "wrong" (a module like pam_exec turning down a
+        // second answer gives "System error"): it's a refusal, so it's told as one, tries left
+        // and all. Only PAM not running at all (StartFailed, InternalError) is "couldn't check"
+        onError: err => {
+            pending = ""; root.asking = false;
+            if (err === PamError.TryAuthFailed) root.checkLockout(true);
+            else root.fail("Slate couldn't check your password. Please try again");
+            root.forget();
+        }
     }
     property string testPamService: ""
     property string testPamDir: ""
@@ -180,7 +192,7 @@ Scope {
                     root.lockedUntil = never ? Infinity : latest + root.unlockTime * 1000;
                     root.busy = false;
                     root.tickLockout();
-                    if (root.afterFailure) root.failed(root.message);
+                    if (root.afterFailure) { root.failuresShown++; root.failed(root.message); }
                 } else {
                     // Unlocked by an administrator since Slate last looked: the field comes back
                     if (root.lockedUntil > 0) { root.lockedUntil = 0; root.message = ""; root.messageIsError = false; }
@@ -193,8 +205,11 @@ Scope {
             }
         }
     }
+    // (tests: how many times a refusal has been shown, so one attempt can be seen to give one)
+    property int failuresShown: 0
     function fail(text) {
         busy = false; message = text; messageIsError = true;
+        failuresShown++;
         root.failed(text);
     }
     function succeeded() {

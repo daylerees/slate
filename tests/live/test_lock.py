@@ -96,13 +96,22 @@ class Lock(LiveCase):
         self.wait(lambda st: not st["lock"]["locked"], "the second answer to unlock", timeout=15)
 
     def test_a_wrong_second_answer_is_refused_kindly(self):
+        """The test's check turns a wrong code down through pam_exec, which PAM reports as a
+        "System error". That's a refusal, told once: it used to show "Slate couldn't check your
+        password" first, then "That password didn't match" once faillock had been read, and on
+        a busy computer the first was what you saw (and the test read)."""
         self.two_questions()
         self.lock()
         self.ipc("lock", "submit", PASSWORD)
         self.wait(lambda st: st["lock"]["asking"], "the second question", timeout=15)
+        shown = self.s.state()["lock"]["failuresShown"]
         st = self.answer("not the code")
         self.assertTrue(st["locked"], "a wrong second answer unlocked the screen")
         self.assertRegex(st["message"], r"^That password didn't match")
+        self.s.settle(0.5)
+        st = self.s.state()["lock"]
+        self.assertRegex(st["message"], r"^That password didn't match")
+        self.assertEqual(st["failuresShown"] - shown, 1, "one wrong answer was told more than once")
         self.assertFalse(self.s.state()["lock"]["asking"])
         # and a fresh attempt starts from the password again
         self.ipc("lock", "submit", PASSWORD)
