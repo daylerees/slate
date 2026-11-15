@@ -267,13 +267,11 @@ PanelWindow {
                     // everywhere else: the active colour is for what stays selected
                     readonly property color rest: Config.tint("#3a424e")
                     color: btnArea.containsMouse ? Qt.tint(rest, danger ? Config.hoverDanger : Config.hover) : rest
-                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(btn.modelData.glyph)
-                        // (it comes in with the colour behind it, not ahead of it)
+                        // (it comes in with the colour behind it, at once, as hovers do everywhere)
                         opacity: btnArea.containsMouse ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                         color: tb.textColor
                         font.family: tabler.name; font.pixelSize: 12
                     }

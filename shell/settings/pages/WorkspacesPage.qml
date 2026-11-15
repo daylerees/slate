@@ -82,7 +82,6 @@ Column {
                                 radius: Config.corner(7)
                                 color: win.accent
                                 opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                             }
                             HoverHandler { id: shapeHover }
                             Row {

@@ -13,7 +13,6 @@ Rectangle {
     signal clicked()
     width: 34; height: 34; radius: Config.corner(17)
     color: iconButtonHover.hovered ? Config.hover : "transparent"
-    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
     Text {
         anchors.centerIn: parent
         text: win.glyph(iconButton.icon)

@@ -127,3 +127,66 @@ class WindowBorders(Case):
                 self.assertNotRegex(src, r"border\.(width|color): Config\.windowBorder", "a plain border instead of the shared one")
                 self.assertNotIn("Config.glassEdge", src, "a border of its own")
                 self.assertNotRegex(src, r"border\.width: Config\.glass \? 1 : 0", "a border of its own")
+
+
+# The muted hover in a color binding: Config.hover itself (not hoverStrength), its red, or
+# hoverOn(); a file's own color properties set from them (BarEditor's controlLit) count too
+_HOVER = r"Config\.hover\b(?!Strength)|Config\.hoverDanger\b|Config\.hoverOn\("
+
+
+def _objects(src):
+    """Each { } block's own text (what's nested in it left out) and the line it starts on."""
+    stack, own, out = [], {}, []
+    for i, ch in enumerate(src):
+        if ch == "{":
+            stack.append(i)
+            own[i] = []
+        elif ch == "}":
+            if stack:
+                s = stack.pop()
+                out.append((src.count("\n", 0, s) + 1, "".join(own.pop(s))))
+        elif stack:
+            own[stack[-1]].append(ch)
+    return out
+
+
+def _binding(text, prop):
+    """`prop: …` in an object's own text, with the lines that carry it on (starting ? or :)."""
+    m = re.search(rf"^[ \t]*{prop}:(.*(?:\n[ \t]*[?:].*)*)", text, re.M)
+    return m.group(1) if m else ""
+
+
+class HoverTracksThePointer(Case):
+    # The login screen's files (shell/greeter/files) are left as they are: any change there makes
+    # Slate offer to update the login screen
+    SKIP = ("shell/greeter",)
+    SKIP_FILES = ("shell/LoginScreen.qml",)
+
+    def test_the_muted_hover_never_fades(self):
+        """Under the pointer the muted hover is there at once and gone at once, as the launcher's
+        highlight is (moved by the pointer, it doesn't slide or fade: Launcher.qml's moveMs).
+        A fade on each row's hover (90-100 ms in menus, panels and Settings) left a trail of
+        half-lit rows behind a pointer moving down a list, and read as lag. So nothing whose
+        color is the muted hover fades its color; where a row is also selectable, the active
+        color fades on the row and the hover is HoverFill's, which never fades."""
+        for f in slate.files("shell", ".qml", skip=self.SKIP):
+            if f in self.SKIP_FILES:
+                continue
+            src = slate.read(f)
+            names = [_HOVER] + [rf"\b{n}\b" for n in re.findall(rf"property color (\w+):[^\n]*(?:{_HOVER})", src)]
+            hover = re.compile("|".join(names))
+            for line, text in _objects(src):
+                with self.subTest(f"{f}:{line}"):
+                    if hover.search(_binding(text, "color")):
+                        self.assertNotIn("Behavior on color", text, "the muted hover fades: drop the fade, or put the hover in a HoverFill")
+                    # (a hover drawn as the accent at the hover's strength, shown by opacity)
+                    o = _binding(text, "opacity")
+                    if "Config.hoverStrength" in o and ".hovered" in o:
+                        self.assertNotIn("Behavior on opacity", text, "the muted hover fades in and out")
+
+    def test_hover_fill_fades_only_with_selection(self):
+        """HoverFill shows its hover layer at once; only `gone` (selected, or let go of) fades."""
+        src = slate.read("shell", "HoverFill.qml")
+        self.assertEqual(src.count("Behavior on"), 1, "HoverFill animates more than its `gone` fade")
+        self.assertRegex(src, r"opacity: gone \? 0 : 1\s*\n\s*Behavior on opacity \{ NumberAnimation \{ duration: Config\.ms\(")
+        self.assertEqual(len(re.findall(r"visible: !?hf\.hovered", src)), 2, "the base and hover layers swap on hovered, at once")

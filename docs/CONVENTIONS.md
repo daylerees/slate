@@ -33,6 +33,15 @@ Rules:
   Settings' `Button` and the arranging panel's `PanelButton`, `danger: true` on the panels'
   `RowButton`/`LinkRow` and on menu rows. A new destructive control must set it; a
   confirmation's red primary button is already solid red.
+- **The muted hover comes and goes at once**, with the pointer, as the launcher's highlight
+  does: no `Behavior on color` (or opacity fade) on a fill that's `Config.hover`,
+  `Config.hoverDanger` or `Config.hoverOn(…)`. A fade on every row's hover left a trail of
+  half-lit rows behind a pointer moving down a menu, a panel or Settings' sidebar, and read as
+  lag. Where a row can also be selected, the row's own color fades the active color in and
+  out (from `Qt.rgba(accent.r, accent.g, accent.b, 0)`, not `"transparent"`, so it doesn't
+  darken on the way) and the hover is a `HoverFill` (only its `gone` fades), as `RowButton`
+  and the Settings sidebar do. The lit accent keeps its fade.
+  `tests/static/test_look_and_feel.py::HoverTracksThePointer` checks it.
 - Text and icons on an active-color fill switch to `accentText` and cross-fade
   (`Behavior on color` with `Config.ms`).
 - An accepted exception: a space's chosen icon uses the space's own color.

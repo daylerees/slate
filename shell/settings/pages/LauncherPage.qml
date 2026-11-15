@@ -48,7 +48,6 @@ Column {
                                 radius: Config.corner(7)
                                 color: win.accent
                                 opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                             }
                             HoverHandler { id: layoutHover }
                             Row {

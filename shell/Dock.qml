@@ -1214,7 +1214,6 @@ PanelWindow {
                         anchors.fill: parent
                         radius: Config.corner(8)
                         color: moreHover.hovered ? Config.hover : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                     }
                     AppTile {
                         id: moreIcon
@@ -1313,7 +1312,6 @@ PanelWindow {
                             radius: Config.corner(8)
                             // Under the pointer: the muted hover, flat
                             color: dlHover.hovered ? Config.hover : "transparent"
-                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                         }
                         // The file: a picture as itself, anything else as its kind on a tile
                         Item {

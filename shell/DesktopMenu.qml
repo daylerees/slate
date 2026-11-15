@@ -233,7 +233,6 @@ PanelWindow {
                         // is for what stays selected); red for what's destructive
                         // (lit: the pointer on it, or the keys)
                         color: row.lit || (row.open && dm.subWanted === row.index) ? (row.modelData.danger ? Config.hoverDanger : Config.hover) : "transparent"
-                        Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                         Rectangle {
                             visible: !!row.modelData.active
                             width: 5; height: 5; radius: Config.corner(2.5)

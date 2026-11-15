@@ -98,7 +98,6 @@ Column {
                                 radius: Config.corner(7)
                                 color: win.accent
                                 opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
-                                Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                             }
                             HoverHandler { id: themeHover }
                             Row {
@@ -443,8 +442,10 @@ Column {
                             readonly property bool on: shadowStage.light === modelData.light
                             width: pillText.implicitWidth + 18; height: 24
                             radius: Config.corner(12)
-                            color: on ? win.accent : pillHover.hovered ? Config.hover : Qt.rgba(0, 0, 0, shadowStage.light ? 0.08 : 0.25)
+                            // The chosen one fades in; the muted hover is there at once (HoverFill)
+                            color: on ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0)
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                            HoverFill { base: Qt.rgba(0, 0, 0, shadowStage.light ? 0.08 : 0.25); hovered: pillHover.hovered; gone: parent.on; radius: parent.radius }
                             Text {
                                 id: pillText
                                 anchors.centerIn: parent

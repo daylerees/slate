@@ -153,7 +153,6 @@ PanelWindow {
                             radius: Config.corner(7)
                             // Under the pointer: the muted hover, flat (the accent is for what stays selected)
                             color: entryHover.hovered && !!entryRow.e && entryRow.e.enabled ? Config.hover : "transparent"
-                            Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                             // Tick for a checked checkbox or radio item
                             Text {
                                 visible: entryRow.checked

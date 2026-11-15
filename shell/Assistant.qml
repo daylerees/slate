@@ -593,7 +593,6 @@ PanelWindow {
                     anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
                     width: 34; height: 34; radius: Config.corner(17)      // (Settings' close button)
                     color: closeHover.hovered ? Config.hover : "transparent"
-                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
@@ -1195,7 +1194,6 @@ PanelWindow {
             width: copyRow.implicitWidth + 14; height: 22; radius: Config.corner(6)
             // (solid on the solid plate, so a hover never flashes through the accent)
             color: copyHover.hovered ? Qt.tint(root.codePlate, Config.hover) : root.codePlate
-            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             Row {
                 id: copyRow
                 anchors.centerIn: parent

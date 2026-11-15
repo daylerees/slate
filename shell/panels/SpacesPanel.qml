@@ -422,8 +422,10 @@ Column {
                 required property int modelData
                 readonly property bool on: spacesView.icon === modelData
                 width: (spacesView.width - 28) / 15; height: width; radius: Config.corner(7)
-                color: on ? spacesView.colour : icHover.hovered ? Config.hover : "transparent"
+                // The chosen icon fades in, in the space's colour; the muted hover is there at once
+                color: on ? spacesView.colour : Qt.rgba(spacesView.colour.r, spacesView.colour.g, spacesView.colour.b, 0)
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                HoverFill { hovered: icHover.hovered; gone: icCell.on; radius: icCell.radius }
                 Icon { anchors.centerIn: parent; code: icCell.modelData; font.pixelSize: 17; color: icCell.on ? spacesView.inkColour : icHover.hovered ? pop.text : pop.dim }
                 HoverHandler { id: icHover }
                 ClickTap { onTapped: spacesView.icon = icCell.modelData }

@@ -404,7 +404,6 @@ Scope {
                                 anchors.fill: parent
                                 radius: Config.corner(12)
                                 color: !card.chosen && cardClick.containsMouse ? Config.hover : "transparent"
-                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             }
                             // The picture: small, made once from the file (never the full image)
                             Rectangle {

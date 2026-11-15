@@ -105,7 +105,6 @@ PanelWindow {
                     width: previews.cardW; height: previews.cardH
                     radius: Config.corner(8)
                     color: liveHover.hovered ? Config.hover : "transparent"
-                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                     Gloss { radius: parent.radius; opacity: liveHover.hovered ? 1 : 0 }
                     WindowPreview {
                         id: liveShot
@@ -180,7 +179,6 @@ PanelWindow {
                     width: titleCol.width; height: previews.cardH
                     radius: Config.corner(8)
                     color: titleHover.hovered ? Config.hover : "transparent"
-                    Behavior on color { ColorAnimation { duration: Config.ms(90) } }
                     Gloss { radius: parent.radius; opacity: titleHover.hovered ? 1 : 0 }
                     AppTile {
                         id: titleIcon

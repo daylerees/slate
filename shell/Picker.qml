@@ -504,7 +504,6 @@ PanelWindow {
                 width: clearLabel.implicitWidth + 24; height: 28; radius: Config.corner(8)
                 // (destructive: written in red, and red under the pointer)
                 color: clearHover.hovered ? Config.hoverDanger : root.fieldColor
-                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverHandler { id: clearHover }
                 ClickTap { onTapped: root.clearClips() }
                 Text {

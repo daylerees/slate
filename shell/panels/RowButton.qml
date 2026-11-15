@@ -15,8 +15,11 @@ Rectangle {
     readonly property color fgDim: selected ? pop.accentText : pop.dim
     height: 36
     radius: Config.corner(8)
-    color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? (danger ? Config.hoverDanger : Config.hover) : "transparent"
+    // The active colour fades in and out; the muted hover is HoverFill's, there at once with the
+    // pointer (as the launcher's highlight is), so moving down a list never leaves a trail
+    color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : Qt.rgba(pop.accent.r, pop.accent.g, pop.accent.b, 0)
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+    HoverFill { hover: rb.danger ? Config.hoverDanger : Config.hover; hovered: rbHover.hovered; gone: rb.selected; radius: rb.radius }
     HoverHandler { id: rbHover }
     ClickTap { onTapped: rb.clicked() }
 }

@@ -575,8 +575,10 @@ FloatingWindow {
                             required property var modelData
                             readonly property bool current: win.section === modelData.id || win.parentSection === modelData.id || (modelData.id === "overview" && win.onMorePage)
                             width: parent.width; height: 38; radius: Config.corner(9)
-                            color: current ? win.accent : navHover.hovered ? Config.hover : "transparent"
+                            // The page you're on fades in; the muted hover is there at once (HoverFill)
+                            color: current ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0)
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                            HoverFill { hovered: navHover.hovered; gone: parent.current; radius: parent.radius }
                             Text {
                                 id: navIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }

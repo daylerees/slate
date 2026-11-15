@@ -132,8 +132,10 @@ FloatingWindow {
                     required property var modelData
                     readonly property bool on: pk.folder === modelData.path
                     width: parent.width; height: 36; radius: Config.corner(9)
-                    color: on ? pk.accent : placeHover.hovered ? Config.hover : "transparent"     // the active colour; the muted hover
+                    // The active colour fades in; the muted hover is there at once (HoverFill)
+                    color: on ? pk.accent : Qt.rgba(pk.accent.r, pk.accent.g, pk.accent.b, 0)
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                    HoverFill { hovered: placeHover.hovered; gone: parent.on; radius: parent.radius }
                     Row {
                         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         spacing: 10

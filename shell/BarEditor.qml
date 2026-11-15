@@ -141,8 +141,9 @@ PanelWindow {
         property bool destructive: false
         signal clicked()
         width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-        color: primary ? Config.accentFor(btnHover.hovered)
-            : btnHover.hovered ? (destructive ? Config.hoverDanger : root.controlLit) : root.control
+        // (the lit accent fades, as everywhere; the muted hover is HoverFill's, there at once)
+        color: primary ? Config.accentFor(btnHover.hovered) : "transparent"
+        HoverFill { base: root.control; hover: parent.destructive ? Config.hoverDanger : root.controlLit; hovered: btnHover.hovered; gone: parent.primary; radius: parent.radius }
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         readonly property color fg: primary ? root.accentText : destructive ? root.danger : root.text
         Row {
@@ -218,7 +219,6 @@ PanelWindow {
             width: 150; height: 32; radius: Config.corner(8)
             color: open || shortHover.hovered ? root.controlLit : root.control
             border.width: open ? 1 : 0; border.color: root.accent
-            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             Text {
                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                 text: root.length.label

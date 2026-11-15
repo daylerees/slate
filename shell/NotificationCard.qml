@@ -260,7 +260,6 @@ Rectangle {
                     width: 20; height: 20
                     radius: Config.corner(5)
                     color: closeHover.hovered ? Config.hover : Qt.rgba(card.textColor.r, card.textColor.g, card.textColor.b, 0.08)
-                    Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(0xEB55)
@@ -325,7 +324,6 @@ Rectangle {
                         radius: Config.corner(8)
                         // Accent-tinted; the muted hover under the pointer
                         color: actHover.hovered ? Config.hover : Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.12)
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         Text {
                             id: actText
                             anchors.centerIn: parent

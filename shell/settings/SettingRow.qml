@@ -80,7 +80,6 @@ Item {
                 anchors.fill: parent
                 radius: Config.corner(6)
                 color: needsLine.linked && needsHover.hovered ? Config.hover : "transparent"
-                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             }
             Row {
                 id: needsRow
