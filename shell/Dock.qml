@@ -1874,7 +1874,7 @@ PanelWindow {
                     return row.x + win.cellX(a) * (1 - f) + win.cellX(b) * f;
                 }
                 y: row.y + row.height - height
-                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                radius: Config.iconCornerFor(width)
                 // Without glass: the theme's own shades (Config.tint: light or dark, and the
                 // wallpaper's tint), a slot a shade off the dock with an edge past the tiles'.
                 // With glass: frosted, like the tiles
@@ -1932,7 +1932,7 @@ PanelWindow {
                         Matrix4x4 { matrix: win.tiltMatrix(launcherCell.width, launcherCell.height, win.tiltAt(win.launcherIndex)) },
                         Translate { y: -win.liftAt(win.launcherIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                     ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
                     Item {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: width
@@ -1940,7 +1940,7 @@ PanelWindow {
                         transform: Matrix4x4 { matrix: win.upright(launchTile.width, launchTile.height) }
                         DockGlow {
                             strength: win.glowAt(win.launcherIndex)
-                            radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            radius: Config.iconCornerFor(width)
                         }
                         // The same shape as the app icons (a tile when they're shown as they come)
                         IconPlate {
@@ -1952,7 +1952,7 @@ PanelWindow {
                             opacity: Config.dockTileOpacity
                         }
                         // Glass: a sheen, rounded like the tile
-                        Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
+                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                         // Three soft rounded bars, as on the bar's Apps button, scaled with the tile
                         Column {
                             id: burger
@@ -2001,15 +2001,14 @@ PanelWindow {
                     }
                     DockBacking {
                         visible: win.mediaWide === 1 && Config.glass
-                        dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                        dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width)
                     }
                     Item {
                         id: mediaWideTile
                         visible: win.mediaWide > 1
                         anchors.bottom: parent.bottom
                         width: parent.width; height: win.base * mediaCell.s
-                        readonly property real corner: Config.s.iconShape === "circle" ? height / 2
-                            : height * win.iconCorner / Math.max(1, win.base)
+                        readonly property real corner: Config.iconCornerFor(height)
                         readonly property bool hasArt: wideArt.status === Image.Ready
                         // The art sits inside the tile, this far in from its edges. Album covers are
                         // square, so it's rounded a little (as music apps show them), whatever the
@@ -2139,8 +2138,7 @@ PanelWindow {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: width
                         transform: Matrix4x4 { matrix: win.upright(mediaTile.width, mediaTile.height) }
-                        readonly property real corner: Config.s.iconShape === "circle" ? width / 2
-                            : width * win.iconCorner / Math.max(1, win.base)
+                        readonly property real corner: Config.iconCornerFor(width)
                         readonly property bool hasArt: win.mediaArt && mediaArt.status === Image.Ready
                         // No art: the tile the launcher button has, with a note on it
                         IconPlate {
@@ -2290,7 +2288,7 @@ PanelWindow {
                         // in it has one
                         DockBacking {
                             visible: cell.isMore
-                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width)
                         }
                         Item {
                             id: moreTile
@@ -2300,7 +2298,7 @@ PanelWindow {
                             transform: Matrix4x4 { matrix: win.upright(moreTile.width, moreTile.height) }
                             DockGlow {
                                 strength: win.glowAt(cell.slot.at)
-                                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                                radius: Config.iconCornerFor(width)
                             }
                             IconPlate {
                                 anchors.fill: parent
@@ -2310,7 +2308,7 @@ PanelWindow {
                                 color: win.tileColor
                                 opacity: Config.dockTileOpacity
                             }
-                            Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
+                            Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                             Text {
                                 opacity: Config.dockIconOpacity
                                 anchors.centerIn: parent
@@ -2346,7 +2344,7 @@ PanelWindow {
                         DockBacking {
                             visible: cell.isApp && !Config.s.iconFill && Config.s.iconShape !== "original" && Config.glass
                             tileWidth: cell.width; lift: cell.bounce * win.base * 0.4
-                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width)
                         }
                         // Glow (Settings → Dock → Hover effect), behind the icon and moving with its bounce.
                         // Kept out of the icon's Image: inside it, the icon wasn't drawn until the dock
@@ -2359,7 +2357,7 @@ PanelWindow {
                             DockGlow {
                                 strength: win.glowAt(cell.slot.at)
                                 colour: win.glowColour(cell.tilePath)
-                                radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                                radius: Config.iconCornerFor(width)
                             }
                         }
                         // The tile behind the icon, in the theme's colour: drawn once at its magnified
@@ -2480,7 +2478,7 @@ PanelWindow {
                         Matrix4x4 { matrix: win.tiltMatrix(downloadsCell.width, downloadsCell.height, win.tiltAt(win.downloadsIndex)) },
                         Translate { y: -win.liftAt(win.downloadsIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                     ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
                     Item {
                         id: downloadsTile
                         anchors.bottom: parent.bottom
@@ -2488,7 +2486,7 @@ PanelWindow {
                         transform: Matrix4x4 { matrix: win.upright(downloadsTile.width, downloadsTile.height) }
                         DockGlow {
                             strength: win.glowAt(win.downloadsIndex)
-                            radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            radius: Config.iconCornerFor(width)
                         }
                         IconPlate {
                             anchors.fill: parent
@@ -2498,7 +2496,7 @@ PanelWindow {
                             color: win.tileColor
                             opacity: Config.dockTileOpacity
                         }
-                        Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
+                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                         Text {
                             opacity: Config.dockIconOpacity
                             anchors.centerIn: parent
@@ -2525,7 +2523,7 @@ PanelWindow {
                         Matrix4x4 { matrix: win.tiltMatrix(trashCell.width, trashCell.height, win.tiltAt(win.trashIndex)) },
                         Translate { y: -win.liftAt(win.trashIndex); Behavior on y { enabled: win.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
                     ]
-                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base) }
+                    DockBacking { dockTop: bg.y - row.y; color: win.dockColor; radius: Config.iconCornerFor(width) }
                     Item {
                         id: trashTile
                         anchors.bottom: parent.bottom
@@ -2533,7 +2531,7 @@ PanelWindow {
                         transform: Matrix4x4 { matrix: win.upright(trashTile.width, trashTile.height) }
                         DockGlow {
                             strength: win.glowAt(win.trashIndex)
-                            radius: Config.s.iconShape === "circle" ? width / 2 : width * win.iconCorner / Math.max(1, win.base)
+                            radius: Config.iconCornerFor(width)
                         }
                         IconPlate {
                             anchors.fill: parent
@@ -2544,7 +2542,7 @@ PanelWindow {
                             opacity: Config.dockTileOpacity
                         }
                         // Glass: a sheen, rounded like the tile
-                        Gloss { radius: parent.width * win.iconCorner / Math.max(1, win.base); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
+                        Gloss { radius: Config.iconCornerFor(parent.width); glassHint: true; tall: false; opacity: Config.dockTileOpacity }
                         // The bin, as Downloads' folder is drawn: outlined while it's empty, filled
                         // once there's something in it
                         Text {
