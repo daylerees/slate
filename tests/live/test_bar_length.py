@@ -12,6 +12,10 @@ class BarLength(LiveCase):
         for key in ("barClockDate", "barClockSeconds", "barValueWifi", "barValueVolume"):
             self.keep_setting(key)
         self.addCleanup(lambda: self.squeeze(0))
+        # (the bar as a session starts it, with one keyboard layout and so no layout switcher:
+        # what each test here expects to go first, and when, is worked out for that. An earlier
+        # test's layouts left in use once made the containers collapse the other way round)
+        self.wait(lambda st: not st["bar"]["line"]["keyboard"]["visible"], "no keyboard layout switcher on the bar", timeout=15)
         self.squeeze(0)
 
     def bar(self):

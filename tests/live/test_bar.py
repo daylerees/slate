@@ -291,6 +291,27 @@ class WorkspaceName(LiveCase):
         self.shown(f"Workspace {ws}", "its name taken away")
 
 
+class KeyboardLayouts(LiveCase):
+    def keyboard_shown(self, shown, what):
+        self.wait(lambda st: st["bar"]["line"]["keyboard"]["visible"] == shown, what, timeout=15)
+
+    def test_layouts_put_back_leave_the_bar(self):
+        """Layouts of your own put back to Hyprland's (config set, as a test's clean-up does):
+        Hyprland is given its own again, and the layout switcher leaves the bar with them. (They
+        stayed in use, and the switcher on the bar, until Hyprland next reloaded: every later
+        test in the session saw a bar a thing longer)"""
+        self.keep_setting("kbLayouts")
+        layout = lambda: self.s.hyprctl("getoption", "input:kb_layout", json_out=True).get("str")
+        self.keyboard_shown(False, "one layout, and no switcher, to start with")
+        own = layout()
+        self.config("kbLayouts", "gb,us")
+        self.keyboard_shown(True, "the switcher with two layouts")
+        self.wait(lambda st: layout() == "gb,us", "Hyprland to have the two layouts", timeout=15)
+        self.config("kbLayouts", "")
+        self.wait(lambda st: layout() == own, "Hyprland to have its own layouts again (it kept the ones put back)", timeout=15)
+        self.keyboard_shown(False, "the switcher gone with the layouts put back")
+
+
 class Label(LiveCase):
     """The label just off the bar saying what the pointer's over (BarLabel.qml): Edit layout's
     name for Slate's own things, which workspace a dot is, a tray app's name. It shows after a

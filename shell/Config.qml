@@ -732,7 +732,9 @@ Singleton {
             if (key === "barPosition") { root.moveBar(value); return; }
             if (key === "dockPosition") { root.moveDock(value); return; }
             const v = root.settingFromText(cur, value);
-            if (v !== undefined) root.s[key] = v;
+            if (v === undefined) return;
+            root.s[key] = v;
+            root.hyprKeyEdited(key, cur);
         }
         function get(key: string): string { return String(root.s[key]); }
     }
@@ -2600,6 +2602,14 @@ Singleton {
         "touchpadTapToClick", "touchpadIgnoreWhileTyping", "focusFollowsMouse", "animations", "cursorSize",
         "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator"]
     Timer { id: hyprReload; interval: 300; onTriggered: root.reloadHyprland() }
+    // One of them changed from `was` to what it is now: put back to "not set here", Hyprland
+    // still holds the old value (Slate stops sending it, it doesn't send Hyprland's own), so
+    // its config is reloaded. (config set and Restore defaults: putting your keyboard layouts
+    // back left the old ones in use, and the bar's layout switcher with them)
+    function hyprKeyEdited(key, was) {
+        if (hyprKeys.includes(key) && !sameValue(was, defaults[key]) && sameValue(root.s[key], defaults[key]))
+            hyprReload.restart();
+    }
     // Slate reloading Hyprland's config itself (to apply something of its own), rather than you
     // editing your Hyprland files: shell.qml leaves out the "reloaded" notice for these
     property real ownHyprReloadAt: 0
@@ -2616,10 +2626,11 @@ Singleton {
             if (k === "barPosition") moveBar(defaults[k]);
             else if (k === "dockPosition") moveDock(defaults[k]);
             else if (!sameValue(root.s[k], defaults[k])) {
+                const was = root.s[k];
                 root.s[k] = defaults[k];
                 if (k === "uiScale") uiScaleEdited();
                 if (k === "logLevel") logLevelEdited();
-                if (hyprKeys.includes(k)) hyprReload.restart();
+                hyprKeyEdited(k, was);
             }
         }
     }
