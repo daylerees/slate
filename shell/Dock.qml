@@ -1662,18 +1662,24 @@ PanelWindow {
         hoverEnabled: true
         // The arrow over the dock, icons and widgets alike, as over the desktop (its click
         // sound stays); the hand is for buttons in panels and menus
+        // (a divider dragged from here shows the resize arrow all the same: starting it turns
+        // on the resizer above, which has it)
         cursorShape: Qt.ArrowCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         function stripX(m) { return strip.mapFromItem(mouse, m.x, m.y).x; }
         property point pressedAt
         property bool dragged: false        // moved far enough to be a drag, not a click
+        property bool sizing: false         // this press is on a divider: it resizes the dock
         onPressed: m => {
+            sizing = m.button === Qt.LeftButton && resizer.overDivider(m);
+            if (sizing) { resizer.begin(m); return; }
             pressedAt = Qt.point(m.x, m.y);
             dragged = false;
             const sl = win.slotAt(win.hoveredIndex);
             win.dragCandidate = m.button === Qt.LeftButton && sl && sl.kind === "app" ? sl.item.key : "";
         }
         onPositionChanged: m => {
+            if (sizing) { if (pressed) resizer.follow(m); return; }
             win.setPointer(stripX(m));
             if (!pressed) resizer.watch(m);        // (resting on a divider: the resize cursor)
             if (!pressed || win.dragCandidate === "" || win.landing) return;
@@ -1686,11 +1692,14 @@ PanelWindow {
                 win.dragTo(strip.mapFromItem(mouse, m.x, m.y));
             }
         }
-        onReleased: win.endDrag()
-        onCanceled: win.endDrag()           // (a drag cut short ends as if let go, never stuck)
+        // (sizing is cleared just after a release, once the click that follows it has been
+        // skipped, and never left on: while it's on the pointer isn't followed, and the dock
+        // stopped magnifying after a resize)
+        onReleased: { if (sizing) { win.endResize(); Qt.callLater(() => { sizing = false; }); } else win.endDrag(); }
+        onCanceled: { if (sizing) { win.endResize(); sizing = false; } else win.endDrag(); }   // (a drag cut short ends as if let go, never stuck)
         onExited: { holdTimer.restart(); if (!win.dividerCursor) resizer.stopRest(); }
         onClicked: m => {
-            if (dragged) return;            // a drag, not a click
+            if (dragged || sizing) return;  // a drag or a resize, not a click
             win.setPointer(stripX(m));
             win.clickItem(win.hoveredIndex, m.button === Qt.RightButton);
         }
@@ -1741,11 +1750,22 @@ PanelWindow {
         Timer { id: rest; interval: 300; onTriggered: win.dividerCursor = true }
         function startRest() { rest.restart(); }
         function stopRest() { rest.stop(); }
+        // A drag from a divider, begun here (after a rest) or by the dock's own area (pressed
+        // straight away, before the cursor has changed): m in this area's coordinates (the same
+        // box as the dock's own)
+        function begin(m) {
+            startCross = cross(m);
+            startSize = Config.s.dockIconSize;
+            win.resizeSize = startSize;
+            win.dividerCursor = true;
+        }
+        function follow(m) {
+            const grow = win.edge === "bottom" || win.edge === "right" ? startCross - cross(m) : cross(m) - startCross;
+            win.resizeSize = Math.max(28, Math.min(64, Math.round(startSize + grow)));
+        }
         onPositionChanged: m => {
-            if (pressed) {
-                const grow = win.edge === "bottom" || win.edge === "right" ? startCross - cross(m) : cross(m) - startCross;
-                win.resizeSize = Math.max(28, Math.min(64, Math.round(startSize + grow)));
-            } else if (!overDivider(m)) {
+            if (pressed) follow(m);
+            else if (!overDivider(m)) {
                 rest.stop();
                 win.dividerCursor = false;           // (off again: the dock's own area takes over)
             }
@@ -1753,10 +1773,7 @@ PanelWindow {
         onExited: { if (!pressed) { rest.stop(); win.dividerCursor = false; } }
         onPressed: m => {
             if (!overDivider(m)) { m.accepted = false; return; }
-            startCross = cross(m);
-            startSize = Config.s.dockIconSize;
-            win.resizeSize = startSize;
-            win.dividerCursor = true;
+            begin(m);
         }
         onReleased: win.endResize()
         onCanceled: win.endResize()
