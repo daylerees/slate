@@ -106,17 +106,6 @@ function instantTo(dispatcher)
     restoreSlideAfter(300)
 end
 
--- squareWhileSliding(): windows lose their rounded corners for as long as a workspace switch
--- that slides takes, and get them back after, so nothing shows past a moving window's corners
--- (windowrules.lua has the rule; a crossfade and a straight switch move nothing, so they keep them)
-local roundTimer = nil
-function squareWhileSliding()
-    if not SLIDE_SQUARE_RULE or ANIM_OFF or WORKSPACE_ANIM == "crossfade" or WORKSPACE_ANIM == "none" then return end
-    SLIDE_SQUARE_RULE:set_enabled(true)
-    if roundTimer then roundTimer:set_enabled(false) end
-    roundTimer = hl.timer(function() roundTimer = nil; SLIDE_SQUARE_RULE:set_enabled(false) end,
-                          { timeout = math.floor(sp(5) * 100 + 40), type = "oneshot" })
-end
 
 -- noteWorkspaceSwitch(): called as a slide starts. The workspace left behind holds, fully there,
 -- until the new one has arrived (holdFade), so the desktop never shows between them. But switching

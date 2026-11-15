@@ -132,32 +132,23 @@ class WorkspaceSwitch(Waits, switching.SwitcherAnimations):
                 Image.open(before).save(os.path.join(self.s.out, "slide-before.png"))
             self.assertEqual(len(xs), 0, f"the wallpaper shows across {len(xs)} px during the switch, at x {xs[:1]}…{xs[-1:]} ({shot})")
 
-    def test_windows_are_square_while_a_switch_slides(self):
+    def test_windows_keep_their_corners_while_a_switch_slides(self):
+        """A window that doesn't fill the screen keeps its rounded corners through a workspace
+        switch: they were squared for the length of every slide, and the author saw the corners
+        of a padded lone window flick square and back (2026-11-15). Only windows that fill the
+        screen (alone and unpadded, or maximized) are square, all the time."""
         self.windows_on_two_workspaces()
-        self.addCleanup(lambda: self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(true)"))
-        self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(false)")     # (a lone window is square anyway)
+        self.addCleanup(lambda: (self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(true)"), self.go_to_workspace(1)))
+        self.s.hyprctl("eval", "SOLO_SQUARE_RULE:set_enabled(false)")     # (as with lone windows padded)
         rounding = lambda: self.s.hyprctl("getprop", "active", "rounding").strip()
         self.until(lambda: rounding() != "0", "the lone window's corners to round")
         usual = self.steady(rounding)
-        self.assertNotEqual(usual, "0")
-        self.s.hyprctl("eval", "squareWhileSliding()")
-        # (squared at once, for as long as a slide takes, a little over half a second: asked
-        # within that)
-        self.s.settle(0.15)
-        self.assertEqual(rounding(), "0", "windows kept their rounded corners during the switch")
-        self.until(lambda: rounding() == usual, "the corners to come back")
-        self.assertEqual(rounding(), usual, "windows didn't get their corners back")
-
-    def test_windows_keep_their_corners_when_nothing_slides(self):
-        self.windows_on_two_workspaces()
-        self.addCleanup(lambda: self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(true); setWorkspaceAnimation("slidefade")'))
-        self.s.hyprctl("eval", 'SOLO_SQUARE_RULE:set_enabled(false); setWorkspaceAnimation("crossfade")')
-        rounding = lambda: self.s.hyprctl("getprop", "active", "rounding").strip()
-        self.until(lambda: rounding() != "0", "the lone window's corners to round")
-        usual = self.steady(rounding)
-        self.s.hyprctl("eval", "squareWhileSliding()")
-        self.s.settle(0.15)                      # (nothing must happen: a crossfade moves nothing)
-        self.assertEqual(self.s.hyprctl("getprop", "active", "rounding").strip(), usual)
+        self.s.hyprctl("dispatch", 'function() cycleWorkspace(1) end')
+        seen = set()
+        for _ in range(8):                       # (through the slide, about half a second)
+            self.s.settle(0.08)
+            seen.add(rounding())
+        self.assertEqual(seen, {usual}, "the corners went square during the switch")
 
     def test_slide_to_an_empty_workspace_isnt_cut_short(self):
         # To an empty workspace the windows slide away. The usual animation (which holds the
