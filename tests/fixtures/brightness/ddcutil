@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""A stand-in for ddcutil (scripts/display-brightness.py, DisplayBrightness.qml) for the live
+tests: pretend monitors whose brightness (VCP 0x10) is a number in $HOME/.ddc.json,
+{"displays": [{"connector": "card1-TEST", "bus": 7, "mfg": "TST", "model": "Test Monitor",
+"serial": "S1", "value": 60, "max": 100, "answers": true}], "slow": 0.3}
+("answers": false: a monitor without DDC/CI; "slow": seconds each call takes, as real ones do).
+Without that file it isn't installed at all (as the shell says: status 127), so every other
+test sees a computer without ddcutil. Each call that sets one is noted in $HOME/.ddc-calls
+(JSON lines: {"bus": 7, "value": 40, "at": <time>}).
+
+Takes what Slate uses: detect --terse; --bus N getvcp 10 --brief; --bus N [--noverify] setvcp 10 V."""
+import json
+import os
+import sys
+import time
+
+home = os.environ.get("HOME", "/tmp")
+STATE = os.path.join(home, ".ddc.json")
+CALLS = os.path.join(home, ".ddc-calls")
+
+try:
+    with open(STATE) as f:
+        state = json.load(f)
+except (OSError, ValueError):
+    sys.stderr.write("ddcutil: command not found\n")
+    sys.exit(127)
+
+args = sys.argv[1:]
+time.sleep(float(state.get("slow", 0)))
+displays = state.get("displays", [])
+bus = int(args[args.index("--bus") + 1]) if "--bus" in args else None
+mine = next((d for d in displays if d["bus"] == bus), None)
+
+if "detect" in args:
+    n = 0
+    for d in displays:
+        if d.get("answers", True):
+            n += 1
+            print("Display %d" % n)
+        else:
+            print("Invalid display")
+        print("   I2C bus:          /dev/i2c-%d" % d["bus"])
+        if d.get("connector"):
+            print("   DRM connector:    %s" % d["connector"])
+        print("   Monitor:          %s:%s:%s" % (d.get("mfg", ""), d.get("model", ""), d.get("serial", "")))
+        print()
+    if not displays:
+        print("No displays found.")
+elif "getvcp" in args:
+    if not mine or not mine.get("answers", True):
+        sys.stderr.write("DDC communication failed\n")
+        sys.exit(1)
+    print("VCP 10 C %d %d" % (mine["value"], mine.get("max", 100)))
+elif "setvcp" in args:
+    if not mine or not mine.get("answers", True):
+        sys.stderr.write("DDC communication failed\n")
+        sys.exit(1)
+    mine["value"] = max(0, min(mine.get("max", 100), int(args[-1])))
+    with open(STATE + ".tmp", "w") as f:
+        json.dump(state, f)
+    os.replace(STATE + ".tmp", STATE)
+    with open(CALLS, "a") as f:
+        f.write(json.dumps({"bus": bus, "value": mine["value"], "at": time.time()}) + "\n")
+else:
+    sys.stderr.write("Unrecognized command\n")
+    sys.exit(1)

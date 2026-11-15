@@ -17,6 +17,7 @@ a check (on the "test" IPC's state) that it's there, and what to undo afterwards
 Approved screenshots are tests/visual/baselines/<name>.png, made in the container only
 (tests/run --update-baselines [name…]).
 """
+import json
 import os
 import re
 import sys
@@ -576,6 +577,19 @@ SCENES["settings-displays-hdr"] = {
            ("settings", "find", "displays", "HDR")],
     "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "displays", "settle": 2,
     "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.local/state/slate/displays.json"')],
+}
+
+# Settings → Displays with the test screen a monitor Slate can set the brightness of, over
+# DDC/CI (the stand-in ddcutil in tests/fixtures/brightness: $HOME/.ddc.json): its Brightness
+# slider, at 65%. (Without it, settings-displays shows the row grayed out, needing ddcutil)
+_DDC = json.dumps({"displays": [{"connector": "card1-TEST", "bus": 7, "mfg": "TST", "model": "Test Monitor",
+                                 "serial": "S1", "value": 65, "max": 100}]})
+SCENES["settings-displays-brightness"] = {
+    "do": [("!sh", "-c", 'printf %s \'' + _DDC + '\' > "$HOME/.ddc.json"'), ("settings", "page", "displays")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "displays"
+    and (st["displayBrightness"]["displays"].get("TEST") or {}).get("kind") == "ddc", "settle": 2,
+    "mask": [(505, 538, 220, 24)],
+    "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.ddc.json"')],
 }
 
 # Settings → Sound scrolled to its sound effects, each with its slider (Nova's answer among them)

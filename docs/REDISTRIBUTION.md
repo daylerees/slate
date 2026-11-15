@@ -72,7 +72,7 @@ what's still open.
 |---|---|
 | Distro packages | none yet: Slate is installed from the repository or a release archive. An AUR `slate-git` package would be the natural first one |
 | Init systems on real installs | elogind support (above) hasn't been tried on a real install or in the test container: an Artix test image is the next step, and it's what will answer how Hyprland's `start-hyprland` and polkit behave there |
-| Brightness | `brightnessctl`, with the first backlight device and a `*kbd_backlight*` glob for the keyboard (`OSD.qml`, and Automatic brightness in `scripts/auto-brightness.py`); detect the devices instead |
+| Brightness | `brightnessctl`, with the first backlight device and a `*kbd_backlight*` glob for the keyboard (`DisplayBrightness.qml`, and Automatic brightness in `scripts/auto-brightness.py`); detect the devices instead. Monitors over DDC/CI need ddcutil and access to `/dev/i2c-*`, which Slate says but doesn't set up |
 | Run as a systemd user service | so Slate is restarted if it dies (matters most for the lock screen); would need an equivalent without systemd |
 | Other distros in the test suite | the suite runs on Arch packages only; `tools/test-install-docker.sh` checks that the installer works elsewhere, not Slate itself |
 | Light-mode GTK on Debian/Ubuntu/openSUSE | adw-gtk3 isn't packaged there ([INSTALL.md](INSTALL.md#not-packaged-everywhere) says where to get it) |

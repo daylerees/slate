@@ -119,32 +119,16 @@ PanelWindow {
     }
 
     // ---- Brightness (screen and keyboard) -------------------------------------
-    // brightnessctl -m prints:  device,class,current,percent%,max
-    Process {
-        id: bright
-        property bool keyboard: false
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = text.trim().split("\n").pop().split(",");
-                const pct = parseInt(parts[3]) / 100;
-                if (isNaN(pct)) return;
-                if (bright.keyboard) osd.show(0xEBD6, pct, pct === 0 ? "Off" : "");
-                else osd.show(pct < 0.3 ? 0xF237 : 0xEB30, pct, "");
-                // (your choice for this light, for Automatic brightness to learn rather than undo)
-                AutoBrightness.manual(bright.keyboard ? "keyboard" : "screen", pct * 100);
-            }
+    // Set in DisplayBrightness.qml (the keys, the IPC below, Settings' slider: one way, which
+    // Automatic brightness hears); shown here, when it's the keys or the IPC
+    Connections {
+        target: DisplayBrightness
+        function onAdjusted(pct, keyboard) {
+            if (keyboard) osd.show(0xEBD6, pct, pct === 0 ? "Off" : "");
+            else osd.show(pct < 0.3 ? 0xF237 : 0xEB30, pct, "");
         }
     }
-    function brightness(dir, keyboard) {
-        const args = ["brightnessctl", "-m"];
-        if (keyboard) args.push("-d", "*kbd_backlight*");
-        else args.push("-c", "backlight", "-n1");      // never go fully black
-        if (dir === "up") args.push("set", keyboard ? "+1" : "5%+");
-        else if (dir === "down") args.push("set", keyboard ? "1-" : "5%-");
-        bright.keyboard = keyboard;
-        bright.command = args;
-        bright.running = true;
-    }
+    function brightness(dir, keyboard) { DisplayBrightness.step(dir, keyboard); }
 
     IpcHandler {
         target: "osd"
@@ -178,11 +162,7 @@ PanelWindow {
             osd.showVolume();
         }
         // The screen's brightness to a percentage (never fully black)
-        function brightnessSet(percent: int): void {
-            bright.keyboard = false;
-            bright.command = ["brightnessctl", "-m", "-c", "backlight", "-n1", "set", Math.max(1, Math.min(100, percent)) + "%"];
-            bright.running = true;
-        }
+        function brightnessSet(percent: int): void { DisplayBrightness.setScreen(percent, true); }
         function keyboard(action: string): void { osd.brightness(action, true); }
         function workspace(): void { osd.showWorkspace(); }
     }

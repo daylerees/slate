@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Displays · Slate docs</title>
-<meta name="description" content="Setting up your screens in Slate: arranging them, resolution, refresh rate, scale, rotation, HDR, the main display, automatic brightness, and keeping or undoing changes.">
+<meta name="description" content="Setting up your screens in Slate: arranging them, resolution, refresh rate, scale, rotation, HDR, the main display, each display's brightness, automatic brightness, and keeping or undoing changes.">
 <link rel="icon" href="../assets/icon.png">
 <link rel="stylesheet" href="../style.css?v=31">
 <link rel="stylesheet" href="docs.css?v=2">
@@ -81,6 +81,23 @@
       <h2>Brightness</h2>
       <p>Your keyboard's brightness keys change the screen's brightness (and the keyboard's backlight, where it has
         keys for it), with a small pop-up showing the new level, just like the volume.</p>
+      <p>Each display also has a <strong>Brightness</strong> slider in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Displays</span>, with its other settings: choose the
+        display in the arrangement first. On a laptop's own screen it's the same brightness the keys change, and it
+        moves with them while Settings is open.</p>
+      <p>For a monitor, Slate sets the brightness through the monitor's own controls (DDC/CI), so it changes the
+        backlight itself rather than dimming the picture. It can take a moment to change, and Slate sets it once you
+        stop dragging. That needs a couple of things:</p>
+      <ul>
+        <li><code>ddcutil</code> installed. Until it is, the slider is grayed out and says so.</li>
+        <li>Access to the monitors' I2C connection. If the row says <em>Needs access to i2c</em>, load the
+          <code>i2c-dev</code> module (<code>sudo modprobe i2c-dev</code>, and add it to
+          <code>/etc/modules-load.d/</code> to keep it) and add yourself to the <code>i2c</code> group
+          (<code>sudo usermod -aG i2c $USER</code>, then log out and back in). Some distributions give you access
+          with ddcutil's own udev rule instead. Slate never changes this for you.</li>
+        <li>DDC/CI switched on in the monitor's own menu. A monitor that doesn't answer says
+          <em>This display doesn't let Slate change its brightness</em>; its own buttons still work as always.</li>
+      </ul>
       <h3>Automatic brightness</h3>
       <p>On a laptop with a light sensor, the <strong>Brightness</strong> section of
         <span class="path"><i class="ti">&#xEB20;</i> Settings → Displays</span> has an

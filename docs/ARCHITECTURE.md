@@ -43,6 +43,10 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ AutoBrightness.qml   singleton: Automatic brightness (Settings → Displays), running
 │                       scripts/auto-brightness.py while it's on; the brightness keys (OSD.qml)
 │                       tell it your changes, to learn
+├─ DisplayBrightness.qml  singleton: each display's brightness (Settings → Displays → Brightness,
+│                       the brightness keys through OSD.qml, the `brightness` IPC): the built-in
+│                       screen with brightnessctl, monitors over DDC/CI with ddcutil
+│                       (scripts/display-brightness.py reads them)
 ├─ Radios.qml          Wi-Fi and Bluetooth through IPC (`wifi`, `bluetooth`), for the assistant's tools
 ├─ AirplaneMode.qml     Wi-Fi, Bluetooth and mobile broadband off together, and back as they were (`airplane` IPC)
 ├─ PrivateMode.qml      Private Mode (`private` IPC): microphones muted, the camera off for every app
@@ -200,6 +204,10 @@ scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio
                               signals, no polling), eases the screen and keyboard light to the room
                               with brightnessctl, learns your changes (~/.local/state/slate/
                               auto-brightness.json, 0600); --check says what the computer has
+scripts/display-brightness.py  which displays Settings → Displays can set the brightness of, and how
+                              bright each is: the backlight (brightnessctl) and monitors over DDC/CI
+                              (ddcutil detect, matched to Hyprland's outputs by DRM connector, else
+                              EDID model and serial; getvcp 10), as JSON lines; changes nothing
 scripts/force-quit.sh         the dock menu's Force Quit: kills the apps behind the given windows (never Slate's own)
 scripts/refresh-gtk-apps.sh   restarts windowless GTK4 apps after the colours change, so their next
                               window opens in the new ones (run by apply-theme.py and on window close)
@@ -454,6 +462,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `more` (More's grid, when apps don't fit), `preview <app>`, `closePreview` |
 | `settings` | `toggle`, `open`, `close`, `page <id>` |
 | `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right), `volumeGet` (JSON), `volumeSet <0-100>`, `brightnessSet <1-100>` |
+| `brightness` | `list` (JSON: each display Slate can set, and how bright; the first call looks), `set <display> <0-100>` (`ok`, `later` once it's looked, or `no`) |
 | `lock` | `lock`, `preview <lock\|login>`, `closePreview` |
 | `media` | `toggle`, `next`, `previous` (media keys), `info` (what's playing, JSON) |
 | `notifications` | `dnd <bool>`, `dndGet`, `list` (the latest, JSON), `clear` |
@@ -477,7 +486,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockMoreDrag <app> <slot> <up>` and `dockMoreDrop` (the same for an app dragged out of More's grid, open with `dock more`), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge); only with `SLATE_TEST=1`, for the test suite |
+| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockMoreDrag <app> <slot> <up>` and `dockMoreDrop` (the same for an app dragged out of More's grid, open with `dock more`), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge), `brightnessSlide <display> <percent> <letGo>` (Settings → Displays → Brightness's slider moved, and let go or not); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 
@@ -668,7 +677,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |
 | `swash` | opens screenshots to annotate; without it they're saved to ~/Pictures/Screenshots and copied |
 | `uwsm` (optional) | session management, with systemd only; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
-| `brightnessctl` | screen and keyboard brightness keys, and Automatic brightness |
+| `brightnessctl` | screen and keyboard brightness keys, Settings → Displays → Brightness for the built-in screen, and Automatic brightness |
+| `ddcutil` (Gentoo `app-misc/ddcutil`; NixOS `hardware.i2c.enable` and `ddcutil`) | Settings → Displays → Brightness for monitors, over DDC/CI (`scripts/display-brightness.py`, `DisplayBrightness.qml`). Optional: without it a monitor's row is grayed out and says to install it. It also needs the `i2c-dev` module and access to `/dev/i2c-*` (the `i2c` group, or ddcutil's udev rule), which the row says when that's missing |
 | `iio-sensor-proxy` (Gentoo `sys-apps/iio-sensor-proxy`; NixOS `hardware.sensor.iio.enable`) | Settings → Displays → Automatic brightness: reads the laptop's light sensor, over D-Bus (`scripts/auto-brightness.py`). Optional: the switch only shows where the kernel has a light sensor, and grayed out says to install it when it's missing |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |

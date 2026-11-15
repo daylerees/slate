@@ -42,7 +42,7 @@ class Stubs:
     # the real desktop) through them, even when a test forgets to stub it
     BLOCKED = ("hyprctl", "notify-send", "qs", "quickshell", "systemctl", "loginctl", "gsettings",
                "nmcli", "bluetoothctl", "wpctl", "pactl", "busctl", "gdbus", "dbus-send", "xdg-open",
-               "wl-copy", "wl-paste", "pw-play", "brightnessctl", "powerprofilesctl", "lpadmin",
+               "wl-copy", "wl-paste", "pw-play", "brightnessctl", "ddcutil", "powerprofilesctl", "lpadmin",
                "pkexec", "sudo",
                # the agent CLIs the assistant can drive: a real one would reach the network and
                # spend the person's own account (tests bring stand-ins: test_assistant.py)

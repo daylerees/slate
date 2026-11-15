@@ -184,9 +184,14 @@ class Session:
             # session bus, where tests/lib/fake_sensor.py stands in for iio-sensor-proxy (none
             # there: no sensor), a pause after your own change of seconds rather than a minute,
             # and a stand-in brightnessctl that's a pretend laptop only once a test gives it
-            # $HOME/.brightness.json (until then, no backlight, as before)
+            # $HOME/.brightness.json (until then, no backlight, as before). Beside it a stand-in
+            # ddcutil, not installed until a test gives it $HOME/.ddc.json; a pretend /sys in
+            # $HOME/.sys (empty until a test says which output the backlight lights) and /dev
+            # in $HOME/.dev (its I2C devices), as tests/live/test_display_brightness.py does
             "SLATE_SENSOR_BUS": "session",
             "SLATE_AUTO_BRIGHTNESS_PAUSE": "6",
+            "SLATE_SYS": os.path.join(self.h.home, ".sys"),
+            "SLATE_DEV": os.path.join(self.h.home, ".dev"),
             "PATH": os.path.join(slate.FIXTURES, "brightness") + ":" + self.env["PATH"],
         })
 

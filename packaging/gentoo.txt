@@ -50,6 +50,7 @@ gui-apps/slurp
 app-misc/brightnessctl
 ?sys-power/power-profiles-daemon
 ?sys-apps/iio-sensor-proxy   # Automatic brightness: the laptop's light sensor (scripts/auto-brightness.py)
+?app-misc/ddcutil            # Settings → Displays → Brightness for monitors, over DDC/CI (scripts/display-brightness.py)
 ?gui-apps/qt6ct
 ?sys-apps/xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 x11-themes/papirus-icon-theme

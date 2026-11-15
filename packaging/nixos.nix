@@ -5,6 +5,8 @@
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
   hardware.sensor.iio.enable = true;          # iio-sensor-proxy: Automatic brightness reads the light sensor (optional)
+  hardware.i2c.enable = true;                 # i2c-dev and the i2c group: monitors' brightness over DDC/CI (optional;
+                                              # add yourself: users.users.<you>.extraGroups = [ "i2c" ];)
   networking.networkmanager.enable = true;
   hardware.bluetooth.enable = true;
   security.polkit.enable = true;
@@ -36,6 +38,7 @@
     grim slurp hyprpicker brightnessctl adw-gtk3 papirus-icon-theme
     system-config-printer simple-scan   # printer settings, and scanning
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
+    ddcutil     # optional: Settings → Displays → Brightness for monitors, over DDC/CI
     whisper-cpp   # optional: talking to Nova, speech turned into text on this computer (Settings → Assistant → Voice)
     # ollama      # yours to add: Nova with a model on this computer (Settings → Assistant); or services.ollama.enable = true;
     # Optional: Hyprbars title bars instead of Slate's own. Nix builds the plugin; link it where Slate looks, e.g.

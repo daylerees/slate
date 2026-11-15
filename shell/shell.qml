@@ -222,6 +222,12 @@ ShellRoot {
         // Less room for the dock's things than its edge has (px; 0: the whole edge), to fill it
         // with a few windows rather than dozens
         function dockRoom(px: real): void { win.setTestRoom(px); }
+        // Settings → Displays → Brightness's slider without a pointer: moved to a percentage, and
+        // let go (or not: still dragging)
+        function brightnessSlide(display: string, percent: int, letGo: bool): void {
+            DisplayBrightness.set(display, percent);
+            if (letGo) DisplayBrightness.settle();
+        }
         function switchMissing(ids: string): void { Config.controlSwitchMissing = ids === "" ? [] : ids.split(","); }
         // Hardware the tests' computer hasn't got, pretended there or not: what = "wifi" or "audio"
         function hardware(what: string, on: bool): void {
@@ -516,6 +522,8 @@ ShellRoot {
                 // timer, Private Mode's portal watch, and the theme check for updated apps
                 // Automatic brightness (AutoBrightness.qml): what the computer has, and what it's doing
                 autoBrightness: AutoBrightness.testState(),
+                // Each display's brightness (DisplayBrightness.qml): what Slate found it can set, and how bright
+                displayBrightness: DisplayBrightness.testState(),
                 idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: appTheming.staleWatching },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,

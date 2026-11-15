@@ -63,6 +63,10 @@ elif a[:2] == ["assistant", "answer"]:
     out = state.get("answer", "")
 elif a[:2] == ["osd", "volumeGet"]:
     out = state.get("volume", "")
+elif a[:2] == ["brightness", "list"]:
+    out = json.dumps({{"checked": True, "displays": state.get("displays", {{}})}})
+elif a[:2] == ["brightness", "set"]:
+    out = "ok" if a[2] in state.get("displays", {{}}) else "no"
 elif a[:2] == ["notifications", "dndGet"]:
     out = "true" if state.get("dnd") else "false"
 elif a[:2] == ["notifications", "list"]:
@@ -113,7 +117,7 @@ CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arr
 ASKS = ["window_close", "space_delete", "waste_basket_empty", "settings_restore_defaults", "session"]
 # What Slate may be asked while only looking
 READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"], ["notifications", "list"],
-         ["osd", "volumeGet"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"])
+         ["osd", "volumeGet"], ["brightness", "list"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"])
 # Arguments each tool accepts, for the tests that call every one
 ARGS = {
     "settings_search": {"query": "glass"}, "settings_get": {"key": "glass"},
@@ -489,7 +493,7 @@ class Tools(Base):
         self.put_state()
         st, err = self.tool("status")
         self.assertFalse(err)
-        for k in ("battery", "network", "window", "workspace", "volume", "brightness"):
+        for k in ("battery", "network", "window", "workspace", "volume", "brightness", "displays"):
             self.assertNotIn(k, st)
 
     def test_windows(self):
@@ -1040,6 +1044,28 @@ class Changes(Base):
             text, err = self.tool(name)
             self.assertTrue(err)
         self.assertEqual(self.qs_calls("osd", "volumeSet") + self.qs_calls("osd", "brightnessSet"), [])
+
+    def test_a_displays_brightness(self):
+        """Another display's brightness (a monitor, over DDC/CI): status lists the ones Slate can
+        set, and brightness_set takes one of them by name, and nothing else."""
+        self.state["displays"] = {"eDP-1": 62, "DP-1": 70}
+        self.put_state()
+        st, err = self.tool("status")
+        self.assertFalse(err)
+        self.assertEqual(st["displays"], {"eDP-1": 62, "DP-1": 70})
+        got, err = self.tool("brightness_set", {"percent": 40, "display": "DP-1"})
+        self.assertFalse(err, got)
+        self.assertEqual(got, {"display": "DP-1", "brightness": 40})
+        self.assertEqual(self.qs_calls("brightness", "set"), [["brightness", "set", "DP-1", "40"]])
+        self.assertEqual(self.activity()[-1]["args"], {"percent": 40, "display": "DP-1"})
+        # One Slate can't set, or made up: refused, and Slate isn't asked
+        for name in ("HDMI-A-1", "--help", "DP-1; rm -rf ~"):
+            text, err = self.tool("brightness_set", {"percent": 40, "display": name})
+            self.assertTrue(err, text)
+        self.assertEqual(len(self.qs_calls("brightness", "set")), 1)
+        # Without a display, the screen, as before
+        self.tool("brightness_set", {"percent": 30})
+        self.assertEqual(self.qs_calls("osd", "brightnessSet"), [["osd", "brightnessSet", "30"]])
 
     def test_spaces(self):
         store = self.h(".local", "share", "slate", "spaces.json")

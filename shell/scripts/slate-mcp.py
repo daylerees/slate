@@ -636,6 +636,16 @@ def brightness():
         return None
 
 
+def displays_brightness():
+    """{display name: brightness %} for each display Slate can set ({} until it has looked: the
+    first ask starts that, and monitors take a second or two)."""
+    try:
+        v = json.loads(ipc("brightness", "list"))
+        return {clean(str(k), 30): int(p) for k, p in v["displays"].items() if isinstance(p, int)}
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
 def volume():
     try:
         v = json.loads(ipc("osd", "volumeGet"))
@@ -660,7 +670,8 @@ def titles():
 
 @tool("status", "Slate's status",
       "How the desktop is right now: Slate's version, the time, the theme, game mode, Do Not Disturb, night "
-      "light, volume, brightness, the battery, the network's name, and the focused window and workspace." + OTHERS)
+      "light, volume, brightness (and each display's it can set), the battery, the network's name, and the focused "
+      "window and workspace." + OTHERS)
 def status():
     t = datetime.datetime.now()
     out = {"slate": version() or "unknown",
@@ -672,7 +683,8 @@ def status():
     out["gameMode"] = bool(STATUS.get("gameMode"))
     out["doNotDisturb"] = ipc("notifications", "dndGet") == "true"
     out["nightLight"] = ipc("config", "get", "nightLight") == "true"
-    for key, value in (("volume", volume()), ("brightness", brightness()), ("battery", battery()), ("network", network())):
+    for key, value in (("volume", volume()), ("brightness", brightness()), ("displays", displays_brightness() or None),
+                       ("battery", battery()), ("network", network())):
         if value is not None:
             out[key] = value
     ws = spaces.hypr("activeworkspace")
@@ -1477,8 +1489,12 @@ def volume_set(percent):
 
 
 @tool("brightness_set", "Set the screen's brightness", "Set the screen's brightness, as a percentage (1 to 100).",
-      {"percent": {"type": "integer", "minimum": 1, "maximum": 100}}, ["percent"], tier="change")
-def brightness_set(percent):
+      {"percent": {"type": "integer", "minimum": 1, "maximum": 100},
+       "display": {"type": "string", "description": "Another display, by its name in status's displays (leave out for the screen)"}},
+      ["percent"], tier="change")
+def brightness_set(percent, display=""):
+    if display:
+        return display_brightness_set(display, percent)
     before = brightness()
     if before is None:
         raise Sorry("This screen's brightness can't be changed from Slate (there's no backlight to set).")
@@ -1487,6 +1503,21 @@ def brightness_set(percent):
     CALL["before"] = before
     ipc("osd", "brightnessSet", percent)
     return {"brightness": percent}
+
+
+def display_brightness_set(display, percent):
+    """A display by name (a monitor, over DDC/CI, or the built-in screen): only one Slate has
+    found it can set, so nothing made up reaches Slate."""
+    known = displays_brightness()
+    if display not in known:
+        raise Sorry("Slate can't change that display's brightness. status lists the displays it can (displays), by name.")
+    name = clean(display, 30)
+    doing("Set %s's brightness to %d%%" % (name, percent))
+    changing("Set %s's brightness to %d%%?" % (name, percent), "%s is asking to change %s's brightness." % (asker(), name))
+    CALL["before"] = known[display]
+    if ipc("brightness", "set", display, percent) != "ok":
+        raise Sorry("Slate couldn't change that display's brightness just now.")
+    return {"display": name, "brightness": percent}
 
 
 @tool("media_control", "Play, pause or skip", "Play or pause what's playing, or skip to the next or previous track.",

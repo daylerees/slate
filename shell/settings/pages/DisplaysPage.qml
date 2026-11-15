@@ -156,6 +156,31 @@ Column {
             }
         }
         Separator { visible: disp.monitors.length > 1 }
+        // Brightness: the built-in screen's backlight, as the keys set it, or a monitor's own
+        // control over DDC/CI (DisplayBrightness.qml). A monitor Slate can't reach says why
+        SettingRow {
+            id: brightRow
+            visible: displaysPane.cfg && !displaysPane.cfg.disabled
+            readonly property var b: displaysPane.mon ? DisplayBrightness.displays[displaysPane.mon.name] : undefined
+            readonly property bool settable: !!b && (b.kind === "backlight" || b.kind === "ddc")
+            label: "Brightness"
+            detail: !b ? (DisplayBrightness.checking ? "Checking what this display allows…" : "")
+                : b.kind === "backlight" ? "How bright this screen is. The brightness keys change it too"
+                : b.kind === "ddc" ? "How bright this display is, set through its own controls. It can take a moment to change"
+                : b.why === "missing" ? "Slate can set a monitor's brightness through its own controls (DDC/CI), with ddcutil"
+                : b.why === "access" ? "Slate can't reach your monitors' controls yet. Loading the i2c-dev module and joining the i2c group usually sorts it"
+                : "This display doesn't let Slate change its brightness. Its own buttons still can"
+            needsMet: !b || (b.why !== "missing" && b.why !== "access")
+            needs: b && b.why === "access" ? "Needs access to i2c (the i2c group)" : "Needs ddcutil to be installed"
+            ValueSlider {
+                visible: brightRow.settable
+                from: brightRow.b && brightRow.b.kind === "backlight" ? 1 : 0; to: 100; stepSize: 1; suffix: "%"
+                value: brightRow.b && brightRow.b.percent !== undefined ? brightRow.b.percent : 0
+                onMoved: v => DisplayBrightness.set(displaysPane.mon.name, v)
+                onReleased: DisplayBrightness.settle()
+            }
+        }
+        Separator { visible: displaysPane.cfg && !displaysPane.cfg.disabled }
         DropdownSetting {
             visible: displaysPane.cfg && !displaysPane.cfg.disabled
             label: "Resolution"
@@ -232,8 +257,12 @@ Column {
         }
     }
     // Automatic brightness: only where there's a light sensor to follow (AutoBrightness.qml).
-    // A sensor the kernel has but nothing reads yet says what to install
-    Component.onCompleted: AutoBrightness.refresh()
+    // A sensor the kernel has but nothing reads yet says what to install. And how bright each
+    // display is (DisplayBrightness.qml): looked at as the page opens, and again for a display
+    // that comes along while it's open
+    Component.onCompleted: { AutoBrightness.refresh(); DisplayBrightness.refresh(); }
+    readonly property bool unseenDisplay: disp.monitors.some(m => !m.disabled && !DisplayBrightness.displays[m.name])
+    onUnseenDisplayChanged: if (unseenDisplay && DisplayBrightness.checked) DisplayBrightness.refresh()
     GroupLabel { visible: AutoBrightness.shown; text: "Brightness" }
     Group {
         visible: AutoBrightness.shown

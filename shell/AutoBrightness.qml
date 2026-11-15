@@ -6,8 +6,9 @@ pragma Singleton
 // runs while it's off, or on a computer without a sensor (the script says so and stops); turning
 // it off stops the script, which gives the sensor back.
 //
-// Your own changes reach it through manual() (OSD.qml: the brightness keys, and the `osd`
-// IPC's brightnessSet, which Nova uses), so they're learned rather than fought.
+// Your own changes reach it through manual() (DisplayBrightness.qml: the brightness keys, the
+// `osd` IPC's brightnessSet, which Nova uses, and Settings → Displays → Brightness), so they're
+// learned rather than fought.
 //
 // It keeps working in game mode: it draws nothing, a change is rare and slow, and a screen that
 // stays readable as the room changes matters as much in a game.

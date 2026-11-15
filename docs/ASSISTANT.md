@@ -195,7 +195,7 @@ Most other agents take a block like this in their settings (with the whole path 
 
 | Tool | Answers with |
 |---|---|
-| `status` | Slate's version, the time, the theme, game mode, Do Not Disturb, night light, volume, brightness, the battery, the network's name, and the focused window and workspace |
+| `status` | Slate's version, the time, the theme, game mode, Do Not Disturb, night light, volume, brightness (and `displays`: each display Slate can set the brightness of, by name), the battery, the network's name, and the focused window and workspace |
 | `settings_search` | Settings that match a word or two ("glass", "dock size", "dpi"): each one's key, name, page in Settings, description, type, default and value now |
 | `settings_get` | One setting, by its key |
 | `windows_list` | Open windows: app, title, workspace, floating, full screen, focused |
@@ -221,7 +221,7 @@ to ask about every change.
 | `workspace_go`, `workspace_mode`, `workspace_rename` | Switches workspace, changes how one lays out its windows, names it |
 | `space_restore`, `space_save` | Opens a saved Space, or saves workspaces as one (saving over a Space asks first) |
 | `wallpaper_set`, `wallpaper_next` | Changes the wallpaper, to a picture from `wallpapers_list` only |
-| `volume_set`, `brightness_set`, `media_control`, `do_not_disturb` | As named |
+| `volume_set`, `brightness_set`, `media_control`, `do_not_disturb` | As named; `brightness_set` takes an optional `display` (one of status's `displays`: a monitor over DDC/CI, through the `brightness` IPC), the built-in screen without it |
 | `wifi` | With no action: whether Wi-Fi is on, the network it's on, and your saved networks in range (networks you haven't saved are never listed). Turns it on or off, connects to a saved network, or disconnects. Turning it off and disconnecting always ask, since either can cut off an agent that works over the internet, Nova included. Never a new network: that needs its password, from you |
 | `bluetooth` | With no action: whether Bluetooth is on, and your paired devices (connected or not, and a connected one's battery). Turns it on or off, connects or disconnects a paired device. Never pairs a new one |
 | `dock_pin` | With no arguments: the apps pinned to the dock. Pins an app (by its id from `apps_list`) at the end, or unpins one, as its menu on the dock does |
