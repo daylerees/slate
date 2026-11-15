@@ -8,7 +8,8 @@ Usage:  apply-theme.py '<json>'
   {"accent": "#9fc9db", "accentText": "#12151a", "bg": "#0f1216", "surface": "#1d222a",
    "surfaceHigh": "#262c35", "text": "#eef1f5", "dim": "#8b94a3", "error": "#f28b8b",
    "light": false, "codeFont": "...", "on": ["gtk", "kitty", ...],
-   "pointerInApps": false, "codeFontInApps": false, "cursorTheme": "", "cursorSize": 0}
+   "pointerInApps": false, "codeFontInApps": false, "cursorTheme": "", "cursorSize": 0,
+   "quickLookInFileManagers": false}
         apply-theme.py --apps     list the apps Slate can theme, and which are installed
         apply-theme.py --stale '<json>'   the switched-on apps whose theming an update of the
                                   app has undone (Spotify, Discord), one id a line. Quick, and
@@ -45,11 +46,13 @@ gsettings, no signals), for trying it against a scratch HOME.
 import json
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from slate_theme import CFG, HOME, STATE, Ctx, changed, palette, read, run_out, signal_all, writable   # noqa: E402
+from slate_theme import CFG, DATA, GEN, HOME, SHELL_DIR, STATE, Ctx, changed, palette, read, run_out, signal_all, writable   # noqa: E402
 import slate_apps                                                                             # noqa: E402
 
 
@@ -90,6 +93,62 @@ def code_font(ctx, name):
         cur = (run_out(["gsettings", "get", "org.gnome.desktop.interface", "monospace-font-name"]) or "").strip().strip("'")
         m = re.search(r"\s(\d+(?:\.\d+)?)$", cur)
         ctx.gsetting("org.gnome.desktop.interface", "monospace-font-name", "%s %s" % (name, m.group(1) if m else "11"))
+
+
+# ---- Quick Look in file managers (Settings → Default Apps → Quick Look in Dolphin and Thunar) --
+# Nautilus and Nemo reach Quick Look by themselves (Space asks a previewer on the session bus:
+# scripts/file-previewer.py). Dolphin and Thunar have no such hook, so they're given a "Quick
+# Look" item on their right-click menus, running Slate's `quicklook open`; Thunar's also gets
+# Space. Only with the switch on (the app "quick-look" in the undo log), so switching it off
+# takes every one out again.
+DOLPHIN_MENU = os.path.join(DATA, "kio", "servicemenus", "slate-quicklook.desktop")
+THUNAR_ACTIONS = os.path.join(CFG, "Thunar", "uca.xml")
+THUNAR_ACCELS = os.path.join(CFG, "Thunar", "accels.scm")
+THUNAR_ID = "slate-quicklook"
+THUNAR_EMPTY = '<?xml version="1.0" encoding="UTF-8"?>\n<actions>\n</actions>\n'
+
+def desktop_exec_arg(s):
+    """One argument of a desktop entry's Exec, quoted as the spec says (in double quotes, with
+    " ` $ and \\ escaped), then with backslashes doubled for the value as a whole."""
+    quoted = '"' + re.sub(r'(["`$\\])', r"\\\1", s) + '"'
+    return quoted.replace("\\", "\\\\")
+
+def xml_text(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+def quick_look_menus(ctx, which=None):
+    """Write the menu items (and Thunar's Space) into the file managers that are installed.
+    which: the commands to look for (tests); the file's path goes last, after "--", so a name
+    can never be read as one of the command's options."""
+    have_cmd = which or shutil.which
+    slate = os.path.join(SHELL_DIR, "bin", "slate")
+    if have_cmd("dolphin"):
+        ctx.file(DOLPHIN_MENU,
+                 "[Desktop Entry]\n# " + GEN.replace("App Theming", "Default Apps") + "\n"
+                 "Type=Service\nMimeType=all/all;\nX-KDE-ServiceTypes=KonqPopupMenu/Plugin\n"
+                 "X-KDE-Priority=TopLevel\nX-KDE-RequiredNumberOfUrls=1\nActions=slateQuickLook\n\n"
+                 "[Desktop Action slateQuickLook]\nName=Quick Look\nIcon=view-preview\n"
+                 "Exec=%s ipc call quicklook open -- %%f\n" % desktop_exec_arg(slate))
+        # (Dolphin only reads service menus in your own folders that may be run)
+        if os.path.isfile(DOLPHIN_MENU) and writable(DOLPHIN_MENU):
+            os.chmod(DOLPHIN_MENU, 0o755)
+    if have_cmd("thunar"):
+        if not os.path.exists(THUNAR_ACTIONS):
+            ctx.start(THUNAR_ACTIONS, THUNAR_EMPTY)
+        # (Thunar puts the file's name in %f already quoted for the shell it reads this with)
+        command = "%s ipc call quicklook open -- %%f" % shlex.quote(slate)
+        action = ("<action>\n\t<icon>view-preview</icon>\n\t<name>Quick Look</name>\n\t<submenu></submenu>\n"
+                  "\t<unique-id>%s</unique-id>\n\t<command>%s</command>\n"
+                  "\t<description>See it without opening an app (Slate)</description>\n"
+                  "\t<range>*</range>\n\t<patterns>*</patterns>\n\t<directories/>\n\t<audio-files/>\n"
+                  "\t<image-files/>\n\t<other-files/>\n\t<text-files/>\n\t<video-files/>\n</action>\n"
+                  % (THUNAR_ID, xml_text(command)))
+        if "<unique-id>%s</unique-id>" % THUNAR_ID not in (read(THUNAR_ACTIONS) or ""):
+            ctx.replace(THUNAR_ACTIONS, r"^</actions>[ \t]*$", action + "</actions>")
+        # Space: its accelerator (a line of yours for it, commented out or not, is replaced)
+        path = "<Actions>/ThunarActions/uca-action-%s" % THUNAR_ID
+        ctx.replace(THUNAR_ACCELS, r'^;? ?\(gtk_accel_path "%s" "[^"]*"\)[ \t]*$' % re.escape(path),
+                    '(gtk_accel_path "%s" "space")' % path)
 
 
 # ---- Cursor theme: the session's (XCURSOR_THEME, set in the Slate session's variables.lua) --
@@ -193,6 +252,8 @@ def undo_own(settings=None):
         if id not in ctx.manifest and was_set_before(ctx, id, ptr[0] if ptr else ""):
             in_apps(ctx, id, True, True, apply)          # (records what's there)
         in_apps(ctx, id, False, False, apply)            # (undoes it)
+    # (Quick Look's items in Dolphin's and Thunar's menus: always recorded, so only undone)
+    in_apps(ctx, "quick-look", False, False, None)
     ctx.save()
 
 
@@ -252,6 +313,7 @@ def main():
     in_apps(ctx, "code-font", bool(p.get("codeFontInApps")),
             was_set_before(ctx, "code-font"), lambda: code_font(ctx, p.get("codeFont", "")))
     font_changed = len(changed) > before
+    in_apps(ctx, "quick-look", bool(p.get("quickLookInFileManagers")), False, lambda: quick_look_menus(ctx))
     ctx.save()
     if live:
         for a in slate_apps.APPS:

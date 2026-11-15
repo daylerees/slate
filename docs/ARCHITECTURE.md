@@ -64,7 +64,11 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ QuickLook.qml        Quick Look ("slate-quicklook"): a large preview of a file (Space on one in the
 │  │                    launcher, the dock's Downloads or the Waste Basket); `quicklook` IPC; built on first use
 │  ├─ QuickLookMedia.qml  its player for videos and songs (Qt Multimedia, so loaded through a Loader)
-│  └─ scripts/quicklook.py  what the file is, its text, a PDF's pages drawn (pdftoppm)
+│  ├─ scripts/quicklook.py  what the file is, its text, a PDF's pages drawn (pdftoppm)
+│  └─ scripts/file-previewer.py  Space in Nautilus and Nemo: takes their previewer's bus name
+│                       (org.gnome.NautilusPreviewer, org.nemo.Preview) where Sushi / nemo-preview
+│                       aren't installed, and hands the files to Quick Look (started by shell.qml).
+│                       Dolphin's and Thunar's menu items: apply-theme.py's "quick-look", opt-in
 ├─ Switcher.qml         Super+Tab window switcher ("slate-switcher")
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")

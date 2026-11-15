@@ -108,6 +108,7 @@ Singleton {
         ["Color", "appearance", "colorful monotone monochrome pastel variety colors colourful colours"],
         ["Interface font", "appearance", "typeface"],
         ["Code font in your apps", "appearance", "monospace monospaced typeface terminal editor other apps fontconfig geist mono undo put back"],
+        ["Quick Look in Dolphin and Thunar", "apps", "quick look preview space file manager dolphin thunar menu right-click"],
         ["Interface size", "appearance", "scale scaling zoom bigger smaller text size font size dpi hidpi"],
         ["Rounded screen corners", "appearance", ""],
         ["Shadows", "appearance", "shadow drop shadow flat elevation depth"],

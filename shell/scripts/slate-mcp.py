@@ -908,7 +908,7 @@ REFUSE = {
     "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator",
     "launcherCommands", "logLevel", "clipboardHistory",
     # change other apps' own settings (as App Theming's list does, refused with every list)
-    "pointerInApps", "codeFontInApps",
+    "pointerInApps", "codeFontInApps", "quickLookInFileManagers",
     # folders and files (wallpaper: wallpaper_set, from the list only)
     "wallpaper", "wallpaperFolder", "screenshotFolder", "screensaverVideoFolder",
     # what keeps the computer yours: locking, and what your keys type and do

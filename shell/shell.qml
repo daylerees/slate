@@ -616,8 +616,33 @@ ShellRoot {
         active: false
         QuickLook { onOpened: appLauncher.closeLauncher() }     // (a file opened from it: done looking)
     }
-    readonly property var lookAt: (paths, at) => { quickLookLoader.active = true; quickLookLoader.item.show(paths, at); }
+    readonly property var lookAt: (paths, at, from) => { quickLookLoader.active = true; quickLookLoader.item.show(paths, at, from || ""); }
     readonly property bool quickLookShown: !!quickLookLoader.item && quickLookLoader.item.shown
+    // Space in Nautilus or Nemo: they ask a previewer on the session bus (GNOME Sushi,
+    // nemo-preview) to show the file. Where that isn't installed, scripts/file-previewer.py
+    // takes its name and hands the files to Quick Look; it tells the file manager when Quick
+    // Look shows or hides, and passes Left/Right on so the file manager's selection moves. It
+    // exits at once without either file manager (or with their previewer there), and with Slate
+    Process {
+        id: filePreviewer
+        running: true
+        command: ["setpriv", "--pdeathsig", "TERM", "python3", Quickshell.shellPath("scripts/file-previewer.py")]
+        stdinEnabled: true
+        stdout: SplitParser {
+            onRead: line => {
+                let m;
+                try { m = JSON.parse(line); } catch (e) { return; }
+                if (typeof m.show === "string" && m.show.startsWith("/")) root.lookAt([m.show], 0, m.from === "nemo" ? "nemo" : "nautilus");
+                else if (m.close && quickLookLoader.item) quickLookLoader.item.close();
+            }
+        }
+    }
+    onQuickLookShownChanged: if (filePreviewer.running) filePreviewer.write("visible " + (quickLookShown ? 1 : 0) + "\n")
+    Connections {
+        target: quickLookLoader.item
+        ignoreUnknownSignals: true
+        function onStepOut(d) { if (filePreviewer.running) filePreviewer.write("select " + (d < 0 ? "left" : "right") + "\n"); }
+    }
     IpcHandler {
         target: "quicklook"
         // A file by its full path (a folder shows its details)

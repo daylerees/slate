@@ -1,7 +1,9 @@
 // Quick Look: a large preview of a file without opening an app ("slate-quicklook"). Space on a
 // file in the launcher's results, the dock's Downloads or the Waste Basket (or Quick Look on
 // one's right-click menu there) shows it here; Space or Escape (or a click outside) closes it,
-// and Left/Right step to the file before or after it in the list it came from.
+// and Left/Right step to the file before or after it in the list it came from. Space in
+// Nautilus and Nemo reaches it too (scripts/file-previewer.py, from shell.qml), and Dolphin's
+// and Thunar's menus with Settings → Default Apps → Quick Look in Dolphin and Thunar.
 //
 //   quickLook.show(paths, index)     a list of files, starting at one of them
 //   slate ipc call quicklook open <path> / close
@@ -52,10 +54,15 @@ PanelWindow {
     property string missing: ""            // "pdftoppm": nothing to draw PDFs with
     property bool gone: false              // the file isn't there any more
 
-    function show(list, at) {
+    // Where the file came from: "" (Slate's own lists), or "nautilus" / "nemo" (Space there,
+    // scripts/file-previewer.py): Left/Right then ask Nautilus to move its selection (stepOut)
+    property string from: ""
+    signal stepOut(int d)
+    function show(list, at, source) {
         const l = (list || []).filter(p => typeof p === "string" && p !== "");
         if (l.length === 0) return;
         screen = Config.focusedScreen;
+        from = source || "";
         files = l;
         index = Math.max(0, Math.min(l.length - 1, at || 0));
         shown = true;
@@ -68,7 +75,7 @@ PanelWindow {
         if (mediaLoader.item) mediaLoader.item.stop();
     }
     function step(d) {
-        if (files.length < 2) return;
+        if (files.length < 2) { if (from === "nautilus") stepOut(d); return; }
         index = (index + d + files.length) % files.length;
         load();
     }

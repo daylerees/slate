@@ -123,6 +123,7 @@ JsonAdapter {
     property string defaultTerminal: ""
     property string defaultBrowser: ""
     property string defaultFileManager: ""
+    property bool quickLookInFileManagers: false   // Settings → Default Apps: Quick Look on Dolphin's and Thunar's right-click menus (Thunar: Space too), undone when switched off
     property string defaultEditor: ""
     property string defaultCalculator: ""
     // ---- Power (Settings → Power)

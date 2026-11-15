@@ -120,6 +120,13 @@ class QuickLook(LiveCase):
         self.assertEqual(st["view"], "details")
         self.assertIn("3 items", st["details"])
 
+    def test_the_file_managers_command(self):
+        """What Dolphin's and Thunar's Quick Look items run (scripts/apply-theme.py): the path
+        after "--", which the command line takes as the end of its options, not an argument."""
+        p = self.file("Documents", "--from a menu.txt", data=b"hi\n")
+        self.s.run(["qs", "-p", self.s.slate_dir, "ipc", "call", "quicklook", "open", "--", p], check=True)
+        self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["path"] == p, "Quick Look from the menu's command")
+
     # ---- Closing ----------------------------------------------------------------------------
 
     def test_space_and_escape_close_it(self):

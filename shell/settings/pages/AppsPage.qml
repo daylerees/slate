@@ -94,4 +94,18 @@ Column {
         }
     }
     Footnote { text: "Ones not chosen here use those in ~/.config/slate/hypr/variables.lua (or Slate's own defaults)." }
+    // Quick Look from Dolphin and Thunar (Nautilus and Nemo need nothing: Space there reaches
+    // it by itself, scripts/file-previewer.py). Off until chosen: an item on their right-click
+    // menus, written into their own settings and taken out again when switched off
+    // (scripts/apply-theme.py, as "quick-look"). Only shown with one of them installed
+    readonly property bool hasMenuFileManager: !!DesktopEntries.byId("org.kde.dolphin") || !!DesktopEntries.byId("thunar")
+    GroupLabel { text: "Quick Look"; visible: defaultAppsPane.hasMenuFileManager }
+    Group {
+        visible: defaultAppsPane.hasMenuFileManager
+        ToggleSetting {
+            label: "Quick Look in Dolphin and Thunar"
+            detail: "Adds Quick Look to their right-click menus, and to Space in Thunar, so you can see a file without opening an app. Switch it off and Slate takes it out again"
+            key: "quickLookInFileManagers"
+        }
+    }
 }
