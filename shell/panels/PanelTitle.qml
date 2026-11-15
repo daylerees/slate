@@ -12,6 +12,9 @@ Item {
     signal editClicked()
     width: parent ? parent.width : 0
     height: 26
+    // How tall the title is by itself: a panel whose title has no switch beside it sets
+    // `height: textHeight`, so the row is only as tall as its words
+    readonly property real textHeight: titleLabel.implicitHeight
     Label {
         id: titleLabel
         anchors.verticalCenter: parent.verticalCenter

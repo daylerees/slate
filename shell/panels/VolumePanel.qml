@@ -96,7 +96,7 @@ Column {
                 Icon {
                     id: devIcon
                     code: parent.shortName.toLowerCase().includes("head") ? 0xEABD : 0xEA8B
-                    color: parent.selected ? pop.accentText : pop.text
+                    color: parent.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 16
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -104,7 +104,7 @@ Column {
                 Label {
                     anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: parent.shortName
-                    color: parent.selected ? pop.accentText : pop.text
+                    color: parent.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
             }

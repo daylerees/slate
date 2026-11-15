@@ -128,9 +128,14 @@ bottom edge while there's more below, fading as that end is reached.
 
 ### Bar panels
 
-New panels in `shell/Popouts.qml` look like the existing ones (Wi-Fi, Bluetooth, Screenshot,
-Keyboard, Battery). Read one or two first, and build them from the file's own inline components
-(defined together under "Shared pieces" and below it) rather than drawing the pieces again:
+A panel is a file of its own in `shell/panels/` (`WifiPanel.qml`, `BatteryPanel.qml`…): a root
+item with `required property var pop` (the Popouts window), and one line in `Popouts.qml` for
+its `Loader` (`Component { id: wifiPanel; WifiPanel { pop: PanelHost.pop } }`). The pieces the
+panels share are files in the same folder (`Label`, `Icon`, `Heading`, `Divider`, `RowButton`,
+`LinkRow`, `Switch`, `Slider`, `PanelTitle`, `PanelField`, `ForecastDay`) and `shell/Meter.qml`
+is the thin level bar (the OSD uses it too). They read their colors from the open panel
+(`PanelHost.pop`, set by Popouts), so a panel never draws them again. New panels look like the
+existing ones (Wi-Fi, Bluetooth, Screenshot, Keyboard, Battery). Read one or two first:
 
 - `Column { width: 300; spacing: 10 }` (280 only for narrow lists like Keyboard).
 - Title: `PanelTitle { text: "…" }`, a plain 15 px title, no icon, 26 px high. If the panel
@@ -143,10 +148,14 @@ Keyboard, Battery). Read one or two first, and build them from the file's own in
   Clickable rows are `RowButton`s (`selected` for the chosen one, `toggles` for something a click
   turns off again, `danger` for something destructive) holding an `Icon { code: 0x…;
   font.pixelSize: 16; color: pop.dim }` (leftMargin 10) and a `Label` with
-  `font.weight: Font.Normal` (leftMargin 10).
+  `font.weight: Font.Normal` (leftMargin 10). A row's own words and icons that
+  turn dark on the active color take its `fg` (or `fgDim`) rather than choosing between
+  `pop.text` and `pop.accentText` themselves.
 - Footer: `Divider {}`, then a `LinkRow { code: 0xEB20; text: "<Thing> settings" }` (a
   `RowButton` with its icon and label already placed) that closes the panel and runs
   `bin/slate ipc call settings page <page>`.
+- Meters (the battery's charge, the Wi-Fi signal): a `Meter` with its `value` and the fill and
+  track colors (`colour`, `trackColour: pop.card`). A text box: a `PanelField`.
 - Tiles (like Screenshot's, or Battery's power modes) use `pop.card`, radius 10, hover
   `Config.hoverOn(pop.card)`.
 

@@ -73,7 +73,7 @@ Column {
                 Icon {
                     id: devIcon
                     code: btView.iconFor(devRow.d)
-                    color: devRow.selected ? pop.accentText : pop.text
+                    color: devRow.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 17
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -84,13 +84,13 @@ Column {
                     Label {
                         width: parent.width
                         text: devRow.d.name || devRow.d.deviceName || devRow.d.address
-                        color: devRow.selected ? pop.accentText : pop.text
+                        color: devRow.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
                     Label {
                         width: parent.width
                         font.pixelSize: 11; font.weight: Font.Normal
-                        color: devRow.selected ? pop.accentText : pop.dim
+                        color: devRow.fgDim
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         opacity: devRow.selected ? 0.8 : 1
                         text: devRow.busy ? (devRow.d.connected ? "Disconnecting…" : "Connecting…")

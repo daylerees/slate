@@ -54,14 +54,14 @@ Column {
                 Icon {
                     id: modeIcon
                     code: modeRow.modelData.icon; font.pixelSize: 16
-                    color: modeRow.selected ? pop.accentText : pop.dim
+                    color: modeRow.fgDim
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                 }
                 Label {
                     anchors { left: modeIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                     text: modeRow.modelData.label
-                    color: modeRow.selected ? pop.accentText : pop.text
+                    color: modeRow.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.weight: Font.Normal
                 }
@@ -69,7 +69,7 @@ Column {
                     visible: modeRow.isDefault
                     anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: "Default"
-                    color: modeRow.selected ? pop.accentText : pop.dim
+                    color: modeRow.fgDim
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 12; font.weight: Font.Normal
                 }

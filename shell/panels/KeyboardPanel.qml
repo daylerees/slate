@@ -17,7 +17,7 @@ Column {
     required property var pop
     width: 280
     spacing: 10
-    Label { text: "Keyboard layout"; font.pixelSize: 15 }
+    PanelTitle { text: "Keyboard layout"; height: textHeight }
     Column {
         width: parent.width
         spacing: 6
@@ -41,7 +41,7 @@ Column {
                         anchors.centerIn: parent
                         textFormat: Text.PlainText        // never markup
                         text: layoutBtn.modelData.code
-                        color: layoutBtn.selected ? pop.accentText : pop.text
+                        color: layoutBtn.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         font.family: pop.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Bold
                     }
@@ -49,7 +49,7 @@ Column {
                 Label {
                     anchors { left: codeCap.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: layoutBtn.modelData.name
-                    color: layoutBtn.selected ? pop.accentText : pop.text
+                    color: layoutBtn.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
             }

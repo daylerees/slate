@@ -10,6 +10,7 @@ the lock screen (`WlSessionLock`).
 ```
 shell.qml               root: creates everything below, plus the dock itself
 ├─ Bar.qml              top bar (layer "slate-bar")
+├─ Meter.qml            the thin level bar (the battery, Wi-Fi signal and volume pop-up)
 ├─ BarArranger.qml      the drag-to-arrange area over the bar while its layout is edited
 ├─ TrayIcon.qml         one tray icon's picture, measured and sized to match the others
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
@@ -21,7 +22,8 @@ shell.qml               root: creates everything below, plus the dock itself
 │  └─ panels/           the pieces the panels share, one file each: panels/Label.qml,
 │                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
 │                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
-│                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/ForecastDay.qml
+│                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/PanelField.qml,
+│                       panels/ForecastDay.qml
 │                       and one file for each panel, loaded when it opens: panels/VolumePanel.qml,
 │                       panels/WifiPanel.qml, panels/KeyboardPanel.qml, panels/ClipboardPanel.qml,
 │                       panels/ScreenshotPanel.qml, panels/BluetoothPanel.qml,

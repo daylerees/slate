@@ -17,7 +17,7 @@ Column {
     width: 300
     spacing: 10
     readonly property var rows: pop.moreBar ? (pop.moreBar.overflowed, pop.moreBar.moreRows()) : []
-    Label { text: "More"; font.pixelSize: 15 }
+    PanelTitle { text: "More"; height: textHeight }
     Label {
         width: parent.width
         wrapMode: Text.WordWrap

@@ -48,14 +48,12 @@ Column {
         }
     }
     // Charge bar
-    Rectangle {
+    Meter {
         visible: bat.has
-        width: parent.width; height: 6; radius: Config.corner(3)
-        color: pop.card
-        Rectangle {
-            width: parent.width * bat.pct; height: parent.height; radius: Config.corner(3)
-            color: bat.pct < 0.15 && UPower.onBattery ? pop.danger : pop.accent
-        }
+        width: parent.width
+        value: bat.pct; minFill: 0
+        trackColour: pop.card
+        colour: bat.pct < 0.15 && UPower.onBattery ? pop.danger : pop.accent
     }
 
     // The battery's health (how much of what it was made to hold it still holds), and
@@ -109,14 +107,14 @@ Column {
                         anchors.horizontalCenter: parent.horizontalCenter
                         code: profileButton.modelData.code
                         font.pixelSize: 18
-                        color: profileButton.selected ? pop.accentText : pop.text
+                        color: profileButton.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
                     Label {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: profileButton.modelData.label
                         font.pixelSize: 12
-                        color: profileButton.selected ? pop.accentText : pop.text
+                        color: profileButton.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
                 }
@@ -211,16 +209,13 @@ Column {
                     color: pop.dim; font.pixelSize: 12
                 }
             }
-            Rectangle {
-                width: parent.width; height: 6; radius: Config.corner(3)
-                color: pop.card
-                Rectangle {
-                    width: Math.max(height, parent.width * Math.min(1, meter.frac))
-                    height: parent.height; radius: Config.corner(3)
-                    // Yellow above 70%, red above 90%
-                    color: meter.frac > 0.9 ? pop.danger : meter.frac > 0.7 ? pop.warn : pop.accent
-                    Behavior on color { ColorAnimation { duration: Config.ms(300) } }
-                }
+            Meter {
+                width: parent.width
+                value: Math.min(1, meter.frac)
+                trackColour: pop.card
+                // Yellow above 70%, red above 90%
+                colour: meter.frac > 0.9 ? pop.danger : meter.frac > 0.7 ? pop.warn : pop.accent
+                colourMs: 300
             }
         }
     }

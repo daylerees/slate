@@ -25,7 +25,7 @@ Column {
         pop.close();
         Quickshell.execDetached(["sh", "-c", "sleep 0.35; exec \"$0\" \"$1\"", Quickshell.shellPath("scripts/screenshot.sh"), mode]);
     }
-    Label { text: "Screenshot"; font.pixelSize: 15 }
+    PanelTitle { text: "Screenshot"; height: textHeight }
     Row {
         width: parent.width
         spacing: 8

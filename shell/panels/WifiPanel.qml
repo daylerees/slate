@@ -145,7 +145,7 @@ Column {
             id: netRow
             required property var modelData
             Component.onCompleted: pop.rowMade("wifi")
-            readonly property alias field: psk
+            readonly property alias field: psk.input
             readonly property bool secure: modelData.security !== undefined && modelData.security !== WifiSecurityType.Open
             width: netList.width - (netList.overflowing ? 18 : 0)   // room for the scrollbar and a gap before it
             spacing: 4
@@ -162,7 +162,7 @@ Column {
                     id: signalIcon
                     readonly property real s: netRow.modelData.signalStrength
                     code: s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4
-                    color: parent.selected ? pop.accentText : pop.text
+                    color: parent.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 16
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
@@ -170,7 +170,7 @@ Column {
                 Label {
                     anchors { left: signalIcon.right; leftMargin: 10; right: netStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                     text: netRow.modelData.name
-                    color: parent.selected ? pop.accentText : pop.text
+                    color: parent.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
                 Row {
@@ -195,32 +195,14 @@ Column {
                 }
             }
             // Password entry for a new secured network
-            Rectangle {
+            PanelField {
+                id: psk
                 visible: wifiView.askingFor === netRow.modelData.name
-                width: parent.width; height: 34; radius: Config.corner(8)
-                color: pop.card
-                TextInput {
-                    id: psk
-                    anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                    verticalAlignment: TextInput.AlignVCenter
-                    echoMode: TextInput.Password
-                    color: pop.text
-                    font.family: pop.bar.fontFamily
-                    font.pixelSize: 13
-                    focus: parent.visible
-                    onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
-                    // (its row moved as the networks' order changed: the list lets go of
-                    // the keyboard as it moves a row, so take it back and carry on typing)
-                    onFocusChanged: if (!focus && visible) forceActiveFocus()
-                    onAccepted: { netRow.modelData.connectWithPsk(text); wifiView.askingFor = ""; }
-                    Keys.onEscapePressed: wifiView.askingFor = ""
-                }
-                Label {
-                    visible: psk.text === ""
-                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                    text: "Password, then Enter"
-                    color: pop.dim
-                }
+                secret: true; keepFocus: true
+                hint: "Password, then Enter"; hintWeight: Font.Medium
+                onOpened: { text = ""; input.forceActiveFocus(); }
+                onAccepted: { netRow.modelData.connectWithPsk(text); wifiView.askingFor = ""; }
+                onEscaped: wifiView.askingFor = ""
             }
         }
     }
@@ -249,15 +231,12 @@ Column {
                 color: pop.dim; font.pixelSize: 12
             }
         }
-        Rectangle {
-            width: parent.width; height: 6; radius: Config.corner(3)
-            color: pop.card
-            Rectangle {
-                width: Math.max(height, parent.width * signalInfo.sig)
-                height: parent.height; radius: Config.corner(3)
-                color: signalInfo.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
-                Behavior on color { ColorAnimation { duration: Config.ms(300) } }
-            }
+        Meter {
+            width: parent.width
+            value: signalInfo.sig
+            trackColour: pop.card
+            colour: signalInfo.sig < 0.2 ? pop.danger : pop.accent   // red below 20%
+            colourMs: 300
         }
     }
     // Details: two columns of tiles

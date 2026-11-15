@@ -225,8 +225,7 @@ Column {
             HoverHandler { id: spBackHover }
             ClickTap { onTapped: spacesView.mode = "list" }
         }
-        Label { anchors { left: spBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
-            text: "New Space"; font.pixelSize: 15 }
+        PanelTitle { x: spBack.width + 6; width: parent.width - x; text: "New Space" }
     }
     Label {
         visible: spacesView.mode === "new"
@@ -393,33 +392,16 @@ Column {
     }
 
     Label { visible: spacesView.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
-    Rectangle {
+    PanelField {
+        id: spName
         visible: spacesView.mode === "new"
-        width: parent.width; height: 34; radius: Config.corner(8)
-        color: pop.card
-        border.width: spName.activeFocus ? 1 : 0
-        border.color: pop.accent
-        TextInput {
-            id: spName
-            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-            verticalAlignment: TextInput.AlignVCenter
-            color: pop.text
-            font.family: pop.bar.fontFamily
-            font.pixelSize: 13
-            maximumLength: 40
-            selectByMouse: true
-            text: spacesView.name
-            onTextEdited: spacesView.name = text
-            onVisibleChanged: if (visible) { text = spacesView.name; forceActiveFocus(); }
-            onAccepted: spacesView.save()
-            Keys.onEscapePressed: spacesView.mode = "list"
-        }
-        Label {
-            visible: spName.text === ""
-            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-            text: "e.g. Coding, Writing, Gaming"
-            color: pop.dim; font.weight: Font.Normal
-        }
+        outlined: true; selectByMouse: true; maximumLength: 40
+        hint: "e.g. Coding, Writing, Gaming"
+        text: spacesView.name
+        onTextEdited: spacesView.name = text
+        onOpened: { text = spacesView.name; input.forceActiveFocus(); }
+        onAccepted: spacesView.save()
+        onEscaped: spacesView.mode = "list"
     }
     Label {
         visible: spacesView.mode === "new" && spacesView.sameName !== null
@@ -501,7 +483,7 @@ Column {
                 ClickTap {
                     onTapped: {
                         if (swatch.isCustom) {
-                            if (!spacesView.custom) { spacesView.custom = true; spHex.text = spacesView.colour.toString().slice(0, 7); }
+                            if (!spacesView.custom) { spacesView.custom = true; spHexBox.text = spacesView.colour.toString().slice(0, 7); }
                         } else { spacesView.custom = false; spacesView.colour = swatch.modelData; }
                     }
                 }
@@ -546,33 +528,22 @@ Column {
                 function set(mx) {
                     const h = Math.max(0, Math.min(0.999, mx / width));
                     spacesView.colour = Qt.hsla(h, 0.65, 0.78, 1);
-                    spHex.text = spacesView.colour.toString().slice(0, 7);
+                    spHexBox.text = spacesView.colour.toString().slice(0, 7);
                 }
                 onPressed: m => set(m.x)
                 onPositionChanged: m => { if (pressed) set(m.x); }
             }
         }
-        Rectangle {
+        PanelField {
             id: spHexBox
-            width: 92; height: 30; radius: Config.corner(8)
-            color: pop.card
-            border.width: spHex.activeFocus ? 1 : 0
-            border.color: pop.accent
-            TextInput {
-                id: spHex
-                anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                verticalAlignment: TextInput.AlignVCenter
-                color: pop.text
-                font.family: pop.bar.fontFamily
-                font.pixelSize: 13
-                maximumLength: 7
-                selectByMouse: true
-                onTextEdited: {
-                    const t = text.startsWith("#") ? text : "#" + text;
-                    if (/^#[0-9a-fA-F]{6}$/.test(t)) spacesView.colour = t;
-                }
-                Keys.onEscapePressed: spacesView.mode = "list"
+            width: 92; height: 30
+            inset: 10
+            outlined: true; selectByMouse: true; maximumLength: 7
+            onTextEdited: {
+                const t = text.startsWith("#") ? text : "#" + text;
+                if (/^#[0-9a-fA-F]{6}$/.test(t)) spacesView.colour = t;
             }
+            onEscaped: spacesView.mode = "list"
         }
     }
 

@@ -236,18 +236,14 @@ PanelWindow {
             font.family: osd.bar.iconFont; font.pixelSize: 20
         }
         // Level bar
-        Rectangle {
+        Meter {
             id: track
             visible: osd.mode === "level"
             anchors { left: osdIcon.right; leftMargin: 14; right: osdText.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            height: 6; radius: Config.corner(3)
-            color: osd.bar.capsuleColor
-            Rectangle {
-                width: Math.max(height, track.width * osd.value)
-                height: parent.height; radius: Config.corner(3)
-                color: osd.dimmed ? Config.tint("#4f5866") : osd.bar.accent
-                Behavior on width { NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
-            }
+            value: osd.value
+            trackColour: osd.bar.capsuleColor
+            colour: osd.dimmed ? Config.tint("#4f5866") : osd.bar.accent
+            slideMs: 120
         }
         Text {
             id: osdText
