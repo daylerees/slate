@@ -8,10 +8,15 @@
 # Skip once with: git commit --no-verify
 root=$(git rev-parse --show-toplevel)
 if [ -n "$(git diff --cached --name-only -- shell/ tests/ packaging/ install.sh site/)" ]; then
-    "$root/tests/run" -q --tier static --no-container || {
-        echo "pre-commit: the static tests failed (above); fix them or commit with --no-verify"
+    # Its own output folder, so a run going on in the same checkout (tests/out is shared with
+    # the containers) can't clash with it; the last output is kept for when it refuses.
+    out="$root/tests/out/pre-commit"; mkdir -p "$out"
+    if ! SLATE_TEST_OUT="$out" "$root/tests/run" -q --tier static --no-container >"$out/output.txt" 2>&1; then
+        cat "$out/output.txt"
+        echo "pre-commit: the static tests failed (above): $(head -5 "$out/failed.txt" 2>/dev/null | tr '\n' ' ')"
+        echo "pre-commit: the full output is kept in tests/out/pre-commit/output.txt (logs beside it); fix them or commit with --no-verify"
         exit 1
-    }
+    fi
 fi
 staged=$(git diff --cached --name-only -- shell/)
 [ -n "$staged" ] || exit 0
