@@ -255,7 +255,8 @@ scripts/session-services.sh   at session start: Hyprland's environment to D-Bus 
                               systemd, PipeWire, WirePlumber and pipewire-pulse too
 bin/slate                     the `slate` command: start, stop, restart (with the reload cover), `ipc`, `log`,
                               `logs`, `dir`, `mcp`, `build-hyprbars`
-                              (and the keeper, `slate _keep`, that starts Slate again after a crash)
+                              (and the keeper, `slate _keep`, that starts Slate again after a crash
+                              and writes a crash report)
 bin/slate-build-hyprbars      `slate build-hyprbars`: builds the optional Hyprbars plugin for the running
                               Hyprland (see Window mode below)
 bin/slate-session-install     adds "Slate" as its own session on the login screen (sudo; --remove)
@@ -507,6 +508,7 @@ keyboard focus. Slate overlays first release the keyboard (`releasing`), then di
 `scripts/appicon.py --tile` into `~/.cache/slate/tiles/`. Clipboard history:
 `~/.local/state/slate/clipboard/`, recent emoji: `emoji.json`.
 Spaces: `~/.local/share/slate/spaces.json` (kept by the installer, unlike `~/.config/slate`).
+Crash reports: `~/.cache/slate/crashes/` (bin/slate's keeper; the last 5, yours alone; see SESSION.md).
 
 ### Spaces
 
@@ -594,7 +596,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `upower` | battery |
 | `polkit` | password prompts (`PolkitAgent.qml`), `pkexec` for login-screen updates |
 | `pam` | lock screen password check, `faillock` lockout |
-| `systemd` or `elogind`, `util-linux`, `dbus`, `glib2`, `procps-ng` | the login service: `systemctl`/`systemd-inhibit`, or `loginctl`/`elogind-inhibit` without systemd (power, sleep; through `bin/slate-init`), `setpriv`/`runuser`, `dbus-send`/`gdbus`/`gsettings`, `pgrep`/`pkill` |
+| `systemd` or `elogind`, `util-linux`, `dbus`, `glib2`, `procps-ng` | the login service: `systemctl`/`systemd-inhibit`, or `loginctl`/`elogind-inhibit` without systemd (power, sleep; through `bin/slate-init`), `setpriv`/`runuser`, `dbus-send`/`gdbus`/`gsettings`, `pgrep`/`pkill`; with systemd, `coredumpctl` for the backtrace in a crash report (`bin/slate`; without it, the report says there is none) |
 | `diffutils` (`cmp`) | whether the installed copy (Slate, the login screen, the session files) is up to date (`install.sh`, `bin/slate-greeter-sync`, `bin/slate-system`) |
 | `libnotify` | `notify-send` (login-screen update prompt, screenshot fallback) |
 | `fontconfig` | font lists in Settings, greeter font sync |

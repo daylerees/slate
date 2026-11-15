@@ -186,4 +186,19 @@ class ComingBack(LiveCase):
         errors = self.s.new_log_errors()
         self.assertTrue(any("Slate stopped unexpectedly (signal SEGV" in e for e in errors), errors)
         self.assertFalse([e for e in errors if "Slate stopped unexpectedly" not in e], errors)
+        # A report of it, where Quickshell's own would have been (the backtrace only where
+        # systemd-coredump has it: not in the container)
+        reports = os.path.join(self.s.h.cache, "slate", "crashes")
+        end = time.monotonic() + 15
+        while time.monotonic() < end and not any(
+                f.endswith(f"-{before}.txt") and os.path.getsize(os.path.join(reports, f)) > 0
+                for f in (os.listdir(reports) if os.path.isdir(reports) else ())):
+            time.sleep(0.3)
+        report = next((os.path.join(reports, f) for f in os.listdir(reports) if f.endswith(f"-{before}.txt")), None) \
+            if os.path.isdir(reports) else None
+        self.assertTrue(report, "no crash report")
+        with open(report) as f:
+            self.assertIn("Slate stopped unexpectedly: signal SEGV", f.read())
+        self.s.save_logs()
+        self.assertTrue(os.path.isdir(os.path.join(self.s.out, "slate-crashes")))
         self.ipc("notifications", "clear")

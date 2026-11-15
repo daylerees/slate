@@ -128,7 +128,10 @@ class Session:
         # in grey on a see-through one, so the bar's text changed with whatever an earlier scene
         # had done to it, and screenshots depended on the order they were taken in
         envs = {"LIBGL_ALWAYS_SOFTWARE": "1", "SLATE_TEST": "1", "SLATE_TEST_TIME": FAKE_TIME, "TZ": "UTC",
-                "QSG_DISTANCEFIELD_ANTIALIASING": "gray"}
+                "QSG_DISTANCEFIELD_ANTIALIASING": "gray",
+                # A crash report's wait for systemd-coredump kept short: the host's catches a crash
+                # in the container (the kernel runs it), so the container's own never has it
+                "SLATE_CRASH_TRIES": "2"}
         self._write(os.path.join(hypr, "env.lua"),
                     "".join(f'hl.env("{k}", "{v}")\n' for k, v in envs.items() if v))
         # One headless output, the size under test (and a second to its right, when asked for);
@@ -325,14 +328,17 @@ class Session:
         # Quickshell's own crash reports (a log with the backtrace, and the minidump): it writes
         # them under the cache, which is thrown away with the scratch home, so a crash would
         # otherwise leave nothing but "Slate died"
-        crashes = os.path.join(self.h.cache, "quickshell", "crashes")
-        if os.path.isdir(crashes):
-            dest = os.path.join(self.out, "crashes")
-            shutil.rmtree(dest, ignore_errors=True)
-            try:
-                shutil.copytree(crashes, dest)
-            except OSError:
-                pass
+        # ...and the reports bin/slate's keeper writes in their place (Quickshell's own handler is
+        # off under it): tests/out/live/slate-crashes
+        for src, name in ((os.path.join(self.h.cache, "quickshell", "crashes"), "crashes"),
+                          (os.path.join(self.h.cache, "slate", "crashes"), "slate-crashes")):
+            if os.path.isdir(src):
+                dest = os.path.join(self.out, name)
+                shutil.rmtree(dest, ignore_errors=True)
+                try:
+                    shutil.copytree(src, dest)
+                except OSError:
+                    pass
 
     def died(self):
         """True (after keeping the logs and any crash report) when Slate is no longer running."""

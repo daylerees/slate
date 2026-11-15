@@ -94,5 +94,10 @@ inside the Slate session.
   down) is left alone; and so is Slate going with the session (logging out: the keeper checks
   Hyprland is still there). Three crashes within a minute and it stops trying: Hyprland's own
   notification says so, the log (`~/.cache/slate.log`) says when and why (the signal or exit
-  code), and `slate` tries again. Quickshell's own crash handler is off under the keeper, so
-  only one thing ever starts Slate again (it would also show a window of its own).
+  code), and `slate` tries again. Quickshell's own crash handler is off under the keeper: with
+  it on, the process the keeper waits on stays up after a crash and starts another copy itself,
+  with a "Quickshell has crashed" window, and Quickshell 0.3.2 has no switch for only its
+  report. So the keeper writes the crash report: `~/.cache/slate/crashes/crash-<when>-<pid>.txt`
+  (yours alone, the last 5), with when and how it ended and, where systemd-coredump caught the
+  crash, the backtrace from `coredumpctl info` (not the command line, user or computer's name;
+  the home folder as `~`). Settings → Debug → Export recent logs adds the latest one.

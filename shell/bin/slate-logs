@@ -81,6 +81,14 @@ print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_DIR/settings.json"
     if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour | untilde
     else qs log -p "$SLATE_DIR" -t "$LINES" 2>/dev/null | nocolour | untilde; fi
 
+    # (bin/slate's keeper writes one when Slate crashes: the backtrace, without the command line,
+    # user or computer's name)
+    crash=$(ls -1t "${XDG_CACHE_HOME:-$HOME/.cache}"/slate/crashes/crash-*.txt 2>/dev/null | head -n 1)
+    if [ -n "$crash" ]; then
+        section "Slate's last crash"
+        head -c 65536 "$crash" | nocolour | untilde
+    fi
+
     section "Login screen's log (last 200 lines, if readable)"
     # (the journal with systemd; the greeter's own file without)
     if command -v journalctl >/dev/null 2>&1; then { journalctl -t slate-greeter -n 200 --no-pager -q 2>/dev/null || echo "(not readable)"; } | untilde

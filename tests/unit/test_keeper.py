@@ -16,6 +16,7 @@ from slate import Case, run
 QS = r'''#!/bin/sh
 d="$STUB_DIR"
 case "$1" in
+    --version) echo "Quickshell 0.3.2"; exit 0 ;;
     list)   # running copies, as Quickshell lists them
         for f in "$d"/running/*; do
             [ -e "$f" ] || continue; p=${f##*/}
@@ -44,6 +45,26 @@ case "$1" in
     notify) [ ! -e "$d/no-hyprland-notify" ] ;;
 esac
 '''
+# systemd-coredump's record of the crash, with what mustn't reach a bug report (the command line
+# with the home folder in it, the user, the computer's name)
+COREDUMPCTL = r'''#!/bin/sh
+printf '%s\n' "$*" >>"$STUB_DIR/coredumpctl.log"
+cat <<END
+           PID: 4242 (quickshell)
+           UID: 1000 (somebody)
+        Signal: 11 (SEGV)
+     Timestamp: Sun 2026-11-15 14:19:43 UTC (1s ago)
+  Command Line: qs -n -p $HOME/.config/slate --log-times
+    Executable: /usr/bin/quickshell
+      Hostname: my-secret-laptop
+       Storage: /var/lib/systemd/coredump/core.quickshell.1000.zst (present)
+       Message: Process 4242 (quickshell) of user 1000 dumped core.
+
+                Stack trace of thread 4242:
+                #0  0x00007f0000000001 QQuickItem::update (libQt6Quick.so.6 + 0x1234)
+                #1  0x00007f0000000002 n/a ($HOME/.config/slate/plugin.so + 0x10)
+END
+'''
 NOTIFY = r'''#!/bin/sh
 printf '%s\n' "$*" >>"$STUB_DIR/notify.log"
 '''
@@ -56,7 +77,7 @@ class Keeper(Case):
         super().setUp()
         self.stubs = os.path.join(self.h.dir, "stubs")
         os.makedirs(os.path.join(self.stubs, "bin"))
-        for name, text in (("qs", QS), ("hyprctl", HYPRCTL), ("notify-send", NOTIFY)):
+        for name, text in (("qs", QS), ("hyprctl", HYPRCTL), ("notify-send", NOTIFY), ("coredumpctl", COREDUMPCTL)):
             p = os.path.join(self.stubs, "bin", name)
             with open(p, "w") as f:
                 f.write(text)
@@ -69,7 +90,9 @@ class Keeper(Case):
         with open(os.path.join(self.dir, "settings.json"), "w") as f:
             f.write('{\n  "uiScale": 1.25\n}\n')
         self.env = dict(self.h.env, PATH=os.path.join(self.stubs, "bin") + ":" + self.h.env["PATH"],
-                        STUB_DIR=self.stubs, SLATE_KEEP_PAUSE="0.1")
+                        STUB_DIR=self.stubs, SLATE_KEEP_PAUSE="0.1", SLATE_CRASH_TRIES="3",
+                        # (crashes not going to systemd-coredump, unless a test says they do)
+                        SLATE_CORE_PATTERN=self.core_pattern("core"))
         self.addCleanup(self.cleanup)
 
     def cleanup(self):
@@ -81,6 +104,16 @@ class Keeper(Case):
                 pass
 
     # ---- helpers ------------------------------------------------------------------------
+    def core_pattern(self, text):
+        p = os.path.join(self.h.dir, "core_pattern")
+        with open(p, "w") as f:
+            f.write(text + "\n")
+        return p
+
+    def reports(self):
+        d = os.path.join(self.h.cache, "slate", "crashes")
+        return sorted(os.path.join(d, f) for f in os.listdir(d)) if os.path.isdir(d) else []
+
     def plan(self, *steps):
         with open(os.path.join(self.stubs, "plan"), "w") as f:
             f.write("\n".join(steps) + "\n")
@@ -286,3 +319,64 @@ class Keeper(Case):
         self.until(lambda: self.launches() >= 5 and len(self.running()) == 1, "start 5", timeout=20)
         self.assertTrue(self.keeper())
         self.assertNotIn("not starting it again", self.log())
+
+    # ---- crash reports (Quickshell's own handler is off) --------------------------------
+    def test_a_crash_leaves_a_report_with_the_backtrace(self):
+        self.core_pattern("|/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h")
+        self.slate_cmd()
+        first = self.started(1)
+        os.kill(first, signal.SIGSEGV)
+        self.until(lambda: self.reports(), "the crash report")
+        path = self.reports()[0]
+        self.until(lambda: os.path.getsize(path) > 0 and "Stack trace" in open(path).read(), "the report's backtrace")
+        self.assertIn(f"info {first}", self.read("coredumpctl.log"), "asked about another process")
+        text = open(path).read()
+        self.assertIn("Slate stopped unexpectedly: signal SEGV", text)
+        self.assertIn("Signal: 11 (SEGV)", text)
+        self.assertIn("QQuickItem::update", text)
+        self.assertIn("~/.config/slate/plugin.so", text)
+        for private in (self.h.home, "Command Line", "somebody", "my-secret-laptop", "Storage"):
+            self.assertNotIn(private, text)
+        # Yours alone
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        self.assertEqual(os.stat(os.path.dirname(path)).st_mode & 0o777, 0o700)
+
+    def test_a_report_without_systemd_coredump(self):
+        """Without it (Artix, Void, or turned off): when and how, and nothing waited for."""
+        self.slate_cmd()
+        os.kill(self.started(1), signal.SIGKILL)
+        self.until(lambda: self.reports() and os.path.getsize(self.reports()[0]) > 0, "the crash report")
+        text = open(self.reports()[0]).read()
+        self.assertIn("Slate stopped unexpectedly: signal KILL", text)
+        self.assertIn("(no backtrace", text)
+        self.assertEqual(self.read("coredumpctl.log"), "")
+
+    def test_only_the_last_few_reports_are_kept(self):
+        d = os.path.join(self.h.cache, "slate", "crashes")
+        os.makedirs(d)
+        for n in range(6):
+            p = os.path.join(d, f"crash-2026010{n}-000000-1{n}.txt")
+            open(p, "w").close()
+            os.utime(p, (1_700_000_000 + n, 1_700_000_000 + n))
+        self.slate_cmd()
+        first = self.started(1)
+        os.kill(first, signal.SIGKILL)
+        self.until(lambda: any(r.endswith(f"-{first}.txt") for r in self.reports()) and len(self.reports()) == 5,
+                   "the oldest reports to go")
+        self.assertNotIn(os.path.join(d, "crash-20260100-000000-10.txt"), self.reports())
+
+    def test_exported_logs_carry_the_last_crash(self):
+        """Settings → Debug → Export recent logs (bin/slate-logs) adds the latest report, with
+        the home folder as ~."""
+        self.core_pattern("|/usr/lib/systemd/systemd-coredump")
+        self.slate_cmd()
+        os.kill(self.started(1), signal.SIGSEGV)
+        self.until(lambda: self.reports() and "Stack trace" in open(self.reports()[0]).read(), "the crash report")
+        shutil.copy(os.path.join(slate.SHELL, "bin", "slate-logs"), os.path.join(self.dir, "bin", "slate-logs"))
+        code, out = run(["sh", os.path.join(self.dir, "bin", "slate-logs")], env=self.env, timeout=60)
+        self.assertEqual(code, 0, out)
+        with open(out.strip().splitlines()[-1]) as f:
+            text = f.read()
+        self.assertIn("===== Slate's last crash =====", text)
+        self.assertIn("QQuickItem::update", text)
+        self.assertNotIn(self.h.home, text)

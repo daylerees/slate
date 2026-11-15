@@ -73,8 +73,10 @@ start() {
 }
 
 # One Quickshell running Slate, as the keeper's child ($child). Quickshell's own crash handler
-# is off: it would start a second copy by itself (and show a window of its own); the keeper
-# does that instead.
+# is off: with it on, the process the keeper starts stays up after a crash and starts a second
+# copy by itself (which shows a "Quickshell has crashed" window), so the keeper could never see
+# the crash; Quickshell 0.3.2 has no switch for only its report. The keeper writes a report of
+# its own instead (save_crash).
 launch() {
     scale=$(ui_scale)
     level=$(log_level)
@@ -120,6 +122,54 @@ gave_up_note() {
         || timeout 5 notify-send -a Slate -i "$ICON" -u critical -- "Slate stopped" "$GAVE_UP" >/dev/null 2>&1
 }
 
+# A crash report, kept in place of Quickshell's own (its crash handler is off, see launch): when,
+# how it ended, and the backtrace where systemd-coredump caught the crash (coredumpctl), in
+# $CRASHES, readable only by you, the last KEEP_REPORTS of them. Only what helps find the bug is
+# copied from coredumpctl (the signal, the time, the program, the stack trace: not the command
+# line, user, host or machine), and the home folder is written as ~, since Settings → Debug →
+# Export recent logs (bin/slate-logs) adds the latest one to the file people attach to bug reports.
+#   save_crash <pid> <how it ended> <started> <ended>   (in the background: it can wait a while)
+CRASHES="${XDG_CACHE_HOME:-$HOME/.cache}/slate/crashes"
+KEEP_REPORTS=5
+save_crash() {
+    umask 077
+    mkdir -p "$CRASHES" && chmod 700 "$CRASHES" || return 0
+    f="$CRASHES/crash-$(date -d "@$4" '+%Y%m%d-%H%M%S' 2>/dev/null || date '+%Y%m%d-%H%M%S')-$1.txt"
+    trace=
+    # (only where crashes go to systemd-coredump: otherwise there's nothing to wait for)
+    caught=
+    command -v coredumpctl >/dev/null 2>&1 && grep -q systemd-coredump "${SLATE_CORE_PATTERN:-/proc/sys/kernel/core_pattern}" 2>/dev/null && caught=1
+    if [ -n "$caught" ]; then
+        # (systemd-coredump takes a few seconds to write it down: up to half a minute)
+        i=0
+        while [ "$i" -lt "${SLATE_CRASH_TRIES:-30}" ]; do
+            trace=$(timeout 20 coredumpctl -q --no-pager -1 --since="@$3" info "$1" 2>/dev/null) && [ -n "$trace" ] && break
+            trace=; i=$((i + 1)); sleep 1
+        done
+    fi
+    {
+        echo "Slate stopped unexpectedly: $2, after $(($4 - $3)) s"
+        echo "When: $(date -d "@$4" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || date)"
+        echo "Quickshell: $(qs --version 2>/dev/null | head -n 1)"
+        echo
+        if [ -n "$trace" ]; then
+            printf '%s\n' "$trace" | awk -v home="${HOME%/}" '
+                /^ *Message:/ { msg = 1 }
+                msg || /^ *(Signal|Timestamp|Executable):/ {
+                    if (length(home) > 1)
+                        while ((i = index($0, home)) > 0) $0 = substr($0, 1, i - 1) "~" substr($0, i + length(home))
+                    print
+                }'
+        elif [ -n "$caught" ]; then
+            echo "(no backtrace: systemd-coredump didn't record this crash)"
+        else
+            echo "(no backtrace: crashes don't go to systemd-coredump on this computer)"
+        fi
+    } >"$f"
+    # Only the last few
+    ls -1t "$CRASHES"/crash-*.txt 2>/dev/null | tail -n +$((KEEP_REPORTS + 1)) | while IFS= read -r old; do rm -f "$old"; done
+}
+
 keep() {
     child=
     # Stopped on purpose (slate stop, restart --full, shutting down): Slate goes with it
@@ -138,7 +188,7 @@ keep() {
             [ -e "$READY" ] && kill -0 "$child" 2>/dev/null && restarted_note
         fi
         wait "$child"; code=$?
-        child=
+        pid=$child; child=
         now=$(date +%s)
         how=$(how_it_ended "$code")
         case "$code" in
@@ -146,6 +196,7 @@ keep() {
         esac
         sleep "$KEEP_PAUSE"
         if ! session_here; then note "Slate stopped ($how) as the session ended"; break; fi
+        ( save_crash "$pid" "$how" "$began" "$now" ) &
         # The crashes in the last KEEP_WINDOW seconds, this one included
         recent=
         for t in $crashes; do [ $((now - t)) -lt "$KEEP_WINDOW" ] && recent="$recent $t"; done
