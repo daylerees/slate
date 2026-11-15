@@ -1253,22 +1253,53 @@ def firefox_profiles():
     return out
 
 def firefox_css(c):
-    v = {"--lwt-accent-color": c["bg"], "--lwt-accent-color-inactive": c["bg"], "--lwt-text-color": c["text"],
-         "--toolbar-bgcolor": c["surface"], "--toolbar-color": c["text"],
-         "--toolbar-field-background-color": c["bg"], "--toolbar-field-color": c["text"],
-         "--toolbar-field-focus-background-color": c["bg"], "--toolbar-field-focus-color": c["text"],
-         "--toolbar-field-focus-border-color": c["accent"], "--toolbar-field-border-color": "transparent",
-         "--tab-selected-bgcolor": c["surface"], "--tab-selected-textcolor": c["text"],
-         "--lwt-selected-tab-background-color": c["surface"], "--tab-loading-fill": c["accent"],
-         "--toolbarbutton-icon-fill": c["text"], "--arrowpanel-background": c["surface"],
-         "--arrowpanel-color": c["text"], "--arrowpanel-border-color": c["divider"],
-         "--panel-separator-color": c["divider"], "--sidebar-background-color": c["bg"],
-         "--sidebar-text-color": c["text"], "--focus-outline-color": c["accent"],
-         "--button-primary-bgcolor": c["accent"], "--button-primary-color": c["accentText"],
-         "--urlbarView-highlight-background": c["selection"], "--urlbarView-highlight-color": c["text"]}
+    bg, surf, text, acc = c["bg"], c["surface"], c["text"], c["accent"]
+    # Firefox renamed most of these around version 140: both names are set, so older builds
+    # (ESR) and newer ones both follow. Newer: read from Firefox 160's own CSS (omni.ja)
+    v = {
+        # the window's top and the toolbars
+        "--lwt-accent-color": bg, "--lwt-accent-color-inactive": bg, "--lwt-text-color": text,
+        "--toolbar-bgcolor": surf, "--toolbar-color": text,
+        "--toolbar-background-color": surf, "--toolbar-bg-color": surf, "--toolbar-text-color": text,
+        "--toolbarbutton-icon-fill": text, "--chrome-content-separator-color": surf,
+        "--tabs-navbar-separator-color": "transparent",
+        # tabs
+        "--tab-selected-bgcolor": surf, "--tab-selected-textcolor": text, "--lwt-selected-tab-background-color": surf,
+        "--tab-background-color-selected": surf, "--tab-text-color-selected": text, "--tab-text-color": text,
+        "--tab-loading-fill": acc, "--tab-icon-fill-loading": acc,
+        # the address bar and other fields, at rest and focused
+        "--toolbar-field-background-color": bg, "--toolbar-field-color": text, "--toolbar-field-text-color": text,
+        "--toolbar-field-focus-background-color": bg, "--toolbar-field-focus-color": text,
+        "--toolbar-field-background-color-focus": bg, "--toolbar-field-text-color-focus": text,
+        "--toolbar-field-focus-border-color": acc, "--toolbar-field-border-color-focus": acc,
+        "--toolbar-field-border-color": "transparent",
+        "--urlbar-background-color": bg, "--urlbar-background-color-focus": bg, "--input-background-color": bg,
+        "--urlbarView-highlight-background": c["selection"], "--urlbarView-highlight-color": text,
+        "--urlbarview-background-color-selected": c["selection"], "--urlbarview-background-color-hover": c["selection"],
+        # menus and panels (the address bar's dropdown, the menu, right-click menus)
+        "--arrowpanel-background": surf, "--arrowpanel-color": text, "--arrowpanel-border-color": c["divider"],
+        "--panel-background-color": surf, "--panel-text-color": text, "--panel-border-color": c["divider"],
+        "--panel-separator-color": c["divider"], "--popup-background-color": surf, "--menu-text-color": text,
+        # the sidebar, focus and buttons
+        "--sidebar-background-color": bg, "--sidebar-text-color": text,
+        "--focus-outline-color": acc,
+        "--button-primary-bgcolor": acc, "--button-primary-color": c["accentText"],
+        "--button-primary-bg-color": acc, "--button-primary-fg-color": c["accentText"],
+    }
     body = "\n".join("  %s: %s !important;" % kv for kv in v.items())
-    return ("/* %s */\n:root, #navigator-toolbox, menupopup, panel {\n%s\n}\n"
-            "#navigator-toolbox, #TabsToolbar, #titlebar { background-color: %s !important; }\n" % (GEN, body, c["bg"]))
+    # Set on the elements too, not only :root: Firefox sets several on the toolbars, the
+    # tabs, the fields and each menu itself (menus default to the system's menu color), where
+    # :root's never reached them. Backgrounds Firefox paints directly are painted here as well
+    return ("/* %s */\n:root, #navigator-toolbox, toolbar, .browser-toolbar, #tabbrowser-tabs, .tabbrowser-tab, "
+            "#urlbar, #searchbar, .urlbarView, menupopup, panel {\n%s\n}\n"
+            "#navigator-toolbox, #TabsToolbar, #titlebar { background-color: %s !important; }\n"
+            "#nav-bar, #PersonalToolbar, #toolbar-menubar, #sidebar-main, .browser-toolbar:not(#TabsToolbar) "
+            "{ background-color: %s !important; color: %s !important; }\n"
+            ".tabbrowser-tab:is([selected], [visuallyselected], [multiselected]) > .tab-stack > .tab-background "
+            "{ background: %s !important; }\n"
+            ".tabbrowser-tab:is([selected], [visuallyselected]) .tab-label { color: %s !important; }\n"
+            "#navigator-toolbox { border-bottom-color: %s !important; }\n"
+            % (GEN, body, bg, surf, text, surf, text, surf))
 
 @app("firefox", "Firefox", "Toolbars, tabs and menus in Slate's colors (userChrome.css), after a restart",
      lambda: bool(firefox_profiles()))
