@@ -190,3 +190,19 @@ class HoverTracksThePointer(Case):
         self.assertEqual(src.count("Behavior on"), 1, "HoverFill animates more than its `gone` fade")
         self.assertRegex(src, r"opacity: gone \? 0 : 1\s*\n\s*Behavior on opacity \{ NumberAnimation \{ duration: Config\.ms\(")
         self.assertEqual(len(re.findall(r"visible: !?hf\.hovered", src)), 2, "the base and hover layers swap on hovered, at once")
+
+
+class DockBackings(Case):
+    def test_dock_backings_follow_glass(self):
+        """A dock tile's backing (DockBacking: the dock's glass behind a lifted tile) shows with
+        glass only: DockBacking decides that itself, and a tile that narrows it further keeps
+        `&& Config.glass`. More's once set its own `visible`, and showed a backing with glass off."""
+        import glob, os
+        for path in sorted(glob.glob(os.path.join(slate.ROOT, "shell", "*.qml"))):
+            src = open(path, encoding="utf-8").read()
+            for m in re.finditer(r"\bDockBacking \{([^{}]*)\}", src):
+                with self.subTest(os.path.basename(path)):
+                    vis = re.search(r"\bvisible:([^\n]*)", m.group(1))
+                    if vis:
+                        self.assertRegex(vis.group(1), r"&& Config\.glass\s*$", "a DockBacking that shows without glass")
+        self.assertIn("visible: Config.glass", slate.read("shell", "DockBacking.qml"))

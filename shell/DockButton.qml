@@ -23,8 +23,8 @@ Item {
         Matrix4x4 { matrix: btn.dock.tiltMatrix(btn.width, btn.height, btn.standalone ? btn.dock.tiltAt(btn.at) : 0) },
         Translate { y: btn.standalone ? -btn.dock.liftAt(btn.at) : 0; Behavior on y { enabled: btn.dock.hoverEffect === "raise"; NumberAnimation { duration: Config.ms(180); easing.type: Easing.OutCubic } }}
     ]
-    // (More's shows without glass too, as it always has)
-    DockBacking { visible: btn.standalone ? Config.glass : true; dockTop: btn.dockTop; color: btn.dock.dockColor; radius: Config.iconCornerFor(width) }
+    // (with glass only, as every tile's: More's once showed without it too)
+    DockBacking { dockTop: btn.dockTop; color: btn.dock.dockColor; radius: Config.iconCornerFor(width) }
     Item {
         id: tile
         anchors.bottom: parent.bottom
