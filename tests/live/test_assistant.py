@@ -839,7 +839,8 @@ class NovaWindowChecks:
         self.addCleanup(lambda: self.ipc("test", "novaSizeReset"))
         self.addCleanup(lambda: self.ipc("assistant", "close"))
         self.ipc("assistant", "close")
-        self.wait(lambda st: not st["assistant"]["open"] and not st["assistant"]["window"]["mapped"], "Nova's window to be closed")
+        self.wait(lambda st: not st["assistant"]["open"], "Nova's window to be closed")
+        self.s._until(lambda: self.client() is None, 5, "Hyprland to let go of Nova's window")
         self.ipc("test", "novaSizeReset")
         self.ipc("assistant", "open")
         self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"], "Nova's window")
@@ -999,6 +1000,11 @@ class NovaWindowChecks:
         self.ipc("assistant", "open")
         st = self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"], "it to open again")
         self.assertEqual((st["assistant"]["turns"], st["assistant"]["answer"]), (1, "Yes."), "the conversation went with the window")
+        # Slate goes by the new window, not the closed one (which Hyprland's list can keep a while
+        # after it's gone): it has the keyboard, so Super+K closes it, and closed it's gone
+        self.wait(lambda st: st["assistant"]["window"]["focused"], "the new window to have the keyboard")
+        self.ipc("assistant", "toggle")
+        self.wait(lambda st: not st["assistant"]["open"] and not st["assistant"]["window"]["mapped"], "Super+K to close the new window")
 
 
 class NovaWindow(NovaWindowChecks, LiveCase):

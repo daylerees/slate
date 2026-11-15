@@ -462,7 +462,10 @@ Scope {
     // (out here, not in the window: it has to outlive the window it lets go of)
     Timer { id: winDrop; interval: 0; onTriggered: if (!root.shown) root.windowWanted = false }
     // The window as Hyprland knows it, and whether it has the keyboard
-    readonly property var top: Hyprland.toplevels.values.find(t => Config.isNova(t)) ?? null
+    // (only one still there for Wayland, the newest: a window Hyprland closed, Super+Q, can stay
+    // in Hyprland.toplevels for a while without one, and was taken for the new window: it never
+    // had the keyboard, so Super+K couldn't close Nova, and it never went, so Nova looked open)
+    readonly property var top: Hyprland.toplevels.values.filter(t => !!t.wayland && Config.isNova(t)).pop() ?? null
     readonly property bool focused: shown && !!top && Hyprland.activeToplevel === top
     // Open already, behind something or not the one you're typing in: to the front, with the keyboard
     function bringHere() {
