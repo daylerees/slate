@@ -459,6 +459,19 @@ Scope {
     readonly property var win: winLoader.item
     property bool windowWanted: false
     function lostWindow() { keepSize(); shown = false; winDrop.restart(); }
+    // While the menu bar's being arranged, Nova steps out of the way, as Settings does (its
+    // window hidden, which Hyprland fades), and comes back, conversation and all, once it's done
+    property bool awayForBar: false
+    Connections {
+        target: Config
+        function onBarArrangingChanged() {
+            if (Config.barArranging) { if (root.shown) root.awayForBar = true; }
+            else if (root.awayForBar) {
+                root.awayForBar = false;
+                Qt.callLater(() => { if (root.win) root.win.box.forceActiveFocus(); });
+            }
+        }
+    }
     // (out here, not in the window: it has to outlive the window it lets go of)
     Timer { id: winDrop; interval: 0; onTriggered: if (!root.shown) root.windowWanted = false }
     // The window as Hyprland knows it, and whether it has the keyboard
@@ -527,7 +540,7 @@ Scope {
         FloatingWindow {
             id: window
             title: Config.novaTitle
-            visible: root.shown
+            visible: root.shown && !root.awayForBar
             color: root.barColor
             implicitWidth: root.openW
             implicitHeight: root.openH

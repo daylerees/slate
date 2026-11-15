@@ -987,6 +987,19 @@ class NovaWindowChecks:
         self.assertAlmostEqual(again["size"][1], e["size"][1], delta=2, msg="it didn't keep its height")
         self.assertAlmostEqual(again["at"][0] + again["size"][0] / 2, self.s.monitor()["width"] / 2, delta=3, msg="it didn't open in the middle")
 
+    def test_steps_aside_while_the_bar_is_arranged(self):
+        """While the menu bar's being arranged, Nova steps out of the way as Settings does (its
+        window hidden, Hyprland fading it), still open, and comes back once that's done."""
+        self.open_nova()
+        self.addCleanup(lambda: self.ipc("bar", "edit", "done"))
+        self.ipc("test", "arrange", "start", "", "", "")
+        self.wait(lambda st: st["bar"]["arranging"], "arranging to start")
+        self.s._until(lambda: self.client() is None, 5, "Nova's window to step aside")
+        self.assertTrue(self.s.state()["assistant"]["open"], "Nova closed instead of stepping aside")
+        self.ipc("bar", "edit", "done")
+        self.wait(lambda st: not st["bar"]["arranging"], "arranging to end")
+        self.s._until(lambda: self.client() is not None, 5, "Nova's window to come back")
+
     def test_closed_by_hyprland_and_opened_again(self):
         """Closed from outside Slate (Super+Q: Hyprland closes it), it opens again the next time,
         built afresh, with the conversation still there."""
