@@ -306,8 +306,8 @@ ShellRoot {
         function fadeIn(): void { Config.welcomeFading = false; Config.welcoming = true; }
         function fadeInEnd(): void { Config.welcomeFading = true; }
         function fadeInClose(): void { Config.welcoming = false; Config.welcomeFading = false; }
-        // Settings asking something (as its Reset does, with a switch): it should ask in Slate's
-        // confirmation window (power: custom), not a card of its own
+        // Settings asking something (as its Reset does, with a switch): it asks in Slate's
+        // confirmation window (power: custom)
         function settingsAsk(): void {
             const w = settingsLoader.item;
             if (w) w.ask = { title: "Test question?", body: "From the tests", button: "Yes",
@@ -409,7 +409,6 @@ ShellRoot {
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
-                            ownCard: !!settings && settings.confirming,
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
                             checking: settings ? settings.checking : 0,

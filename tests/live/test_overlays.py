@@ -143,7 +143,6 @@ class Overlays(LiveCase):
         st = self.wait(lambda st: st["power"]["open"], "the confirmation window")
         self.assertEqual(st["power"]["action"], "custom")
         self.assertTrue(st["power"]["option"], "the question's switch is missing")
-        self.assertFalse(st["settings"]["ownCard"], "Settings showed its own card as well")
         self.ipc("power", "cancel")
         self.wait(lambda st: not st["power"]["open"], "the confirmation window to close")
 

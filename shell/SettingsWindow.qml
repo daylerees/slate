@@ -65,7 +65,6 @@ FloatingWindow {
     onVisibleChanged: {
         const a = Bluetooth.defaultAdapter;
         if (!visible && a && a.discovering) a.discovering = false;
-        if (!visible) cancelConfirm();        // closing Settings answers an open question with Cancel
         if (!visible) dropLayer.owner = null; // and closes an open dropdown (its page is let go)
         // Only as it opens: showing the window can report "visible" again a moment later (longer
         // on a busy machine), and that would otherwise send a page asked for in between back
@@ -336,26 +335,19 @@ FloatingWindow {
     function countChanged() { changedHere = Config.changedCount(currentKeys); }
     onCurrentKeysChanged: countChanged()
     Connections { target: Config; function onSaved() { win.countChanged(); } }
-    property bool confirmReset: false
     // A page whose settings aren't Slate's own (Webcam: the camera's) hooks its reset into the
     // title's Restore defaults: whether anything's changed, and what puts it back
     property bool pageResetChanged: false
     property var pageResetRun: null
-    // Any other question for the confirmation card: { title, body, button, run, cancel (optional),
-    // cancelLabel (optional: the other button's label, when it's a choice rather than backing out),
-    // destructive (optional: a red button Enter doesn't press), option (optional: { label, detail },
-    // a switch on the card, off to start; run gets whether it's on) }.
-    // Esc, Cancel, clicking outside or changing page all count as cancelling. The card keeps
-    // showing the last one while it fades out
+    // Any other question, asked in Slate's confirmation window: { title, body, button, run,
+    // cancel (optional), cancelLabel (optional: the other button's label, when it's a choice
+    // rather than backing out), destructive (optional: a red button Enter doesn't press),
+    // option (optional: { label, detail }, a switch in the question, off to start; run gets
+    // whether it's on) }. Setting this asks it, and it's cleared again at once
     property var ask: null
-    property var lastAsk: null
-    property bool askOption: false
     onAskChanged: {
         if (!ask) return;
-        // Asked in Slate's confirmation window, like the rest of Slate; this window's own card
-        // only when that isn't there
-        if (confirmer) { const q = ask; ask = null; askInConfirmer(q); return; }
-        lastAsk = ask; askOption = false;
+        const q = ask; ask = null; askInConfirmer(q);
     }
     // A question { title, body, button, destructive?, code?, option?, run(optionOn), cancel? }
     function askInConfirmer(q) {
@@ -448,7 +440,7 @@ FloatingWindow {
     }
     // Restore defaults (the title button): asks first
     function askRestoreDefaults() {
-        if (!confirmer) { confirmReset = true; return; }
+        if (!confirmer) return;
         confirmer.confirmWith({
             title: "Restore " + pageTitle + " defaults?",
             body: changedHere + (changedHere === 1 ? " setting on this page goes" : " settings on this page go")
@@ -457,15 +449,11 @@ FloatingWindow {
             button: "Restore defaults", code: 0xEB13, danger: false
         }, () => { restoreDefaults(); countChanged(); });
     }
-    // A follow-up question (asking again, more seriously): shown once the card has faded out, so
-    // it's clearly a new one, with its own attention sound
+    // A follow-up question (asking again, more seriously): asked a moment later, so it's clearly
+    // a new one, with its own attention sound
     property var nextAsk: null
     function askAfter(q) { nextAsk = q; nextAskTimer.restart(); }
     Timer { id: nextAskTimer; interval: 260; onTriggered: { win.ask = win.nextAsk; win.nextAsk = null; } }
-    readonly property bool confirming: !confirmer && (confirmReset || ask !== null)
-    onConfirmingChanged: if (confirming) Config.attention()
-    function closeConfirm() { confirmReset = false; ask = null; }
-    function cancelConfirm() { const c = ask && ask.cancel; closeConfirm(); if (c) c(); }
     // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
     readonly property bool resetRestarts: restartsFor(currentKeys)
     function restartsFor(keys) {
@@ -474,7 +462,6 @@ FloatingWindow {
     }
     onSectionChanged: {
         if (section !== "general") avatarPicking = false;
-        cancelConfirm();
         if (visible) placeSave.restart();     // remember the page (see savePlace)
     }
     property string pageTitle: ""
@@ -537,7 +524,7 @@ FloatingWindow {
     Item {
         anchors.fill: parent
         focus: win.visible
-        Keys.onEscapePressed: { if (win.confirming) win.cancelConfirm(); else if (dropLayer.owner) dropLayer.owner = null; else win.visible = false; }
+        Keys.onEscapePressed: { if (dropLayer.owner) dropLayer.owner = null; else win.visible = false; }
 
         // ---- Sidebar -------------------------------------------------------
         Rectangle {
@@ -897,92 +884,6 @@ FloatingWindow {
                 anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
                 height: 24
                 distance: scroller.originY + scroller.contentHeight - scroller.height - scroller.contentY
-            }
-        }
-    }
-
-    // ---- Confirmation card (Restore defaults, or any win.ask question) --------------------
-    Rectangle {
-        id: confirmLayer
-        anchors.fill: parent
-        z: 120
-        color: Qt.rgba(0, 0, 0, 0.45)
-        visible: opacity > 0
-        opacity: win.confirming ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Config.ms(140) } }
-        onVisibleChanged: if (visible) confirmCard.forceActiveFocus()
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: win.cancelConfirm() }
-        // Restoring defaults, or another question (win.ask)
-        readonly property var q: win.confirmReset ? null : win.lastAsk
-        Rectangle {
-            id: confirmCard
-            anchors.centerIn: parent
-            width: 380; height: confirmCol.implicitHeight + 40
-            radius: Config.corner(16)
-            color: win.bar.barColor
-            border.width: 1; border.color: win.outline
-            scale: win.confirming ? 1 : 0.96
-            Behavior on scale { NumberAnimation { duration: Config.ms(140); easing.type: Easing.OutCubic } }
-            MouseArea { anchors.fill: parent }    // clicks on the card don't close it
-            Keys.onEscapePressed: win.cancelConfirm()
-            // Enter confirms, except for something that can't be taken back (a red button)
-            Keys.onReturnPressed: if (!confirmYes.destructive) confirmYes.clicked()
-            Keys.onEnterPressed: if (!confirmYes.destructive) confirmYes.clicked()
-            Column {
-                id: confirmCol
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20 }
-                spacing: 8
-                Text {
-                    textFormat: Text.PlainText        // never markup: some questions carry names other programs chose
-                    text: confirmLayer.q ? confirmLayer.q.title : "Restore " + win.pageTitle + " defaults?"
-                    color: win.text; font.family: win.font; font.pixelSize: 16; font.weight: Font.Medium
-                    width: parent.width; elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    textFormat: Text.PlainText        // never markup
-                    text: confirmLayer.q ? confirmLayer.q.body
-                        : win.changedHere + (win.changedHere === 1 ? " setting on this page goes" : " settings on this page go")
-                          + " back to how Slate starts out. Your other pages are left just as they are."
-                          + (win.resetRestarts ? " Slate restarts to apply them; your apps and windows stay open." : "")
-                    color: win.dim; font.family: win.font; font.pixelSize: 13
-                    wrapMode: Text.Wrap
-                }
-                // The question's switch (an option to go further), when it has one
-                Item {
-                    readonly property var opt: confirmLayer.q ? confirmLayer.q.option : null
-                    visible: !!opt
-                    width: parent.width; height: visible ? Math.max(optCol.implicitHeight, optToggle.height) + 12 : 0
-                    Column {
-                        id: optCol
-                        anchors { left: parent.left; right: optToggle.left; rightMargin: 12; bottom: parent.bottom }
-                        spacing: 2
-                        Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.label : ""; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; wrapMode: Text.Wrap }
-                        Text { width: parent.width; text: parent.parent.opt ? parent.parent.opt.detail || "" : ""; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap }
-                    }
-                    SettingToggle {
-                        id: optToggle
-                        anchors { right: parent.right; verticalCenter: optCol.verticalCenter }
-                        checked: win.askOption
-                        onToggled: v => win.askOption = v
-                    }
-                }
-                Item { width: 1; height: 8 }
-                Row {
-                    anchors.right: parent.right
-                    spacing: 8
-                    Button { label: "Cancel"; onClicked: win.cancelConfirm() }
-                    Button {
-                        id: confirmYes
-                        label: confirmLayer.q ? confirmLayer.q.button : "Restore defaults"
-                        destructive: !!(confirmLayer.q && confirmLayer.q.destructive)
-                        primary: !destructive
-                        onClicked: {
-                            if (win.ask) { const run = win.ask.run, opt = win.askOption; win.closeConfirm(); run(opt); }
-                            else { win.restoreDefaults(); win.closeConfirm(); win.countChanged(); }
-                        }
-                    }
-                }
             }
         }
     }

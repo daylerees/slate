@@ -227,7 +227,6 @@ class RestoreDefaults(LiveCase):
         """Press Restore defaults on the page and say yes; returns what the question asked about."""
         self.ipc("test", "settingsRestoreDefaults")
         st = self.wait(lambda st: st["power"]["open"], "the Restore defaults question")
-        self.assertFalse(st["settings"]["ownCard"], "asked on Settings' own card, not Slate's confirmation window")
         self.ipc("test", "answer", "true")
         self.wait(lambda st: not st["power"]["open"], "the question to close")
         return self.wait(lambda st: st["settings"]["changed"] == 0, f"{page}'s settings to be back at their defaults")
