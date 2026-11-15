@@ -536,6 +536,21 @@ class Chromium(ApplyTheme):
         self.assertEqual(self.prefs()["x"], 1, "the rest of the profile changed")
         self.assertEqual(self.stale(), [])
 
+    def flags(self):
+        return json.loads(self.text(self.DIR + "/Local State")).get("browser", {}).get("enabled_labs_experiments", [])
+
+    def test_overlay_scrollbars(self):
+        """GTK can't color the scrollbars Chromium draws on pages, so its own thin overlay ones
+        are switched on (a chrome://flags entry), and off again with the rest; a choice made
+        there already stays."""
+        self.apply(["chromium"])
+        self.assertIn("overlay-scrollbars@1", self.flags())
+        self.apply([])
+        self.assertNotIn("overlay-scrollbars@1", self.flags())
+        self.put({self.DIR + "/Local State": json.dumps({"browser": {"enabled_labs_experiments": ["overlay-scrollbars@2"]}})})
+        self.apply(["chromium"])
+        self.assertEqual(self.flags(), ["overlay-scrollbars@2"], "your own choice changed")
+
     def test_an_open_browser_waits_until_it_closes(self):
         os.symlink("host-123", self.h(self.DIR + "/SingletonLock"))
         self.apply(["chromium"])

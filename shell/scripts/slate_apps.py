@@ -1353,7 +1353,7 @@ def chromium_set_pending(dirs):
     with open(CHROMIUM_PENDING, "w", encoding="utf-8") as f:
         json.dump(sorted(dirs), f)
 
-@app("chromium", "Chromium", "Its GTK look, which follows Slate's colors through GTK; set while it's closed",
+@app("chromium", "Chromium", "Its GTK look, which follows Slate's colors through GTK, and thin scrollbars; set while it's closed",
      lambda: bool(chromium_dirs()))
 def chromium(ctx):
     pending = set()
@@ -1363,6 +1363,11 @@ def chromium(ctx):
             continue
         for prefs in chromium_profiles(d):
             ctx.jsonpath(prefs, ["extensions", "theme", "system_theme"], CHROMIUM_GTK)
+        # Its overlay scrollbars (chrome://flags, kept in Local State): GTK can't color the
+        # scrollbars on pages, which Chromium draws itself; these are thin, rounded, hidden
+        # until you scroll, and follow dark mode. A choice you've made there yourself stays
+        ctx.jsonlist(os.path.join(d, "Local State"), ["browser", "enabled_labs_experiments"],
+                     "overlay-scrollbars@1", match=lambda x: str(x).startswith("overlay-scrollbars@"))
     chromium_set_pending(pending)
 
 @stale("chromium")
