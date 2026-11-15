@@ -3,6 +3,8 @@
     "updateCheck": false,
     "clipboardHistory": false,
     "accent": "#8fb3e8",
+    "accentFromWallpaper": false,
+    "toneFromWallpaper": false,
     "themeMode": "dark",
     "lightMode": false,
     "glass": false,
