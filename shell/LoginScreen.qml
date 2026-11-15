@@ -159,7 +159,8 @@ Item {
         anchors.verticalCenterOffset: -34
         spacing: 18
 
-        // Round avatar with a border (8 px round a 124 px picture)
+        // Round avatar with a border (8 px round a 124 px picture): the border is the accent
+        // (avatarRing, below), over the glass, which shows through it
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 140; height: 140; radius: Config.corner(70)
@@ -172,15 +173,19 @@ Item {
                 radius: Config.corner(width / 2)
                 color: Config.raised(ls.field)
             }
-            // A thin ring in the accent round the picture (3 px, in the frame's border), with a
-            // light catch along 45° from the top left, as on the window borders' sheen: lighter
-            // there, the accent itself towards the bottom right. As round as the picture is.
+            // The picture's border: the accent, with a light catch along 45° from the top left, as
+            // on the window borders' sheen: lighter there, the accent itself towards the bottom
+            // right, laid over the glass partly see-through. As round as the picture is. (A thin
+            // ring inside a glass border once: the author wanted the border itself in the accent)
             Shape {
                 id: avatarRing
-                readonly property real line: 3
-                readonly property color lit: Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.5))
-                readonly property color soft: Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.15))
-                anchors { fill: parent; margins: 8 - line }
+                readonly property real line: 8
+                // (partly see-through: the frosted glass, or the frame without glass, shows through)
+                readonly property real see: 0.6
+                readonly property color lit: Qt.alpha(Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.5)), see)
+                readonly property color soft: Qt.alpha(Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.15)), see)
+                readonly property color base: Qt.alpha(Config.accent, see)
+                anchors.fill: parent
                 preferredRendererType: Shape.CurveRenderer
                 ShapePath {
                     strokeWidth: -1
@@ -191,7 +196,7 @@ Item {
                         x2: avatarRing.width; y2: avatarRing.height
                         GradientStop { position: 0; color: avatarRing.lit }
                         GradientStop { position: 0.45; color: avatarRing.soft }
-                        GradientStop { position: 1; color: Config.accent }
+                        GradientStop { position: 1; color: avatarRing.base }
                     }
                     PathRectangle {
                         width: avatarRing.width; height: avatarRing.height
