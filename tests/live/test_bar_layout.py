@@ -282,6 +282,17 @@ class BarLayout(LiveCase):
         self.s.wait(lambda st: st["bar"]["editor"], what="the arranging panel, straight from the menu")
         self.do("done")
 
+    def test_right_click_menu_points_at_the_bar(self):
+        """The bar's menu hangs from just off the bar and points at it with its arrow, as a real
+        right-click opens it: never laid over the bar the way the desktop's menu sits at the
+        pointer (the docs' picture once showed that, from a test hook opening it the other way)."""
+        self.ipc("test", "barMenu", "open")
+        self.addCleanup(lambda: self.ipc("test", "menuKey", "Escape"))
+        m = self.s.wait(lambda st: st["barMenu"]["open"], what="the bar's menu")["barMenu"]
+        self.assertEqual(m["edge"], "top")
+        self.assertEqual(m["gap"], 14, "opened like the desktop's menu, not pointing at the bar")
+        self.assertEqual(m["atY"], m["barHeight"], "not hanging from the bar's edge")
+
     # ---- nothing left blank ---------------------------------------------------------------------
     def blanks(self, name):
         """The things showing on the bar that have nothing drawn where they are. (Pictured once

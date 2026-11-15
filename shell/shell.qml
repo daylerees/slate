@@ -234,7 +234,7 @@ ShellRoot {
         // submenu); menuKey sends a key to it, as pressing it there does (Up, Down, Enter, Space,
         // Left, Right, Home, End, Escape)
         function barMenu(what: string): void {
-            if (what === "open") { topBar.menu.openAt(600, 20); return; }
+            if (what === "open") { topBar.openMenuFrom(600, 20); return; }   // (as a right-click there would)
             const path = what.split("/");
             let row = topBar.menu.items.find(i => i.label === path[0]);
             if (row && path.length > 1 && row.submenu) row = row.submenu.find(i => i.label === path[1]);
@@ -469,7 +469,8 @@ ShellRoot {
                            rects: Config.controlSwitchRects(Config.controlSwitches.length, 200, 300).map(q => [q.x, q.y, q.width, q.height]) },
                 barMenu: { open: topBar.menu.visible, hot: topBar.menu.hot, sub: topBar.menu.subIndex,
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
-                           items: topBar.menu.items.map(i => i.separator ? "-" : i.label) },
+                           items: topBar.menu.items.map(i => i.separator ? "-" : i.label),
+                           edge: topBar.menu.edge, atY: topBar.menu.atY, gap: topBar.menu.gap, barHeight: topBar.barHeight },
                 switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(),
                             fade: Math.round(winSwitcher.fade * 100) / 100, animate: winSwitcher.animate },
                 // The wallpaper switcher: the wallpapers it shows, the one chosen, the one on screen

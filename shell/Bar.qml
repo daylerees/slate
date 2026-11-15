@@ -55,6 +55,16 @@ PanelWindow {
     // mode, tinted toward the wallpaper), which stays visible whatever's behind the bar
     readonly property color separatorColor: Config.glass ? withAlpha(dimColor, 0.35)
                                                            : Config.tint("#444c58")
+    // The bar's own right-click menu, pointing at the bar from just off it where it was
+    // clicked (x, y on the screen, in Slate's units). The test hook opens it this way too, so
+    // tests and the docs' picture show the menu where a real right-click puts it
+    function openMenuFrom(x, y) {
+        const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
+        if (bar.side === "top") barMenu.openFrom(x, bar.barHeight, "top", 14);
+        else if (bar.side === "bottom") barMenu.openFrom(x, sh - bar.barHeight, "bottom", 14);
+        else if (bar.side === "left") barMenu.openFrom(bar.barHeight, y, "left", 14);
+        else barMenu.openFrom(sw - bar.barHeight, y, "right", 14);
+    }
     function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
     readonly property real fontSize: 13              // Settings → Interface size scales it with everything else
@@ -483,13 +493,7 @@ PanelWindow {
                     const q = under.row.mapFromItem(left, p.x, p.y), cell = under.row.childAt(q.x, q.y);
                     if (cell !== winTitle && cell !== winIcon) return;
                 }
-                // Pointing at the bar from just off it, where it was clicked
-                const sw = bar.screen ? bar.screen.width : 0, sh = bar.screen ? bar.screen.height : 0;
-                const x = w.x + bar.windowX, y = w.y + bar.windowY;
-                if (bar.side === "top") barMenu.openFrom(x, bar.barHeight, "top", 14);
-                else if (bar.side === "bottom") barMenu.openFrom(x, sh - bar.barHeight, "bottom", 14);
-                else if (bar.side === "left") barMenu.openFrom(bar.barHeight, y, "left", 14);
-                else barMenu.openFrom(sw - bar.barHeight, y, "right", 14);
+                bar.openMenuFrom(w.x + bar.windowX, w.y + bar.windowY)
             }
         }
     }
