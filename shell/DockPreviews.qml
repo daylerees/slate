@@ -5,6 +5,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 
 PanelWindow {
@@ -113,6 +114,8 @@ PanelWindow {
                         width: Math.min(parent.width - 12, (parent.height - 34) * ratio)
                         height: width / ratio
                         window: previews.visible ? liveCard.modelData : null
+                        // (its Hyprland address: it stops as Hyprland says the window is closing)
+                        address: { const t = Hyprland.toplevels.values.find(h => h.wayland === liveCard.modelData); return t ? t.address : ""; }
                         running: previews.wanted          // (still while it fades out)
                         // Rounded, and brightened back if Hyprland dims it (it isn't focused)
                         layer.enabled: true

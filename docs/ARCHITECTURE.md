@@ -297,6 +297,8 @@ shaders/preview.frag(.qsb)    live window previews: rounded, inactive windows br
 shaders/glow.frag(.qsb)       DockGlow.qml's ring and glow, worked out per pixel; with the dock's glass blurring, the glow is added light, which Hyprland doesn't blur behind
 WindowPreview.qml             every live window preview (overview, switcher, dock, New Space): frames
                               asked for by Slate, not Quickshell's live mode (see Workarounds below)
+PreviewHold.qml               singleton: every live preview holds still for a moment after any window
+                              closes, and a closing window is never captured again (see Workarounds below)
 reloading/              the "Reloading Slate" cover `slate restart` shows: a small Quickshell
                         setup of its own, so it outlives the Slate it covers for
 greeter/                the login screen (see LOCK-AND-LOGIN.md); greeter/files lists
@@ -560,7 +562,7 @@ how to check whether a new release fixed it, and how to take the workaround out 
   when that window closes ("The Wayland connection experienced a fatal error: Invalid argument",
   a frame after `ToplevelHandle(…) closed`), most often when several close at once: live mode's
   stream of captures racing windows coming and going. Seen with Quickshell 0.3.2
-  and Hyprland 0.57.2, on an Intel graphics card; never in the test container.
+  and Hyprland 0.57.2, on an Intel graphics card (and in the test container: below).
 - **Reported:** quickshell-mirror/quickshell#1481 (ours, with the repro below). Very likely the same
   as quickshell-mirror/quickshell#1123 (open since September; seen there on Quickshell 0.3.1 and
   Hyprland 0.56.2, with a trace pointing at Wayland object ids reused during a burst of captures,
@@ -568,17 +570,36 @@ how to check whether a new release fixed it, and how to take the workaround out 
   same: quickshell-mirror/quickshell#1418 (window captures failing outright on Hyprland 0.57.0).
   With WindowPreview, both held here: three windows closing at once under New Space and the
   overview (5 of 5), and ten opening at once, then closing at once, with the overview showing (4 of 4).
+- **Not live mode alone:** without live mode it was still there in the container:
+  `tests/live/test_preview_closing.py` (eight windows closing in one dispatch, three times over,
+  under New Space, the overview, the switcher and the dock's previews) killed Slate in 5 of 5
+  runs, about one closing in ten (2026-11-15). A `WAYLAND_DEBUG=client` trace showed how: three
+  windows of a burst had closed, the dock's previews were rebuilt from the shorter list, and 1 ms
+  later Slate asked to capture (`capture_toplevel_with_wlr_toplevel_handle`) a window Hyprland had
+  already closed but whose `closed` hadn't reached Slate yet; Slate's `destroy` of that frame
+  then got `invalid object` and the connection died. No backtrace (it's a clean protocol error).
+  Hyprland's `closewindow` event reaches Slate a few milliseconds after the Wayland `closed`,
+  so stopping only a window Hyprland had named still died in 4 of 8 runs.
 - **What Slate does instead:** every live preview is a `WindowPreview` (`shell/WindowPreview.qml`):
   `live: false`, and Slate asks for frames itself with `captureFrame()` on a timer (30 a second,
   starting once the first frame is in, which comes by itself). Previews update at 30 frames a
-  second rather than the window's own rate. Static checks in `tests/static/test_consistency.py`
-  (`WindowPreviews`) keep every preview on it.
+  second rather than the window's own rate. And windows close in bursts, so the first word of
+  any window closing (Quickshell's list of windows losing one, or Hyprland's `closewindow`)
+  holds every preview for 250 ms (`shell/PreviewHold.qml`, each close starting it again): no
+  new captures, no frames asked for, a picture already there kept. A window Hyprland named as
+  closing, or whose Toplevel said `closed`, is never captured again (hosts pass its `address`).
+  Previews freeze for that moment and a card built during it gets its picture a moment late.
+  Static checks in `tests/static/test_consistency.py` (`WindowPreviews`) keep every preview on
+  it; the live test checks each close held them. It narrows the race, not closes it: with it,
+  15 of 16 runs of the test file were clean (one died, inside a whole live run alongside others).
 - **Checking a new Quickshell:** run `qs -n -p tools/repro/screencopy-close` beside Slate, open
   three windows, and close them all at once (one `hyprctl dispatch` closing each). It died three
   times in four on 0.3.2; if it survives ten tries, the bug is likely fixed.
 - **Taking it out:** in `WindowPreview.qml`, `live: running` in place of `live: false` and the
   Timer removed (keep the component, so every preview stays in one place); change
   `test_never_live` to match; then close windows under New Space and the overview a few times.
+  Keep `PreviewHold` until `tests/live/test_preview_closing.py` passes `--repeat 10` without it
+  (its `held` and `closing` left out of `WindowPreview.qml`).
 
 ## Dependencies
 

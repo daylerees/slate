@@ -741,6 +741,41 @@ class WindowPreviews(Case):
         # (the first frame comes by itself: asked for again before it's here, it started over)
         self.assertRegex(src, r"running: .*wp\.hasContent")
 
+    def test_holds_as_windows_close(self):
+        """Nothing is captured for a moment after any window closes, and a window Hyprland says
+        is closing is never captured again. A capture asked for just after Hyprland closed its
+        window killed Slate (closing eight windows at once under any preview, about one closing
+        in ten in the container, 2026-11-15): the first windows' closing rebuilt the previews,
+        which started fresh captures of the rest. PreviewHold holds every preview on the first
+        word of a close (Quickshell's list losing a window, or Hyprland's closewindow); a
+        WindowPreview starts no capture and asks for no frame while held (checked again right
+        before asking), drops a closing window's source, and is given its window's address."""
+        hold = slate.read("shell", "PreviewHold.qml")
+        self.assertRegex(hold, r"target: ToplevelManager\.toplevels\s*\n\s*function onObjectRemovedPre\(\) \{ root\.hold\(\); \}")
+        m = re.search(r'event\.name === "closewindow"\) \{(.*?)\} else if', hold, re.S)
+        self.assertTrue(m and "root.hold()" in m.group(1) and "event.data" in m.group(1),
+                        "Hyprland's closewindow doesn't hold the previews and mark the window")
+        self.assertIn('event.name === "openwindow"', hold, "a reused address stays marked closing")
+        self.assertRegex(hold, r"id: holdTimer; interval: [1-9]\d{2}\b")
+        src = slate.read("shell", "WindowPreview.qml")
+        self.assertIn("PreviewHold.closing[addr]", src)
+        # (set by pickSource, on every change it depends on: bound, it was a binding loop)
+        self.assertNotRegex(src, r"\n    captureSource:")
+        self.assertRegex(src, r"const want = !closing && window && \(window === startedFor \|\| !PreviewHold\.held\) \? window : null;")
+        for hook in (r"onWindowChanged: pickSource\(\)", r"onClosingChanged: \{[^\n]*pickSource\(\)",
+                     r"function onHeldChanged\(\) \{ wp\.pickSource\(\); \}", r"Component\.onCompleted: \{[^\n]*pickSource\(\)"):
+            self.assertRegex(src, hook)
+        self.assertRegex(src, r"running: wp\.running && !wp\.closing && !PreviewHold\.held && ")
+        self.assertRegex(src, r"onTriggered: if \(!wp\.closing && !PreviewHold\.held && [^\n]*\) wp\.captureFrame\(\)")
+        bad = []
+        hosts = [f for f in slate.files("shell", ".qml") if not f.endswith("WindowPreview.qml")]
+        self.assertGreaterEqual(len([f for f in hosts if re.search(r"\bWindowPreview\s*\{", slate.read(f))]), 4)
+        for f in hosts:
+            for blk in re.finditer(r"\bWindowPreview\s*\{(.*?)\n\s*\}", slate.read(f), re.S):
+                if not re.search(r"\n\s*address:", blk.group(1)):
+                    bad.append(f)
+        self.assertFalse(bad, "a WindowPreview without its window's address: " + ", ".join(bad))
+
     def test_blur_decoded_once(self):
         """The wallpaper behind see-through previews (WallBlur) is decoded at one size, so it's
         shared through the image cache, and the switcher has it ready before it opens (each

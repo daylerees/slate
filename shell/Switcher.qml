@@ -203,6 +203,7 @@ PanelWindow {
                 width: Math.min(sw.cardW - 20, sw.previewH * ratio)
                 height: width / ratio
                 window: sw.livePreviews && sw.shown && modelData.wayland ? modelData.wayland : null
+                address: modelData.address || ""
                 running: sw.shown && !sw.releasing     // stop updating once chosen: less work during the fade
             }
         }

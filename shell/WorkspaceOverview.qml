@@ -449,6 +449,7 @@ PanelWindow {
                 // Kept until the overview has completely gone (not just closing): dropped as it
                 // started fading, the window vanished from its card and came back as the real one
                 window: ov.visible && ov.byAddr[modelData] && ov.byAddr[modelData].wayland ? ov.byAddr[modelData].wayland : null
+                address: modelData
                 running: ov.shown && !ov.releasing     // stop updating once chosen: less work during the fade
             }
         }

@@ -535,6 +535,8 @@ ShellRoot {
                              enabled: Config.assistantOn, risksChanged: Config.assistantRisksChanged, waiting: Object.keys(assistantGate.answers).length },
                 // Slate's settings reaching Hyprland (Config.testHypr)
                 hypr: Config.testHypr(),
+                // Live previews held as windows closed, and stopped as their own did (PreviewHold.qml)
+                previews: { holds: PreviewHold.testHolds, stopped: PreviewHold.testStopped, held: PreviewHold.held },
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,

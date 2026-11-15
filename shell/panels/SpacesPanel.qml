@@ -321,6 +321,7 @@ Column {
                                         anchors.margins: 1
                                         // Not in game mode: just the window's outline and app icon
                                         window: !Config.gameMode && pop.shown && spacesView.mode === "new" && wsWin.toplevel && wsWin.toplevel.wayland ? wsWin.toplevel.wayland : null
+                                        address: wsWin.modelData.address || ""
                                         running: pop.shown && spacesView.mode === "new"
                                         smooth: true
                                         // Clipped to the window's rounded corners, and brightened
