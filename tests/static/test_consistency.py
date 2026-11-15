@@ -781,6 +781,17 @@ class Shadows(Case):
             self.assertIn(part, line)
         self.assertNotRegex(config, r"shadow = \{ color = ", "a second shadow colour handed to Hyprland")
 
+    def test_no_dark_line_under_a_see_through_edge(self):
+        """In the pixel a surface's edge crosses, the shadow is what makes it the surface where it
+        covers and the shadow where it doesn't, for how solid the surface is: at full strength
+        under a solid edge it showed through a see-through one (glass) as a dark line round
+        menus and panels (2026-11-15). Shadow.qml passes the surface's opacity."""
+        frag = slate.read("shell", "shaders", "shadow.frag")
+        self.assertIn("float surfaceAlpha;", frag)
+        self.assertRegex(frag, r"\(1\.0 - c\) / max\(0\.001, 1\.0 - c \* surfaceAlpha\)")
+        qml = slate.read("shell", "Shadow.qml")
+        self.assertIn("readonly property real surfaceAlpha: root.surfaceAlpha", qml)
+
     def test_falloff_is_as_modelled(self):
         """The live test of Hyprland's shadow models Shadow.qml's falloff: these lines are it."""
         frag = slate.read("shell", "shaders", "shadow.frag")

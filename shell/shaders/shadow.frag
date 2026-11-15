@@ -36,6 +36,7 @@ layout(std140, binding = 0) uniform buf {
                         // it is; none if x and y are 0): the menu bar's, under a panel's. Only what
                         // this one adds over it is drawn, so where they meet it's as dark as the
                         // darker of the two, not both
+    float surfaceAlpha; // how solid the surface is (1: opaque; glass less), for its edge (below)
     vec4 attach;        // the surface hangs off one of its edges (a panel off the bar): x, y the way
                         // in from that edge, as fade's (0, 0: none). Its shape carries on past that
                         // edge as it is there, so moved by the distance it still reaches the edge
@@ -96,10 +97,14 @@ void main() {
     float soft = max(blur, 0.5);                    // (no softness at all: still a smooth edge)
     float t = clamp((shade + soft * 0.4) / (soft * 1.4), 0.0, 1.0);
     float a = (1.0 - t) * (1.0 - t);
-    // Nothing under the surface itself, fading in just inside its edge: full strength from the
-    // first pixel outside it (centred on the edge instead, that pixel got a little less, which
-    // showed as a light line between a surface and a hard shadow, under the menu bar most)
-    a *= smoothstep(-1.0, 0.0, surface);
+    // Nothing under the surface itself. In the pixel its edge crosses, the surface covers part
+    // (c) and is drawn over this, letting (1 - c × its alpha) through: the shadow there is what
+    // makes that pixel the surface where it covers and the shadow where it doesn't. Solid, that's
+    // full strength (less showed as a light line between a surface and a hard shadow, under the
+    // menu bar most); see-through (glass), less, or the shadow under its edge showed through as
+    // a dark line round menus and panels
+    float c = clamp(0.5 - surface, 0.0, 1.0);
+    a *= c >= 0.999 ? 0.0 : (1.0 - c) / max(0.001, 1.0 - c * surfaceAlpha);
     if (fade.x != 0.0 || fade.y != 0.0) {
         float d = fade.x > 0.0 ? q.x - box.x : fade.x < 0.0 ? box.x + box.z - q.x
                 : fade.y > 0.0 ? q.y - box.y : box.y + box.w - q.y;

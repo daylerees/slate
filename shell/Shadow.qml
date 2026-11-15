@@ -36,6 +36,11 @@ Item {
     // the bar), whose shape carries on past that edge into what it hangs from: moved by the
     // distance, its shadow still reaches that edge, with no gap or curl at the joins there
     property string attachEdge: ""
+    // How solid the surface is, for the shadow at its edge (a see-through one showed a dark line
+    // round it there): its own color's alpha, or the glass's for one drawn by something else
+    // (a menu's MenuSurface)
+    property real surfaceAlpha: parent && parent.color !== undefined && parent.color.a > 0 ? parent.color.a
+        : (Config.glass ? Config.glassOpacity : 1)
     property real strength: 1          // 1: Slate's usual; a small surface can ask for less
     // A rounded rectangle taken out of the surface (in this item's coordinates; none if it has
     // no width), for a surface that isn't a box: the menu bar with its flared corners is a
@@ -99,6 +104,7 @@ Item {
                                                      root.fadeFrom, root.fadeOver)
         readonly property vector4d point: Qt.vector4d(root.pointAt.x + root.reach, root.pointAt.y + root.reach, root.pointSize, 0)
         readonly property real spread: root.spread
+        readonly property real surfaceAlpha: root.surfaceAlpha
         readonly property vector4d attach: Qt.vector4d(root.attachEdge === "left" ? 1 : root.attachEdge === "right" ? -1 : 0,
                                                        root.attachEdge === "top" ? 1 : root.attachEdge === "bottom" ? -1 : 0, 0, 0)
         readonly property vector4d joinA: Qt.vector4d(root.joinA.x + root.reach, root.joinA.y + root.reach, root.joinA.width, root.joinA.height)
