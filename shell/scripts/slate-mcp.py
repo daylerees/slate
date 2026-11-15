@@ -916,6 +916,7 @@ REFUSE = {
 }
 ON_OFF = ["", "on", "off"]
 CORNERS = ["none", "lock", "launcher", "overview", "control", "notifications", "screenoff"]
+GESTURES = ["overview", "desktop", "launcher", "none"]
 MOVES = ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"]
 # What each text setting takes: a list of values, or a pattern (with how to say it)
 VALUES = {
@@ -934,7 +935,7 @@ VALUES = {
     "mouseAccel": ["", "adaptive", "flat"],
     "mouseNaturalScroll": ON_OFF, "touchpadNaturalScroll": ON_OFF, "touchpadTapToClick": ON_OFF,
     "touchpadIgnoreWhileTyping": ON_OFF, "focusFollowsMouse": ON_OFF,
-    "gestureSwipeDown": ["desktop", "launcher"],
+    "gestureUp": GESTURES, "gestureDown": GESTURES, "gesturePinchIn": GESTURES, "gesturePinchOut": GESTURES,
     "animations": ["", "normal", "fast", "off"],
     "colourStyle": ["monotone", "colourful"],
     "workspaceAnimation": ["slidefade", "slidefadevert", "slide", "slidevert", "crossfade", "none"],
@@ -1009,7 +1010,7 @@ SWITCHES = {
     "launcherFiles", "launcherConvert", "launcherEmoji", "launcherWeb", "switcherPreviews",
     "switcherAppIcons", "workspaceSwitchName", "wrapWorkspaces", "overviewAppIcons",
     "overviewPreviews", "screensaverClock", "glass", "fastBlur", "idleRespectInhibitors",
-    "touchpadGestures",
+    "touchpadGestures", "gestureSideways",
 }
 # Settings that only take effect the next time Slate starts
 AT_START = {"uiScale"}

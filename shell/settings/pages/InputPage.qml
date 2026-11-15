@@ -271,13 +271,22 @@ Column {
         }
     }
 
-    // Swiping with three or four fingers (session/hypr/config/gestures.lua, through Config.hyprSettings)
+    // Swiping with three or four fingers (session/hypr/config/gestures.lua, through Config.hyprSettings).
+    // Each of the four takes one of these; done again, it closes what it opened
+    readonly property var gestureOptions: [{ value: "overview", label: "Workspace overview" }, { value: "desktop", label: "Show the desktop" },
+                                           { value: "launcher", label: "Open the launcher" }, { value: "none", label: "Nothing" }]
+    function gestureDetail(v) {
+        return v === "overview" ? "Opens the workspace overview. Do it again to close it"
+            : v === "desktop" ? "Moves your windows aside to show the desktop. Do it again to bring them back"
+            : v === "launcher" ? "Opens the launcher. Do it again to close it"
+            : "Left free, for a gesture of your own"
+    }
     GroupLabel { visible: inputPane.hasTouchpad; text: "Gestures" }
     Group {
         visible: inputPane.hasTouchpad
         ToggleSetting {
             label: "Touchpad gestures"
-            detail: "Swipe sideways to change workspace, following your fingers, and up for the workspace overview. Pinch in for the launcher"
+            detail: "Swipe or pinch with several fingers to get around. Two fingers still scroll"
             key: "touchpadGestures"
         }
         Separator {}
@@ -293,17 +302,61 @@ Column {
             onPicked: v => Config.s.gestureFingers = v
         }
         Separator {}
-        DropdownSetting {
-            label: "Swiping down"
-            settingKey: "gestureSwipeDown"
-            detail: Config.s.gestureSwipeDown === "launcher" ? "Opens the launcher. Swipe up to close it again"
-                : "Moves your windows aside to show the desktop. Swipe up, or down again, to bring them back"
+        ToggleSetting {
+            label: "Swipe sideways"
+            detail: "Moves to the next or previous workspace, following your fingers"
+            key: "gestureSideways"
             needsMet: Config.s.touchpadGestures
             needs: "Needs Touchpad gestures to be on"
             needsPage: "input"; needsLabel: "Touchpad gestures"
-            options: [{ value: "desktop", label: "Show the desktop" }, { value: "launcher", label: "Open the launcher" }]
-            value: Config.s.gestureSwipeDown === "launcher" ? "launcher" : "desktop"
-            onPicked: v => Config.s.gestureSwipeDown = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Swipe up"
+            settingKey: "gestureUp"
+            detail: inputPane.gestureDetail(Config.s.gestureUp)
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.gestureOptions
+            value: Config.s.gestureUp
+            onPicked: v => Config.s.gestureUp = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Swipe down"
+            settingKey: "gestureDown"
+            detail: inputPane.gestureDetail(Config.s.gestureDown)
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.gestureOptions
+            value: Config.s.gestureDown
+            onPicked: v => Config.s.gestureDown = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Pinch in"
+            settingKey: "gesturePinchIn"
+            detail: inputPane.gestureDetail(Config.s.gesturePinchIn)
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.gestureOptions
+            value: Config.s.gesturePinchIn
+            onPicked: v => Config.s.gesturePinchIn = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Pinch out"
+            settingKey: "gesturePinchOut"
+            detail: inputPane.gestureDetail(Config.s.gesturePinchOut)
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.gestureOptions
+            value: Config.s.gesturePinchOut
+            onPicked: v => Config.s.gesturePinchOut = v
         }
     }
 }

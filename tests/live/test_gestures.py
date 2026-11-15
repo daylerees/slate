@@ -1,10 +1,12 @@
-"""Touchpad gestures (Settings → Input → Touchpad gestures, session/hypr/config/gestures.lua):
-Slate makes them in Hyprland with the fingers chosen and takes them away when they're off, and
-what each one does works in a real session. (The container has no touchpad to swipe on, so the
+"""Touchpad gestures (Settings → Input → Gestures, session/hypr/config/gestures.lua):
+Slate makes them in Hyprland with the fingers chosen, leaves free the directions set to do
+nothing, takes them away when they're off, and what each one does works in a real session. (The container has no touchpad to swipe on, so the
 gestures' own functions are called, as Hyprland calls them when one ends.)"""
 from live import LiveCase
 
 DIRECTIONS = ("horizontal", "up", "down", "pinchin", "pinchout")
+# Made to start with (pinching out does nothing until chosen)
+DEFAULT = ("horizontal", "up", "down", "pinchin")
 
 
 class Gestures(LiveCase):
@@ -24,8 +26,8 @@ class Gestures(LiveCase):
         self.s.run(["hyprctl", "eval", f'SLATE_HL_GESTURE({{ {g}, action = "unset" }})'])
         return False
 
-    def made(self, fingers):
-        return all(self.has(fingers, d) for d in DIRECTIONS)
+    def made(self, fingers, directions=DEFAULT):
+        return all(self.has(fingers, d) for d in directions)
 
     def none(self, fingers):
         return not any(self.has(fingers, d) for d in DIRECTIONS)
@@ -61,33 +63,55 @@ class Gestures(LiveCase):
         self.s.settle(1)
         self.until(lambda: self.made(3), "Slate's gestures after a reload", timeout=15)
 
-    def test_up_opens_the_overview_and_down_closes_it(self):
+    def test_each_direction_as_chosen(self):
+        """Sideways off and "Nothing" leave a direction free; choosing something for pinch out
+        makes it."""
+        for key in ("gestureFingers", "gestureSideways", "gestureUp", "gesturePinchOut"):
+            self.keep_setting(key)
+        self.config("gestureFingers", "3")
+        self.until(lambda: self.made(3) and not self.has(3, "pinchout"), "Slate's gestures, pinch out left free")
+        self.config("gestureSideways", "false")
+        self.config("gestureUp", "none")
+        self.config("gesturePinchOut", "desktop")
+        self.until(lambda: not self.has(3, "horizontal") and not self.has(3, "up") and self.made(3, ("down", "pinchin", "pinchout")),
+                   "sideways and up left free, pinch out made")
+
+    def test_up_opens_the_overview_and_again_closes_it(self):
+        self.keep_setting("gestureUp")
+        self.config("gestureUp", "overview")
         self.addCleanup(lambda: self.ipc("overview", "close"))
-        self.s.hyprctl("dispatch", "function() gestureUp() end")
+        self.until(lambda: self.lua('GESTURE_ACTIONS.up == "overview"'), "Hyprland to have the setting")
+        self.s.hyprctl("dispatch", 'function() gesture("up") end')
         self.wait(lambda st: st["overview"]["open"], "the overview to open")
         self.s.settle(0.5)
-        self.s.hyprctl("dispatch", "function() gestureDown() end")
+        self.s.hyprctl("dispatch", 'function() gesture("up") end')
         self.wait(lambda st: not st["overview"]["open"], "the overview to close")
 
-    def test_pinch_opens_and_closes_the_launcher(self):
+    def test_pinch_opens_the_launcher_and_another_gesture_closes_it(self):
+        self.keep_setting("gesturePinchIn")
+        self.config("gesturePinchIn", "launcher")
         self.addCleanup(lambda: self.ipc("launcher", "close"))
-        self.s.hyprctl("dispatch", "function() gesturePinch(true) end")
+        self.until(lambda: self.lua('GESTURE_ACTIONS.pinchin == "launcher"'), "Hyprland to have the setting")
+        self.s.hyprctl("dispatch", 'function() gesture("pinchin") end')
         self.wait(lambda st: st["launcher"]["open"], "the launcher to open")
         self.s.settle(0.5)
-        self.s.hyprctl("dispatch", "function() gesturePinch(false) end")
+        self.s.hyprctl("dispatch", 'function() gesture("down") end')
         self.wait(lambda st: not st["launcher"]["open"], "the launcher to close")
 
     def test_down_opens_the_launcher_when_chosen(self):
-        self.keep_setting("gestureSwipeDown")
+        self.keep_setting("gestureDown")
         self.addCleanup(lambda: self.ipc("launcher", "close"))
-        self.config("gestureSwipeDown", "launcher")
-        self.until(lambda: self.lua('GESTURE_DOWN == "launcher"'), "Hyprland to have the setting")
-        self.s.hyprctl("dispatch", "function() gestureDown() end")
+        self.config("gestureDown", "launcher")
+        self.until(lambda: self.lua('GESTURE_ACTIONS.down == "launcher"'), "Hyprland to have the setting")
+        self.s.hyprctl("dispatch", 'function() gesture("down") end')
         self.wait(lambda st: st["launcher"]["open"], "the launcher to open")
 
     def test_show_the_desktop_and_back(self):
-        """Swiping down moves the workspace's windows out of sight; swiping up brings them back
-        to their workspace."""
+        """Swiping down moves the workspace's windows out of sight; swiping down again brings
+        them back to their workspace."""
+        self.keep_setting("gestureDown")
+        self.config("gestureDown", "desktop")
+        self.until(lambda: self.lua('GESTURE_ACTIONS.down == "desktop"'), "Hyprland to have the setting")
         self.close_windows()
         self.addCleanup(self.close_windows)
         self.addCleanup(lambda: self.s.hyprctl("dispatch", "function() showDesktop(false) end"))
@@ -96,11 +120,10 @@ class Gestures(LiveCase):
         apps = lambda: [c for c in self.s.hyprctl("clients", json_out=True) if c.get("mapped") and c.get("class") == "foot"]
         self.until(lambda: len(apps()) == 2, "two windows")
         self.s.settle(0.5)
-        self.s.hyprctl("dispatch", "function() gestureDown() end")
+        self.s.hyprctl("dispatch", 'function() gesture("down") end')
         self.until(lambda: all(c["workspace"]["name"] == "special:slate-desktop" for c in apps()), "the windows to go aside")
         self.assertTrue(self.lua("desktopShowing()"))
         self.assertEqual(self.s.hyprctl("activeworkspace", json_out=True)["id"], 1, "the workspace changed")
-        self.s.hyprctl("dispatch", "function() gestureUp() end")
+        self.s.hyprctl("dispatch", 'function() gesture("down") end')
         self.until(lambda: all(c["workspace"]["id"] == 1 for c in apps()), "the windows to come back")
         self.assertTrue(self.lua("not desktopShowing()"))
-        self.assertFalse(self.s.state()["overview"]["open"], "swiping up opened the overview as well")

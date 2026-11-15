@@ -1,14 +1,16 @@
 -- Touchpad gestures (Settings → Input → Gestures), with three or four fingers:
---   sideways   the next or previous workspace, following your fingers (Hyprland's own swipe)
---   up         the workspace overview; with the desktop showing, the windows come back instead
---   down       shows the desktop, or opens the launcher (Settings → Input → Swiping down);
---              with the overview or the launcher open, it closes that instead
---   pinch in   the launcher; pinching out closes it again
+--   sideways   the next or previous workspace, following your fingers (Hyprland's own swipe;
+--              Settings → Input → Swipe sideways)
+--   up, down, pinch in, pinch out
+--              each one of: "overview" (the workspace overview), "desktop" (show the desktop),
+--              "launcher", or "none" (no gesture of Slate's there, so it's free for your own)
+-- Each opens its own thing and, done again, closes it. While the overview or the launcher is
+-- open, or the desktop is showing, any of them puts that away first.
 --
--- Slate makes them with setGestures(on, fingers, down), called by slateApply (slate.lua) when
--- Slate starts, when this config reloads and when they change in Settings. Where a gesture of
--- your own (in ~/.config/slate/hypr/hyprland.lua) uses the same fingers and direction, yours
--- is kept and Slate's is left out (see "Making them", below).
+-- Slate makes them with setGestures({ on, fingers, sideways, up, down, pinchin, pinchout }),
+-- called by slateApply (slate.lua) when Slate starts, when this config reloads and when they
+-- change in Settings. Where a gesture of your own (in ~/.config/slate/hypr/hyprland.lua) uses
+-- the same fingers and direction, yours is kept and Slate's is left out (see "Making them").
 
 -- A Slate command, e.g. slateCall("overview open")
 local function slateCall(args) hl.exec_cmd(SLATE .. " ipc call " .. args) end
@@ -60,23 +62,25 @@ do
 end
 
 -- ---- What each gesture does ------------------------------------------------------
-GESTURE_DOWN = GESTURE_DOWN or "desktop"   -- "desktop" or "launcher" (Settings → Input → Swiping down)
-function gestureUp()
-    if hidden then showDesktop(false)
-    elseif isOpen("slate-launcher") then slateCall("launcher close")
-    elseif not isOpen("slate-overview") then slateCall("overview open") end
+-- What each direction does (Settings → Input → Swipe up…): "overview", "desktop", "launcher" or "none"
+GESTURE_ACTIONS = GESTURE_ACTIONS or { up = "overview", down = "desktop", pinchin = "launcher", pinchout = "none" }
+-- Put away whatever a gesture opened: true if something was
+local function putAway()
+    if hidden then showDesktop(false); return true end
+    if isOpen("slate-overview") then slateCall("overview close"); return true end
+    if isOpen("slate-launcher") then slateCall("launcher close"); return true end
+    return false
 end
-function gestureDown()
-    if isOpen("slate-overview") then slateCall("overview close")
-    elseif isOpen("slate-launcher") then slateCall("launcher close")
-    elseif GESTURE_DOWN == "launcher" then slateCall("launcher open")
-    else showDesktop() end
+-- gestureDo(action): what a gesture does, as Hyprland calls it when the gesture ends
+function gestureDo(action)
+    if action == nil or action == "none" then return end
+    if putAway() then return end
+    if action == "overview" then slateCall("overview open")
+    elseif action == "launcher" then slateCall("launcher open")
+    elseif action == "desktop" then showDesktop(true) end
 end
-function gesturePinch(inward)
-    if inward then
-        if not isOpen("slate-launcher") then slateCall("launcher open") end
-    elseif isOpen("slate-launcher") then slateCall("launcher close") end
-end
+-- gesture(direction): the gesture in that direction ("up", "down", "pinchin", "pinchout")
+function gesture(direction) gestureDo(GESTURE_ACTIONS[direction]) end
 
 -- ---- Making them ------------------------------------------------------------------
 -- Hyprland keeps one gesture per fingers and direction, and refuses one that an earlier one
@@ -116,29 +120,36 @@ end
 -- Which Slate made (fingers, direction), so they can be taken away again without touching
 -- yours, and what they were made for, so they're only made again when that changes
 local made, madeFor = {}, nil
-function setGestures(on, fingers, down)
-    GESTURE_DOWN = down == "launcher" and "launcher" or "desktop"
-    fingers = fingers == 4 and 4 or 3
-    local want = on and tostring(fingers) or "off"
+local ACTIONS = { overview = true, desktop = true, launcher = true, none = true }
+local DIRECTIONS = { "up", "down", "pinchin", "pinchout" }
+function setGestures(t)
+    t = t or {}
+    local fingers = t.fingers == 4 and 4 or 3
+    for _, d in ipairs(DIRECTIONS) do
+        if ACTIONS[t[d]] then GESTURE_ACTIONS[d] = t[d] end
+    end
+    -- Which directions get one of Slate's: sideways if it's on, the rest unless they're "none"
+    local wanted = {}
+    if t.on then
+        if t.sideways ~= false then wanted[#wanted + 1] = "horizontal" end
+        for _, d in ipairs(DIRECTIONS) do
+            if GESTURE_ACTIONS[d] ~= "none" then wanted[#wanted + 1] = d end
+        end
+    end
+    local want = fingers .. ":" .. table.concat(wanted, ",")
     if want == madeFor then return end
     madeFor = want
     for _, g in ipairs(made) do
         SLATE_HL_GESTURE({ fingers = g.fingers, direction = g.direction, action = "unset" })
     end
     made = {}
-    if not on then return end
-    -- (each action looks up what to do when it happens, so a change to GESTURE_DOWN needs
-    -- nothing made again)
-    for _, g in ipairs({
-        { "horizontal", "workspace" },
-        { "up",         function() gestureUp() end },
-        { "down",       function() gestureDown() end },
-        { "pinchin",    function() gesturePinch(true) end },
-        { "pinchout",   function() gesturePinch(false) end },
-    }) do
-        if not clashes(fingers, g[1]) then
-            SLATE_HL_GESTURE({ fingers = fingers, direction = g[1], action = g[2] })
-            made[#made + 1] = { fingers = fingers, direction = g[1] }
+    -- (each looks up what to do when it happens, so changing between actions needs nothing
+    -- made again; only "none", which leaves the direction free)
+    for _, d in ipairs(wanted) do
+        if not clashes(fingers, d) then
+            local action = d == "horizontal" and "workspace" or function() gesture(d) end
+            SLATE_HL_GESTURE({ fingers = fingers, direction = d, action = action })
+            made[#made + 1] = { fingers = fingers, direction = d }
         end
     end
 end

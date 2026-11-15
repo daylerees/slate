@@ -98,7 +98,12 @@ JsonAdapter {
     property string touchpadIgnoreWhileTyping: "" // on / off
     property bool touchpadGestures: true      // swiping with several fingers (session/hypr/config/gestures.lua)
     property int gestureFingers: 3            // how many: 3 or 4
-    property string gestureSwipeDown: "desktop" // swiping down: "desktop" (show it) or "launcher"
+    property bool gestureSideways: true       // swiping sideways changes workspace
+    // What swiping up and down and pinching in and out do: overview, desktop, launcher or none
+    property string gestureUp: "overview"
+    property string gestureDown: "desktop"
+    property string gesturePinchIn: "launcher"
+    property string gesturePinchOut: "none"
     property int cursorSize: 0                // px (0 = not set here)
     property string cursorTheme: ""           // the pointer's theme: "" = Slate's own (Slate-Cursors), or any installed cursor theme
     property bool pointerInApps: false        // Settings → Input: write the pointer into other apps' own settings too (GTK, KDE, X11), undone when switched off

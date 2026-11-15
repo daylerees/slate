@@ -74,6 +74,13 @@ function swipe(fingers, direction)
     if type(a) ~= "function" then error("no gesture of Slate's for " .. fingers .. " " .. direction) end
     a()
 end
+-- Slate's settings for them, as slateApply hands them on: on, with these fingers and anything else in t
+function slate(fingers, t)
+    t = t or {}
+    if t.on == nil then t.on = true end
+    t.fingers = fingers
+    setGestures(t)
+end
 function happen(event) for _, fn in ipairs(events[event] or {}) do fn() end end
 function window(address, ws, pinned) WINDOWS[#WINDOWS + 1] = { address = address, workspace = { id = ws, name = tostring(ws) }, pinned = pinned } end
 
@@ -106,91 +113,107 @@ class GesturesLua(Case):
     def commands(self, lines):
         return [l[1].removeprefix(SLATE_CMD) for l in lines if l[0] == "EXEC"]
 
+    def made(self, lines, fingers=None):
+        return [l[2] for l in lines if l[0] == "GESTURE" and l[3] != "close" and (fingers is None or l[1] == str(fingers))]
+
     def test_made_with_the_fingers_chosen(self):
-        lines = self.do('setGestures(true, 3, "desktop")')
+        """By default: sideways (Hyprland's swipe), up, down and pinch in. Pinch out does nothing
+        to start with, so it's left free."""
+        lines = self.do('slate(3)')
         self.assertEqual(lines, [["GESTURE", "3", "horizontal", "workspace"], ["GESTURE", "3", "up", "function"],
-                                 ["GESTURE", "3", "down", "function"], ["GESTURE", "3", "pinchin", "function"],
-                                 ["GESTURE", "3", "pinchout", "function"]])
-        lines = self.do('setGestures(true, 4, "desktop")')
-        self.assertEqual({tuple(l[1:3]) for l in lines}, {("4", d) for d in ("horizontal", "up", "down", "pinchin", "pinchout")})
+                                 ["GESTURE", "3", "down", "function"], ["GESTURE", "3", "pinchin", "function"]])
+        self.assertEqual(self.made(self.do('slate(4)'), 4), ["horizontal", "up", "down", "pinchin"])
+
+    def test_nothing_and_sideways_off_leave_the_direction_free(self):
+        lines = self.do('slate(3, { sideways = false, up = "none", pinchout = "desktop" })')
+        self.assertEqual(self.made(lines), ["down", "pinchin", "pinchout"])
+        lines = self.do('slate(3, { up = "none", down = "none", pinchin = "none", pinchout = "none" })')
+        self.assertEqual(self.made(lines), ["horizontal"])
+        # ...and taken away when it becomes "Nothing"
+        lines = self.do('slate(3); print("--"); slate(3, { down = "none" })')
+        after = lines[lines.index(["--"]) + 1:]
+        self.assertIn(["UNSET", "3", "down"], after)
+        self.assertNotIn("down", self.made(after))
 
     def test_changing_fingers_or_turning_off_takes_slates_away(self):
-        lines = self.do('setGestures(true, 3, "desktop"); print("--"); setGestures(true, 4, "desktop"); '
-                        'print("--"); setGestures(false, 4, "desktop")')
+        lines = self.do('slate(3); print("--"); slate(4); print("--"); slate(4, { on = false })')
         first, second, third = "\n".join("\t".join(l) for l in lines).split("--")
-        self.assertEqual(second.count("UNSET\t3"), 5)
-        self.assertEqual(second.count("GESTURE\t4"), 5)
-        self.assertEqual(third.count("UNSET\t4"), 5)
+        self.assertEqual(second.count("UNSET\t3"), 4)
+        self.assertEqual(second.count("GESTURE\t4"), 4)
+        self.assertEqual(third.count("UNSET\t4"), 4)
         self.assertNotIn("GESTURE", third)
 
     def test_made_once_for_the_same_settings(self):
         """Slate sends its settings to Hyprland whenever any of them changes (a slider being
-        dragged): the gestures are only made again when theirs change, never in the middle of one."""
-        lines = self.do('setGestures(true, 3, "desktop"); print("--"); setGestures(true, 3, "launcher"); '
-                        'setGestures(true, 3, "desktop")')
-        after = lines[lines.index(["--"]) + 1:]
-        self.assertEqual(after, [])
+        dragged): the gestures are only made again when which ones there are changes, not when
+        one changes between actions, and never in the middle of one."""
+        lines = self.do('slate(3); print("--"); slate(3); slate(3, { up = "launcher", down = "overview" }); '
+                        'assert(GESTURE_ACTIONS.up == "launcher" and GESTURE_ACTIONS.down == "overview")')
+        self.assertEqual(lines[lines.index(["--"]) + 1:], [])
 
     def test_yours_stay(self):
         """A gesture of your own on the same fingers and direction (your hyprland.lua, made
         first) is kept: Slate's is left out, and turning Slate's off leaves yours alone."""
         lines = self.do('hl.gesture({ fingers = 3, direction = "up", action = "fullscreen" }); print("--"); '
-                        'setGestures(true, 3, "desktop"); print("--"); setGestures(false, 3, "desktop")')
+                        'slate(3); print("--"); slate(3, { on = false })')
         text = "\n".join("\t".join(l) for l in lines)
         _, made, off = text.split("--")
         self.assertNotIn("\tup\t", made)
-        self.assertEqual(made.count("GESTURE"), 4)
+        self.assertEqual(made.count("GESTURE"), 3)
         self.assertNotIn("\tup", off)
-        self.assertEqual(off.count("UNSET"), 4)
+        self.assertEqual(off.count("UNSET"), 3)
 
     def test_yours_in_a_wider_direction_stay_too(self):
         """Yours sideways (left or right) or up and down together (vertical) would hide
         Slate's on those fingers: Slate leaves those out, and the rest are made."""
+        every = '{ up = "overview", down = "desktop", pinchin = "launcher", pinchout = "launcher" }'
         for yours, left_out in (("left", {"horizontal"}), ("right", {"horizontal"}), ("vertical", {"up", "down"}),
                                 ("swipe", {"horizontal", "up", "down"}), ("pinch", {"pinchin", "pinchout"}),
                                 ("zoomin", {"pinchin"})):
             with self.subTest(yours=yours):
-                lines = self.do(f'hl.gesture({{ fingers = 4, direction = "{yours}", action = "close" }}); '
-                                'setGestures(true, 4, "desktop")')
-                made = {l[2] for l in lines if l[0] == "GESTURE" and l[3] != "close"}
-                self.assertEqual(made, {"horizontal", "up", "down", "pinchin", "pinchout"} - left_out)
-        lines = self.do('hl.gesture({ fingers = 3, direction = "left", action = "close" }); setGestures(true, 4, "desktop")')
-        self.assertEqual(len([l for l in lines if l[0] == "GESTURE" and l[1] == "4"]), 5, "other fingers aren't affected")
-        lines = self.do('hl.gesture({ fingers = 4, direction = "left", mods = "SUPER", action = "close" }); '
-                        'setGestures(true, 4, "desktop")')
-        self.assertEqual(len([l for l in lines if l[0] == "GESTURE" and l[1] == "4"]), 6, "one with keys held doesn't clash")
+                lines = self.do(f'hl.gesture({{ fingers = 4, direction = "{yours}", action = "close" }}); slate(4, {every})')
+                self.assertEqual(set(self.made(lines)), {"horizontal", "up", "down", "pinchin", "pinchout"} - left_out)
+        lines = self.do(f'hl.gesture({{ fingers = 3, direction = "left", action = "close" }}); slate(4, {every})')
+        self.assertEqual(len(self.made(lines, 4)), 5, "other fingers aren't affected")
+        lines = self.do(f'hl.gesture({{ fingers = 4, direction = "left", mods = "SUPER", action = "close" }}); slate(4, {every})')
+        self.assertEqual(len(self.made(lines, 4)), 5, "one with keys held doesn't clash")
 
-    def test_up_opens_the_overview(self):
-        self.assertEqual(self.commands(self.do('setGestures(true, 3, "desktop"); swipe(3, "up")')), ["overview open"])
-        self.assertEqual(self.commands(self.do('OPEN["slate-overview"] = true; setGestures(true, 3, "desktop"); swipe(3, "up")')), [])
-        self.assertEqual(self.commands(self.do('OPEN["slate-launcher"] = true; setGestures(true, 3, "desktop"); swipe(3, "up")')),
-                         ["launcher close"])
+    def test_each_opens_its_own_and_closes_it_again(self):
+        """Every direction can do any of the three, and done again (the overview or launcher
+        then open) closes it."""
+        for direction in ("up", "down", "pinchin", "pinchout"):
+            for action, opened, layer in (("overview", "overview open", "slate-overview"),
+                                          ("launcher", "launcher open", "slate-launcher")):
+                with self.subTest(direction=direction, action=action):
+                    setup = f'slate(3, {{ {direction} = "{action}" }}); '
+                    self.assertEqual(self.commands(self.do(setup + f'swipe(3, "{direction}")')), [opened])
+                    self.assertEqual(self.commands(self.do(f'OPEN["{layer}"] = true; ' + setup + f'swipe(3, "{direction}")')),
+                                     [opened.replace("open", "close")])
 
-    def test_down_closes_what_is_open_first(self):
+    def test_any_gesture_closes_what_is_open_first(self):
+        """While the overview or the launcher is open, a gesture for something else puts it away
+        rather than opening a second thing over it."""
         for open_, closed in (("slate-overview", "overview close"), ("slate-launcher", "launcher close")):
-            for down in ("desktop", "launcher"):
-                with self.subTest(open=open_, down=down):
-                    lines = self.do(f'window("0x1", 1); OPEN["{open_}"] = true; setGestures(true, 3, "{down}"); swipe(3, "down")')
+            for action in ("overview", "launcher", "desktop"):
+                with self.subTest(open=open_, action=action):
+                    lines = self.do(f'window("0x1", 1); OPEN["{open_}"] = true; slate(3, {{ up = "{action}" }}); swipe(3, "up")')
                     self.assertEqual(self.commands(lines), [closed])
                     self.assertFalse([l for l in lines if l[0] == "MOVE"])
 
-    def test_down_opens_the_launcher_when_chosen(self):
-        self.assertEqual(self.commands(self.do('setGestures(true, 4, "launcher"); swipe(4, "down")')), ["launcher open"])
-
-    def test_pinch(self):
-        self.assertEqual(self.commands(self.do('setGestures(true, 3, "desktop"); swipe(3, "pinchin")')), ["launcher open"])
-        self.assertEqual(self.commands(self.do('OPEN["slate-launcher"] = true; setGestures(true, 3, "desktop"); swipe(3, "pinchin")')), [])
-        self.assertEqual(self.commands(self.do('OPEN["slate-launcher"] = true; setGestures(true, 3, "desktop"); swipe(3, "pinchout")')),
-                         ["launcher close"])
-        self.assertEqual(self.commands(self.do('setGestures(true, 3, "desktop"); swipe(3, "pinchout")')), [])
+    def test_nothing_does_nothing(self):
+        """Made by hand (as by an earlier setting), a "Nothing" gesture still does nothing,
+        and doesn't close what's open either."""
+        lines = self.do('OPEN["slate-launcher"] = true; slate(3); gesture("pinchout")')
+        self.assertEqual(self.commands(lines), [])
 
     def test_show_the_desktop_and_back(self):
-        """Down moves this workspace's windows (not Slate's pinned ones, nor another
-        workspace's) aside; up, or down again, brings them back where they were, in order."""
+        """Showing the desktop moves this workspace's windows (not Slate's pinned ones, nor
+        another workspace's) aside; the same gesture again, any other gesture, or going on with
+        your work brings them back where they were, in order."""
         setup = ('window("0xa", 1); window("0xb", 1); window("0xnova", 1, true); window("0xc", 2); '
-                 'setGestures(true, 3, "desktop"); ')
-        for back in ('swipe(3, "up")', 'swipe(3, "down")', 'happen("workspace.active")',
-                     'happen("window.open")', 'happen("workspace.special_active")'):
+                 'slate(3, { pinchout = "desktop" }); ')
+        for back in ('swipe(3, "down")', 'swipe(3, "up")', 'swipe(3, "pinchin")', 'swipe(3, "pinchout")',
+                     'happen("workspace.active")', 'happen("window.open")', 'happen("workspace.special_active")'):
             with self.subTest(back=back):
                 lines = self.do(setup + 'swipe(3, "down"); assert(desktopShowing()); print("--"); ' + back
                                 + '; assert(not desktopShowing())')
@@ -200,8 +223,7 @@ class GesturesLua(Case):
                 self.assertEqual(self.commands(lines), [])
 
     def test_nothing_to_hide(self):
-        lines = self.do('window("0xnova", 1, true); setGestures(true, 3, "desktop"); swipe(3, "down"); '
-                        'assert(not desktopShowing())')
+        lines = self.do('window("0xnova", 1, true); slate(3); swipe(3, "down"); assert(not desktopShowing())')
         self.assertFalse([l for l in lines if l[0] == "MOVE"])
 
     def test_a_reload_brings_hidden_windows_back(self):

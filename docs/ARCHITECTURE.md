@@ -499,10 +499,11 @@ instead, made mode 0700, never a fixed name in `/tmp`.
   `switchWorkspace(dispatcher, from, to)` for Super+Left/Right (`cycleWorkspace`) and the bar's
   dots (`goToWorkspace(id)`, binds.lua), which slides the windows away (`slideAwayTo`) to an
   empty workspace or from one with a floating window.
-- `gestures.lua` — touchpad gestures (Settings → Input → Gestures), made by `setGestures(on,
-  fingers, down)` from `slateApply`: Hyprland's own workspace swipe sideways, and `gestureUp`
-  (overview), `gestureDown` (`showDesktop()`, which moves the workspace's windows to
-  `special:slate-desktop` and back, or the launcher) and `gesturePinch` (launcher). Gestures made
+- `gestures.lua` — touchpad gestures (Settings → Input → Gestures), made by `setGestures({ on,
+  fingers, sideways, up, down, pinchin, pinchout })` from `slateApply`: Hyprland's own workspace
+  swipe sideways, and `gesture(direction)` for the rest, each the overview, the launcher or
+  `showDesktop()` (the workspace's windows to `special:slate-desktop` and back), and again to
+  close it; "none" leaves a direction free. Gestures made
   in your own files are noted (`hl.gesture` is wrapped; `SLATE_HL_GESTURE` is Hyprland's own) and
   Slate's that would clash with them are left out.
 - `workspaces.lua` — `newWorkspace(movingAddr)` (the number after the last workspace with

@@ -85,8 +85,8 @@ function slateApply(t)
     end
     if cursorChanged then hl.exec_cmd("hyprctl setcursor " .. CURSOR_THEME .. " " .. CURSOR_SIZE) end
 
-    -- Touchpad gestures: { on, fingers (3 or 4), down ("desktop" or "launcher") } (gestures.lua)
-    if t.gestures ~= nil and setGestures then setGestures(t.gestures.on, t.gestures.fingers, t.gestures.down) end
+    -- Touchpad gestures: { on, fingers (3 or 4), sideways, up, down, pinchin, pinchout } (gestures.lua)
+    if t.gestures ~= nil and setGestures then setGestures(t.gestures) end
 
     -- Animations: "normal", "fast" or "off" (animations.lua)
     if t.animations ~= nil and setAnimationSpeed then setAnimationSpeed(t.animations) end
