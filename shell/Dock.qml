@@ -663,7 +663,9 @@ PanelWindow {
     }
     // (and once at start, so the windows already open have their details)
     Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
-    property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag || Config.wallpaperSwitching)
+    // (resting on a divider or dragging one keeps it shown: the resize area takes the pointer
+    // from the dock's own then, and an auto-hiding dock slid away mid-drag and dropped it)
+    property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || resizing || dividerCursor || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag || Config.wallpaperSwitching)
     Timer { id: holdTimer; interval: win.hideDelay }
     // Moved to another edge: it shows there for a moment (even with auto-hide), so you see
     // where it went. Meanwhile it's kept out of sight until its window has moved: drawn for
@@ -2775,7 +2777,7 @@ PanelWindow {
             // scrollbar starts (menu coordinates), and how strong each shade is now
             grid: appMenu.gridFlick ? appMenu.gridState() : null,
             hoverEffect: win.hoverEffect, made: win.madeOf,
-            resizing: win.resizing, previewScale: Math.round(win.previewScale * 1000) / 1000, windowSize: Math.round(win.thickness),
+            shown: win.shown, resizing: win.resizing, previewScale: Math.round(win.previewScale * 1000) / 1000, windowSize: Math.round(win.thickness),
             dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
             fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
             glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
