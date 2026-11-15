@@ -1564,9 +1564,10 @@ Singleton {
     property bool iconColoursReading: false
     // Still drawing tiles or noting their colours (the test hook waits for this before a picture)
     // (always a yes or no: `a || b` hands back the last part as it is, and while a reload tears
-    // this down the parts read undefined, which a bool can't take)
-    readonly property bool iconsBusy: !!(tileAll.running || tileAllRun.running || iconColoursSoon.running
-        || iconColoursRun.running || iconColoursReading)
+    // this down the parts read undefined, which a bool can't take; and a part already gone
+    // threw, which left the binding undefined all the same: each is asked for with ?.)
+    readonly property bool iconsBusy: !!(tileAll?.running || tileAllRun?.running || iconColoursSoon?.running
+        || iconColoursRun?.running || iconColoursReading)
     onIconColoursWantedChanged: if (iconColoursWanted) iconColoursSoon.restart()
     // An icon with no colour noted yet (an app just drawn): look again, at most every 30 s each
     property var iconColourAsked: ({})
