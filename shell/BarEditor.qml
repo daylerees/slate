@@ -361,8 +361,8 @@ PanelWindow {
         color: root.bar.barColor
         opacity: root.fade * (1 - root.turn)
         visible: opacity > 0
-        border.width: Config.glass ? 1 : 0
-        border.color: Config.glassEdge
+        border.width: Config.windowBorderWidth      // glass: the window border (Config)
+        border.color: Config.windowBorder
         Shadow {}      // raised: Slate's shadow, with glass too
         Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
         MouseArea { anchors.fill: parent }       // (a click on the panel itself does nothing)
@@ -631,8 +631,8 @@ PanelWindow {
         color: root.bar.barColor
         opacity: root.fade * root.turn
         visible: opacity > 0
-        border.width: Config.glass ? 1 : 0
-        border.color: Config.glassEdge
+        border.width: Config.windowBorderWidth      // glass: the window border (Config)
+        border.color: Config.windowBorder
         Shadow {}
         Gloss { radius: parent.radius; strength: 0.6 }
         MouseArea { anchors.fill: parent }

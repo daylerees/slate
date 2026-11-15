@@ -200,9 +200,8 @@ PanelWindow {
         color: root.barColor
         opacity: root.fade
         scale: 0.98 + 0.02 * root.fade
-        // Glass: a thin light rim
-        border.width: Config.glass ? 1 : 0
-        border.color: Config.glassEdge
+        border.width: Config.windowBorderWidth      // glass: the window border (Config)
+        border.color: Config.windowBorder
         Shadow {}      // raised: Slate's shadow, with glass too
         transform: Translate { y: -root.dropDistance * (1 - root.fade) }
 

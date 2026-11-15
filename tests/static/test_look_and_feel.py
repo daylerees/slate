@@ -96,3 +96,26 @@ class SpacesSave(Case):
     def test_save_lights_the_accent_under_the_pointer(self):
         src = slate.read("shell", "panels", "SpacesPanel.qml")
         self.assertRegex(src, r"spacesView\.canSave \? \(spSaveHover\.hovered \? Config\.accentLit : pop\.accent\)")
+
+
+# Slate's own windows with a glass border (the panel each one draws), and how many each draws
+BORDERED_WINDOWS = {"Launcher.qml": 1, "Assistant.qml": 1, "Switcher.qml": 1, "Picker.qml": 1,
+                    "WallpaperSwitcher.qml": 1, "BarEditor.qml": 2}
+
+
+class WindowBorders(Case):
+    def test_slates_windows_share_the_window_border(self):
+        """The border round Slate's own windows (the launcher, Nova, the switchers, the pickers,
+        the bar's arranging panel) is one shared definition: a softer accent than Hyprland's
+        active border, as wide as Settings → Windows → Window borders (in Hyprland's pixels, so
+        divided by the Interface size), none without glass."""
+        cfg = slate.read("shell", "Config.qml")
+        self.assertRegex(cfg, r"readonly property color windowBorder: Qt\.rgba\(accent\.r, accent\.g, accent\.b,")
+        self.assertRegex(cfg, r"readonly property real windowBorderWidth: glass \? [^\n]*s\.windowBorderSize[^\n]*/ uiScale : 0")
+        for f, n in BORDERED_WINDOWS.items():
+            src = slate.read("shell", f)
+            with self.subTest(f):
+                pairs = re.findall(r"border\.width: Config\.windowBorderWidth\b[^\n]*\n\s*border\.color: Config\.windowBorder\b", src)
+                self.assertEqual(len(pairs), n, "not the shared window border")
+                self.assertNotIn("Config.glassEdge", src, "a border of its own")
+                self.assertNotRegex(src, r"border\.width: Config\.glass \? 1 : 0", "a border of its own")

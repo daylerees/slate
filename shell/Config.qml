@@ -1911,9 +1911,17 @@ Singleton {
     readonly property real glossAmount: Math.max(0, Math.min(2, Number(s.glassGloss)))
     readonly property bool glassGloss: glass && glossAmount > 0
     readonly property real glossTint: Math.max(0, Math.min(1, Number(s.glassGlossTint)))
-    // The bright edge round glass panels (the launcher, Nova, the bar's arranging panel…):
-    // a bright, light shade of the theme's accent, so it belongs to the colours in use.
-    // (A grey accent has no colour to give: it stays white)
+    // The border round Slate's own glass windows (the launcher, Nova, the switchers, the
+    // pickers, the bar's arranging panel): the accent, softer than on Hyprland's active window
+    // (0.6 there), and as wide as Settings → Windows → Window borders makes tiled windows'.
+    // That width is in Hyprland's pixels, so it's divided by the Interface size to match on
+    // screen; 0 turns it off here too. Without glass (or in game mode) there's none.
+    // Use both together: `border.width: Config.windowBorderWidth; border.color: Config.windowBorder`
+    readonly property color windowBorder: Qt.rgba(accent.r, accent.g, accent.b, s.lightMode ? 0.4 : 0.32)
+    readonly property real windowBorderWidth: glass ? Math.max(0, Math.min(12, Number(s.windowBorderSize) || 0)) / uiScale : 0
+    // The bright edge round the title bars' move handle: a bright, light shade of the theme's
+    // accent, so it belongs to the colours in use. (A grey accent has no colour to give: it
+    // stays white)
     readonly property color glassEdge: {
         const a = Qt.lighter(accent, 1.0);
         const sat = Math.min(1, a.hslSaturation * 1.5);

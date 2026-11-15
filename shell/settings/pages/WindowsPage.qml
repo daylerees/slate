@@ -158,7 +158,7 @@ Column {
         SettingRow {
             label: "Window borders"
             settingKey: "windowBorderSize"
-            detail: "Around each window when a workspace has more than one (a lone window has none). 0 turns them off"
+            detail: "Around each window when a workspace has more than one (a lone window has none), and round Slate's own windows with glass. 0 turns them off"
             ValueSlider { from: 0; to: 12; stepSize: 1; suffix: " px"; value: Config.s.windowBorderSize; onMoved: v => Config.s.windowBorderSize = v }
         }
         Separator {}

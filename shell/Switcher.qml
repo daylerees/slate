@@ -244,9 +244,8 @@ PanelWindow {
         color: sw.bar.barColor
         opacity: sw.fade
         scale: 0.97 + 0.03 * sw.fade
-        // Glass: a thin light rim
-        border.width: Config.glass ? 1 : 0
-        border.color: Config.glassEdge
+        border.width: Config.windowBorderWidth      // glass: the window border (Config)
+        border.color: Config.windowBorder
         Shadow {}      // raised: Slate's shadow, with glass too
         MouseArea { anchors.fill: parent }
 

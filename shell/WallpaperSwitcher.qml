@@ -324,9 +324,9 @@ Scope {
                     color: root.bar.barColor
                     opacity: root.fade
                     scale: 0.97 + 0.03 * root.fade
-                    // Glass: a thin light rim, and the wallpaper blurred behind, as Hyprland blurs it
-                    border.width: Config.glass ? 1 : 0
-                    border.color: Config.glassEdge
+                    // Glass: the wallpaper blurred behind, as Hyprland blurs it
+                    border.width: Config.windowBorderWidth      // glass: the window border (Config)
+                    border.color: Config.windowBorder
                     Shadow {}
                     WallBlur {
                         z: -1
