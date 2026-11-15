@@ -34,8 +34,8 @@ MouseArea {
         const t = target || carryTarget;
         return t ? { to: t.to, slot: t.join ? t.slot : -1, len: gapLen } : null;
     }
-    // The open slot's own place along the line, or null
-    function openSlot() {
+    // The open slot itself, or null
+    function openSlotItem() {
         const g = gap;
         if (!g) return null;
         let it = null;
@@ -44,7 +44,12 @@ MouseArea {
             else if (g.slot >= 0 && c.isBox && c.index === g.to)
                 for (const d of c.row.children) if (d.isSlot && d.slot === g.slot) it = d;
         }
-        if (!it || it.len < 2) return null;
+        return it && it.len >= 2 ? it : null;
+    }
+    // ...and its place along the line, or null
+    function openSlot() {
+        const it = openSlotItem();
+        if (!it) return null;
         const p = it.mapToItem(line, 0, 0), a = win.vert ? p.y : p.x;
         return { a0: a, a1: a + (win.vert ? it.height : it.width) };
     }
@@ -148,6 +153,7 @@ MouseArea {
         }
     }
     function press(x, y) {
+        if (landing) landed();          // (picked up again as the last one lands: it lands at once)
         const m = Qt.point(x, y);
         const a = along(mapToItem(line, m.x, m.y));
         held = pick(a); from = a; at = a; moved = false; target = null;
@@ -174,8 +180,44 @@ MouseArea {
         Config.barLeaving = leaving;
         target = leaving ? null : aim(at, held.kind === "item");
     }
+    // Let go over a gap: what's carried glides into it (the floating copy, BarEditor.qml), the
+    // gap held open, and only then is it moved there; the copy goes once the bar has drawn the
+    // thing in its place (Bar.qml's showing). With animations off, straight there
+    property var landing: null          // { h, t }: what's landing, and where
+    property bool keepGap: false        // the gap stays open until the line's laid again
+    Timer { id: land; interval: Config.ms(120); onTriggered: arranger.landed() }
+    function landed() {
+        const l = landing;
+        landing = null;
+        land.stop();
+        if (!l || !Config.barArranging) { keepGap = false; target = null; Config.barLanding = false; return; }
+        keepGap = true;
+        back.restart();
+        apply(l.h, l.t);
+    }
+    // The line's laid again with the move made (Bar.qml's place()): the gap goes with it
+    function laid() { if (keepGap) { keepGap = false; target = null; } }
+    // ...and the bar has drawn it there: the floating copy goes
+    function shown() { if (Config.barLanding && !landing) { Config.barLanding = false; Config.barFloat = null; } }
+    function apply(h, t) {
+        if (h.kind === "item" && h.name === "tuck") Config.barMoveTuck(h.index, t.join ? t.to : -1, t.slot);
+        else if (h.kind === "item") Config.barMoveItem(h.name, t.to, t.join ? t.slot : -1);
+        else Config.barMoveEntry(h.index, t.to);
+        Config.click();
+    }
     function release() {
         const h = held, t = target, dragged = moved, off = leaving;
+        const slot = dragged && t && !off && h && Config.animate ? openSlotItem() : null;
+        if (slot) {
+            const c = slot.mapToItem(null, slot.width / 2, slot.height / 2), sc = win.screen;
+            held = null; moved = false; leaving = false; edge = -1;
+            Config.barLeaving = false;
+            Config.barLanding = true;
+            Config.barFloatAt = Qt.point((sc ? sc.x : 0) + win.windowX + c.x, (sc ? sc.y : 0) + win.windowY + c.y);
+            landing = { h: h, t: t };
+            land.restart();
+            return;
+        }
         drop();
         // (it stays off the line until the line's laid again with it in its new place; if
         // nothing came of the drag, it goes back where it was)
@@ -195,14 +237,12 @@ MouseArea {
             return;
         }
         if (!t) return;
-        if (h.kind === "item" && h.name === "tuck") Config.barMoveTuck(h.index, t.join ? t.to : -1, t.slot);
-        else if (h.kind === "item") Config.barMoveItem(h.name, t.to, t.join ? t.slot : -1);
-        else Config.barMoveEntry(h.index, t.to);
-        Config.click();
+        apply(h, t);
     }
     onCanceled: { carry(held, false); drop(); }
     // (should a drop change nothing, so the line isn't laid again: back on it)
-    Timer { id: back; interval: 300; onTriggered: { for (const n in line.things) line.things[n].carried = false; for (const c of line.children) { if (c.isBox) c.settle(); else if (c.carried) c.carried = false; } } }
+    // (and a landing that changed nothing: its gap closes and the floating copy goes)
+    Timer { id: back; interval: 300; onTriggered: { arranger.laid(); arranger.shown(); for (const n in line.things) line.things[n].carried = false; for (const c of line.children) { if (c.isBox) c.settle(); else if (c.carried) c.carried = false; } } }
 
     // Something carried here from the pool in the panel beside the bar (BarEditor.qml; Config.barCarry): the
     // page says where the pointer is on the desktop; when that's on or near this bar,

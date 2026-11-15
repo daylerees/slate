@@ -325,7 +325,7 @@ Singleton {
             : `hl.dispatch(hl.dsp.submap("reset"))`]);
         barPrioritising = false;
         if (barArranging) return;
-        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null; barPreview = 0;
+        barSelected = -1; barCarry = null; barCarryTarget = null; barLeaving = false; barFloat = null; barLanding = false; barPreview = 0;
         // (a container put on the bar and never given anything goes)
         if (barLayout.some(e => typeof e !== "string" && e.keep)) barSave(barCopy().filter(e => typeof e === "string" || !e.keep));
     }
@@ -341,6 +341,8 @@ Singleton {
     // (BarEditor.qml): { kind, icons: [{ code, item }], label }, and where on the desktop
     property var barFloat: null
     property point barFloatAt: Qt.point(0, 0)
+    // ...gliding into the gap it was let go over, before it's moved there (BarArranger.qml)
+    property bool barLanding: false
     // Let go of what's carried: onto the bar where it was aimed (true), or nowhere (false)
     function barDrop() {
         const c = barCarry, t = barCarryTarget;
@@ -1865,7 +1867,9 @@ Singleton {
     // dark mode, a quarter of the way from the glass's opacity to solid
     // (While the bar's being arranged it's solid, its containers too, with no blur: all there
     // to see and pick up, whatever the sliders say)
-    readonly property real barGlassOpacity: barArranging ? 1 : s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
+    readonly property real barGlassOpacity: barArranging ? 1 : barGlassOpacityUsual
+    // (...as it is when it isn't being arranged: the bar eases between the two, Bar.qml's arrangeLook)
+    readonly property real barGlassOpacityUsual: s.barOpacity < 0 ? (s.lightMode ? glassOpacity : glassOpacity + (1 - glassOpacity) * 0.25)
         : Math.max(s.barBlur ? 0.01 : 0, Math.min(1, s.barOpacity))
     // The containers on the bar (Bar.qml's Capsule), with glass: drawn solid, and the whole of
     // each faded to Settings → Menu Bar → Glass → Contents opacity as one: its fill, icons,

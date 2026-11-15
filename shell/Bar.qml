@@ -39,7 +39,7 @@ PanelWindow {
     // band whatever the wallpaper does behind it
     // (and clearer still by Settings → Menu Bar → Background opacity: Config.barGlassOpacity)
     readonly property color barBackground: !Config.glass ? barColor
-        : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
+        : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacityUsual + (1 - Config.barGlassOpacityUsual) * bar.arrangeLook))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
     readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
     // On the bar itself, a container with an opacity chosen (Settings → Menu Bar → Glass) is
@@ -367,6 +367,18 @@ PanelWindow {
     Behavior on zoneReveal { NumberAnimation { duration: Config.ms(bar.slideMs); easing.type: Easing.InOutCubic } }
     // (quicker out when it's moving to another edge)
     Behavior on reveal { NumberAnimation { duration: Config.ms(bar.movingOut ? 300 : bar.slideMs); easing.type: Easing.InOutCubic } }
+
+    // Going into and out of being arranged (Config.barArranging), eased rather than switched:
+    // 0 … 1, the outlines and grippers fading in and opening up, the background going solid,
+    // the window's title fading to "Window" halfway (arrangeShown). What the line is fitted
+    // by goes straight to where it's heading (gripTarget), so nothing's fitted twice. Through
+    // Config.ms: at once with Animations off and in game mode
+    property real arrangeLook: Config.barArranging ? 1 : 0
+    Behavior on arrangeLook { NumberAnimation { duration: Config.ms(260); easing.type: Easing.InOutCubic } }
+    readonly property bool arrangeShown: arrangeLook > 0.5
+    // (what changes halfway fades out to it and back in after: 1 at either end)
+    readonly property real arrangeSwap: Math.min(1, Math.abs(arrangeLook - 0.5) * 2)
+    readonly property bool arrangeMoving: arrangeLook > 0 && arrangeLook < 1
 
     function setFilled(value) {
         if (value && !filled) holdTimer.restart();
@@ -732,7 +744,9 @@ PanelWindow {
     // What each flexible space gets: an equal share of what's left once the title has its own
     readonly property real flex: {
         if (lineSpaces === 0) return 0;
-        const title = winTitle.visible ? (vert ? titleBody.height : titleBody.width) : 0;
+        // (by the title's length as it's drawn, eased as it changes going into or out of
+        // arranging, so the spaces either side ease with it)
+        const title = winTitle.visible ? winTitle.length - winTitle.pad : 0;
         return Math.max(0, (lineLength - lineFixed - title) / lineSpaces);
     }
     // The cross-fade between the window's title and a description of what the pointer's over
@@ -947,11 +961,13 @@ PanelWindow {
                 property int index: -1
                 property bool carried: false    // being dragged: off the line till it lands
                 visible: !carried
-                readonly property real len: Math.max(Config.barArranging ? bar.spaceLeast : 0.01, bar.flex)
-                width: bar.vert ? (Config.barArranging ? bar.capsuleHeight : 1) : len
-                height: bar.vert ? len : (Config.barArranging ? bar.capsuleHeight : 1)
+                // (opening up to a size to pick up, and its outline fading in, as arranging starts)
+                readonly property real len: Math.max(0.01, bar.spaceLeast * bar.arrangeLook, bar.flex)
+                width: bar.vert ? (bar.arrangeLook > 0 ? bar.capsuleHeight : 1) : len
+                height: bar.vert ? len : (bar.arrangeLook > 0 ? bar.capsuleHeight : 1)
                 Rectangle {
-                    visible: Config.barArranging
+                    visible: bar.arrangeLook > 0
+                    opacity: bar.arrangeLook
                     anchors.fill: parent
                     radius: Config.corner(bar.capsuleRadius)
                     readonly property bool picked: Config.barSelected === sp.index
@@ -1004,7 +1020,7 @@ PanelWindow {
                 property int frames: 0
                 property bool waiting: false
                 function restart() { frames = 0; waiting = true; if (left.Window.window) left.Window.window.update(); }
-                function release() { waiting = false; for (const name in left.things) left.things[name].held = false; }
+                function release() { waiting = false; for (const name in left.things) left.things[name].held = false; arranger.shown(); }
             }
             Connections {
                 target: left.Window.window
@@ -1019,6 +1035,7 @@ PanelWindow {
                 // it's going stays unseen through the move, and shows a moment after it: shown and
                 // moved in the same instant, it was never drawn either
                 const old = made;
+                arranger.laid();            // (a gap held open for a landing goes with the old places)
                 // (so does one that was being carried, which is back on the line from here. And
                 // all of them when the bar goes into or out of being arranged, or back to Slate's
                 // own: should one ever have been left undrawn, that draws it again)
@@ -1042,7 +1059,7 @@ PanelWindow {
                 const fresh = [];
                 for (const o of order) {
                     const entry = o.entry;
-                    if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: o.at }));
+                    fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
                     else {
                         const box = boxComp.createObject(left, { index: o.at, collapse: entry.collapse || "needed", tuckFrom: entry.tuckFrom || "end" });
@@ -1051,7 +1068,7 @@ PanelWindow {
                         fresh.push(box);
                     }
                 }
-                if (Config.barArranging) fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
+                fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
                 made = fresh;
                 for (const m of old) m.destroy();
                 for (const name in things) if (things[name].parent !== was[name] && was[name] !== null) things[name].held = true;
@@ -1059,7 +1076,10 @@ PanelWindow {
                 fitLater.restart();
             }
             Component.onCompleted: place()
-            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarArrangingChanged() { left.afresh = true; left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
+            // (not laid again as arranging starts or ends: the places to land are there all
+            // along, with no size until something's carried, so the bar eases into its arranging
+            // look with nothing hidden and shown again, which flashed every thing on it)
+            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
         }
@@ -1081,22 +1101,22 @@ PanelWindow {
             Segment {
                 id: winIcon
                 hover: false
-                wanted: Config.s.barShowTitleIcon && (Config.barArranging || !!appTile.focusedTop)
+                wanted: Config.s.barShowTitleIcon && (bar.arrangeShown || !!appTile.focusedTop)
                 length: bar.capsuleHeight + 4
                 Item {
                     id: appTile
                     anchors.centerIn: parent
                     width: bar.capsuleHeight; height: bar.capsuleHeight
-                    opacity: bar.titleFade
+                    opacity: bar.titleFade * bar.arrangeSwap
                     readonly property var focusedTop: bar.shownTop
                     readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
                     readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
                     // (while the bar's being arranged: Slate Settings' own icon, as a stand-in)
-                    readonly property string key: Config.barArranging ? "slate-settings" : winKey
+                    readonly property string key: bar.arrangeShown ? "slate-settings" : winKey
                     readonly property string path: Config.tilePath(key)
                     // The focused window came from a space: its tile takes the space's colour
                     // (the whole button, for icon styles with no tile behind the icon)
-                    readonly property var space: Config.barArranging || !Config.s.spaceBarTint ? null
+                    readonly property var space: bar.arrangeShown || !Config.s.spaceBarTint ? null
                         : Spaces.spaceById(Hyprland.activeToplevel ? Spaces.spaceOfAddress[Hyprland.activeToplevel.address] : "")
                     Rectangle {
                         anchors { fill: parent; margins: 2 }
@@ -1138,18 +1158,20 @@ PanelWindow {
                 hover: false
                 stretchy: true              // (it takes the room the rest of the line doesn't need)
                 pad: 18
-                wanted: Config.s.barShowTitle && (Config.barShowAll || (titleText.text !== "" && !bar.slimTitle))
+                wanted: Config.s.barShowTitle && ((Config.barShowAll && bar.arrangeShown) || (titleText.text !== "" && !bar.slimTitle))
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
                 // (all it likes while the bar's arranged: the line scrolls then, if it has to)
                 readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed - bar.spacesLeast)
                 length: (bar.vert ? titleBody.height : titleBody.width) + pad
+                // (eased from the window's title to "Window" and back as arranging starts and ends)
+                Behavior on length { enabled: bar.arrangeMoving; NumberAnimation { duration: Config.ms(130); easing.type: Easing.OutCubic } }
                 // The title (turned to run down a side bar)
                 Item {
                     id: titleBody
                     anchors.centerIn: parent
-                    opacity: bar.titleFade
+                    opacity: bar.titleFade * bar.arrangeSwap
                     width: bar.vert ? titleText.height : titleText.width
                     height: bar.vert ? titleText.width : titleText.height
                     Text {
@@ -1165,7 +1187,7 @@ PanelWindow {
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: titleFade; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                         // (while the bar's being arranged it just says what it is, to leave room)
                         textFormat: Text.PlainText        // never markup: the window's title is the app's (a web page's) to choose
-                        text: Config.barArranging ? "Window" : bar.shownTop ? bar.shownTop.title : ""
+                        text: bar.arrangeShown ? "Window" : bar.shownTop ? bar.shownTop.title : ""
                         color: bar.textColor
                         font.family: bar.fontFamily
                         font.pixelSize: bar.fontSize
@@ -1770,7 +1792,7 @@ PanelWindow {
         property string sample: ""
         property bool textOn: true
         readonly property string exampleLabel: label !== "" ? label : sample
-        readonly property string shownLabel: !Config.barArranging ? label : textOn ? exampleLabel : ""
+        readonly property string shownLabel: !bar.arrangeShown ? label : textOn ? exampleLabel : ""   // (halfway into arranging, with the rest)
         // What's drawn: the same, taken up at the middle of a cross-fade, so a change of text
         // (the volume, a network's name) fades from the old to the new. Changes that come
         // while one's under way are picked up by it, or by another straight after
@@ -1927,11 +1949,14 @@ PanelWindow {
         // Being arranged (Config.barArranging): outlined, brighter when it's the one
         // picked, with a gripper at its start to move it whole by. Only then: the ordinary bar
         // has neither
-        readonly property real grip: Config.barArranging ? 14 : 0
+        // (eased open as arranging starts, and closed as it ends; the line's fitted by where it's going)
+        readonly property real gripTarget: Config.barArranging ? 14 : 0
+        readonly property real grip: 14 * bar.arrangeLook
         // (an outline of its own, not the shape's border: giving the shape a border, even of
         // no width, changed how its edge was drawn by a few pixels)
         Rectangle {
-            visible: Config.barArranging
+            visible: bar.arrangeLook > 0
+            opacity: bar.arrangeLook
             anchors.fill: parent
             radius: parent.radius
             color: "transparent"
@@ -1940,7 +1965,8 @@ PanelWindow {
         // (picked as a whole, by its gripper: one of its things picked lights that instead)
         readonly property bool picked: Config.barSelected === box.index && Config.barSelectedItem === ""
         Text {
-            visible: Config.barArranging
+            visible: bar.arrangeLook > 0
+            opacity: bar.arrangeLook
             x: bar.vert ? (parent.width - width) / 2 : (box.grip - width) / 2 + 1
             y: bar.vert ? (box.grip - height) / 2 + 1 : (parent.height - height) / 2
             text: bar.glyph(bar.vert ? 0xEC00 : 0xEC01)
@@ -1975,7 +2001,7 @@ PanelWindow {
         readonly property var order: tuckFrom === "start" ? [toggle].concat(cells) : cells.concat([toggle])
         // As long as it will be once it's settled (opening and closing are eased): what the line
         // is fitted by
-        readonly property real settledLength: (tuck && !expanded ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + grip
+        readonly property real settledLength: (tuck && !expanded ? closedLength : stretchyCell ? fixedLength - grip : fullLength) + gripTarget
         function shows(c) { return !c.carried && !c.overflowed && (c === toggle ? tuck : (c.wanted && showThings)); }
         property bool carried: false            // being dragged (arranging): off the line till it lands
         function isFirst(c) { const i = order.indexOf(c); for (let k = 0; k < i; k++) if (shows(order[k])) return false; return true; }
@@ -2034,13 +2060,13 @@ PanelWindow {
             let n = 0;
             for (let i = 0; i < seq.length; i++) {
                 const counted = seq[i] !== toggle || box.always;
-                if (Config.barArranging && counted) slotComp.createObject(row, { to: box.index, slot: n });
+                if (counted) slotComp.createObject(row, { to: box.index, slot: n });
                 if (i > 0) sepComp.createObject(row, { shell: box, cell: seq[i] });
                 seq[i].shell = box;
                 seq[i].parent = row;
                 if (counted) n++;
             }
-            if (Config.barArranging) slotComp.createObject(row, { to: box.index, slot: n });
+            slotComp.createObject(row, { to: box.index, slot: n });
         }
     }
 
