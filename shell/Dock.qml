@@ -192,7 +192,12 @@ PanelWindow {
     readonly property real reach: Math.ceil(base * maxScale + padding * 2 + 40)
     // The window is taller still, so an app dragged up far enough to unpin it stays over it (the
     // dock only gets the pointer while it's over its window). Only a drag takes the pointer there
-    readonly property real thickness: reach + Math.ceil(Math.max(120, base * 2.5)) + 40
+    readonly property real restThickness: reach + Math.ceil(Math.max(120, base * 2.5)) + 40
+    // While a divider is dragged the window is taller still (half the screen across, once, as the
+    // drag starts, and back as it's let go; never per move): the pointer stays over the dock's
+    // input area however far the drag goes, so the compositor never sees it leave and ends the
+    // press. The dock stays drawn at the screen's edge: the strip hangs from the edge
+    readonly property real thickness: resizing ? Math.max(restThickness, Math.round((vertical ? (screen ? screen.width : 0) : (screen ? screen.height : 0)) / 2)) : restThickness
     anchors { top: edge !== "bottom"; bottom: edge !== "top"; left: edge !== "right"; right: edge !== "left" }
     implicitHeight: vertical ? 0 : thickness
     implicitWidth: vertical ? thickness : 0
@@ -1924,8 +1929,9 @@ PanelWindow {
             id: hitArea
             x: (strip.width - width) / 2
             // (while dragging: the whole window, so the app can be carried anywhere above the dock)
-            width: win.dragKey !== "" ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
-            height: !win.shown ? 2 : win.dragKey !== "" ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight)
+            // (and while a divider is dragged: the same, so the press is never lost off the dock)
+            width: win.dragKey !== "" || win.resizing ? strip.width : Math.max(row.width + win.padding * 2, win.restWidth + win.padding * 2)
+            height: !win.shown ? 2 : win.dragKey !== "" || win.resizing ? strip.height : (win.hover > 0 ? win.reach : win.dockHeight)
             y: strip.height - height
         }
 
@@ -1934,6 +1940,11 @@ PanelWindow {
         Item {
             id: dock
             anchors.fill: parent
+            // While a divider is dragged the drawn dock (shadow, sheen, glass) is kept as one
+            // picture and only that is scaled, so each move costs a transform, not a redraw
+            layer.enabled: win.resizing
+            layer.smooth: true
+            layer.mipmap: true
             // (scaled about the dock's edge for a divider drag's preview, then slid for hiding)
             transform: [
                 Scale { origin.x: strip.width / 2; origin.y: strip.height; xScale: win.previewScale; yScale: win.previewScale },
@@ -2778,6 +2789,8 @@ PanelWindow {
             grid: appMenu.gridFlick ? appMenu.gridState() : null,
             hoverEffect: win.hoverEffect, made: win.madeOf,
             shown: win.shown, resizing: win.resizing, previewScale: Math.round(win.previewScale * 1000) / 1000, windowSize: Math.round(win.thickness),
+            inputSize: [Math.round(maskBox.width), Math.round(maskBox.height)], windowBox: [Math.round(win.width), Math.round(win.height)],
+            cached: dock.layer.enabled, busy: win.workspaceBusy,
             dividerCursor: win.dividerCursor ? (win.vertical ? "horizontal" : "vertical") : "arrow",
             fade: win.slots.map(x => Math.round(win.fadeAt(x.at) * 100) / 100),
             glow: win.slots.map(x => Math.round(win.glowAt(x.at) * 100) / 100),
