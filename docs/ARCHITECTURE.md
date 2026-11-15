@@ -12,6 +12,12 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Bar.qml              top bar (layer "slate-bar")
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
+│  ├─ PanelHost.qml     singleton holding the Popouts window, so the pieces in panels/ can read
+│  │                    its colours and fonts
+│  └─ panels/           the pieces the panels share, one file each: panels/Label.qml,
+│                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
+│                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
+│                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/ForecastDay.qml
 ├─ PowerConfirm.qml     centred confirmation ("slate-confirm"): log out / restart / shut down,
 │                       and confirmWith() for anything else (deleting a space)
 ├─ Wallpaper.qml        desktop wallpaper, one per screen ("slate-wallpaper")

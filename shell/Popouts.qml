@@ -17,10 +17,13 @@ import Quickshell.Networking
 import Quickshell.Bluetooth
 import Quickshell.Services.Mpris
 import QtQuick.Effects
+import "panels"
 
 PanelWindow {
     id: pop
     required property var bar
+    // The shared pieces in panels/ read their colours from here (PanelHost.qml)
+    Component.onCompleted: PanelHost.pop = pop
     property var notifs: null
     // (the test hook: press a control centre switch by its id, as a click on it does; the
     // panel has to be open)
@@ -556,241 +559,13 @@ PanelWindow {
     // ---- Shared pieces -----------------------------------------------------
     function glyph(code) { return String.fromCodePoint(code); }
 
-    // (plain text, never markup: most of what the panels say is a name something else chose,
-    // a Wi-Fi network's, a Bluetooth device's, a track's, what you copied. One that means to
-    // use markup says so itself, as ForecastDay does)
-    component Label: Text {
-        textFormat: Text.PlainText
-        color: pop.text
-        font.family: bar.fontFamily
-        font.pixelSize: 13
-        font.weight: Font.Medium
-        elide: Text.ElideRight
-    }
-    component Icon: Text {
-        property int code: 0
-        text: pop.glyph(code)
-        color: pop.text
-        font.family: bar.iconFont
-        font.pixelSize: 18
-    }
-    component Divider: Rectangle { width: parent ? parent.width : 0; height: 1; color: pop.card }
 
-    // Horizontal slider, 0..1
-    component Slider: Item {
-        id: sl
-        property real value: 0
-        property bool muted: false
-        property bool busy: false          // in use just now (sound playing, or being listened to)
-        signal moved(real v)
-        implicitHeight: 22
-        Rectangle {
-            id: track
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width; height: 6; radius: Config.corner(3)
-            color: pop.card
-            Rectangle {
-                id: slFill
-                width: Math.max(6, track.width * Math.min(1, sl.value)); height: parent.height; radius: Config.corner(3)
-                // Switched off (a muted volume): a much darker accent, with diagonal stripes in the
-                // red of its muted indicator across it, so it reads as there but not in use
-                color: sl.muted ? Qt.darker(pop.accent, 2.4) : pop.accent
-                Behavior on color { ColorAnimation { duration: Config.ms(320) } }
-                clip: mutedStripes.visible || busyStripes.visible
-                // Both sets of stripes are the same size, in the same places, and drift as one, so
-                // going between them only the colour changes
-                property real drift: 0
-                NumberAnimation on drift {
-                    running: sl.busy && (mutedStripes.visible || busyStripes.visible) && Config.animate && !Config.gameMode
-                    from: 0; to: 9; duration: 700; loops: Animation.Infinite
-                }
-                // In use (sound playing through it, or something listening to it): stripes of a
-                // darker accent drifting along it, fading in as it starts and out as it stops.
-                // They hold still with animations off and in game mode
-                Item {
-                    id: busyStripes
-                    anchors.fill: parent
-                    opacity: sl.busy && !sl.muted ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
-                    visible: opacity > 0
-                    Repeater {
-                        model: busyStripes.visible ? Math.ceil(slFill.width / 9) + 3 : 0
-                        Rectangle {
-                            required property int index
-                            x: -14 + index * 9 + slFill.drift; y: (slFill.height - height) / 2
-                            width: 3; height: slFill.height * 3
-                            rotation: 40
-                            antialiasing: true
-                            color: Qt.darker(pop.accent, 1.45)
-                        }
-                    }
-                }
-                // Muted: the red stripes, fading in and out as it's muted and unmuted (across to
-                // the in-use stripes, or to none). They drift too while it's in use: sound is
-                // playing, unheard
-                Item {
-                    id: mutedStripes
-                    anchors.fill: parent
-                    opacity: sl.muted ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(320) } }
-                    visible: opacity > 0
-                    Repeater {
-                        model: mutedStripes.visible ? Math.ceil(slFill.width / 9) + 3 : 0
-                        Rectangle {
-                            required property int index
-                            // (leaning: taller than the bar and turned, cut off by the bar's own edges)
-                            x: -14 + index * 9 + slFill.drift; y: (slFill.height - height) / 2
-                            width: 3; height: slFill.height * 3
-                            rotation: 40
-                            antialiasing: true
-                            color: pop.danger          // (the red of the muted speaker beside it)
-                        }
-                    }
-                }
-            }
-        }
-        Rectangle {
-            width: 16; height: 16; radius: Config.corner(8)
-            anchors.verticalCenter: parent.verticalCenter
-            x: Math.min(1, sl.value) * (sl.width - width)
-            color: pop.text
-            Gloss { radius: parent.radius; strength: 0.6 }   // glass: a sheen
-        }
-        MouseArea {
-            preventStealing: true      // keep the drag once started, even if the pointer drifts off
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
-            function set(mx) { sl.moved(Math.max(0, Math.min(1, mx / width))); }
-            onPressed: m => set(m.x)
-            onPositionChanged: m => { if (pressed) set(m.x); }
-            onWheel: w => sl.moved(Math.max(0, Math.min(1, sl.value + (w.angleDelta.y > 0 ? 0.05 : -0.05))))
-        }
-    }
 
-    // A row you can click, highlighted on hover (or blue when selected)
-    component RowButton: Rectangle {
-        id: rb
-        property bool selected: false
-        property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
-        property bool danger: false        // destructive: the muted hover in red
-        signal clicked()
-        height: 36
-        radius: Config.corner(8)
-        color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : rbHover.hovered ? (danger ? Config.hoverDanger : Config.hover) : "transparent"
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-        HoverHandler { id: rbHover }
-        ClickTap { onTapped: rb.clicked() }
-    }
 
-    // A link at the foot of a panel ("Keyboard settings", "Show all and search"…): an icon,
-    // then what it does
-    component LinkRow: RowButton {
-        id: link
-        property int code: 0
-        property string text: ""
-        property color iconColor: pop.dim
-        property color textColor: pop.text
-        width: parent ? parent.width : 0
-        Icon {
-            id: linkIcon
-            code: link.code; font.pixelSize: 16; color: link.iconColor
-            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-        }
-        Label {
-            anchors { left: linkIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-            text: link.text; color: link.textColor; font.weight: Font.Normal
-        }
-    }
 
-    // An on/off switch, as in the Wi-Fi, Bluetooth, game mode and notifications panels
-    component Switch: Rectangle {
-        id: onOff
-        property bool checked: false
-        signal toggled()
-        width: 40; height: 22; radius: Config.corner(11)
-        color: checked ? Config.accentFor(onOffHover.hovered) : pop.card
-        HoverHandler { id: onOffHover }
-        Rectangle {
-            width: 16; height: 16; radius: Config.corner(8)
-            anchors.verticalCenter: parent.verticalCenter
-            x: onOff.checked ? parent.width - width - 3 : 3
-            color: onOff.checked ? pop.accentText : pop.text
-            Behavior on x { NumberAnimation { duration: Config.ms(120) } }
-        }
-        ClickTap { onTapped: onOff.toggled() }
-    }
 
-    // A panel's title row: its name on the left; anything put inside it (a switch, a count)
-    // anchors itself, usually to the right
-    component PanelTitle: Item {
-        property alias text: titleLabel.text
-        // An icon straight after the title, to click (the pencil that renames a workspace);
-        // the title shortens before the two would overflow
-        property int editCode: 0
-        signal editClicked()
-        width: parent ? parent.width : 0
-        height: 26
-        Label {
-            id: titleLabel
-            anchors.verticalCenter: parent.verticalCenter
-            font.pixelSize: 15
-            width: Math.min(implicitWidth, parent.width - (titleEdit.visible ? 30 : 0))
-            elide: Text.ElideRight
-        }
-        Item {
-            id: titleEdit
-            visible: parent.editCode !== 0
-            anchors { left: titleLabel.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
-            width: 24; height: 24
-            Rectangle { anchors.fill: parent; radius: Config.corner(6); color: titleEditHover.hovered ? Config.hover : "transparent" }
-            Icon { anchors.centerIn: parent; code: parent.parent.editCode; font.pixelSize: 16; color: pop.accent }
-            HoverHandler { id: titleEditHover }
-            ClickArea { anchors.fill: parent; onClicked: parent.parent.editClicked() }
-        }
-    }
 
-    // One day's weather: its name, its weather's icon, then the high and low. The calendar and
-    // the control centre each size it their own way. `today`: the day it is, as it is now (the
-    // weather and temperature at the moment), on the active colour so it stands out from the
-    // days to come
-    component ForecastDay: Rectangle {
-        id: forecastDay
-        property int day: 0              // days from today (an index into pop.forecast)
-        property bool today: false
-        property real gap: 3             // between its lines
-        property real iconSize: 16
-        property real tempSize: 11
-        readonly property color fg: today ? pop.accentText : pop.text
-        readonly property color faint: today ? Qt.rgba(pop.accentText.r, pop.accentText.g, pop.accentText.b, 0.7) : pop.dim
-        radius: Config.corner(9)
-        Column {
-            anchors.centerIn: parent
-            spacing: forecastDay.gap
-            Label {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: forecastDay.today ? "Today" : Qt.formatDate(new Date(pop.forecast.time[forecastDay.day] + "T12:00"), "ddd")
-                color: forecastDay.faint; font.pixelSize: 11
-            }
-            Icon {
-                anchors.horizontalCenter: parent.horizontalCenter
-                code: pop.weatherInfo(forecastDay.today && pop.weather ? pop.weather.weather_code : pop.forecast.weather_code[forecastDay.day]).icon
-                color: forecastDay.fg
-                font.pixelSize: forecastDay.iconSize
-            }
-            Label {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: forecastDay.today && pop.weather ? Math.round(pop.weather.temperature_2m) + "°"
-                    : Math.round(pop.forecast.temperature_2m_max[forecastDay.day]) + "° "
-                      + "<font color='" + forecastDay.faint + "'>" + Math.round(pop.forecast.temperature_2m_min[forecastDay.day]) + "°</font>"
-                textFormat: Text.StyledText
-                color: forecastDay.fg
-                font.pixelSize: forecastDay.tempSize
-            }
-        }
-    }
 
-    // A section's dim heading, over its rows ("Output device", "Power mode"…)
-    component Heading: Label { color: pop.dim; font.pixelSize: 12 }
 
     // Run one of Slate's IPC calls (bin/slate ipc call …)
     function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }

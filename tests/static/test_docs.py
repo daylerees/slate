@@ -182,7 +182,7 @@ def shipped_files():
     for f in sorted(os.listdir(slate.SHELL)):
         if f.endswith((".qml", ".js")):
             out.append((f, "shell/" + f))
-    for folder in ("bin", "scripts"):
+    for folder in ("bin", "scripts", "panels"):
         for f in sorted(os.listdir(os.path.join(slate.SHELL, folder))):
             if os.path.isfile(os.path.join(slate.SHELL, folder, f)):
                 out.append((folder + "/" + f, f"shell/{folder}/{f}"))
@@ -225,7 +225,7 @@ class Architecture(Case):
         """And the other way: nothing the list names as a QML file, helper or script has gone."""
         doc = slate.read("docs", "ARCHITECTURE.md")
         have = {name for name, _ in shipped_files()}
-        named = set(re.findall(r"(?<![\w/.-])((?:bin|scripts)/[\w.-]*\w)", doc))
+        named = set(re.findall(r"(?<![\w/.-])((?:bin|scripts|panels)/[\w.-]*\w)", doc))
         named |= set(re.findall(r"(?<![\w/.-])([A-Z]\w+\.qml)\b", doc))
         for name in sorted(named - have - {"LoginWindow.qml"}):      # greeter/LoginWindow.qml: the login screen's own
             with self.subTest(name):

@@ -984,6 +984,22 @@ class OutsideTextIsPlain(Case):
     def plain_kinds(src):
         """The file's own text components that are plain already (the panels' Label, and what's built on it)."""
         plain = set()
+        # The panels' shared pieces live in shell/panels/, one per file: a file is its root's kind
+        # (Label is a Text with its own PlainText, Heading is built on Label…)
+        panel_files = {}
+        for f in sorted(os.listdir(os.path.join(slate.SHELL, "panels"))):
+            m = re.search(r"^(\w+) \{([^\n]*\n[^\n]*\n[^\n]*\n)", slate.read("shell", "panels", f), re.M)
+            if f.endswith(".qml") and m:
+                panel_files[f[:-4]] = (m.group(1), m.group(2))
+        for _ in range(3):
+            for name, (base, body) in panel_files.items():
+                if base in plain or (base == "Text" and re.search(r"^\s*textFormat: Text\.PlainText\b", body, re.M)):
+                    plain.add(name)
+                elif re.search(r"property alias text: (\w+)\.text\b", body + slate.read("shell", "panels", name + ".qml")):
+                    inner = re.search(r"property alias text: (\w+)\.text\b", slate.read("shell", "panels", name + ".qml")).group(1)
+                    holder = re.search(r"(\w+) \{\s*id: %s\b" % inner, slate.read("shell", "panels", name + ".qml"))
+                    if holder and holder.group(1) in plain:
+                        plain.add(name)
         for _ in range(3):
             for name, base, body in re.findall(r"^\s*component (\w+): (\w+) \{([^\n]*\n[^\n]*)", src, re.M):
                 if base in plain or (base == "Text" and re.match(r"\s*textFormat: Text\.PlainText\b", body)):
@@ -1010,7 +1026,8 @@ class OutsideTextIsPlain(Case):
 
     def test_text_from_outside_is_plain(self):
         seen = 0
-        for name in sorted(os.listdir(slate.SHELL)):
+        names = sorted(os.listdir(slate.SHELL)) + ["panels/" + n for n in sorted(os.listdir(os.path.join(slate.SHELL, "panels")))]
+        for name in names:
             if not name.endswith(".qml") or name in self.LOGIN_SCREEN or name in self.SLATES_OWN:
                 continue
             src = slate.read("shell", name)
@@ -1033,11 +1050,13 @@ class OutsideTextIsPlain(Case):
                     self.check(name, src, at, "a name something else chose")
 
     def test_the_panels_label_is_plain(self):
-        """Popouts.qml's Label (every panel's words) is plain, and the one use that wants markup
+        """panels/Label.qml (every panel's words) is plain, and the one use that wants markup
         (the forecast's low, in a fainter colour) builds it from numbers alone."""
         src = slate.read("shell", "Popouts.qml")
         self.assertIn("Label", self.plain_kinds(src))
-        styled = re.findall(r"[^\n]*\n[^\n]*\n[^\n]*textFormat: Text\.(?:StyledText|RichText|AutoText|MarkdownText)", src)
+        styled = []
+        for f in ["Popouts.qml"] + ["panels/" + n for n in sorted(os.listdir(os.path.join(slate.SHELL, "panels")))]:
+            styled += re.findall(r"[^\n]*\n[^\n]*\n[^\n]*textFormat: Text\.(?:StyledText|RichText|AutoText|MarkdownText)", slate.read("shell", f))
         self.assertEqual(len(styled), 1, "markup in a panel other than the forecast's temperatures")
         self.assertIn("Math.round(pop.forecast.temperature_2m_min[forecastDay.day])", styled[0])
 

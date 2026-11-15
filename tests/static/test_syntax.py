@@ -40,7 +40,18 @@ class Syntax(Case):
         static/greeter loads them for real."""
         qmllint = need("/usr/lib/qt6/bin/qmllint", "/usr/lib64/qt6/bin/qmllint", "qmllint6")
         qml = slate.files("shell", ".qml", skip=("shell/greeter",))
-        code, out = run([qmllint] + qml, cwd=slate.ROOT, timeout=300)
+        # Quickshell lets a file in a subfolder (shell/panels/) `import qs` to reach the types
+        # in shell/ itself; qmllint has no such module, so it's given one: a qmldir naming them
+        with tempfile.TemporaryDirectory() as imports:
+            os.mkdir(os.path.join(imports, "qs"))
+            lines = ["module qs"]
+            for f in sorted(os.listdir(slate.SHELL)):
+                if f.endswith(".qml") and f[0].isupper():
+                    single = "singleton " if "pragma Singleton" in slate.read("shell", f) else ""
+                    lines.append(f"{single}{f[:-4]} 1.0 {os.path.relpath(slate.path('shell', f), os.path.join(imports, 'qs'))}")
+            with open(os.path.join(imports, "qs", "qmldir"), "w") as fh:
+                fh.write("\n".join(lines) + "\n")
+            code, out = run([qmllint, "-I", imports] + qml, cwd=slate.ROOT, timeout=300)
         problems = {}
         for line in out.splitlines():
             m = re.match(r"Warning: ([^:]+\.qml):(\d*):?(\d*):? (.*)$", line)
