@@ -118,7 +118,18 @@ class Dock(LiveCase):
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
         self.ipc("test", "dockDividerDrag", "10")
         self.wait(lambda st: abs(st["dock"]["previewScale"] - 1.25) < 0.01, "back to 50")
+        # The picture is captured at the largest size the drag can reach, so it only shrinks
+        tex, size = st["dock"]["textureSize"], st["dock"]["dockSize"]
+        want = min(3, 64 / before["base"], 8192 / max(size))
+        self.assertGreaterEqual(tex[0], int(size[0] * want) - 1, "the preview is captured too small and would be blown up")
         self.ipc("test", "dockDividerDrop")
+        # Let go: the picture stays on while the new size is laid out, then drops, then the window shrinks
+        seen = []
+        def watch(st):
+            d = st["dock"]; seen.append((d["cached"], d["base"] >= 49, d["windowSize"]))
+            return not d["cached"]
+        self.wait(watch, "the picture dropped", timeout=10)
+        self.assertTrue(any(c and b for c, b, _ in seen) or len(seen) == 1, f"the picture was dropped before the new size was laid out: {seen}")
         st = self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "50")
         self.assertEqual(st["dock"]["previewScale"], 1)
@@ -168,8 +179,8 @@ class Dock(LiveCase):
             self.assertEqual(st["windowSize"], grown, "the window changed during the drag")
             self.assertTrue(st["shown"])
         self.ipc("test", "dockDividerDrop")
-        st = self.wait(lambda st: not st["dock"]["resizing"], "the drag over")["dock"]
-        self.assertFalse(st["cached"])
+        self.wait(lambda st: not st["dock"]["resizing"], "the drag over")
+        self.wait(lambda st: not st["dock"]["cached"], "the picture dropped once the new size is drawn")
         self.wait(lambda st: st["dock"]["windowSize"] < grown, "the window back to its size")
 
     def test_preview_delay_and_switch(self):
