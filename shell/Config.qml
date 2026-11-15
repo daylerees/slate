@@ -1016,8 +1016,9 @@ Singleton {
         // Touchpad gestures (Settings → Input): always sent, as they're Slate's own (gestures.lua);
         // game mode leaves them on, as they're input like any other
         const gesture = v => q(["overview", "desktop", "launcher", "none"].includes(v) ? v : "none");
+        const sideways = v => v === "workspace" ? q(v) : gesture(v);      // (left and right can switch workspace too)
         t.push(`gestures = { on = ${s.touchpadGestures ? "true" : "false"}, fingers = ${s.gestureFingers === 4 ? 4 : 3}, `
-            + `sideways = ${s.gestureSideways ? "true" : "false"}, up = ${gesture(s.gestureUp)}, down = ${gesture(s.gestureDown)}, `
+            + `left = ${sideways(s.gestureLeft)}, right = ${sideways(s.gestureRight)}, up = ${gesture(s.gestureUp)}, down = ${gesture(s.gestureDown)}, `
             + `pinchin = ${gesture(s.gesturePinchIn)}, pinchout = ${gesture(s.gesturePinchOut)} }`);
         // Focus: follows the pointer (1), or a click, with scrolling still reaching the window under it (2).
         // With Slate's own title bars, always a click (the setting's kept, and hidden meanwhile)

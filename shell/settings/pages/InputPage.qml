@@ -275,8 +275,13 @@ Column {
     // Each of the four takes one of these; done again, it closes what it opened
     readonly property var gestureOptions: [{ value: "overview", label: "Workspace overview" }, { value: "desktop", label: "Show the desktop" },
                                            { value: "launcher", label: "Open the launcher" }, { value: "none", label: "Nothing" }]
+    // (left and right can also switch workspace, as Hyprland's own swipe)
+    readonly property var sidewaysOptions: [{ value: "workspace", label: "Switch workspace" }].concat(gestureOptions)
+    // (a pinch takes as many fingers as a swipe: two-finger pinches stay with apps, for zooming)
+    readonly property string pinchWith: "With " + (Config.s.gestureFingers === 4 ? "four" : "three") + " fingers. "
     function gestureDetail(v) {
-        return v === "overview" ? "Opens the workspace overview. Do it again to close it"
+        return v === "workspace" ? "Moves between workspaces, following your fingers"
+            : v === "overview" ? "Opens the workspace overview. Do it again to close it"
             : v === "desktop" ? "Moves your windows aside to show the desktop. Do it again to bring them back"
             : v === "launcher" ? "Opens the launcher. Do it again to close it"
             : "Left free, for a gesture of your own"
@@ -293,7 +298,7 @@ Column {
         DropdownSetting {
             label: "Fingers"
             settingKey: "gestureFingers"
-            detail: "How many fingers a gesture takes"
+            detail: "How many fingers you swipe and pinch with. Two fingers stay with your apps, to scroll and zoom"
             needsMet: Config.s.touchpadGestures
             needs: "Needs Touchpad gestures to be on"
             needsPage: "input"; needsLabel: "Touchpad gestures"
@@ -302,13 +307,28 @@ Column {
             onPicked: v => Config.s.gestureFingers = v
         }
         Separator {}
-        ToggleSetting {
-            label: "Swipe sideways"
-            detail: "Moves to the next or previous workspace, following your fingers"
-            key: "gestureSideways"
+        DropdownSetting {
+            label: "Swipe left"
+            settingKey: "gestureLeft"
+            detail: inputPane.gestureDetail(Config.s.gestureLeft)
             needsMet: Config.s.touchpadGestures
             needs: "Needs Touchpad gestures to be on"
             needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.sidewaysOptions
+            value: Config.s.gestureLeft
+            onPicked: v => Config.s.gestureLeft = v
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Swipe right"
+            settingKey: "gestureRight"
+            detail: inputPane.gestureDetail(Config.s.gestureRight)
+            needsMet: Config.s.touchpadGestures
+            needs: "Needs Touchpad gestures to be on"
+            needsPage: "input"; needsLabel: "Touchpad gestures"
+            options: inputPane.sidewaysOptions
+            value: Config.s.gestureRight
+            onPicked: v => Config.s.gestureRight = v
         }
         Separator {}
         DropdownSetting {
@@ -338,7 +358,7 @@ Column {
         DropdownSetting {
             label: "Pinch in"
             settingKey: "gesturePinchIn"
-            detail: inputPane.gestureDetail(Config.s.gesturePinchIn)
+            detail: inputPane.pinchWith + inputPane.gestureDetail(Config.s.gesturePinchIn)
             needsMet: Config.s.touchpadGestures
             needs: "Needs Touchpad gestures to be on"
             needsPage: "input"; needsLabel: "Touchpad gestures"
@@ -350,7 +370,7 @@ Column {
         DropdownSetting {
             label: "Pinch out"
             settingKey: "gesturePinchOut"
-            detail: inputPane.gestureDetail(Config.s.gesturePinchOut)
+            detail: inputPane.pinchWith + inputPane.gestureDetail(Config.s.gesturePinchOut)
             needsMet: Config.s.touchpadGestures
             needs: "Needs Touchpad gestures to be on"
             needsPage: "input"; needsLabel: "Touchpad gestures"

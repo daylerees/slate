@@ -507,8 +507,9 @@ instead, made mode 0700, never a fixed name in `/tmp`.
   dots (`goToWorkspace(id)`, binds.lua), which slides the windows away (`slideAwayTo`) to an
   empty workspace or from one with a floating window.
 - `gestures.lua` — touchpad gestures (Settings → Input → Gestures), made by `setGestures({ on,
-  fingers, sideways, up, down, pinchin, pinchout })` from `slateApply`: Hyprland's own workspace
-  swipe sideways, and `gesture(direction)` for the rest, each the overview, the launcher or
+  fingers, left, right, up, down, pinchin, pinchout })` from `slateApply`: Hyprland's own workspace
+  swipe for left and right set to "workspace" (one "horizontal" gesture when both are), and
+  `gesture(direction)` for the rest, each the overview, the launcher or
   `showDesktop()` (the workspace's windows to `special:slate-desktop` and back), and again to
   close it; "none" leaves a direction free. Gestures made
   in your own files are noted (`hl.gesture` is wrapped; `SLATE_HL_GESTURE` is Hyprland's own) and

@@ -64,17 +64,26 @@ class Gestures(LiveCase):
         self.until(lambda: self.made(3), "Slate's gestures after a reload", timeout=15)
 
     def test_each_direction_as_chosen(self):
-        """Sideways off and "Nothing" leave a direction free; choosing something for pinch out
-        makes it."""
-        for key in ("gestureFingers", "gestureSideways", "gestureUp", "gesturePinchOut"):
+        """"Nothing" leaves a direction free; choosing something for pinch out makes it; Switch
+        workspace one way only is Hyprland's swipe on that direction alone."""
+        for key in ("gestureFingers", "gestureLeft", "gestureRight", "gestureUp", "gesturePinchOut"):
             self.keep_setting(key)
         self.config("gestureFingers", "3")
+        self.config("gestureLeft", "workspace")
+        self.config("gestureRight", "workspace")
         self.until(lambda: self.made(3) and not self.has(3, "pinchout"), "Slate's gestures, pinch out left free")
-        self.config("gestureSideways", "false")
+        self.config("gestureRight", "none")
         self.config("gestureUp", "none")
         self.config("gesturePinchOut", "desktop")
-        self.until(lambda: not self.has(3, "horizontal") and not self.has(3, "up") and self.made(3, ("down", "pinchin", "pinchout")),
-                   "sideways and up left free, pinch out made")
+        self.until(lambda: not self.has(3, "horizontal") and not self.has(3, "right") and not self.has(3, "up")
+                   and self.made(3, ("left", "down", "pinchin", "pinchout")),
+                   "only left switching workspace, right and up left free, pinch out made")
+        self.config("gestureRight", "launcher")
+        self.until(lambda: self.made(3, ("left", "right")) and self.lua('GESTURE_ACTIONS.right == "launcher"'),
+                   "swiping right for the launcher")
+        self.s.hyprctl("dispatch", 'function() gesture("right") end')
+        self.addCleanup(lambda: self.ipc("launcher", "close"))
+        self.wait(lambda st: st["launcher"]["open"], "the launcher to open")
 
     def test_up_opens_the_overview_and_again_closes_it(self):
         self.keep_setting("gestureUp")

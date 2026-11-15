@@ -306,7 +306,7 @@ FloatingWindow {
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorTheme", "cursorSize", "pointerInApps", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping", "touchpadGestures", "gestureFingers",
-            "gestureSideways", "gestureUp", "gestureDown", "gesturePinchIn", "gesturePinchOut"],
+            "gestureLeft", "gestureRight", "gestureUp", "gestureDown", "gesturePinchIn", "gesturePinchOut"],
         sound: ["tickVolume", "notificationVolume", "clickVolume", "swishVolume", "welcomeVolume", "goodbyeVolume", "attentionVolume", "answeredVolume",
             "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"],
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC", "reopenAppsAfterRestart"],

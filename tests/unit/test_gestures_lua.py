@@ -117,15 +117,47 @@ class GesturesLua(Case):
         return [l[2] for l in lines if l[0] == "GESTURE" and l[3] != "close" and (fingers is None or l[1] == str(fingers))]
 
     def test_made_with_the_fingers_chosen(self):
-        """By default: sideways (Hyprland's swipe), up, down and pinch in. Pinch out does nothing
+        """By default: left and right together (Hyprland's swipe), up, down and pinch in. Pinch out does nothing
         to start with, so it's left free."""
         lines = self.do('slate(3)')
         self.assertEqual(lines, [["GESTURE", "3", "horizontal", "workspace"], ["GESTURE", "3", "up", "function"],
                                  ["GESTURE", "3", "down", "function"], ["GESTURE", "3", "pinchin", "function"]])
         self.assertEqual(self.made(self.do('slate(4)'), 4), ["horizontal", "up", "down", "pinchin"])
 
-    def test_nothing_and_sideways_off_leave_the_direction_free(self):
-        lines = self.do('slate(3, { sideways = false, up = "none", pinchout = "desktop" })')
+    def gestures(self, lines):
+        """What Slate made: {direction: what it does there}."""
+        return {l[2]: l[3] for l in lines if l[0] == "GESTURE" and l[3] != "close"}
+
+    def test_left_and_right(self):
+        """Switch workspace both ways is one gesture, Hyprland's swipe following the fingers;
+        one way only, Hyprland's swipe on that direction alone (it starts only that way), and
+        the other does what's chosen for it or is left free."""
+        self.assertEqual(self.gestures(self.do('slate(3, { up = "none", down = "none", pinchin = "none" })')),
+                         {"horizontal": "workspace"})
+        for left, right, want in (
+                ("workspace", "none", {"left": "workspace"}),
+                ("none", "workspace", {"right": "workspace"}),
+                ("workspace", "overview", {"left": "workspace", "right": "function"}),
+                ("launcher", "desktop", {"left": "function", "right": "function"}),
+                ("none", "none", {})):
+            with self.subTest(left=left, right=right):
+                lines = self.do(f'slate(3, {{ left = "{left}", right = "{right}", up = "none", down = "none", pinchin = "none" }})')
+                self.assertEqual(self.gestures(lines), want)
+        # Swiping left for the launcher, then again to close it
+        self.assertEqual(self.commands(self.do('slate(3, { left = "launcher" }); swipe(3, "left")')), ["launcher open"])
+        self.assertEqual(self.commands(self.do('OPEN["slate-launcher"] = true; slate(3, { left = "launcher" }); swipe(3, "left")')),
+                         ["launcher close"])
+        # Changing from Switch workspace makes them again; anything else isn't taken
+        lines = self.do('slate(3); print("--"); slate(3, { right = "none" })')
+        after = lines[lines.index(["--"]) + 1:]
+        self.assertIn(["UNSET", "3", "horizontal"], after)
+        made = self.gestures(after)
+        self.assertEqual((made.get("left"), "horizontal" in made, "right" in made), ("workspace", False, False))
+        lines = self.do('slate(3, { left = "bogus", up = "workspace" }); assert(GESTURE_ACTIONS.left == "workspace"); '
+                        'assert(GESTURE_ACTIONS.up == "overview")')
+
+    def test_nothing_leaves_the_direction_free(self):
+        lines = self.do('slate(3, { left = "none", right = "none", up = "none", pinchout = "desktop" })')
         self.assertEqual(self.made(lines), ["down", "pinchin", "pinchout"])
         lines = self.do('slate(3, { up = "none", down = "none", pinchin = "none", pinchout = "none" })')
         self.assertEqual(self.made(lines), ["horizontal"])
@@ -165,14 +197,19 @@ class GesturesLua(Case):
 
     def test_yours_in_a_wider_direction_stay_too(self):
         """Yours sideways (left or right) or up and down together (vertical) would hide
-        Slate's on those fingers: Slate leaves those out, and the rest are made."""
+        Slate's on those fingers: Slate leaves those out, and the rest are made. (One of yours
+        on one side leaves Slate's workspace swipe the other way.)"""
         every = '{ up = "overview", down = "desktop", pinchin = "launcher", pinchout = "launcher" }'
-        for yours, left_out in (("left", {"horizontal"}), ("right", {"horizontal"}), ("vertical", {"up", "down"}),
-                                ("swipe", {"horizontal", "up", "down"}), ("pinch", {"pinchin", "pinchout"}),
-                                ("zoomin", {"pinchin"})):
+        rest = {"up": "function", "down": "function", "pinchin": "function", "pinchout": "function"}
+        for yours, want in (("left", dict(rest, right="workspace")), ("right", dict(rest, left="workspace")),
+                            ("horizontal", rest),
+                            ("vertical", {"horizontal": "workspace", "pinchin": "function", "pinchout": "function"}),
+                            ("swipe", {"pinchin": "function", "pinchout": "function"}),
+                            ("pinch", {"horizontal": "workspace", "up": "function", "down": "function"}),
+                            ("zoomin", {"horizontal": "workspace", "up": "function", "down": "function", "pinchout": "function"})):
             with self.subTest(yours=yours):
                 lines = self.do(f'hl.gesture({{ fingers = 4, direction = "{yours}", action = "close" }}); slate(4, {every})')
-                self.assertEqual(set(self.made(lines)), {"horizontal", "up", "down", "pinchin", "pinchout"} - left_out)
+                self.assertEqual(self.gestures(lines), want)
         lines = self.do(f'hl.gesture({{ fingers = 3, direction = "left", action = "close" }}); slate(4, {every})')
         self.assertEqual(len(self.made(lines, 4)), 5, "other fingers aren't affected")
         lines = self.do(f'hl.gesture({{ fingers = 4, direction = "left", mods = "SUPER", action = "close" }}); slate(4, {every})')

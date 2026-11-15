@@ -935,6 +935,7 @@ VALUES = {
     "mouseAccel": ["", "adaptive", "flat"],
     "mouseNaturalScroll": ON_OFF, "touchpadNaturalScroll": ON_OFF, "touchpadTapToClick": ON_OFF,
     "touchpadIgnoreWhileTyping": ON_OFF, "focusFollowsMouse": ON_OFF,
+    "gestureLeft": ["workspace"] + GESTURES, "gestureRight": ["workspace"] + GESTURES,
     "gestureUp": GESTURES, "gestureDown": GESTURES, "gesturePinchIn": GESTURES, "gesturePinchOut": GESTURES,
     "animations": ["", "normal", "fast", "off"],
     "colourStyle": ["monotone", "colourful"],
@@ -1010,7 +1011,7 @@ SWITCHES = {
     "launcherFiles", "launcherConvert", "launcherEmoji", "launcherWeb", "switcherPreviews",
     "switcherAppIcons", "workspaceSwitchName", "wrapWorkspaces", "overviewAppIcons",
     "overviewPreviews", "screensaverClock", "glass", "fastBlur", "idleRespectInhibitors",
-    "touchpadGestures", "gestureSideways",
+    "touchpadGestures",
     "autoBrightness",
 }
 # Settings that only take effect the next time Slate starts

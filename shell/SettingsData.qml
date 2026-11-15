@@ -99,8 +99,10 @@ JsonAdapter {
     property string touchpadIgnoreWhileTyping: "" // on / off
     property bool touchpadGestures: true      // swiping with several fingers (session/hypr/config/gestures.lua)
     property int gestureFingers: 3            // how many: 3 or 4
-    property bool gestureSideways: true       // swiping sideways changes workspace
-    // What swiping up and down and pinching in and out do: overview, desktop, launcher or none
+    // What swiping left, right, up and down and pinching in and out do: overview, desktop,
+    // launcher or none; left and right can also be workspace (Hyprland's own swipe)
+    property string gestureLeft: "workspace"
+    property string gestureRight: "workspace"
     property string gestureUp: "overview"
     property string gestureDown: "desktop"
     property string gesturePinchIn: "launcher"
