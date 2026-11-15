@@ -559,12 +559,14 @@ class BarWithOverlays(LiveCase):
         self.wait(lambda st: not st["launcher"]["open"], "the launcher to close on a press on the bar")
         self.wait(lambda st: st["popout"] == "calendar", "the calendar from the same press")
 
-    def test_nova_closes_and_the_panel_opens(self):
+    def test_nova_stays_and_the_panel_opens(self):
+        """Nova is a real window, as Settings is: a press on the bar opens its panel, and Nova
+        stays open behind it."""
         self.ipc("assistant", "open")
-        self.wait(lambda st: st["assistant"]["open"], "Nova")
+        self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"], "Nova")
         self.press("clock")
-        self.wait(lambda st: not st["assistant"]["open"], "Nova to close on a press on the bar")
-        self.wait(lambda st: st["popout"] == "calendar", "the calendar from the same press")
+        self.wait(lambda st: st["popout"] == "calendar", "the calendar from the press")
+        self.assertTrue(self.s.state()["assistant"]["open"], "Nova closed on a press on the bar")
 
     def test_dock_overlays_close(self):
         self.ipc("dock", "downloads")

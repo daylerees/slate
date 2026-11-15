@@ -1072,11 +1072,14 @@ Singleton {
         + glassRule("SLATE_GLASS_PANEL", "^slate-popout$", panelGlassCut, s.barPanelBlur)
         // (notifications as they pop up: the same again, Settings → Notifications → Glass)
         + glassRule("SLATE_GLASS_TOAST", "^slate-notifications$", toastGlassCut, s.notificationBlur)
-        // (the launcher, and Nova's window: Settings → Launcher → Glass, → Assistant → Glass)
+        // (the launcher: Settings → Launcher → Glass)
         + glassRule("SLATE_GLASS_LAUNCHER", "^slate-launcher$", launcherGlassCut, s.launcherBlur)
-        // (named for Nova's old name, Chalk: a running Hyprland knows the rule by it, and a new
-        // name would leave the old rule there beside it until Hyprland restarts)
-        + glassRule("SLATE_GLASS_CHALK", "^slate-assistant$", assistantGlassCut, s.assistantBlur)
+        // (Nova's window, a real window: blurred behind as every window is, unless Settings →
+        // Assistant → Glass's blur is off. Its old layer's rule, named for Nova's old name,
+        // Chalk, is let go in a Hyprland that still has it)
+        + `if SLATE_GLASS_CHALK then SLATE_GLASS_CHALK:set_enabled(false); SLATE_GLASS_CHALK = nil end; `
+        + `if not SLATE_NOVA_NO_BLUR then SLATE_NOVA_NO_BLUR = hl.window_rule({ name = "slate-nova-no-blur", match = { class = "^(slate-settings)$", title = "^(${novaTitle})$" }, no_blur = true }) end; `
+        + `SLATE_NOVA_NO_BLUR:set_enabled(${glass && s.assistantBlur ? "false" : "true"}); `
     onGlassRulesChanged: if (!glassPush.running) glassPush.start()
     Timer { id: glassPush; interval: 16; onTriggered: Quickshell.execDetached(["hyprctl", "eval", root.glassRules]) }
     Timer {
@@ -1887,8 +1890,9 @@ Singleton {
         return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
     }
     readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
-    // The launcher and Nova's window: a background opacity of their own with glass, a blur rule
-    // and a shadow kept under it, as the panels' are. An opacity not set (below 0) is Appearance's
+    // The launcher and Nova's window: a background opacity of their own with glass, and a blur
+    // rule (the launcher's with a shadow kept under it, as the panels' are; Nova's shadow is
+    // Hyprland's, as every window's). An opacity not set (below 0) is Appearance's
     function ownGlassOpacity(v, blur) { return v < 0 ? glassOpacity : Math.max(blur ? 0.01 : 0, Math.min(1, v)); }
     function ownGlassCut(o) { return o < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(o * 0.85 * 10) / 10); }
     function ownShadowShare(o, blur) { return !glass || !blur ? 1 : Math.min(1, Math.max(0, o - 0.25) / Math.max(0.01, shadowStrength)); }
@@ -1897,8 +1901,6 @@ Singleton {
     readonly property real launcherShadowShare: ownShadowShare(launcherGlassOpacity, s.launcherBlur)
     function launcherSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * launcherGlassOpacity) : c; }
     readonly property real assistantGlassOpacity: ownGlassOpacity(s.assistantOpacity, s.assistantBlur)
-    readonly property real assistantGlassCut: ownGlassCut(assistantGlassOpacity)
-    readonly property real assistantShadowShare: ownShadowShare(assistantGlassOpacity, s.assistantBlur)
     function assistantSurface(c) { return glass ? Qt.rgba(c.r, c.g, c.b, c.a * assistantGlassOpacity) : c; }
     // Notifications as they pop up: a background opacity of their own with glass, another while
     // the pointer's on one (to read it by), a blur rule and a shadow kept under it, as the
@@ -2018,6 +2020,22 @@ Singleton {
         blurOverriddenKey = now;
     }
     onBlurOverrideChanged: if (!blurOverride && blurOverridden) { blurOverridden = false; hyprReload.restart(); }
+
+    // Nova's window (Assistant.qml): a real window of Slate's, with Slate's app id
+    // (slate-settings) and this title, but not one of your windows: it's left out of the window
+    // switcher, the overview, the dock, the launcher's window search, the bar's title, Slate's
+    // title bars and the counts of what's on a workspace. Takes any kind of window Slate sees:
+    // Hyprland's (a toplevel, or its details from hyprctl) or a Wayland toplevel. (The same
+    // test is slateIsNova in windowrules.lua and is_nova in scripts/spaces.py)
+    readonly property string novaTitle: "Nova"
+    function isNova(t) {
+        if (!t || t.title !== novaTitle) return false;
+        const o = t.lastIpcObject;
+        const cls = t.appId !== undefined ? t.appId : t.class !== undefined ? t.class
+            : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
+        // (a Hyprland window whose details haven't come yet: by its title alone)
+        return cls === "slate-settings" || cls === "" || cls === undefined || cls === null;
+    }
 
     // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
     // drawing windows the way they look: previews, borders. A tiled window alone on its
@@ -2281,7 +2299,7 @@ Singleton {
     // they follow, or one of their own)
     function workspacesNotIn(v) {
         return Hyprland.workspaces.values.filter(w => w.id > 0 && workspaceMode(w.id) !== v
-            && (w.toplevels?.values?.length ?? 0) > 0).map(w => w.id);
+            && (w.toplevels?.values ?? []).some(t => !isNova(t))).map(w => w.id);
     }
     // Change the default. tidy: every workspace takes the new mode, those with a mode of their
     // own included (they go back to following the default), and their windows are rearranged.

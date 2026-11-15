@@ -12,7 +12,7 @@ Slate also has a way of its own to ask: **Nova**. Press Super+K (or the button o
 bar, or your keyboard's Copilot or assistant key), type what you want in a line, and the
 agent you chose does it through the same tools.
 
-## Nova, the prompt window
+## Nova, the assistant's window
 
 - **Asking.** One line, Enter sends. It reads like a chat: what you asked on the right in
   your accent color, Nova's answers on the left as they're written, each with
@@ -37,18 +37,25 @@ agent you chose does it through the same tools.
   only you can read, never sent anywhere and not part of `slate logs`. Settings → Assistant
   → **Clear chat history** empties it, and **Keep chat history** switches keeping off, which
   deletes what was kept; the history is then forgotten whenever Slate restarts.
-- **Moving it.** Drag the header (Nova's name) to move the window; a double-click there puts
-  it back in the middle. It's a layer that covers the screen, so the card moves inside it
-  (`offX`/`offY` in `Assistant.qml`), kept wholly on the screen and off the menu bar (the
-  edges Hyprland keeps clear for it, `area`: the rule floating windows follow) as it grows or
-  the screen, the bar or Interface size changes. Closing it forgets where it was: it opens in the middle, as Settings does.
-- **Resizing it.** Its edges and corners resize it, the opposite edges staying put: its width
-  (`wantW`, 400 to 1200) and the conversation's height (`wantTalk`, from 120 to the screen's
-  height less the rest of the card), wholly on the screen. 0 is "as it comes" (the launcher's
-  width, a conversation that grows with what's said); a double-click on an edge goes back to
-  it. The size is kept across openings and restarts in `~/.local/state/slate/assistant-size.json`
-  (two numbers, nothing personal).
-- **Closing it.** Escape or a click outside hides the window and the work carries on: the
+- **A window of its own.** Nova is a real floating window, as Settings is (a
+  `FloatingWindow` in `Assistant.qml`, with Slate's app id `slate-settings` and the title
+  "Nova"). Hyprland moves it (drag the header, Nova's name), resizes it by its edges, draws its
+  border and shadow, rounds its corners and, with glass, blurs what's behind it (unless
+  Settings → Assistant → Glass's blur is off: the `slate-nova-no-blur` window rule). Let go
+  over the menu bar, it slides back below it, as any floating window does
+  (`slateKeepUnderBar`). It opens in the middle of the screen and is pinned (`windowrules.lua`),
+  so it stays with you when you go to another workspace. It isn't one of your windows: the
+  window switcher, the overview, the dock, the launcher's window search, the bar's title,
+  workspace counts and the assistant's own `windows_list` leave it out (`Config.isNova`,
+  `slateIsNova`, `spaces.is_nova`). Opening it closes the launcher and the bar's panels so it
+  has the keyboard; they leave it open. Super+K closes it when it's the window you're in, and
+  brings it to the front when it's open behind something.
+- **Its size.** 560 by 520 as it comes (no more than nine tenths of the screen), never smaller
+  than 400 by 320. The size you leave it at is kept across openings and restarts in
+  `~/.local/state/slate/assistant-size.json` (two numbers, nothing personal). Closed from
+  outside Slate (Super+Q), it's built again the next time it opens; the conversation and a
+  run carry on.
+- **Closing it.** Escape or its close button hides the window and the work carries on: the
   bar button shows it, and a notification brings the answer when it's done. **Stop**, at the end of
   the box while Nova works, ends it, and so does Ctrl+C there (with nothing selected).
   Locking the screen stops it too.

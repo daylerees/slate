@@ -54,6 +54,7 @@ PanelWindow {
         for (const c of list) {
             if (!c.mapped || c.hidden || !c.floating || c.monitor !== mon.id) continue;
             if (!c.pinned && !(c.workspace && c.workspace.id === wsId)) continue;
+            if (Config.isNova(c)) continue;         // (Nova has its own header and close button)
             top = c;
         }
         // (the same window, changed, and not by us)

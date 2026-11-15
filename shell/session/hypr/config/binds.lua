@@ -313,7 +313,7 @@ local pendingClose = nil
 local function otherWindowsOn(wsId, exceptAddr)
     local n = 0
     for _, w in ipairs(hl.get_windows()) do
-        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.id == wsId then
+        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.id == wsId and not slateIsNova(w) then
             n = n + 1
         end
     end
@@ -540,18 +540,20 @@ end
 -- Left Shift and F23 together (keycode 201, bound by code as keyboard tables name it
 -- differently). Switched off, they open its window saying so, never a dead key.
 -- Super+K can also be held to talk to Nova (Settings → Assistant → Voice, NovaVoice.qml): a
--- quick press opens Nova (or closes it, if it was open, as it's let go); held past NOVA_HOLD
+-- quick press opens Nova (or closes it, if it was the window you're in, as it's let go); held past NOVA_HOLD
 -- ms, Slate listens until K is let go, then sends what was said. The let-go is caught by a
 -- release bind on K alone with any modifiers (Super is often let go first), which does
 -- nothing unless Super+K started it, and never takes the key from anything
 local NOVA_HOLD = 350
 local novaHeld, novaListening, novaWasOpen, novaTimer = false, false, false, nil
+-- (Nova's window is a real one of Slate's, slateIsNova in windowrules.lua: a tap closes it only
+-- when it's the window you're in; open behind something, the press brings it to the front)
 -- (global, so the tests can press and let go through hyprctl: a virtual keyboard's keys
 -- don't reach binds)
 function novaKeyDown()
     if novaHeld then return end
     novaHeld, novaListening = true, false
-    novaWasOpen = slateOverlayOpen("slate-assistant")
+    novaWasOpen = slateIsNova(hl.get_active_window()) and true or false
     if not novaWasOpen then hl.exec_cmd(slate("assistant open")) end
     if novaTimer then novaTimer:set_enabled(false) end
     novaTimer = hl.timer(function()

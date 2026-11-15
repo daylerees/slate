@@ -261,7 +261,7 @@ import json as _json
 SCENES["assistant-empty"] = {
     "settings": _NOVA_ON,
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS})), ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["agent"] == "claude",
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["agent"] == "claude",
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 SCENES["assistant-answer"] = {
@@ -272,7 +272,7 @@ SCENES["assistant-answer"] = {
             "answer": "I've turned glass on and moved Firefox to workspace 2. The terminal is still open, as you said no to closing it.",
             "actions": [{"id": 1, "text": "Turn Glass on", "state": "done"}, {"id": 2, "text": "Move Firefox to workspace 2", "state": "done"},
                         {"id": 3, "text": "Close Terminal", "state": "declined"}]})), ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and len(st["assistant"]["actions"]) == 3,
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and len(st["assistant"]["actions"]) == 3,
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 # A setting it changed offers Undo at the end of its row; one already put back says so
@@ -284,7 +284,7 @@ SCENES["assistant-answer-undo"] = {
             "actions": [{"id": 1, "text": "Turn Show seconds on", "state": "done", "key": "barClockSeconds", "before": False, "after": True},
                         {"id": 2, "text": "Turn Glass on", "state": "done", "key": "glass", "before": False, "after": True, "undone": True},
                         {"id": 3, "text": "Move Firefox to workspace 2", "state": "done"}]})), ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["undo"] == [True, False, False],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["undo"] == [True, False, False],
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 SCENES["assistant-error"] = {
@@ -292,7 +292,7 @@ SCENES["assistant-error"] = {
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": "turn on glass",
             "error": {"kind": "offline", "message": "Slate couldn't reach Claude just now. Your question is still here: try again in a moment.", "detail": ""}})),
            ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["error"] == "offline",
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["error"] == "offline",
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 # While it works: Stop at the end of the box, "Ctrl+C to stop" beneath
@@ -300,7 +300,7 @@ SCENES["assistant-working"] = {
     "settings": dict(_NOVA_ON, animations="off"),
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": "make the dock smaller", "working": True,
             "actions": [{"id": 1, "text": "Set Icon size to 40", "state": "done"}]})), ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["working"] and st["assistant"]["stopShown"],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["working"] and st["assistant"]["stopShown"],
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 SCENES["assistant-long"] = {
@@ -309,7 +309,7 @@ SCENES["assistant-long"] = {
             "history": [{"asked": "question %d" % i, "answer": "This is answer %d, long enough to wrap onto a second line in Nova's side of the conversation." % i}
                         for i in range(1, 9)],
             "asked": "and the last one", "answer": "Here it is."})), ("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["turns"] == 9,
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["turns"] == 9,
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 # Answers with a little Markdown (docs/ASSISTANT.md, "How answers look"), read by the runner's
@@ -335,7 +335,7 @@ for _name, _asked, _answer in (("markdown", "turn on glass, and how do I do it m
             "settings": dict(_NOVA_ON, **_extra),
             "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": _asked, "answer": _answer,
                                                   "blocks": _md.parse(_answer)})), ("assistant", "open")],
-            "wait": lambda st, a=_answer: st["assistant"]["open"] and st["assistant"]["answer"] == a and st["assistant"]["blocks"],
+            "wait": lambda st, a=_answer: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["answer"] == a and st["assistant"]["blocks"],
             "settle": 1.2,
             "undo": [("assistant", "close"), ("test", "nova", "{}")],
         }
@@ -349,7 +349,7 @@ SCENES["assistant-listening"] = {
     "settings": dict(_NOVA_ON, assistantVoice="true", animations="off"),
     "do": [("!sh", "-c", _VOICE_MODEL), ("test", "voiceCheck"), ("test", "nova", _json.dumps({"agents": _NOVA_AGENTS})),
            ("assistant", "open"), lambda st: st["novaVoice"]["ready"], ("voice", "hold")],
-    "wait": lambda st: st["assistant"]["open"] and st["novaVoice"]["phase"] == "listening",
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["novaVoice"]["phase"] == "listening",
     "undo": [("voice", "cancel"), ("assistant", "close"), ("test", "nova", "{}"), ("!sh", "-c", _VOICE_GONE), ("test", "voiceCheck")],
 }
 # Settings → Assistant scrolled to Voice: switched on, with the model downloaded
@@ -362,7 +362,7 @@ SCENES["settings-assistant-voice"] = {
 }
 SCENES["assistant-off"] = {
     "do": [("assistant", "open")],
-    "wait": lambda st: st["assistant"]["open"] and not st["assistant"]["enabled"],
+    "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and not st["assistant"]["enabled"],
     "undo": [("assistant", "close")],
 }
 # The bar with Nova's button, after Spaces

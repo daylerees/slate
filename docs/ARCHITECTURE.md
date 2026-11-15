@@ -156,7 +156,7 @@ DockBadge.qml           an app's badge on the dock: its unread count or "!" as a
 Gloss.qml               the glossy sheen for glass (Settings → Appearance → Glass → Gloss): light catching the
                         top of a shape; only shows with glass on
 DockGlow.qml            the dock's Glow hover effect: a ring and soft glow in the icon's colour
-WindowBorder.qml        the border round Slate's own glass windows (launcher, Nova, switchers), drawn as
+WindowBorder.qml        the border round Slate's own glass windows (launcher, switchers), drawn as
                         Hyprland draws the active window's, sheen included
 IconGloss.qml           the glass sheen on an app icon's tile, the same everywhere icons show
 IconPlate.qml           the tile behind an app icon when icons don't fill their shape
@@ -222,7 +222,8 @@ Shadow.qml                    the shadow under anything raised (panels, menus, t
                               shape cut out of it, so glass can have shadows too. Floating windows get
                               Hyprland's shadow made to look the same (Config.hyprShadow). Off in game mode
 BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor": the pool, what leaves first when it doesn't fit, the picked thing's options), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions
-Assistant.qml                 Nova's prompt window ("slate-assistant", Super+K): runs scripts/assistant.py
+Assistant.qml                 Nova's window (a floating window titled "Nova", Super+K; kept out of the
+                              lists of your windows by Config.isNova): runs scripts/assistant.py
                               for a prompt, shows the answer (drawn from the runner's blocks:
                               lists, bold, code boxes with Copy; never Qt's own Markdown) and what was done, as
                               Slate's server reports it (`assistant did`)
@@ -389,6 +390,9 @@ opening any of them closes bar panels (wired in `shell.qml`).
   `shell.qml`), matched by `data/slate-settings.desktop` (hidden) and the icon
   `assets/icon/settings-*.png` (rendered by `tools/render-settings-icon.py`), which the
   installer puts in `~/.local/share/applications` and the hicolor icon theme.
+  Nova's window has the same app id and the title "Nova": `Config.isNova()` (and `slateIsNova`
+  in windowrules.lua, `is_nova` in scripts/spaces.py) tells it apart, so it's kept out of the
+  switcher, the overview, the dock, the bar's title and workspace counts.
 - Location for weather and night light's sunset/sunrise: `Config.s.latitude/longitude`
   (`Config.sunTimes()` computes the sun locally).
 - The wallpaper is `Config.s.wallpaper` (drawn by `Wallpaper.qml`);
@@ -496,7 +500,8 @@ instead, made mode 0700, never a fixed name in `/tmp`.
 - `workspaces.lua` — `newWorkspace(movingAddr)` (the number after the last workspace with
   windows: Super+W, Super+Return in the launcher) and `besideWorkspace(dir)` for "open on a
   new workspace left/right".
-- `windowrules.lua` — `no_anim` for Slate overlay layers; "Slate Settings" floats.
+- `windowrules.lua` — `no_anim` for Slate overlay layers; "Slate Settings" floats; Nova's
+  window floats, centered and pinned (`slateIsNova`).
 - `misc.lua` — `allow_session_lock_restore = true` (a restarted Slate re-takes a lock);
   `focus_on_activate = true` (an app asking to come forward, like a browser handed a link, is
   switched to, on its workspace).

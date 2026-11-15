@@ -35,8 +35,9 @@ PanelWindow {
         }
     }
     function currentWindows() {
-        // Normal workspaces only: the secret (special) workspace stays out of the switcher
-        const all = Hyprland.toplevels.values.filter(t => t.workspace && t.workspace.id > 0 && t.title !== undefined);
+        // Normal workspaces only: the secret (special) workspace stays out of the switcher, and
+        // so does Nova's window (Slate's own, on every workspace: Config.isNova)
+        const all = Hyprland.toplevels.values.filter(t => t.workspace && t.workspace.id > 0 && t.title !== undefined && !Config.isNova(t));
         const rank = a => { const i = mru.indexOf(a); return i < 0 ? 1e6 : i; };
         return all.slice().sort((a, b) => rank(a.address) - rank(b.address));
     }

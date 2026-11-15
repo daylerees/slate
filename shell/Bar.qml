@@ -540,17 +540,21 @@ PanelWindow {
     SequentialAnimation {
         id: titleSwap
         NumberAnimation { target: bar; property: "titleFade"; to: 0; duration: Config.ms(90); easing.type: Easing.InQuad }
-        ScriptAction { script: bar.shownTop = ToplevelManager.activeToplevel }
+        ScriptAction { script: if (!Config.isNova(ToplevelManager.activeToplevel)) bar.shownTop = ToplevelManager.activeToplevel }
         NumberAnimation { target: bar; property: "titleFade"; to: 1; duration: Config.ms(140); easing.type: Easing.OutQuad }
     }
     // The window whose icon and title the bar shows: the focused one, taken up at the middle of
     // the same cross-fade, so going from one window to another fades the old out and the new
-    // in. (A window changing its own title just changes: some do every second)
+    // in. (A window changing its own title just changes: some do every second.) Nova's window
+    // isn't one of yours (Config.isNova): with it in front, the bar keeps the window it showed
     property var shownTop: null
     Connections {
         target: ToplevelManager
-        Component.onCompleted: bar.shownTop = ToplevelManager.activeToplevel
-        function onActiveToplevelChanged() { if (ToplevelManager.activeToplevel !== bar.shownTop) titleSwap.restart(); }
+        Component.onCompleted: if (!Config.isNova(ToplevelManager.activeToplevel)) bar.shownTop = ToplevelManager.activeToplevel
+        function onActiveToplevelChanged() {
+            const t = ToplevelManager.activeToplevel;
+            if (t !== bar.shownTop && !Config.isNova(t)) titleSwap.restart();
+        }
     }
 
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------

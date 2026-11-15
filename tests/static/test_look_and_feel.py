@@ -118,13 +118,13 @@ class SpacesSave(Case):
 
 
 # Slate's own windows with a glass border (the panel each one draws), and how many each draws
-BORDERED_WINDOWS = {"Launcher.qml": 1, "Assistant.qml": 1, "Switcher.qml": 1, "Picker.qml": 1,
+BORDERED_WINDOWS = {"Launcher.qml": 1, "Switcher.qml": 1, "Picker.qml": 1,
                     "WallpaperSwitcher.qml": 1, "BarEditor.qml": 2}
 
 
 class WindowBorders(Case):
     def test_slates_windows_share_the_window_border(self):
-        """The border round Slate's own windows (the launcher, Nova, the switchers, the pickers,
+        """The border round Slate's own windows (the launcher, the switchers, the pickers,
         the bar's arranging panel) is one shared definition, drawn as Hyprland draws the active
         window's (the same colours and glass sheen, from one function both use), as wide as
         Settings → Windows → Window borders (in Hyprland's pixels, so divided by the Interface
@@ -146,6 +146,11 @@ class WindowBorders(Case):
                 self.assertNotRegex(src, r"border\.(width|color): Config\.windowBorder", "a plain border instead of the shared one")
                 self.assertNotIn("Config.glassEdge", src, "a border of its own")
                 self.assertNotRegex(src, r"border\.width: Config\.glass \? 1 : 0", "a border of its own")
+        # Nova's is a real window, as Settings is: Hyprland draws its border and shadow, and a
+        # second of Slate's own would double them
+        nova = slate.read("shell", "Assistant.qml")
+        self.assertIn("FloatingWindow {", nova)
+        self.assertNotRegex(nova, r"\b(WindowBorder|Shadow) \{", "Nova's window draws a border or shadow Hyprland already draws")
 
 
 # The muted hover in a color binding: Config.hover itself (not hoverStrength), its red, or

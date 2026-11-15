@@ -165,7 +165,7 @@ hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow 
 -- (tests/unit/test_window_rules.py checks both)
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|assistant|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar)$" },
+  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar)$" },
   no_anim = true,
 })
 -- Screenshots (scripts/screenshot.sh) freeze the screen with hyprpicker and choose with slurp
@@ -180,6 +180,15 @@ hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titl
 -- Slate Settings (Super+Z): floats in the middle of the screen, at the size it asks for
 -- (880×620 times the interface size), kept within the screen by the floating-window limit above
 hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true })
+-- Nova, Slate's assistant (Super+K, Assistant.qml): a window of Slate's own, by its app id and
+-- title. Floats in the middle of the screen at the size it asks for (the size you last left
+-- it at), pinned so it's on whichever workspace you're looking at. It has its own header to
+-- drag it by and its own close button, so it gets no title bar of Slate's (TitleBar.qml), and
+-- none is made room for above it (slateFitFloating, slateKeepUnderBar)
+hl.window_rule({ name = "slate-nova", match = { class = "^(slate-settings)$", title = "^(Nova)$" }, float = true, center = true, pin = true })
+function slateIsNova(w)
+    return w ~= nil and w.class == "slate-settings" and w.title == "Nova"
+end
 -- Choosing your account picture (Settings → General): a dialog of Slate's own
 hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true })
 
@@ -347,8 +356,8 @@ function slateFitFloating(address)
     if not id or modeOf(id) ~= "floating" then return end
     local r = m.reserved or {}
     local scale = m.scale or 1
-    -- (room for the title bar above it: Slate's own, or hyprbars')
-    local barH = SLATE_TITLEBARS and (SLATE_TITLEBAR_HEIGHT or 34) or 0
+    -- (room for the title bar above it: Slate's own, or hyprbars'; Nova has none)
+    local barH = SLATE_TITLEBARS and not slateIsNova(w) and (SLATE_TITLEBAR_HEIGHT or 34) or 0
     if not SLATE_TITLEBARS and HYPRBARS_LOADED then
         local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
         if ok and type(h) == "number" then barH = h end
@@ -380,7 +389,7 @@ function slateKeepUnderBar(address)
     if not (w and w.mapped and w.floating and m) or (w.fullscreen or 0) ~= 0 then return end
     local r = m.reserved or {}
     local scale = m.scale or 1
-    local barH = SLATE_TITLEBARS and (SLATE_TITLEBAR_HEIGHT or 34) or 0
+    local barH = SLATE_TITLEBARS and not slateIsNova(w) and (SLATE_TITLEBAR_HEIGHT or 34) or 0
     if not SLATE_TITLEBARS and HYPRBARS_LOADED then
         local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
         if ok and type(h) == "number" then barH = h end

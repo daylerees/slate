@@ -1,4 +1,5 @@
-// Nova, Slate's assistant: a small prompt window, like the launcher. Type what you want
+// Nova, Slate's assistant: a small chat window, a real floating window as Settings is (see
+// Window, below). Type what you want
 // ("turn on glass", "put Firefox on workspace 2") and it's handed to the agent you chose
 // (Settings → Assistant), which acts through Slate's own tools (docs/ASSISTANT.md).
 //   slate ipc call assistant toggle      (or open / close / stop; Super+K)
@@ -25,18 +26,12 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import Quickshell.Hyprland
 
-PanelWindow {
+Scope {
     id: root
 
     // ---- Look: the launcher's ------------------------------------------------
-    // (as it comes, or as wide as you've made it: wantW, below)
-    readonly property real panelWidth: wantW > 0 ? Math.round(Math.max(Math.min(minW, area.width - 2 * edgeGap), Math.min(wantW, maxW, area.width - 2 * edgeGap)))
-                                                 : Math.max(300, Math.min(560, width - 32))
-    readonly property int fadeMs: 200
-    readonly property real dropDistance: 18
     // (at its own opacity with glass: Settings → Assistant → Glass)
     readonly property color barColor: Config.assistantSurface(Config.tint("#0f1216"))
     readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
@@ -189,11 +184,10 @@ PanelWindow {
     // "2 min ago", worded as on notifications, and kept fresh while the window shows
     property int tick: 0
     Timer { interval: 30000; running: root.shown; repeat: true; onTriggered: root.tick++ }
-    // The conversation's cards are built the first time the window opens, not at every start
-    // (they can be fifty exchanges with pictures of actions). `turns` itself, and the file it's
-    // kept in, are read and written as ever, so nothing is lost or late while it's hidden
-    property bool built: false
-    onShownChanged: if (shown) { tick++; built = true; }
+    // The conversation's cards are built with the window, the first time it opens, not at every
+    // start (they can be fifty exchanges with pictures of actions). `turns` itself, and the file
+    // it's kept in, are read and written as ever, so nothing is lost or late while it's hidden
+    onShownChanged: if (shown) tick++;
     function ago(t) {
         tick;
         if (!t) return "";
@@ -250,34 +244,29 @@ PanelWindow {
     function lastHeard() { return cur ? (cur.doneAt || cur.at || 0) : 0; }
     readonly property bool canFollowUp: session !== "" && !!agent && agent.followUps !== false
 
-    // Switching workspace closes it, as it does the launcher (a run carries on). Changes
-    // right after opening are ignored, so "go to a workspace and ask" still works
-    property real openedAt: 0
-    property int openedOnWorkspace: -1
-    Connections {
-        target: Hyprland
-        function onFocusedWorkspaceChanged() {
-            const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
-            if (!root.shown || id === root.openedOnWorkspace) return;
-            if (Date.now() - root.openedAt > 400) root.closeWindow();
-            else root.openedOnWorkspace = id;
-        }
-    }
+    // Opened, or brought to the front: shell.qml closes the launcher and the other overlays, so
+    // the keyboard comes here
+    signal opened()
     function openWindow() {
-        if (!shown) { centre(); resizeEnd(); }   // (it opens in the middle, as Settings does)
-        screen = Config.focusedScreen;
-        Hyprland.refreshMonitors();
-        openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
-        openedAt = Date.now();
-        shown = true;
+        // (it opens in the middle, as Settings does: windowrules.lua; already open: to the front)
+        if (shown) bringHere();
+        else { fitOpenSize(); windowWanted = true; shown = true; }
+        opened();
         if (!looked && on) { looked = true; detect.running = true; }
-        Qt.callLater(() => field.forceActiveFocus());
+        Qt.callLater(() => { if (root.win) root.win.box.forceActiveFocus(); });
     }
-    function closeWindow() { shown = false; }
+    // Super+K and the bar's button: open it, or close it when it's the window you're in. Open but
+    // behind another window, or with the keyboard elsewhere, it comes to the front instead
+    function toggleWindow() {
+        if (shown && top && !focused) openWindow();
+        else if (shown) closeWindow();
+        else openWindow();
+    }
+    function closeWindow() { keepSize(); shown = false; }
     function ask(text) { openWindow(); send(text); }
     function fresh() {
         if (working) return;
-        turns = []; session = ""; answeredAt = 0; field.text = "";
+        turns = []; session = ""; answeredAt = 0; clearBox();
     }
     function send(text) {
         text = String(text || "").trim();
@@ -287,12 +276,12 @@ PanelWindow {
             if (Config.s.assistantAgent !== "" && (!looked || detect.running)) { pending = text; if (!looked) { looked = true; detect.running = true; } return; }
             begin(text);
             patch({ error: noAgent });
-            field.text = "";
+            clearBox();
             return;
         }
         const heard = lastHeard();         // (before this prompt joins the history)
         begin(text);
-        field.text = "";
+        clearBox();
         runId = Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
         const cmd = ["python3", Quickshell.shellPath("scripts/assistant.py"), "run", "--agent", agent.id, "--run", runId];
         // (an agent on this computer, like Ollama, takes its model from Settings → Assistant's list)
@@ -313,15 +302,15 @@ PanelWindow {
         runner.stdinEnabled = false;       // (closes it: the prompt is the whole of stdin)
     }
     // What you said (NovaVoice.qml), after anything already typed in the box, sent as typing it would be
-    function sendSpoken(text) { send((field.text.trim() + " " + String(text || "")).trim()); }
+    function sendSpoken(text) { send((typed().trim() + " " + String(text || "")).trim()); }
+    // What's in the box you type in (none before the window's first built), and emptying it
+    function typed() { return win ? win.box.text : ""; }
+    function clearBox() { if (win) win.box.text = ""; }
     property string pending: ""            // typed before the agents were found: sent once they are
     readonly property var noAgent: ({ kind: "not-installed", message: Config.s.assistantAgent === "" ? "Nova doesn't have an agent to ask yet. Choose one in Settings → Assistant, and ask again." : "There's no assistant set up yet. You can choose one in Settings → Assistant." })
     function stop() { if (working) runner.signal(15); }
-    readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1    // (for the tests)
-    readonly property real panelX: panel.x                  // (for the tests: where the card is)
-    readonly property real panelY: panel.y
-    readonly property real panelHeight: panel.height
-    readonly property real talkHeight: talkBox.height       // (and how tall its conversation is)
+    readonly property bool stopShown: !!win && win.stopShown    // (for the tests)
+    readonly property real talkHeight: win ? win.talkHeight : 0  // (and how tall its conversation is)
     property int keysSeen: 0               // (for the tests: keys the box has been given)
     // Try again: the same words, in place of the exchange that went wrong
     function again() {
@@ -456,137 +445,52 @@ PanelWindow {
     onOnChanged: if (!on) { stop(); looked = false; }
 
     // ---- Window --------------------------------------------------------------
-    property real fade: shown ? 1 : 0
-    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
-    visible: shown || fade > 0
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.namespace: "slate-assistant"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
-    // Every click outside the panel closes it, except on the menu bar: that's left out, so a
-    // click there reaches the bar and does what it does, and closes this too (Config.barPressed)
-    mask: Region {
-        x: 0; y: 0; width: root.width; height: root.height
-        Region {
-            readonly property rect bar: Config.barRectOn(root.screen)
-            x: bar.x; y: bar.y; width: bar.width; height: bar.height
-            intersection: Intersection.Subtract
-        }
-    }
-    Connections {
-        target: Config
-        function onBarPressed() { if (root.shown) { Config.noteBarClosed("assistant"); root.closeWindow(); } }
-    }
-
-    // Click outside to close (a run carries on). A drag by the header isn't a click outside:
-    // the header holds on to the pointer until it's let go, wherever that is
-    MouseArea { anchors.fill: parent; enabled: root.shown; onClicked: root.closeWindow() }
-
-    // ---- Where it sits ---------------------------------------------------------
-    // In the middle, as the launcher, or where you've dragged it by its header (offX/offY:
-    // how far from the middle, in Slate's own units). Closing it forgets that: it opens in the
-    // middle again, as Settings does, and a double-click on the header puts it back there.
-    // Always wholly on the screen and off the menu bar (area, below), kept there as the screen,
-    // the bar or the interface size changes
-    // (the window covers the screen: the card moves inside it, Hyprland can't move a layer)
-    property real offX: 0
-    property real offY: 0
-    readonly property real homeX: Math.round((width - panelWidth) / 2)
-    readonly property real homeY: Math.round(Math.max(24, (height - 520) / 2))
-    readonly property int edgeGap: 8
-    // Where on the screen it may be (Slate's units, in this window): the screen less what
-    // Hyprland keeps clear for the menu bar (its reserved edges), so it never goes over or past
-    // the bar, wherever the bar is: the rule floating windows follow (slateKeepUnderBar and
-    // slateFitFloating in windowrules.lua, from the same reserved edges). Hyprland's pixels,
-    // over the Interface size; looked at again as it opens and as a drag or resize starts
-    readonly property var hyprMonitor: root.screen ? Hyprland.monitorFor(root.screen) : null
-    readonly property var reserved: {
-        const r = hyprMonitor && hyprMonitor.lastIpcObject ? hyprMonitor.lastIpcObject.reserved : null;
-        return r && r.length === 4 ? r.map(v => Math.max(0, Number(v) || 0) / Config.uiScale) : [0, 0, 0, 0];
-    }
-    readonly property rect area: Qt.rect(reserved[0], reserved[1], Math.max(0, width - reserved[0] - reserved[2]),
-                                         Math.max(0, height - reserved[1] - reserved[3]))
-    function clampX(x) { return Math.round(Math.max(area.x + edgeGap, Math.min(area.x + area.width - panelWidth - edgeGap, x))); }
-    function clampY(y) { return Math.round(Math.max(area.y + edgeGap, Math.min(area.y + area.height - panel.height - edgeGap, y))); }
-    function centre() { offX = 0; offY = 0; }
-    // A drag: from where the card is when it starts, by dx, dy (what the header does, and the
-    // tests). As a floating window does (Settings): anywhere on the screen while it's dragged,
-    // over the bar too, then slid back off it once let go (stopped at the bar's edge instead,
-    // it moved differently from every other window)
-    property bool dragging: false
-    function clampScreenX(x) { return Math.round(Math.max(edgeGap, Math.min(width - panelWidth - edgeGap, x))); }
-    function clampScreenY(y) { return Math.round(Math.max(edgeGap, Math.min(height - panel.height - edgeGap, y))); }
-    property point dragFrom: Qt.point(0, 0)
-    function dragStart() { Hyprland.refreshMonitors(); dragFrom = Qt.point(panel.x - homeX, panel.y - homeY); dragging = true; }
-    function dragBy(dx, dy) {
-        offX = clampScreenX(homeX + dragFrom.x + dx) - homeX;
-        offY = clampScreenY(homeY + dragFrom.y + dy) - homeY;
-    }
-    function dragEnd() {
-        if (!dragging) return;
-        dragging = false;                    // (the card slides back into the area: panel's Behaviors)
-        offX = clampX(homeX + offX) - homeX;
-        offY = clampY(homeY + offY) - homeY;
+    // A real window, as Settings is: Hyprland moves it (by its header), resizes it by its edges,
+    // draws its border and shadow, rounds its corners, blurs what's behind it with glass, and
+    // slides it back under the menu bar when it's let go over it (slateKeepUnderBar), as for
+    // any floating window. Its app id is Slate's (slate-settings) and its title "Nova"
+    // (Config.novaTitle): windowrules.lua floats it in the middle of the screen and pins it, so
+    // it's on whichever workspace you're looking at, as the old card was, and Config.isNova()
+    // leaves it out of the lists of your windows (the switcher, the overview, the dock, the
+    // bar's title, workspace counts). Built the first time it opens, then shown and hidden;
+    // closed from outside Slate (Super+Q), it's built again the next time it opens, as a
+    // window closed that way can't be shown again (the conversation and a run carry on: they
+    // live out here)
+    readonly property var win: winLoader.item
+    property bool windowWanted: false
+    function lostWindow() { keepSize(); shown = false; winDrop.restart(); }
+    // (out here, not in the window: it has to outlive the window it lets go of)
+    Timer { id: winDrop; interval: 0; onTriggered: if (!root.shown) root.windowWanted = false }
+    // The window as Hyprland knows it, and whether it has the keyboard
+    readonly property var top: Hyprland.toplevels.values.find(t => Config.isNova(t)) ?? null
+    readonly property bool focused: shown && !!top && Hyprland.activeToplevel === top
+    // Open already, behind something or not the one you're typing in: to the front, with the keyboard
+    function bringHere() {
+        if (!top) return;
+        const a = String(top.address).replace(/^0x/, "").replace(/[^0-9a-fA-F]/g, "");
+        if (a === "") return;
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.focus({ window = "address:0x${a}" })) end`]);
     }
 
     // ---- Its size --------------------------------------------------------------
-    // Its edges and corners resize it, as a window's do: wider or narrower (wantW), and its
-    // conversation taller or shorter (wantTalk; the rest of the card keeps its size). Slate's
-    // units; 0: as it comes (the launcher's width, the conversation growing with what's said up
-    // to its share of the screen). Never smaller than minW by minTalk nor wider than maxW, and
-    // wholly in the area, as dragging is. Kept from one opening to the next and after Slate
-    // restarts (sizeFile: nothing personal, just two numbers); a double-click on an edge puts it
-    // back as it comes
-    property real wantW: 0
-    property real wantTalk: 0
+    // As it comes, 560 by 520 (Slate's units), or the size you last left it at (its edges resize
+    // it, as any window's do), kept from one opening to the next and after Slate restarts
+    // (sizeFile: nothing personal, just two numbers). Never more than nine tenths of the screen
+    // (as Settings), nor less than minW by minH
     readonly property real minW: 400
-    readonly property real maxW: 1200
-    readonly property real minTalk: 120
-    // (the conversation's most: the screen's height less the rest of the card, about 200)
-    readonly property real maxTalk: Math.max(minTalk, area.height - 2 * edgeGap - 200)
-    property bool resizing: false
-    property var sizeFrom: null
-    // A resize: from the card as it is when it starts, its edges ("l", "r", "t", "b", or a
-    // corner's two) moved by dx, dy (what the edges do, and the tests)
-    function resizeStart() {
-        Hyprland.refreshMonitors();
-        sizeFrom = { x: panel.x, y: panel.y, w: panel.width, h: panel.height, talk: talkBox.height };
-        resizing = true;
+    readonly property real minH: 320
+    property real wantW: 0
+    property real wantH: 0
+    // The size it opens at, worked out as it opens (not a binding: changed while it shows, it
+    // would fight a resize)
+    property real openW: 560
+    property real openH: 520
+    function fitOpenSize() {
+        const scr = Config.focusedScreen;
+        const sw = scr ? scr.width * 0.9 : 1e5, sh = scr ? (scr.height - 60) * 0.9 : 1e5;
+        openW = Math.round(Math.min(sw, Math.max(minW, wantW > 0 ? wantW : 560)));
+        openH = Math.round(Math.min(sh, Math.max(minH, wantH > 0 ? wantH : 520)));
     }
-    function resizeBy(edges, dx, dy) {
-        const f = sizeFrom, a = area, g = edgeGap;
-        if (!f) return;
-        let x = f.x, y = f.y;
-        if (edges.indexOf("l") >= 0 || edges.indexOf("r") >= 0) {
-            const left = edges.indexOf("l") >= 0;
-            // (as far as the screen's edge on the side being dragged)
-            const room = left ? f.x + f.w - (a.x + g) : a.x + a.width - g - f.x;
-            const w = Math.round(Math.max(Math.min(minW, room), Math.min(maxW, room, f.w + (left ? -dx : dx))));
-            if (left) x = f.x + f.w - w;
-            wantW = w;
-        }
-        if ((edges.indexOf("t") >= 0 || edges.indexOf("b") >= 0) && talkBox.visible) {
-            const top = edges.indexOf("t") >= 0;
-            const rest = f.h - f.talk;
-            const room = Math.min(maxTalk, (top ? f.y + f.h - (a.y + g) : a.y + a.height - g - f.y) - rest);
-            const t = Math.round(Math.max(Math.min(minTalk, room), Math.min(room, f.talk + (top ? -dy : dy))));
-            if (top) y = f.y + f.h - (rest + t);
-            wantTalk = t;
-        }
-        // (the opposite edges stay where they were)
-        offX = x - homeX;
-        offY = y - homeY;
-    }
-    function resizeEnd() {
-        if (!resizing) return;
-        resizing = false;
-        sizeFrom = null;
-        saveSize();
-    }
-    function sizeAsItComes() { wantW = 0; wantTalk = 0; saveSize(); }
     readonly property string sizeFile: Config.stateHome + "/slate/assistant-size.json"
     FileView {
         id: sizeStore
@@ -597,267 +501,180 @@ PanelWindow {
             try {
                 const d = JSON.parse(text());
                 root.wantW = Math.max(0, Number(d.width) || 0);
-                root.wantTalk = Math.max(0, Number(d.talk) || 0);
+                // (a file from when only the conversation's height was kept has no height: as it comes)
+                root.wantH = Math.max(0, Number(d.height) || 0);
             } catch (e) {}
         }
     }
-    function saveSize() { sizeStore.setText(JSON.stringify({ width: wantW, talk: wantTalk })); }
+    function saveSize() { sizeStore.setText(JSON.stringify({ width: wantW, height: wantH })); }
+    // Resized: kept a moment after it's let go, and as it closes
+    Timer { id: sizeSave; interval: 500; onTriggered: root.keepSize() }
+    function keepSize() {
+        if (!win || !shown || win.width < 1 || win.height < 1) return;
+        const w = Math.round(win.width), h = Math.round(win.height);
+        if ((w === openW && h === openH) || (w === Math.round(wantW) && h === Math.round(wantH))) return;
+        wantW = w; wantH = h;
+        saveSize();
+    }
+    function sizeAsItComes() { wantW = 0; wantH = 0; saveSize(); }   // (the tests, to put it back)
 
-    Rectangle {
-        id: panel
-        width: root.panelWidth
-        height: body.implicitHeight + 28
-        Behavior on height { enabled: root.shown && !root.resizing; NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
-        x: root.dragging ? root.clampScreenX(root.homeX + root.offX) : root.clampX(root.homeX + root.offX)
-        y: root.dragging ? root.clampScreenY(root.homeY + root.offY) : root.clampY(root.homeY + root.offY)
-        // (let go over the bar, it slides back under it, as a floating window does)
-        Behavior on x { enabled: root.shown && !root.dragging && !root.resizing; NumberAnimation { duration: Config.ms(250); easing.type: Easing.OutCubic } }
-        Behavior on y { enabled: root.shown && !root.dragging && !root.resizing; NumberAnimation { duration: Config.ms(250); easing.type: Easing.OutCubic } }
-        radius: Config.corner(18)
-        color: root.barColor
-        opacity: root.fade
-        scale: 0.98 + 0.02 * root.fade
-        WindowBorder { radius: parent.radius }   // glass: the window border (Config)
-        Shadow { strength: Config.assistantShadowShare }      // raised: Slate's shadow, with glass too
-        Gloss { radius: parent.radius; strength: 0.6 }     // glass: a sheen, as on Slate's panels
-        transform: Translate { y: -root.dropDistance * (1 - root.fade) }
-        MouseArea { anchors.fill: parent }       // swallow clicks inside
+    LazyLoader {
+        id: winLoader
+        active: root.windowWanted
+        FloatingWindow {
+            id: window
+            title: Config.novaTitle
+            visible: root.shown
+            color: root.barColor
+            implicitWidth: root.openW
+            implicitHeight: root.openH
+            minimumSize: Qt.size(Math.min(root.minW, root.openW), Math.min(root.minH, root.openH))
+            onClosed: root.lostWindow()
+            onWidthChanged: if (root.shown) sizeSave.restart()
+            onHeightChanged: if (root.shown) sizeSave.restart()
+            // (for the rest of Nova: the box you type in, and what the tests read)
+            property alias box: field
+            readonly property bool stopShown: stopButton.visible && stopButton.opacity === 1
+            readonly property real talkHeight: talkBox.height
 
-        Column {
-            id: body
-            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
-            spacing: 12
-
-            // ---- Header: its name, and a round close button as on Settings ----
             Item {
-                width: parent.width; height: 30
-                // Drag it to move the window, as Settings' logo and window title bars do (an
-                // arrow, silent, moving once the pointer has gone 4 px); double-click to put it
-                // back in the middle. Not the close button, which takes its own clicks
-                MouseArea {
-                    id: headDrag
-                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom; right: closeBtn.left }
-                    property point grab: Qt.point(0, 0)
-                    property bool moved: false
-                    // (places on the screen: the header moves with the card under the pointer)
-                    onPressed: mouse => {
-                        grab = mapToItem(null, mouse.x, mouse.y);
-                        moved = false;
-                        root.dragStart();
-                    }
-                    onPositionChanged: mouse => {
-                        const p = mapToItem(null, mouse.x, mouse.y);
-                        if (!moved && Math.abs(p.x - grab.x) + Math.abs(p.y - grab.y) < 4) return;   // (a click so far)
-                        moved = true;
-                        root.dragBy(p.x - grab.x, p.y - grab.y);
-                    }
-                    onReleased: root.dragEnd()
-                    onCanceled: root.dragEnd()
-                    onDoubleClicked: root.centre()
-                }
-                Row {
-                    anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                    spacing: 8
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: String.fromCodePoint(0xF014)
-                        color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Nova"
-                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
-                    }
-                    // Nova is an experiment still, and says so: a flask and the word, on a soft
-                    // green pill (the accent with the Colourful look off). Flat, with glass too
-                    Rectangle {
-                        id: trial
-                        readonly property color ink: Config.colourful ? Config.tint("#9ed6a6") : root.accent
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: trialRow.implicitWidth + 18; height: 22; radius: Config.corner(11)
-                        color: Qt.rgba(ink.r, ink.g, ink.b, 0.16)
-                        Row {
-                            id: trialRow
-                            anchors.centerIn: parent
-                            spacing: 5
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: String.fromCodePoint(0xEBD2)
-                                color: trial.ink; font.family: tabler.name; font.pixelSize: 13
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Experiment"
-                                color: trial.ink; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
-                            }
-                        }
-                    }
-                }
-                Rectangle {
-                    id: closeBtn
-                    anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
-                    width: 34; height: 34; radius: Config.corner(17)      // (Settings' close button)
-                    color: closeHover.hovered ? Config.hover : "transparent"
-                    Text {
-                        anchors.centerIn: parent
-                        text: String.fromCodePoint(0xEB55)
-                        color: closeHover.hovered ? root.textColor : root.dimTextColor
-                        // (with the fill behind it, not ahead of it)
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        font.family: tabler.name; font.pixelSize: 18
-                    }
-                    HoverHandler { id: closeHover }
-                    ClickTap { onTapped: root.closeWindow() }
-                }
-            }
+                id: panel
+                anchors.fill: parent
+                // Escape closes it from anywhere in it (keys not taken by what has the keyboard
+                // come up to here; the box you type in sees them first)
+                Keys.onEscapePressed: root.closeWindow()
+                // glass: a sheen, as on Slate's panels (rounded as Hyprland rounds the window)
+                Gloss { radius: Config.windowRounding / Config.uiScale; strength: 0.6 }
 
-            // ---- Not switched on yet -------------------------------------
-            Column {
-                visible: !root.on
-                width: parent.width
-                spacing: 12
-                topPadding: 6
-                Text {
-                    width: parent.width
-                    text: Config.s.privateMode ? "Nova is off while Private Mode is on. You can turn Private Mode off in the control center."
-                        : Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
-                        : "The assistant isn't switched on yet. You can switch it on in Settings, which says what that means first."
-                    textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                    color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
-                }
-                PillButton { visible: !Config.s.privateMode; label: "Open Settings"; primary: true; onPressed: root.openSettings() }
-            }
-
-            // ---- The conversation: what you asked, what came back, what it did ----
-            // (it scrolls once it's taller than its share of the screen, with Slate's slim
-            // scrollbar and a shade at whichever end has more)
-            Item {
-                id: talkBox
-                visible: root.on
-                width: parent.width
-                // (as tall as you've made it, or growing with what's said up to its share)
-                height: root.wantTalk > 0 ? Math.max(root.minTalk, Math.min(root.wantTalk, root.maxTalk))
-                                          : Math.min(talkCol.implicitHeight, Math.max(120, root.height - 320), 420)
-                readonly property bool overflows: talk.contentHeight > talk.height + 1
-            Flickable {
-                id: talk
-                anchors { fill: parent; rightMargin: talkBox.overflows ? 18 : 0 }
-                contentHeight: talkCol.implicitHeight
-                clip: true
-                // While it scrolls, its corners are rounded like its cards and the shades at its
-                // ends, so what passes them is cut round too (square, the cards showed past them)
-                layer.enabled: talkBox.overflows
-                layer.effect: MultiEffect { maskEnabled: true; maskSource: talkMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                boundsBehavior: Flickable.StopAtBounds
-                SmoothWheel { flick: talk }
-                // Follows the newest words as they arrive
-                onContentHeightChanged: contentY = Math.max(0, contentHeight - height)
-                onHeightChanged: contentY = Math.max(0, contentHeight - height)
                 Column {
-                    id: talkCol
-                    width: parent.width
-                    spacing: 14
-                    // Nothing said yet: Nova says hello, so the window isn't a bare box. Not part
-                    // of the conversation (it isn't kept, and it goes with your first words)
-                    Rectangle {
-                        visible: root.turns.length === 0
-                        width: hello.implicitWidth + 28
-                        height: hello.implicitHeight + 18
-                        radius: Config.corner(14)
-                        bottomLeftRadius: Config.corner(3)
-                        color: root.replyColor
-                        Column {
-                            id: hello
-                            anchors { left: parent.left; top: parent.top; leftMargin: 14; topMargin: 9 }
+                    id: body
+                    anchors { fill: parent; margins: 14 }
+                    spacing: 12
+
+                    // ---- Header: its name, and a round close button as on Settings ----
+                    Item {
+                        width: parent.width; height: 30
+                        // Drag it to move the window, as Settings' logo does: Hyprland moves it,
+                        // and slides it back under the menu bar if it's let go over it. Not the
+                        // close button, which takes its own clicks
+                        MouseArea {
+                            anchors { left: parent.left; top: parent.top; bottom: parent.bottom; right: closeBtn.left }
+                            onPressed: window.startSystemMove()
+                        }
+                        Row {
+                            anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
                             spacing: 8
-                            Row {
-                                spacing: 6
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: String.fromCodePoint(0xF014)
-                                    color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
-                                }
-                                Text {
-                                    text: "Nova"
-                                    color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
-                                }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: String.fromCodePoint(0xF014)
+                                color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
                             }
                             Text {
-                                text: "Hello, I'm Nova. How can I help?"
-                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Nova"
+                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                            }
+                            // Nova is an experiment still, and says so: a flask and the word, on a soft
+                            // green pill (the accent with the Colourful look off). Flat, with glass too
+                            Rectangle {
+                                id: trial
+                                readonly property color ink: Config.colourful ? Config.tint("#9ed6a6") : root.accent
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: trialRow.implicitWidth + 18; height: 22; radius: Config.corner(11)
+                                color: Qt.rgba(ink.r, ink.g, ink.b, 0.16)
+                                Row {
+                                    id: trialRow
+                                    anchors.centerIn: parent
+                                    spacing: 5
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: String.fromCodePoint(0xEBD2)
+                                        color: trial.ink; font.family: tabler.name; font.pixelSize: 13
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Experiment"
+                                        color: trial.ink; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                                    }
+                                }
                             }
                         }
-                    }
-                    Repeater {
-                        model: root.built ? root.turns.length : 0
-                        Column {
-                            id: turn
-                            required property int index
-                            readonly property var t: root.turns[index] || ({ asked: "", answer: "", blocks: [], error: null, actions: [] })
-                            readonly property bool latest: index === root.turns.length - 1
-                            width: talkCol.width
-                            spacing: turn.t.at ? 20 : 8        // (room for the time under your bubble)
-                            // You, on the right, in the accent colour
-                            Rectangle {
-                                anchors.right: parent.right
-                                width: Math.min(askedText.implicitWidth + 28, turn.width * 0.82)
-                                height: askedText.implicitHeight + 16
-                                radius: Config.corner(14)
-                                bottomRightRadius: Config.corner(3)        // (the corner nearest your side squared off, as chat bubbles are)
-                                color: root.accent
-                                HoverHandler { id: youHover }
-                                CopyChip {
-                                    shownFor: youHover.hovered
-                                    done: root.copied === turn.index + ":you"
-                                    base: Qt.darker(root.accent, 1.18); ink: root.accentText
-                                    hoverBase: root.accentText; hoverInk: root.accent
-                                    onPressed: root.copy(turn.index + ":you", turn.t.asked)
-                                }
-                                // When you asked, small and dim under the bubble
-                                Text {
-                                    anchors { right: parent.right; rightMargin: 4; top: parent.bottom; topMargin: 3 }
-                                    visible: text !== ""
-                                    text: root.ago(turn.t.at)
-                                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
-                                }
-                                Text {
-                                    id: askedText
-                                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 14; rightMargin: 14 }
-                                    text: turn.t.asked
-                                    textFormat: Text.PlainText; wrapMode: Text.Wrap
-                                    color: root.accentText; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
-                                }
+                        Rectangle {
+                            id: closeBtn
+                            anchors { right: parent.right; rightMargin: -4; verticalCenter: parent.verticalCenter }
+                            width: 34; height: 34; radius: Config.corner(17)      // (Settings' close button)
+                            color: closeHover.hovered ? Config.hover : "transparent"
+                            Text {
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(0xEB55)
+                                color: closeHover.hovered ? root.textColor : root.dimTextColor
+                                // (with the fill behind it, not ahead of it)
+                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+                                font.family: tabler.name; font.pixelSize: 18
                             }
-                            // Nova, on the left: the answer as it arrives, or what went wrong, and
-                            // under it what was done (Slate's own record)
+                            HoverHandler { id: closeHover }
+                            ClickTap { onTapped: root.closeWindow() }
+                        }
+                    }
+
+                    // ---- Not switched on yet -------------------------------------
+                    Column {
+                        visible: !root.on
+                        width: parent.width
+                        spacing: 12
+                        topPadding: 6
+                        Text {
+                            width: parent.width
+                            text: Config.s.privateMode ? "Nova is off while Private Mode is on. You can turn Private Mode off in the control center."
+                                : Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
+                                : "The assistant isn't switched on yet. You can switch it on in Settings, which says what that means first."
+                            textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                            color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                        }
+                        PillButton { visible: !Config.s.privateMode; label: "Open Settings"; primary: true; onPressed: root.openSettings() }
+                    }
+
+                    // ---- The conversation: what you asked, what came back, what it did ----
+                    // (it scrolls once it's taller than the room the window gives it, with Slate's
+                    // slim scrollbar and a shade at whichever end has more)
+                    Item {
+                        id: talkBox
+                        visible: root.on
+                        width: parent.width
+                        // (what the window has left once the rest is laid out: it's as tall as you make the window)
+                        readonly property real below: (typeBox.visible ? typeBox.height + body.spacing : 0)
+                            + (voiceNote.visible ? voiceNote.height + body.spacing : 0) + (footer.visible ? footer.height + body.spacing : 0)
+                        height: Math.max(0, body.height - y - below)
+                        readonly property bool overflows: talk.contentHeight > talk.height + 1
+                    Flickable {
+                        id: talk
+                        anchors { fill: parent; rightMargin: talkBox.overflows ? 18 : 0 }
+                        contentHeight: talkCol.implicitHeight
+                        clip: true
+                        // While it scrolls, its corners are rounded like its cards and the shades at its
+                        // ends, so what passes them is cut round too (square, the cards showed past them)
+                        layer.enabled: talkBox.overflows
+                        layer.effect: MultiEffect { maskEnabled: true; maskSource: talkMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                        boundsBehavior: Flickable.StopAtBounds
+                        SmoothWheel { flick: talk }
+                        // Follows the newest words as they arrive
+                        onContentHeightChanged: contentY = Math.max(0, contentHeight - height)
+                        onHeightChanged: contentY = Math.max(0, contentHeight - height)
+                        Column {
+                            id: talkCol
+                            width: parent.width
+                            spacing: 14
+                            // Nothing said yet: Nova says hello, so the window isn't a bare box. Not part
+                            // of the conversation (it isn't kept, and it goes with your first words)
                             Rectangle {
-                                id: reply
-                                readonly property bool wrong: !!turn.t.error
-                                readonly property bool waiting: turn.latest && root.working && turn.t.answer === ""
-                                // (drawn from its blocks, or shown as plain text)
-                                readonly property bool drawn: turn.t.answer !== "" && !wrong && (turn.t.blocks || []).length > 0
-                                visible: turn.t.answer !== "" || wrong || waiting || (turn.t.actions || []).length > 0
-                                anchors.left: parent.left
-                                width: Math.min(parent.width * 0.88, Math.max(replyCol.implicitWidth, 120) + 28)
-                                height: replyCol.implicitHeight + 18
+                                visible: root.turns.length === 0
+                                width: hello.implicitWidth + 28
+                                height: hello.implicitHeight + 18
                                 radius: Config.corner(14)
-                                // (one shape, not a square laid over the corner: on glass the bubble
-                                // is see-through, and the overlap showed as a lighter square)
                                 bottomLeftRadius: Config.corner(3)
                                 color: root.replyColor
-                                border.width: wrong ? 1 : 0
-                                border.color: Qt.rgba(root.danger.r, root.danger.g, root.danger.b, 0.55)
-                                HoverHandler { id: replyHover }
-                                CopyChip {
-                                    visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
-                                    shownFor: replyHover.hovered
-                                    done: root.copied === turn.index + ":nova"
-                                    base: Config.tint("#2a313c"); ink: root.textColor
-                                    onPressed: root.copy(turn.index + ":nova", reply.wrong ? turn.t.error.message : turn.t.answer)
-                                }
                                 Column {
-                                    id: replyCol
-                                    readonly property real inner: turn.width * 0.88 - 28
+                                    id: hello
                                     anchors { left: parent.left; top: parent.top; leftMargin: 14; topMargin: 9 }
                                     spacing: 8
                                     Row {
@@ -871,207 +688,299 @@ PanelWindow {
                                             text: "Nova"
                                             color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
                                         }
-                                        // When it answered
+                                    }
+                                    Text {
+                                        text: "Hello, I'm Nova. How can I help?"
+                                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                                    }
+                                }
+                            }
+                            Repeater {
+                                model: root.turns.length
+                                Column {
+                                    id: turn
+                                    required property int index
+                                    readonly property var t: root.turns[index] || ({ asked: "", answer: "", blocks: [], error: null, actions: [] })
+                                    readonly property bool latest: index === root.turns.length - 1
+                                    width: talkCol.width
+                                    spacing: turn.t.at ? 20 : 8        // (room for the time under your bubble)
+                                    // You, on the right, in the accent colour
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        width: Math.min(askedText.implicitWidth + 28, turn.width * 0.82)
+                                        height: askedText.implicitHeight + 16
+                                        radius: Config.corner(14)
+                                        bottomRightRadius: Config.corner(3)        // (the corner nearest your side squared off, as chat bubbles are)
+                                        color: root.accent
+                                        HoverHandler { id: youHover }
+                                        CopyChip {
+                                            shownFor: youHover.hovered
+                                            done: root.copied === turn.index + ":you"
+                                            base: Qt.darker(root.accent, 1.18); ink: root.accentText
+                                            hoverBase: root.accentText; hoverInk: root.accent
+                                            onPressed: root.copy(turn.index + ":you", turn.t.asked)
+                                        }
+                                        // When you asked, small and dim under the bubble
                                         Text {
-                                            anchors.baseline: parent.children[1].baseline
+                                            anchors { right: parent.right; rightMargin: 4; top: parent.bottom; topMargin: 3 }
                                             visible: text !== ""
-                                            text: turn.t.doneAt ? "·  " + root.ago(turn.t.doneAt) : ""
+                                            text: root.ago(turn.t.at)
                                             color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
                                         }
+                                        Text {
+                                            id: askedText
+                                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 14; rightMargin: 14 }
+                                            text: turn.t.asked
+                                            textFormat: Text.PlainText; wrapMode: Text.Wrap
+                                            color: root.accentText; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                                        }
                                     }
-                                    // An answer without blocks (kept from before, or from a
-                                    // runner that sent none): plain text, as typed
-                                    TextEdit {
-                                        visible: turn.t.answer !== "" && !reply.wrong && !reply.drawn
-                                        width: Math.min(implicitWidth, replyCol.inner)
-                                        text: visible ? turn.t.answer : ""
-                                        textFormat: TextEdit.PlainText        // never markup: see the top of this file
-                                        wrapMode: TextEdit.Wrap
-                                        readOnly: true; selectByMouse: true
-                                        color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-                                        font.family: root.fontFamily; font.pixelSize: 14
-                                    }
-                                    // The answer as Slate reads it: paragraphs and headings, lists
-                                    // with Slate's own bullets and numbers, and code in a box
-                                    Column {
-                                        visible: reply.drawn
-                                        spacing: 8
-                                        Repeater {
-                                            // The blocks' places (0, 1, 2…), not the blocks: a ScriptModel keeps the delegates
-                                            // of the places it still has and only makes the new ones, so a streamed answer
-                                            // adds its new block and the rest stay. (A plain count would make every one again
-                                            // each time it changed.) Each block reads its own words from its place
-                                            model: ScriptModel { values: reply.drawn ? turn.t.blocks.map((b, i) => i) : [] }
-                                            Column {
-                                                id: block
-                                                required property int index
-                                                readonly property var spec: turn.t.blocks[index] || ({ type: "paragraph", runs: [] })
-                                                readonly property string kind: spec.type
-                                                Component.onCompleted: root.blockMade(turn.index)
-                                                AnswerWords {
-                                                    visible: block.kind === "paragraph" || block.kind === "heading"
-                                                    runs: visible ? block.spec.runs : []
-                                                    heading: block.kind === "heading"
-                                                    maxWidth: replyCol.inner
+                                    // Nova, on the left: the answer as it arrives, or what went wrong, and
+                                    // under it what was done (Slate's own record)
+                                    Rectangle {
+                                        id: reply
+                                        readonly property bool wrong: !!turn.t.error
+                                        readonly property bool waiting: turn.latest && root.working && turn.t.answer === ""
+                                        // (drawn from its blocks, or shown as plain text)
+                                        readonly property bool drawn: turn.t.answer !== "" && !wrong && (turn.t.blocks || []).length > 0
+                                        visible: turn.t.answer !== "" || wrong || waiting || (turn.t.actions || []).length > 0
+                                        anchors.left: parent.left
+                                        width: Math.min(parent.width * 0.88, Math.max(replyCol.implicitWidth, 120) + 28)
+                                        height: replyCol.implicitHeight + 18
+                                        radius: Config.corner(14)
+                                        // (one shape, not a square laid over the corner: on glass the bubble
+                                        // is see-through, and the overlap showed as a lighter square)
+                                        bottomLeftRadius: Config.corner(3)
+                                        color: root.replyColor
+                                        border.width: wrong ? 1 : 0
+                                        border.color: Qt.rgba(root.danger.r, root.danger.g, root.danger.b, 0.55)
+                                        HoverHandler { id: replyHover }
+                                        CopyChip {
+                                            visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
+                                            shownFor: replyHover.hovered
+                                            done: root.copied === turn.index + ":nova"
+                                            base: Config.tint("#2a313c"); ink: root.textColor
+                                            onPressed: root.copy(turn.index + ":nova", reply.wrong ? turn.t.error.message : turn.t.answer)
+                                        }
+                                        Column {
+                                            id: replyCol
+                                            readonly property real inner: turn.width * 0.88 - 28
+                                            anchors { left: parent.left; top: parent.top; leftMargin: 14; topMargin: 9 }
+                                            spacing: 8
+                                            Row {
+                                                spacing: 6
+                                                Text {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: String.fromCodePoint(0xF014)
+                                                    color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
                                                 }
-                                                Column {
-                                                    visible: block.kind === "list"
-                                                    spacing: 4
-                                                    Repeater {
-                                                        model: block.kind === "list" ? block.spec.items : []
-                                                        Row {
-                                                            id: item
-                                                            required property var modelData
-                                                            leftPadding: item.modelData.level * 18
-                                                            spacing: 6
-                                                            Text {
-                                                                id: marker
-                                                                width: Math.max(implicitWidth, 10)
-                                                                text: item.modelData.marker
-                                                                textFormat: Text.PlainText
-                                                                horizontalAlignment: Text.AlignRight
-                                                                color: Config.pageColour("assistant")
-                                                                font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                                                Text {
+                                                    text: "Nova"
+                                                    color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
+                                                }
+                                                // When it answered
+                                                Text {
+                                                    anchors.baseline: parent.children[1].baseline
+                                                    visible: text !== ""
+                                                    text: turn.t.doneAt ? "·  " + root.ago(turn.t.doneAt) : ""
+                                                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
+                                                }
+                                            }
+                                            // An answer without blocks (kept from before, or from a
+                                            // runner that sent none): plain text, as typed
+                                            TextEdit {
+                                                visible: turn.t.answer !== "" && !reply.wrong && !reply.drawn
+                                                width: Math.min(implicitWidth, replyCol.inner)
+                                                text: visible ? turn.t.answer : ""
+                                                textFormat: TextEdit.PlainText        // never markup: see the top of this file
+                                                wrapMode: TextEdit.Wrap
+                                                readOnly: true; selectByMouse: true
+                                                color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
+                                                font.family: root.fontFamily; font.pixelSize: 14
+                                            }
+                                            // The answer as Slate reads it: paragraphs and headings, lists
+                                            // with Slate's own bullets and numbers, and code in a box
+                                            Column {
+                                                visible: reply.drawn
+                                                spacing: 8
+                                                Repeater {
+                                                    // The blocks' places (0, 1, 2…), not the blocks: a ScriptModel keeps the delegates
+                                                    // of the places it still has and only makes the new ones, so a streamed answer
+                                                    // adds its new block and the rest stay. (A plain count would make every one again
+                                                    // each time it changed.) Each block reads its own words from its place
+                                                    model: ScriptModel { values: reply.drawn ? turn.t.blocks.map((b, i) => i) : [] }
+                                                    Column {
+                                                        id: block
+                                                        required property int index
+                                                        readonly property var spec: turn.t.blocks[index] || ({ type: "paragraph", runs: [] })
+                                                        readonly property string kind: spec.type
+                                                        Component.onCompleted: root.blockMade(turn.index)
+                                                        AnswerWords {
+                                                            visible: block.kind === "paragraph" || block.kind === "heading"
+                                                            runs: visible ? block.spec.runs : []
+                                                            heading: block.kind === "heading"
+                                                            maxWidth: replyCol.inner
+                                                        }
+                                                        Column {
+                                                            visible: block.kind === "list"
+                                                            spacing: 4
+                                                            Repeater {
+                                                                model: block.kind === "list" ? block.spec.items : []
+                                                                Row {
+                                                                    id: item
+                                                                    required property var modelData
+                                                                    leftPadding: item.modelData.level * 18
+                                                                    spacing: 6
+                                                                    Text {
+                                                                        id: marker
+                                                                        width: Math.max(implicitWidth, 10)
+                                                                        text: item.modelData.marker
+                                                                        textFormat: Text.PlainText
+                                                                        horizontalAlignment: Text.AlignRight
+                                                                        color: Config.pageColour("assistant")
+                                                                        font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                                                                    }
+                                                                    AnswerWords {
+                                                                        runs: item.modelData.runs
+                                                                        maxWidth: replyCol.inner - item.leftPadding - marker.width - item.spacing
+                                                                    }
+                                                                }
                                                             }
-                                                            AnswerWords {
-                                                                runs: item.modelData.runs
-                                                                maxWidth: replyCol.inner - item.leftPadding - marker.width - item.spacing
-                                                            }
+                                                        }
+                                                        CodeBox {
+                                                            visible: block.kind === "code" || block.kind === "table"
+                                                            code: visible ? block.spec.text : ""
+                                                            lang: visible ? block.spec.lang : ""
+                                                            table: block.kind === "table"
+                                                            turnIndex: turn.index
+                                                            blockIndex: block.index
+                                                            maxWidth: replyCol.inner
                                                         }
                                                     }
                                                 }
-                                                CodeBox {
-                                                    visible: block.kind === "code" || block.kind === "table"
-                                                    code: visible ? block.spec.text : ""
-                                                    lang: visible ? block.spec.lang : ""
-                                                    table: block.kind === "table"
-                                                    turnIndex: turn.index
-                                                    blockIndex: block.index
-                                                    maxWidth: replyCol.inner
-                                                }
                                             }
-                                        }
-                                    }
-                                    // Thinking: three dots taking turns, as chat apps show someone
-                                    // typing. (Like a spinner, it isn't a transition, so its timing
-                                    // is its own.) With animations off or in game mode nothing moves
-                                    // or fades: the dots take turns to light up instead, a step at a time
-                                    Row {
-                                        id: typing
-                                        visible: reply.waiting
-                                        readonly property bool moving: visible && root.shown && Config.animate && !Config.gameMode
-                                        // (without motion: which dot is lit; 3 is a beat with none)
-                                        property int lit: 0
-                                        Timer {
-                                            interval: 380; repeat: true
-                                            running: typing.visible && root.shown && !typing.moving
-                                            onTriggered: typing.lit = (typing.lit + 1) % 4
-                                        }
-                                        spacing: 5
-                                        topPadding: 5; bottomPadding: 5
-                                        Repeater {
-                                            model: 3
-                                            Rectangle {
-                                                id: dot
-                                                required property int index
-                                                width: 7; height: 7; radius: Config.corner(3.5)
-                                                color: !typing.moving && typing.lit === index ? root.textColor : root.dimTextColor
-                                                opacity: typing.moving ? 0.35 : 1
-                                                transform: Translate { id: hop }
-                                                SequentialAnimation {
-                                                    running: typing.moving
-                                                    loops: Animation.Infinite
-                                                    onRunningChanged: if (!running) { hop.y = 0; dot.opacity = Qt.binding(() => typing.moving ? 0.35 : 1); }
-                                                    PauseAnimation { duration: dot.index * 160 }
-                                                    ParallelAnimation {
-                                                        NumberAnimation { target: hop; property: "y"; to: -4; duration: 260; easing.type: Easing.OutSine }
-                                                        NumberAnimation { target: dot; property: "opacity"; to: 1; duration: 260 }
-                                                    }
-                                                    ParallelAnimation {
-                                                        NumberAnimation { target: hop; property: "y"; to: 0; duration: 260; easing.type: Easing.InSine }
-                                                        NumberAnimation { target: dot; property: "opacity"; to: 0.35; duration: 260 }
-                                                    }
-                                                    PauseAnimation { duration: (2 - dot.index) * 160 + 420 }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Text {
-                                        visible: reply.wrong
-                                        width: Math.min(implicitWidth, replyCol.inner)
-                                        text: turn.t.error ? turn.t.error.message : ""
-                                        textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
-                                    }
-                                    Text {
-                                        visible: reply.wrong && !!turn.t.error.detail
-                                        width: Math.min(implicitWidth, replyCol.inner)
-                                        text: turn.t.error ? (turn.t.error.detail || "") : ""
-                                        textFormat: Text.PlainText; wrapMode: Text.WrapAnywhere; maximumLineCount: 3; elide: Text.ElideRight
-                                        color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12
-                                    }
-                                    Column {
-                                        visible: (turn.t.actions || []).length > 0
-                                        spacing: 4
-                                        Repeater {
-                                            model: turn.t.actions || []
+                                            // Thinking: three dots taking turns, as chat apps show someone
+                                            // typing. (Like a spinner, it isn't a transition, so its timing
+                                            // is its own.) With animations off or in game mode nothing moves
+                                            // or fades: the dots take turns to light up instead, a step at a time
                                             Row {
-                                                id: actionRow
-                                                required property var modelData
-                                                required property int index
-                                                readonly property bool ok: modelData.state === "done"
-                                                readonly property bool waiting: modelData.state === "asking"
-                                                readonly property bool undone: ok && !!modelData.undone
-                                                readonly property bool canUndo: root.undoable(modelData)
-                                                spacing: 8
-                                                // (the mark and the spinner are two items, so a tick or cross
-                                                // never keeps the angle the spinner stopped at)
-                                                Item {
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    width: 14; height: 14
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        visible: !actionRow.waiting
-                                                        text: String.fromCodePoint(actionRow.undone ? 0xEB77 : actionRow.ok ? 0xEA5E : 0xEB55)      // put back, tick, cross
-                                                        color: actionRow.undone ? root.dimTextColor : actionRow.ok ? Config.pageColour("power") : root.danger
-                                                        font.family: tabler.name; font.pixelSize: 14
-                                                    }
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        visible: actionRow.waiting
-                                                        text: String.fromCodePoint(0xF226)                               // Slate's loading spinner
-                                                        color: root.accent
-                                                        font.family: tabler.name; font.pixelSize: 14
-                                                        // (a spinner: one of the animations that isn't a transition)
-                                                        RotationAnimation on rotation { running: actionRow.waiting && root.shown && Config.animate && !Config.gameMode; from: 0; to: 360; duration: 900; loops: Animation.Infinite }
+                                                id: typing
+                                                visible: reply.waiting
+                                                readonly property bool moving: visible && root.shown && Config.animate && !Config.gameMode
+                                                // (without motion: which dot is lit; 3 is a beat with none)
+                                                property int lit: 0
+                                                Timer {
+                                                    interval: 380; repeat: true
+                                                    running: typing.visible && root.shown && !typing.moving
+                                                    onTriggered: typing.lit = (typing.lit + 1) % 4
+                                                }
+                                                spacing: 5
+                                                topPadding: 5; bottomPadding: 5
+                                                Repeater {
+                                                    model: 3
+                                                    Rectangle {
+                                                        id: dot
+                                                        required property int index
+                                                        width: 7; height: 7; radius: Config.corner(3.5)
+                                                        color: !typing.moving && typing.lit === index ? root.textColor : root.dimTextColor
+                                                        opacity: typing.moving ? 0.35 : 1
+                                                        transform: Translate { id: hop }
+                                                        SequentialAnimation {
+                                                            running: typing.moving
+                                                            loops: Animation.Infinite
+                                                            onRunningChanged: if (!running) { hop.y = 0; dot.opacity = Qt.binding(() => typing.moving ? 0.35 : 1); }
+                                                            PauseAnimation { duration: dot.index * 160 }
+                                                            ParallelAnimation {
+                                                                NumberAnimation { target: hop; property: "y"; to: -4; duration: 260; easing.type: Easing.OutSine }
+                                                                NumberAnimation { target: dot; property: "opacity"; to: 1; duration: 260 }
+                                                            }
+                                                            ParallelAnimation {
+                                                                NumberAnimation { target: hop; property: "y"; to: 0; duration: 260; easing.type: Easing.InSine }
+                                                                NumberAnimation { target: dot; property: "opacity"; to: 0.35; duration: 260 }
+                                                            }
+                                                            PauseAnimation { duration: (2 - dot.index) * 160 + 420 }
+                                                        }
                                                     }
                                                 }
-                                                Text {
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    width: Math.min(implicitWidth, replyCol.inner - 24 - (undoButton.visible ? undoButton.width + 8 : 0))
-                                                    text: actionRow.modelData.text + (actionRow.undone ? " · undone" : actionRow.ok ? "" : (actionRow.waiting ? " · " : ": ") + (root.stateWords[actionRow.modelData.state] || ""))
-                                                    textFormat: Text.PlainText; elide: Text.ElideRight
-                                                    color: actionRow.ok ? root.dimTextColor : root.textColor
-                                                    font.family: root.fontFamily; font.pixelSize: 13
-                                                }
-                                                // Undo, for a setting it changed: puts back the value it had before
-                                                Rectangle {
-                                                    id: undoButton
-                                                    visible: actionRow.canUndo
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    width: undoLabel.implicitWidth + 16; height: 22
-                                                    radius: Config.corner(6)
-                                                    color: "transparent"
-                                                    HoverFill { base: "transparent"; hovered: undoHover.hovered; radius: parent.radius }
-                                                    Text {
-                                                        id: undoLabel
-                                                        anchors.centerIn: parent
-                                                        text: "Undo"
-                                                        color: root.textColor
-                                                        font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                            }
+                                            Text {
+                                                visible: reply.wrong
+                                                width: Math.min(implicitWidth, replyCol.inner)
+                                                text: turn.t.error ? turn.t.error.message : ""
+                                                textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                                            }
+                                            Text {
+                                                visible: reply.wrong && !!turn.t.error.detail
+                                                width: Math.min(implicitWidth, replyCol.inner)
+                                                text: turn.t.error ? (turn.t.error.detail || "") : ""
+                                                textFormat: Text.PlainText; wrapMode: Text.WrapAnywhere; maximumLineCount: 3; elide: Text.ElideRight
+                                                color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12
+                                            }
+                                            Column {
+                                                visible: (turn.t.actions || []).length > 0
+                                                spacing: 4
+                                                Repeater {
+                                                    model: turn.t.actions || []
+                                                    Row {
+                                                        id: actionRow
+                                                        required property var modelData
+                                                        required property int index
+                                                        readonly property bool ok: modelData.state === "done"
+                                                        readonly property bool waiting: modelData.state === "asking"
+                                                        readonly property bool undone: ok && !!modelData.undone
+                                                        readonly property bool canUndo: root.undoable(modelData)
+                                                        spacing: 8
+                                                        // (the mark and the spinner are two items, so a tick or cross
+                                                        // never keeps the angle the spinner stopped at)
+                                                        Item {
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                            width: 14; height: 14
+                                                            Text {
+                                                                anchors.centerIn: parent
+                                                                visible: !actionRow.waiting
+                                                                text: String.fromCodePoint(actionRow.undone ? 0xEB77 : actionRow.ok ? 0xEA5E : 0xEB55)      // put back, tick, cross
+                                                                color: actionRow.undone ? root.dimTextColor : actionRow.ok ? Config.pageColour("power") : root.danger
+                                                                font.family: tabler.name; font.pixelSize: 14
+                                                            }
+                                                            Text {
+                                                                anchors.centerIn: parent
+                                                                visible: actionRow.waiting
+                                                                text: String.fromCodePoint(0xF226)                               // Slate's loading spinner
+                                                                color: root.accent
+                                                                font.family: tabler.name; font.pixelSize: 14
+                                                                // (a spinner: one of the animations that isn't a transition)
+                                                                RotationAnimation on rotation { running: actionRow.waiting && root.shown && Config.animate && !Config.gameMode; from: 0; to: 360; duration: 900; loops: Animation.Infinite }
+                                                            }
+                                                        }
+                                                        Text {
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                            width: Math.min(implicitWidth, replyCol.inner - 24 - (undoButton.visible ? undoButton.width + 8 : 0))
+                                                            text: actionRow.modelData.text + (actionRow.undone ? " · undone" : actionRow.ok ? "" : (actionRow.waiting ? " · " : ": ") + (root.stateWords[actionRow.modelData.state] || ""))
+                                                            textFormat: Text.PlainText; elide: Text.ElideRight
+                                                            color: actionRow.ok ? root.dimTextColor : root.textColor
+                                                            font.family: root.fontFamily; font.pixelSize: 13
+                                                        }
+                                                        // Undo, for a setting it changed: puts back the value it had before
+                                                        Rectangle {
+                                                            id: undoButton
+                                                            visible: actionRow.canUndo
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                            width: undoLabel.implicitWidth + 16; height: 22
+                                                            radius: Config.corner(6)
+                                                            color: "transparent"
+                                                            HoverFill { base: "transparent"; hovered: undoHover.hovered; radius: parent.radius }
+                                                            Text {
+                                                                id: undoLabel
+                                                                anchors.centerIn: parent
+                                                                text: "Undo"
+                                                                color: root.textColor
+                                                                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                                            }
+                                                            HoverHandler { id: undoHover }
+                                                            ClickTap { onTapped: root.undo(turn.index, actionRow.index) }
+                                                        }
                                                     }
-                                                    HoverHandler { id: undoHover }
-                                                    ClickTap { onTapped: root.undo(turn.index, actionRow.index) }
                                                 }
                                             }
                                         }
@@ -1080,208 +989,165 @@ PanelWindow {
                             }
                         }
                     }
-                }
-            }
-                ThinScrollbar {
-                    flick: talk
-                    color: root.textColor
-                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
-                }
-                // (the conversation's shape, for its mask: rounded only at an end with more past
-                // it, and rounding in as it's scrolled, with that end's shade; at the very top or
-                // bottom it's square, so the cards there, angled corners and all, show whole)
-                Item {
-                    id: talkMask
-                    anchors.fill: talk
-                    visible: false
-                    layer.enabled: true
-                    readonly property real above: Math.max(0, Math.min(14, talk.contentY))
-                    readonly property real below: Math.max(0, Math.min(14, talk.contentHeight - talk.height - talk.contentY))
-                    Rectangle {
-                        anchors.fill: parent
-                        topLeftRadius: Config.corner(talkMask.above); topRightRadius: Config.corner(talkMask.above)
-                        bottomLeftRadius: Config.corner(talkMask.below); bottomRightRadius: Config.corner(talkMask.below)
+                        ThinScrollbar {
+                            flick: talk
+                            color: root.textColor
+                            anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+                        }
+                        // (the conversation's shape, for its mask: rounded only at an end with more past
+                        // it, and rounding in as it's scrolled, with that end's shade; at the very top or
+                        // bottom it's square, so the cards there, angled corners and all, show whole)
+                        Item {
+                            id: talkMask
+                            anchors.fill: talk
+                            visible: false
+                            layer.enabled: true
+                            readonly property real above: Math.max(0, Math.min(14, talk.contentY))
+                            readonly property real below: Math.max(0, Math.min(14, talk.contentHeight - talk.height - talk.contentY))
+                            Rectangle {
+                                anchors.fill: parent
+                                topLeftRadius: Config.corner(talkMask.above); topRightRadius: Config.corner(talkMask.above)
+                                bottomLeftRadius: Config.corner(talkMask.below); bottomRightRadius: Config.corner(talkMask.below)
+                            }
+                        }
+                        // Shades while there's more above or below: fading out just as you reach the end
+                        // (rounded like the cards they're over: square, they showed as hard-cornered blocks)
+                        Rectangle {
+                            anchors { left: talk.left; right: talk.right; top: parent.top }
+                            height: 28
+                            topLeftRadius: Config.corner(14); topRightRadius: Config.corner(14)
+                            opacity: Math.max(0, Math.min(1, talk.contentY / 24))
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: root.barColor }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+                        Rectangle {
+                            anchors { left: talk.left; right: talk.right; bottom: parent.bottom }
+                            height: 28
+                            bottomLeftRadius: Config.corner(14); bottomRightRadius: Config.corner(14)
+                            opacity: Math.max(0, Math.min(1, (talk.contentHeight - talk.height - talk.contentY) / 24))
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 1.0; color: root.barColor }
+                            }
+                        }
                     }
-                }
-                // Shades while there's more above or below: fading out just as you reach the end
-                // (rounded like the cards they're over: square, they showed as hard-cornered blocks)
-                Rectangle {
-                    anchors { left: talk.left; right: talk.right; top: parent.top }
-                    height: 28
-                    topLeftRadius: Config.corner(14); topRightRadius: Config.corner(14)
-                    opacity: Math.max(0, Math.min(1, talk.contentY / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: root.barColor }
-                        GradientStop { position: 1.0; color: "transparent" }
-                    }
-                }
-                Rectangle {
-                    anchors { left: talk.left; right: talk.right; bottom: parent.bottom }
-                    height: 28
-                    bottomLeftRadius: Config.corner(14); bottomRightRadius: Config.corner(14)
-                    opacity: Math.max(0, Math.min(1, (talk.contentHeight - talk.height - talk.contentY) / 24))
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 1.0; color: root.barColor }
-                    }
-                }
-            }
 
-            // ---- The line you type -----------------------------------------
-            Rectangle {
-                visible: root.on
-                width: parent.width; height: 44; radius: Config.corner(10)
-                color: root.fieldColor
-                Text {
-                    anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                    text: root.working ? "Nova is working…"
-                        : root.listening === "listening" || root.listening === "starting" ? "Listening… let go when you're done"
-                        : root.listening === "transcribing" ? "Writing down what you said…"
-                        : "What would you like to do?"
-                    color: root.listening === "listening" || root.listening === "starting" ? root.textColor : root.dimTextColor
-                    font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
-                    visible: field.text === ""
-                }
-                TextInput {
-                    id: field
-                    anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working || root.micShown ? 50 : 14; verticalCenter: parent.verticalCenter }
-                    color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-                    font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
-                    focus: root.shown
-                    clip: true
-                    maximumLength: 2000
-                    readOnly: root.working
-                    onAccepted: root.send(text)
-                    Keys.onPressed: e => {
-                        root.keysSeen++;
-                        if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true; }
-                        // Ctrl+C stops Nova while it works (with text selected, it copies as ever)
-                        else if (e.key === Qt.Key_C && (e.modifiers & Qt.ControlModifier) && root.working && field.selectedText === "") { root.stop(); e.accepted = true; }
-                        // Page Up / Page Down move through the conversation, as in Slate's lists
-                        else if (e.key === Qt.Key_PageUp || e.key === Qt.Key_PageDown) {
-                            const by = (e.key === Qt.Key_PageUp ? -1 : 1) * Math.max(40, talk.height - 40);
-                            talk.contentY = Math.max(0, Math.min(Math.max(0, talk.contentHeight - talk.height), talk.contentY + by));
-                            e.accepted = true;
+                    // ---- The line you type -----------------------------------------
+                    Rectangle {
+                        id: typeBox
+                        visible: root.on
+                        width: parent.width; height: 44; radius: Config.corner(10)
+                        color: root.fieldColor
+                        Text {
+                            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                            text: root.working ? "Nova is working…"
+                                : root.listening === "listening" || root.listening === "starting" ? "Listening… let go when you're done"
+                                : root.listening === "transcribing" ? "Writing down what you said…"
+                                : "What would you like to do?"
+                            color: root.listening === "listening" || root.listening === "starting" ? root.textColor : root.dimTextColor
+                            font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                            visible: field.text === ""
+                        }
+                        TextInput {
+                            id: field
+                            anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working || root.micShown ? 50 : 14; verticalCenter: parent.verticalCenter }
+                            color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
+                            font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                            focus: root.shown
+                            clip: true
+                            maximumLength: 2000
+                            readOnly: root.working
+                            onAccepted: root.send(text)
+                            Keys.onPressed: e => {
+                                root.keysSeen++;
+                                if (e.key === Qt.Key_Escape) { root.closeWindow(); e.accepted = true; }
+                                // Ctrl+C stops Nova while it works (with text selected, it copies as ever)
+                                else if (e.key === Qt.Key_C && (e.modifiers & Qt.ControlModifier) && root.working && field.selectedText === "") { root.stop(); e.accepted = true; }
+                                // Page Up / Page Down move through the conversation, as in Slate's lists
+                                else if (e.key === Qt.Key_PageUp || e.key === Qt.Key_PageDown) {
+                                    const by = (e.key === Qt.Key_PageUp ? -1 : 1) * Math.max(40, talk.height - 40);
+                                    talk.contentY = Math.max(0, Math.min(Math.max(0, talk.contentHeight - talk.height), talk.contentY + by));
+                                    e.accepted = true;
+                                }
+                            }
+                        }
+                        // Stop, at the end of the box while Nova's working (Escape only hides the window,
+                        // and the work carries on)
+                        Rectangle {
+                            id: stopButton
+                            objectName: "assistantStop"
+                            visible: opacity > 0
+                            opacity: root.working ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+                            anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+                            width: 30; height: 30; radius: Config.corner(15)
+                            color: root.accent
+                            Text {
+                                anchors.centerIn: parent
+                                text: String.fromCodePoint(0xED4A)
+                                color: root.accentText
+                                font.family: tabler.name; font.pixelSize: 15
+                            }
+                            ClickTap { enabled: root.working; onTapped: root.stop() }
+                        }
+                        // Hold to talk (Settings → Assistant → Voice)
+                        NovaMic {
+                            objectName: "assistantMic"
+                            visible: root.micShown
+                            anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
+                            voice: root.voice
+                            iconFont: tabler.name
+                            ink: root.dimTextColor; accent: root.accent; accentText: root.accentText
+                        }
+                    }
+
+                    // Why talking to Nova didn't go ahead, for a few seconds (NovaVoice.qml)
+                    Text {
+                        id: voiceNote
+                        visible: root.on && text !== ""
+                        width: parent.width
+                        leftPadding: 4; rightPadding: 4
+                        text: root.voice ? root.voice.note : ""
+                        textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 13
+                    }
+
+                    // ---- Footer: who's answering, and the one useful button -----------
+                    Item {
+                        id: footer
+                        visible: root.on
+                        width: parent.width; height: 32
+                        Text {
+                            anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                            width: parent.width - 8 - footerButtons.width - 8
+                            elide: Text.ElideRight
+                            textFormat: Text.PlainText        // never markup
+                            text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
+                                + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send" + (root.micShown ? "  ·  Hold Super+K to talk" : ""))
+                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        }
+                        Row {
+                            id: footerButtons
+                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                            spacing: 8
+                            PillButton {
+                                visible: !root.working && !!root.error && ["offline", "timeout", "failed"].indexOf(root.error.kind) >= 0
+                                icon: 0xEB13; label: "Try again"; primary: true; onPressed: root.again()
+                            }
+                            PillButton {
+                                visible: !root.working && !!root.error && root.error.kind === "signed-out"
+                                icon: 0xEBEF; label: "Open a terminal"; primary: true; onPressed: root.signIn()
+                            }
+                            PillButton {
+                                visible: !root.working && !!root.error && ["not-installed", "not-accepted", "off", "server"].indexOf(root.error.kind) >= 0
+                                label: "Open Settings"; primary: true; onPressed: root.openSettings(root.error.kind === "server" ? "debug" : "assistant")
+                            }
+                            PillButton { visible: !root.working && !root.error; icon: 0xEB20; label: "Settings"; onPressed: root.openSettings() }
                         }
                     }
                 }
-                // Stop, at the end of the box while Nova's working (Escape only hides the window,
-                // and the work carries on)
-                Rectangle {
-                    id: stopButton
-                    objectName: "assistantStop"
-                    visible: opacity > 0
-                    opacity: root.working ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
-                    anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
-                    width: 30; height: 30; radius: Config.corner(15)
-                    color: root.accent
-                    Text {
-                        anchors.centerIn: parent
-                        text: String.fromCodePoint(0xED4A)
-                        color: root.accentText
-                        font.family: tabler.name; font.pixelSize: 15
-                    }
-                    ClickTap { enabled: root.working; onTapped: root.stop() }
-                }
-                // Hold to talk (Settings → Assistant → Voice)
-                NovaMic {
-                    objectName: "assistantMic"
-                    visible: root.micShown
-                    anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
-                    voice: root.voice
-                    iconFont: tabler.name
-                    ink: root.dimTextColor; accent: root.accent; accentText: root.accentText
-                }
-            }
-
-            // Why talking to Nova didn't go ahead, for a few seconds (NovaVoice.qml)
-            Text {
-                visible: root.on && text !== ""
-                width: parent.width
-                leftPadding: 4; rightPadding: 4
-                text: root.voice ? root.voice.note : ""
-                textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 13
-            }
-
-            // ---- Footer: who's answering, and the one useful button -----------
-            Item {
-                visible: root.on
-                width: parent.width; height: 32
-                Text {
-                    anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                    width: parent.width - 8 - footerButtons.width - 8
-                    elide: Text.ElideRight
-                    textFormat: Text.PlainText        // never markup
-                    text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
-                        + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send" + (root.micShown ? "  ·  Hold Super+K to talk" : ""))
-                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
-                }
-                Row {
-                    id: footerButtons
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    spacing: 8
-                    PillButton {
-                        visible: !root.working && !!root.error && ["offline", "timeout", "failed"].indexOf(root.error.kind) >= 0
-                        icon: 0xEB13; label: "Try again"; primary: true; onPressed: root.again()
-                    }
-                    PillButton {
-                        visible: !root.working && !!root.error && root.error.kind === "signed-out"
-                        icon: 0xEBEF; label: "Open a terminal"; primary: true; onPressed: root.signIn()
-                    }
-                    PillButton {
-                        visible: !root.working && !!root.error && ["not-installed", "not-accepted", "off", "server"].indexOf(root.error.kind) >= 0
-                        label: "Open Settings"; primary: true; onPressed: root.openSettings(root.error.kind === "server" ? "debug" : "assistant")
-                    }
-                    PillButton { visible: !root.working && !root.error; icon: 0xEB20; label: "Settings"; onPressed: root.openSettings() }
-                }
-            }
-        }
-
-        // ---- Its edges and corners: drag one to resize it ----
-        // A strip along each edge, half in the card and half out (a corner's square bigger),
-        // over what's in the card, with the pointer showing which way it resizes. Silent, as
-        // dragging is; a double-click puts it back as it comes. Not the conversation's height
-        // while it's switched off (only its width: there's no conversation to show)
-        Repeater {
-            model: ["l", "r", "t", "b", "tl", "tr", "bl", "br"]
-            delegate: MouseArea {
-                id: grip
-                required property string modelData
-                readonly property bool l: modelData.indexOf("l") >= 0
-                readonly property bool r: modelData.indexOf("r") >= 0
-                readonly property bool t: modelData.indexOf("t") >= 0
-                readonly property bool b: modelData.indexOf("b") >= 0
-                readonly property bool corner: modelData.length === 2
-                readonly property real reach: 5           // (past the edge, and as far in)
-                readonly property real cornerSize: 16
-                readonly property real panelW: panel.width
-                readonly property real panelH: panel.height
-                visible: talkBox.visible || !(t || b)
-                z: 2
-                x: l ? -reach : r ? panelW - (corner ? cornerSize : reach) : cornerSize
-                y: t ? -reach : b ? panelH - (corner ? cornerSize : reach) : cornerSize
-                width: corner ? cornerSize + reach : (l || r) ? reach * 2 : panelW - cornerSize * 2
-                height: corner ? cornerSize + reach : (t || b) ? reach * 2 : panelH - cornerSize * 2
-                // (hover on: without it the arrow only showed while the button was held)
-                hoverEnabled: true
-                cursorShape: !corner ? ((l || r) ? Qt.SizeHorCursor : Qt.SizeVerCursor)
-                    : (l === t) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
-                property point grab: Qt.point(0, 0)
-                // (places on the screen: the edge moves with the card under the pointer)
-                onPressed: mouse => {
-                    grab = mapToItem(null, mouse.x, mouse.y);
-                    root.resizeStart();
-                }
-                onPositionChanged: mouse => {
-                    if (!pressed) return;
-                    const p = mapToItem(null, mouse.x, mouse.y);
-                    root.resizeBy(modelData, p.x - grab.x, p.y - grab.y);
-                }
-                onReleased: root.resizeEnd()
-                onCanceled: root.resizeEnd()
-                onDoubleClicked: root.sizeAsItComes()
             }
         }
     }

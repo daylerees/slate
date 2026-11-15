@@ -726,8 +726,9 @@ def settings_get(key):
 
 
 def clients():
+    # (not Nova's own window: it isn't one of yours, and it's on every workspace)
     out = [c for c in spaces.hypr("clients") if isinstance(c, dict) and c.get("mapped") and not c.get("hidden")
-           and (c.get("workspace") or {}).get("id", 0) > 0]
+           and (c.get("workspace") or {}).get("id", 0) > 0 and not spaces.is_nova(c)]
     out.sort(key=lambda c: (c["workspace"]["id"], c.get("at", [0, 0])[0], c.get("at", [0, 0])[1]))
     return out
 

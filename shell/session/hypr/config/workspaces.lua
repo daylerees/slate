@@ -16,6 +16,18 @@ hl.workspace_rule({ workspace = "3", monitor = MONITOR1, default = true })
 hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
 hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
 
+-- How many windows a workspace has, leaving out Nova's (Slate's own, pinned to whichever
+-- workspace you're looking at: slateIsNova in windowrules.lua), which never makes one in use
+function slateWindowCount(w)
+    local n = w.windows or 0
+    if n > 0 and slateIsNova then
+        for _, win in ipairs(hl.get_workspace_windows(w.id) or {}) do
+            if slateIsNova(win) then n = n - 1 end
+        end
+    end
+    return n
+end
+
 -- besideWorkspace(dir): an empty workspace directly to the right (dir = 1) or left
 -- (dir = -1) of the current one, returned by number. Uses a free number next to the
 -- current workspace if there is one; otherwise shifts the following workspaces' windows
@@ -26,7 +38,7 @@ function besideWorkspace(dir)
     local used = {}
     local maxId = cur
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id and w.id > 0 and (w.windows or 0) > 0 then
+        if w.id and w.id > 0 and slateWindowCount(w) > 0 then
             used[w.id] = true
             if w.id > maxId then maxId = w.id end
         end
@@ -35,7 +47,9 @@ function besideWorkspace(dir)
     local function shiftFrom(from)
         for id = maxId, from, -1 do
             for _, win in ipairs(hl.get_workspace_windows(id) or {}) do
-                hl.dispatch(hl.dsp.window.move({ workspace = id + 1, window = "address:" .. win.address, follow = false }))
+                if not slateIsNova(win) then
+                    hl.dispatch(hl.dsp.window.move({ workspace = id + 1, window = "address:" .. win.address, follow = false }))
+                end
             end
         end
     end
@@ -61,7 +75,7 @@ function newWorkspace(movingAddr)
     local maxId, ownId, ownAlone = 0, nil, false
     for _, w in ipairs(hl.get_workspaces()) do
         if w.id and w.id > 0 then
-            local n = w.windows or 0
+            local n = slateWindowCount(w)
             if movingAddr then
                 for _, win in ipairs(hl.get_workspace_windows(w.id) or {}) do
                     if win.address == movingAddr then
@@ -87,13 +101,13 @@ function updateSpareWorkspace()
     if spareOn then
         local maxId = 0
         for _, w in ipairs(hl.get_workspaces()) do
-            if w.id and w.id > 0 and (w.windows or 0) > 0 and w.id > maxId then maxId = w.id end
+            if w.id and w.id > 0 and slateWindowCount(w) > 0 and w.id > maxId then maxId = w.id end
         end
         want = maxId + 1
         -- Always the last one: if you're on an empty workspace further along, that one is the
         -- spare (rather than leaving another empty one before it)
         local cur = hl.get_active_workspace()
-        if cur and cur.id and cur.id > want and (cur.windows or 0) == 0 then want = cur.id end
+        if cur and cur.id and cur.id > want and slateWindowCount(cur) == 0 then want = cur.id end
     end
     if want == spareId then return end
     if spareId then hl.workspace_rule({ workspace = tostring(spareId), persistent = false }) end

@@ -27,7 +27,8 @@ Item {
     property bool animate: true             // the marker's glide and the scroll (else they jump)
     property bool markerFollows: true       // false: the caller moves the marker itself (marker.go)
     // Each dot's look: occupied (has windows) or empty
-    property var occupied: ws => (ws && ws.toplevels && ws.toplevels.values ? ws.toplevels.values.length : 0) > 0
+    // (Nova's window, pinned to every workspace, doesn't make one occupied: Config.isNova)
+    property var occupied: ws => !!ws && !!ws.toplevels && !!ws.toplevels.values && ws.toplevels.values.some(t => !Config.isNova(t))
     // On the bar: a hover highlight behind each dot, and a click to go there
     property bool interactive: false
     property color hoverFill: "transparent"

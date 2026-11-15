@@ -487,6 +487,7 @@ PanelWindow {
         if (mode !== "normal" || !Config.s.launcherWindows || q.length < 2) return [];
         const out = [];
         for (const t of ToplevelManager.toplevels.values) {
+            if (Config.isNova(t)) continue;          // (Nova's window: Slate's own)
             const e = Config.appEntry(t.appId);
             const appName = e ? e.name : (t.appId || "");
             if (!((t.title || "") + " " + appName).toLowerCase().includes(q)) continue;

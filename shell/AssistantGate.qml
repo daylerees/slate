@@ -47,7 +47,8 @@ Scope {
     IpcHandler {
         target: "assistant"
         // The prompt window (Super+K): toggle, open, close; ask opens it and sends; stop ends a run
-        function toggle(): void { if (!root.window) return; if (root.window.shown) root.window.closeWindow(); else root.window.openWindow(); }
+        // (open behind another window, or not the one you're in: to the front, rather than closed)
+        function toggle(): void { if (root.window) root.window.toggleWindow(); }
         function open(): void { if (root.window) root.window.openWindow(); }
         function close(): void { if (root.window) root.window.closeWindow(); }
         function ask(text: string): void { if (root.window) root.window.ask(text); }

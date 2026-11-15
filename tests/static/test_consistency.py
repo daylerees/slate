@@ -222,6 +222,32 @@ class Settings(Case):
                     with self.subTest(os.path.relpath(os.path.join(root, name), shell) + ": Config." + fn):
                         self.assertIn(fn, have, f"Config.{fn}() is called here, but Config.qml has no such function")
 
+    def test_novas_window_is_told_apart_the_same_everywhere(self):
+        """Nova's window is a real window of Slate's, told apart from your windows by Slate's app
+        id and its title: in QML (Config.isNova, and the title Assistant.qml gives it), in
+        Hyprland's config (its window rule, slateIsNova) and in scripts/spaces.py (is_nova, which
+        keeps it out of the assistant's own window list). Each says the same, or one list would
+        show it and another not."""
+        import importlib.util
+        self.assertIn("//@ pragma AppId slate-settings", slate.read("shell", "shell.qml"))
+        config = slate.read("shell", "Config.qml")
+        self.assertIn('readonly property string novaTitle: "Nova"', config)
+        self.assertIn('cls === "slate-settings"', config)
+        self.assertIn("title: Config.novaTitle", slate.read("shell", "Assistant.qml"))
+        self.assertIn('class = "^(slate-settings)$", title = "^(${novaTitle})$"', config)     # (its blur rule)
+        rules = slate.read("shell", "session", "hypr", "config", "windowrules.lua")
+        self.assertIn('match = { class = "^(slate-settings)$", title = "^(Nova)$" }, float = true, center = true, pin = true', rules)
+        self.assertIn('w.class == "slate-settings" and w.title == "Nova"', rules)
+        spec = importlib.util.spec_from_file_location("spaces_for_nova", slate.path("shell", "scripts", "spaces.py"))
+        spaces = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(spaces)
+        for client, nova in (({"class": "slate-settings", "title": "Nova"}, True),
+                             ({"class": "slate-settings", "title": "Slate Settings"}, False),
+                             ({"class": "nova-editor", "title": "Nova"}, False),
+                             ({"class": "foot", "title": "~"}, False)):
+            with self.subTest(client):
+                self.assertEqual(spaces.is_nova(client), nova)
+
     def test_glass_blurs_every_popup(self):
         """Slate's pop-ups are blurred behind with glass: each one's layer is named in the rule
         (the dock's window previews were left out, and showed the desktop sharp through them)."""
@@ -230,8 +256,10 @@ class Settings(Case):
         named = set(m.group(1).split("|"))
         # (notifications have a rule of their own, with their own opacity: SLATE_GLASS_TOAST)
         self.assertIn('glassRule("SLATE_GLASS_TOAST", "^slate-notifications$"', slate.read("shell", "Config.qml"))
-        for own in ('"SLATE_GLASS_LAUNCHER", "^slate-launcher$"', '"SLATE_GLASS_CHALK", "^slate-assistant$"'):
-            self.assertIn("glassRule(" + own, slate.read("shell", "Config.qml"))
+        self.assertIn('glassRule("SLATE_GLASS_LAUNCHER", "^slate-launcher$"', slate.read("shell", "Config.qml"))
+        # (Nova's is a real window, blurred behind as every window is, but for a rule taking
+        # the blur away when Settings → Assistant → Glass's blur is off)
+        self.assertRegex(slate.read("shell", "Config.qml"), r"SLATE_NOVA_NO_BLUR = hl\.window_rule\(.*no_blur = true")
         for layer in ("dock-previews", "picker", "switcher",
                       "tray-menu", "desktop-menu", "confirm", "polkit", "osd", "bar-label"):
             with self.subTest(layer):

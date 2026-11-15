@@ -57,7 +57,8 @@ PanelWindow {
         const c = {}, g = {}, all = [];
         for (const w of spaces) c[w.id] = [];
         for (const t of Hyprland.toplevels.values) {
-            if (!t.workspace || c[t.workspace.id] === undefined) continue;
+            // (Nova's window, Slate's own on every workspace, isn't one of yours: Config.isNova)
+            if (!t.workspace || c[t.workspace.id] === undefined || Config.isNova(t)) continue;
             c[t.workspace.id].push(t.address);
             all.push(t.address);
             const o = t.lastIpcObject;

@@ -67,7 +67,8 @@ local now = {}
 local function window()
     if now.window == false then return nil end
     local id = now.onLast and 2 or 1
-    return { address = "0xabc", floating = now.floating ~= false, mapped = true, workspace = { id = id, name = tostring(id) } }
+    return { address = "0xabc", floating = now.floating ~= false, mapped = true, workspace = { id = id, name = tostring(id) },
+             class = now.nova and "slate-settings" or "foot", title = now.nova and "Nova" or "~" }
 end
 local function workspaces()
     return { { id = 1, name = "1", windows = 1, monitor = { name = "DP-1" } },
@@ -168,9 +169,9 @@ SCENARIOS = (
     ("the window switcher open", 'open = "slate-switcher"'),
     ("the wallpaper switcher open", 'open = "slate-wallpaper-switcher"'),
     ("the overview open", 'open = "slate-overview"'),
-    ("Nova open", 'open = "slate-assistant"'),
+    ("Nova open", "nova = true"),
     ("a quick tap", "timersWait = true"),
-    ("a quick tap with Nova open", 'timersWait = true, open = "slate-assistant"'),
+    ("a quick tap with Nova open", "timersWait = true, nova = true"),
     ("a tiled window with Slate's title bars", "floating = false, titlebars = true"),
     ("no window", "window = false"),
     ("the secret workspace showing", "special = true"),

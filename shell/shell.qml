@@ -71,18 +71,19 @@ ShellRoot {
     Launcher {
         id: appLauncher
         notifs: root.dockNotifs              // (not `notifs: notifs`: that reads the launcher's own property)
-        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
-    // Nova, the assistant's prompt window (Super+K): one of the things only one of shows at a time
+    // Nova, the assistant's window (Super+K): a real window, as Settings is, so the launcher and
+    // the other overlays leave it open; opening it closes them, so it has the keyboard
     Assistant {
         id: nova
         voice: novaVoice
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onOpened: { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); }
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
@@ -384,17 +385,7 @@ ShellRoot {
         function novaCopyCode(block: int): void { nova.copyCode(nova.turns.length - 1, block); }
         // Undo on a row of what the latest answer did, as clicking it does (action: its place in the list)
         function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
-        // Drag Nova's window by its header, as the pointer would: pressed, moved by dx, dy (Slate's
-        // units), let go. centre: as double-clicking the header does
-        function novaDrag(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); nova.dragEnd(); }
-        // ...held there, not let go yet (novaDragEnd lets go)
-        function novaDragHold(dx: real, dy: real): void { nova.dragStart(); nova.dragBy(dx, dy); }
-        function novaDragEnd(): void { nova.dragEnd(); }
-        function novaCentre(): void { nova.centre(); }
-        // Resize it by its edges (edges: "l", "r", "t", "b", or a corner's two), as dragging them
-        // does: pressed, moved by dx, dy (Slate's units), let go. Reset: as it comes, as
-        // double-clicking an edge does
-        function novaResize(edges: string, dx: real, dy: real): void { nova.resizeStart(); nova.resizeBy(edges, dx, dy); nova.resizeEnd(); }
+        // Nova's window back to the size it comes at (Hyprland resizes it; this forgets the size kept)
         function novaSizeReset(): void { nova.sizeAsItComes(); }
         // Scroll the launcher's list steadily from where it is to the bottom, over ms
         function launcherScroll(ms: int): void { appLauncher.testScroll(ms); }
@@ -528,10 +519,16 @@ ShellRoot {
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
                              blocks: nova.cur ? nova.cur.blocks || [] : [], blocksMade: nova.blocksMade, rich: nova.richNow(), copied: nova.copied,
-                             // (where the card is, its size, and the window's: dragged by its header)
-                             panel: { x: nova.panelX, y: nova.panelY, w: nova.panelWidth, h: nova.panelHeight, talk: nova.talkHeight, homeX: nova.homeX, homeY: nova.homeY, screenW: nova.width, screenH: nova.height,
-                                      area: [nova.area.x, nova.area.y, nova.area.width, nova.area.height], minW: nova.minW, maxW: nova.maxW,
-                                      minTalk: nova.minTalk, maxTalk: nova.maxTalk, resizing: nova.resizing },
+                             // (its window, in Slate's units: whether it's been built, Hyprland has it and it
+                             // has the keyboard, its size, the size it opened at and kept, and the conversation's height.
+                             // Where it is comes from Hyprland: hyprctl clients)
+                             window: { built: !!nova.win, mapped: !!nova.top, focused: nova.focused, w: nova.win ? nova.win.width : 0, h: nova.win ? nova.win.height : 0,
+                                       openW: nova.openW, openH: nova.openH, wantW: nova.wantW, wantH: nova.wantH, minW: nova.minW, minH: nova.minH, talk: nova.talkHeight },
+                             // (whether the lists of your windows have it, as each works it out: the
+                             // switcher's, the overview's while it's open, and the bar's title)
+                             listed: nova.top ? { switcher: winSwitcher.currentWindows().includes(nova.top),
+                                                  overview: Object.values(wsOverview.contents || {}).some(l => l.includes(nova.top.address)),
+                                                  title: !!topBar.shownTop && Config.isNova(topBar.shownTop) } : null,
                              // (whether each row of what it did offers Undo just now)
                              undo: nova.actions.map(a => nova.undoable(a)),
                              button: Config.s.barShowAssistant && Config.assistantOn,
@@ -566,7 +563,7 @@ ShellRoot {
     Connections {
         target: wallpaperLayer.switcher
         function onShownChanged() {
-            if (wallpaperLayer.switcher.shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+            if (wallpaperLayer.switcher.shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
         }
     }
     NightLight { id: nightLight }
@@ -686,8 +683,6 @@ ShellRoot {
     VoiceModel { id: voiceModel }
     NovaVoice { id: novaVoice; window: nova; model: voiceModel; locked: lockScreen.locked }
     AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: nova }     // what AI agents may do (slate mcp)
-    // A bar panel opening takes the prompt window's place, like the other overlays
-    Connections { target: popouts; function onCurrentChanged() { if (popouts.current !== "") nova.closeWindow(); } }
     // The screen locks: the prompt window closes and a run stops
     Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); wallpaperLayer.switcher.cancel(); } } }
     Screensaver { id: screensaver; lock: lockScreen }
@@ -696,12 +691,12 @@ ShellRoot {
     Switcher {
         id: winSwitcher
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     WorkspaceOverview {
         id: wsOverview
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); popouts.close(); picker.close(); nova.closeWindow(); }
+        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); popouts.close(); picker.close(); }
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)

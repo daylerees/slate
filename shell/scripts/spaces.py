@@ -288,6 +288,12 @@ def launch_info(client):
 
 # ---- Snapshot and the store ------------------------------------------------------------
 
+def is_nova(client):
+    """Nova's window (Assistant.qml): Slate's own, by its app id and title, pinned to whichever
+    workspace you're looking at. Not one of your windows (Config.isNova, slateIsNova)."""
+    return client.get("class") == "slate-settings" and client.get("title") == "Nova"
+
+
 def is_slate(client):
     """One of Slate's own windows (Settings…): starting its command again would start a
     second Slate."""

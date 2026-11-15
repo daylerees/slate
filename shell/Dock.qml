@@ -264,7 +264,8 @@ PanelWindow {
     }
     property var items: {
         DesktopEntries.applications.values;   // rebuild once app entries have loaded
-        const tops = ToplevelManager.toplevels.values;
+        // (not Nova's window: Slate's own, it isn't one of your apps' windows, Config.isNova)
+        const tops = ToplevelManager.toplevels.values.filter(t => !Config.isNova(t));
         const out = [];
         const claimed = new Set();
         for (const id of pinned) {
@@ -649,7 +650,7 @@ PanelWindow {
     // hasn't given yet (one just opened) doesn't count until they come, a moment later:
     // counted as tiled, a new floating window briefly hid the dock
     readonly property bool workspaceBusy: {
-        const tops = Hyprland.focusedWorkspace?.toplevels?.values ?? [];
+        const tops = (Hyprland.focusedWorkspace?.toplevels?.values ?? []).filter(t => !Config.isNova(t));
         if (Config.floatingWindows) return tops.length > 0;
         return tops.some(t => t.lastIpcObject && t.lastIpcObject.floating === false);
     }

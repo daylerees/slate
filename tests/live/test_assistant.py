@@ -394,58 +394,10 @@ class Nova(LiveCase):
         self.ipc("assistant", "close")
         self.wait(lambda st: not st["assistant"]["open"])
 
-    def test_dragged_by_its_header(self):
-        """Nova's window moves when dragged by its header, never off the screen (also as the card
-        grows), double-clicking the header puts it back, and it opens in the middle again."""
+    def test_opening_it_closes_the_overlays(self):
+        """Opening it closes the launcher and a bar panel, so it has the keyboard. It's a real
+        window, as Settings is: the launcher and the panels leave it open."""
         self.addCleanup(lambda: self.ipc("assistant", "close"))
-        self.ipc("assistant", "open")
-        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
-        # (once the card has its size: it can still be shrinking from an earlier conversation)
-        home = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        self.assertEqual((home["x"], home["y"]), (home["homeX"], home["homeY"]), "it didn't open in the middle")
-        self.ipc("test", "novaDrag", "-120", "60")
-        p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to move")["assistant"]["panel"]
-        self.assertEqual((p["x"], p["y"]), (home["x"] - 120, home["y"] + 60))
-        # Too far, either way: it stops at the screen's edges, whole. While it's held, as a
-        # floating window (Settings), it can go over the menu bar; let go, it slides back below
-        # it (what Hyprland keeps clear for it, as for floating windows)
-        top = self.s.monitor()["reserved"][1]
-        self.assertGreater(top, 0, "nothing kept clear for the bar")
-        self.ipc("test", "novaDragHold", "-10000", "-10000")
-        p = self.wait(lambda st: st["assistant"]["panel"]["x"] < home["x"] - 120)["assistant"]["panel"]
-        self.assertEqual((p["x"], p["y"]), (8, 8), "held, it wasn't free to go over the bar as a floating window is")
-        self.ipc("test", "novaDragEnd")
-        p = self.wait(lambda st: st["assistant"]["panel"]["y"] == top + 8, "it to slide back below the bar")["assistant"]["panel"]
-        self.assertEqual((p["x"], p["y"]), (8, top + 8))
-        self.ipc("test", "novaDrag", "10000", "10000")
-        self.wait(lambda st: st["assistant"]["panel"]["x"] > home["x"])
-        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        # (whole pixels, against a screen that may not be: within one)
-        self.assertAlmostEqual(p["x"] + p["w"], p["screenW"] - 8, delta=1)
-        self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - 8, delta=1)
-        # Dragged back from the edge, it moves straight away (no stretch to make up first)
-        self.ipc("test", "novaDrag", "-50", "0")
-        self.wait(lambda st: st["assistant"]["panel"]["x"] == p["x"] - 50, "it to move back from the edge")
-        # At the bottom, a conversation making the card taller keeps it on the screen
-        self.ipc("test", "nova", json.dumps({"history": [{"asked": "Tell me something long " + str(i), "answer": "A line.\n" * 6} for i in range(6)],
-                                             "asked": "And?", "answer": "Done."}))
-        self.wait(lambda st: st["assistant"]["panel"]["h"] > p["h"] + 100, "the card to grow")
-        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - 8, delta=1, msg=f"the card grew off the screen: {p}")
-        # Double-clicking the header puts it back in the middle
-        self.ipc("test", "novaCentre")
-        self.wait(lambda st: (st["assistant"]["panel"]["x"], st["assistant"]["panel"]["y"]) == (home["homeX"], home["homeY"]), "it to go back to the middle")
-        # Moved, closed and opened again: in the middle, as Settings opens
-        self.ipc("test", "novaDrag", "200", "-40")
-        self.wait(lambda st: st["assistant"]["panel"]["x"] == home["x"] + 200)
-        self.ipc("assistant", "close")
-        self.wait(lambda st: not st["assistant"]["open"])
-        self.ipc("assistant", "open")
-        p = self.wait(lambda st: st["assistant"]["open"])["assistant"]["panel"]
-        self.assertEqual((p["x"], p["y"]), (home["homeX"], home["homeY"]), "it didn't open in the middle again")
-
-    def test_only_one_at_a_time(self):
-        """Opening it closes the launcher, and the launcher closes it."""
         self.ipc("launcher", "open")
         self.wait(lambda st: st["launcher"]["open"])
         self.ipc("assistant", "open")
@@ -453,13 +405,11 @@ class Nova(LiveCase):
         self.assertFalse(st["launcher"]["open"])
         self.ipc("launcher", "open")
         st = self.wait(lambda st: st["launcher"]["open"])
-        self.assertFalse(st["assistant"]["open"])
+        self.assertTrue(st["assistant"]["open"], "the launcher closed Nova's window")
         self.ipc("launcher", "close")
-        self.ipc("assistant", "open")
-        self.wait(lambda st: st["assistant"]["open"])
         self.ipc("bar", "panel", "control")
         st = self.wait(lambda st: st["popout"] == "control")
-        self.wait(lambda st: not st["assistant"]["open"], "the prompt window to give way to the panel")
+        self.assertTrue(st["assistant"]["open"], "a bar panel closed Nova's window")
         self.ipc("assistant", "open")
         self.wait(lambda st: st["assistant"]["open"] and st["popout"] == "", "the panel to close")
 
@@ -872,10 +822,12 @@ class CameraNote(LiveCase):
 
 
 class NovaWindowChecks:
-    """Moving and resizing Nova's window with a real pointer (tests/lib/pointer.py: pressed,
-    moved and let go through Hyprland, as a mouse does, not a test hook, so whatever lies over
-    the title or an edge would show). `scale` is the Interface size the session runs at: the
-    state is in Slate's units, the pointer in Hyprland's pixels."""
+    """Nova's window is a real one, as Settings is: Hyprland floats it in the middle, pins it to
+    every workspace, moves it by its header, resizes it by its edges and slides it back under
+    the menu bar when it's let go over it. Driven as a person would: a real pointer
+    (tests/lib/pointer.py: pressed, moved and let go through Hyprland) and real keys, and read
+    back from Hyprland (hyprctl clients). `scale` is the Interface size the session runs at:
+    Hyprland's pixels are Slate's units times it."""
     scale = 1
 
     def open_nova(self):
@@ -883,117 +835,170 @@ class NovaWindowChecks:
             self.keep_setting(key)
         self.config("assistantRisksAccepted", "1")
         self.config("assistantEnabled", "true")
-        self.config("glass", "true")          # (with its border and sheen over the card)
+        self.config("glass", "true")
+        self.addCleanup(lambda: self.ipc("test", "novaSizeReset"))
         self.addCleanup(lambda: self.ipc("assistant", "close"))
+        self.ipc("assistant", "close")
+        self.wait(lambda st: not st["assistant"]["open"] and not st["assistant"]["window"]["mapped"], "Nova's window to be closed")
+        self.ipc("test", "novaSizeReset")
         self.ipc("assistant", "open")
-        self.wait(lambda st: st["assistant"]["open"], "the prompt window")
-        return self.steady(lambda: self.s.state()["assistant"]["panel"])
+        self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"], "Nova's window")
+        return self.placed()
+
+    def client(self):
+        """Nova's window as Hyprland has it (its place and size in Hyprland's pixels), or None."""
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c.get("class") == "slate-settings" and c.get("title") == "Nova" and c.get("mapped"):
+                return c
+        return None
+
+    def placed(self):
+        """Nova's window once Hyprland has stopped moving it (its open animation, a slide)."""
+        def read():
+            c = self.client()
+            return None if not c else (tuple(c["at"]), tuple(c["size"]))
+        self.steady(read)
+        c = self.client()
+        self.assertIsNotNone(c, "Nova's window isn't there")
+        return c
 
     def pointer(self):
         return Pointer(self.s.env, self.s.width, self.s.height)
 
-    def px(self, x, y):
-        """A place in Slate's units, in Hyprland's pixels (one screen, at 0, 0)."""
-        return (round(x * self.scale), round(y * self.scale))
+    def u(self, v):
+        """Slate's units, in Hyprland's pixels."""
+        return round(v * self.scale)
 
-    def test_dragged_by_its_title_with_the_pointer(self):
-        """Pressed on Nova's title, moved and let go, the window follows the pointer."""
-        home = self.open_nova()
-        grab = (home["x"] + 120, home["y"] + 28)
+    def test_a_floating_window_in_the_middle_with_the_keyboard(self):
+        """It opens as a floating window pinned to every workspace, in the middle of the screen,
+        at the size it comes at, and has the keyboard straight away: Escape closes it."""
+        c = self.open_nova()
+        win = self.s.state()["assistant"]["window"]
+        self.assertTrue(c["floating"], "it isn't floating")
+        self.assertTrue(c["pinned"], "it isn't on every workspace")
+        self.assertAlmostEqual(c["size"][0], self.u(win["openW"]), delta=2)
+        self.assertAlmostEqual(c["size"][1], self.u(win["openH"]), delta=2)
+        m = self.s.monitor()
+        self.assertAlmostEqual(c["at"][0] + c["size"][0] / 2, m["width"] / 2, delta=3, msg=f"not in the middle: {c['at']}")
+        self.assertGreaterEqual(c["at"][1], m["reserved"][1], "it's over the menu bar")
+        self.assertLessEqual(c["at"][1] + c["size"][1], m["height"] - m["reserved"][3])
+        self.wait(lambda st: st["assistant"]["window"]["focused"], "it to have the keyboard")
+        # Escape, a real key press (wtype: -s waits for the keymap; the keys the box was given
+        # say whether it arrived)
+        seen = self.s.state()["assistant"]["keysSeen"]
+        for _ in range(5):
+            self.s.run(["wtype", "-s", "300", "-k", "Escape"], check=True)
+            self.s.settle(0.3)
+            if self.s.state()["assistant"]["keysSeen"] > seen:
+                break
+        self.wait(lambda st: not st["assistant"]["open"], "Escape to close it")
+        self.s._until(lambda: self.client() is None, 5, "the window to go")
+
+    def test_on_every_workspace_and_in_no_list(self):
+        """Pinned, it goes with you to another workspace and stays open. It isn't one of your
+        windows: not in the window switcher, the overview, the dock or the bar's title."""
+        self.open_nova()
+        self.addCleanup(lambda: self.s.hyprctl("dispatch", "function() hl.dispatch(hl.dsp.focus({ workspace = 1 })) end"))
+        self.addCleanup(lambda: self.ipc("overview", "close"))
+        st = self.wait(lambda st: st["assistant"]["window"]["focused"] and st["assistant"]["listed"] is not None, "it to have the keyboard")
+        self.assertEqual(st["assistant"]["listed"], {"switcher": False, "overview": False, "title": False})
+        self.assertFalse(any(x.get("key") == "slate-settings" for x in st["dock"]["slots"]), "it's in the dock")
+        self.ipc("overview", "open")
+        st = self.wait(lambda st: st["overview"]["open"], "the overview")
+        self.s.settle(0.5)
+        self.assertFalse(self.s.state()["assistant"]["listed"]["overview"], "it's in the overview")
+        self.ipc("overview", "close")
+        self.wait(lambda st: not st["overview"]["open"])
+        self.s.hyprctl("dispatch", "function() hl.dispatch(hl.dsp.focus({ workspace = 2 })) end")
+        self.s._until(lambda: self.s.monitor()["activeWorkspace"]["id"] == 2, 5, "workspace 2")
+        self.s.settle(0.5)
+        self.assertTrue(self.s.state()["assistant"]["open"], "it closed going to another workspace")
+        c = self.client()
+        self.assertEqual(c["workspace"]["id"], 2, "it stayed behind on the workspace it opened on")
+
+    def test_dragged_by_its_header_with_the_pointer(self):
+        """Pressed on its header, moved and let go, Hyprland moves the window with the pointer."""
+        c = self.open_nova()
+        grab = (c["at"][0] + self.u(120), c["at"][1] + self.u(28))
         with self.pointer() as ptr:
-            ptr.drag(self.px(*grab), self.px(grab[0] - 160, grab[1] + 96))
-        p = self.wait(lambda st: st["assistant"]["panel"]["x"] != home["x"], "the window to follow the pointer")["assistant"]["panel"]
-        self.assertAlmostEqual(p["x"], home["x"] - 160, delta=2)
-        self.assertAlmostEqual(p["y"], home["y"] + 96, delta=2)
+            ptr.drag(grab, (grab[0] - 160, grab[1] + 96))
+        self.s._until(lambda: self.client()["at"] != c["at"], 5, "the window to follow the pointer")
+        d = self.placed()
+        self.assertAlmostEqual(d["at"][0], c["at"][0] - 160, delta=3)
+        self.assertAlmostEqual(d["at"][1], c["at"][1] + 96, delta=3)
+        self.assertEqual(d["size"], c["size"], "moving it changed its size")
 
-    def test_kept_off_the_menu_bar(self):
-        """Dragged by its title up past the menu bar, it stops at the bar's edge (what Hyprland
-        keeps clear for the bar, the rule floating windows follow), and the same with the bar at
-        the bottom (dragged down) or on the left (dragged left), at any Interface size."""
+    def test_slides_back_under_the_menu_bar(self):
+        """Dragged by its header up over the menu bar (or down past it, with the bar at the
+        bottom) and let go, it's put back below the bar, as every floating window is
+        (slateKeepUnderBar): with no title bar of Slate's to make room for, its top at the bar's
+        edge."""
         self.keep_setting("barPosition")
-        for edge, toward in (("top", (0, -2000)), ("bottom", (0, 2000)), ("left", (-2000, 0))):
+        for edge, toward in (("top", -2000), ("bottom", 2000)):
             with self.subTest(edge):
                 self.config("barPosition", edge)
                 self.wait(lambda st: st["barEdge"] == edge)
-                # (once Hyprland keeps the bar's edge clear)
-                side = {"left": 0, "top": 1, "bottom": 3}[edge]
+                side = {"top": 1, "bottom": 3}[edge]
                 self.s._until(lambda: self.s.monitor()["reserved"][side] > 0, 8, f"nothing kept clear for the bar on the {edge}")
                 self.s.settle(0.5)
-                res = [v / self.scale for v in self.s.monitor()["reserved"]]
-                self.ipc("assistant", "close")
-                self.wait(lambda st: not st["assistant"]["open"])
-                home = self.open_nova()
-                grab = (home["x"] + 120, home["y"] + 28)
+                m = self.s.monitor()
+                c = self.open_nova()
+                grab = (c["at"][0] + self.u(120), c["at"][1] + self.u(28))
                 with self.pointer() as ptr:
-                    ptr.drag(self.px(*grab), self.px(max(1, grab[0] + toward[0]), max(1, grab[1] + toward[1])))
-                self.wait(lambda st: (st["assistant"]["panel"]["x"], st["assistant"]["panel"]["y"]) != (home["x"], home["y"]), "the window to move")
-                p = self.steady(lambda: self.s.state()["assistant"]["panel"])
+                    ptr.drag(grab, (grab[0], max(1, grab[1] + toward)))
+                self.s._until(lambda: self.client()["at"] != c["at"], 5, "the window to move")
+                d = self.placed()
                 if edge == "top":
-                    self.assertAlmostEqual(p["y"], res[1] + 8, delta=1.5, msg=f"over the bar: {p}")
-                elif edge == "bottom":
-                    self.assertAlmostEqual(p["y"] + p["h"], p["screenH"] - res[3] - 8, delta=1.5, msg=f"over the bar: {p}")
+                    self.assertEqual(d["at"][1], m["reserved"][1], f"not back below the bar: {d['at']}")
                 else:
-                    self.assertAlmostEqual(p["x"], res[0] + 8, delta=1.5, msg=f"over the bar: {p}")
+                    self.assertEqual(d["at"][1], m["height"] - m["reserved"][3] - 40, f"not back above the bar: {d['at']}")
 
-    def test_resized_by_its_edges_with_the_pointer(self):
-        """Its edges and corners resize it, the opposite edges staying put: the right edge makes
-        it wider, the bottom left corner narrower (no narrower than its least) with a taller
-        conversation. Never past its limits or off the screen, and it keeps its size when it's
-        opened again (in the middle, as ever)."""
-        self.addCleanup(lambda: self.ipc("test", "novaSizeReset"))
-        home = self.open_nova()
-        mid = home["y"] + home["h"] / 2
+    def test_resized_by_its_edges_and_kept(self):
+        """Its edges resize it, as any window's do (Hyprland), never smaller than its least; the
+        size it's left at is kept: closed and opened again, it's that size, in the middle."""
+        c = self.open_nova()
+        mid = c["at"][1] + c["size"][1] // 2
+        right = c["at"][0] + c["size"][0] + 2          # (just outside the edge: Hyprland's grab area)
         with self.pointer() as ptr:
-            ptr.drag(self.px(home["x"] + home["w"], mid), self.px(home["x"] + home["w"] + 100, mid))
-        self.wait(lambda st: st["assistant"]["panel"]["w"] > home["w"], "it to get wider")
-        p = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        self.assertAlmostEqual(p["w"], home["w"] + 100, delta=2)
-        self.assertAlmostEqual(p["x"], home["x"], delta=2, msg="its left edge moved")
-        self.assertFalse(p["resizing"])
+            ptr.drag((right, mid), (right + 100, mid))
+        self.s._until(lambda: self.client()["size"][0] > c["size"][0], 5, "it to get wider")
+        d = self.placed()
+        self.assertAlmostEqual(d["size"][0], c["size"][0] + 100, delta=4)
+        self.assertEqual(d["at"][0], c["at"][0], "its left edge moved")
+        # Its bottom edge, up much further than it can go: no shorter than its least
+        bottom = d["at"][1] + d["size"][1] + 2
+        x = d["at"][0] + d["size"][0] // 2
         with self.pointer() as ptr:
-            ptr.drag(self.px(p["x"] + 1, p["y"] + p["h"] - 1), self.px(p["x"] + 400, p["y"] + p["h"] + 150))
-        self.wait(lambda st: st["assistant"]["panel"]["w"] < p["w"], "it to get narrower")
-        q = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        self.assertEqual(q["w"], q["minW"], "it went narrower than its least")
-        self.assertAlmostEqual(q["x"] + q["w"], p["x"] + p["w"], delta=2, msg="its right edge moved")
-        self.assertAlmostEqual(q["talk"], max(q["minTalk"], p["talk"] + 150), delta=2)
-        self.assertAlmostEqual(q["h"] - q["talk"], p["h"] - p["talk"], delta=1, msg="more than the conversation grew")
-        self.assertAlmostEqual(q["y"], p["y"], delta=2, msg="its top moved")
-
-        # As far as it goes each way: within its limits and wholly on the screen
-        def inside(c):
-            a = c["area"]
-            self.assertGreaterEqual(c["x"], a[0] + 8 - 1, c)
-            self.assertGreaterEqual(c["y"], a[1] + 8 - 1, c)
-            self.assertLessEqual(c["x"] + c["w"], a[0] + a[2] - 8 + 1, c)
-            self.assertLessEqual(c["y"] + c["h"], a[1] + a[3] - 8 + 1, c)
-        for edges, dx, dy in (("r", 10000, 0), ("l", -10000, 0), ("t", 0, -10000), ("b", 0, 10000)):
-            self.ipc("test", "novaResize", edges, dx, dy)
-            c = self.steady(lambda: self.s.state()["assistant"]["panel"])
-            inside(c)
-            self.assertLessEqual(c["w"], c["maxW"])
-            self.assertLessEqual(c["talk"], c["maxTalk"])
-        self.assertGreater(c["w"], q["w"])
-        self.assertGreater(c["talk"], q["talk"])
-        for edges, dx, dy in (("l", 10000, 0), ("b", 0, -10000)):
-            self.ipc("test", "novaResize", edges, dx, dy)
-        c = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        inside(c)
-        self.assertEqual((c["w"], c["talk"]), (c["minW"], c["minTalk"]), "it went smaller than its least")
-
-        # Kept: closed and opened again, the same size, in the middle
-        self.ipc("test", "novaResize", "br", 120, 80)
-        kept = self.steady(lambda: self.s.state()["assistant"]["panel"])
+            ptr.drag((x, bottom), (x, d["at"][1] + 20))
+        self.s._until(lambda: self.client()["size"][1] < d["size"][1], 5, "it to get shorter")
+        e = self.placed()
+        win = self.s.state()["assistant"]["window"]
+        self.assertAlmostEqual(e["size"][1], self.u(win["minH"]), delta=2, msg="not as short as it goes")
+        # Kept: the size, in Slate's units, and again once it's opened again
+        self.wait(lambda st: abs(st["assistant"]["window"]["wantW"] * self.scale - e["size"][0]) <= 2
+                  and abs(st["assistant"]["window"]["wantH"] * self.scale - e["size"][1]) <= 2, "its size to be kept")
         self.ipc("assistant", "close")
-        self.wait(lambda st: not st["assistant"]["open"])
+        self.s._until(lambda: self.client() is None, 5, "the window to go")
         self.ipc("assistant", "open")
-        self.wait(lambda st: st["assistant"]["open"])
-        again = self.steady(lambda: self.s.state()["assistant"]["panel"])
-        self.assertEqual((again["w"], again["talk"]), (kept["w"], kept["talk"]), "it didn't keep its size")
-        self.assertEqual((again["x"], again["y"]), (again["homeX"], again["homeY"]), "it didn't open in the middle")
-        # (and as it comes again, as a double-click on an edge puts it)
-        self.ipc("test", "novaSizeReset")
-        self.wait(lambda st: st["assistant"]["panel"]["w"] == home["w"], "it to go back as it comes")
+        self.wait(lambda st: st["assistant"]["window"]["mapped"], "it to open again")
+        again = self.placed()
+        self.assertAlmostEqual(again["size"][0], e["size"][0], delta=2, msg="it didn't keep its width")
+        self.assertAlmostEqual(again["size"][1], e["size"][1], delta=2, msg="it didn't keep its height")
+        self.assertAlmostEqual(again["at"][0] + again["size"][0] / 2, self.s.monitor()["width"] / 2, delta=3, msg="it didn't open in the middle")
+
+    def test_closed_by_hyprland_and_opened_again(self):
+        """Closed from outside Slate (Super+Q: Hyprland closes it), it opens again the next time,
+        built afresh, with the conversation still there."""
+        self.open_nova()
+        self.ipc("test", "nova", json.dumps({"asked": "Still here?", "answer": "Yes."}))
+        self.addCleanup(lambda: self.ipc("test", "nova", "{}"))
+        addr = self.client()["address"]
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.close({{ window = "address:{addr}" }})) end')
+        self.wait(lambda st: not st["assistant"]["open"], "it to close")
+        self.s._until(lambda: self.client() is None, 5, "the window to go")
+        self.ipc("assistant", "open")
+        st = self.wait(lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"], "it to open again")
+        self.assertEqual((st["assistant"]["turns"], st["assistant"]["answer"]), (1, "Yes."), "the conversation went with the window")
 
 
 class NovaWindow(NovaWindowChecks, LiveCase):
