@@ -71,6 +71,8 @@ ShellRoot {
     Launcher {
         id: appLauncher
         notifs: root.dockNotifs              // (not `notifs: notifs`: that reads the launcher's own property)
+        quickLook: root.lookAt
+        lookShown: root.quickLookShown
         onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
     }
     // Nova, the assistant's window (Super+K): a real window, as Settings is, so the launcher and
@@ -408,6 +410,8 @@ ShellRoot {
         // Scroll More's or Downloads' grid (open) to y, as far as it goes
         function dockGridScroll(y: real): void { win.testScrollGrid(y); }
         function dockHover(i: int): void { win.testHoverSlot(i); }
+        // A file in the dock's open Downloads or Waste Basket grid under the pointer (-1: none)
+        function dockHoverFile(i: int): void { win.testHoverFile(i); }
         function state(): string {
             const settings = settingsLoader.item;
             const opt = v => v === undefined || v === null ? null : v;
@@ -557,7 +561,9 @@ ShellRoot {
                 // (where each screen's bar takes the pointer: the click catchers leave it out)
                 barRects: Config.barRects,
                 // (each item, its submenu's items, and which are ticked: icon 0xEA5E)
-                dockMenu: win.testMenuState()
+                dockMenu: win.testMenuState(),
+                // Quick Look: what it shows and how (QuickLook.qml's testState), once built
+                quicklook: quickLookLoader.item ? quickLookLoader.item.testState() : { open: false, visible: false }
             });
         }
     }
@@ -602,6 +608,21 @@ ShellRoot {
             placeFile: root.settingsPlaceFile
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
+    }
+    // Quick Look (QuickLook.qml): a large preview of a file (Space on one in the launcher, the
+    // dock's Downloads or the Waste Basket), built the first time it's wanted
+    LazyLoader {
+        id: quickLookLoader
+        active: false
+        QuickLook { onOpened: appLauncher.closeLauncher() }     // (a file opened from it: done looking)
+    }
+    readonly property var lookAt: (paths, at) => { quickLookLoader.active = true; quickLookLoader.item.show(paths, at); }
+    readonly property bool quickLookShown: !!quickLookLoader.item && quickLookLoader.item.shown
+    IpcHandler {
+        target: "quicklook"
+        // A file by its full path (a folder shows its details)
+        function open(path: string): void { if (path.startsWith("/")) root.lookAt([path], 0); }
+        function close(): void { if (quickLookLoader.item) quickLookLoader.item.close(); }
     }
     // The Settings window, built if it isn't yet (a LazyLoader builds the moment it's switched on)
     function settingsWindow() {
@@ -747,5 +768,6 @@ ShellRoot {
         appLauncher: root.dockLauncher
         powerConfirm: root.dockConfirm
         settingsWindow: () => root.settingsWindow()
+        quickLook: root.lookAt
     }
 }

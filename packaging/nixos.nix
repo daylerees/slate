@@ -39,6 +39,7 @@
     system-config-printer simple-scan   # printer settings, and scanning
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
     ddcutil     # optional: Settings → Displays → Brightness for monitors, over DDC/CI
+    poppler-utils   # optional: Quick Look (Space on a file in the launcher or the dock) draws a PDF's pages (pdftoppm)
     whisper-cpp   # optional: talking to Nova, speech turned into text on this computer (Settings → Assistant → Voice)
     # ollama      # yours to add: Nova with a model on this computer (Settings → Assistant); or services.ollama.enable = true;
     # Optional: Hyprbars title bars instead of Slate's own. Nix builds the plugin; link it where Slate looks, e.g.

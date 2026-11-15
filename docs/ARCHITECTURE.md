@@ -61,6 +61,10 @@ shell.qml               root: creates everything below, plus the dock itself
 │  ├─ NotificationCard.qml
 │  └─ NotificationText.js       what a notification's message may use: bold, italic, underline, web and mail links
 ├─ Launcher.qml         app launcher + calculator ("slate-launcher")
+├─ QuickLook.qml        Quick Look ("slate-quicklook"): a large preview of a file (Space on one in the
+│  │                    launcher, the dock's Downloads or the Waste Basket); `quicklook` IPC; built on first use
+│  ├─ QuickLookMedia.qml  its player for videos and songs (Qt Multimedia, so loaded through a Loader)
+│  └─ scripts/quicklook.py  what the file is, its text, a PDF's pages drawn (pdftoppm)
 ├─ Switcher.qml         Super+Tab window switcher ("slate-switcher")
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
@@ -459,7 +463,7 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight`, `launch <desktop-id>` (an app only; answers `ok` or `unknown`) |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
 | `overview` | `open`, `close`, `toggle`, `next`, `prev`, `go`, `moveLeft`, `moveRight`, `hold <bool>` |
-| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `more` (More's grid, when apps don't fit), `preview <app>`, `closePreview` |
+| `dock` | `menu <app>`, `closeMenu`, `downloads` (the Downloads stack's grid), `trash` (the Waste Basket's menu, with what's in it), `fileMenu <n>` (a file in the open grid's own menu: Quick Look, Open), `more` (More's grid, when apps don't fit), `preview <app>`, `closePreview` |
 | `settings` | `toggle`, `open`, `close`, `page <id>` |
 | `osd` | `volume <up\|down\|mute>`, `mic mute`, `brightness <up\|down>`, `keyboard <up\|down>`, `workspace` (big workspace dots; Super+Left/Right), `volumeGet` (JSON), `volumeSet <0-100>`, `brightnessSet <1-100>` |
 | `brightness` | `list` (JSON: each display Slate can set, and how bright; the first call looks), `set <display> <0-100>` (`ok`, `later` once it's looked, or `no`) |
@@ -486,7 +490,8 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | `spaces` | `restore <name>`, `list` |
 | `screensaver` | `start` (a preview: any input puts it away), `stop` |
 | `welcome` | `open`, `close` |
-| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockMoreDrag <app> <slot> <up>` and `dockMoreDrop` (the same for an app dragged out of More's grid, open with `dock more`), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge), `brightnessSlide <display> <percent> <letGo>` (Settings → Displays → Brightness's slider moved, and let go or not); only with `SLATE_TEST=1`, for the test suite |
+| `quicklook` | `open <path>` (Quick Look on a file, by its full path), `close` |
+| `test` | `state` (JSON of what's on screen, tray icons included), `dockHover <slot>` (magnify the dock as if pointed at; -1 stops), `dockDrag <app> <slot> <up>` and `dockDrop` (drag an app on the dock: over a slot, a number of pixels up off it, then let go), `dockMoreDrag <app> <slot> <up>` and `dockMoreDrop` (the same for an app dragged out of More's grid, open with `dock more`), `dockRoom <px>` (less room for the dock's things than its edge has, so a few windows fill it and apps go into More; 0 for the whole edge), `brightnessSlide <display> <percent> <letGo>` (Settings → Displays → Brightness's slider moved, and let go or not), `dockHoverFile <n>` (a file in the dock's open Downloads or Waste Basket grid under the pointer; -1 none); only with `SLATE_TEST=1`, for the test suite |
 
 ### Test mode (`SLATE_TEST=1`)
 
@@ -666,6 +671,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | Package | Feature |
 |---|---|
 | `v4l-utils` (`v4l2-ctl`) | Settings → Webcam: reading and setting the camera's picture settings (`scripts/webcam.py`; optional: without it the page says what to install) |
+| `poppler` (`pdftoppm`; Debian, Fedora, Void, NixOS `poppler-utils`, openSUSE `poppler-tools`, Gentoo `app-text/poppler`) | Quick Look: a PDF's pages drawn (`scripts/quicklook.py`; optional: without it Quick Look shows the PDF's details and says what to install) |
+| `qt6-multimedia` (optional) | the click sound, the screensaver's videos, and Quick Look's player for videos and songs (`QuickLookMedia.qml`, loaded through a Loader: without it Quick Look shows the file's details and says what to install) |
 | `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
 | `grim`, `slurp` | screenshots (Print / Super+Print) |
 | `hyprpicker` | the color picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |

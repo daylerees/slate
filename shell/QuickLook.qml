@@ -1,0 +1,546 @@
+// Quick Look: a large preview of a file without opening an app ("slate-quicklook"). Space on a
+// file in the launcher's results, the dock's Downloads or the Waste Basket (or Quick Look on
+// one's right-click menu there) shows it here; Space or Escape (or a click outside) closes it,
+// and Left/Right step to the file before or after it in the list it came from.
+//
+//   quickLook.show(paths, index)     a list of files, starting at one of them
+//   slate ipc call quicklook open <path> / close
+//
+// What it shows, by kind (scripts/quicklook.py says which, and reads what's needed):
+//   pictures   the picture, decoded near the size it's shown at
+//   text       the first 200 KB, read-only (code in the code font, Settings → Appearance)
+//   PDFs       the pages, drawn by poppler's pdftoppm (optional: without it, it says so)
+//   video, songs  a player (QuickLookMedia.qml, Qt Multimedia: optional, likewise)
+//   anything else  its icon, name, kind, size and date, with Open
+// Open (or Enter) opens the file in its app, as a click on it in the launcher does.
+// Built the first time it's wanted (shell.qml's LazyLoader).
+
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import Quickshell.Wayland
+
+PanelWindow {
+    id: root
+
+    // ---- Look --------------------------------------------------------------
+    readonly property color cardColor: Config.surface(Config.tint("#0f1216"))     // as the launcher's
+    readonly property color tileColor: Config.raised(Config.tint("#1d222a"))      // bar capsules
+    readonly property color textColor: Config.tint("#eef1f5")
+    readonly property color dimTextColor: Config.tint("#8b94a3")
+    readonly property color accentText: Config.tint("#12151a")
+    readonly property string fontFamily: Config.s.fontFamily
+    readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
+    readonly property int fadeMs: 160
+    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
+
+    // ---- What it's showing -------------------------------------------------
+    property var files: []                 // paths, in the order of the list it came from
+    property int index: 0
+    readonly property string path: files[index] || ""
+    property bool shown: false
+    signal opened()                        // a file was opened from here (the launcher closes)
+
+    // From scripts/quicklook.py: the file's details, then what's in it
+    property var info: null
+    property string body: ""               // text
+    property bool bodyCut: false
+    property bool bodyCode: false
+    property var pages: []                 // PDF pages, drawn
+    property bool pagesDone: false
+    property bool pagesMore: false
+    property string missing: ""            // "pdftoppm": nothing to draw PDFs with
+    property bool gone: false              // the file isn't there any more
+
+    function show(list, at) {
+        const l = (list || []).filter(p => typeof p === "string" && p !== "");
+        if (l.length === 0) return;
+        screen = Config.focusedScreen;
+        files = l;
+        index = Math.max(0, Math.min(l.length - 1, at || 0));
+        shown = true;
+        load();
+    }
+    function close() {
+        if (!shown) return;
+        shown = false;
+        reader.running = false;
+        if (mediaLoader.item) mediaLoader.item.stop();
+    }
+    function step(d) {
+        if (files.length < 2) return;
+        index = (index + d + files.length) % files.length;
+        load();
+    }
+    function load() {
+        info = null; body = ""; bodyCut = false; bodyCode = false;
+        pages = []; pagesDone = false; pagesMore = false; missing = ""; gone = false;
+        reader.running = false;
+        reader.command = ["python3", Quickshell.shellPath("scripts/quicklook.py"), path, Config.runtimeDir + "/slate/quicklook"];
+        reader.running = true;
+    }
+    function openFile() {
+        if (!path) return;
+        Qt.openUrlExternally(fileUrl(path));
+        close();
+        opened();
+    }
+    // A path as a file:// URL, each part encoded: a name with # or ? in it is still that file
+    function fileUrl(p) { return "file://" + p.split("/").map(encodeURIComponent).join("/"); }
+
+    Process {
+        id: reader
+        stdout: SplitParser {
+            onRead: line => {
+                let m;
+                try { m = JSON.parse(line); } catch (e) { return; }
+                if (m.info) root.info = m.info;
+                else if (m.text !== undefined) { root.body = m.text; root.bodyCut = !!m.cut; root.bodyCode = !!m.code; }
+                else if (m.page) root.pages = root.pages.concat([m.page]);
+                else if (m.pages !== undefined) { root.pagesDone = true; root.pagesMore = !!m.more; }
+                else if (m.missing) root.missing = m.missing;
+                else if (m.gone) root.gone = true;
+            }
+        }
+    }
+
+    // ---- Which view --------------------------------------------------------
+    readonly property string kind: info ? info.kind : ""
+    readonly property bool mediaKind: kind === "video" || kind === "audio"
+    // Anything that can't be shown as itself falls back to its details, saying why if
+    // something's missing that would show it
+    readonly property bool imageFailed: kind === "image" && picture.status === Image.Error
+    readonly property bool mediaMissing: mediaKind && mediaLoader.status === Loader.Error
+    readonly property bool mediaFailed: mediaKind && !!mediaLoader.item && mediaLoader.item.failed
+    readonly property bool pdfEmpty: kind === "pdf" && pagesDone && pages.length === 0
+    readonly property string view: !info ? (gone ? "details" : "loading")
+        : kind === "image" && !imageFailed ? "image"
+        : kind === "text" ? "text"
+        : kind === "pdf" && missing === "" && !pdfEmpty ? "pdf"
+        : mediaKind && !mediaMissing && !mediaFailed ? kind
+        : "details"
+    readonly property string note: gone ? "This file isn't there any more. It may have been moved or deleted."
+        : missing === "pdftoppm" ? "To see PDFs here, install poppler-utils (poppler on Arch)."
+        : mediaMissing ? "To play videos and songs here, install Qt Multimedia (the qt6-multimedia package)."
+        : imageFailed ? "Slate can't draw this kind of picture yet."
+        : mediaFailed ? "Slate couldn't play this one."
+        : pdfEmpty ? "Slate couldn't read the pages of this PDF."
+        : ""
+
+    function sizeText(n) {
+        if (n < 1000) return n === 1 ? "1 byte" : n + " bytes";
+        const units = ["KB", "MB", "GB", "TB"];
+        let v = n / 1000, u = 0;
+        while (v >= 1000 && u < units.length - 1) { v /= 1000; u++; }
+        return (v < 10 ? v.toFixed(1) : Math.round(v)) + " " + units[u];
+    }
+    readonly property string name: info ? info.name : path.split("/").pop()
+    // The kind and size, and what else is known (a picture's size, a PDF's pages)
+    readonly property string details: {
+        if (!info) return "";
+        const parts = [info.label];
+        if (info.dir) { if (info.items !== null) parts.push(info.items === 1 ? "1 item" : info.items + " items"); }
+        else parts.push(sizeText(info.size));
+        if (kind === "image" && info.width > 0) parts.push(info.width + " × " + info.height);
+        if (view === "pdf" && pagesDone)
+            parts.push(pagesMore ? "first " + pages.length + " pages" : pages.length === 1 ? "1 page" : pages.length + " pages");
+        return parts.join(" · ");
+    }
+    readonly property string modified: info ? "Modified " + Qt.formatDateTime(new Date(info.modified * 1000), "MMMM d, yyyy") : ""
+    function glyph() {
+        switch (kind) {
+        case "folder": return 0xEAAD;
+        case "image": return 0xEB0A;
+        case "pdf": return 0xFB10;
+        case "video": return 0xEAFA;
+        case "audio": return 0xEAFC;
+        case "text": return 0xEAA2;
+        }
+        const ext = (name.split(".").pop() || "").toLowerCase();
+        if (["zip", "tar", "gz", "xz", "bz2", "zst", "7z", "rar", "deb", "rpm", "appimage", "iso"].includes(ext)) return 0xED4E;
+        return 0xEAA4;
+    }
+
+    // ---- Size --------------------------------------------------------------
+    // As big as the file wants, within most of the screen
+    readonly property real dpr: screen && screen.devicePixelRatio > 0 ? screen.devicePixelRatio : 1
+    readonly property real pad: 12
+    readonly property real headHeight: 52
+    readonly property real maxBodyW: Math.max(320, Math.min(width * 0.86, 1600) - pad * 2)
+    readonly property real maxBodyH: Math.max(200, height * 0.84 - headHeight - pad)
+    function fit(w, h) {
+        if (!(w > 0 && h > 0)) return Qt.size(480, 320);
+        const s = Math.min(1, maxBodyW / w, maxBodyH / h);
+        return Qt.size(Math.max(120, Math.round(w * s)), Math.max(80, Math.round(h * s)));
+    }
+    readonly property size bodySize: {
+        switch (view) {
+        case "image": return picture.status === Image.Ready ? fit(picture.fullWidth, picture.fullHeight) : lastImage;
+        case "text": return Qt.size(Math.min(maxBodyW, 820), maxBodyH);
+        case "pdf": return Qt.size(Math.min(maxBodyW, 780), maxBodyH);
+        case "video": {
+            const n = mediaLoader.item ? mediaLoader.item.naturalSize : Qt.size(0, 0);
+            return n.width > 0 ? fit(n.width, n.height) : fit(1280, 720);
+        }
+        case "audio": return Qt.size(420, 150);
+        }
+        return Qt.size(400, 0);
+    }
+    // (stepping from one picture to the next, the card keeps the last one's size until the
+    // next is ready, rather than shrinking to nothing in between)
+    property size lastImage: Qt.size(480, 320)
+
+    // ---- Window ------------------------------------------------------------
+    property real fade: shown ? 1 : 0
+    Behavior on fade { NumberAnimation { duration: Config.ms(root.fadeMs); easing.type: Easing.OutCubic } }
+    visible: shown || fade > 0
+    anchors { top: true; bottom: true; left: true; right: true }
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "slate-quicklook"
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+    Connections {
+        target: Config
+        function onFocusedWorkspaceIdChanged() { root.close(); }
+    }
+
+    // Dimmed desktop; click it to close
+    DialogBackdrop { fade: root.fade; active: root.shown; onDismissed: root.close() }
+
+    FocusScope {
+        anchors.fill: parent
+        focus: root.shown
+        Keys.onPressed: e => {
+            switch (e.key) {
+            case Qt.Key_Space: case Qt.Key_Escape: root.close(); break;
+            case Qt.Key_Left: root.step(-1); break;
+            case Qt.Key_Right: root.step(1); break;
+            case Qt.Key_Return: case Qt.Key_Enter: root.openFile(); break;
+            // (text: copy what's selected, or select it all)
+            case Qt.Key_C: case Qt.Key_A:
+                if (!(e.modifiers & Qt.ControlModifier) || root.view !== "text") return;
+                if (e.key === Qt.Key_A) textEdit.selectAll(); else textEdit.copy();
+                break;
+            case Qt.Key_Up: case Qt.Key_Down: case Qt.Key_PageUp: case Qt.Key_PageDown: case Qt.Key_Home: case Qt.Key_End: {
+                const f = root.view === "text" ? textFlick : root.view === "pdf" ? pdfFlick : null;
+                if (!f) return;
+                const most = Math.max(0, f.contentHeight - f.height);
+                const by = { [Qt.Key_Up]: -60, [Qt.Key_Down]: 60, [Qt.Key_PageUp]: -f.height * 0.9, [Qt.Key_PageDown]: f.height * 0.9 }[e.key];
+                f.contentY = e.key === Qt.Key_Home ? 0 : e.key === Qt.Key_End ? most : Math.max(0, Math.min(most, f.contentY + by));
+                break;
+            }
+            default: return;
+            }
+            e.accepted = true;
+        }
+    }
+
+    // ---- Card --------------------------------------------------------------
+    Rectangle {
+        id: card
+        readonly property bool header: root.view !== "details" && root.view !== "loading"
+        readonly property real wantW: card.header ? Math.max(400, root.bodySize.width + root.pad * 2) : 400
+        readonly property real wantH: card.header ? root.headHeight + root.bodySize.height + root.pad : detailsCol.implicitHeight + 48
+        width: Math.round(wantW)
+        height: Math.round(wantH)
+        // (grows or shrinks from one file to the next; at once when it first opens)
+        property bool settled: false
+        Behavior on width { enabled: card.settled; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+        Behavior on height { enabled: card.settled; NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
+        anchors.centerIn: parent
+        radius: Config.corner(18)
+        color: root.cardColor
+        // Shown once there's something to show (the file's details: a moment after opening)
+        opacity: root.fade * (root.view === "loading" ? 0 : 1)
+        scale: 0.96 + 0.04 * root.fade
+        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        WindowBorder { radius: parent.radius }   // glass: the window border (Config)
+        Shadow {}                                // raised: Slate's shadow, with glass too
+        MouseArea { anchors.fill: parent }       // clicks inside don't close it
+        Timer { interval: 300; running: root.shown && root.view !== "loading"; onTriggered: card.settled = true }
+        Connections { target: root; function onShownChanged() { if (!root.shown) card.settled = false; } }
+
+        // ---- The header: name, details, where in the list, Open ----
+        Item {
+            id: head
+            visible: card.header
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: root.headHeight
+            Column {
+                anchors { left: parent.left; leftMargin: 18; right: counter.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                spacing: 1
+                Text {
+                    id: headName
+                    width: parent.width
+                    textFormat: Text.PlainText        // never markup: a file's name
+                    text: root.name
+                    elide: Text.ElideMiddle
+                    color: root.textColor
+                    font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                }
+                Text {
+                    width: parent.width
+                    textFormat: Text.PlainText
+                    text: root.details
+                    elide: Text.ElideRight
+                    color: root.dimTextColor
+                    font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                }
+            }
+            Text {
+                id: counter
+                visible: root.files.length > 1
+                anchors { right: openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                width: visible ? implicitWidth : 0
+                text: (root.index + 1) + " of " + root.files.length
+                color: root.dimTextColor
+                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            }
+            DialogButton {
+                id: openButton
+                anchors { right: parent.right; rightMargin: root.pad; verticalCenter: parent.verticalCenter }
+                width: 76; height: 32
+                label: "Open"
+                primary: true
+                fill: root.tileColor; textColor: root.textColor; accentText: root.accentText
+                onClicked: root.openFile()
+            }
+        }
+
+        // ---- The body ----
+        Item {
+            id: bodyBox
+            visible: card.header
+            x: root.pad; y: root.headHeight
+            width: card.width - root.pad * 2
+            height: card.height - root.headHeight - root.pad
+            clip: true
+
+            // A picture: decoded no bigger than the screen can show it
+            Image {
+                id: picture
+                // How big it's shown: as decoded (never bigger than the file, nor than the room
+                // there is), in Slate's units
+                readonly property real fullWidth: implicitWidth / root.dpr
+                readonly property real fullHeight: implicitHeight / root.dpr
+                anchors.fill: parent
+                visible: root.view === "image"
+                source: root.kind === "image" && root.shown ? root.fileUrl(root.path) : ""
+                sourceSize: Qt.size(Math.round(root.maxBodyW * root.dpr), Math.round(root.maxBodyH * root.dpr))
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                cache: false
+                smooth: true; mipmap: true
+                onStatusChanged: if (status === Image.Ready) root.lastImage = root.fit(fullWidth, fullHeight)
+            }
+
+            // Text: read-only, selectable, the first 200 KB
+            Rectangle {
+                anchors.fill: parent
+                visible: root.view === "text"
+                radius: Config.corner(10)
+                color: root.tileColor
+                Flickable {
+                    id: textFlick
+                    anchors { fill: parent; margins: 2; rightMargin: textFlick.contentHeight > textFlick.height ? 16 : 2 }
+                    contentWidth: width
+                    contentHeight: textEdit.implicitHeight + (cutNote.visible ? cutNote.height + 8 : 0)
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    SmoothWheel { flick: textFlick }
+                    TextEdit {
+                        id: textEdit
+                        width: textFlick.width
+                        padding: 14
+                        readOnly: true
+                        selectByMouse: true
+                        activeFocusOnPress: false           // (the keys stay Quick Look's: Space closes)
+                        textFormat: TextEdit.PlainText      // never markup: what's in the file
+                        wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
+                        text: root.view === "text" ? root.body : ""
+                        color: root.textColor
+                        selectionColor: Config.accent; selectedTextColor: root.accentText
+                        font.family: root.bodyCode ? root.codeFont : root.fontFamily
+                        font.pixelSize: 13
+                    }
+                    Text {
+                        id: cutNote
+                        visible: root.bodyCut
+                        anchors { top: textEdit.bottom; left: parent.left; leftMargin: 14 }
+                        text: "That's the first 200 KB. Open it to see the rest."
+                        color: root.dimTextColor
+                        font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    }
+                }
+                ScrollShade { anchors { left: parent.left; right: parent.right; top: parent.top } z: 3; cornerRadius: 10
+                              distance: textFlick.contentY }
+                ScrollShade { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } z: 3; atBottom: true; cornerRadius: 10
+                              distance: textFlick.contentHeight - textFlick.height - textFlick.contentY }
+                ThinScrollbar { flick: textFlick; color: root.textColor
+                                anchors { top: parent.top; bottom: parent.bottom; right: parent.right; topMargin: 6; bottomMargin: 6; rightMargin: 3 } }
+            }
+
+            // A PDF: its pages, one under another
+            Item {
+                anchors.fill: parent
+                visible: root.view === "pdf"
+                Flickable {
+                    id: pdfFlick
+                    anchors { fill: parent; rightMargin: pdfFlick.contentHeight > pdfFlick.height ? 16 : 0 }
+                    contentWidth: width
+                    contentHeight: pageCol.height
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    SmoothWheel { flick: pdfFlick }
+                    Column {
+                        id: pageCol
+                        width: pdfFlick.width
+                        spacing: 10
+                        Repeater {
+                            model: root.view === "pdf" ? root.pages : []
+                            delegate: Image {
+                                required property string modelData
+                                width: pageCol.width
+                                height: status === Image.Ready && implicitWidth > 0 ? width * implicitHeight / implicitWidth : width * 1.414
+                                source: root.fileUrl(modelData)
+                                sourceSize.width: Math.round(pageCol.width * root.dpr)
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                cache: false
+                            }
+                        }
+                        Text {
+                            visible: root.pagesMore
+                            width: pageCol.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: "Open it to see the rest of the pages."
+                            color: root.dimTextColor
+                            font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        }
+                    }
+                }
+                ScrollShade { anchors { left: pdfFlick.left; right: pdfFlick.right; top: parent.top } z: 3; cornerRadius: 10
+                              distance: pdfFlick.contentY }
+                ScrollShade { anchors { left: pdfFlick.left; right: pdfFlick.right; bottom: parent.bottom } z: 3; atBottom: true; cornerRadius: 10
+                              distance: pdfFlick.contentHeight - pdfFlick.height - pdfFlick.contentY }
+                ThinScrollbar { flick: pdfFlick; color: root.textColor
+                                anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
+            }
+
+            // A video or a song: Qt Multimedia's player (optional: loaded, never imported)
+            Loader {
+                id: mediaLoader
+                anchors.fill: parent
+                active: root.shown && root.mediaKind
+                source: Qt.resolvedUrl("QuickLookMedia.qml")
+                visible: root.view === "video" || root.view === "audio"
+                onLoaded: {
+                    item.textColor = Qt.binding(() => root.textColor);
+                    item.dimColor = Qt.binding(() => root.dimTextColor);
+                    item.tileColor = Qt.binding(() => root.tileColor);
+                    item.fontFamily = Qt.binding(() => root.fontFamily);
+                    item.iconFamily = tabler.name;
+                    item.audio = Qt.binding(() => root.kind === "audio");
+                    item.autoplay = !Config.testMode;          // (the tests' Slate stays quiet)
+                    item.source = Qt.binding(() => root.mediaKind ? root.fileUrl(root.path) : "");
+                }
+            }
+        }
+
+        // ---- Anything else: its details, and Open ----
+        Column {
+            id: detailsCol
+            visible: !card.header
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 24 }
+            spacing: 0
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 88; height: 88
+                radius: Config.corner(20)
+                color: root.tileColor
+                Text {
+                    anchors.centerIn: parent
+                    text: String.fromCodePoint(root.glyph())
+                    color: Config.accent
+                    font.family: tabler.name; font.pixelSize: 40
+                }
+            }
+            Item { width: 1; height: 16 }
+            Text {
+                id: detailsName
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                textFormat: Text.PlainText        // never markup: a file's name
+                text: root.name
+                wrapMode: Text.WrapAnywhere
+                maximumLineCount: 3
+                elide: Text.ElideMiddle
+                color: root.textColor
+                font.family: root.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold
+            }
+            Item { width: 1; height: 6 }
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                textFormat: Text.PlainText
+                text: root.details
+                wrapMode: Text.WordWrap
+                color: root.dimTextColor
+                font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+            }
+            Text {
+                width: parent.width
+                visible: !!root.info
+                horizontalAlignment: Text.AlignHCenter
+                text: root.modified
+                color: root.dimTextColor
+                font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+            }
+            Item { width: 1; height: 10; visible: root.note !== "" }
+            Text {
+                width: parent.width
+                visible: root.note !== ""
+                horizontalAlignment: Text.AlignHCenter
+                text: root.note
+                wrapMode: Text.WordWrap
+                color: root.dimTextColor
+                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            }
+            Item { width: 1; height: 20 }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 10
+                DialogButton {
+                    width: 120
+                    label: "Close"
+                    fill: root.tileColor; textColor: root.textColor; accentText: root.accentText
+                    onClicked: root.close()
+                }
+                DialogButton {
+                    width: 120
+                    visible: !root.gone
+                    label: "Open"
+                    primary: true
+                    fill: root.tileColor; textColor: root.textColor; accentText: root.accentText
+                    onClicked: root.openFile()
+                }
+            }
+        }
+    }
+
+    // ---- For the tests -------------------------------------------------------
+    function testState() {
+        return {
+            open: shown, visible: visible, path: path, index: index, count: files.length,
+            kind: kind, view: view, note: note, details: details,
+            // the name as each place shows it, and whether it's drawn as plain text
+            name: card.header ? headName.text : detailsName.text,
+            plain: (card.header ? headName.textFormat : detailsName.textFormat) === Text.PlainText,
+            textLength: body.length, cut: bodyCut, code: bodyCode, pages: pages.length, pagesDone: pagesDone,
+            card: [Math.round(card.width), Math.round(card.height)], opacity: Math.round(card.opacity * 100) / 100,
+            image: picture.status === Image.Ready ? [Math.round(picture.fullWidth), Math.round(picture.fullHeight)] : null
+        };
+    }
+}

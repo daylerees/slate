@@ -20,6 +20,8 @@
 //                     there's no room), and it closes with the menu. Pointing at another item
 //                     closes it again, after a moment, so the pointer can cross to it
 //   extra: a Component shown above the items (the dock's Downloads grid); menuWidth: wider for it
+//   keyFirst: a function given each key before the menu's own, true if it took the key (the
+//             dock's Downloads grid: Space on the file under the pointer shows it in Quick Look)
 //   lifted: something carried out of it (an app dragged from the dock's More onto the dock): its
 //           cards fade away, but it stays open, keeping the pointer, until it's let go
 
@@ -33,6 +35,7 @@ PanelWindow {
     property Component extra: null
     property real menuWidth: 230
     property bool lifted: false
+    property var keyFirst: null
 
     // Where it points, and from which of its sides
     property real atX: 0
@@ -88,6 +91,7 @@ PanelWindow {
         if (run) run();
     }
     function key(e) {
+        if (keyFirst && keyFirst(e)) { e.accepted = true; return; }
         const sub = inSub && subItems.length > 0;
         const list = sub ? subItems : items;
         const at = sub ? subHot : hot;

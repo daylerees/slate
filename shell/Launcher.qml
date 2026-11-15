@@ -60,6 +60,19 @@ PanelWindow {
     // changes, and as they're reordered the list carries the selection along with its row (so
     // typing "c" left it on Files at the bottom, and 24*7 on "Search the web" under the answer)
     property bool picked: false
+    // Moved with the keys since the search changed: then Space on a file shows it in Quick Look
+    // (otherwise Space types a space, as it should while you're typing)
+    property bool keyPicked: false
+    // Quick Look (QuickLook.qml, from shell.qml): show(paths, index), and whether it's showing
+    property var quickLook: null
+    property bool lookShown: false
+    // Space on a file: Quick Look, with the other files in the results to step through
+    function lookAt(entry) {
+        if (!quickLook || !entry || entry.kind !== "file" || !entry.path) return false;
+        const files = results.filter(r => r && r.kind === "file" && r.path);
+        quickLook(files.map(r => r.path), files.indexOf(entry));
+        return true;
+    }
     readonly property int currentIndex: list.currentIndex     // (the test hook's state)
     // Wrapping round to the other end jumps there, highlight and list both, as opening does: a
     // slide the length of the list took longer than a held key takes to repeat, so the
@@ -89,6 +102,7 @@ PanelWindow {
         screen = Config.focusedScreen;     // open on the focused screen
         lastPointer = null;
         picked = false;
+        keyPicked = false;
         openedOnWorkspace = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         slideHighlight = false;
         Qt.callLater(() => root.slideHighlight = true);
@@ -226,7 +240,8 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-launcher"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: shown && !releasing ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // (handed to Quick Look while it shows a file from here, and back when it closes)
+    WlrLayershell.keyboardFocus: shown && !releasing && !lookShown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     // Every click outside the panel closes it, except on the menu bar: that's left out, so a
     // click there reaches the bar and does what it does, and closes this too (Config.barPressed)
@@ -595,12 +610,12 @@ PanelWindow {
         for (const f of recentFiles) {
             const base = f.split("/").pop();
             if (!base.toLowerCase().includes(q)) continue;
-            out.push({ kind: "file", icon: fileGlyph(f, false), name: base, comment: "Recent · " + shortPath(f),
+            out.push({ kind: "file", icon: fileGlyph(f, false), name: base, comment: "Recent · " + shortPath(f), path: f,
                 run: () => Qt.openUrlExternally("file://" + f) });
             if (out.length >= 4) break;
         }
         for (const d of foundFolders)
-            out.push({ kind: "file", icon: 0xEAAD, name: d.split("/").pop(), comment: "Folder · " + shortPath(d),
+            out.push({ kind: "file", icon: 0xEAAD, name: d.split("/").pop(), comment: "Folder · " + shortPath(d), path: d,
                 run: () => Qt.openUrlExternally("file://" + d) });
         return out;
     }
@@ -985,12 +1000,16 @@ PanelWindow {
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
-                onTextChanged: { root.byPointer = false; root.picked = false; list.currentIndex = 0; if (root.shown) root.typed = true; }
+                onTextChanged: { root.byPointer = false; root.picked = false; root.keyPicked = false; list.currentIndex = 0; if (root.shown) root.typed = true; }
 
                 Keys.onPressed: event => {
                     root.byPointer = false;             // (keys slide at their own pace)
                     if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Tab, Qt.Key_Backtab, Qt.Key_PageUp, Qt.Key_PageDown,
-                         Qt.Key_Left, Qt.Key_Right, Qt.Key_Home, Qt.Key_End].includes(event.key)) root.picked = true;
+                         Qt.Key_Left, Qt.Key_Right, Qt.Key_Home, Qt.Key_End].includes(event.key)) { root.picked = true; root.keyPicked = true; }
+                    // Space on a file you've moved to with the keys: Quick Look. (Before that, or
+                    // on anything else, it's a space in the search)
+                    if (event.key === Qt.Key_Space && event.modifiers === Qt.NoModifier && root.keyPicked
+                        && root.lookAt(root.results[list.currentIndex])) { event.accepted = true; return; }
                     const n = list.count;
                     const i = list.currentIndex;
                     // Items per row (1 in the list) and per page

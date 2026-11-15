@@ -276,7 +276,7 @@ class Settings(Case):
         # the blur away when Settings → Assistant → Glass's blur is off)
         self.assertRegex(slate.read("shell", "Config.qml"), r"SLATE_NOVA_NO_BLUR = hl\.window_rule\(.*no_blur = true")
         for layer in ("dock-previews", "picker", "switcher",
-                      "tray-menu", "desktop-menu", "confirm", "polkit", "osd", "bar-label"):
+                      "tray-menu", "desktop-menu", "confirm", "polkit", "osd", "bar-label", "quicklook"):
             with self.subTest(layer):
                 self.assertIn(layer, named, f"slate-{layer} isn't blurred behind with glass")
 

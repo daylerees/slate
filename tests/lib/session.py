@@ -312,7 +312,7 @@ class Session:
         for target, fn in (("settings", "close"), ("launcher", "close"), ("picker", "close"), ("switcher", "cancel"), ("wallpaperSwitcher", "cancel"),
                            ("overview", "close"), ("popout", "close"), ("power", "cancel"), ("polkit", "close"),
                            ("screensaver", "stop"), ("lock", "closePreview"), ("assistant", "stop"), ("assistant", "clear"), ("assistant", "close"), ("dock", "closeMenu"),
-                           ("dock", "closePreview")):
+                           ("dock", "closePreview"), ("quicklook", "close")):
             try:
                 self.ipc(target, fn)
             except SessionError:

@@ -662,3 +662,22 @@ SCENES["bar-arranging-glass"] = {
     "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"], "settle": 5,     # (glass: its blur is made the first time)
     "undo": [("bar", "edit", "done"), ("config", "set", "glass", "false")],
 }
+
+# Quick Look (QuickLook.qml): a text file and a picture, each as itself, and a file it can only
+# describe (its details and Open). The files are made in the session's home first
+_LOOK_TEXT = ('mkdir -p "$HOME/Documents" && printf \'%s\\n\' "Shopping" "" "- apples" "- bread" "- coffee beans" '
+              '"- something for dinner" > "$HOME/Documents/notes.txt" && ' + _SLATE_IPC + 'quicklook open "$HOME/Documents/notes.txt"')
+_LOOK_PICTURE = ('mkdir -p "$HOME/Pictures" && python3 -c "from PIL import Image, ImageDraw; im = Image.new(\'RGB\', (960, 600), \'#3a7bd5\'); '
+                 'ImageDraw.Draw(im).ellipse((330, 150, 630, 450), fill=\'#f2c14e\'); im.save(\'$HOME/Pictures/sun.png\')" && '
+                 + _SLATE_IPC + 'quicklook open "$HOME/Pictures/sun.png"')
+_LOOK_OTHER = ('mkdir -p "$HOME/Downloads" && head -c 2048 /dev/zero > "$HOME/Downloads/backup.bin" && touch -d 2026-05-03 "$HOME/Downloads/backup.bin" && '
+               + _SLATE_IPC + 'quicklook open "$HOME/Downloads/backup.bin"')
+SCENES["quicklook-text"] = {"do": [("!sh", "-c", _LOOK_TEXT)], "settle": 1.2,
+                            "wait": lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "text",
+                            "undo": [("quicklook", "close")]}
+SCENES["quicklook-picture"] = {"do": [("!sh", "-c", _LOOK_PICTURE)], "settle": 1.2,
+                               "wait": lambda st: st["quicklook"]["open"] and st["quicklook"]["image"] is not None,
+                               "undo": [("quicklook", "close")]}
+SCENES["quicklook-details"] = {"do": [("!sh", "-c", _LOOK_OTHER)], "settle": 1.2,
+                               "wait": lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "details",
+                               "undo": [("quicklook", "close")]}

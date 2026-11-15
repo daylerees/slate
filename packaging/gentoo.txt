@@ -71,6 +71,7 @@ sys-apps/accountsservice
 ?x11-misc/xdg-user-dirs
 ?sys-apps/pciutils
 ?media-tv/v4l-utils
+?app-text/poppler   # Quick Look (Space on a file in the launcher or the dock): a PDF's pages drawn (pdftoppm)
 
 # Talking to Nova (Settings → Assistant → Voice): speech turned into text on this computer:
 # whisper.cpp is in the GURU overlay (app-accessibility/whisper-cpp); enable it to install it

@@ -24,6 +24,7 @@ PanelWindow {
     property var appLauncher: null         // the launcher (the Apps button)
     property var powerConfirm: null        // Slate's confirmation window
     property var settingsWindow: () => null    // builds the Settings window if need be, and returns it
+    property var quickLook: null           // Quick Look (QuickLook.qml): show(paths, index)
     // The dock is on the focused screen
     screen: Config.focusedScreen
 
@@ -537,8 +538,34 @@ PanelWindow {
         id: trashFiles
         folder: win.trashShown && win.trashReady ? "file://" + win.trashDir : ""
         showDirs: true; showHidden: true; showDotAndDotDot: false
+        sortField: FolderListModel.Time          // newest first
     }
     readonly property int trashCount: trashShown ? trashFiles.count : 0
+    // The newest 24 in it, for its menu's grid (as Downloads' is), to look at with Quick Look
+    readonly property var recentTrash: {
+        const out = [];
+        for (let i = 0; i < trashFiles.count && out.length < 24; i++)
+            out.push({ name: trashFiles.get(i, "fileName"), path: trashFiles.get(i, "filePath"), dir: trashFiles.get(i, "fileIsDir") });
+        return out;
+    }
+    // Quick Look on one of the files in a grid (Downloads', the Waste Basket's), with the rest of
+    // them to step through. The menu closes first: Quick Look has the keyboard from then on
+    function lookAt(list, i) {
+        if (!quickLook || i < 0 || i >= list.length) return;
+        const paths = list.map(d => d.path);
+        appMenu.closeMenu();
+        quickLook(paths, i);
+    }
+    // A file in the grid right-clicked: its own menu, from where the grid's menu points
+    function fileMenu(i) {
+        const list = appMenu.fileList;
+        if (i < 0 || i >= list.length) return;
+        const x = appMenu.alongX;
+        appMenu.closeMenu();
+        appMenu.openFor({ fileMenu: true, files: list, at: i, key: "", windows: [] }, x);
+    }
+    // (tests: a file in the open grid under the pointer, as hovering it does; -1 none)
+    function testHoverFile(i) { appMenu.hotFile = i; }
     // Opened in the file manager the shortcuts use (FILE_MANAGER, Hyprland's variable)
     function openTrash() {
         Quickshell.execDetached(["hyprctl", "dispatch",
@@ -712,6 +739,14 @@ PanelWindow {
             const i = win.downloadsIndex;
             appMenu.openFor({ downloadsGrid: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
         }
+        // The Waste Basket's menu, with what's in it, as right-clicking it does:  slate ipc call dock trash
+        function trash(): void {
+            if (!win.trashShown) return;
+            const i = win.trashIndex;
+            appMenu.openFor({ trashMenu: true, key: "", windows: [] }, (strip.width - win.restWidth) / 2 + win.slotStart(i) + win.base / 2);
+        }
+        // A file in the open Downloads or Waste Basket grid right-clicked: its menu (Quick Look, Open)
+        function fileMenu(i: int): void { win.fileMenu(i); }
         // More's grid (the apps that don't fit), as clicking it does:  slate ipc call dock more
         function more(): void {
             const i = win.moreIndex;
@@ -1052,18 +1087,30 @@ PanelWindow {
         // rows as the menu's items, and Downloads' grid above them
         items: rows.map(r => r.kind === "sep" ? { separator: true }
             : { label: r.label, danger: !!r.danger, active: !!r.active, run: () => appMenu.run(r) })
-        menuWidth: app && (app.downloadsGrid || app.moreGrid) ? 4 * 88 + 16 + (gridScrolls ? 18 : 0) : 240
-        // More's or Downloads' grid with more than its three rows, so it scrolls: the menu
+        menuWidth: app && (fileGrid || app.moreGrid) ? 4 * 88 + 16 + (gridScrolls ? 18 : 0) : 240
+        // More's or a grid of files with more than its three rows, so it scrolls: the menu
         // widens by the scrollbar's room (an 8 px gap and the bar's 10) while it does, so the
         // cells keep their width and nothing sits under the scrollbar
-        readonly property bool gridScrolls: !!app && (app.moreGrid ? moreList.length > 12 : !!app.downloadsGrid && win.recentDownloads.length > 12)
+        readonly property bool gridScrolls: !!app && (app.moreGrid ? moreList.length > 12 : fileGrid && fileList.length > 12)
+        // A grid of files above the items: Downloads' newest (a click on the stack), or what's in
+        // the Waste Basket (its right-click menu, above Open and Empty)
+        readonly property bool fileGrid: !!app && (!!app.downloadsGrid || !!app.trashMenu)
+        readonly property var fileList: !app ? [] : app.downloadsGrid ? win.recentDownloads : app.trashMenu ? win.recentTrash : []
+        // The file under the pointer in it (-1: none): Space shows it in Quick Look
+        property int hotFile: -1
+        onAppChanged: hotFile = -1
+        keyFirst: e => {
+            if (e.key !== Qt.Key_Space || !fileGrid || hotFile < 0 || hotFile >= fileList.length) return false;
+            win.lookAt(fileList, hotFile);
+            return true;
+        }
         // The grid sits 8 px in from the menu's rounded edge (DesktopMenu's card: 12), so its
         // shades round their corners to match, the same curve 8 px further in
         readonly property real gridCorner: 12 - 8
         // and, on the menu's dark (the shade's own colour), go deeper and taller than a
         // list's, fading the cells into the menu so they show (light mode: the usual shade)
         readonly property real gridShadeDepth: Config.s.lightMode ? 1 : 2.4
-        extra: app && app.downloadsGrid ? downloadsGrid : app && app.moreGrid ? moreGrid : null
+        extra: fileGrid ? filesGrid : app && app.moreGrid ? moreGrid : null
         property var app: null
         property real alongX: 0     // where it was opened from along the dock (strip coordinates)
         property real menuX: 0      // just inside the dock's inner edge, by the icon (screen coordinates)
@@ -1126,8 +1173,14 @@ PanelWindow {
                 r.push({ label: "Open Downloads", kind: "downloads-open" });
                 return r;
             }
+            // One of the files in a grid (right-clicked): look at it, or open it
+            if (app.fileMenu) {
+                r.push({ label: "Quick Look", kind: "file-look" });
+                r.push({ label: "Open", kind: "file-open" });
+                return r;
+            }
             if (app.trashMenu) {
-                r.push({ label: "Open", kind: "trash-open" });
+                r.push({ label: "Open Waste Basket", kind: "trash-open" });
                 if (win.trashCount > 0) {
                     r.push({ kind: "sep" });
                     r.push({ label: "Empty Waste Basket…", kind: "trash-empty", danger: true });
@@ -1178,6 +1231,8 @@ PanelWindow {
             case "settings": win.settingsWindow().goTo(row.target, row.find || ""); break;
             case "trash-open": win.openTrash(); break;
             case "downloads-open": win.openDownloads(); break;
+            case "file-look": win.lookAt(app.files, app.at); return;       // (closes the menu itself)
+            case "file-open": Qt.openUrlExternally("file://" + app.files[app.at].path); break;
             case "media-toggle": if (win.player) win.player.togglePlaying(); break;
             case "media-next": if (win.player) win.player.next(); break;
             case "media-previous": if (win.player) win.player.previous(); break;
@@ -1282,27 +1337,30 @@ PanelWindow {
             }
         }
         Component {
-            id: downloadsGrid
+            id: filesGrid
             Column {
                 id: dlCol
                 width: appMenu.menuWidth - 16
                 spacing: 1
-                // Downloads: the newest, four across; click one to open it
+                // Downloads' newest, or what's in the Waste Basket, four across: click one to
+                // open it; Space on the one under the pointer, or Quick Look on its right-click
+                // menu, to look at it first
                 Text {
-                    visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length === 0
+                    visible: appMenu.fileGrid && appMenu.fileList.length === 0
                     width: dlCol.width; height: 40
                     horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                    text: "No downloads just yet"
+                    text: appMenu.app && appMenu.app.trashMenu ? "Nothing in the waste basket" : "No downloads just yet"
                     color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
                     font.family: Config.s.fontFamily; font.pixelSize: 13
                 }
                 DockGrid {
                     menu: appMenu; dock: win
-                    visible: !!appMenu.app && !!appMenu.app.downloadsGrid && win.recentDownloads.length > 0
-                    model: appMenu.app && appMenu.app.downloadsGrid ? win.recentDownloads : []
+                    visible: appMenu.fileGrid && appMenu.fileList.length > 0
+                    model: appMenu.fileGrid ? appMenu.fileList : []
                     delegate: Item {
                         id: dl
                         required property var modelData
+                        required property int index
                         readonly property var kind: win.downloadKind(modelData)
                         width: 88; height: 92
                         Rectangle {
@@ -1357,15 +1415,27 @@ PanelWindow {
                             color: win.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: 11
                         }
-                        HoverHandler { id: dlHover }
+                        HoverHandler {
+                            id: dlHover
+                            onHoveredChanged: {
+                                if (hovered) appMenu.hotFile = dl.index;
+                                else if (appMenu.hotFile === dl.index) appMenu.hotFile = -1;
+                            }
+                        }
                         ClickTap {
                             hand: false
                             onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
                         }
+                        // Right-click: its own menu (Quick Look, Open), as More's apps have theirs
+                        ClickTap {
+                            hand: false
+                            acceptedButtons: Qt.RightButton
+                            onTapped: win.fileMenu(dl.index)
+                        }
                     }
                 }
                 Rectangle {
-                    visible: !!appMenu.app && !!appMenu.app.downloadsGrid
+                    visible: appMenu.fileGrid
                     width: dlCol.width; height: 9; color: "transparent"
                     Rectangle { anchors.centerIn: parent; width: parent.width - 16; height: 1; color: appMenu.sepColor }
                 }
@@ -2317,6 +2387,10 @@ PanelWindow {
                 ? { kind: "app", key: x.item.key, pinned: x.item.pinned, windows: x.item.windows.length, badge: win.badgeFor(x.item) }
                 : { kind: x.kind }),
             menu: appMenu.visible ? (appMenu.app && appMenu.app.key ? appMenu.app.key : appMenu.app && appMenu.app.moreGrid ? "more" : "other") : "",
+            // The app menu's items, and the files in its grid (Downloads', the Waste Basket's)
+            // with the one under the pointer
+            menuItems: appMenu.visible ? appMenu.items.map(i => i.separator ? null : i.label) : [],
+            files: appMenu.visible && appMenu.fileGrid ? appMenu.fileList.map(f => f.name) : null, hotFile: appMenu.hotFile,
             preview: previewPop.wanted, previewOnScreen: previewPop.visible, media: win.mediaShown, trash: win.trashCount,
             // The previews: cards shown, the "+N" card's count, the panel's place and the screen's size
             previews: previewPop.wanted ? { cards: previewPop.shownWins.length, more: previewPop.moreCount, mode: win.previewMode,
