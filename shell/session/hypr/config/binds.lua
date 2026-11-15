@@ -645,12 +645,10 @@ function cycleWorkspace(step)
     local monitor = current.monitor.name
     local minId, maxId = current.id, current.id
     local nextId, prevId = nil, nil
-    local windows = {}
     for _, ws in ipairs(hl.get_workspaces()) do
         if ws.monitor and ws.monitor.name == monitor and not tostring(ws.name):find("^special") then
             minId = math.min(minId, ws.id)
             maxId = math.max(maxId, ws.id)
-            windows[ws.id] = ws.windows or 0
             if ws.id > current.id and (not nextId or ws.id < nextId) then nextId = ws.id end
             if ws.id < current.id and (not prevId or ws.id > prevId) then prevId = ws.id end
         end
@@ -662,13 +660,11 @@ function cycleWorkspace(step)
         return
     end
     hl.config({ animations = { workspace_wraparound = wraps } })
-    -- Where it's going (round to the other end when it wraps); to an empty workspace the
-    -- windows slide away rather than fading where they are
+    -- Where it's going (round to the other end when it wraps), with the usual animation, or
+    -- the windows sliding away where that wouldn't look right (switchWorkspace, animations.lua)
     local target = step > 0 and (nextId or minId) or (prevId or maxId)
     local go = hl.dsp.focus({ workspace = step > 0 and "m+1" or "m-1" })
-    if target ~= current.id and noteWorkspaceSwitch then noteWorkspaceSwitch() end
-    if target ~= current.id and (windows[target] or 0) == 0 and slideAwayTo then slideAwayTo(go)
-    else hl.dispatch(go) end
+    if switchWorkspace then switchWorkspace(go, current.id, target) else hl.dispatch(go) end
     hl.exec_cmd(slate("osd workspace"))     -- big workspace dots, like the bar's
 end
 

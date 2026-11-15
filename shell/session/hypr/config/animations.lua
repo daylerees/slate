@@ -157,6 +157,26 @@ function slideAwayTo(dispatcher)
     restoreSlideAfter(math.floor(sp(5) * 100 + 80))
 end
 
+-- switchWorkspace(dispatcher, from, to): a switch Slate makes from workspace id `from` to `to`
+-- (Super+Left/Right, the bar's dots), with the usual animation. Two cases where that would look
+-- wrong slide the windows away instead (slideAwayTo):
+--   - to an empty workspace: nothing comes in to cover the windows, so they'd fade where they are
+--   - from a workspace with a floating window: Hyprland draws every floating window after every
+--     tiled one, whichever workspace it's on, so a floating window on the workspace being left
+--     (held solid where it was) stayed still over the tiled windows sliding in, until the end
+function switchWorkspace(dispatcher, from, to)
+    if to == from then hl.dispatch(dispatcher); return end
+    noteWorkspaceSwitch()
+    local arriving, floating = 0, false
+    for _, w in ipairs(hl.get_windows()) do
+        if w.mapped and w.workspace then
+            if w.workspace.id == to then arriving = arriving + 1 end
+            if w.workspace.id == from and w.floating and not w.pinned then floating = true end
+        end
+    end
+    if arriving == 0 or floating then slideAwayTo(dispatcher) else hl.dispatch(dispatcher) end
+end
+
 -- Slate's own title bars (TitleBar.qml): dragging one moves its window to each pointer position
 -- (x, y: Hyprland coordinates), with the move animation off meanwhile so the window keeps up
 -- with the pointer rather than trailing it; slateDragEnd() puts the animation back

@@ -277,3 +277,73 @@ class FastSwitching(SplitSlides):
         if white:
             shot.save(os.path.join(self.s.out, "fast-switch.png"))
         self.assertEqual(white, 0, f"the first workspace's white window still shows ({white} spots), 3 switches later")
+
+
+class FloatingSlides(SplitSlides):
+    """A floating window leaves with its workspace. Hyprland draws every floating window after
+    every tiled one, whatever workspace it's on, and the workspace being left is held solid where
+    it was while the new one slides in over it: so a floating window stayed still over the tiled
+    windows arriving, then vanished at the end, rather than going with its workspace (Dayle,
+    2026-11-15: "sometimes", as it took a floating window on the workspace left and a tiled one
+    on the one arriving)."""
+    test_both_windows_slide_in = None
+    COLOURS = {"float": (230, 30, 30), "tiled": (30, 200, 60), "other": (40, 60, 230)}
+    FLOAT = (300, 300, 500, 300)          # (where the floating window sits: x, y, width, height)
+
+    def floating(self, ws):
+        before = {c["address"] for c in self.s.hyprctl("clients", json_out=True)}
+        self.coloured(ws, "float")
+        new = [c for c in self.s.hyprctl("clients", json_out=True) if c["address"] not in before][0]
+        win = f'address:{new["address"]}'
+        x, y, w, h = self.FLOAT
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.float({{ action = "enable", window = "{win}" }})) end')
+        self.s.hyprctl("dispatch", f'function() hl.dispatch(hl.dsp.window.resize({{ x = {w}, y = {h}, window = "{win}" }})); '
+                                   f'hl.dispatch(hl.dsp.window.move({{ x = {x}, y = {y}, window = "{win}" }})) end')
+        self.laid_out()
+
+    def still_there(self, im):
+        """How much of the floating window's middle row is it, where it was before the switch."""
+        x, y, w, h = self.FLOAT
+        red = lambda p: p[0] > 60 and p[0] > 2 * max(p[1], p[2])
+        xs = range(x + 20, x + w - 20, 4)
+        return sum(1 for px in xs if red(im.getpixel((px, y + h // 2)))) / len(xs)
+
+    def slowed_slide(self, start, switch):
+        """A picture partway through the switch `switch` (Lua) makes from workspace `start`,
+        slowed ten times, and how much of the floating window is still where it was in it."""
+        self.go_to_workspace(start)
+        self.sliding_back()
+        self.s.hyprctl("eval", 'hl.config({ animations = { enabled = true } }); SLATE_ANIM_SLOW = 10; setWorkspaceAnimation("slidefade")')
+        self.slow_slide()
+        d = tempfile.mkdtemp()
+        before = Image.open(self.s.screenshot(os.path.join(d, "before.png"))).convert("RGB")
+        self.assertGreater(self.still_there(before), 0.9, "the floating window isn't where it was put")
+        self.s.hyprctl("dispatch", f"function() {switch} end")
+        self.s.settle(1.5)                       # (partway through the slowed slide, about 5 s)
+        mid = Image.open(self.s.screenshot(os.path.join(d, "mid.png"))).convert("RGB")
+        self.s.settle(4.0)                       # (the slide's end: Hyprland doesn't say when it's over)
+        return mid, self.still_there(mid)
+
+    def setup_workspaces(self):
+        """A tiled window with a floating one over it on workspace 1, a tiled one on 2."""
+        self.addCleanup(lambda: self.s.hyprctl("eval", 'hl.config({ animations = { enabled = false } }); SLATE_ANIM_SLOW = nil; setWorkspaceAnimation("slidefade")'))
+        self.keep_setting("keepEmptyWorkspace")
+        self.config("keepEmptyWorkspace", "false")
+        self.close_windows()
+        self.coloured(1, "other")
+        self.floating(1)
+        self.coloured(2, "tiled")
+        self.laid_out()
+
+    def test_a_floating_window_leaves_with_its_workspace(self):
+        self.setup_workspaces()
+        self.keep_setting("wrapWorkspaces")
+        self.config("wrapWorkspaces", "true")
+        # On to the next, and round from the first to the last (the same two: wrapping)
+        for what, step in (("next", 1), ("wrapping", -1)):
+            with self.subTest(what):
+                mid, left = self.slowed_slide(1, f"cycleWorkspace({step})")
+                if left > 0.5:
+                    mid.save(os.path.join(self.s.out, f"floating-{what}.png"))
+                self.assertLess(left, 0.5, f"partway through, the floating window was still where it was ({left:.0%} of it)")
+
