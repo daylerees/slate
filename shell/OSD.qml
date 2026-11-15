@@ -130,6 +130,8 @@ PanelWindow {
                 if (isNaN(pct)) return;
                 if (bright.keyboard) osd.show(0xEBD6, pct, pct === 0 ? "Off" : "");
                 else osd.show(pct < 0.3 ? 0xF237 : 0xEB30, pct, "");
+                // (your choice for this light, for Automatic brightness to learn rather than undo)
+                AutoBrightness.manual(bright.keyboard ? "keyboard" : "screen", pct * 100);
             }
         }
     }

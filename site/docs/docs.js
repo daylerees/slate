@@ -33,7 +33,7 @@ const SECTIONS = [
     { id: "app-theming", title: "App theming", icon: 0xEBB8, about: "Your other apps in Slate's colors", covers: ["apptheming"] },
   ]},
   { title: "Your computer", pages: [
-    { id: "displays", title: "Displays", icon: 0xEA89, about: "Arranging screens, resolution, scale and Slate's size", covers: ["displays"] },
+    { id: "displays", title: "Displays", icon: 0xEA89, about: "Arranging screens, resolution, scale, brightness and Slate's size", covers: ["displays"] },
     { id: "input", title: "Keyboard, mouse and touchpad", icon: 0xEBD6, about: "Layouts, key repeat, pointer speed and gestures", covers: ["input"] },
     { id: "sound", title: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and Slate's sounds", covers: ["sound"] },
     { id: "power", title: "Power and battery", icon: 0xEA38, about: "Power modes, the charging limit, the lid and the power button", covers: ["power"] },

@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""A stand-in for brightnessctl (OSD.qml, scripts/auto-brightness.py) for the live tests: a
+pretend laptop whose backlights are numbers in $HOME/.brightness.json,
+{"screen": [current, max], "keyboard": [current, max]} ("keyboard" left out: no keyboard light).
+Without that file there's no backlight at all, as on a desktop PC, so every other test sees
+what it always has. Each call that sets one is noted in $HOME/.brightness-calls (JSON lines:
+{"device": "screen", "value": 120, "at": <time>}).
+
+Takes what Slate uses: -m, -q, -c CLASS, -d DEVICE, -n MIN, then info | get | max | set VALUE
+(N, N%, +N, N-, N%+, N%-)."""
+import json
+import os
+import sys
+import time
+
+home = os.environ.get("HOME", "/tmp")
+STATE = os.path.join(home, ".brightness.json")
+CALLS = os.path.join(home, ".brightness-calls")
+
+args = sys.argv[1:]
+machine, device, cls, lowest, rest = False, None, None, 0, []
+i = 0
+while i < len(args):
+    a = args[i]
+    if a == "-m":
+        machine = True
+    elif a == "-q":
+        pass
+    elif a == "-c":
+        i += 1
+        cls = args[i]
+    elif a == "-d":
+        i += 1
+        device = args[i]
+    elif a.startswith("-n"):
+        if a == "-n":
+            i += 1
+            lowest = int(args[i])
+        else:
+            lowest = int(a[2:] or 1)
+    else:
+        rest.append(a)
+    i += 1
+
+try:
+    with open(STATE) as f:
+        state = json.load(f)
+except (OSError, ValueError):
+    state = {}
+
+which = "keyboard" if device and "kbd_backlight" in device else "screen" if cls in (None, "backlight") else None
+if which is None or which not in state:
+    sys.stderr.write("Device '%s' not found.\n" % (device or cls or ""))
+    sys.exit(1)
+cur, top = state[which]
+name, kind = ("tpacpi::kbd_backlight", "leds") if which == "keyboard" else ("intel_backlight", "backlight")
+
+command = rest[0] if rest else "info"
+if command == "set" and len(rest) > 1:
+    v = rest[1]
+    pct = "%" in v
+    num = float(v.replace("%", "").replace("+", "").replace("-", ""))
+    step = round(num / 100 * top) if pct else int(num)
+    if v.startswith("+") or v.endswith("+"):
+        new = cur + step
+    elif v.endswith("-"):
+        new = cur - step
+    else:
+        new = step
+    cur = max(lowest, min(top, int(new)))
+    state[which] = [cur, top]
+    with open(STATE + ".tmp", "w") as f:
+        json.dump(state, f)
+    os.replace(STATE + ".tmp", STATE)
+    with open(CALLS, "a") as f:
+        f.write(json.dumps({"device": which, "value": cur, "at": time.time()}) + "\n")
+
+if command == "get":
+    print(cur)
+elif command == "max":
+    print(top)
+elif machine:
+    print("%s,%s,%d,%d%%,%d" % (name, kind, cur, round(cur * 100 / top), top))
+elif command != "set" or "-q" not in args:
+    print("Device '%s' of class '%s':\n\tCurrent brightness: %d (%d%%)\n\tMax brightness: %d"
+          % (name, kind, cur, round(cur * 100 / top), top))

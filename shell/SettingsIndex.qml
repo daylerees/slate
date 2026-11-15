@@ -211,6 +211,7 @@ Singleton {
         ["Tint app icons", "icons", "icon color accent theme tint monochrome themed icons colour"],
         ["Workspace indicators", "workspaces", "dots shape circles squares rounded workspace"],
         ["Displays", "displays", "monitors screens resolution refresh rate hz scale scaling rotate rotation arrange arrangement main primary external"],
+        ["Automatic brightness", "displays", "auto brightness adaptive ambient light sensor room dim bright screen keyboard backlight"],
         ["Default window mode", "windows", "tiling side stack scrolling stacking floating solo layout free move drag traditional desktop tile dwindle master columns strip monocle one window full per workspace maximized maximised"],
         ["Keep an empty workspace", "workspaces", "spare new blank extra dynamic workspaces gnome"],
         ["Window spacing", "windows", "gaps gap padding space between margin"],

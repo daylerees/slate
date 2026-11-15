@@ -40,6 +40,9 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Picker.qml           clipboard history + emoji picker ("slate-picker")
 ├─ PolkitAgent.qml      password prompts for apps ("slate-polkit")
 ├─ NightLight.qml       warm screen via Hyprland's screen shader
+├─ AutoBrightness.qml   singleton: Automatic brightness (Settings → Displays), running
+│                       scripts/auto-brightness.py while it's on; the brightness keys (OSD.qml)
+│                       tell it your changes, to learn
 ├─ Radios.qml          Wi-Fi and Bluetooth through IPC (`wifi`, `bluetooth`), for the assistant's tools
 ├─ AirplaneMode.qml     Wi-Fi, Bluetooth and mobile broadband off together, and back as they were (`airplane` IPC)
 ├─ PrivateMode.qml      Private Mode (`private` IPC): microphones muted, the camera off for every app
@@ -193,6 +196,10 @@ scripts/set-avatar.sh         sets your account picture: cropped square, handed 
 scripts/netinfo.sh            connection details for the network panel (nmcli), as KEY=value lines
 scripts/camera-watch.py       tells Slate when a camera starts and stops being used (inotify on
                               /dev/video*), for OSD.qml's indicator
+scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio-sensor-proxy, D-Bus
+                              signals, no polling), eases the screen and keyboard light to the room
+                              with brightnessctl, learns your changes (~/.local/state/slate/
+                              auto-brightness.json, 0600); --check says what the computer has
 scripts/force-quit.sh         the dock menu's Force Quit: kills the apps behind the given windows (never Slate's own)
 scripts/refresh-gtk-apps.sh   restarts windowless GTK4 apps after the colours change, so their next
                               window opens in the new ones (run by apply-theme.py and on window close)
@@ -660,7 +667,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | a terminal, a file manager (kitty and Nautilus offered when you have none) | the shortcuts, dock and desktop menu; the first installed is used (`session/hypr/config/variables.lua`), Settings → Default Apps picks |
 | `swash` | opens screenshots to annotate; without it they're saved to ~/Pictures/Screenshots and copied |
 | `uwsm` (optional) | session management, with systemd only; log out goes through `uwsm stop` when it manages the session (else Hyprland exits directly) |
-| `brightnessctl` | screen and keyboard brightness keys |
+| `brightnessctl` | screen and keyboard brightness keys, and Automatic brightness |
+| `iio-sensor-proxy` (Gentoo `sys-apps/iio-sensor-proxy`; NixOS `hardware.sensor.iio.enable`) | Settings → Displays → Automatic brightness: reads the laptop's light sensor, over D-Bus (`scripts/auto-brightness.py`). Optional: the switch only shows where the kernel has a light sensor, and grayed out says to install it when it's missing |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colors |

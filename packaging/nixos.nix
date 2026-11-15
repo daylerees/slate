@@ -4,6 +4,7 @@
   programs.hyprland = { enable = true; withUWSM = true; };
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
+  hardware.sensor.iio.enable = true;          # iio-sensor-proxy: Automatic brightness reads the light sensor (optional)
   networking.networkmanager.enable = true;
   hardware.bluetooth.enable = true;
   security.polkit.enable = true;

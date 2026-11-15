@@ -302,7 +302,7 @@ FloatingWindow {
             "launcherWrap", "launcherRecent", "launcherFuzzy", "launcherWindows", "launcherActions", "launcherToggles", "launcherFiles",
             "launcherConvert", "launcherCommands", "launcherEmoji", "launcherWeb", "launcherSearchEngine"],
         debug: ["logLevel"],
-        displays: ["mainDisplay"],
+        displays: ["mainDisplay", "autoBrightness"],
         input: ["kbLayouts", "kbVariants", "kbSwitch", "capsLock", "keyRepeatDelay", "keyRepeatRate", "mouseSpeed", "mouseAccel",
             "mouseNaturalScroll", "cursorTheme", "cursorSize", "pointerInApps", "touchpadScrollSpeed", "touchpadNaturalScroll", "touchpadTapToClick",
             "touchpadIgnoreWhileTyping", "touchpadGestures", "gestureFingers",

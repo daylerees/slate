@@ -231,5 +231,21 @@ Column {
             onPicked: v => Config.s.mainDisplay = v
         }
     }
+    // Automatic brightness: only where there's a light sensor to follow (AutoBrightness.qml).
+    // A sensor the kernel has but nothing reads yet says what to install
+    Component.onCompleted: AutoBrightness.refresh()
+    GroupLabel { visible: AutoBrightness.shown; text: "Brightness" }
+    Group {
+        visible: AutoBrightness.shown
+        ToggleSetting {
+            label: "Automatic brightness"
+            key: "autoBrightness"
+            detail: (AutoBrightness.keyboard ? "Your screen and keyboard light follow the light in the room."
+                                             : "Your screen follows the light in the room.")
+                + " When you change it yourself, Slate remembers what you like for that light"
+            needsMet: AutoBrightness.sensor
+            needs: "Needs iio-sensor-proxy to be installed"
+        }
+    }
     Footnote { text: "Slate's own size (bar, panels, this window) is under Appearance → Interface size, on top of each display's scale. Monitor rules in ~/.config/slate/hypr/monitors.lua override these." }
 }

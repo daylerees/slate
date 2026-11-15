@@ -514,6 +514,8 @@ ShellRoot {
                              downloading: voiceModel.downloading, progress: voiceModel.progress, error: voiceModel.error, checks: voiceModel.checks },
                 // Background work that should be idle when nothing needs it: Night light's schedule
                 // timer, Private Mode's portal watch, and the theme check for updated apps
+                // Automatic brightness (AutoBrightness.qml): what the computer has, and what it's doing
+                autoBrightness: AutoBrightness.testState(),
                 idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: appTheming.staleWatching },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
@@ -569,6 +571,8 @@ ShellRoot {
         }
     }
     NightLight { id: nightLight }
+    // Automatic brightness: a singleton, made here so it starts with Slate when it's switched on
+    readonly property bool autoBrightnessRunning: AutoBrightness.running
     AirplaneMode {}
     Radios {}                                 // Wi-Fi and Bluetooth through IPC, for assistants
     PrivateMode { id: privateMode; confirm: powerConfirm }

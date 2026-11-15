@@ -1011,6 +1011,7 @@ SWITCHES = {
     "switcherAppIcons", "workspaceSwitchName", "wrapWorkspaces", "overviewAppIcons",
     "overviewPreviews", "screensaverClock", "glass", "fastBlur", "idleRespectInhibitors",
     "touchpadGestures", "gestureSideways",
+    "autoBrightness",
 }
 # Settings that only take effect the next time Slate starts
 AT_START = {"uiScale"}

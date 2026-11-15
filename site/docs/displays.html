@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Displays · Slate docs</title>
-<meta name="description" content="Setting up your screens in Slate: arranging them, resolution, refresh rate, scale, rotation, HDR, the main display, and keeping or undoing changes.">
+<meta name="description" content="Setting up your screens in Slate: arranging them, resolution, refresh rate, scale, rotation, HDR, the main display, automatic brightness, and keeping or undoing changes.">
 <link rel="icon" href="../assets/icon.png">
 <link rel="stylesheet" href="../style.css?v=31">
 <link rel="stylesheet" href="docs.css?v=2">
@@ -81,6 +81,19 @@
       <h2>Brightness</h2>
       <p>Your keyboard's brightness keys change the screen's brightness (and the keyboard's backlight, where it has
         keys for it), with a small pop-up showing the new level, just like the volume.</p>
+      <h3>Automatic brightness</h3>
+      <p>On a laptop with a light sensor, the <strong>Brightness</strong> section of
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Displays</span> has an
+        <strong>Automatic brightness</strong> switch (off to start with). With it on, your screen follows the light
+        in the room, and so does your keyboard's backlight where it has one: brighter in daylight, dimmer in the
+        evening, and the keyboard's light on in the dark. Changes are slow and gentle, and a passing shadow or a
+        flicker isn't followed.</p>
+      <p>It learns from you. Whenever you change the brightness yourself, Slate remembers what you like for that
+        light, waits a minute before following the room again, and from then on uses your choice in that light.
+        What it has learned stays on your computer, readable by you alone.</p>
+      <p>The switch only appears where there's a sensor. If your laptop has one but the switch is grayed out, install
+        <code>iio-sensor-proxy</code>, the system service that reads it. Automatic brightness keeps working in game
+        mode.</p>
 
       <h2>Your own monitor rules</h2>
       <p>If you'd rather set your screens up by hand, rules in <code>~/.config/slate/hypr/monitors.lua</code> take

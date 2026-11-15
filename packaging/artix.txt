@@ -50,6 +50,7 @@ slurp
 hyprpicker
 brightnessctl
 power-profiles-daemon
+?iio-sensor-proxy        # Automatic brightness: the laptop's light sensor (scripts/auto-brightness.py)
 adw-gtk-theme
 qt6ct
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)

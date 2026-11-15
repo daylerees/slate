@@ -61,6 +61,7 @@ JsonAdapter {
     property real latitude: 0                // for weather and sunset/sunrise
     property real longitude: 0
     property string mainDisplay: ""           // Settings → Displays → Main display (monitor description; "" = the first)
+    property bool autoBrightness: false      // Settings → Displays: the screen (and keyboard light) follow the room (AutoBrightness.qml)
     property string logLevel: "normal"        // Settings → Debug → Log detail: normal, detailed or everything (applied when Slate starts)
     property real uiScale: 1                  // Settings → Appearance → Interface size: scales all of Slate (applied when Slate starts)
     property string workspaceShape: "square"  // workspace indicators: square (rounded) or circle

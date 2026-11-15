@@ -48,6 +48,7 @@ slurp
 ?hyprpicker
 brightnessctl
 ?power-profiles-daemon
+?iio-sensor-proxy        # Automatic brightness: the laptop's light sensor (scripts/auto-brightness.py)
 ?qt6ct
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)

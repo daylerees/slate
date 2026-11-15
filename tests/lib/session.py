@@ -180,6 +180,14 @@ class Session:
             # Stand-ins for pw-record and whisper-cli (talking to Nova, scripts/voice.py): no
             # microphone is ever opened, and what's "heard" is $HOME/.voice-transcript
             "SLATE_VOICE_TOOLS": os.path.join(slate.FIXTURES, "voice"),
+            # Automatic brightness (scripts/auto-brightness.py): the light sensor looked for on the
+            # session bus, where tests/lib/fake_sensor.py stands in for iio-sensor-proxy (none
+            # there: no sensor), a pause after your own change of seconds rather than a minute,
+            # and a stand-in brightnessctl that's a pretend laptop only once a test gives it
+            # $HOME/.brightness.json (until then, no backlight, as before)
+            "SLATE_SENSOR_BUS": "session",
+            "SLATE_AUTO_BRIGHTNESS_PAUSE": "6",
+            "PATH": os.path.join(slate.FIXTURES, "brightness") + ":" + self.env["PATH"],
         })
 
     def start(self):
