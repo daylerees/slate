@@ -1662,6 +1662,7 @@ PanelWindow {
         }
         onPositionChanged: m => {
             win.setPointer(stripX(m));
+            if (!pressed) resizer.watch(m);        // (resting on a divider: the resize cursor)
             if (!pressed || win.dragCandidate === "" || win.landing) return;
             if (!dragged && Math.hypot(m.x - pressedAt.x, m.y - pressedAt.y) > win.dragThreshold) {
                 dragged = true;
@@ -1674,7 +1675,7 @@ PanelWindow {
         }
         onReleased: win.endDrag()
         onCanceled: win.endDrag()           // (a drag cut short ends as if let go, never stuck)
-        onExited: holdTimer.restart()
+        onExited: { holdTimer.restart(); if (!win.dividerCursor) resizer.stopRest(); }
         onClicked: m => {
             if (dragged) return;            // a drag, not a click
             win.setPointer(stripX(m));
@@ -1689,9 +1690,21 @@ PanelWindow {
         id: resizer
         z: 10.5
         anchors.fill: maskBox
+        // Laid over the dock only once the pointer has rested on a divider (or while dragging
+        // one). Anything over the whole dock that takes hover, even a passive HoverHandler,
+        // keeps the pointer from the dock's own area beneath, and the dock stopped magnifying
+        // and sliding. So the dock's own area watches for a rest on a divider (watch(), below),
+        // and this switches on just for that, then off again as the pointer leaves it
+        enabled: win.dividerCursor || pressed
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
         cursorShape: win.dividerCursor ? (win.vertical ? Qt.SizeHorCursor : Qt.SizeVerCursor) : Qt.ArrowCursor
+        // From the dock's own area as the pointer moves (same box, same coordinates): a rest on a
+        // divider shows the resize cursor and lets this take the press
+        function watch(m) {
+            if (overDivider(m)) rest.restart();             // (still moving: not yet at rest)
+            else rest.stop();
+        }
         property real startCross: 0
         property real startSize: 0
         // Where the pointer is across the dock, on the screen (moves with the pointer, not the window)
@@ -1719,11 +1732,9 @@ PanelWindow {
             if (pressed) {
                 const grow = win.edge === "bottom" || win.edge === "right" ? startCross - cross(m) : cross(m) - startCross;
                 win.resizeSize = Math.max(28, Math.min(64, Math.round(startSize + grow)));
-            } else if (overDivider(m)) {
-                if (!win.dividerCursor) rest.restart();      // (still moving: not yet at rest)
-            } else {
+            } else if (!overDivider(m)) {
                 rest.stop();
-                win.dividerCursor = false;
+                win.dividerCursor = false;           // (off again: the dock's own area takes over)
             }
         }
         onExited: { if (!pressed) { rest.stop(); win.dividerCursor = false; } }
