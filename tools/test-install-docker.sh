@@ -38,6 +38,16 @@ python3 -c "import PIL" && echo "python Pillow: ok" || echo "python Pillow: MISS
 sudo -u nobody test -r /usr/local/share/slate/shell.qml && echo "shared copy readable by others: ok" || echo "shared copy readable by others: NO"
 ls /home/tester/.config/slate | tr "\n" " " | sed "s/^/your folder: /"; echo
 [ ! -e /home/tester/.config/slate/shell.qml ] && echo "no code in your folder: ok" || echo "code in your folder: WRONG"
+# What Slate later does as root, with the copy for everyone being root'"'"'s (not the release it came from)
+S=/usr/local/share/slate
+echo "helpers vs the copy for everyone: $(sudo -u tester $S/bin/slate-helpers-install --check $S 2>&1)"
+sudo -u tester -H sudo $S/bin/slate-helpers-install $S slate-session-install $S >/tmp/root-steps.log 2>&1 \
+    && echo "helpers and login session from the copy for everyone: ok" \
+    || { echo "helpers and login session from the copy for everyone: FAILED"; sed "s/^/    /" /tmp/root-steps.log; }
+todo=$(sudo -u tester $S/bin/slate-system --check 2>&1 | tr "\n" " ")
+echo "slate-system --check (as you): ${todo:-nothing to do}"
+out=$(sudo /usr/local/libexec/slate/slate-update-install v0.0.1 2>&1 || true)
+case "$out" in *"newer"*) echo "update helper accepts the copy for everyone: ok (refused only as not newer)" ;; *) echo "update helper: UNEXPECTED: $out" ;; esac
 echo "--- QML modules Slate imports (no display here, so windows are not created) ---"
 mkdir -p /tmp/qmlcheck
 # (Slate'"'"'s own modules, import qs…, only resolve inside Slate: left out)

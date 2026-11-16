@@ -11,6 +11,7 @@ the test, `getent` gives the scratch home, and the commands that would write to 
 (`install`, and `mktemp` for the login screen's staging folder) are stand-ins that only record
 what they were asked to do."""
 import os
+import shlex
 import pwd
 import shutil
 import stat
@@ -188,6 +189,27 @@ class SessionFiles(RootCase):
         self.assertNotEqual(code, 0, out)
         self.assertIn("own folder", out)
         self.assertEqual(self.root_calls(), [])
+
+    def as_if_roots(self, writable_by_others=""):
+        """stat says every folder is root's, and find says none can be written by anyone else
+        (or the folder named can), as for Slate's copy for everyone in /usr/local/share."""
+        self.stub("stat", 'case "$*" in *%U*) echo root ;; *) exec /usr/bin/stat "$@" ;; esac')
+        self.stub("find", f'[ "$1" = {shlex.quote(writable_by_others) if writable_by_others else "/nothing"} ] && echo "$1"; exit 0')
+
+    def test_the_copy_for_everyone(self):
+        """Slate's copy for everyone is root's, not yours: it's taken, as long as only root can
+        change it (it, and every folder above it)."""
+        self.as_if_roots()
+        self.assert_installed(*run([SESSION, self.slate], env=self.s.env, timeout=20))
+
+    def test_a_copy_for_everyone_others_can_change(self):
+        for where in (self.slate, os.path.dirname(self.slate)):
+            with self.subTest(where):
+                self.as_if_roots(writable_by_others=where)
+                code, out = run([SESSION, self.slate], env=self.s.env, timeout=20)
+                self.assertNotEqual(code, 0, out)
+                self.assertIn("copy for everyone", out)
+                self.assertEqual(self.root_calls(), [])
 
     def test_the_callers_say_where_slate_is(self):
         """(Both run the root-owned copy of it now: see the helpers' tests below.)"""

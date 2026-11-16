@@ -63,12 +63,28 @@ if [ "$#" -gt 0 ]; then
     shift
 fi
 
+# Whose files root may take: your own folder, or Slate's copy for everyone (root's, as is every
+# folder above it, none of them writable by anyone else, so nothing can be swapped in after
+# it's looked at). Looked at with your own permissions. Anything else, like a path into
+# someone else's folder, is left alone.
+yours_or_roots() {
+    who=$(asowner stat -c %U -- "$1" 2>/dev/null) || return 1
+    [ "$who" = "$OWNER" ] && return 0
+    d=$1
+    while :; do
+        [ "$(asowner stat -c %U -- "$d" 2>/dev/null)" = root ] || return 1
+        [ -z "$(asowner find "$d" -maxdepth 0 -perm /022 2>/dev/null)" ] || return 1
+        [ "$d" = / ] && return 0
+        d=$(dirname -- "$d")
+    done
+}
+
 # Your Slate folder is looked at with your own permissions (never root's), has to be a real
-# folder, and has to be yours: a path that leads into someone else's folder is left alone.
+# folder, and has to be yours or the copy for everyone (yours_or_roots).
 SLATE=$(asowner realpath -e -- "$FOLDER" 2>/dev/null) && asowner test -d "$SLATE" \
     || fail "can't find your Slate folder at $FOLDER"
-[ "$(asowner stat -c %U -- "$SLATE" 2>/dev/null)" = "$OWNER" ] \
-    || fail "$SLATE isn't $OWNER's own folder, so nothing was taken from it."
+yours_or_roots "$SLATE" \
+    || fail "$SLATE isn't $OWNER's own folder or Slate's copy for everyone, so nothing was taken from it."
 lists="$SLATE/packaging"; asowner test -d "$lists" || lists="$SLATE/../packaging"
 
 # Every file is read with your own permissions into a folder only root can see, and installed
