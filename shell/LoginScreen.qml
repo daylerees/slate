@@ -18,6 +18,9 @@ Item {
     property string avatar: ""            // image path
     property string displayName: ""
     property var sessions: []             // login: [{ name, exec }]
+    property var people: []               // login: everyone who can log in, [{ user, name }]
+    property int personIndex: 0           // ...and who's chosen (personPicked: chosen here)
+    signal personPicked(int index)
     property int sessionIndex: 0
     property bool busy: false             // checking the password
     property string message: ""
@@ -357,7 +360,7 @@ Item {
     }
 
     // ---- Corner menus ------------------------------------------------------------
-    property string menu: ""              // "", "session" or "power"
+    property string menu: ""              // "", "person", "session" or "power"
 
     component Pill: Rectangle {
         id: pill
@@ -428,7 +431,28 @@ Item {
         }
     }
 
-    // Bottom-left: session switcher (login screen only)
+    // Bottom middle: who's logging in, when there's more than one person (login screen only)
+    Pill {
+        id: personBtn
+        visible: ls.interactive && ls.mode === "login" && ls.people.length > 1
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 28 }
+        icon: 0xEB4D
+        label: ls.people.length > 1 ? (ls.people[Math.min(ls.personIndex, ls.people.length - 1)].name || "") + "  ▴" : ""
+        active: ls.menu === "person"
+        onClicked: ls.menu = ls.menu === "person" ? "" : "person"
+    }
+    Menu {
+        visible: ls.menu === "person" && personBtn.visible
+        anchors { horizontalCenter: personBtn.horizontalCenter; bottom: personBtn.top; bottomMargin: 10 }
+        width: Math.max(220, personBtn.width)
+        items: ls.people.map((p, i) => ({ id: i, label: p.name, icon: 0xEB4D, current: i === ls.personIndex }))
+        onChosen: item => {
+            ls.menu = "";
+            if (item.id !== ls.personIndex) { password.text = ""; ls.reset(); ls.personPicked(item.id); }
+            password.forceActiveFocus();
+        }
+    }
+    // Bottom-left: which session (login screen only)
     Pill {
         id: sessionBtn
         visible: ls.interactive && ls.mode === "login" && ls.sessions.length > 0

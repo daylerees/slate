@@ -22,34 +22,60 @@ ShellRoot {
     // without a window, then exit 0 if it loaded, so a broken copy is never installed
     readonly property bool checking: Quickshell.env("SLATE_GREETER_CHECK") === "1"
 
-    // ---- Who logs in (written by the sync) -------------------------------------
-    property string user: ""
-    property string displayName: ""
-    property string defaultSession: ""     // the session you were using when Slate last synced
+    // ---- Who logs in ----------------------------------------------------------------
+    // Everyone who can log in (people: { user, name }), and the one chosen: the last
+    // person to log in here, else the one whose desktop Slate last synced from (user.json), else
+    // the first. Pictures: the synced person's own copy, else AccountsService's (readable by all)
+    property var people: []
+    property int personIndex: 0
+    readonly property var person: people[personIndex] || null
+    readonly property string user: person ? person.user : syncedUser
+    readonly property string displayName: person ? person.name : syncedName
+    readonly property string avatar: !person || person.user === syncedUser ? dir + "/avatar" : "/var/lib/AccountsService/icons/" + person.user
+    property bool personChosen: false      // picked on the screen: kept, whatever loads after
+    property string syncedUser: ""
+    property string syncedName: ""
+    property string defaultSession: ""     // the session the synced person was using
     FileView {
         path: root.dir + "/user.json"
         onLoaded: {
             try {
                 const u = JSON.parse(text());
-                root.user = u.user || ""; root.displayName = u.name || u.user || "";
+                root.syncedUser = u.user || ""; root.syncedName = u.name || u.user || "";
                 root.defaultSession = u.session || "";
                 root.pickRemembered();
             } catch (e) {}
+            root.pickPerson();
             root.userKnown();
         }
     }
-    // Fallback: the first normal account on the system
+    FileView { id: lastUser; path: root.stateDir + "/last-user"; onLoaded: root.pickPerson() }
+    // People with a normal account (the same rule as accounts.py's list: a uid from 1000 to
+    // 59999 and a shell to log in with), in the order they were added
     Process {
         running: true
-        command: ["sh", "-c", "getent passwd | awk -F: '$3>=1000 && $3<60000 && $7 !~ /nologin|false/ {print $1\":\"$5; exit}'"]
+        // (the tests hand it a passwd file of their own, under the test switch only)
+        command: ["sh", "-c", "{ if [ \"$SLATE_GREETER_TEST\" = 1 ] && [ -n \"$SLATE_GREETER_PASSWD\" ]; then cat \"$SLATE_GREETER_PASSWD\"; else getent passwd; fi; } | awk -F: '$3>=1000 && $3<60000 && $7 !~ /nologin|false/ {print $1\"\\t\"$5}'"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const p = text.trim().split(":");
-                if (!root.user && p[0]) { root.user = p[0]; root.displayName = (p[1] || p[0]).split(",")[0]; }
+                root.people = text.trim().split("\n").filter(l => l).slice(0, 30).map(l => {
+                    const p = l.split("\t");
+                    const name = (p[1] || "").split(",")[0] || p[0];
+                    return { user: p[0], name: name };
+                });
+                root.pickPerson();
                 root.searched = true;
                 root.userKnown();
             }
         }
+    }
+    function pickPerson() {
+        if (people.length === 0 || personChosen) return;
+        for (const u of [(lastUser.text() || "").trim(), syncedUser]) {
+            const i = people.findIndex(p => p.user === u);
+            if (u && i >= 0) { personIndex = i; return; }
+        }
+        personIndex = 0;
     }
 
     // ---- Wallpaper drives the accent / tint, as on the desktop -----------------
@@ -180,6 +206,7 @@ ShellRoot {
             const s = root.sessions[root.sessionIndex];
             if (!s) { root.fail("Slate couldn't find a session to start"); return; }
             lastSession.setText(s.id + "\n");
+            lastUser.setText(root.user + "\n");
             // This version works: the installer keeps it as the fallback (.good)
             const v = version.text().trim();
             if (v) proven.setText(v + "\n");
@@ -244,5 +271,9 @@ ShellRoot {
         function message(): string { return root.message; }
         function asking(): string { return root.asking ? "yes" : "no"; }
         function cancel(): void { root.cancelAsking(); }
+        // Who's listed and who's chosen, and choosing, as the person menu does
+        function people(): string { return JSON.stringify(root.people.map(p => p.user)); }
+        function user(): string { return root.user; }
+        function pick(i: int): void { if (root.asking) root.cancelAsking(); root.personChosen = true; root.personIndex = i; }
     }
 }

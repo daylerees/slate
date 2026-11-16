@@ -440,8 +440,14 @@ Scope {
     property string previewMode: "lock"
     // Tests: Caps Lock as the preview shows it (the test session never reads the keyboard's light)
     property bool testCaps: false
+    // ...and the login screen's people, as the preview shows them (the login screen lists the
+    // computer's own; the tests' session has one): [{ user, name }]
+    // ("user:Name;user:Name": Quickshell's IPC strips an argument's [ ], so not JSON)
+    property string testPeopleText: ""
+    readonly property var testPeople: testPeopleText.split(";").filter(p => p.indexOf(":") > 0)
+        .map(p => ({ user: p.slice(0, p.indexOf(":")), name: p.slice(p.indexOf(":") + 1) }))
     Timer { id: previewCloseTimer; interval: 900; onTriggered: root.previewing = false }
-    function endPreview() { previewCloseTimer.stop(); previewing = false; testCaps = false; }
+    function endPreview() { previewCloseTimer.stop(); previewing = false; testCaps = false; testPeopleText = ""; }
 
     PanelWindow {
         visible: root.previewing
@@ -467,6 +473,7 @@ Scope {
             messageIsError: root.messageIsError
             lockedOut: root.lockedOut
             capsLock: root.testCaps
+            people: root.previewMode === "login" ? root.testPeople : []
             showPowerMenu: root.previewMode === "login" || Config.s.lockScreenPowerMenu
             onSubmitted: pw => root.check(pw)
             onPowerAction: a => root.power(a)
@@ -501,6 +508,8 @@ Scope {
         }
         function closePreview(): void { root.endPreview(); }
         function previewCaps(on: bool): void { if (Config.testMode) root.testCaps = on; }
+        function previewPeople(people: string): void { if (Config.testMode) root.testPeopleText = people; }
+        function previewMenu(name: string): void { if (Config.testMode) previewScreen.menu = name; }
         // Tests: a faillock.conf of their own ("" for the system's), and a password as if typed
         // and Enter pressed. PAM checks it like any other, so it's no way past the lock
         function pamService(dir: string, name: string): void { if (Config.testMode) { root.testPamDir = dir; root.testPamService = name; } }

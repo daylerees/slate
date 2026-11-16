@@ -64,6 +64,13 @@ SCENES = {
                           "wait": lambda st: st["lock"]["previewing"], "settle": 1.5, "undo": [("lock", "closePreview")]},
     "login-preview-caps": {"do": [("lock", "preview", "login"), ("lock", "previewCaps", "true")],
                            "wait": lambda st: st["lock"]["previewing"], "settle": 1.5, "undo": [("lock", "closePreview")]},
+    # More than one person on the computer: who's logging in, bottom left beside the session, and
+    # its list open
+    **{name: {"do": [("lock", "preview", "login"), ("lock", "previewPeople", "alex:Alex Morgan;sam:Sam Lee;robin:Robin Park")]
+                  + ([("lock", "previewMenu", "person")] if open_ else []),
+              "wait": lambda st: st["lock"]["previewing"] and st["lock"]["previewPeople"] == 3, "settle": 1.5,
+              "undo": [("lock", "closePreview")]}
+       for name, open_ in (("login-preview-people", False), ("login-preview-people-menu", True))},
     "power-confirm": {"do": [("power", "confirm", "logout")], "wait": lambda st: st["power"]["open"],
                       "undo": [("power", "cancel")]},
     "polkit": {"do": [("polkit", "preview")], "wait": lambda st: st["polkit"]["open"], "undo": [("polkit", "close")]},

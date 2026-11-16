@@ -25,8 +25,15 @@ PanelWindow {
         mode: "login"
         visible: true
         wallpaper: win.greeter.haveWallpaper ? win.greeter.wallpaper : ""
-        avatar: win.greeter.dir + "/avatar"
+        avatar: win.greeter.avatar
         displayName: win.greeter.displayName
+        people: win.greeter.people
+        personIndex: win.greeter.personIndex
+        onPersonPicked: i => {
+            // (a question from the last attempt belongs to the last person: ended first)
+            if (win.greeter.asking) win.greeter.cancelAsking();
+            win.greeter.personChosen = true; win.greeter.personIndex = i;
+        }
         sessions: win.greeter.sessions
         sessionIndex: win.greeter.sessionIndex
         onSessionIndexChanged: win.greeter.sessionIndex = sessionIndex

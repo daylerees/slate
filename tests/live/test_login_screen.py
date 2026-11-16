@@ -224,3 +224,66 @@ class HostLights(LiveCase):
         if not in_container():
             self.skipTest("only in the test container")
         self.assertEqual(os.listdir("/sys/class/leds"), [])
+
+
+class ChoosingWho(LiveCase):
+    """With more than one person on the computer, the login screen lists them all (people with
+    a normal account only), starts on the one whose desktop it was synced from, and logs in
+    whoever's chosen."""
+    def test_pick_someone_else(self):
+        h = self.s.h
+        code = os.path.join(h.dir, "greeter-people")
+        build_greeter(code)
+        data = os.path.join(h.dir, "greeter-people-data")
+        os.makedirs(data)
+        with open(os.path.join(data, "user.json"), "w") as f:
+            json.dump({"user": "sam", "name": "Sam Lee"}, f)
+        passwd = os.path.join(h.dir, "passwd")
+        with open(passwd, "w") as f:
+            f.write("root:x:0:0:root:/root:/bin/bash\n"
+                    "daemon:x:2:2:daemon:/:/usr/bin/nologin\n"
+                    "alex:x:1000:1000:Alex Morgan,,,:/home/alex:/bin/bash\n"
+                    "sam:x:1001:1001:Sam Lee:/home/sam:/bin/zsh\n"
+                    "robin:x:1002:1002::/home/robin:/bin/bash\n"
+                    "builder:x:1003:1003:Build bot:/home/builder:/usr/bin/false\n")
+        sessions = os.path.join(h.dir, "share-people", "wayland-sessions")
+        os.makedirs(sessions)
+        with open(os.path.join(sessions, "slate.desktop"), "w") as f:
+            f.write("[Desktop Entry]\nName=Slate\nExec=slate-session --test\nDesktopNames=Hyprland\n")
+        sock = os.path.join(h.runtime, "greetd-people.sock")
+        greetd = FakeGreetd(sock)
+        greetd.start()
+        self.addCleanup(greetd.stop)
+        env = dict(self.s.env, GREETD_SOCK=sock, SLATE_GREETER_TEST="1", SLATE_GREETER_DATA=data,
+                   SLATE_GREETER_PASSWD=passwd, XDG_DATA_DIRS=os.path.join(h.dir, "share-people"), USER="tester")
+        log = open(os.path.join(self.s.out, "login-screen-people.log"), "w")
+        p = subprocess.Popen(["qs", "-p", code], env=env, stdout=log, stderr=subprocess.STDOUT)
+        self.addCleanup(lambda: p.poll() is None and p.kill())
+
+        def ipc(*a):
+            return slate.run(["qs", "-p", code, "ipc", "call", "greeter"] + list(a), env=env)[1].strip()
+
+        for _ in range(100):
+            if p.poll() is not None:
+                self.fail(f"the login screen exited ({p.returncode}); see tests/out/live/login-screen-people.log")
+            if ipc("people").startswith("["):
+                break
+            time.sleep(0.2)
+        for _ in range(50):
+            if json.loads(ipc("people") or "[]") and ipc("user") == "sam":
+                break
+            time.sleep(0.1)
+        self.assertEqual(json.loads(ipc("people")), ["alex", "sam", "robin"], "system accounts and ones without a shell are left out")
+        self.assertEqual(ipc("user"), "sam", "it didn't start on the person it was synced from")
+
+        ipc("pick", "2")
+        self.assertEqual(ipc("user"), "robin")
+        ipc("submit", PASSWORD)
+        for _ in range(60):
+            if greetd.of_type("start_session"):
+                break
+            time.sleep(0.1)
+        made = greetd.of_type("create_session")
+        self.assertTrue(made, "nobody was logged in")
+        self.assertEqual(made[-1].get("username"), "robin", "the wrong person was logged in")
+        self.assertTrue(greetd.of_type("start_session"))
