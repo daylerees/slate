@@ -433,6 +433,7 @@ SCENES["software-discover"] = {
     "wait": lambda st: st["software"]["open"] and st["software"]["apps"] > 0 and st["software"]["updates"] == 3,
     "settle": 1.2, "undo": _SW_UNDO,
 }
+SCENES["software-discover-monotone"] = dict(SCENES["software-discover"], settings={"colourStyle": "monotone"})
 SCENES["software-updates"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "updates")],
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["updates"] == 3)
 SCENES["software-installed"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "installed")],

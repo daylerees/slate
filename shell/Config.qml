@@ -1647,7 +1647,13 @@ Singleton {
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a"
+        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
+        // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
+        "software-discover": "#8fb3e8", "software-installed": "#9ad3b8", "software-updates": "#a6d8a6",
+        "software-Game": "#e8a6c8", "software-Graphics": "#e8c4a6", "software-AudioVideo": "#c3a6e6",
+        "software-Office": "#9db4d8", "software-Network": "#8fc7e8", "software-Development": "#e8d08f",
+        "software-Education": "#e8b48f", "software-Science": "#8fd0c8", "software-Utility": "#c8c8a0",
+        "software-System": "#a8b8cc"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // ---- The control centre's quick switches (Settings → Control Centre) --------------------

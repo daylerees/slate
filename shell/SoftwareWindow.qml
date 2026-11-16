@@ -270,7 +270,10 @@ FloatingWindow {
                             id: navIcon
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                             text: sw.glyph(parent.modelData.icon)
-                            color: parent.current ? sw.accentText : Config.colourful ? Config.pageColour("updates") : sw.dim
+                            // As Settings' sidebar: Colorful, each section its own colour; else dim
+                            // (dark like its name on the section you're in)
+                            color: parent.current ? sw.accentText : Config.colourful ? Config.pageColour("software-" + parent.modelData.id) : sw.dim
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             font.family: sw.bar.iconFont; font.pixelSize: 17
                         }
                         Text {
@@ -278,6 +281,7 @@ FloatingWindow {
                             anchors { left: navIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
                             text: parent.modelData.label
                             color: parent.current ? sw.accentText : sw.dim
+                            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium
                         }
                         // How many updates are waiting
@@ -713,7 +717,7 @@ FloatingWindow {
             Row {
                 anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
                 spacing: 8
-                Text { anchors.verticalCenter: parent.verticalCenter; text: sw.glyph(strip.cat.icon || 0xEB1C); color: Config.colourful ? Config.pageColour("updates") : sw.accent; font.family: sw.bar.iconFont; font.pixelSize: 17 }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: sw.glyph(strip.cat.icon || 0xEB1C); color: Config.pageColour("software-" + strip.cat.id); font.family: sw.bar.iconFont; font.pixelSize: 17 }
                 Text { anchors.verticalCenter: parent.verticalCenter; text: strip.cat.label || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15; font.weight: Font.Medium }
             }
             Row {
