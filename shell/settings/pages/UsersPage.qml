@@ -341,7 +341,7 @@ Column {
         SettingRow {
             visible: !usersPane.adding
             label: "Add someone"
-            detail: usersPane.admin ? "A new account, with its own files, settings and password. For now, they can use other desktops on the login screen, but not Slate yet"
+            detail: usersPane.admin ? "A new account, with its own files, settings and password. Slate sets itself up for them the first time they log in"
                 : "Only an administrator can add people to this computer"
             Button {
                 visible: usersPane.admin

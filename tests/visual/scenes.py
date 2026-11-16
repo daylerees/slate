@@ -395,6 +395,14 @@ SCENES["hyprbars-question"] = {
 
 # The Welcome window's "Glass or flat?" page, and the whole window on glass (it follows the
 # theme in use, as it can be opened again from Settings)
+# Someone new to Slate on this computer: the welcome's last page, a password of their own
+# (slate-session's mark, left here instead, then looked for again)
+SCENES["welcome-password"] = {
+    "do": [("!sh", "-c", ': > "$XDG_CONFIG_HOME/slate/.new-here"'), ("welcome", "lookForNewHere"), ("welcome", "page", "8")],
+    "wait": lambda st: st["welcome"]["open"] and st["welcome"]["newHere"] and st["welcome"]["page"] == 8,
+    "settle": 1.2,
+    "undo": [("welcome", "close"), ("!sh", "-c", 'rm -f "$XDG_CONFIG_HOME/slate/.new-here"'), ("welcome", "lookForNewHere")],
+}
 SCENES["welcome-look"] = {
     "do": [("welcome", "page", "3")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3,
     "settle": 1.2, "undo": [("welcome", "close")],

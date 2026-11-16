@@ -48,6 +48,12 @@ todo=$(sudo -u tester $S/bin/slate-system --check 2>&1 | tr "\n" " ")
 echo "slate-system --check (as you): ${todo:-nothing to do}"
 out=$(sudo /usr/local/libexec/slate/slate-update-install v0.0.1 2>&1 || true)
 case "$out" in *"newer"*) echo "update helper accepts the copy for everyone: ok (refused only as not newer)" ;; *) echo "update helper: UNEXPECTED: $out" ;; esac
+# Someone added later, who never ran the installer: what they get without doing anything
+useradd -m newbie
+echo "for someone new: slate dir = $(sudo -u newbie -H /usr/local/bin/slate dir 2>&1)"
+[ -f /usr/local/share/applications/slate-settings.desktop ] && echo "for someone new: Settings entry ok" || echo "for someone new: Settings entry MISSING"
+[ -f /usr/local/share/icons/Slate-Cursors/index.theme ] && echo "for someone new: cursors ok" || echo "for someone new: cursors MISSING"
+sudo -u newbie -H fc-list : family | grep -qi "^Geist" && echo "for someone new: Geist font ok" || echo "for someone new: Geist font MISSING"
 echo "--- QML modules Slate imports (no display here, so windows are not created) ---"
 mkdir -p /tmp/qmlcheck
 # (Slate'"'"'s own modules, import qs…, only resolve inside Slate: left out)

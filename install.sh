@@ -38,6 +38,8 @@ DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"    # your own files: settings.jso
 CODE=/usr/local/share/slate                         # Slate's code, for everyone on the computer
 # (the tests' own, in a scratch folder: only under the tests, so they never reach the real one)
 [ "${SLATE_TEST:-}" != 1 ] || [ -z "${SLATE_TEST_CODE:-}" ] || CODE=$SLATE_TEST_CODE
+SYS=/usr/local                                      # where for_everyone puts the rest, for everyone
+[ "${SLATE_TEST:-}" != 1 ] || [ -z "${SLATE_TEST_SYS:-}" ] || SYS=$SLATE_TEST_SYS
 BIN_LINK="$HOME/.local/bin/slate"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/slate"   # what the installer remembers between runs
 HELPERS=/usr/local/libexec/slate      # Slate's root helpers (shell/bin/slate-helpers-install)
@@ -97,6 +99,32 @@ code_in_use() {
 # code_is_yours: $CODE is your own (made so on purpose, to change Slate without a password, as
 # on a computer only you use for working on Slate): it's then changed as you, never with sudo
 code_is_yours() { [ -d "$CODE" ] && [ ! -L "$CODE" ] && [ -w "$CODE" ] && [ "$(stat -c %u "$CODE")" = "$(id -u)" ]; }
+
+# for_everyone: what someone new needs that isn't in Slate's code folder, for everyone on the
+# computer (with sudo): the `slate` command, Slate Settings' icon and desktop entry, Slate
+# Cursors and the Geist fonts for their other apps. Links into $CODE wherever they can be, so an
+# update brings them along. (The installer's own person gets these in their home as well.)
+for_everyone() {
+    sudo mkdir -p "$SYS/bin" "$SYS/share/applications" "$SYS/share/icons" "$SYS/share/fonts/slate"
+    sudo ln -sfn "$CODE/bin/slate" "$SYS/bin/slate"
+    sed "s|@SLATE@|$CODE/bin/slate|" "$CODE/data/slate-settings.desktop" | sudo tee "$SYS/share/applications/slate-settings.desktop" >/dev/null
+    local s f
+    for s in 512 256 128 64 48 32 16; do
+        sudo install -D -m 644 "$CODE/assets/icon/settings-$s.png" "$SYS/share/icons/hicolor/${s}x${s}/apps/slate-settings.png"
+    done
+    sudo ln -sfn "$CODE/cursors/Slate-Cursors" "$SYS/share/icons/Slate-Cursors"
+    for f in "$CODE"/fonts/Geist*-Variable.ttf; do [ ! -f "$f" ] || sudo ln -sfn "$f" "$SYS/share/fonts/slate/"; done
+    { have fc-cache && sudo fc-cache -f "$SYS/share/fonts/slate"; } >/dev/null 2>&1 || true
+    { have gtk-update-icon-cache && sudo gtk-update-icon-cache -q -t "$SYS/share/icons/hicolor"; } >/dev/null 2>&1 || true
+    ok "For everyone: the slate command, the Settings icon, Slate Cursors and the Geist fonts"
+}
+
+# not_for_everyone: for_everyone's, taken away (with the copy for everyone, by --uninstall)
+not_for_everyone() {
+    sudo rm -f "$SYS/bin/slate" "$SYS/share/applications/slate-settings.desktop" "$SYS/share/icons/Slate-Cursors" \
+        "$SYS"/share/icons/hicolor/*/apps/slate-settings.png
+    sudo rm -rf "$SYS/share/fonts/slate"
+}
 
 # Is this Slate running? Only Slate's own copy counts (the one started from its folder, which is
 # how bin/slate finds it too): `qs` is Quickshell, and other shells run on it as well, so "a qs
@@ -170,9 +198,12 @@ if [ "$UNINSTALL" -eq 1 ]; then
     fi
     # The copy for everyone: only when asked, since anyone else on the computer loses Slate too
     if [ -f "$CODE/shell.qml" ] && ask "Remove Slate for everyone on this computer, from $CODE (uses sudo)? Anyone else who uses it loses it too."; then
-        if code_is_yours; then rm -rf "$CODE" "$CODE.previous" 2>/dev/null || sudo rm -rf "$CODE" "$CODE.previous"
+        yours=0; code_is_yours && yours=1
+        if [ "$yours" = 1 ]; then rm -rf "$CODE" "$CODE.previous" 2>/dev/null || sudo rm -rf "$CODE" "$CODE.previous"
         else sudo rm -rf "$CODE" "$CODE.previous"; fi
         [ -d "$CODE" ] || ok "Removed $CODE"
+        # (and what was put beside it for everyone: never put there for a copy of yours)
+        [ "$yours" = 1 ] || not_for_everyone
     fi
     # What's left, and how to remove each. None of it is deleted here: other apps may be using
     # the fonts and the icon theme, and nothing marks them as Slate's rather than yours.
@@ -602,6 +633,9 @@ else
     stage_code "$staged/slate"
     place_code "$staged/slate"
     rm -rf "$staged"
+    # (a copy for everyone that's yours is a computer of yours for working on Slate: nothing more
+    # is needed, and nothing is done with sudo)
+    code_is_yours || [ "$UPDATE" -eq 1 ] || for_everyone
     your_folder
 fi
 SLATE=$(code_in_use)          # where your Slate runs from now

@@ -550,7 +550,8 @@ class InstallPlaces(Pieces):
     """Step 4: Slate's code goes in $CODE, once for everyone (root's, with sudo; or in place
     without sudo when that folder is yours on purpose), and ~/.config/slate keeps only your files,
     an older copy of your own moved aside whole."""
-    PIECES = function("stage_code") + function("place_code") + function("your_folder") + "KEEP=(settings.json hypr user)\n"
+    PIECES = (function("stage_code") + function("place_code") + function("your_folder") + function("for_everyone")
+              + function("not_for_everyone") + "KEEP=(settings.json hypr user)\n")
 
     def setUp(self):
         super().setUp()
@@ -608,6 +609,31 @@ class InstallPlaces(Pieces):
             self.addCleanup(lambda: os.path.isdir(self.code + ".previous") and os.chmod(self.code + ".previous", 0o755))
             self.install()
             self.assertTrue(os.path.isfile(os.path.join(self.code + ".previous", "shell.qml")))
+
+    def test_what_someone_new_needs_is_there_for_everyone(self):
+        """The slate command, the Settings icon and entry, the cursors and the fonts, for
+        everyone, as links into the copy for everyone where they can be (so updates bring them
+        along); and gone again with it."""
+        sys_dir = os.path.join(self.h.dir, "usr-local")
+        for rel in ("data/slate-settings.desktop", "fonts/Geist-Variable.ttf", "fonts/GeistMono-Variable.ttf",
+                    *("assets/icon/settings-%d.png" % n for n in (512, 256, 128, 64, 48, 32, 16)), "cursors/Slate-Cursors/index.theme"):
+            path = os.path.join(self.root, "shell", rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                f.write("Exec=@SLATE@ settings\n" if rel.endswith(".desktop") else "x")
+        self.install()
+        self.piece("for_everyone\n", SYS=sys_dir)
+        p = lambda *rel: os.path.join(sys_dir, *rel)
+        self.assertEqual(os.readlink(p("bin", "slate")), os.path.join(self.code, "bin", "slate"))
+        with open(p("share", "applications", "slate-settings.desktop")) as f:
+            self.assertIn("Exec=%s settings" % os.path.join(self.code, "bin", "slate"), f.read())
+        self.assertTrue(os.path.isfile(p("share", "icons", "hicolor", "64x64", "apps", "slate-settings.png")))
+        self.assertEqual(os.readlink(p("share", "icons", "Slate-Cursors")), os.path.join(self.code, "cursors", "Slate-Cursors"))
+        self.assertEqual(sorted(os.listdir(p("share", "fonts", "slate"))), ["Geist-Variable.ttf", "GeistMono-Variable.ttf"])
+        self.piece("not_for_everyone\n", SYS=sys_dir)
+        for rel in (("bin", "slate"), ("share", "applications", "slate-settings.desktop"), ("share", "icons", "Slate-Cursors"),
+                    ("share", "fonts", "slate"), ("share", "icons", "hicolor", "64x64", "apps", "slate-settings.png")):
+            self.assertFalse(os.path.lexists(p(*rel)), rel)
 
     def test_a_folder_of_yours_is_changed_without_sudo(self):
         os.makedirs(self.code)
@@ -821,6 +847,24 @@ class SessionStarter(Case):
         other = self.shared_copy("usr")
         env = dict(self.env, SLATE_TEST="1", SLATE_TEST_SHARED=f"{local} {other}")
         self.assertEqual(self.started_with(env), [os.path.join(local, "session", "hypr", "hyprland.lua"), local])
+
+    def test_someone_new_is_marked_once(self):
+        """With Slate for everyone and no folder of their own yet, the starter makes it, marked,
+        so the welcome offers a password of their own; never for someone who has one already."""
+        local = self.shared_copy("usr-local")
+        env = dict(self.env, SLATE_TEST="1", SLATE_TEST_SHARED=local)
+        yours = os.path.join(self.h.config, "slate")
+        self.assertFalse(os.path.exists(yours))
+        self.started_with(env)
+        self.assertTrue(os.path.isfile(os.path.join(yours, ".new-here")))
+        os.remove(os.path.join(yours, ".new-here"))
+        self.started_with(env)
+        self.assertFalse(os.path.exists(os.path.join(yours, ".new-here")), "marked again, with a folder of their own")
+
+    def test_your_own_install_is_never_marked(self):
+        self.config_in("slate")
+        self.started_with(dict(self.env, SLATE_TEST="1", SLATE_TEST_SHARED=self.shared_copy("usr-local")))
+        self.assertFalse(os.path.exists(os.path.join(self.h.config, "slate", ".new-here")))
 
     def test_your_own_install_comes_first(self):
         """A copy of your own (your development link) wins over the one for everyone."""

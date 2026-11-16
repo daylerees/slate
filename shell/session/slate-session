@@ -17,6 +17,14 @@ done
 [ -n "$SLATE_DIR" ] || { echo "slate-session: Slate isn't installed for $USER" >&2; exit 1; }
 conf="$SLATE_DIR/session/hypr/hyprland.lua"
 export SLATE_DIR
+# Someone new to Slate here (it's installed for everyone, and their own folder isn't made yet):
+# made now, and marked, so the Welcome window offers them a password of their own (the person
+# who added them chose the one they have). The installer makes its own person's folder, so
+# they're never asked
+yours="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
+if [ "$SLATE_DIR" != "$yours" ] && [ ! -e "$yours" ]; then
+    mkdir -p "$yours" && : > "$yours/.new-here"
+fi
 
 export SLATE_SESSION=1
 # uwsm runs the session through systemd, so only where systemd is running

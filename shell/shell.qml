@@ -497,7 +497,7 @@ ShellRoot {
                 screensaver: { open: screensaver.shown },
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
-                welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps },
+                welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps, newHere: welcome.newHere },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.dnd, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "", toast: notifs.toastLook() },

@@ -200,6 +200,31 @@ class YourQml(LiveCase):
                       "the notice of the mistake", timeout=40)
 
 
+class SomeoneNew(LiveCase):
+    """Someone new to Slate on a computer where it's installed for everyone: slate-session marks
+    their first login, and the welcome gets one more page, last, offering a password of their
+    own. Finishing the welcome takes the mark away, so it's offered once."""
+    def test_one_more_page_then_never_again(self):
+        mark = os.path.join(self.s.slate_home, ".new-here")
+        self.addCleanup(lambda: os.path.exists(mark) and os.remove(mark))
+        self.addCleanup(lambda: self.ipc("welcome", "lookForNewHere"))
+        self.addCleanup(lambda: self.ipc("welcome", "close"))
+        self.assertEqual(self.s.state()["welcome"]["pages"], 8)
+        open(mark, "w").close()
+        self.ipc("welcome", "lookForNewHere")
+        self.wait(lambda st: st["welcome"]["newHere"] and st["welcome"]["pages"] == 9, "the extra page")
+        self.ipc("welcome", "page", 8)
+        self.wait(lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 8, "the password page")
+        self.ipc("welcome", "finish")
+        self.wait(lambda st: not st["welcome"]["newHere"] and st["welcome"]["pages"] == 8, "the page gone")
+        end = time.monotonic() + 10
+        while os.path.exists(mark) and time.monotonic() < end:
+            time.sleep(0.1)
+        self.assertFalse(os.path.exists(mark), "the mark outlived the welcome")
+        self.ipc("welcome", "lookForNewHere")
+        self.assertEqual(self.steady(lambda: self.s.state()["welcome"]["pages"], floor=1.0), 8)
+
+
 class ComingBack(LiveCase):
     def test_slate_comes_back_after_a_crash(self):
         """A crashed Slate is started again by itself (bin/slate's keeper), within a few seconds,

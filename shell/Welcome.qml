@@ -21,7 +21,44 @@ PanelWindow {
     // ---- Showing ---------------------------------------------------------------
     property bool shown: false
     property int page: 0
-    readonly property int pages: 8
+    // Someone new to Slate on this computer gets one more page, last: a password of their own
+    // (the person who added them chose the one they have). slate-session marks them, at the first
+    // login with Slate installed for everyone; the mark goes once the welcome's done
+    readonly property string newHereMark: Config.userDir + "/.new-here"
+    property bool newHere: false
+    Process {
+        id: newHereLook
+        running: true
+        command: ["test", "-e", w.newHereMark]
+        onExited: code => w.newHere = code === 0
+    }
+    readonly property int pages: newHere ? 9 : 8
+    // The password page: busy while passwd works, then what it said ("" until then)
+    property bool pwBusy: false
+    property bool pwChanged: false
+    property string pwNote: ""
+    function changePassword(current, chosen) {
+        if (pwBusy) return;
+        pwBusy = true; pwNote = "";
+        pwRun.input = current + "\n" + chosen;
+        pwRun.running = true;
+    }
+    Process {
+        id: pwRun
+        property string input: ""
+        command: [Quickshell.shellPath("scripts/accounts.py"), "own-password"]
+        stdinEnabled: true
+        onStarted: { write(input + "\n"); input = ""; }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const line = text.trim();
+                w.pwBusy = false;
+                w.pwChanged = line === "ok";
+                w.pwNote = line === "ok" ? "Done: your password is yours alone now."
+                    : line.startsWith("error ") ? line.slice(6) : "Slate couldn't change your password";
+            }
+        }
+    }
     function open() {
         screen = Config.focusedScreen;
         page = 0;
@@ -31,6 +68,8 @@ PanelWindow {
     function finish() {
         Config.s.welcomeShown = true;
         shown = false;
+        // (asked once: from here on, Settings → Users changes it)
+        if (newHere) { Quickshell.execDetached(["rm", "-f", "--", newHereMark]); newHere = false; }
     }
     // Nova's page: Settings → Assistant, where switching it on shows the risks first. The
     // welcome never switches it on itself
@@ -56,12 +95,17 @@ PanelWindow {
         target: "welcome"
         function open(): void { w.open(); }
         function close(): void { w.shown = false; }
-        // Straight to a page (0: the welcome … 6: Nova, 7: the keys to know), its "Glass or flat?"
+        // Straight to a page (0: the welcome … 6: Nova, 7: the keys to know, 8: a password of your
+        // own, for someone new), its "Glass or flat?"
         // choice and the switch under it, and Nova's page's button
         function page(n: int): void { if (!w.shown) w.open(); w.page = Math.max(0, Math.min(w.pages - 1, n)); }
         function look(name: string): void { Config.applyLook(name); }
         function inApps(on: bool): void { w.setInApps(on); }
         function assistant(): void { w.openAssistant(); }
+        // Done, as its last button is (the mark for someone new goes too), and a fresh look for
+        // that mark (slate-session leaves it before Slate starts; the tests leave one later)
+        function finish(): void { w.finish(); }
+        function lookForNewHere(): void { newHereLook.running = false; newHereLook.running = true; }
     }
 
     property real fade: shown ? 1 : 0
@@ -881,6 +925,116 @@ PanelWindow {
                     }
                 }
             }
+
+            // ---- For someone new: a password of their own (last, only for them) ----
+            Item {
+                id: passwordPage
+                anchors.fill: parent
+                opacity: w.page === 8 ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                readonly property bool ready: !w.pwBusy && current.text !== "" && chosen.text !== "" && chosen.text === again.text
+                function go() {
+                    if (!ready) return;
+                    w.changePassword(current.text, chosen.text);
+                    current.text = ""; chosen.text = ""; again.text = "";
+                }
+                onVisibleChanged: if (visible && !w.pwChanged) current.forceActiveFocus()
+                Column {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - 80, 420)
+                    spacing: 0
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: w.glyph(0xEAE2)
+                        color: w.accent; font.family: w.iconFont; font.pixelSize: 40
+                    }
+                    Item { width: 1; height: 14 }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "A password of your own"
+                        color: w.text; font.family: w.font; font.pixelSize: 26; font.weight: Font.DemiBold
+                    }
+                    Item { width: 1; height: 10 }
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        text: "Whoever added you to this computer chose your password, so they know it too. You can choose a new one now, or keep it and change it any time in Settings → Users."
+                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                    }
+                    Item { width: 1; height: 22 }
+                    Repeater {
+                        // (the three boxes: the one you have, then the new one twice)
+                        model: [{ id: "current", hint: "Your password now" }, { id: "chosen", hint: "A new password" }, { id: "again", hint: "The new one again" }]
+                        delegate: Item {
+                            required property var modelData
+                            required property int index
+                            visible: !w.pwChanged
+                            width: parent.width; height: visible ? 46 : 0
+                            Rectangle {
+                                width: parent.width; height: 38; radius: Config.corner(10)
+                                color: w.card
+                                border.width: box.activeFocus ? 1 : 0; border.color: w.accent
+                                TextInput {
+                                    id: box
+                                    anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    echoMode: TextInput.Password
+                                    color: w.text; selectionColor: w.accent
+                                    font.family: w.font; font.pixelSize: 13
+                                    clip: true
+                                    Component.onCompleted: {
+                                        if (modelData.id === "current") passwordPage.current = box;
+                                        else if (modelData.id === "chosen") passwordPage.chosen = box;
+                                        else passwordPage.again = box;
+                                    }
+                                    Keys.onReturnPressed: index < 2 ? (index === 0 ? passwordPage.chosen : passwordPage.again).forceActiveFocus() : passwordPage.go()
+                                }
+                                Text {
+                                    visible: box.text === ""
+                                    anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                    text: modelData.hint
+                                    color: w.dim; font.family: w.font; font.pixelSize: 13
+                                }
+                            }
+                        }
+                    }
+                    Text {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
+                        textFormat: Text.PlainText        // (it can quote what passwd said)
+                        text: w.pwBusy ? "Changing it…"
+                            : w.pwNote !== "" ? w.pwNote
+                            : passwordPage.chosen && passwordPage.again && passwordPage.again.text !== "" && passwordPage.chosen.text !== passwordPage.again.text ? "Those new passwords don't match"
+                            : ""
+                        color: w.pwChanged || w.pwBusy ? w.dim : Config.tint("#f28b8b")
+                        font.family: w.font; font.pixelSize: 12
+                        height: text === "" ? 0 : implicitHeight + 8
+                        topPadding: 4
+                    }
+                    Item { width: 1; height: 8 }
+                    Rectangle {
+                        visible: !w.pwChanged
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: changeText.implicitWidth + 36; height: 38; radius: Config.corner(10)
+                        color: passwordPage.ready ? Config.accentFor(changeHover.hovered) : w.card
+                        HoverHandler { id: changeHover }
+                        Text {
+                            id: changeText
+                            anchors.centerIn: parent
+                            text: "Change password"
+                            color: passwordPage.ready ? w.accentText : w.dim
+                            font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
+                        }
+                        ClickTap { onTapped: passwordPage.go() }
+                    }
+                }
+                property Item current: null
+                property Item chosen: null
+                property Item again: null
+            }
         }
 
         // ---- Footer: page dots, Back and Next ----------------------------------
@@ -937,7 +1091,9 @@ PanelWindow {
                     Text {
                         id: nextText
                         anchors.centerIn: parent
-                        text: w.page === 0 ? "Get started" : w.page === w.pages - 1 ? "Start using Slate" : "Next"
+                        text: w.page === 0 ? "Get started"
+                            : w.page === 8 && !w.pwChanged ? "Keep it for now"
+                            : w.page === w.pages - 1 ? "Start using Slate" : "Next"
                         color: w.accentText; font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
                     }
                     ClickTap { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
