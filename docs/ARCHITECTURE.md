@@ -91,6 +91,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
 ├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
 ├─ SoftwareWindow.qml   Slate Software (floating window "Slate Software"): install, remove and update Flathub apps, update the system (scripts/software.py)
+├─ SoftwareJobs.qml     Slate Software's installs, removals and updates, one at a time (outlives its window)
 │  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)
 │  ├─ Displays.qml        Settings → Displays: reads the monitors from Hyprland, applies and saves
 │  │                      them (~/.local/state/slate/displays.json and displays.lua)

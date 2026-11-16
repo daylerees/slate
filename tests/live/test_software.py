@@ -126,3 +126,16 @@ class Software(LiveCase):
         self.s.settle(1.0)
         clients = [c for c in self.s.hyprctl("clients", json_out=True) if c.get("title") == "Slate Software"]
         self.assertTrue(clients and clients[0].get("mapped", True), "on screen again")
+
+    def test_a_job_carries_on_when_the_window_goes(self):
+        """Closed with Super+Q in the middle of an install (the window is built afresh after
+        that), the install carries on, and the window opened again shows it."""
+        self.ipc("test", "softwarePretend", json.dumps(dict(PRETEND, actMs=4000)))
+        self.ipc("test", "softwareAct", "install", "org.mozilla.firefox")
+        self.wait(lambda st: st["software"]["busy"] == "install org.mozilla.firefox", "Firefox installing")
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "title:^(Slate Software)$" })) end')
+        self.wait(lambda st: not st["software"]["open"], "closed from outside")
+        self.ipc("software", "open")
+        st = self.wait(lambda st: st["software"]["open"], "open again")["software"]
+        self.assertEqual(st["busy"], "install org.mozilla.firefox", "the install ended with the window")
+        self.wait(lambda st: st["software"]["busy"] == "", "then finished", timeout=10)

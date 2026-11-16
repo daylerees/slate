@@ -226,7 +226,12 @@ ShellRoot {
         // Slate Software: what its engine (scripts/software.py) would say, as a JSON object
         // { status, catalogue, lists, installed, updates, app, act }, used in place of running it
         // (act: how an install, removal or update goes, "ok" or what went wrong)
-        function softwarePretend(json: string): void { root.softwareWindow().pretend = JSON.parse(json); }
+        function softwarePretend(json: string): void {
+            const p = JSON.parse(json);
+            root.softwareWindow().pretend = p;
+            SoftwareJobs.pretend = p.act;
+            SoftwareJobs.pretendMs = p.actMs || 600;
+        }
         // Slate Software's Remove on an app's page (it asks first)
         function softwareRemove(id: string): void { const w = root.softwareWindow(); w.askRemove(w.byId[id] || { id: id, name: id }); }
         // Slate Software's Install (or Update all, or Update for the system: id "update-apps", "update-system")

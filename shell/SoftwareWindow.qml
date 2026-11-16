@@ -165,50 +165,20 @@ FloatingWindow {
         onExited: { stdinEnabled = true; sw.tilesVersion++; if (sw.tilesWanted.length) tileBatch.restart(); }
     }
 
-    // ---- Doing: one at a time, in order ------------------------------------------------------
-    // queue: [{ what: "install"|"remove"|"update-apps"|"update-system", id, name }]; busy: the
-    // one running (and its progress, 0–100); note: how the last one went, when it didn't
-    property var queue: []
-    property var busy: null
-    property int progress: 0
-    property string note: ""
-    function act(what, id, name) {
-        if (busy && busy.what === what && busy.id === id) return;
-        if (queue.some(q => q.what === what && q.id === id)) return;
-        queue = queue.concat([{ what: what, id: id || "", name: name || "" }]);
-        next();
-    }
-    function next() {
-        if (busy || queue.length === 0) return;
-        busy = queue[0];
-        queue = queue.slice(1);
-        progress = 0;
-        note = "";
-        actRun.command = [script, busy.what].concat(busy.id ? [busy.id] : []);
-        if (pretend.act === undefined) { actRun.running = true; return; }
-        // (the tests: how it went, after a moment at half way)
-        progress = 50;
-        pretendAct.restart();
-    }
-    Timer { id: pretendAct; interval: 600; onTriggered: { if (sw.pretend.act !== "ok") sw.note = sw.pretend.act; sw.finished(); } }
-    function waiting(what, id) { return (busy && busy.what === what && busy.id === id) || queue.some(q => q.what === what && q.id === id); }
-    Process {
-        id: actRun
-        stdout: SplitParser {
-            onRead: line => {
-                if (line.startsWith("progress ")) { sw.progress = parseInt(line.slice(9)) || 0; return; }
-                if (line === "ok" || line === "error canceled") return;
-                if (line.startsWith("error ")) sw.note = line.slice(6);
-            }
+    // ---- Doing: one at a time, in order (SoftwareJobs, which outlives this window) ------------
+    readonly property var queue: SoftwareJobs.queue
+    readonly property var busy: SoftwareJobs.busy
+    readonly property int progress: SoftwareJobs.progress
+    readonly property string note: SoftwareJobs.note
+    function act(what, id, name) { SoftwareJobs.act(what, id, name); }
+    function waiting(what, id) { return SoftwareJobs.waiting(what, id); }
+    Connections {
+        target: SoftwareJobs
+        function onDone() {
+            sw.load("installed", installedRun);
+            sw.checkUpdates();
+            if (sw.app !== "") sw.openApp(sw.app);
         }
-        onExited: sw.finished()
-    }
-    function finished() {
-        busy = null;
-        load("installed", installedRun);
-        checkUpdates();
-        if (app !== "") openApp(app);
-        next();
     }
     function launch(id) { Quickshell.execDetached(["flatpak", "run", "--", id]); }
     function askRemove(a) {
