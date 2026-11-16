@@ -629,11 +629,19 @@ ShellRoot {
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
     }
-    // Slate Software (SoftwareWindow.qml), built the first time it's opened, as Settings is
+    // Slate Software (SoftwareWindow.qml), built the first time it's opened, as Settings is, and
+    // built afresh after it's closed from outside Slate (Super+Q, a title bar's close button):
+    // until then it couldn't be shown again
     LazyLoader {
         id: softwareLoader
         active: false
-        SoftwareWindow { bar: topBar; confirmer: powerConfirm }
+        SoftwareWindow { bar: topBar; confirmer: powerConfirm; onClosed: softwareRebuild.restart() }
+    }
+    // (out here: it outlives the window it replaces)
+    Timer {
+        id: softwareRebuild
+        interval: 0
+        onTriggered: softwareLoader.active = false
     }
     function softwareWindow() {
         softwareLoader.active = true;

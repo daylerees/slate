@@ -114,3 +114,15 @@ class Software(LiveCase):
         self.assertTrue(os.path.isfile(tile), tile)
         from PIL import Image
         self.assertEqual(Image.open(tile).size, (192, 192))
+
+    def test_opens_again_after_closing_from_outside(self):
+        """Closed from outside Slate (Super+Q, or a title bar's close button), it opens again
+        the next time it's asked for, rather than staying gone until Slate restarts."""
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "title:^(Slate Software)$" })) end')
+        self.wait(lambda st: not st["software"]["open"], "closed from outside")
+        self.ipc("test", "softwarePretend", json.dumps(PRETEND))
+        self.ipc("software", "open")
+        self.wait(lambda st: st["software"]["open"], "open again")
+        self.s.settle(1.0)
+        clients = [c for c in self.s.hyprctl("clients", json_out=True) if c.get("title") == "Slate Software"]
+        self.assertTrue(clients and clients[0].get("mapped", True), "on screen again")
