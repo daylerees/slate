@@ -437,6 +437,18 @@ SCENES["software-discover"] = {
 SCENES["software-discover-monotone"] = dict(SCENES["software-discover"], settings={"colourStyle": "monotone"})
 SCENES["software-updates"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "updates")],
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["updates"] == 3)
+# Update all apps while it runs: a progress bar where its button was (the pretend job stays at half way)
+SCENES["software-updating"] = dict(SCENES["software-discover"],
+    do=[("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(dict(_SW, actMs=600000))),
+        ("software", "page", "updates"), ("test", "softwareAct", "update-apps", "")],
+    wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["busy"] == "update-apps ",
+    undo=[("test", "softwarePretend", _json.dumps(_SW)), ("software", "close")])
+# An app's page with more screenshots than fit: the row scrolls sideways, a shade at its right end
+_SHOTS = [{"thumb": "file:///tmp/slate-test-app-icon.png", "full": "file:///tmp/slate-test-app-icon.png", "caption": ""}] * 5
+SCENES["software-app-shots"] = dict(SCENES["software-discover"],
+    do=[("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(dict(_SW, app=dict(_SW["app"], screenshots=_SHOTS)))),
+        ("software", "app", "org.mozilla.firefox")],
+    wait=lambda st: st["software"]["open"] and st["software"]["detail"] == "Firefox")
 SCENES["software-installed"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "installed")],
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "installed" and st["software"]["installed"] == ["org.videolan.VLC"])
 SCENES["software-category"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "Game")],

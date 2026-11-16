@@ -1674,10 +1674,11 @@ Singleton {
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
         // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
         "software-discover": "#8fb3e8", "software-installed": "#e8c48f", "software-updates": "#a6d8a6",
-        "software-Game": "#e8a6c8", "software-Graphics": "#e8c4a6", "software-AudioVideo": "#c3a6e6",
-        "software-Office": "#9db4d8", "software-Network": "#8fc7e8", "software-Development": "#e8d08f",
-        "software-Education": "#e8b48f", "software-Science": "#8fd0c8", "software-Utility": "#c8c8a0",
-        "software-System": "#a8b8cc"
+        // (Flathub's categories: ten hues evenly round the wheel, neighbours far apart, none repeated)
+        "software-Game": "#e396c4", "software-Graphics": "#e3c496", "software-AudioVideo": "#a696e3",
+        "software-Office": "#a6e396", "software-Network": "#96b5e3", "software-Development": "#d4e396",
+        "software-Education": "#e39696", "software-Science": "#96e3e3", "software-Utility": "#96e3b5",
+        "software-System": "#d496e3"
     })
     function pageColour(id) { return colourful && pagePastels[id] ? tint(pagePastels[id]) : accent; }
     // ---- The control centre's quick switches (Settings → Control Centre) --------------------

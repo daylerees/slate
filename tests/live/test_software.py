@@ -168,3 +168,71 @@ class Software(LiveCase):
             json.dump(noted, f)
         self.ipc("software", "open")
         self.wait(lambda st: "org.gimp.GIMP" in st["software"]["shaded"], "GIMP's tile in its own colour")
+
+    def test_grey_and_white_icons_get_a_tile_too(self):
+        """A grey or white icon (LibreOffice, DBeaver) gets a neutral tile of its own rather than
+        the theme's, which barely showed on a card."""
+        st = self.wait(lambda st: st["software"]["tilesDrawn"] > 0, "Firefox's picture drawn", timeout=20)["software"]
+        self.s.settle(0.5)
+        self.ipc("software", "close")
+        folder = st["flathubTiles"]
+        from PIL import Image
+        Image.new("RGBA", (192, 192), (231, 231, 231, 255)).save(os.path.join(folder, "org.videolan.VLC.png"))
+        path = os.path.join(folder, "colours.json")
+        with open(path) as f:
+            noted = json.load(f)
+        noted["org.videolan.VLC"] = {"c": "#e7e7e7", "t": 0}
+        with open(path, "w") as f:
+            json.dump(noted, f)
+        self.ipc("software", "open")
+        st = self.wait(lambda st: "org.videolan.VLC" in st["software"]["shaded"], "VLC's white icon on a tile of its own")
+        # A plain grey: not leaning to the accent (as the theme's tile does)
+        hex_ = st["software"]["shades"]["org.videolan.VLC"].lstrip("#")[-6:]
+        r, g, b = (int(hex_[i:i + 2], 16) for i in (0, 2, 4))
+        self.assertLessEqual(max(r, g, b) - min(r, g, b), 10, f"#{hex_} isn't a neutral grey")
+
+    def test_a_job_running_is_picked_up(self):
+        """A job runs as a process of its own and keeps how it's going in a file: one already
+        running (when Slate starts or reloads) is picked up with its progress, and finishes
+        when its file says so."""
+        import subprocess
+        self.ipc("test", "softwarePretend", json.dumps({k: v for k, v in PRETEND.items() if k != "act"}))
+        st = self.s.state()["software"]
+        stand_in = subprocess.Popen(["sleep", "60"])
+        self.addCleanup(stand_in.kill)
+        path = st["jobFile"]
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        def say(**more):
+            state = dict({"token": "from-before", "what": "install", "id": "org.gimp.GIMP", "pid": stand_in.pid,
+                          "progress": 30, "done": False, "result": ""}, **more)
+            with open(path + ".tmp", "w") as f:
+                json.dump(state, f)
+            os.replace(path + ".tmp", path)
+        say()
+        self.wait(lambda st: st["software"]["busy"] == "install org.gimp.GIMP" and st["software"]["progress"] == 30,
+                  "the running job picked up, at 30%", timeout=10)
+        say(progress=80)
+        self.wait(lambda st: st["software"]["progress"] == 80, "its progress followed", timeout=10)
+        say(progress=100, done=True, result="ok")
+        self.wait(lambda st: st["software"]["busy"] == "", "finished", timeout=10)
+
+    def test_screenshots_large_in_quick_look(self):
+        """A screenshot clicked on an app's page shows large in Quick Look (the dimmed screen,
+        Left and Right through the rest), with its caption, and no Open: it isn't a file."""
+        shots = [{"thumb": "https://example.invalid/a-small.png", "full": "https://example.invalid/a.png", "caption": "The main window"},
+                 {"thumb": "https://example.invalid/b-small.png", "full": "https://example.invalid/b.png", "caption": ""}]
+        self.ipc("test", "softwarePretend", json.dumps(dict(PRETEND, app=dict(PRETEND["app"], screenshots=shots))))
+        self.ipc("software", "app", "org.mozilla.firefox")
+        self.wait(lambda st: st["software"]["detail"] == "Firefox", "Firefox's page")
+        self.addCleanup(lambda: self.ipc("quicklook", "close"))
+        self.ipc("test", "softwareShot", "1")
+        st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["index"] == 1, "the second screenshot, large")["quicklook"]
+        self.assertEqual((st["path"], st["count"], st["web"], st["openShown"]), ("https://example.invalid/b.png", 2, True, False))
+        self.assertEqual(st["name"], "Firefox, screenshot 2")
+        self.assertTrue(st["closeShown"], "no close button")
+        # (offline here: says so, rather than an empty card)
+        self.wait(lambda st: "couldn't load this screenshot" in st["quicklook"]["note"], "why it can't show it", timeout=15)
+        self.ipc("quicklook", "close")
+        self.ipc("test", "softwareShot", "0")
+        self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["name"] == "The main window", "the first, with its caption")

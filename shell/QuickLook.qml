@@ -6,6 +6,8 @@
 // and Thunar's menus with Settings → Default Apps → Quick Look in Dolphin and Thunar.
 //
 //   quickLook.show(paths, index)     a list of files, starting at one of them
+//   quickLook.show(urls, index, "", titles)   pictures on the web (https://: Slate Software's
+//                                    screenshots), each with its title; shown as they are, no Open
 //   slate ipc call quicklook open <path> / close
 //
 // What it shows, by kind (scripts/quicklook.py says which, and reads what's needed):
@@ -58,9 +60,27 @@ PanelWindow {
     // scripts/file-previewer.py): Left/Right then ask Nautilus to move its selection (stepOut)
     property string from: ""
     signal stepOut(int d)
-    function show(list, at, source) {
-        const l = (list || []).filter(p => typeof p === "string" && p !== "");
+    property var titles: []                // (pictures on the web: what each is called)
+    // The picture being shown, in whichever of the two layers is current (layerA/layerB, below)
+    property bool curA: true
+    property string urlA: ""
+    property string urlB: ""
+    readonly property var picture: curA ? layerA : layerB
+    readonly property string pictureUrl: kind === "image" && shown ? (web ? path : fileUrl(path)) : ""
+    onPictureUrlChanged: {
+        if (pictureUrl === "" || pictureUrl === (curA ? urlA : urlB)) return;
+        if (curA) urlB = pictureUrl; else urlA = pictureUrl;
+        curA = !curA;
+    }
+    // (the spinner only once a picture's taking a while: one already kept loads in a moment, and
+    // just crossfades in)
+    Timer { id: slowPicture; interval: 350 }
+    // A picture on the web rather than a file here (only https: Flathub's screenshots)
+    readonly property bool web: path.startsWith("https://")
+    function show(list, at, source, names) {
+        const l = (list || []).filter(p => typeof p === "string" && (p.startsWith("/") || p.startsWith("https://")));
         if (l.length === 0) return;
+        titles = names || [];
         screen = Config.focusedScreen;
         from = source || "";
         files = l;
@@ -84,11 +104,13 @@ PanelWindow {
         info = null; body = ""; bodyCut = false; bodyCode = false;
         pages = []; pagesDone = false; pagesMore = false; missing = ""; gone = false;
         reader.running = false;
+        // On the web: a picture, nothing to read about it here
+        if (web) { info = { kind: "image", name: titles[index] || "Screenshot", label: "Screenshot", web: true, width: 0, height: 0 }; return; }
         reader.command = ["python3", Quickshell.shellPath("scripts/quicklook.py"), path, Config.runtimeDir + "/slate/quicklook"];
         reader.running = true;
     }
     function openFile() {
-        if (!path) return;
+        if (!path || web) return;
         Qt.openUrlExternally(fileUrl(path));
         close();
         opened();
@@ -130,7 +152,8 @@ PanelWindow {
         : kind === "pdf" && missing === "" && !pdfEmpty ? "pdf"
         : mediaKind && !mediaMissing && !mediaFailed ? kind
         : "details"
-    readonly property string note: gone ? "This file isn't there any more. It may have been moved or deleted."
+    readonly property string note: web && imageFailed ? "Slate couldn't load this screenshot. Check you're online, then try again."
+        : gone ? "This file isn't there any more. It may have been moved or deleted."
         : missing === "pdftoppm" ? "To see PDFs here, install poppler-utils (poppler on Arch)."
         : mediaMissing ? "To play videos and songs here, install Qt Multimedia (the qt6-multimedia package)."
         : imageFailed ? "Slate can't draw this kind of picture yet."
@@ -149,6 +172,7 @@ PanelWindow {
     // The kind and size, and what else is known (a picture's size, a PDF's pages)
     readonly property string details: {
         if (!info) return "";
+        if (info.web) return info.label;
         const parts = [info.label];
         if (info.dir) { if (info.items !== null) parts.push(info.items === 1 ? "1 item" : info.items + " items"); }
         else parts.push(sizeText(info.size));
@@ -291,7 +315,7 @@ PanelWindow {
             anchors { left: parent.left; right: parent.right; top: parent.top }
             height: root.headHeight
             Column {
-                anchors { left: parent.left; leftMargin: 18; right: root.files.length > 1 ? counter.left : openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: 18; right: root.files.length > 1 ? counter.left : root.web ? closeButton.left : openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                 spacing: 1
                 Text {
                     id: headName
@@ -311,22 +335,47 @@ PanelWindow {
                     font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
                 }
             }
-            Text {
+            // Where in the list, between arrows to the one before and after (as Left and Right)
+            Row {
                 id: counter
                 visible: root.files.length > 1
-                anchors { right: openButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                text: (root.index + 1) + " of " + root.files.length
-                color: root.dimTextColor
-                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                anchors { right: root.web ? closeButton.left : openButton.left; rightMargin: root.web ? 2 : 8; verticalCenter: parent.verticalCenter }
+                spacing: 2
+                HeadButton { id: prevButton; code: 0xEA60; onClicked: root.step(-1) }
+                // (as wide as it can get for this list, its widest digits in both places, so the
+                // arrows stay still as it counts)
+                Text {
+                    id: countText
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.ceil(widest.advanceWidth) + 4
+                    horizontalAlignment: Text.AlignHCenter
+                    text: (root.index + 1) + " of " + root.files.length
+                    color: root.dimTextColor
+                    font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    TextMetrics {
+                        id: widest
+                        font: countText.font
+                        text: { const n = String(root.files.length).replace(/./g, "8"); return n + " of " + n; }
+                    }
+                }
+                HeadButton { id: nextButton; code: 0xEA61; onClicked: root.step(1) }
             }
             DialogButton {
                 id: openButton
-                anchors { right: parent.right; rightMargin: root.pad; verticalCenter: parent.verticalCenter }
+                visible: !root.web            // (a picture on the web: no file to open)
+                anchors { right: closeButton.left; rightMargin: 6; verticalCenter: parent.verticalCenter }
                 width: 76; height: 32
                 label: "Open"
                 primary: true
                 fill: root.tileColor; textColor: root.textColor; accentText: root.accentText
                 onClicked: root.openFile()
+            }
+            // Close, at the end (as Settings' close button: Escape, Space or a click outside too)
+            HeadButton {
+                id: closeButton
+                anchors { right: parent.right; rightMargin: root.pad - 4; verticalCenter: parent.verticalCenter }
+                code: 0xEB55
+                onClicked: root.close()
             }
         }
 
@@ -339,27 +388,23 @@ PanelWindow {
             height: card.height - root.headHeight - root.pad
             clip: true
 
-            // A picture: decoded no bigger than the screen can show it
-            Image {
-                id: picture
-                // How big it's shown: as decoded (never bigger than the file, nor than the room
-                // there is), in Slate's units
-                readonly property real fullWidth: implicitWidth / root.dpr
-                readonly property real fullHeight: implicitHeight / root.dpr
-                anchors.fill: parent
-                visible: root.view === "image"
-                source: root.kind === "image" && root.shown ? root.fileUrl(root.path) : ""
-                // (the size it's shown at: Qt scales a picture up to sourceSize too, so it's the fitted
-                // size, from the file's own, read by quicklook.py; the room there is when that isn't known)
-                sourceSize: root.info && root.info.width > 0
-                    ? Qt.size(Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).width * root.dpr),
-                              Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).height * root.dpr))
-                    : Qt.size(Math.round(root.maxBodyW * root.dpr), Math.round(root.maxBodyH * root.dpr))
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                cache: false
-                smooth: true; mipmap: true
-                onStatusChanged: if (status === Image.Ready) root.lastImage = root.fit(fullWidth, fullHeight)
+            // A picture, in two layers that take turns: the next loads in the other, then fades in
+            // over this one, which fades out after it (a smooth crossfade: nothing is reloaded, and
+            // the card never goes blank between two pictures)
+            PictureLayer { id: layerA; current: root.curA; url: root.urlA }
+            PictureLayer { id: layerB; current: !root.curA; url: root.urlB }
+            // Loading (a screenshot from the web, a large picture): Slate's spinner
+            Text {
+                id: lookSpinner
+                anchors.centerIn: parent
+                readonly property bool wanted: root.view === "image" && picture.status === Image.Loading && !slowPicture.running
+                opacity: wanted ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                text: String.fromCodePoint(0xF226)
+                color: Config.accent
+                font.family: tabler.name; font.pixelSize: 26
+                RotationAnimation on rotation { running: lookSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
             }
 
             // Text: read-only, selectable, the first 200 KB
@@ -547,7 +592,7 @@ PanelWindow {
                 }
                 DialogButton {
                     width: 120
-                    visible: !root.gone
+                    visible: !root.gone && !root.web
                     label: "Open"
                     primary: true
                     fill: root.tileColor; textColor: root.textColor; accentText: root.accentText
@@ -560,7 +605,9 @@ PanelWindow {
     // ---- For the tests -------------------------------------------------------
     function testState() {
         return {
-            open: shown, visible: visible, path: path, index: index, count: files.length,
+            open: shown, visible: visible, path: path, index: index, count: files.length, web: web, openShown: openButton.visible, closeShown: card.header ? closeButton.visible : root.view === "details",
+            arrowsShown: card.header && counter.visible,
+            arrows: counter.visible ? [Math.round(prevButton.mapToItem(card, 0, 0).x), Math.round(nextButton.mapToItem(card, 0, 0).x)] : [],
             kind: kind, view: view, note: note, details: details,
             // the name as each place shows it, and whether it's drawn as plain text
             name: card.header ? headName.text : detailsName.text,
@@ -569,5 +616,58 @@ PanelWindow {
             card: [Math.round(card.width), Math.round(card.height)], opacity: Math.round(card.opacity * 100) / 100,
             image: picture.status === Image.Ready ? [Math.round(picture.fullWidth), Math.round(picture.fullHeight)] : null
         };
+    }
+
+    // A round icon button in the header (close, and the arrows), as Settings' close button
+    component HeadButton: Rectangle {
+        id: hb
+        property int code: 0
+        signal clicked()
+        width: 34; height: 34; radius: Config.corner(17)
+        color: hbHover.hovered ? Config.hover : "transparent"
+        Text {
+            anchors.centerIn: parent
+            text: String.fromCodePoint(hb.code)
+            color: hbHover.hovered ? root.textColor : root.dimTextColor
+            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
+            font.family: tabler.name; font.pixelSize: 18
+        }
+        HoverHandler { id: hbHover }
+        ClickTap { onTapped: hb.clicked() }
+    }
+
+    // One of the picture's two layers (above): the current one fades in once it has loaded, on
+    // top; the other keeps the picture before it until then, and fades out a little after
+    component PictureLayer: Image {
+        id: layer
+        property bool current: false
+        property string url: ""
+        // How big it's shown: as decoded (never bigger than the file, nor than the room there
+        // is), in Slate's units
+        readonly property real fullWidth: implicitWidth / root.dpr
+        readonly property real fullHeight: implicitHeight / root.dpr
+        anchors.fill: parent
+        visible: root.view === "image" && opacity > 0
+        z: current ? 1 : 0
+        source: url
+        opacity: current ? (status === Image.Ready ? 1 : 0) : (root.picture.status === Image.Ready ? 0 : 1)
+        Behavior on opacity {
+            NumberAnimation { duration: Config.ms(layer.current ? 240 : 420); easing.type: Easing.InOutQuad }
+        }
+        // (the size it's shown at: Qt scales a picture up to sourceSize too, so it's the fitted
+        // size, from the file's own, read by quicklook.py; the room there is when that isn't known)
+        sourceSize: root.info && root.info.width > 0
+            ? Qt.size(Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).width * root.dpr),
+                      Math.round(root.fit(root.info.width / root.dpr, root.info.height / root.dpr).height * root.dpr))
+            : Qt.size(Math.round(root.maxBodyW * root.dpr), Math.round(root.maxBodyH * root.dpr))
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        cache: root.web               // (on the web: kept, so stepping back to it is instant)
+        smooth: true; mipmap: true
+        onStatusChanged: {
+            if (!current) return;
+            if (status === Image.Ready) root.lastImage = root.fit(fullWidth, fullHeight);
+            if (status === Image.Loading) slowPicture.restart(); else slowPicture.stop();
+        }
     }
 }

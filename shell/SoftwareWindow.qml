@@ -29,6 +29,7 @@ FloatingWindow {
     readonly property bool compact: width < 780
 
     property var confirmer: null              // Slate's confirmation window (removing an app)
+    property var look: null                   // Quick Look (shell.qml's lookAt): screenshots, large
     // ---- Look: Settings' own (the theme's), so its building blocks (Group, Button…) fit. They
     // read these from SettingsHost.win: Settings when it's built, else this window, which has the
     // same colours under the same names
@@ -193,6 +194,14 @@ FloatingWindow {
             if (sw.app !== "") sw.openApp(sw.app);
         }
     }
+    // An app's screenshots, large (Quick Look), starting at one
+    function showShots(at) {
+        const shots = (detail && detail.screenshots) || [];
+        if (!look || shots.length === 0) return;
+        const name = detail.name || app;
+        look(shots.map(x => x.full || x.thumb), at, "",
+             shots.map((x, i) => x.caption || (name + ", screenshot " + (i + 1))));
+    }
     function launch(id) { Quickshell.execDetached(["flatpak", "run", "--", id]); }
     function askRemove(a) {
         if (!confirmer) return;
@@ -341,6 +350,14 @@ FloatingWindow {
                 // (clear of the close button, as Settings' search is)
                 anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
             }
+            // The header: its empty space moves the window, as a title bar would (on every page,
+            // Discover's too, which scrolls beneath it rather than up to the window's top)
+            MouseArea {
+                anchors { top: parent.top; left: parent.left; right: parent.right }
+                height: 59
+                z: 1
+                onPressed: sw.startSystemMove()
+            }
             // Close, top right, where Settings has it
             IconButton {
                 z: 3
@@ -350,7 +367,7 @@ FloatingWindow {
             }
             Flickable {
                 id: scroller
-                anchors { top: parent.top; topMargin: searchBox.visible ? 59 : 0; left: parent.left; right: parent.right; bottom: parent.bottom }
+                anchors { top: parent.top; topMargin: 59; left: parent.left; right: parent.right; bottom: parent.bottom }
                 contentHeight: pageCol.implicitHeight + 40
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -396,7 +413,7 @@ FloatingWindow {
                         width: parent.width
                         visible: sw.onHome
                         spacing: 10
-                        topPadding: 34
+                        topPadding: 2
                         bottomPadding: 22
                         Text {
                             width: parent.width; horizontalAlignment: Text.AlignHCenter
@@ -457,11 +474,17 @@ FloatingWindow {
                         visible: sw.app === "" && sw.query.trim() === "" && !!cat
                         readonly property var apps: visible ? sw.inCategory(sw.page, 0) : []
                         spacing: 4
-                        Row {
-                            spacing: 12
-                            bottomPadding: 8
-                            IconTile { anchors.verticalCenter: parent.verticalCenter; size: 36; code: catPage.cat ? catPage.cat.icon : 0xEB1C; colourOf: "software-" + sw.page }
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium }
+                        // Back to Discover beside its title, as Settings' pages have
+                        Item {
+                            width: parent.width; height: 48
+                            IconButton {
+                                id: catBack
+                                anchors { left: parent.left; leftMargin: -8; verticalCenter: parent.verticalCenter }
+                                icon: 0xEA19
+                                onClicked: sw.show("discover")
+                            }
+                            IconTile { id: catTile; anchors { left: catBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter } size: 36; code: catPage.cat ? catPage.cat.icon : 0xEB1C; colourOf: "software-" + sw.page }
+                            Text { anchors { left: catTile.right; leftMargin: 12; verticalCenter: parent.verticalCenter } text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium }
                         }
                         Group { Repeater { model: catPage.apps.slice(0, 120); delegate: AppRow { required property var modelData; required property int index; entry: modelData; first: index === 0 } } }
                     }
@@ -505,18 +528,22 @@ FloatingWindow {
                             Item {
                                 width: parent.width; height: 56
                                 Text {
-                                    anchors { left: parent.left; leftMargin: 16; right: allButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    anchors { left: parent.left; leftMargin: 16; right: allAction.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                     elide: Text.ElideRight
-                                    text: sw.busy && sw.busy.what === "update-apps" && sw.busy.id === "" ? "Updating your apps… (" + sw.progress + "%)"
+                                    text: allAction.running ? "Updating your apps… " + sw.progress + "%"
                                         : "Your apps and windows stay open while they update"
                                     color: sw.dim; font.family: sw.font; font.pixelSize: 12
                                 }
-                                Button {
-                                    id: allButton
+                                // While it runs, a progress bar in the button's place (as an app's row has)
+                                ProgressOr {
+                                    id: allAction
                                     anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-                                    label: "Update all apps"; primary: true; icon: 0xEB13
-                                    opacity: sw.waiting("update-apps", "") ? 0.5 : 1
-                                    onClicked: sw.act("update-apps", "", "your apps")
+                                    running: !!sw.busy && sw.busy.what === "update-apps" && sw.busy.id === ""
+                                    Button {
+                                        label: "Update all apps"; primary: true; icon: 0xEB13
+                                        opacity: sw.waiting("update-apps", "") ? 0.5 : 1
+                                        onClicked: sw.act("update-apps", "", "your apps")
+                                    }
                                 }
                             }
                             Repeater {
@@ -530,7 +557,7 @@ FloatingWindow {
                             Item {
                                 width: parent.width; height: 64
                                 Column {
-                                    anchors { left: parent.left; leftMargin: 16; right: sysButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    anchors { left: parent.left; leftMargin: 16; right: sysAction.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                     spacing: 2
                                     Text {
                                         width: parent.width; elide: Text.ElideRight
@@ -541,18 +568,21 @@ FloatingWindow {
                                         width: parent.width; wrapMode: Text.Wrap
                                         textFormat: Text.PlainText
                                         text: sw.updates.systemProblem !== "" ? sw.updates.systemProblem
-                                            : sw.waiting("update-system", "") ? "Updating the system… (" + sw.progress + "%)"
+                                            : sysAction.running ? "Updating the system… " + sw.progress + "%"
                                             : "They update together. Asks for an administrator's password; restart afterwards if it says to"
                                         color: sw.dim; font.family: sw.font; font.pixelSize: 12
                                     }
                                 }
-                                Button {
-                                    id: sysButton
+                                ProgressOr {
+                                    id: sysAction
                                     visible: sw.updates.system.length > 0
                                     anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-                                    label: "Update"; icon: 0xEB13
-                                    opacity: sw.waiting("update-system", "") ? 0.5 : 1
-                                    onClicked: sw.act("update-system", "", "the system")
+                                    running: !!sw.busy && sw.busy.what === "update-system"
+                                    Button {
+                                        label: "Update"; icon: 0xEB13
+                                        opacity: sw.waiting("update-system", "") ? 0.5 : 1
+                                        onClicked: sw.act("update-system", "", "the system")
+                                    }
                                 }
                             }
                             // Each package, with the version it goes to. (They update together: one
@@ -589,7 +619,7 @@ FloatingWindow {
                 flick: scroller
                 color: sw.text
                 // (below the close button)
-                anchors { top: scroller.top; topMargin: searchBox.visible ? 0 : 56; bottom: parent.bottom; right: parent.right; rightMargin: 4; bottomMargin: 8 }
+                anchors { top: scroller.top; bottom: parent.bottom; right: parent.right; rightMargin: 4; bottomMargin: 8 }
             }
             ScrollShade { z: 3; anchors { top: scroller.top; left: parent.left; right: parent.right } distance: scroller.contentY }
             ScrollShade { z: 3; atBottom: true; anchors { bottom: parent.bottom; left: parent.left; right: parent.right } distance: scroller.contentHeight - scroller.height - scroller.contentY }
@@ -668,6 +698,7 @@ FloatingWindow {
         // (sw.wantTile). Nothing shows until it's ready, then it fades in (showing the picture first
         // and swapping flickered); the picture itself only if it couldn't be drawn
         readonly property bool installedApp: !!sw.installedIds[appId]
+        readonly property real density: sw.screen ? sw.screen.devicePixelRatio : 1
         property bool noDockTile: false
         property bool gaveUp: false
         onAppIdChanged: { noDockTile = false; gaveUp = false; }
@@ -680,8 +711,10 @@ FloatingWindow {
             opacity: status === Image.Ready ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             source: ai.tile ? "file://" + ai.tile + "?v=" + Config.tileVersion + "." + sw.tilesVersion : ""
-            sourceSize: Qt.size(192, 192)
-            smooth: true; mipmap: true
+            // Shrunk once to exactly the pixels it's drawn at (as the launcher's are): mipmapped
+            // from a larger picture, it came out soft on a 2× screen
+            sourceSize: Qt.size(Math.ceil(ai.size * ai.density), Math.ceil(ai.size * ai.density))
+            smooth: true
             asynchronous: true
             onStatusChanged: {
                 if (status !== Image.Error) return;
@@ -760,7 +793,8 @@ FloatingWindow {
         readonly property var apps: sw.inCategory(cat.id, 16)
         readonly property int gap: 12
         readonly property int perPage: Math.max(2, Math.floor((width + gap) / (180 + gap)))
-        readonly property real cardWidth: (width - gap * (perPage - 1)) / perPage
+        // (whole pixels: a card a fraction of one wide puts the next between pixels, and blurs it)
+        readonly property real cardWidth: Math.floor((width - gap * (perPage - 1)) / perPage)
         property int first: 0
         onPerPageChanged: first = Math.floor(first / perPage) * perPage
         width: parent ? parent.width : 0
@@ -803,6 +837,23 @@ FloatingWindow {
                 model: strip.apps.slice(strip.first, strip.first + strip.perPage)
                 delegate: AppCard { required property var modelData; entry: modelData; width: strip.cardWidth }
             }
+        }
+    }
+
+    // A button, or while what it started runs, a progress bar in its place
+    component ProgressOr: Item {
+        id: po
+        property bool running: false
+        default property alias button: slot.data
+        width: running ? 160 : slot.childrenRect.width
+        height: 30
+        Item { id: slot; anchors.verticalCenter: parent.verticalCenter; visible: !po.running; width: childrenRect.width; height: childrenRect.height }
+        Meter {
+            visible: po.running
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width; height: 6
+            value: sw.progress / 100
+            colour: sw.accent; trackColour: sw.faint
         }
     }
 
@@ -858,81 +909,130 @@ FloatingWindow {
             readonly property bool isInstalled: !!sw.installedIds[sw.app]
             readonly property bool busyHere: !!sw.busy && sw.busy.id === sw.app
             spacing: 14
-            Row {
-                spacing: 10
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: sw.glyph(0xEA60); color: backHover.hovered ? sw.text : sw.dim; font.family: sw.bar.iconFont; font.pixelSize: 18
-                    HoverHandler { id: backHover }
-                    ClickTap { onTapped: sw.app = "" }
+            // Its name as the page's title, with Back beside it, as Settings' pages have
+            Item {
+                width: parent.width; height: 40
+                IconButton {
+                    id: appBack
+                    anchors { left: parent.left; leftMargin: -8; verticalCenter: parent.verticalCenter }
+                    icon: 0xEA19
+                    onClicked: sw.app = ""
                 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: sw.dim; font.family: sw.font; font.pixelSize: 13 }
+                Text {
+                    anchors { left: appBack.right; leftMargin: 6; right: parent.right; verticalCenter: parent.verticalCenter }
+                    elide: Text.ElideRight; textFormat: Text.PlainText
+                    text: pg.d.name || sw.app
+                    color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium
+                }
             }
             Item {
-                width: parent.width; height: 96
-                AppIcon { id: bigIcon; size: 96; appId: sw.app; path: pg.d.icon || "" }
+                // (as tall as what's beside the icon, at least the icon's height)
+                width: parent.width; height: Math.max(96, pageInfo.implicitHeight)
+                AppIcon { id: bigIcon; anchors.verticalCenter: parent.verticalCenter; size: 96; appId: sw.app; path: pg.d.icon || "" }
+                // What it is, who makes it, and what you can do with it, beside its icon
                 Column {
-                    anchors { left: bigIcon.right; leftMargin: 18; right: pageActions.left; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                    id: pageInfo
+                    anchors { left: bigIcon.right; leftMargin: 18; right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 4
-                    Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: pg.d.name || sw.app; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium }
-                    Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: pg.d.summary || ""; color: sw.dim; font.family: sw.font; font.pixelSize: 13 }
+                    Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: pg.d.summary || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15 }
                     Text {
                         width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText
                         text: [pg.d.developer, pg.d.latest ? "Version " + pg.d.latest : "", pg.d.license].filter(x => !!x).join(" · ")
                         color: sw.dim; font.family: sw.font; font.pixelSize: 12
                     }
-                }
-                Row {
-                    id: pageActions
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    spacing: 8
-                    Meter {
-                        visible: pg.busyHere
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 140; height: 6
-                        value: sw.progress / 100
-                        colour: sw.accent; trackColour: sw.faint
-                    }
-                    Button {
-                        visible: !pg.busyHere && pg.isInstalled
-                        label: "Remove"; destructive: true
-                        onClicked: sw.askRemove(pg.d)
-                    }
-                    Button {
-                        visible: !pg.busyHere
-                        label: pg.isInstalled ? "Open" : sw.waiting("install", sw.app) ? "Waiting…" : "Install"
-                        primary: true
-                        onClicked: pg.isInstalled ? sw.launch(sw.app) : sw.act("install", sw.app, pg.d.name)
+                    Item { width: 1; height: 6 }
+                    Row {
+                        id: pageActions
+                        spacing: 8
+                        height: 32
+                        Meter {
+                            visible: pg.busyHere
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 160; height: 6
+                            value: sw.progress / 100
+                            colour: sw.accent; trackColour: sw.faint
+                        }
+                        Button {
+                            visible: !pg.busyHere
+                            label: pg.isInstalled ? "Open" : sw.waiting("install", sw.app) ? "Waiting…" : "Install"
+                            primary: true
+                            onClicked: pg.isInstalled ? sw.launch(sw.app) : sw.act("install", sw.app, pg.d.name)
+                        }
+                        Button {
+                            visible: !pg.busyHere && pg.isInstalled
+                            label: "Remove"; destructive: true
+                            onClicked: sw.askRemove(pg.d)
+                        }
                     }
                 }
             }
-            // Screenshots, in a row you can scroll sideways
-            Flickable {
+            // Screenshots, in a row you can scroll sideways, with shades at the ends while there's
+            // more that way (as everything that scrolls has)
+            Item {
                 visible: !!pg.d.screenshots && pg.d.screenshots.length > 0
                 width: parent.width; height: visible ? 240 : 0
-                contentWidth: shotRow.implicitWidth
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                flickableDirection: Flickable.HorizontalFlick
-                Row {
-                    id: shotRow
-                    spacing: 12
-                    Repeater {
-                        model: pg.d.screenshots || []
-                        delegate: Rectangle {
-                            required property var modelData
-                            width: 426; height: 240; radius: Config.corner(10)
-                            color: sw.faint
-                            clip: true
-                            Image {
-                                anchors.fill: parent
-                                source: parent.modelData.thumb
-                                fillMode: Image.PreserveAspectFit
-                                asynchronous: true
-                                sourceSize: Qt.size(852, 480)
+                Flickable {
+                    id: shotFlick
+                    anchors.fill: parent
+                    contentWidth: shotRow.implicitWidth
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    flickableDirection: Flickable.HorizontalFlick
+                    Row {
+                        id: shotRow
+                        spacing: 12
+                        Repeater {
+                            model: pg.d.screenshots || []
+                            // Clicked: large, in Quick Look (the dimmed screen, Left and Right through
+                            // the rest, Escape or a click outside to close)
+                            delegate: Rectangle {
+                                id: shot
+                                required property var modelData
+                                required property int index
+                                width: 426; height: 240; radius: Config.corner(10)
+                                color: sw.faint
+                                clip: true
+                                // Fades in once it's loaded, with Slate's spinner until then
+                                Image {
+                                    id: shotImg
+                                    anchors.fill: parent
+                                    source: shot.modelData.thumb
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    sourceSize: Qt.size(852, 480)
+                                    opacity: status === Image.Ready ? 1 : 0
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(220) } }
+                                    // (the spinner only once it's taking a while: one already kept
+                                    // loads in a moment, and just fades in)
+                                    onStatusChanged: if (status === Image.Loading) slowShot.restart(); else slowShot.stop()
+                                    Component.onCompleted: if (status === Image.Loading) slowShot.restart()
+                                    Timer { id: slowShot; interval: 350 }
+                                }
+                                Text {
+                                    id: shotSpinner
+                                    anchors.centerIn: parent
+                                    opacity: shotImg.status === Image.Loading && !slowShot.running ? 1 : 0
+                                    visible: opacity > 0
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                                    text: sw.glyph(0xF226)
+                                    color: sw.accent
+                                    font.family: sw.bar.iconFont; font.pixelSize: 22
+                                    RotationAnimation on rotation { running: shotSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                                }
+                                ClickTap { onTapped: sw.showShots(shot.index) }
                             }
                         }
                     }
+                }
+                ScrollShade {
+                    sideways: true
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    distance: shotFlick.contentX
+                }
+                ScrollShade {
+                    sideways: true; atBottom: true
+                    anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+                    distance: shotFlick.contentWidth - shotFlick.width - shotFlick.contentX
                 }
             }
             Repeater {

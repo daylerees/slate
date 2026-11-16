@@ -226,3 +226,20 @@ class QuickLook(LiveCase):
         self.key("-k", "Down", "-k", "Return")
         st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "image", "Quick Look from the menu")["quicklook"]
         self.assertEqual(st["path"], p)
+
+    def test_arrows_stay_still_as_it_counts(self):
+        """The arrows either side of "9 of 12" don't move as the count changes width ("9 of 12",
+        then "10 of 12"): the count is as wide as it can get for the list."""
+        import json
+        paths = [self.picture("Pictures", f"still-{i}.png") for i in range(12)]
+        self.ipc("test", "quickLookList", json.dumps({"paths": paths, "at": 0}))
+        places = []
+        for at in (0, 8, 9, 11):
+            if at:
+                self.ipc("quicklook", "close")
+                self.closed()
+                self.ipc("test", "quickLookList", json.dumps({"paths": paths, "at": at}))
+            st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["index"] == at
+                           and st["quicklook"]["view"] == "image" and st["quicklook"]["arrows"], f"picture {at + 1}")["quicklook"]
+            places.append(tuple(st["arrows"]))
+        self.assertEqual(len(set(places)), 1, f"the arrows moved: {places}")

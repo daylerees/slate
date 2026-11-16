@@ -233,7 +233,25 @@ class Actions(SoftwareCase):
         code, lines = self.act("install", "org.example.Paint")
         self.assertEqual(code, 0, lines)
         self.assertEqual(lines, ["progress 40", "progress 100", "ok"])
-        self.assertIn(["install", "--system", "-y", "--noninteractive", "flathub", "org.example.Paint"], self.s.calls("flatpak"))
+        self.assertIn(["install", "--system", "-y", "flathub", "org.example.Paint"], self.s.calls("flatpak"))
+
+    def test_progress_from_steps_without_a_terminal(self):
+        """Away from a terminal, Flatpak and pacman draw no bars, only steps: those are the
+        progress (it sat at 0% before). It never goes backwards."""
+        flatpak_says = "Looking for updates…\nUpdating 1/4…\nUpdating 2/4… 50%\nUpdating 3/4…\nUpdating 4/4…\nUpdates complete.\n"
+        got = [int(l.split()[1]) for l in self.mod.progress_lines(flatpak_says.splitlines())]
+        self.assertEqual(got, [0, 37, 50, 75], "(and 100 once it's done: follow)")
+        pacman_says = [":: Starting full system upgrade...", "resolving dependencies...",
+                       "Packages (4) linux-6.2-1  mesa-2-1  vim-9-1  zsh-5-1", "Total Download Size:  120.00 MiB",
+                       ":: Retrieving packages...", " downloading linux-6.2-1-x86_64.pkg.tar.zst...",
+                       " downloading mesa-2-1-x86_64.pkg.tar.zst...", " downloading vim-9-1-x86_64.pkg.tar.zst...",
+                       " downloading zsh-5-1-x86_64.pkg.tar.zst...", "(4/4) checking keys in keyring",
+                       "(4/4) checking package integrity", "(1/4) upgrading linux", "(2/4) upgrading mesa",
+                       "(3/4) upgrading vim", "(4/4) upgrading zsh", ":: Running post-transaction hooks...", "(1/2) Updating icon cache"]
+        got = [int(l.split()[1]) for l in self.mod.progress_lines(pacman_says)]
+        self.assertEqual(got, sorted(got), "went backwards")
+        self.assertEqual(got[:4], [10, 20, 30, 40], "downloads: the first 40%")
+        self.assertEqual(got[4:], [55, 70, 85], "upgrades: the rest (hooks don't count)")
 
     def test_only_an_app_id(self):
         for bad in ("org.example.Paint; rm -rf ~", "--user", "paint", "../x"):
@@ -248,16 +266,16 @@ class Actions(SoftwareCase):
 
     def test_remove_from_where_it_is(self):
         self.flatpak({"list": "com.example.Chat\tChat\t1\tuser\n", "uninstall": "Uninstall complete.\n"})
-        self.assertEqual(self.act("remove", "com.example.Chat"), (0, ["ok"]))
-        self.assertIn(["uninstall", "--user", "-y", "--noninteractive", "com.example.Chat"], self.s.calls("flatpak"))
+        self.assertEqual(self.act("remove", "com.example.Chat"), (0, ["progress 100", "ok"]))
+        self.assertIn(["uninstall", "--user", "-y", "com.example.Chat"], self.s.calls("flatpak"))
 
     def test_update_apps_in_each_installation(self):
         self.flatpak({"--system --updates": "org.example.Paint\tPaint\t2.1\n", "--user --updates": "com.example.Chat\tChat\t1.1\n",
                       "update": "Updating… 100%\n"})
         self.assertEqual(self.act("update-apps")[1][-1], "ok")
         calls = [c for c in self.s.calls("flatpak") if c and c[0] == "update"]
-        self.assertEqual(calls, [["update", "--system", "-y", "--noninteractive", "org.example.Paint"],
-                                 ["update", "--user", "-y", "--noninteractive", "com.example.Chat"]])
+        self.assertEqual(calls, [["update", "--system", "-y", "org.example.Paint"],
+                                 ["update", "--user", "-y", "com.example.Chat"]])
 
     def test_system_through_slate_system(self):
         fake = os.path.join(self.h.dir, "slate-code")
@@ -267,7 +285,7 @@ class Actions(SoftwareCase):
             f.write('#!/bin/sh\necho "$*" > "%s"\necho "(1/3) upgrading 50%%"\n' % log)
         os.chmod(os.path.join(fake, "bin", "slate-system"), 0o755)
         self.mod.SLATE = fake
-        self.assertEqual(self.act("update-system")[1], ["progress 50", "ok"])
+        self.assertEqual(self.act("update-system")[1], ["progress 16", "progress 100", "ok"])
         with open(log) as f:
             self.assertEqual(f.read().strip(), "--upgrade")
 
@@ -276,3 +294,26 @@ class Actions(SoftwareCase):
         self.assertEqual(self.act("install", "org.example.Paint")[1], ["error Flatpak isn't installed (install the flatpak package)"])
         self.assertEqual(json.loads(run([sys.executable, SCRIPT, "status"], env=self.s.env)[1]),
                          {"flatpak": False, "flathub": False, "catalogue": False})
+
+
+class Jobs(SoftwareCase):
+    """`job`: an action run as a process of its own, keeping how it's going in a private file
+    Slate follows (so a reload of Slate can't cut it off or lose it)."""
+    def test_progress_and_result_in_a_private_file(self):
+        self.flatpak({"install": "Installing 1/1… 40%\rInstalling 1/1… 100%\n"})
+        run_dir = os.path.join(self.h.dir, "run")
+        os.makedirs(run_dir)
+        env = dict(os.environ, XDG_RUNTIME_DIR=run_dir)
+        code, out = run([sys.executable, SCRIPT, "job", "t1", "install", "org.example.Paint"], env=env)
+        self.assertEqual(code, 0, out)
+        path = os.path.join(run_dir, "slate", "software-job.json")
+        with open(path) as f:
+            state = json.load(f)
+        self.assertEqual({k: state[k] for k in ("token", "what", "id", "progress", "done", "result")},
+                         {"token": "t1", "what": "install", "id": "org.example.Paint", "progress": 100, "done": True, "result": "ok"})
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        self.assertEqual(os.stat(os.path.dirname(path)).st_mode & 0o777, 0o700)
+
+    def test_only_known_actions(self):
+        code, out = run([sys.executable, SCRIPT, "job", "t1", "rm", "-rf"], env=dict(os.environ, XDG_RUNTIME_DIR=self.h.dir))
+        self.assertNotEqual(code, 0)

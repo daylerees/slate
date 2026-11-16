@@ -228,10 +228,16 @@ ShellRoot {
         // (act: how an install, removal or update goes, "ok" or what went wrong)
         function softwarePretend(json: string): void {
             const p = JSON.parse(json);
+            SoftwareJobs.endPretend();
             root.softwareWindow().pretend = p;
             SoftwareJobs.pretend = p.act;
             SoftwareJobs.pretendMs = p.actMs || 600;
         }
+        // Quick Look on a list, as the launcher and the dock's Downloads open it ({"paths": […], "at": n}:
+        // an object, since qs ipc takes the brackets off an argument that starts with one)
+        function quickLookList(json: string): void { const o = JSON.parse(json); root.lookAt(o.paths, o.at || 0); }
+        // Slate Software: a screenshot on the app's page clicked (it shows large, in Quick Look)
+        function softwareShot(at: int): void { root.softwareWindow().showShots(at); }
         // Slate Software's Remove on an app's page (it asks first)
         function softwareRemove(id: string): void { const w = root.softwareWindow(); w.askRemove(w.byId[id] || { id: id, name: id }); }
         // Slate Software's Install (or Update all, or Update for the system: id "update-apps", "update-system")
@@ -446,9 +452,14 @@ ShellRoot {
                 software: softwareLoader.item ? (w => ({
                     built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page,
                     flathubTiles: Config.tileDir + "/flathub", tilesDrawn: w.tilesVersion,
-                    shaded: w.catalogue.slice(0, 10).filter(a => Config.iconTileShade(a.id) !== null).map(a => a.id), app: w.app, query: w.query,
+                    shaded: w.catalogue.slice(0, 10).filter(a => Config.iconTileShade(a.id) !== null).map(a => a.id),
+                    shades: w.catalogue.slice(0, 10).reduce((o, a) => {
+                        const t = Config.iconTileShade(a.id);
+                        if (t !== null) o[a.id] = String(t);
+                        return o;
+                    }, {}), app: w.app, query: w.query,
                     apps: w.catalogue.length, installed: w.installed.map(a => a.id), updates: w.updateCount,
-                    busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note,
+                    busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note, progress: w.progress, jobFile: SoftwareJobs.jobFile,
                     found: w.query.trim() !== "" ? w.found(w.query).map(a => a.id) : [],
                     detail: w.detail ? w.detail.name : ""
                 }))(softwareLoader.item) : { built: false, open: false },
@@ -641,7 +652,7 @@ ShellRoot {
     LazyLoader {
         id: softwareLoader
         active: false
-        SoftwareWindow { bar: topBar; confirmer: powerConfirm; onClosed: softwareRebuild.restart() }
+        SoftwareWindow { bar: topBar; confirmer: powerConfirm; look: root.lookAt; onClosed: softwareRebuild.restart() }
     }
     // (out here: it outlives the window it replaces)
     Timer {
@@ -668,7 +679,7 @@ ShellRoot {
         active: false
         QuickLook { onOpened: appLauncher.closeLauncher() }     // (a file opened from it: done looking)
     }
-    readonly property var lookAt: (paths, at, from) => { quickLookLoader.active = true; quickLookLoader.item.show(paths, at, from || ""); }
+    readonly property var lookAt: (paths, at, from, titles) => { quickLookLoader.active = true; quickLookLoader.item.show(paths, at, from || "", titles); }
     readonly property bool quickLookShown: !!quickLookLoader.item && quickLookLoader.item.shown
     // Space in Nautilus or Nemo: they ask a previewer on the session bus (GNOME Sushi,
     // nemo-preview) to show the file. Where that isn't installed, scripts/file-previewer.py

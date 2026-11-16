@@ -329,3 +329,20 @@ class TabOrder(Case):
                 if "activeFocusOnTab: true" not in head:
                     missing.append(f"{rel}:{src[:m.start()].count(chr(10)) + 1}")
         self.assertEqual(missing, [], "text boxes Tab skips over: " + ", ".join(missing))
+
+
+
+class SoftwareCategoryColours(Case):
+    """Slate Software's categories (Discover's rows, Colorful) each have a colour of their own:
+    no two alike (some were near-repeats: two blues, peach beside orange)."""
+    def test_no_two_alike(self):
+        import colorsys
+        src = slate.read("shell", "Config.qml")
+        found = dict(re.findall(r'"software-([A-Z]\w+)":\s*"(#[0-9a-fA-F]{6})"', src))
+        self.assertGreaterEqual(len(found), 10, found)
+        hues = {k: colorsys.rgb_to_hls(*(int(v[i:i + 2], 16) / 255 for i in (1, 3, 5)))[0] * 360 for k, v in found.items()}
+        names = sorted(hues)
+        for i, a in enumerate(names):
+            for b in names[i + 1:]:
+                gap = abs(hues[a] - hues[b]) % 360
+                self.assertGreaterEqual(min(gap, 360 - gap), 30, f"{a} and {b} are nearly the same colour")

@@ -341,24 +341,112 @@ def status():
 APP_ID = re.compile(r"[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z0-9_-]+)+")
 
 
-def follow(cmd):
-    """Run an action, printing "progress N" as it goes; its exit code and its last words."""
+# Progress, from what an action prints. Away from a terminal Flatpak and pacman draw no bars,
+# only steps, so the steps are the progress:
+#   Flatpak:  "Updating 2/7…" (sometimes with "40%" for that step)
+#   pacman:   "Packages (75) …", then " downloading x…" for each (the first 40%), then
+#             "(12/75) upgrading x" (the rest; its hooks' own "(1/2) …" don't count)
+#   others:   "(n/m)" steps, or a plain "40%"
+STEP_VERB = re.compile(r"\b(?:Installing|Updating|Uninstalling|Downloading|Upgrading)\s+(\d+)/(\d+)")
+PACMAN_STEP = re.compile(r"^\((\d+)/(\d+)\)\s+(?:upgrading|installing|removing|reinstalling|downgrading)\b")
+PERCENT = re.compile(r"(\d{1,3})%")
+
+
+def progress_lines(parts):
+    """ "progress N" for each line that moves it on (never backwards)."""
+    last, total, downloaded = -1, 0, 0
+    for part in parts:
+        m = re.search(r"^Packages \((\d+)\)", part.strip())
+        if m:
+            total = int(m.group(1))
+            continue
+        pct = PERCENT.search(part)
+        within = min(100, int(pct.group(1))) / 100 if pct else 0
+        step = STEP_VERB.search(part) or PACMAN_STEP.search(part.strip())
+        if total and part.strip().startswith("downloading "):
+            downloaded += 1
+            n = 40 * min(downloaded, total) / total
+        elif step:
+            k, of = int(step.group(1)), max(1, int(step.group(2)))
+            done = (k - 1 + within) / of
+            n = (40 + 60 * done) if downloaded else 100 * done
+        elif pct:
+            n = 100 * within
+        else:
+            continue
+        n = int(n)
+        if n > last:
+            last = n
+            yield "progress %d" % n
+
+
+ESCAPES = re.compile(r"\x1b(?:\[[0-9;?]*[A-Za-z]|[()][A-Z0-9]|[=>78])")
+
+
+def chunks_of(cmd, tty):
+    """(the process, its output as text as it comes). With tty, in a terminal of its own:
+    Flatpak only shows how far a download has got when it's writing to one."""
+    if not tty:
+        p = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             text=True, env=env(), bufsize=1)
+        return p, iter(lambda: p.stdout.readline(), "")
+    import fcntl
+    import pty
+    import struct
+    import termios
+    leader, follower = pty.openpty()
+    # (wide, so its progress line isn't wrapped or cut short)
+    fcntl.ioctl(follower, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 200, 0, 0))
     try:
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env(), bufsize=1)
+        p = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=follower, stderr=follower, env=env(), close_fds=True)
+    finally:
+        os.close(follower)
+
+    def read():
+        try:
+            while True:
+                try:
+                    data = os.read(leader, 4096)
+                except OSError:          # (EIO: it has finished, and its terminal is closed)
+                    return
+                if not data:
+                    return
+                yield ESCAPES.sub("", data.decode(errors="replace"))
+        finally:
+            os.close(leader)
+    return p, read()
+
+
+def follow(cmd, tty=False):
+    """Run an action, printing "progress N" as it goes (and 100 once it's done); its exit code
+    and its last words."""
+    try:
+        p, chunks = chunks_of(cmd, tty)
     except OSError:
         return 127, "%s isn't installed" % cmd[0]
-    last, said = -1, []
-    for chunk in iter(lambda: p.stdout.readline(), ""):
-        for part in re.split(r"[\r\n]", chunk):
-            m = re.search(r"(\d{1,3})%", part)
-            if m:
-                n = min(100, int(m.group(1)))
-                if n != last:
-                    print("progress %d" % n, flush=True)
-                    last = n
-            elif part.strip():
-                said.append(part.strip())
-    return p.wait(), (said[-1] if said else "")
+    said = []
+
+    def parts():
+        rest = ""
+        for chunk in chunks:
+            pieces = re.split(r"[\r\n]", rest + chunk)
+            rest = pieces.pop()
+            for part in pieces:
+                if part.strip() and not PERCENT.search(part):
+                    said.append(part.strip())
+                yield part
+        if rest:
+            if rest.strip() and not PERCENT.search(rest):
+                said.append(rest.strip())
+            yield rest
+    last = None
+    for line in progress_lines(parts()):
+        print(line, flush=True)
+        last = line
+    code = p.wait()
+    if code == 0 and last != "progress 100":
+        print("progress 100", flush=True)
+    return code, (said[-1] if said else "")
 
 
 def words(code, said, what):
@@ -378,7 +466,7 @@ def words(code, said, what):
 def install(app_id):
     if not APP_ID.fullmatch(app_id):
         return "error That isn't an app's name"
-    code, said = follow(["flatpak", "install", "--system", "-y", "--noninteractive", REMOTE, app_id])
+    code, said = follow(["flatpak", "install", "--system", "-y", REMOTE, app_id], tty=True)
     return words(code, said, "install it")
 
 
@@ -387,7 +475,7 @@ def remove(app_id):
         return "error That isn't an app's name"
     where = next((i["installation"] for i in installed() if i["id"] == app_id), "system")
     flag = "--user" if where == "user" else "--system"
-    code, said = follow(["flatpak", "uninstall", flag, "-y", "--noninteractive", app_id])
+    code, said = follow(["flatpak", "uninstall", flag, "-y", app_id], tty=True)
     return words(code, said, "remove it")
 
 
@@ -400,7 +488,7 @@ def update_apps(ids):
         mine = [a["id"] for a in app_updates() if (a["installation"] == "user") == (flag == "--user")]
         todo = [i for i in ids if i in mine] if ids else mine
         if todo:
-            code, said = follow(["flatpak", "update", flag, "-y", "--noninteractive", *todo])
+            code, said = follow(["flatpak", "update", flag, "-y", *todo], tty=True)
             results.append(words(code, said, "update them"))
     return next((r for r in results if r != "ok"), "ok")
 
@@ -408,6 +496,48 @@ def update_apps(ids):
 def update_system():
     code, said = follow([os.path.join(SLATE, "bin", "slate-system"), "--upgrade"])
     return words(code, said, "update the system")
+
+
+# ---- Jobs that outlive Slate ------------------------------------------------------------------
+# Slate starts each install, removal or update as `software.py job <token> <action> [id]`, a
+# process of its own (so a reload or restart of Slate can't cut it off), which keeps how it's going
+# in a file Slate follows: {token, what, id, pid, progress, done, result}. Slate picks up a job
+# still running when it starts, from the same file.
+def job_file():
+    run_dir = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
+    return os.path.join(run_dir, "slate", "software-job.json")
+
+
+def write_job(state):
+    path = job_file()
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    tmp = path + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump(state, f)
+    os.replace(tmp, path)
+
+
+def job(token, what, args):
+    state = {"token": token, "what": what, "id": args[0] if args else "", "pid": os.getpid(),
+             "progress": 0, "done": False, "result": ""}
+    write_job(state)
+    try:
+        p = subprocess.Popen([sys.executable, os.path.abspath(__file__), what, *args],
+                             stdout=subprocess.PIPE, text=True, bufsize=1)
+        for line in p.stdout:
+            line = line.strip()
+            if line.startswith("progress "):
+                state["progress"] = int(line.split()[1])
+                write_job(state)
+            elif line:
+                state["result"] = line
+        p.wait()
+    except Exception as e:  # anything at all: say so, rather than leave it "running"
+        state["result"] = "error Slate couldn't finish that (%s)" % e
+    state["done"] = True
+    write_job(state)
+    return 0 if state["result"] == "ok" else 1
 
 
 def main(argv):
@@ -418,6 +548,8 @@ def main(argv):
     if what in looks and not args:
         print(json.dumps(looks[what]()))
         return 0
+    if what == "job" and len(args) >= 2 and args[1] in ("install", "remove", "update-apps", "update-system"):
+        return job(args[0], args[1], args[2:])
     if what == "app" and len(args) == 1:
         print(json.dumps(app(args[0])))
         return 0

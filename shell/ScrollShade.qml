@@ -6,6 +6,9 @@ import QtQuick
 Rectangle {
     id: scrollShade
     property bool atBottom: false
+    // Sideways, for something that scrolls left and right: a shade down its left edge (or with
+    // atBottom, its right), anchored top and bottom (the anchors give its length)
+    property bool sideways: false
     property real distance: 0
     property real cornerRadius: 0      // the rounding of the corners it sits in
     // How strong, times the usual: deeper on a surface as dark as the shade itself (a dark
@@ -20,12 +23,17 @@ Rectangle {
     readonly property real reach: Config.shadowSpread + Config.shadowReach
     readonly property real solid: reach > 0 ? Config.shadowSpread / reach : 0
     readonly property color dark: Config.shade(Math.min(1, (Config.s.lightMode ? (atBottom ? 0.14 : 0.12) : (atBottom ? 0.38 : 0.32)) * depth * darkness))
-    height: Math.max(4, Math.round(18 * reach / 8))
-    topLeftRadius: Config.corner(atBottom ? 0 : cornerRadius); topRightRadius: Config.corner(atBottom ? 0 : cornerRadius)
-    bottomLeftRadius: Config.corner(atBottom ? cornerRadius : 0); bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
+    readonly property real thickness: Math.max(4, Math.round(18 * reach / 8))
+    height: thickness
+    width: thickness            // (one or the other; the anchors give the long side)
+    topLeftRadius: Config.corner(sideways ? (atBottom ? 0 : cornerRadius) : (atBottom ? 0 : cornerRadius))
+    topRightRadius: Config.corner(sideways ? (atBottom ? cornerRadius : 0) : (atBottom ? 0 : cornerRadius))
+    bottomLeftRadius: Config.corner(sideways ? (atBottom ? 0 : cornerRadius) : (atBottom ? cornerRadius : 0))
+    bottomRightRadius: Config.corner(atBottom ? cornerRadius : 0)
     opacity: Math.max(0, Math.min(1, distance / 24))
     // (dark at the edge it's for, solid for the spread's share, then fading out)
     gradient: Gradient {
+        orientation: scrollShade.sideways ? Gradient.Horizontal : Gradient.Vertical
         GradientStop { position: 0; color: scrollShade.atBottom ? "transparent" : scrollShade.dark }
         GradientStop { position: scrollShade.atBottom ? 1 - scrollShade.solid : scrollShade.solid
                        color: scrollShade.dark }
