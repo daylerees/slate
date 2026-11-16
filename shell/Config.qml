@@ -1617,10 +1617,11 @@ Singleton {
         iconColoursSoon.restart();
     }
     // The tile behind an app's icon: a deep shade of the icon's colour (a light one in light
-    // mode) with the setting on, else `fallback`. Grey icons keep the fallback
+    // mode) with the setting on, else `fallback`. Grey and white icons get a plain neutral grey,
+    // clearer than the theme's tile (which barely showed on a card, and leans to the accent)
     function iconTileFor(app, fallback) { return iconTileShade(app) ?? fallback; }
-    // The shade itself, or null when the theme's tile applies (setting off, filled icons, a grey
-    // icon, or its colour not noted yet)
+    // The shade itself, or null when the theme's tile applies (setting off, filled icons, or
+    // its colour not noted yet)
     function iconTileShade(app) {
         if (!s.iconTileColour || s.iconFill || !app) return null;
         const hex = iconColours[app] || flathubColours[app];
@@ -1631,7 +1632,8 @@ Singleton {
     function iconTileShadeOf(hex) {
         if (!s.iconTileColour || s.iconFill || !hex) return null;
         const c = Qt.color(hex);
-        if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1) return null;
+        if (c.hslSaturation * (1 - Math.abs(2 * c.hslLightness - 1)) < 0.1)
+            return Qt.color(s.lightMode ? "#d2d4d8" : "#484b50");      // (plain grey: tint() would lean it to the accent)
         const h = Math.max(0, c.hslHue), sat = Math.min(0.65, c.hslSaturation);
         const t = s.lightMode ? Qt.hsla(h, sat * 0.7, 0.84, 1) : Qt.hsla(h, sat * 0.8, 0.22, 1);
         return t;

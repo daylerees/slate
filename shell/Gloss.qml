@@ -18,6 +18,9 @@ Rectangle {
     // middle, like the top of a wide ellipse), rather than the gentle fade tall shapes
     // otherwise get: for things that should look most like glass, like notifications
     property bool band: false
+    // The colour the sheen takes a hint of, in place of the fill's or the wallpaper's (an app
+    // icon's tile in its own colour: IconGloss); transparent: as usual
+    property color hintFrom: "transparent"
     anchors.fill: parent
     // Present whenever gloss is on (faded out at 0 opacity when not shown, which Qt skips
     // drawing). Its edge and band are one shader each, with no offscreen layers to keep
@@ -49,6 +52,7 @@ Rectangle {
     // anything else (frosted glass, the dock, a grey button) the wallpaper's, as the scene
     // showing through, like the bar's capsules
     readonly property color hint: {
+        if (hintFrom.a > 0) return hintFrom;
         if (coloured) return parent.color;
         // The wallpaper's vivid colour (the one an accent from the wallpaper uses); its
         // overall tone averages the whole picture and came out too grey
@@ -57,7 +61,7 @@ Rectangle {
     }
     // Settings → Glass → Gloss colour. On a coloured fill at most 40% of it, so the sheen stays
     // a lighter tint of the fill (at full strength it was the fill's own colour, and vanished)
-    readonly property bool onFill: coloured
+    readonly property bool onFill: coloured || hintFrom.a > 0
     // Light frosted glass (light mode, not on a coloured fill): the sheen stays close to white,
     // since a sheen in the wallpaper's colour vanished into the tinted surface beneath it
     readonly property bool lightFrost: Config.s.lightMode && !onFill

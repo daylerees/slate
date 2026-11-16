@@ -192,7 +192,7 @@ Column {
             needsPage: "icons"; needsLabel: Config.s.iconShape === "original" ? "Shape" : "Fill the shape"
             label: "Tiles in the icon's color"
             settingKey: "iconTileColour"
-            detail: "The tile behind each icon takes a deep shade of the icon's own main color, rather than the theme's. Gray icons keep the theme's tile"
+            detail: "The tile behind each icon takes a deep shade of the icon's own main color, rather than the theme's. Gray and white icons get a plain gray tile"
             SettingToggle { checked: Config.s.iconTileColour; onToggled: v => Config.s.iconTileColour = v }
         }
         Separator {}
