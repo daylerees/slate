@@ -7,6 +7,7 @@ The installed code's folder (/usr/local/share/slate-greeter) is fixed in the scr
 --check tests run a copy with it pointed at a scratch folder instead."""
 import json
 import os
+import pwd
 import shutil
 
 import slate
@@ -355,7 +356,9 @@ class Sync(GreeterCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(out, "slate-greeter-sync: login screen appearance updated\n")
         d = lambda *p: os.path.join(self.dest, *p)
-        self.assertTrue(self.same(d("settings.json"), os.path.join(self.h.slate_home, "settings.json")))
+        # (only how the desktop looks: see test_only_the_look)
+        with open(d("settings.json")) as f:
+            self.assertEqual(json.load(f), {"fontFamily": "Geist", "accent": "#3584e4"})
         self.assertTrue(self.same(d("wallpaper"), self.wall))
         self.assertTrue(self.same(d("avatar"), self.h(".face")))
         with open(d("user.json")) as f:
@@ -365,6 +368,51 @@ class Sync(GreeterCase):
                                                           "GeistMono-Italic-Variable.ttf", "GeistMono-Variable.ttf",
                                                           "tabler.ttf"])
         self.assertFalse([n for n in os.listdir(self.dest) if n.endswith(".tmp")], "temporary files left")
+
+    def test_only_the_look(self):
+        """The login screen's folder can be read by everyone on the computer: only the settings
+        for how the desktop looks go in, never where you are, your own commands or the rest."""
+        self.settings({"wallpaper": self.wall, "accent": "#112233", "themeMode": "dark", "glass": True, "uiScale": 1.25,
+                       "latitude": 51.5, "longitude": -0.1, "locationName": "Home", "assistantCommand": "my-agent --token=s3cret",
+                       "startupApps": ["x"], "defaultBrowser": "firefox", "screenshotFolder": self.h("Shots")})
+        os.makedirs(self.dest)
+        self.assertEqual(self.sync()[0], 0)
+        with open(os.path.join(self.dest, "settings.json")) as f:
+            copied = json.load(f)
+        self.assertEqual(copied, {"accent": "#112233", "themeMode": "dark", "glass": True, "uiScale": 1.25})
+
+    def people(self):
+        p = os.path.join(self.dest, "people")
+        os.makedirs(p)
+        os.chmod(p, 0o1777)
+        return p
+
+    def test_your_own_folder(self):
+        """Each person's own look, in people/<them>/, kept without a password; the shared look
+        only when the login screen's folder is yours."""
+        people = self.people()
+        self.assertEqual(self.sync()[0], 0)
+        mine = os.path.join(people, pwd.getpwuid(os.getuid()).pw_name)
+        for n in ("settings.json", "wallpaper", "avatar"):
+            self.assertTrue(os.path.isfile(os.path.join(mine, n)), n)
+        with open(os.path.join(mine, "settings.json")) as f:
+            self.assertEqual(json.load(f), {"fontFamily": "Geist", "accent": "#3584e4"})
+        with self.subTest("someone else's login screen: only your own folder"):
+            os.chmod(self.dest, 0o555)
+            self.addCleanup(os.chmod, self.dest, 0o755)
+            os.remove(os.path.join(mine, "wallpaper"))
+            code, out = self.sync()
+            self.assertEqual((code, out.strip()), (0, "slate-greeter-sync: your look on the login screen updated"))
+            self.assertTrue(os.path.isfile(os.path.join(mine, "wallpaper")))
+
+    def test_a_folder_that_isnt_yours_is_left_alone(self):
+        """A link in your name (to somewhere else) is never written through."""
+        people = self.people()
+        elsewhere = os.path.join(self.h.dir, "elsewhere")
+        os.makedirs(elsewhere)
+        os.symlink(elsewhere, os.path.join(people, pwd.getpwuid(os.getuid()).pw_name))
+        self.assertEqual(self.sync()[0], 0)
+        self.assertEqual(os.listdir(elsewhere), [], "it wrote through a link")
 
     def test_unchanged_files_left_alone(self):
         """A second run doesn't copy the wallpaper and fonts again."""

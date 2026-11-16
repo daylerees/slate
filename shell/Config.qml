@@ -1417,6 +1417,10 @@ Singleton {
     // everyone on the computer (/usr/local/share/slate). The login screen has none: its copy of
     // your settings is next to its code (slate-greeter-install)
     readonly property string userDir: configHome + "/slate"
+    // The login screen: the folder of the look of the person chosen on it (greeter/shell.qml), or
+    // "" for the shared look next to its code
+    property string loginLook: ""
+    onLoginLookChanged: Qt.callLater(() => file.reload())
     // Where Slate keeps its saved state and its cache (XDG_STATE_HOME / XDG_CACHE_HOME). Two
     // paths still use ~/.local/state and ~/.cache directly on purpose: the dock's dock.json
     // (shell.qml), the tiles (tileDir below), the notifications history, the launcher's list and
@@ -2455,7 +2459,8 @@ Singleton {
 
     FileView {
         id: file
-        path: root.isLoginScreen ? Qt.resolvedUrl("settings.json").toString().replace("file://", "")
+        path: root.isLoginScreen ? (root.loginLook !== "" ? root.loginLook + "/settings.json"
+                                                         : Qt.resolvedUrl("settings.json").toString().replace("file://", ""))
             : root.userDir + "/settings.json"
         watchChanges: true
         // Each save finishes before anything else happens, so the file is never caught halfway
@@ -2473,9 +2478,10 @@ Singleton {
         }
         // Changes are saved together, a moment after the last one: a preset or Restore defaults
         // changes many at once, and is written once rather than once for each
-        onAdapterUpdated: { settingsSave.restart(); root.saved(); }
+        // (the login screen only ever reads: the settings there are a copy, someone's look)
+        onAdapterUpdated: { if (!root.isLoginScreen) settingsSave.restart(); root.saved(); }
         // First run: create the file with the defaults (SettingsData.qml)
-        onLoadFailed: error => { if (error === FileViewError.FileNotFound) writeAdapter(); }
+        onLoadFailed: error => { if (error === FileViewError.FileNotFound && !root.isLoginScreen) writeAdapter(); }
 
         adapter: SettingsData { id: adapter }
         // Read before anything is drawn (Config's Component.onCompleted), not in the background:

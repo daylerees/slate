@@ -611,3 +611,16 @@ class SlateSystem(HelpersCase):
         self.assertIn("from your Slate folder", asked[-1])
         self.assertIn("You'll be asked for your password", asked[-1])
         self.assertEqual(calls, [[os.path.join(self.top, "bin", "slate-helpers-install"), self.top]])
+
+
+class PeopleLooks(Case):
+    """slate-greeter-install makes the login screen's people/ folder, where each person's own
+    Slate keeps their look: root's, sticky and open to all (as /tmp), so anyone can add their own
+    folder and nobody can touch anyone else's. On a full install and on a code-only update (how
+    an existing login screen gets it)."""
+    def test_made_on_both_routes(self):
+        src = slate.read("shell", "bin", "slate-greeter-install")
+        line = 'install -d -m 1777 -o root -g root "$DATA/people"'
+        self.assertEqual(src.count(line), 2, "people/ isn't made, or not as root's sticky folder")
+        code_only = src.index('if [ "$MODE" = code ]; then')
+        self.assertLess(src.index(line), code_only, "a code-only update stops before making people/")

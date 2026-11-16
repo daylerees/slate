@@ -287,3 +287,64 @@ class ChoosingWho(LiveCase):
         self.assertTrue(made, "nobody was logged in")
         self.assertEqual(made[-1].get("username"), "robin", "the wrong person was logged in")
         self.assertTrue(greetd.of_type("start_session"))
+
+
+class EachPersonsLook(LiveCase):
+    """Each person's own look on the login screen: picking them shows it, from their own folder
+    in people/ (kept by their own Slate), only when that folder is really theirs; otherwise the
+    shared look."""
+    def test_look_follows_the_person(self):
+        import pwd
+        me = pwd.getpwuid(os.getuid()).pw_name          # (the folders here are all this account's)
+        h = self.s.h
+        code = os.path.join(h.dir, "slate-greeter-looks")      # (named as the real one is: Config knows the login screen by it)
+        build_greeter(code)
+        data = os.path.join(h.dir, "greeter-looks-data")
+        os.makedirs(os.path.join(data, "people"))
+        def look(where, accent):
+            os.makedirs(where, exist_ok=True)
+            with open(os.path.join(where, "settings.json"), "w") as f:
+                json.dump({"accent": accent, "accentFromWallpaper": False}, f)
+        look(data, "#111111")                                              # the shared look
+        look(os.path.join(data, "people", me), "#22aa44")                  # really theirs
+        look(os.path.join(data, "people", "robin"), "#ee0000")             # named robin, but not robin's
+        with open(os.path.join(data, "user.json"), "w") as f:
+            json.dump({"user": me, "name": "Me"}, f)
+        passwd = os.path.join(h.dir, "passwd-looks")
+        with open(passwd, "w") as f:
+            f.write(f"{me}:x:1000:1000:Me:/home/{me}:/bin/bash\nrobin:x:1002:1002:Robin:/home/robin:/bin/bash\n")
+        sessions = os.path.join(h.dir, "share-looks", "wayland-sessions")
+        os.makedirs(sessions)
+        with open(os.path.join(sessions, "slate.desktop"), "w") as f:
+            f.write("[Desktop Entry]\nName=Slate\nExec=slate-session --test\nDesktopNames=Hyprland\n")
+        env = dict(self.s.env, SLATE_GREETER_TEST="1", SLATE_GREETER_DATA=data, SLATE_GREETER_PASSWD=passwd,
+                   XDG_DATA_DIRS=os.path.join(h.dir, "share-looks"), USER=me)
+        log = open(os.path.join(self.s.out, "login-screen-looks.log"), "w")
+        p = subprocess.Popen(["qs", "-p", code], env=env, stdout=log, stderr=subprocess.STDOUT)
+        self.addCleanup(lambda: p.poll() is None and p.kill())
+
+        def ipc(*a):
+            return slate.run(["qs", "-p", code, "ipc", "call", "greeter"] + list(a), env=env)[1].strip()
+
+        def seen():
+            try:
+                return json.loads(ipc("look"))
+            except ValueError:
+                return {}
+
+        def until(check, what):
+            for _ in range(100):
+                if p.poll() is not None:
+                    self.fail(f"the login screen exited ({p.returncode}); see tests/out/live/login-screen-looks.log")
+                if check():
+                    return
+                time.sleep(0.2)
+            self.fail(f"{what}: {seen()}")
+
+        until(lambda: seen().get("accent") == "#22aa44", "your own look, to start with")
+        self.assertEqual(seen()["dir"], os.path.join(data, "people", me))
+        ipc("pick", "1")       # robin: their folder isn't theirs, so the shared look
+        until(lambda: seen().get("accent") == "#111111", "the shared look for someone whose folder isn't theirs")
+        self.assertEqual(seen()["dir"], data)
+        ipc("pick", "0")
+        until(lambda: seen().get("accent") == "#22aa44", "your own look again")

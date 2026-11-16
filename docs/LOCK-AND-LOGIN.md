@@ -95,7 +95,8 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
 | `/usr/local/share/slate-greeter` (+ `.good`) | root | the files listed in `greeter/files` (`shell.qml`, `LoginWindow.qml`, `LoginScreen.qml`, `Config.qml`, … and the `emergency/` login screen), plus `hyprland.lua` (keyboard layout filled in), `version`, and `settings.json` → symlink to the data folder | `sudo /usr/local/share/slate/bin/slate-greeter-install` |
-| `/var/lib/slate-greeter` | you | appearance only: `settings.json`, `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
+| `/var/lib/slate-greeter` | you | the shared look, appearance only: `settings.json` (the same allow-list), `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
+| `/var/lib/slate-greeter/people/<name>/` | that person (`people/` itself: root, 1777) | that person's own look: `settings.json` (an allow-list of appearance settings), `wallpaper`, `avatar`. Used only when it's a real folder owned by the person it's named after | each person's own `slate-greeter-sync`, without a password |
 | `/var/cache/slate-greeter` | greeter | `last-session`, `proven` (version of the last copy someone logged in with), logs, caches | the greeter |
 
 - **Keeping the appearance in step:** Slate runs `slate-greeter-sync` a few seconds after the

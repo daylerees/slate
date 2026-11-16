@@ -31,7 +31,30 @@ ShellRoot {
     readonly property var person: people[personIndex] || null
     readonly property string user: person ? person.user : syncedUser
     readonly property string displayName: person ? person.name : syncedName
-    readonly property string avatar: !person || person.user === syncedUser ? dir + "/avatar" : "/var/lib/AccountsService/icons/" + person.user
+    // Each person's own look (people/<them>/, kept by their own Slate), used only when it's a real
+    // folder owned by them (looked at below); else the shared look, the one whose folder this is
+    property var ownLooks: ({})            // user → true, for the folders that pass
+    readonly property string lookDir: person && ownLooks[person.user] ? dir + "/people/" + person.user : dir
+    readonly property string avatar: lookDir !== dir ? lookDir + "/avatar"
+        : !person || person.user === syncedUser ? dir + "/avatar" : "/var/lib/AccountsService/icons/" + person.user
+    // (Config reads the look's settings from that folder, the shared one or the person's own:
+    // bound in Component.onCompleted, below)
+    Process {
+        id: looks
+        running: true
+        // (owner, then name, of each folder there that's a real one, not a link, with settings in it)
+        command: ["sh", "-c", 'cd "$0/people" 2>/dev/null || exit 0; for d in *; do [ -d "$d" ] && [ ! -L "$d" ] && [ -f "$d/settings.json" ] && printf "%s %s\\n" "$(stat -c %U -- "$d")" "$d"; done; exit 0', root.dir]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const own = {};
+                for (const line of text.trim().split("\n")) {
+                    const p = line.split(" ");
+                    if (p.length === 2 && p[0] === p[1]) own[p[1]] = true;
+                }
+                root.ownLooks = own;
+            }
+        }
+    }
     property bool personChosen: false      // picked on the screen: kept, whatever loads after
     property string syncedUser: ""
     property string syncedName: ""
@@ -79,12 +102,14 @@ ShellRoot {
     }
 
     // ---- Wallpaper drives the accent / tint, as on the desktop -----------------
-    readonly property string wallpaper: root.dir + "/wallpaper"
+    readonly property string wallpaper: root.lookDir + "/wallpaper"
+    onWallpaperChanged: { wallpaperLook.running = false; wallpaperLook.running = true; }
     property bool haveWallpaper: false
     Process {
         running: true
+        id: wallpaperLook
         command: ["test", "-s", root.wallpaper]
-        onExited: code => { root.haveWallpaper = code === 0; if (code === 0) Config.wallpaper = root.wallpaper; }
+        onExited: code => { root.haveWallpaper = code === 0; Config.wallpaper = code === 0 ? root.wallpaper : ""; }
     }
 
     // ---- Sessions (wayland-sessions in the standard data folders), last one remembered ----
@@ -253,7 +278,10 @@ ShellRoot {
     // Check mode: the same login screen, with no window
     Component { id: checkScreen; LoginScreen { mode: "login"; width: 1280; height: 800 } }
     property var checked: null
-    Component.onCompleted: if (checking) checked = checkScreen.createObject(null); else checkWindow()
+    Component.onCompleted: {
+        Config.loginLook = Qt.binding(() => root.lookDir);
+        if (checking) checked = checkScreen.createObject(null); else checkWindow();
+    }
     Timer {
         running: root.checking
         interval: 1500      // let it settle, so errors while it starts up are logged too
@@ -274,6 +302,7 @@ ShellRoot {
         // Who's listed and who's chosen, and choosing, as the person menu does
         function people(): string { return JSON.stringify(root.people.map(p => p.user)); }
         function user(): string { return root.user; }
+        function look(): string { return JSON.stringify({ dir: root.lookDir, accent: String(Config.s.accent), wallpaper: Config.wallpaper }); }
         function pick(i: int): void { if (root.asking) root.cancelAsking(); root.personChosen = true; root.personIndex = i; }
     }
 }

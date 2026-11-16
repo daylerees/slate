@@ -141,6 +141,13 @@ fi
 rm -rf "$CODE.previous"      # the fallback before there was a .good
 mv "$stage" "$CODE"; trap - EXIT
 
+# Each person's own look (people/<them>/, kept by their own Slate without a password): a folder
+# anyone can add their own folder to and nobody can touch anyone else's in (sticky, as /tmp).
+# The login screen only takes a folder owned by the person it's named after
+if [ -d "$DATA" ]; then
+    install -d -m 1777 -o root -g root "$DATA/people"
+fi
+
 if [ "$MODE" = code ]; then
     echo "Login screen code updated (shows at your next logout or reboot)."
     exit 0
@@ -148,6 +155,7 @@ fi
 
 # 2. Appearance folder (yours, so Slate can sync it) and the greeter's writable cache
 install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
+install -d -m 1777 -o root -g root "$DATA/people"
 install -d -m 755 -o "$GREETER_USER" -g "$GREETER_GROUP" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
 sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
 

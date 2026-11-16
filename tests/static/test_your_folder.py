@@ -23,7 +23,7 @@ RULE = {
     "shell/scripts/slate_theme.py": ['CFG = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")'],
     "shell/UserFiles.qml": ['Config.userDir + "/hypr"', 'Config.userDir + "/user/shell.qml"'],
     "shell/bin/slate-logs": ['SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"'],
-    "shell/bin/slate-greeter-sync": ['YOURS="${XDG_CONFIG_HOME:-$HOME/.config}/slate"', 'put "$YOURS/settings.json" settings.json'],
+    "shell/bin/slate-greeter-sync": ['YOURS="${XDG_CONFIG_HOME:-$HOME/.config}/slate"', 'look "$YOURS/settings.json" | write settings.json'],
 }
 
 # Where Slate's code is: your own install (or a link) first, then the copy for everyone, in the
@@ -84,4 +84,5 @@ class YourFolder(Case):
 
     def test_config_reads_settings_from_your_folder(self):
         src = slate.read("shell", "Config.qml")
-        self.assertRegex(src, r'path: root\.isLoginScreen \? Qt\.resolvedUrl\("settings\.json"\)[^\n]*\n\s*: root\.userDir \+ "/settings\.json"')
+        # (the login screen's own: the chosen person's look, or the shared one; everyone else's: theirs)
+        self.assertRegex(src, r'path: root\.isLoginScreen \? \(root\.loginLook !== "" \? root\.loginLook \+ "/settings\.json"[\s\S]{0,160}?\n\s*: root\.userDir \+ "/settings\.json"')

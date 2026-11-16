@@ -122,7 +122,21 @@ if [ "${1:-}" = "--prompt" ]; then
     exit 0
 fi
 
-if [ ! -d "$DEST" ] || [ ! -w "$DEST" ]; then
+# Where your look goes: your own folder in the login screen's people/ (anyone can keep theirs
+# there, nobody can touch anyone else's), and the shared look too when the login screen's folder
+# is yours (you set it up). A folder of yours there has to be a real folder owned by you: one
+# that isn't (a link, or someone else's) is left alone, and the login screen won't use it either
+# (named by the account you really are, never by $USER, which anything can set)
+ME=$(id -un)
+PEOPLE="$DEST/people"
+MINE="$PEOPLE/$ME"
+mine_ok=0
+if [ -d "$PEOPLE" ] && [ -w "$PEOPLE" ]; then
+    if [ ! -e "$MINE" ] && [ ! -L "$MINE" ]; then mkdir -m 755 "$MINE" 2>/dev/null || true; fi
+    [ -d "$MINE" ] && [ ! -L "$MINE" ] && [ "$(stat -c %U "$MINE")" = "$ME" ] && mine_ok=1
+fi
+shared_ok=0; [ -d "$DEST" ] && [ -w "$DEST" ] && shared_ok=1
+if [ "$shared_ok" = 0 ] && [ "$mine_ok" = 0 ]; then
     echo "slate-greeter-sync: $DEST isn't set up yet; install it from Settings → Security, or with: ./install.sh --login-screen" >&2
     exit 1
 fi
@@ -130,31 +144,52 @@ fi
 # Copy into place via a temporary file + rename, so the greeter never sees half a file. A file
 # that's already the same is left alone: this runs after every settings change, and copying the
 # wallpaper (many MB) and fonts again each time was wasted work
-put() {   # put <source> <name in DEST>
-    cmp -s "$1" "$DEST/$2" && return 0
-    local tmp="$DEST/.$(basename "$2").tmp"
-    mkdir -p "$(dirname "$DEST/$2")"
-    cp -f "$1" "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$DEST/$2"
+put() {   # put <source> <name in DEST>   (DEST, or a folder in it, as $into says)
+    local to="${into:-$DEST}"
+    cmp -s "$1" "$to/$2" && return 0
+    local tmp="$to/.$(basename "$2").tmp"
+    mkdir -p "$(dirname "$to/$2")"
+    cp -f "$1" "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$to/$2"
 }
-write() {  # write <name in DEST>  (contents on stdin)
-    local tmp="$DEST/.$1.tmp"
-    cat > "$tmp" && chmod a+r "$tmp" && mv -f "$tmp" "$DEST/$1"
+write() {  # write <name in DEST>  (contents on stdin; left alone when it's the same)
+    local to="${into:-$DEST}"
+    local tmp="$to/.$1.tmp"
+    cat > "$tmp" || return 1
+    if cmp -s "$tmp" "$to/$1"; then rm -f "$tmp"; return 0; fi
+    chmod a+r "$tmp" && mv -f "$tmp" "$to/$1"
 }
 
-# Theme settings (accent, light/dark, tint, fonts, rounded corners…)
-put "$YOURS/settings.json" settings.json
+# Only how your desktop looks goes in, never the rest of your settings (where you are, your
+# own commands…): the login screen's folder can be read by everyone on the computer. The settings
+# it uses, by name; anything new stays out until it's added here
+LOOK="accent accentFromWallpaper accentBoldness lightMode themeMode toneFromWallpaper toneBoldness colourStyle uiScale
+      roundedScreenCorners roundedElements shadows shadowDarkness shadowSoftness shadowSpread shadowDistance
+      shadowDirection animations fontFamily cursorTheme cursorSize lockScreenPowerMenu
+      glass glassOpacity glassBlur glassGlossTint glassGloss fastBlur blurPasses"
+look() {   # look <settings.json>: just those, as JSON
+    python3 -c 'import json, sys
+s = json.load(open(sys.argv[1]))
+print(json.dumps({k: s[k] for k in sys.argv[2].split() if k in s}, indent=2))' "$1" "$LOOK"
+}
 
 # The wallpaper and interface font, from Slate's settings (one read for both)
 { read -r wall; read -r family; } < <(python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s.get("wallpaper","")); print(s.get("fontFamily","Geist") or "Geist")' "$YOURS/settings.json" 2>/dev/null || printf '\nGeist\n')
 family=${family:-Geist}
+avatar=""
+for a in "/var/lib/AccountsService/icons/$USER" "$HOME/.face"; do [ -f "$a" ] && { avatar=$a; break; }; done
 
-# Wallpaper; without it the login screen uses plain slate
-if [ -n "$wall" ] && [ -f "$wall" ]; then put "$wall" wallpaper; else rm -f "$DEST/wallpaper"; fi
-
-# Avatar
-for a in "/var/lib/AccountsService/icons/$USER" "$HOME/.face"; do
-    if [ -f "$a" ]; then put "$a" avatar; break; fi
+# Your look: settings, wallpaper (without it, plain slate) and picture, in each place it goes
+for into in $([ "$mine_ok" = 1 ] && echo "$MINE") $([ "$shared_ok" = 1 ] && echo "$DEST"); do
+    look "$YOURS/settings.json" | write settings.json || true
+    if [ -n "$wall" ] && [ -f "$wall" ]; then put "$wall" wallpaper; else rm -f "$into/wallpaper"; fi
+    if [ -n "$avatar" ]; then put "$avatar" avatar; else rm -f "$into/avatar"; fi
 done
+into=""
+[ "$mine_ok" = 1 ] && chmod -R a+rX "$MINE"
+if [ "$shared_ok" = 0 ]; then
+    echo "slate-greeter-sync: your look on the login screen updated"
+    exit 0
+fi
 
 # Who logs in, and the session they use now (Slate, uwsm-managed or plain Hyprland)
 name=$(getent passwd "$USER" | cut -d: -f5 | cut -d, -f1)
