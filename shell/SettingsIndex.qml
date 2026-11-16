@@ -41,6 +41,7 @@ Singleton {
         { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
         { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
         { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
+        { id: "users", label: "Users", icon: 0xEBF2, more: true, about: "The people on this computer: adding, changing and removing accounts" },
         { id: "lock", label: "Security", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen" },
         { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper, a slideshow or videos while you're away" },
         { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
@@ -239,6 +240,7 @@ Singleton {
         ["Network", "wifi", "connection internet ip address gateway dns link speed online offline"],
         ["Wired", "wifi", "ethernet cable lan socket network"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
+        ["Users", "users", "users people accounts account add person someone family guest administrator admin remove delete password picture username"],
         ["Printers", "printers", "printers and scanners print printer printing scanner scan scanning cups sane test page"],
         ["About Slate", "about", "version restart settings file"]
     ]

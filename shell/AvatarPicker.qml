@@ -39,6 +39,10 @@ FloatingWindow {
     // ---- Where it is, and what's picked -----------------------------------------
     property string folder: home + "/Pictures"
     property string chosen: ""             // the picked image's path
+    // Someone else's picture (Settings → Users): their name for the heading, and where the
+    // chosen picture goes instead of Config.setAvatar
+    property string forName: ""
+    property var then: null
     function open() {
         chosen = "";
         placesRun.running = true;
@@ -59,7 +63,8 @@ FloatingWindow {
     }
     function use() {
         if (!chosen) return;
-        Config.setAvatar(chosen);
+        if (then) then(chosen);
+        else Config.setAvatar(chosen);
         visible = false;
     }
     function activate(i) {
@@ -122,7 +127,9 @@ FloatingWindow {
             anchors { fill: parent; margins: 14; topMargin: 18 }
             spacing: 4
             Text {
-                text: "Choose a picture"
+                width: parent.width; elide: Text.ElideRight
+                textFormat: Text.PlainText        // never markup: someone's own name
+                text: pk.forName ? "Choose a picture for " + pk.forName : "Choose a picture"
                 color: pk.text; font.family: pk.font; font.pixelSize: 17; font.weight: Font.Medium
                 bottomPadding: 12; leftPadding: 6
             }

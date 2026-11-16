@@ -276,13 +276,19 @@ FloatingWindow {
     }
     Timer { interval: 40; repeat: true; running: foundFade.running; onTriggered: win.placeFound() }
     // Choosing your account picture: its own window (AvatarPicker.qml), opened from General or
-    // the control centre's picture
+    // the control centre's picture; or someone else's, from Users (pickPictureFor: the picture
+    // chosen goes to then(path) instead)
     property bool avatarPicking: false
     onAvatarPickingChanged: if (avatarPicking) avatarPicker.open()
+    function pickPictureFor(who, then) {
+        avatarPicker.forName = who;
+        avatarPicker.then = then;
+        avatarPicking = true;
+    }
     AvatarPicker {
         id: avatarPicker
         bar: win.bar
-        onVisibleChanged: if (!visible) win.avatarPicking = false
+        onVisibleChanged: if (!visible) { win.avatarPicking = false; forName = ""; then = null; }
     }
     // The settings each page can restore to their defaults. Left out on purpose: your
     // location and night light on/off (General), and the chosen wallpaper (Appearance)
@@ -467,7 +473,7 @@ FloatingWindow {
             || (keys.includes("logLevel") && (Config.s.logLevel || "normal") !== "normal");
     }
     onSectionChanged: {
-        if (section !== "general") avatarPicking = false;
+        if (section !== "general" && section !== "users") avatarPicking = false;
         if (visible) placeSave.restart();     // remember the page (see savePlace)
     }
     property string pageTitle: ""
@@ -861,7 +867,7 @@ FloatingWindow {
                     active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
+                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -1155,6 +1161,8 @@ FloatingWindow {
     Component { id: bluetoothPage; BluetoothPage {} }
 
     Component { id: printersPage; PrintersPage {} }
+
+    Component { id: usersPage; UsersPage {} }
 
     Component { id: updatesPage; UpdatesPage {} }
 

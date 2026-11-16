@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People on this computer · Slate docs</title>
+<meta name="description" content="Adding people to your computer in Slate, changing their name, picture, password and account type, and removing an account.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=31">
+<link rel="stylesheet" href="docs.css?v=2">
+</head>
+<body class="docs" data-page="users">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>People on this computer</h1>
+      <p class="lead">Everyone who uses this computer can have their own account, with their own files, settings and
+        password. Add, change and remove them from Settings.</p>
+
+      <h2>Who's here</h2>
+      <p>Open <span class="path"><i class="ti">&#xEB20;</i> Settings → Users</span>. Everyone with an account is listed,
+        you first, with their picture, whether they're an administrator, and whether they're logged in right now.</p>
+      <p>Adding someone or changing their account asks for an administrator's password. You can always change your own
+        name, picture and password.</p>
+
+      <h2>Adding someone</h2>
+      <ol>
+        <li>Under <strong>Add someone</strong>, click <strong>Add</strong>.</li>
+        <li>Type their <strong>Full name</strong>. Slate suggests a <strong>Username</strong> from it: what they log
+          in with, and the name of their home folder. It can't be changed later.</li>
+        <li>Choose a <strong>Password</strong> and type it twice. Let them know what it is: they can change it later.</li>
+        <li>Switch on <strong>Administrator</strong> if they should be able to add and remove people, install apps and
+          change settings for the whole computer.</li>
+        <li>Click <strong>Add</strong>, and type your password.</li>
+      </ol>
+      <p>They show up on the login screen straight away.</p>
+
+      <h2>Changing someone's account</h2>
+      <p>Click <strong>Edit</strong> beside them:</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Name</td><td>How they're shown on the login screen and the lock screen. Press Enter to save it.</td></tr>
+        <tr><td>Picture</td><td>Choose a picture of theirs. It's cropped to a square for you.</td></tr>
+        <tr><td>Administrator</td><td>Whether they can change the whole computer. There's always at least one
+          administrator, so the last one can't be switched off.</td></tr>
+        <tr><td>Password</td><td>Type the new password twice, then click <strong>Change</strong>.</td></tr>
+      </table>
+      <p>Your own picture is the same one as on <span class="path"><i class="ti">&#xEB20;</i> Settings → General</span>.</p>
+
+      <h2>Removing someone</h2>
+      <p>Click <strong>Remove</strong> beside them, then <strong>Remove</strong> again to confirm. They won't be able to
+        log in anymore, but their home folder stays where it is, so nothing they made is lost. You can delete it yourself
+        later if you're sure.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Someone who's logged in can't be removed until they log out, and you can't remove your own account while
+          you're using it.</p></div>
+      <p>Accounts go through AccountsService (the <code>accountsservice</code> package), the same on every distro. If
+        it isn't running, the page says so.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js?v=4"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

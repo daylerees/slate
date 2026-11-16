@@ -182,6 +182,15 @@ for _p in settings_pages():
         "settle": 1.2, "undo": [("settings", "close")],
     }
 
+# Users, with pretend accounts (the tests' computer has only its own, and maybe no AccountsService)
+_PEOPLE = json.dumps({"service": "on", "me": 1000, "admin": True, "users": [
+    {"uid": 1000, "username": "alex", "home": "/home/alex", "name": "Alex Morgan", "admin": True, "picture": "", "me": True, "loggedIn": True, "locked": False},
+    {"uid": 1001, "username": "sam", "home": "/home/sam", "name": "Sam Lee", "admin": False, "picture": "", "me": False, "loggedIn": False, "locked": False},
+    {"uid": 1002, "username": "robin", "home": "/home/robin", "name": "Robin Park", "admin": True, "picture": "", "me": False, "loggedIn": True, "locked": False}]})
+SCENES["settings-users"] = dict(SCENES["settings-users"],
+    do=[("settings", "page", "users"), ("test", "settingsPoll", "users", _PEOPLE)],
+    undo=[("test", "settingsPoll", "users", ""), ("settings", "close")])
+
 # Every shadow the same way with a long distance straight down (Settings → Appearance → Shadows):
 # moved down, not grown at the sides. A panel under the bar (its shadow used to widen all
 # round), Settings (Hyprland's shadow, drawn to match Slate's), the launcher and a menu

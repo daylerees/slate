@@ -251,6 +251,26 @@ class SettingsPolls(Lists):
             self.ipc("test", "settingsPoll", "printers", self.printers("study", "attic"))
             self.assertEqual(self.looks("printerLooks", 2)["printers"], made + 1)
 
+    def people(self, *names, admin=()):
+        return json.dumps({"service": "on", "me": 1000, "admin": True, "users": [
+            {"uid": 1000 + i, "username": n, "home": "/home/" + n, "name": n.title(), "admin": i == 0 or n in admin,
+             "picture": "", "me": i == 0, "loggedIn": i == 0, "locked": False} for i, n in enumerate(names)]})
+
+    def test_users(self):
+        """Settings → Users: a row per account, kept when someone's details change, one made
+        for someone new (the list is looked at again after every change made there)."""
+        self.addCleanup(lambda: self.ipc("test", "settingsPoll", "users", ""))
+        self.page("users")
+        self.ipc("test", "settingsPoll", "users", self.people("alex", "sam"))
+        self.wait(lambda st: st["lists"]["settings"].get("users", 0) >= 2, "the two people's rows", timeout=15)
+        made = self.rows()["users"]
+        with self.subTest("someone made an administrator"):
+            self.ipc("test", "settingsPoll", "users", self.people("alex", "sam", admin=("sam",)))
+            self.assertEqual(self.looks("userLooks", 1)["users"], made, "a change of account type made the rows again")
+        with self.subTest("someone added"):
+            self.ipc("test", "settingsPoll", "users", self.people("alex", "sam", "robin", admin=("sam",)))
+            self.assertEqual(self.looks("userLooks", 1)["users"], made + 1, "the rows there already were made again")
+
     def test_network(self):
         self.addCleanup(lambda: self.ipc("test", "settingsPoll", "network", ""))
         self.page("wifi")

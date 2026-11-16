@@ -39,6 +39,7 @@ const SECTIONS = [
     { id: "power", title: "Power and battery", icon: 0xEA38, about: "Power modes, the charging limit, the lid and the power button", covers: ["power"] },
     { id: "network", title: "Network and Bluetooth", icon: 0xF09F, about: "Wi-Fi, wired connections, Airplane Mode and Bluetooth devices", covers: ["wifi", "bluetooth"] },
     { id: "printers-webcam", title: "Printers and the webcam", icon: 0xEB0E, about: "Adding printers, scanning, and your camera's picture", covers: ["printers", "webcam"] },
+    { id: "users", title: "People on this computer", icon: 0xEBF2, about: "Adding someone, changing their account, and removing it", covers: ["users"] },
     { id: "security", title: "Locking and login", icon: 0xEAE2, about: "The lock screen, the login screen and the screensaver", covers: ["lock", "screensaver"] },
     { id: "privacy", title: "Private Mode and the camera", icon: 0xF227, about: "Turning off the mic, camera, assistants and screen capture", },
   ]},

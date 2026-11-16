@@ -97,7 +97,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │        AppsPage.qml, StartupPage.qml, DateTimePage.qml, ScreenshotsPage.qml, WindowsPage.qml,
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
 │        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
-│        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml
+│        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
@@ -204,7 +204,10 @@ scripts/hypr-options.py       Hyprland options' current values as JSON, so Setti
 scripts/xkb-layouts.py        keyboard layouts and their variants as JSON, from xkb's own list (Settings)
 scripts/theme-packs.py        a few pointer and icon themes put in with one click: each from its makers'
                               release, pinned to a version and checked by SHA-256
-scripts/set-avatar.sh         sets your account picture: cropped square, handed to AccountsService, and ~/.face
+scripts/set-avatar.sh         sets your account picture (or someone else's, by uid): cropped square, handed to
+                              AccountsService, and ~/.face (yours only)
+scripts/accounts.py           the people on this computer for Settings → Users: listing, adding, changing and
+                              removing accounts through AccountsService (passwords on stdin, hashed with libcrypt)
 scripts/netinfo.sh            connection details for the network panel (nmcli), as KEY=value lines
 scripts/camera-watch.py       tells Slate when a camera starts and stops being used (inotify on
                               /dev/video*), for OSD.qml's indicator
@@ -650,7 +653,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
-| `accountsservice` | your account picture (Settings → General, the lock and login screens) |
+| `accountsservice` | your account picture (Settings → General, the lock and login screens); the accounts on Settings → Users (`scripts/accounts.py`) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |
 | `wl-clipboard` | clipboard history (`wl-paste --watch`), copying from the pickers |
