@@ -48,6 +48,9 @@ class Software(LiveCase):
         self.assertEqual(st["page"], "discover")
         self.assertEqual(st["installed"], ["org.videolan.VLC"])
 
+    def test_search_has_the_keyboard_on_opening(self):
+        self.wait(lambda st: st["software"]["searchFocused"], "the search box with the keyboard")
+
     def test_search_by_name_and_words(self):
         self.ipc("software", "search", "fire")
         self.wait(lambda st: st["software"]["found"] == ["org.mozilla.firefox"], "Firefox found by its name")

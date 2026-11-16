@@ -52,11 +52,15 @@ FloatingWindow {
     property string page: "discover"
     property string app: ""
     property string query: ""
+    readonly property bool searchFocused: findApps.activeFocus      // (the tests)
     // (opens on Discover each time, as Settings opens on All Settings: reset here rather than when
     // it shows, which can come after a page, an app or a search asked for with it)
     function open() {
-        if (!visible) { app = ""; query = ""; page = "discover"; }
+        const opening = !visible;
+        if (opening) { app = ""; query = ""; page = "discover"; }
         visible = true;
+        // (the search box takes the keyboard, so you can type straight away)
+        if (opening) { findApps.focus = true; Qt.callLater(() => findApps.forceActiveFocus()); }
         refresh();
     }
     function show(p) { app = ""; page = p; query = ""; scroller.contentY = 0; }
@@ -206,9 +210,11 @@ FloatingWindow {
         { id: "installed", label: "Installed", icon: 0xEA96 },
         { id: "updates", label: "Updates", icon: 0xEB13 }
     ]
-    Item {
+    // (a focus scope with the search box in it focused: whenever the window is active, the
+    // search box has the keyboard)
+    FocusScope {
         anchors.fill: parent
-        focus: sw.visible
+        focus: true
         Keys.onEscapePressed: { if (sw.app !== "") sw.app = ""; else if (sw.query !== "") sw.query = ""; else sw.visible = false; }
 
         // Sidebar, as Settings'
@@ -307,13 +313,19 @@ FloatingWindow {
                     id: findApps
                     objectName: "findApps"
                     activeFocusOnTab: true
+                    focus: true
                     anchors { left: findIcon.right; leftMargin: 8; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     color: sw.text; font.family: sw.font; font.pixelSize: 13
                     selectionColor: sw.accent; selectedTextColor: sw.accentText
                     clip: true
                     text: sw.query
                     onTextEdited: { sw.query = text; sw.app = ""; scroller.contentY = 0; }
-                    Keys.onEscapePressed: { if (text !== "") sw.query = ""; else focus = false; }
+                    // Escape: clears the search, then leaves an app's page, then closes the window
+                    Keys.onEscapePressed: {
+                        if (text !== "") sw.query = "";
+                        else if (sw.app !== "") sw.app = "";
+                        else sw.visible = false;
+                    }
                     Text {
                         visible: findApps.text === ""
                         anchors.verticalCenter: parent.verticalCenter
@@ -637,7 +649,7 @@ FloatingWindow {
         }
         HoverHandler { id: rowHover }
         // (the row, not its button: the app's own page)
-        TapHandler { onTapped: sw.openApp(row.entry.id) }
+        ClickTap { onTapped: sw.openApp(row.entry.id) }
     }
 
     // An app's icon from the catalog, or a plain stand-in
