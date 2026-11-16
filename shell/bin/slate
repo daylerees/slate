@@ -14,17 +14,20 @@
 #   slate build-hyprbars   build Hyprbars, the optional title-bar plugin (again after Hyprland updates)
 # Slate's folder is the one this script lives in (bin/..), or $SLATE_DIR.
 SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+# Your own Slate files (settings.json, hypr/, user/), wherever the code is: the same folder for
+# an install of your own, apart from it when Slate is installed for everyone (Config.qml's userDir)
+SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
 LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate.log"
 
 # Settings → Appearance → Interface size (uiScale in settings.json): Qt scales all of Slate
 ui_scale() {
-    s=$(sed -n 's/.*"uiScale": *\([0-9.]*\).*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)
+    s=$(sed -n 's/.*"uiScale": *\([0-9.]*\).*/\1/p' "$SLATE_HOME/settings.json" 2>/dev/null | head -n 1)
     case "$s" in ""|1|1.0|1.00) ;; *) echo "$s" ;; esac
 }
 
 # Settings → Debug → Log detail (logLevel in settings.json): normal, detailed or everything
 log_level() {
-    l=$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)
+    l=$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_HOME/settings.json" 2>/dev/null | head -n 1)
     case "$l" in detailed|everything) echo "$l" ;; *) echo normal ;; esac
 }
 
@@ -65,7 +68,7 @@ keeper_pid() {
 }
 
 start() {
-    mkdir -p "$(dirname "$LOG")"
+    mkdir -p "$(dirname "$LOG")" "$SLATE_HOME"
     # Already running, or about to be: nothing to do
     keeper_pid >/dev/null && return 0
     [ -n "$(pids)" ] && return 0

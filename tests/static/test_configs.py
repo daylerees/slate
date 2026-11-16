@@ -13,19 +13,27 @@ class Configs(Case):
         """Hyprland --verify-config on Slate's session config, installed in a scratch home
         (it reads ~/.config/slate), with and without a user's own files."""
         hyprland = need("Hyprland")
-        dest = self.h.install_slate()
-        conf = os.path.join(dest, "session", "hypr", "hyprland.lua")
-        for case in ("fresh install", "with user files"):
+        for case in ("fresh install", "with user files", "installed for everyone, with user files"):
             with self.subTest(case):
-                if case == "with user files":
+                # (installed for everyone: the code in a folder of its own, your files still in
+                # ~/.config/slate, and no SLATE_DIR: the config finds its code by its own path)
+                code_dir = self.h.install_slate(shared=case.startswith("installed for everyone"))
+                conf = os.path.join(code_dir, "session", "hypr", "hyprland.lua")
+                if "with user files" in case:
                     # The files Slate creates for you (scripts/user-files.sh copies these)
                     src = slate.path("shell", "data", "user-files", "hypr")
                     if os.path.isdir(src):
-                        os.makedirs(os.path.join(dest, "hypr"), exist_ok=True)
+                        os.makedirs(os.path.join(self.h.slate_home, "hypr"), exist_ok=True)
                         for n in os.listdir(src):
-                            with open(os.path.join(src, n)) as i, open(os.path.join(dest, "hypr", n), "w") as o:
+                            with open(os.path.join(src, n)) as i, open(os.path.join(self.h.slate_home, "hypr", n), "w") as o:
                                 o.write(i.read())
+                # (a last user file of its own that says where the config thinks Slate is)
+                probe = os.path.join(self.h.slate_home, "hypr", "hyprland.lua")
+                os.makedirs(os.path.dirname(probe), exist_ok=True)
+                with open(probe, "a") as f:
+                    f.write('\nprint("SLATE_DIR=" .. SLATE_DIR)\n')
                 code, out = slate.run([hyprland, "--verify-config", "-c", conf], env=self.h.env, timeout=60)
+                self.assertIn("SLATE_DIR=" + code_dir, out, "the config looks for Slate's code somewhere else")
                 clean = re.sub(r"\x1b\[[0-9;]*m", "", out)
                 result = clean.partition("Config parsing result:")[2].strip()
                 problem = " ".join(l.strip() for l in result.splitlines() if l.strip())[:300]

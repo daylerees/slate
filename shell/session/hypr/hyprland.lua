@@ -17,11 +17,24 @@
 -- $XDG_RUNTIME_DIR/slate-hypr-errors.txt, which Slate shows in a notification.
 
 hl.env("SLATE_SESSION", "1")
--- Where Slate lives, and its `slate` command (used by autostart.lua and binds.lua)
-SLATE_DIR = (os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/slate"
+-- Your own Slate folder (settings, these tweaks, your QML), and where Slate's code is: the same
+-- folder for an install of your own, apart from it when Slate is installed for everyone
+-- (slate-session says which, in SLATE_DIR)
+local function env(name) local v = os.getenv(name); if v and v ~= "" then return v end end
+local yourSlate = (env("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/slate"
+-- (this file is session/hypr/hyprland.lua in Slate's code: its own path says where that is,
+-- should SLATE_DIR not reach Hyprland, as under uwsm)
+local function codeDir()
+    -- (called directly, not through pcall: level 1 is then this function, in this file)
+    local info = debug and debug.getinfo and debug.getinfo(1, "S")
+    local src = info and info.source or ""
+    return src:match("^@(.+)/session/hypr/hyprland%.lua$")
+end
+SLATE_DIR = env("SLATE_DIR") or codeDir() or yourSlate
+-- Its `slate` command (used by autostart.lua and binds.lua)
 SLATE = SLATE_DIR .. "/bin/slate"
 
-local userDir = SLATE_DIR .. "/hypr"         -- your own files (see the top of this file)
+local userDir = yourSlate .. "/hypr"         -- your own files (see the top of this file)
 -- Mistakes in them, for Slate to show (started empty on each load of the config)
 -- (in Slate's runtime folder, as Config.qml's runtimeDir works it out: never /tmp)
 local runtimeDir = os.getenv("XDG_RUNTIME_DIR") or ""

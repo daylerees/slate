@@ -619,9 +619,10 @@ class Uninstall(Case):
 
 class SessionStarter(Case):
     """session/slate-session (what the login screen's "Slate" entry runs) starts Hyprland with
-    the config in your own install, and nothing else: there was never a release that lived in
-    ~/.config/quickshell/slate, and a system-wide copy couldn't work (the config itself looks
-    for Slate in ~/.config/slate), so neither is tried."""
+    the config in your own install if you have one (~/.config/slate, or a link from it to a
+    checkout), else the copy installed once for everyone, and tells it where that is
+    (SLATE_DIR). There was never a release that lived in ~/.config/quickshell/slate, so that
+    isn't tried."""
     scratch = True
     STARTER = slate.path("shell", "session", "slate-session")
 
@@ -646,6 +647,45 @@ class SessionStarter(Case):
         self.assertEqual(code, 0, out)
         self.assertEqual(self.s.calls("start-hyprland"), [["--", "-c", conf]])
 
+    def shared_copy(self, name):
+        """A copy for everyone, at a scratch path the starter is told to look in (as it looks
+        in /usr/local/share/slate and /usr/share/slate)."""
+        d = os.path.join(self.h.dir, name, "slate", "session", "hypr")
+        os.makedirs(d)
+        with open(os.path.join(d, "hyprland.lua"), "w") as f:
+            f.write("-- a stand-in\n")
+        return os.path.join(self.h.dir, name, "slate")
+
+    def started_with(self, env):
+        """Runs the starter; the config it gave Hyprland and the SLATE_DIR it set."""
+        self.s.add("start-hyprland", stdin_to=None)
+        probe = os.path.join(self.h.dir, "said")
+        with open(os.path.join(self.s.dir, "start-hyprland"), "w") as f:
+            f.write('#!/bin/sh\nprintf "%%s\\n%%s\\n" "$3" "$SLATE_DIR" > "%s"\n' % probe)
+        code, out = run(["sh", self.STARTER], env=env, timeout=20)
+        self.assertEqual(code, 0, out)
+        with open(probe) as f:
+            return f.read().splitlines()
+
+    def test_the_copy_for_everyone(self):
+        local = self.shared_copy("usr-local")
+        other = self.shared_copy("usr")
+        env = dict(self.env, SLATE_TEST="1", SLATE_TEST_SHARED=f"{local} {other}")
+        self.assertEqual(self.started_with(env), [os.path.join(local, "session", "hypr", "hyprland.lua"), local])
+
+    def test_your_own_install_comes_first(self):
+        """A copy of your own (your development link) wins over the one for everyone."""
+        mine = self.config_in("slate")
+        local = self.shared_copy("usr-local")
+        env = dict(self.env, SLATE_TEST="1", SLATE_TEST_SHARED=local)
+        self.assertEqual(self.started_with(env), [mine, os.path.dirname(os.path.dirname(os.path.dirname(mine)))])
+
+    def test_the_tests_paths_only_under_the_tests(self):
+        local = self.shared_copy("usr-local")
+        code, out = run(["sh", self.STARTER], env=dict(self.env, SLATE_TEST_SHARED=local), timeout=20)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Slate isn't installed", out)
+
     def test_nowhere_else(self):
         self.config_in("quickshell", "slate")
         code, out = run(["sh", self.STARTER], env=self.env, timeout=20)
@@ -654,6 +694,4 @@ class SessionStarter(Case):
         self.assertEqual(self.s.calls("start-hyprland"), [])
         for rel in (("install.sh",), ("shell", "session", "slate-session")):
             with self.subTest(rel[-1]):
-                src = slate.read(*rel)
-                self.assertNotIn("quickshell/slate", src)
-                self.assertNotIn("/usr/share/slate", src)
+                self.assertNotIn("quickshell/slate", slate.read(*rel))

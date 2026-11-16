@@ -8,6 +8,7 @@
 # log itself can still name apps, windows and files, so the file says to look it over before
 # sharing it.
 SLATE_DIR="${SLATE_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"     # your own files (Config.qml's userDir)
 LOG="${XDG_CACHE_HOME:-$HOME/.cache}/slate.log"
 LINES=2000
 
@@ -37,7 +38,7 @@ section() { printf '\n===== %s =====\n' "$1"; }
     echo "Hyprland:    $(hyprctl version 2>/dev/null | head -n 1)"
     . /etc/os-release 2>/dev/null
     echo "System:      ${PRETTY_NAME:-unknown}, $(uname -sr)"
-    level=${SLATE_LOG_LEVEL:-$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_DIR/settings.json" 2>/dev/null | head -n 1)}
+    level=${SLATE_LOG_LEVEL:-$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_HOME/settings.json" 2>/dev/null | head -n 1)}
     echo "Log detail:  ${level:-normal}"
     echo "Session:     ${XDG_SESSION_TYPE:-?}${SLATE_SESSION:+ (Slate session)}"
 
@@ -75,7 +76,7 @@ def tidy(v):
     if isinstance(v, list): return [tidy(x) for x in v]
     if isinstance(v, dict): return {tidy(k): tidy(x) for k, x in v.items()}
     return v
-print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_DIR/settings.json" "$(hyprctl monitors -j 2>/dev/null)" 2>/dev/null || echo "(couldn't read settings.json)"
+print(json.dumps(tidy(s), indent=2, sort_keys=True))' "$SLATE_HOME/settings.json" "$(hyprctl monitors -j 2>/dev/null)" 2>/dev/null || echo "(couldn't read settings.json)"
 
     section "Slate's log (last $LINES lines)"
     if [ -s "$LOG" ]; then tail -n "$LINES" "$LOG" | nocolour | untilde

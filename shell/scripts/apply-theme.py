@@ -238,8 +238,8 @@ def undo_own(settings=None):
     ctx = Ctx(None, not os.environ.get("SLATE_THEME_TEST"))
     set_theme, font = os.environ.get("XCURSOR_THEME", ""), ""
     try:                      # (the pointer and font in Settings are the better answer, where set)
-        with open(settings or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                           "settings.json"), encoding="utf-8") as f:
+        # (your settings.json: in your own Slate folder, wherever Slate's code is)
+        with open(settings or os.path.join(CFG, "slate", "settings.json"), encoding="utf-8") as f:
             saved = json.load(f)
         set_theme, font = str(saved.get("cursorTheme") or set_theme), str(saved.get("codeFont") or "")
     except (OSError, ValueError, AttributeError):

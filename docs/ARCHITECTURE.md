@@ -5,7 +5,25 @@ config files that bind keys and run Slate commands. Everything visible is a Wayl
 layer-shell surface (`PanelWindow`), except the settings window (`FloatingWindow`) and
 the lock screen (`WlSessionLock`).
 
-## Components (`~/.config/slate`)
+## Slate's code and your own files
+
+Slate's code (everything below) and each person's own files are kept apart:
+
+- **Your own files** are always in `${XDG_CONFIG_HOME:-~/.config}/slate`: `settings.json`,
+  `hypr/` (your Hyprland tweaks) and `user/` (your own QML). Every place that reads them works
+  this out the same way (`Config.userDir`, `SLATE_HOME` in `bin/slate`, `yourSlate` in
+  `session/hypr/hyprland.lua`; `tests/static/test_your_folder.py` checks each copy).
+- **The code** is wherever it's installed, and finds itself from its own path
+  (`Quickshell.shellPath`, `bin/..`, a script's own folder). For an install of your own (or
+  `~/.config/slate` linked to a checkout) that's the same folder as your files; when Slate is
+  installed once for everyone it's `/usr/local/share/slate` (or `/usr/share/slate` from a
+  package). `session/slate-session` picks your own install first, then the one for everyone,
+  and passes it on as `SLATE_DIR`; the Hyprland config also finds it from its own path.
+- Your `user/shell.qml` is read from your folder and made as a file at the top of Slate's code
+  (`UserFiles.qml`), so `Config` and Slate's other pieces work in it in either layout.
+- The login screen keeps its own copy of your settings next to its code (`slate-greeter-install`).
+
+## Components (Slate's code)
 
 ```
 shell.qml               root: creates everything below, plus the dock itself

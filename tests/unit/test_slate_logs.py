@@ -37,7 +37,9 @@ class Logs(Case):
             "nested": {"folder": home + "/deep"},
             "barPosition": "top", "logLevel": "normal", "accent": "#7aa2f7",
         }
-        with open(os.path.join(self.install, "settings.json"), "w") as f:
+        # (your settings: in your own Slate folder, apart from the code here)
+        os.makedirs(self.h.slate_home, exist_ok=True)
+        with open(os.path.join(self.h.slate_home, "settings.json"), "w") as f:
             json.dump(settings, f)
         os.makedirs(os.path.join(self.h.cache), exist_ok=True)
         with open(os.path.join(self.h.cache, "slate.log"), "w") as f:
@@ -76,7 +78,7 @@ class Logs(Case):
         self.assertIn('"mainDisplay": "DP-1"', self.export())
 
     def setting(self, **changes):
-        p = os.path.join(self.install, "settings.json")
+        p = os.path.join(self.h.slate_home, "settings.json")
         with open(p) as f:
             s = json.load(f)
         s.update(changes)

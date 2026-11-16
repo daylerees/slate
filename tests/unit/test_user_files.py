@@ -1,6 +1,7 @@
 """scripts/user-files.sh: the files for your own tweaks (hypr/*.lua, user/shell.qml) are made
 in Slate's folder from data/user-files, and one that's already there is never touched."""
 import os
+import shutil
 
 import slate
 from slate import Case, run
@@ -110,8 +111,27 @@ class UserFiles(Case):
         self.assertEqual(sorted(os.listdir(self.h.home)), [".cache", ".config", ".local"])
 
     def test_no_templates(self):
-        """A Slate folder without data/user-files (an old copy): nothing to do, no error."""
-        bare = os.path.join(self.h.dir, "bare")
-        os.makedirs(bare)
-        self.assertEqual(self.make(bare), "")
-        self.assertEqual(os.listdir(bare), [])
+        """A copy of Slate without data/user-files (an old one): nothing to do, no error."""
+        code_dir = os.path.join(self.h.dir, "bare", "scripts")
+        os.makedirs(code_dir)
+        shutil.copy(self.script, code_dir)
+        yours = os.path.join(self.h.dir, "yours")
+        os.makedirs(yours)
+        code, out = run(["sh", os.path.join(code_dir, "user-files.sh"), yours], env=self.h.env)
+        self.assertEqual((code, out), (0, ""))
+        self.assertEqual(os.listdir(yours), [])
+
+    def test_from_the_code_into_your_folder(self):
+        """Slate installed for everyone: the blank files come from its code, and go into your
+        own folder (by default $XDG_CONFIG_HOME/slate), not next to the code."""
+        shared = self.h.install_slate(shared=True)
+        script = os.path.join(shared, "scripts", "user-files.sh")
+        for args in ([], [self.h.slate_home]):
+            with self.subTest(args=args):
+                shutil.rmtree(self.h.slate_home)
+                os.makedirs(self.h.slate_home)
+                code, out = run(["sh", script, *args], env=self.h.env)
+                self.assertEqual(code, 0, out)
+                self.assertTrue(os.path.isfile(os.path.join(self.h.slate_home, "user", "shell.qml")))
+                self.assertTrue(os.path.isfile(os.path.join(self.h.slate_home, "hypr", "binds.lua")))
+                self.assertFalse(os.path.exists(os.path.join(shared, "hypr")), "made next to the code")

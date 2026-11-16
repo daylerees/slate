@@ -138,7 +138,7 @@ class YourHyprlandFiles(LiveCase):
         and one notification says there's an error. There used to be two, from two places, with
         different names and pictures, and one of them said all was well. Fixing the file gets
         the one that says so."""
-        path = os.path.join(self.s.slate_dir, "hypr", "rules.lua")
+        path = os.path.join(self.s.slate_home, "hypr", "rules.lua")
         with open(path, encoding="utf-8") as f:
             good = f.read()
 
@@ -162,6 +162,42 @@ class YourHyprlandFiles(LiveCase):
         save(good)
         self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings reloaded", "the notice that it's well again")
         self.assertEqual(self.steady(history, floor=1.5), before + 2)
+
+
+class YourQml(LiveCase):
+    """Your user/shell.qml, in your own Slate folder (apart from Slate's code in these tests):
+    loaded into Slate, with Slate's own pieces (Config) usable in it as they are in Slate's own
+    files; a mistake in it is a notification, and Slate keeps running."""
+    def test_loaded_from_your_folder_with_slates_pieces(self):
+        path = os.path.join(self.s.slate_home, "user", "shell.qml")
+        marker = os.path.join(self.s.h.dir, "your-qml-ran")
+        with open(path, encoding="utf-8") as f:
+            blank = f.read()
+
+        def save(text):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+        def put_back():
+            save(blank)
+            self.wait(lambda st: True, "Slate back after putting your file back", timeout=30)
+        self.addCleanup(put_back)
+        save("import QtQuick\nimport Quickshell\nScope {\n"
+             "    Component.onCompleted: Quickshell.execDetached([\"sh\", \"-c\", 'printf \"%%s\\\\n%%s\\\\n\" \"$0\" \"$1\" > \"$2\"', String(Config.accent), Config.madeAs, %s])\n"
+             "}\n" % json.dumps(marker))
+        end = time.monotonic() + 40
+        while time.monotonic() < end and not os.path.exists(marker):
+            time.sleep(0.2)
+        self.assertTrue(os.path.exists(marker), "your shell.qml didn't run")
+        with open(marker) as f:
+            accent, made_as = f.read().splitlines()
+        self.assertRegex(accent, r"^#[0-9a-f]{6,8}$", "Config.accent didn't reach your shell.qml")
+        # Slate's own Config, not a second copy of it (one named by its path on disk was)
+        self.assertEqual(made_as, self.s.state()["configMadeAs"], "your shell.qml was given a copy of Config of its own")
+        with self.subTest("a mistake"):
+            save("import QtQuick\nScope { this is not qml\n")
+            self.wait(lambda st: st["notifications"]["latest"] == "Slate couldn't load your shell.qml",
+                      "the notice of the mistake", timeout=40)
 
 
 class ComingBack(LiveCase):

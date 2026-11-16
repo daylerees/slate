@@ -3,10 +3,20 @@
 # Installed as /usr/local/bin/slate-session by slate-session-install and listed on the
 # login screen as "Slate". Your normal Hyprland session (~/.config/hypr) is untouched.
 
-# Slate's Hyprland config, in your own install: the only place Slate runs from (the config
-# itself looks for the rest of Slate there: SLATE_DIR in hyprland.lua)
-conf="${XDG_CONFIG_HOME:-$HOME/.config}/slate/session/hypr/hyprland.lua"
-[ -f "$conf" ] || { echo "slate-session: Slate isn't installed for $USER" >&2; exit 1; }
+# Where Slate's code is: your own install (~/.config/slate, or a link from it to a checkout)
+# if you have one, else the copy installed once for everyone (install.sh's, then a package's).
+# Your own files (settings, Hyprland tweaks, your QML) are always in ~/.config/slate. The
+# Hyprland config finds the rest of Slate through SLATE_DIR
+SHARED="/usr/local/share/slate /usr/share/slate"
+# (the tests' own shared copies, in a scratch folder: only under the tests)
+[ "${SLATE_TEST:-}" = 1 ] && [ -n "${SLATE_TEST_SHARED:-}" ] && SHARED=$SLATE_TEST_SHARED
+SLATE_DIR=""
+for d in "${XDG_CONFIG_HOME:-$HOME/.config}/slate" $SHARED; do
+    [ -f "$d/session/hypr/hyprland.lua" ] && { SLATE_DIR=$d; break; }
+done
+[ -n "$SLATE_DIR" ] || { echo "slate-session: Slate isn't installed for $USER" >&2; exit 1; }
+conf="$SLATE_DIR/session/hypr/hyprland.lua"
+export SLATE_DIR
 
 export SLATE_SESSION=1
 # uwsm runs the session through systemd, so only where systemd is running

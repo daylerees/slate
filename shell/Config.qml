@@ -1411,6 +1411,12 @@ Singleton {
         return d === 1 ? "Yesterday" : d + " days ago";
     }
     readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+    // Your own Slate files: settings.json, hypr/ (your Hyprland tweaks) and user/ (your own QML).
+    // Always here, wherever Slate's code is: in this same folder for an install of your own (or
+    // ~/.config/slate linked to a checkout), or apart from it when Slate is installed once for
+    // everyone on the computer (/usr/local/share/slate). The login screen has none: its copy of
+    // your settings is next to its code (slate-greeter-install)
+    readonly property string userDir: configHome + "/slate"
     // Where Slate keeps its saved state and its cache (XDG_STATE_HOME / XDG_CACHE_HOME). Two
     // paths still use ~/.local/state and ~/.cache directly on purpose: the dock's dock.json
     // (shell.qml), the tiles (tileDir below), the notifications history, the launcher's list and
@@ -1807,6 +1813,8 @@ Singleton {
     // Under the test suite (tests/run sets SLATE_TEST=1): no sounds, welcome, startup apps,
     // update checks or login screen prompts, so a run is quiet and the same every time
     readonly property bool testMode: Quickshell.env("SLATE_TEST") === "1"
+    // (which Config this is, for the tests: your shell.qml must see Slate's own, never a copy)
+    readonly property string madeAs: testMode ? String(Date.now()) + "-" + Math.random() : ""
     // The tests' computer has no Wi-Fi and no sound card, and the bar hides what a computer
     // hasn't got. So the tests pretend it has both (the bar they arrange and measure is the
     // usual one), and take either away to see the bar without it: `test hardware wifi false`
@@ -2447,7 +2455,8 @@ Singleton {
 
     FileView {
         id: file
-        path: Qt.resolvedUrl("settings.json").toString().replace("file://", "")
+        path: root.isLoginScreen ? Qt.resolvedUrl("settings.json").toString().replace("file://", "")
+            : root.userDir + "/settings.json"
         watchChanges: true
         // Each save finishes before anything else happens, so the file is never caught halfway
         blockWrites: true

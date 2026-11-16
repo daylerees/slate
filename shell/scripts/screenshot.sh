@@ -28,7 +28,7 @@ except Exception: d = {}
 print(d.get("screenshotName") or "default")
 print(d.get("screenshotAfter") or "edit")
 print(d.get("screenshotFolder") or "")
-' "$here/../settings.json" 2>/dev/null)
+' "${XDG_CONFIG_HOME:-$HOME/.config}/slate/settings.json" 2>/dev/null)
 naming=$(printf '%s\n' "$settings" | sed -n 1p)
 after=$(printf '%s\n' "$settings" | sed -n 2p)
 folder=$(printf '%s\n' "$settings" | sed -n 3p)

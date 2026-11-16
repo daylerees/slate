@@ -111,6 +111,7 @@ class Session:
         self.procs = []
         self.log_offset = 0
         self.slate_dir = None
+        self.slate_home = None
         self.env = None
 
     # ---- setting up ---------------------------------------------------------------------
@@ -121,8 +122,12 @@ class Session:
 
     def _prepare(self):
         h = self.h
-        self.slate_dir = h.install_slate()
-        hypr = os.path.join(self.slate_dir, "hypr")
+        # Slate's code in a folder of its own and your files in ~/.config/slate, as when it's
+        # installed for everyone, so every live test runs with the two apart (the unit tests
+        # cover an install of your own, with both in ~/.config/slate)
+        self.slate_dir = h.install_slate(shared=True)
+        self.slate_home = h.slate_home
+        hypr = os.path.join(self.slate_home, "hypr")
         # Slate and the apps it starts: software GL, test mode, and a fixed time on the clocks
         # Text smoothed in grey: Qt Quick smooths text in colour (subpixel) on an opaque window and
         # in grey on a see-through one, so the bar's text changed with whatever an earlier scene
@@ -160,7 +165,7 @@ class Session:
         wallpaper = h("Pictures", "wallpaper.png")
         make_wallpaper(wallpaper, self.width, self.height)
         settings["wallpaper"] = wallpaper
-        self._write(os.path.join(self.slate_dir, "settings.json"), json.dumps(settings, indent=2))
+        self._write(os.path.join(self.slate_home, "settings.json"), json.dumps(settings, indent=2))
         # The dock's pinned apps, and the files it shows
         self._write(h(".local", "state", "slate", "dock.json"), json.dumps({"pinned": ["foot"]}))
         for d in ("Downloads", "Documents", "Videos/Screensaver", ".local/share/Trash/files", ".local/share/Trash/info"):

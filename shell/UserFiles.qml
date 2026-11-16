@@ -1,4 +1,5 @@
-// Your own tweaks, in files kept in Slate's folder (and kept when Slate updates):
+// Your own tweaks, in files kept in your Slate folder (Config.userDir: ~/.config/slate, wherever
+// Slate's code is; kept when Slate updates):
 //   hypr/*.lua       the Slate session's Hyprland config loads these (session/hypr/hyprland.lua):
 //                    env, variables, monitors, binds, rules, autostart, hyprland
 //   user/shell.qml   loaded into Slate itself
@@ -15,8 +16,8 @@ import Quickshell.Io
 Scope {
     id: root
     readonly property var hyprFiles: ["env.lua", "variables.lua", "monitors.lua", "binds.lua", "rules.lua", "autostart.lua", "hyprland.lua"]
-    readonly property string hyprDir: Quickshell.shellPath("hypr")
-    readonly property string userQml: Quickshell.shellPath("user/shell.qml")
+    readonly property string hyprDir: Config.userDir + "/hypr"
+    readonly property string userQml: Config.userDir + "/user/shell.qml"
     readonly property string errorsPath: Config.runtimeDir + "/slate-hypr-errors.txt"
     property bool ready: false        // the files exist (watching a missing file doesn't work)
 
@@ -26,7 +27,7 @@ Scope {
 
     Process {
         running: true
-        command: ["sh", Quickshell.shellPath("scripts/user-files.sh"), Quickshell.shellPath("")]
+        command: ["sh", Quickshell.shellPath("scripts/user-files.sh"), Config.userDir]
         onExited: { root.ready = true; root.loadUserQml(); }
     }
 
@@ -54,23 +55,26 @@ Scope {
     }
 
     // ---- user/shell.qml: loaded into Slate ---------------------------------------------
-    // Made from its file directly (rather than a Loader) so a mistake in it can be shown
-    // instead of only logged. Saving it reloads Slate (Quickshell does that for every file
-    // it has loaded; the watch here covers it too, a moment later)
+    // Made from its text, as if it were a file at the top of Slate's code (wherever your folder
+    // is), so Slate's pieces (Config, Spaces…) work in it the same in every install. (Made as
+    // user/shell.qml there instead, they weren't found: that folder is its own module.) Named
+    // the way Quickshell names Slate's own files (Qt.resolvedUrl here: qs:@/qs/…), so it shares
+    // Slate's one Config: named by its path on disk, it was given a second copy of its own
+    // Made here rather than by a Loader so a mistake in it can be shown instead of only logged.
+    // Saving it reloads Slate (the watch below)
     property var userObject: null
+    FileView { id: userText; path: root.ready ? root.userQml : ""; blockLoading: true; printErrors: false }
     function loadUserQml() {
         if (userObject) { userObject.destroy(); userObject = null; }
-        const c = Qt.createComponent("file://" + userQml);
-        const make = () => {
-            if (c.status === Component.Error) {
-                notify("Slate couldn't load your shell.qml", c.errorString().slice(0, 600) + "\n\nSlate keeps running without it; it'll load as soon as the file is saved again.");
-            } else if (c.status === Component.Ready) {
-                userObject = c.createObject(root);
-                if (!userObject) notify("Slate couldn't load your shell.qml", "It couldn't be created; see `slate log`. Slate keeps running without it; it'll load as soon as the file is saved again.");
-            }
-        };
-        if (c.status === Component.Loading) c.statusChanged.connect(make);
-        else make();
+        userText.reload();
+        const text = userText.text();
+        if (!text) return;               // (none: nothing to load)
+        try {
+            userObject = Qt.createQmlObject(text, root, Qt.resolvedUrl("your-shell.qml"));
+        } catch (e) {
+            const errs = (e && e.qmlErrors) ? e.qmlErrors.map(q => "line " + q.lineNumber + ": " + q.message).join("\n") : String(e);
+            notify("Slate couldn't load your shell.qml", errs.slice(0, 600) + "\n\nSlate keeps running without it; it'll load as soon as the file is saved again.");
+        }
     }
     FileView {
         path: root.ready ? root.userQml : ""

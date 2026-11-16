@@ -419,6 +419,7 @@ ShellRoot {
                 screens: Quickshell.screens.map(s => ({ name: s.name, x: s.x, y: s.y, width: s.width, height: s.height })),
                 // With more than one screen: the focused one and the main display (Settings → Displays),
                 // each screen's bar, and where the panels and the dock are
+                configMadeAs: Config.madeAs,
                 focusedScreen: Config.focusedScreen ? Config.focusedScreen.name : "",
                 mainScreen: Config.primaryScreen ? Config.primaryScreen.name : "",
                 bars: Config.bars.map(b => ({ screen: b.screen ? b.screen.name : "", primary: b.primary, dimmed: b.dimmed,

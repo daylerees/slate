@@ -14,6 +14,7 @@ set -u
 userFiles=false
 [ "${1:-}" = "--user-files" ] && userFiles=true
 SLATE_DIR=$(cd "$(dirname "$0")/.." && pwd)
+SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"     # your own files (Config.qml's userDir)
 state="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
 share="${XDG_DATA_HOME:-$HOME/.local/share}/slate"
 backup="$share/backups/factory-reset-$(date +%Y-%m-%d-%H%M%S)"
@@ -27,13 +28,13 @@ sleep 0.3
 # adopts it back on. (Needs settings.json and the undo log, so before they're moved.)
 python3 "$SLATE_DIR/scripts/apply-theme.py" --undo-own >/dev/null 2>&1
 
-[ -e "$SLATE_DIR/settings.json" ] && mv "$SLATE_DIR/settings.json" "$backup/"
+[ -e "$SLATE_HOME/settings.json" ] && mv "$SLATE_HOME/settings.json" "$backup/"
 [ -e "$share/spaces.json" ] && mv "$share/spaces.json" "$backup/"
 [ -d "$state" ] && find "$state" -mindepth 1 -maxdepth 1 -exec mv -t "$backup/state/" {} +
 if $userFiles; then
-    for d in hypr user; do [ -e "$SLATE_DIR/$d" ] && mv "$SLATE_DIR/$d" "$backup/"; done
+    for d in hypr user; do [ -e "$SLATE_HOME/$d" ] && mv "$SLATE_HOME/$d" "$backup/"; done
     # Blank ones back before Hyprland reloads, since its config loads them
-    sh "$SLATE_DIR/scripts/user-files.sh" "$SLATE_DIR" >/dev/null
+    sh "$SLATE_DIR/scripts/user-files.sh" "$SLATE_HOME" >/dev/null
 fi
 
 # Hyprland drops the display layout, title bar colours and shortcut set Slate had written

@@ -121,16 +121,24 @@ class ScratchHome:
     def __call__(self, *parts):
         return os.path.join(self.home, *parts)
 
-    def install_slate(self):
-        """A copy of shell/ at $XDG_CONFIG_HOME/slate, like an install. Returns its path."""
-        dest = os.path.join(self.config, "slate")
+    @property
+    def slate_home(self):
+        """Your own Slate folder: settings.json, hypr/, user/ (Config.qml's userDir)."""
+        return os.path.join(self.config, "slate")
+
+    def install_slate(self, shared=False):
+        """A copy of shell/ at $XDG_CONFIG_HOME/slate, like an install of your own; or, shared,
+        in a folder of its own, like Slate installed once for everyone (your own files still in
+        $XDG_CONFIG_HOME/slate). Returns the code's path."""
+        dest = os.path.join(self.dir, "share", "slate") if shared else self.slate_home
+        os.makedirs(self.slate_home, exist_ok=True)
         # Your own files (settings, hypr/, user/) only at the top, like the installer
         mine = {"settings.json", "hypr", "user", "install.log", "VERSION", ".manifest"}
 
         def ignore(d, names):
             top = os.path.samefile(d, SHELL)
             return [n for n in names if n == "__pycache__" or (top and n in mine)]
-        shutil.copytree(SHELL, dest, ignore=ignore)
+        shutil.copytree(SHELL, dest, ignore=ignore, dirs_exist_ok=True)
         return dest
 
     def cleanup(self):
