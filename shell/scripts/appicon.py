@@ -397,9 +397,17 @@ def colours(tile_dir, out):
     os.replace(tmp, out)
 
 
+# Slate's own windows (Settings, Nova): their icon is Slate's, in Slate's own folder, so it's
+# never looked for in the icon themes (where only the person who installed Slate had a copy)
+OWN_ICONS = {"slate-settings": os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                            "assets", "icon", "settings-512.png")}
+
+
 def icon_for(cls):
     if not cls:
         return None
+    if cls in OWN_ICONS and os.path.isfile(OWN_ICONS[cls]):
+        return OWN_ICONS[cls]
     name = desktop_icon(cls) or cls
     return find_icon_file(name) or find_icon_file(cls.lower()) \
         or find_icon_file(cls.split(".")[-1].lower())
@@ -478,16 +486,26 @@ def render_tile(icon_path, px, shape="tile", fill=True):
 
 
 def tile_main(app, out, px, shape="tile", fill=True):
-    img = render_tile(icon_for(app), px, shape, fill)
+    icon = icon_for(app)
+    img = render_tile(icon, px, shape, fill)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(out), suffix=".tmp")
     os.close(fd)
     img.save(tmp, format="PNG")
     os.replace(tmp, out)
+    # Drawn without its icon (not installed yet, or put somewhere shared later on): marked, so
+    # the next --tile-all tries again rather than keeping the placeholder for good
+    mark = out + ".placeholder"
+    if icon:
+        if os.path.exists(mark):
+            os.remove(mark)
+    else:
+        open(mark, "w").close()
 
 
 def tile_all(out_dir, px, shape="tile", fill=True):
-    """Draw a tile for every installed app that doesn't have one yet."""
+    """Draw a tile for every installed app that doesn't have one yet, or has only a placeholder
+    (drawn before its icon could be found)."""
     seen = set()
     for d in APP_DIRS:
         if not os.path.isdir(d):
@@ -501,7 +519,9 @@ def tile_all(out_dir, px, shape="tile", fill=True):
             seen.add(app)
             safe = "".join(c if (c.isascii() and c.isalnum()) or c in "._-" else "_" for c in app)
             out = os.path.join(out_dir, safe + ".png")
-            if os.path.isfile(out):
+            # (Slate's own are drawn every time: one or two, and a tile drawn before this knew
+            # where to find them stays right from then on)
+            if os.path.isfile(out) and not os.path.exists(out + ".placeholder") and app not in OWN_ICONS:
                 continue
             try:
                 tile_main(app, out, px, shape, fill)

@@ -285,6 +285,36 @@ class AppIcon(Case):
             self.assertEqual(Image.open(os.path.join(out, n + ".png")).size, (PX, PX))
         self.assertFalse([f for f in os.listdir(out) if f.endswith(".tmp")], "temp files left behind")
 
+    def test_slate_settings_has_its_own_icon(self):
+        """Slate Settings' icon is Slate's own file, found without any desktop entry or icon
+        theme copy (someone who didn't install Slate has neither in their home)."""
+        out = os.path.join(self.h.cache, "slate", "tiles")
+        self.ok([sys.executable, SCRIPT, "--tile", "slate-settings", os.path.join(out, "slate-settings.png"), str(PX)], env=self.h.env)
+        self.assertFalse(os.path.exists(os.path.join(out, "slate-settings.png.placeholder")), "drawn as a placeholder")
+        # An old blank tile of it, with no mark, from before: drawn again
+        self.desktop("slate-settings", "slate-settings")
+        with open(os.path.join(out, "slate-settings.png"), "w") as f:
+            f.write("an old blank tile")
+        self.ok([sys.executable, SCRIPT, "--tile-all", out, str(PX)], env=self.h.env)
+        self.assertEqual(Image.open(os.path.join(out, "slate-settings.png")).size, (PX, PX))
+
+    def test_an_icon_that_arrives_later_is_drawn_then(self):
+        """An app whose icon wasn't there when its tile was first drawn (Slate Settings' icon,
+        put in /usr/local by the installer after someone new first logged in): the placeholder
+        is drawn again at the next run, with the icon, rather than kept for good."""
+        self.desktop("later", "laterapp")
+        out = os.path.join(self.h.cache, "slate", "tiles")
+        self.ok([sys.executable, SCRIPT, "--tile-all", out, str(PX)], env=self.h.env)
+        placeholder = Image.open(os.path.join(out, "later.png")).convert("RGBA").tobytes()
+        # (the icon arrives in a system folder, as the installer's shared one does)
+        shared = os.path.join(self.sys, "icons", "hicolor", "256x256", "apps")
+        os.makedirs(shared, exist_ok=True)
+        Image.new("RGBA", (256, 256), (200, 40, 40, 255)).save(os.path.join(shared, "laterapp.png"))
+        self.ok([sys.executable, SCRIPT, "--tile-all", out, str(PX)], env=self.h.env)
+        drawn = Image.open(os.path.join(out, "later.png")).convert("RGBA").tobytes()
+        self.assertNotEqual(drawn, placeholder, "the placeholder was kept after the icon arrived")
+        self.assertFalse([f for f in os.listdir(out) if f.endswith(".placeholder")], "still marked as a placeholder")
+
     def test_tile_all_folder_style(self):
         out = os.path.join(self.h.cache, "slate", "tiles", "circle-whole")
         self.ok([sys.executable, SCRIPT, "--tile-all", out, str(PX), "--shape", "square"], env=self.h.env)
