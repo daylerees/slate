@@ -1569,6 +1569,24 @@ Singleton {
         }
         onLoadFailed: { root.iconColoursReading = false; iconColoursSoon.restart(); }     // not made yet
     }
+    // Slate Software's icons for apps not installed (tiles/<style>/flathub, appicon.py
+    // --tile-files) note their colours there; read with the dock's (after the dock's own)
+    property var flathubColours: ({})
+    FileView {
+        id: flathubColoursFile
+        path: root.iconColoursWanted ? root.tileDir + "/flathub/colours.json" : ""
+        printErrors: false
+        onLoaded: {
+            try {
+                const d = JSON.parse(text()), m = {};
+                for (const k in d) if (d[k] && d[k].c) m[k] = d[k].c;
+                root.flathubColours = m;
+            } catch (e) {}
+        }
+        onLoadFailed: root.flathubColours = ({})
+    }
+    // (Slate Software, when it has drawn some)
+    function rereadFlathubColours() { if (flathubColoursFile.path !== "") flathubColoursFile.reload(); }
     Timer { id: iconColoursSoon; interval: 1500; onTriggered: if (root.iconColoursWanted) { iconColoursRun.running = false; iconColoursRun.running = true; } }
     // Read straight after it's written: watching for the file only works once its folder
     // exists, and a style's folder is made by the first tiles drawn in it (on a first login,
@@ -1601,7 +1619,7 @@ Singleton {
     // icon, or its colour not noted yet)
     function iconTileShade(app) {
         if (!s.iconTileColour || s.iconFill || !app) return null;
-        const hex = iconColours[app];
+        const hex = iconColours[app] || flathubColours[app];
         if (!hex) { askIconColour(app); return null; }
         return iconTileShadeOf(hex);
     }

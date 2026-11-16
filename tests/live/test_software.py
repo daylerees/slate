@@ -114,6 +114,11 @@ class Software(LiveCase):
         self.assertTrue(os.path.isfile(tile), tile)
         from PIL import Image
         self.assertEqual(Image.open(tile).size, (192, 192))
+        # Its tile behind it in a shade of its own colour (Settings → Icons, on by default), as the
+        # dock's are: the colours noted as it was drawn
+        with open(os.path.join(st["flathubTiles"], "colours.json")) as f:
+            self.assertIn("org.mozilla.firefox", json.load(f))
+        self.wait(lambda st: "org.mozilla.firefox" in st["software"]["shaded"], "Firefox's tile in its own colour")
 
     def test_opens_again_after_closing_from_outside(self):
         """Closed from outside Slate (Super+Q, or a title bar's close button), it opens again

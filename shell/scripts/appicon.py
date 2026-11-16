@@ -7,7 +7,7 @@ Usage: appicon.py --tile <app-id-or-class> <out.png> <pixels> [--shape S] [--fil
        appicon.py --colours <dir> <out.json> (each drawn icon's main colour, for tiles in it)
        appicon.py --tile-files <dir>/flathub <pixels>   (Slate Software: "<app id>\t<icon file>"
                   lines on stdin, each drawn from that picture into <id>.png in the style of
-                  the folder above, unless it's there already)
+                  the folder above, unless it's there already; their colours in colours.json)
 
 Settings → Icons → App icons:
   --shape  tile (default: a rounded square), squircle, circle, square, or original
@@ -585,6 +585,8 @@ def tile_files(out_dir, px, lines):
             os.replace(tmp, out)
         except Exception as e:  # one broken picture shouldn't stop the rest
             print(f"{app}: {e}", file=sys.stderr)
+    # Their colours, as --colours notes the dock's (for tiles in each icon's colour)
+    colours(out_dir, os.path.join(out_dir, "colours.json"))
 
 
 def style_of_folder(folder):

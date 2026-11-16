@@ -302,7 +302,10 @@ class AppIcon(Case):
         code, log = run([sys.executable, SCRIPT, "--tile-files", out, str(PX)], env=self.h.env, input=lines)
         self.assertEqual(code, 0, log)
         self.assertIn("org.example.Broken:", log)
-        self.assertEqual(sorted(os.listdir(out)), ["org.example.Round.png", "org.example.Square.png"])
+        self.assertEqual(sorted(os.listdir(out)), ["colours.json", "org.example.Round.png", "org.example.Square.png"])
+        with open(os.path.join(out, "colours.json")) as f:
+            noted = json.load(f)
+        self.assertEqual(sorted(noted), ["org.example.Round", "org.example.Square"], "their colours (for tiles in each icon's colour)")
         sq = Image.open(os.path.join(out, "org.example.Square.png"))
         self.assertEqual(sq.size, (PX, PX))
         self.assertEqual(sq.getpixel((0, 0))[3], 0, "not drawn in the folder's style (a circle: corners cut away)")

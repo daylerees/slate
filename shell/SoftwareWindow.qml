@@ -136,6 +136,8 @@ FloatingWindow {
     function flathubTile(id) { return Config.tileDir + "/flathub/" + String(id).replace(/[^A-Za-z0-9._-]/g, "_") + ".png"; }
     property int tilesVersion: 0
     property var tilesAsked: ({})              // style folder + id: asked already
+    property var tilesTried: ({})              // ...and its batch has finished (drawn, or it couldn't be)
+    function tileTried(id) { return !!tilesTried[Config.tileDir + " " + id]; }
     property var tilesWanted: []                // ["id\tpicture"], for the next batch
     function wantTile(id, picture) {
         if (!id || !picture) return;
@@ -152,6 +154,7 @@ FloatingWindow {
             if (tileRun.running) { restart(); return; }
             if (sw.tilesWanted.length === 0) return;
             tileRun.lines = sw.tilesWanted.join("\n") + "\n";
+            tileRun.keys = sw.tilesWanted.map(l => Config.tileDir + " " + l.split("\t")[0]);
             sw.tilesWanted = [];
             tileRun.command = [Config.tileScript, "--tile-files", Config.tileDir + "/flathub", "192"];
             tileRun.running = true;
@@ -160,9 +163,18 @@ FloatingWindow {
     Process {
         id: tileRun
         property string lines: ""
+        property var keys: []
         stdinEnabled: true
         onStarted: { write(lines); stdinEnabled = false; }
-        onExited: { stdinEnabled = true; sw.tilesVersion++; if (sw.tilesWanted.length) tileBatch.restart(); }
+        onExited: {
+            stdinEnabled = true;
+            const t = Object.assign({}, sw.tilesTried);
+            for (const k of keys) t[k] = true;
+            sw.tilesTried = t;
+            Config.rereadFlathubColours();
+            sw.tilesVersion++;
+            if (sw.tilesWanted.length) tileBatch.restart();
+        }
     }
 
     // ---- Doing: one at a time, in order (SoftwareJobs, which outlives this window) ------------
@@ -652,16 +664,20 @@ FloatingWindow {
         property real size: 40
         // Drawn as the dock draws apps (Settings → Icons: shape, fill, theme, tint, glass):
         // installed, the dock's own tile of it; else its catalog picture drawn the same way
-        // (sw.wantTile), with the picture itself until that's done
+        // (sw.wantTile). Nothing shows until it's ready, then it fades in (showing the picture first
+        // and swapping flickered); the picture itself only if it couldn't be drawn
         readonly property bool installedApp: !!sw.installedIds[appId]
         property bool noDockTile: false
-        onAppIdChanged: noDockTile = false
+        property bool gaveUp: false
+        onAppIdChanged: { noDockTile = false; gaveUp = false; }
         readonly property string tile: !appId ? "" : installedApp && !noDockTile ? Config.tilePath(appId) : sw.flathubTile(appId)
         width: size; height: size
         Image {
             id: aiTile
             anchors.fill: parent
             visible: status === Image.Ready
+            opacity: status === Image.Ready ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             source: ai.tile ? "file://" + ai.tile + "?v=" + Config.tileVersion + "." + sw.tilesVersion : ""
             sourceSize: Qt.size(192, 192)
             smooth: true; mipmap: true
@@ -669,6 +685,7 @@ FloatingWindow {
             onStatusChanged: {
                 if (status !== Image.Error) return;
                 if (ai.installedApp && !ai.noDockTile) ai.noDockTile = true;
+                else if (sw.tileTried(ai.appId) || !ai.path) ai.gaveUp = true;
                 else sw.wantTile(ai.appId, ai.path);
             }
             layer.enabled: Config.iconTint > 0
@@ -679,14 +696,14 @@ FloatingWindow {
         Image {
             id: aiImg
             anchors.fill: parent
-            visible: !aiTile.visible && ai.path !== "" && status === Image.Ready
-            source: !aiTile.visible && ai.path ? "file://" + ai.path : ""
+            visible: ai.gaveUp && ai.path !== "" && status === Image.Ready
+            source: ai.gaveUp && ai.path ? "file://" + ai.path : ""
             sourceSize: Qt.size(ai.size * 2, ai.size * 2)
             fillMode: Image.PreserveAspectFit
             asynchronous: true
         }
         Rectangle {
-            visible: !aiTile.visible && !aiImg.visible
+            visible: ai.gaveUp && !aiImg.visible
             anchors.fill: parent; radius: Config.corner(ai.size * 0.22)
             color: sw.faint
             Text { anchors.centerIn: parent; text: sw.glyph(0xEB75); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: ai.size * 0.5 }
