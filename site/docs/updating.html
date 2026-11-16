@@ -45,6 +45,10 @@
       <p>When there's a new version, Settings → Updates shows <strong>What's new</strong> in it, with a link to its
         release page. Choose <strong>Update now</strong>: Slate downloads it, puts it in place and restarts on the new
         version. Your apps and windows stay open.</p>
+      <p>Slate is installed once for everyone on the computer, so updating asks for an administrator's password. If
+        you're not an administrator, someone who is can type theirs.</p>
+      <p>If Slate came with your system's packages (from your distro rather than its installer), it updates with the
+        rest of your system instead, and Settings → Updates says so.</p>
       <p>Before anything is unpacked or run, Slate checks the download against the checksum (a SHA-256) published
         with the release on GitHub. If the two don't match, or the release has no checksum, Slate doesn't install it
         and says so; your Slate stays just as it was. It only ever downloads from Slate's own releases on GitHub, and
@@ -64,9 +68,9 @@
       <p>Each release's notes are also in the <a href="../changelog.html">changelog</a>.</p>
 
       <h2>Going back</h2>
-      <p>Slate keeps the version you had before, in <code>~/.config/slate.previous</code>. Under
+      <p>Slate keeps the version you had before, in <code>/usr/local/share/slate.previous</code>. Under
         <strong>Previous version</strong> in Settings → Updates, <strong>Go back</strong> (and a confirmation in Slate's
-        confirmation window) switches to it.</p>
+        confirmation window) switches to it. Like updating, it asks for an administrator's password.</p>
       <p>Your settings and tweaks stay just as they are now, and the version you leave is kept in its place, so you
         can switch back again the same way.</p>
 

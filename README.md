@@ -119,7 +119,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Session launcher + login entry (installed) | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` |
 | Login screen code (root-owned copy) | `/usr/local/share/slate-greeter/` |
 | Login screen appearance (synced) | `/var/lib/slate-greeter/` |
-| Helpers | `/usr/local/share/slate/bin/`: `slate-greeter-sync`, `slate-system` (`--check`, `--fix`, `--root <helper>`). What runs as root is a root-owned copy in `/usr/local/libexec/slate`: `slate-session-install`, `slate-greeter-install`, `slate-private-camera`, `slate-system-root` |
+| Helpers | `/usr/local/share/slate/bin/`: `slate-greeter-sync`, `slate-system` (`--check`, `--fix`, `--root <helper>`). What runs as root is a root-owned copy in `/usr/local/libexec/slate`: `slate-session-install`, `slate-greeter-install`, `slate-private-camera`, `slate-update-install`, `slate-system-root` |
 | App-icon tile generator | `scripts/appicon.py` (in the shell folder) |
 
 ## Everyday commands

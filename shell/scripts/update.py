@@ -4,9 +4,21 @@
     update.py check [--force]   look for a newer release (at most every 20 hours unless --force)
     update.py modified          Slate's own files changed by hand since it was installed
     update.py install           download the latest release, check it against the checksum
-                                published with it, and install it (install.sh --update)
-    update.py revert            go back to the version before (~/.config/slate.previous), keeping
-                                your settings and overrides; the one you leave becomes the backup
+                                published with it, and install it (install.sh --update), or
+                                for Slate installed for everyone, have slate-update-install do
+                                that as root, with an administrator's password
+    update.py revert            go back to the version before (<Slate's folder>.previous),
+                                keeping your settings and overrides; the one you leave becomes the
+                                backup
+
+How Slate's installed decides which (layout(), shown as `how` in the state):
+  own       yours to change: a copy or link of your own in ~/.config/slate, or the copy for
+            everyone in a folder that's yours (made so to work on Slate): updated as you
+  shared    the copy for everyone in /usr/local/share/slate, root's: updated by the root-owned
+            slate-update-install (given only the tag; it downloads and checks the release
+            itself), with an administrator's password
+  packaged  from a distro package (/usr/share/slate, the Nix store): updated with the rest of
+            the system, never by Slate itself
 
 What it finds and does is kept in ~/.local/state/slate/update.json, which Settings → Updates
 shows. Installing keeps settings.json, hypr/ and user/ (your settings and overrides), and
@@ -21,9 +33,8 @@ import hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, 
 
 REPO = "daylerees/slate"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
-HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))      # ~/.config/slate
-DEST = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "slate")
-PREVIOUS = DEST + ".previous"
+HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))      # Slate's code, this one
+DEST = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "slate")  # your files
 # Yours, never replaced by an update: copied across to the new version as they are (the
 # same list as KEEP in install.sh, which must match)
 KEEP = ("settings.json", "hypr", "user")
@@ -80,11 +91,44 @@ def installed_version():
     return version_in(HERE)
 
 
+# Slate from a distro package: these places are only ever written by a package manager
+PACKAGED = ("/usr/share/", "/nix/store/")
+
+
+def layout():
+    """"own", "shared" or "packaged": see the top of this file."""
+    here = os.path.realpath(HERE)
+    if here.startswith(PACKAGED):
+        return "packaged"
+    st = os.stat(here)
+    return "own" if st.st_uid == os.getuid() and os.access(here, os.W_OK) else "shared"
+
+
+def previous_dir():
+    """Where the version before this one is kept: beside it (none for a link to a checkout)."""
+    if os.path.islink(DEST) and os.path.realpath(DEST) == os.path.realpath(HERE):
+        return ""
+    return os.path.realpath(HERE) + ".previous"
+
+
 def previous_version():
     """The backup's version ("unknown" if it has none), or "" when there's no backup."""
-    if os.path.islink(DEST) or not os.path.isfile(os.path.join(PREVIOUS, "shell.qml")):
+    prev = previous_dir()
+    if not prev or not os.path.isfile(os.path.join(prev, "shell.qml")):
         return ""
-    return version_in(PREVIOUS) or "unknown"
+    return version_in(prev) or "unknown"
+
+
+def as_root(*args):
+    """Runs a root-owned helper through slate-system (an administrator's password): its exit
+    code and what it said."""
+    r = subprocess.run([os.path.join(HERE, "bin", "slate-system"), "--root", *args], stdin=subprocess.DEVNULL,
+                       capture_output=True, text=True)
+    return r.returncode, (r.stdout + r.stderr).strip()
+
+
+# pkexec's own exit codes: the password prompt closed, or not allowed
+CANCELED = (126, 127)
 
 
 def parse(v):
@@ -197,6 +241,8 @@ def fetch_release(tag, folder):
 def check(force):
     st = load()
     st["previous"] = previous_version()
+    st["how"] = layout()
+    st["kept"] = previous_dir().replace(os.path.expanduser("~"), "~", 1)
     if not force and time.time() - st.get("checked", 0) < CHECK_EVERY and st.get("latest"):
         st["current"] = installed_version()
         st["notify"] = False
@@ -263,6 +309,15 @@ def modified():
 
 def install():
     st = load()
+    how = st["how"] = layout()
+    if how == "packaged":
+        st.update(status="failed", error="Slate came with your system's packages, so it updates with them: "
+                  "use your system's own updates.")
+        save(st)
+        return
+    if how == "shared":
+        install_for_everyone(st)
+        return
     st.update(status="downloading", error="", log=LOG)
     save(st)
     tmp = tempfile.mkdtemp(prefix="slate-update-")
@@ -299,9 +354,17 @@ def install():
                     st["note"] = ("One more step: this version changes the login session. In a terminal, run: "
                                   "/usr/local/share/slate/bin/slate-system --fix")
         elif rc == 3:
-            # (install.sh --update installs new packages itself, with a password prompt)
-            st.update(status="failed", error="This update needs packages that weren't installed (the password prompt "
-                      "was canceled, or they couldn't be). Try again, or download the release and run ./install.sh from it.")
+            with open(LOG) as log:
+                said = log.read()
+            if "installed for everyone on the computer" in said:
+                # (a copy of your own from before Slate was installed for everyone)
+                st.update(status="failed", error="Slate is now installed once for everyone on the computer. To move "
+                          "to that, download the release and run ./install.sh from it (it asks for your password and "
+                          "keeps your settings).")
+            else:
+                # (install.sh --update installs new packages itself, with a password prompt)
+                st.update(status="failed", error="This update needs packages that weren't installed (the password prompt "
+                          "was canceled, or they couldn't be). Try again, or download the release and run ./install.sh from it.")
         else:
             st.update(status="failed", error="The update didn't finish (see the log). Your previous Slate is still in place.")
     except Refused as e:
@@ -316,20 +379,87 @@ def install():
     save(st)
 
 
+def install_for_everyone(st):
+    """The copy for everyone, root's: checked here that the newest release is a proper one,
+    newer than this, then handed to slate-update-install by its tag alone, which downloads
+    and checks it again itself, as root (an administrator's password)."""
+    st.update(status="downloading", error="", log=LOG)
+    save(st)
+    try:
+        rel = fetch_latest()
+        tag = rel.get("tag_name")
+        newer_than_installed(tag)
+        st.update(latest=tag, notes=rel.get("body") or "", url=rel.get("html_url", ""), status="installing")
+        save(st)
+    except Refused as e:
+        st.update(status="failed", error=str(e))
+        save(st)
+        return
+    except Exception as e:
+        st.update(status="failed", error="Slate couldn't reach GitHub (%s). Your Slate is just as it was."
+                  % (getattr(e, "reason", None) or e))
+        save(st)
+        return
+    rc, said = as_root("slate-update-install", tag)
+    with open(LOG, "w") as log:
+        log.write(said + "\n")
+    st = load()
+    st["note"] = ""
+    if rc == 0:
+        st.update(status="done", current=installed_version(), newer=False, error="", previous=previous_version())
+        restart()
+    elif rc in CANCELED:
+        st.update(status="failed", error="The password prompt was closed, so nothing changed.")
+    else:
+        st.update(status="failed", error="The update didn't finish (see the log). Your previous Slate is still in place.")
+    save(st)
+
+
+def restart():
+    subprocess.run([os.path.join(HERE, "bin", "slate"), "restart"], stdin=subprocess.DEVNULL,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def revert():
     st = load()
+    st["how"] = how = layout()
+    if how == "packaged":
+        st.update(status="failed", error="Slate came with your system's packages, so going back is up to them.")
+        save(st)
+        return
+    if how == "shared":
+        if not previous_version():
+            st.update(status="failed", error="There's no previous version to go back to.")
+            save(st)
+            return
+        leaving = installed_version()
+        rc, said = as_root("slate-update-install", "--revert")
+        st = load()
+        if rc == 0:
+            st.update(status="reverted", error="", current=installed_version(), reverted_from=leaving, previous=previous_version())
+            cur, new = parse(st["current"]), parse(st.get("latest", ""))
+            st["newer"] = bool(cur and new and new > cur)
+            save(st)
+            restart()
+        else:
+            st.update(status="failed", error="The password prompt was closed, so nothing changed." if rc in CANCELED
+                      else "Slate couldn't go back (%s)." % said.splitlines()[-1] if said else "Slate couldn't go back.")
+            save(st)
+        return
     if not previous_version():
         st.update(status="failed", error="There's no previous version to go back to.")
         save(st)
         return
     leaving = installed_version()
-    swap = DEST + ".swap"
+    code, prev = os.path.realpath(HERE), previous_dir()
+    swap = code + ".swap"
     shutil.rmtree(swap, ignore_errors=True)
-    os.rename(DEST, swap)
-    os.rename(PREVIOUS, DEST)
-    # Your settings and overrides come along, as they are now
-    for k in KEEP:
-        src, dst = os.path.join(swap, k), os.path.join(DEST, k)
+    os.rename(code, swap)
+    os.rename(prev, code)
+    # Your settings and overrides come along, as they are now (when they're kept in with the
+    # code: an install of your own in ~/.config/slate)
+    for k in KEEP if code == os.path.realpath(DEST) else ():
+        src, dst = os.path.join(swap, k), os.path.join(code, k)
         if not os.path.exists(src):
             continue
         if os.path.isdir(dst) and not os.path.islink(dst):
@@ -337,13 +467,12 @@ def revert():
         elif os.path.lexists(dst):
             os.remove(dst)
         (shutil.copytree if os.path.isdir(src) else shutil.copy2)(src, dst, **({"symlinks": True} if os.path.isdir(src) else {}))
-    os.rename(swap, PREVIOUS)
-    st.update(status="reverted", error="", current=version_in(DEST), reverted_from=leaving, previous=previous_version())
+    os.rename(swap, prev)
+    st.update(status="reverted", error="", current=version_in(code), reverted_from=leaving, previous=previous_version())
     cur, new = parse(st["current"]), parse(st.get("latest", ""))
     st["newer"] = bool(cur and new and new > cur)
     save(st)
-    subprocess.run([os.path.join(DEST, "bin", "slate"), "restart"], stdin=subprocess.DEVNULL,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    restart()
 
 
 if __name__ == "__main__":

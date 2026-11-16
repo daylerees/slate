@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Install a newer release of Slate for everyone on the computer, or go back to the one before,
+# as root (Settings → Updates, through `slate-system --root`, with an administrator's password).
+#   slate-update-install <tag>      download release <tag> (v1.2.3), check it against the
+#                                   checksum published with it, and put it in
+#                                   /usr/local/share/slate; the one there is kept as slate.previous
+#   slate-update-install --revert   go back to slate.previous; the one left becomes slate.previous
+#
+# All it's told is the tag. The download addresses are built here from it, the download and its
+# checksum are fetched and checked here, in a folder only root can read, and only a release
+# newer than the installed one is taken: an older one, however genuine, could bring back what a
+# later one fixed. Nothing from anyone's home folder is read or run. It only changes a copy
+# that's root's: one that isn't (made someone's own on purpose, to work on Slate) is theirs to
+# update without a password, and it's left alone.
+# It never runs from a Slate folder, only from the root-owned copy slate-helpers-install puts in
+# /usr/local/libexec/slate.
+set -euo pipefail
+
+HERE=$(dirname "$(readlink -f "$0")")
+[ "$HERE" = /usr/local/libexec/slate ] || {
+    echo "slate-update-install: this only runs from /usr/local/libexec/slate (slate-system calls it there)" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "slate-update-install: this is run as root, by slate-system (pkexec)" >&2; exit 1; }
+
+CODE=/usr/local/share/slate
+DOWNLOADS=https://github.com/daylerees/slate/releases/download     # (as REPO in scripts/update.py)
+MAX_BYTES=$((400 * 1024 * 1024))                                    # far more than a release weighs
+
+fail() { echo "slate-update-install: $*" >&2; exit 1; }
+
+# The copy for everyone, and only if it's root's and only root can change it
+[ -f "$CODE/shell.qml" ] || fail "Slate isn't installed for everyone here ($CODE)"
+[ ! -L "$CODE" ] && [ "$(stat -c %u "$CODE")" = 0 ] && [ -z "$(find "$CODE" -maxdepth 0 -perm /022)" ] \
+    || fail "$CODE isn't root's, so it's updated without a password by whoever it belongs to"
+
+# A version's numbers, for comparing: v1.2.3 → 1 2 3 (nothing for anything else)
+numbers() { [[ "$1" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?$ ]] && echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]} ${BASH_REMATCH[3]}"; }
+newer() {    # newer <a> <b>: a's version is above b's
+    local a b; read -r -a a <<<"$(numbers "$1")"; read -r -a b <<<"$(numbers "$2")"
+    [ "${#a[@]}" = 3 ] && [ "${#b[@]}" = 3 ] || return 1
+    local i; for i in 0 1 2; do
+        [ "${a[$i]}" -gt "${b[$i]}" ] && return 0
+        [ "${a[$i]}" -lt "${b[$i]}" ] && return 1
+    done
+    return 1
+}
+
+if [ "${1:-}" = --revert ]; then
+    [ -f "$CODE.previous/shell.qml" ] || fail "there's no previous version to go back to"
+    [ "$(stat -c %u "$CODE.previous")" = 0 ] || fail "$CODE.previous isn't root's"
+    rm -rf "$CODE.swap"
+    mv "$CODE" "$CODE.swap"
+    mv "$CODE.previous" "$CODE"
+    mv "$CODE.swap" "$CODE.previous"
+    echo "Back to $(cat "$CODE/VERSION" 2>/dev/null || echo "the version before")"
+    exit 0
+fi
+
+tag=${1:-}
+[[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "give a release, like v1.2.3"
+installed=$(cat "$CODE/VERSION" 2>/dev/null || true)
+newer "$tag" "$installed" || fail "$tag isn't newer than the installed ${installed:-version}"
+
+work=$(mktemp -d)                   # (root's, and only root can open it)
+trap 'rm -rf "$work"' EXIT
+chmod 700 "$work"
+get() {    # get <url> <file> <limit>
+    curl -fsSL --proto '=https' --proto-redir '=https' --max-filesize "$3" --max-time 300 -o "$2" -- "$1" \
+        || fail "couldn't download $1"
+}
+archive="slate-$tag.tar.gz"
+get "$DOWNLOADS/$tag/$archive" "$work/$archive" "$MAX_BYTES"
+get "$DOWNLOADS/$tag/$archive.sha256" "$work/$archive.sha256" 4096
+want=$(grep -oE '^[0-9a-f]{64}' "$work/$archive.sha256" | head -n 1 || true)
+[ -n "$want" ] || fail "the checksum published with $tag couldn't be read"
+have=$(sha256sum "$work/$archive" | cut -d' ' -f1)
+[ "$have" = "$want" ] || fail "the download doesn't match the checksum published with $tag, so nothing was changed"
+
+# Unpacked only once it's matched: plain files and folders, nothing outside its own folder
+mkdir "$work/src"
+tar -xzf "$work/$archive" -C "$work/src" --no-same-owner --no-same-permissions
+shell="$work/src/slate-$tag/shell"
+[ -f "$shell/shell.qml" ] || fail "release $tag doesn't hold Slate where it should"
+[ -z "$(find "$work/src" -type b -o -type c -o -type p -o -type s | head -n 1)" ] \
+    || fail "release $tag holds something other than files and folders, so nothing was changed"
+# (links only between its own files, like the cursor theme's names for one cursor)
+while IFS= read -r -d '' l; do
+    case "$(readlink -m -- "$l")" in
+        "$work/src/slate-$tag"/*) ;;
+        *) fail "release $tag holds a link out of its own folder, so nothing was changed" ;;
+    esac
+done < <(find "$work/src" -type l -print0)
+
+# Ready to put in place (as install.sh's stage_code makes it): no one's own files, the package
+# lists, its version and a fingerprint of each file
+new="$CODE.new"
+rm -rf "$new"
+cp -a "$shell" "$new"
+rm -rf "$new/settings.json" "$new/hypr" "$new/user" "$new/.manifest"
+find "$new" -name __pycache__ -prune -exec rm -rf {} +
+if [ -d "$work/src/slate-$tag/packaging" ]; then
+    mkdir -p "$new/packaging" && cp "$work/src/slate-$tag/packaging"/*.txt "$new/packaging/"
+fi
+echo "$tag" > "$new/VERSION"
+chmod +x "$new"/bin/* "$new"/scripts/*.sh "$new"/scripts/*.py "$new"/greeter/run-greeter.sh "$new"/session/slate-session 2>/dev/null || true
+(cd "$new" && find . -type f ! -path '*/.*' ! -path '*/__pycache__/*' ! -path ./VERSION -printf '%P\0' \
+    | sort -z | xargs -0 sha256sum) > "$new/.manifest"
+chown -R root:root "$new"
+chmod -R u+rwX,go+rX,go-w "$new"
+
+rm -rf "$CODE.previous"
+mv "$CODE" "$CODE.previous"
+mv "$new" "$CODE"
+echo "Installed $tag for everyone (the version before is kept, to go back to)"

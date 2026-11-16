@@ -350,15 +350,23 @@ All keys are in `shell/session/hypr/config/binds.lua`.
 
 Slate looks for a new release once a day and shows a notification when one is out
 (turn it off in Settings → Updates). **Settings → Updates** shows what's new and updates in
-one click: it downloads the release and runs its `./install.sh --update`, which puts the new
-version in place without questions or `sudo`. Your settings and overrides are always kept:
-`settings.json`, `hypr/` and `user/` in `~/.config/slate`.
+one click. Slate is installed once for everyone (`/usr/local/share/slate`, root's), so this
+asks for an administrator's password: the root-owned helper `slate-update-install` (through
+`slate-system --root`) is given only the release's tag, and downloads, checks and puts the
+release in place itself. Your settings and overrides are always kept: `settings.json`,
+`hypr/` and `user/` in `~/.config/slate`, which no update touches.
+
+- A Slate from a distro package (`/usr/share/slate`, or the Nix store) updates with the rest
+  of the system and never updates itself: Settings → Updates says so.
+- A copy of Slate that's yours (`~/.config/slate` linked to a checkout, or a shared folder
+  you've made your own to work on Slate) is updated as you, by the release's
+  `./install.sh --update`, with no password.
 
 - The download is the release's own `slate-<tag>.tar.gz` from Slate's repository on GitHub, and
   it's checked against the SHA-256 published beside it (`slate-<tag>.tar.gz.sha256`) before
   anything is unpacked or run. One that doesn't match, a release without a checksum, or a
   version that isn't newer than yours isn't installed, and Settings says why.
-- The version you had is kept in `~/.config/slate.previous` (one version back), and
+- The version you had is kept in `/usr/local/share/slate.previous` (one version back), and
   Settings → Updates can go back to it. Your settings and overrides stay as they are when
   you switch, and the version you leave becomes the backup, so you can switch back again.
 - Changes made by hand to Slate's own files (outside `settings.json`, `hypr/` and `user/`)

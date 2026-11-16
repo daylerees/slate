@@ -34,6 +34,11 @@ Singleton {
     readonly property real checkedAt: (state.checked || 0) * 1000
     // The version kept as a backup (~/.config/slate.previous), to go back to; "" if none
     readonly property string previous: state.previous || ""
+    // How this Slate is installed (update.py layout()): own, shared (for everyone: updating asks
+    // for an administrator's password) or packaged (it updates with the system), and where the
+    // version before is kept
+    readonly property string how: state.how || "own"
+    readonly property string kept: state.kept || "~/.config/slate.previous"
 
     FileView {
         path: Quickshell.shellPath("VERSION")

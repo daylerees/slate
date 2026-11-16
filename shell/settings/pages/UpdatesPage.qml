@@ -32,7 +32,12 @@ Column {
     Component.onCompleted: { Updates.check(false); Updates.findModified(); }
 
     PageTitle { text: "Updates" }
-    IntroText { text: "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it." }
+    IntroText {
+        text: Updates.how === "packaged"
+            ? "Slate came with your system's packages, so it updates with the rest of your system. Slate still lets you know when there's a new version."
+            : "Slate looks for a new version once a day and lets you know with a notification. Updating keeps your settings and your own tweaks (settings.json, hypr/ and user/ in ~/.config/slate), and keeps the version you had, so you can go back to it."
+              + (Updates.how === "shared" ? " Slate is installed for everyone on this computer, so updating asks for an administrator's password." : "")
+    }
     GroupLabel { text: "Version" }
     Group {
         SettingRow {
@@ -83,7 +88,7 @@ Column {
             x: 16; width: parent.width - 32
             visible: updatesPane.touched.length > 0 && !Updates.busy
             topPadding: 12; bottomPadding: 4
-            text: "You've changed some of Slate's own files, outside settings.json, hypr/ and user/. Updating replaces them; your versions stay in ~/.config/slate.previous:\n"
+            text: "You've changed some of Slate's own files, outside settings.json, hypr/ and user/. Updating replaces them; your versions stay in " + Updates.kept + ":\n"
                 + updatesPane.touched.slice(0, 8).map(f => "  · " + f).join("\n")
                 + (updatesPane.touched.length > 8 ? "\n  · and " + (updatesPane.touched.length - 8) + " more" : "")
             color: win.danger; font.family: win.font; font.pixelSize: 12
@@ -96,6 +101,8 @@ Column {
                 : "Update to " + updatesPane.latest
             detail: Updates.status === "installing" ? "Slate restarts on the new version when it's done"
                 : Updates.status === "failed" ? Updates.error
+                : Updates.how === "packaged" ? "Your system's own updates bring it"
+                : Updates.how === "shared" ? "Asks for an administrator's password, then Slate restarts on the new version"
                 : "Takes a moment; Slate restarts on the new version"
             Row {
                 spacing: 8
@@ -106,7 +113,7 @@ Column {
                     onClicked: Quickshell.execDetached(["xdg-open", Updates.state.log])
                 }
                 Button {
-                    visible: !Updates.busy
+                    visible: !Updates.busy && Updates.how !== "packaged"
                     primary: true
                     icon: 0xEA96
                     label: Updates.status === "failed" ? "Try again" : "Update now"
@@ -116,7 +123,7 @@ Column {
                         win.ask = {
                             title: "Update over your changes?",
                             body: "You've changed some of Slate's own files. Updating replaces them, and your versions stay in "
-                                + "~/.config/slate.previous. Your settings.json, hypr/ and user/ aren't touched.",
+                                + Updates.kept + ". Your settings.json, hypr/ and user/ aren't touched.",
                             button: "Update anyway", code: 0xEA96,
                             run: () => Updates.install()
                         };
@@ -144,14 +151,16 @@ Column {
         visible: Updates.previous !== ""
         SettingRow {
             label: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous))
-            detail: "Kept in ~/.config/slate.previous. Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
+            detail: "Kept in " + Updates.kept + ". Your settings and tweaks stay as they are now, and the version you leave is kept instead, so you can switch back"
+                + (Updates.how === "shared" ? ". Asks for an administrator's password" : "")
             Button {
                 enabled: !Updates.busy
                 label: "Go back"
                 onClicked: win.ask = {
                     title: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous)) + "?",
-                    body: "Slate switches to the version kept in ~/.config/slate.previous and restarts. Your settings and tweaks "
-                        + "stay as they are now, and the version you leave is kept instead, so you can switch back.",
+                    body: "Slate switches to the version kept in " + Updates.kept + " and restarts. Your settings and tweaks "
+                        + "stay as they are now, and the version you leave is kept instead, so you can switch back."
+                        + (Updates.how === "shared" ? " It asks for an administrator's password." : ""),
                     button: "Go back", code: 0xEA60,
                     run: () => Updates.revert()
                 }

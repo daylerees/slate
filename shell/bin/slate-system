@@ -11,8 +11,9 @@
 #   slate-system --install <pkg>…   install these packages from the distro's repositories (asks
 #                                   for your password); Settings → App Theming's Install buttons
 #   slate-system --root <helper> …  run one of Slate's root helpers (asks for your password):
-#                                   slate-session-install, slate-greeter-install or
-#                                   slate-private-camera, with its own arguments
+#                                   slate-session-install, slate-greeter-install,
+#                                   slate-private-camera or slate-update-install, with its own
+#                                   arguments
 # Nothing here runs as root itself, and nothing in your Slate folder is run as root: the root
 # helpers are root-owned copies in /usr/local/libexec/slate (bin/slate-helpers-install puts
 # them there, and is the one exception: it runs from here, with your password, when they're
@@ -117,8 +118,8 @@ fix() {   # fix <only packages: 0/1>
 # ---- root: one of the root helpers, for Slate's own buttons and prompts ---------------------
 root() {
     case "${1:-}" in
-        slate-session-install|slate-greeter-install|slate-private-camera) as_root "$@" ;;
-        *) echo "slate-system: --root takes slate-session-install, slate-greeter-install or slate-private-camera" >&2; return 1 ;;
+        slate-session-install|slate-greeter-install|slate-private-camera|slate-update-install) as_root "$@" ;;
+        *) echo "slate-system: --root takes slate-session-install, slate-greeter-install, slate-private-camera or slate-update-install" >&2; return 1 ;;
     esac
 }
 

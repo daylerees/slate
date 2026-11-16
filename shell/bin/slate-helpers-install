@@ -24,7 +24,7 @@ set -u
 TARGET=/usr/local/libexec/slate
 # Everything that's copied: these from bin/ (run as root), and the package lists the root half
 # of slate-system reads (packaging/<name>.txt). Nothing else in your folder is looked at.
-HELPERS="slate-system-root slate-session-install slate-greeter-install slate-private-camera"
+HELPERS="slate-system-root slate-session-install slate-greeter-install slate-private-camera slate-update-install"
 LISTS="arch artix debian fedora gentoo opensuse void"
 # Before there was this folder, the camera switch was one file of its own
 OLD_CAMERA=/usr/local/libexec/slate-private-camera

@@ -247,9 +247,8 @@ class Internet:
         return mock.patch.object(urllib.request.OpenerDirector, "open", fake)
 
 
-class Install(Case):
-    """`install`: only a proper, newer release, from Slate's own repository on GitHub, that
-    matches the checksum published with it, is unpacked and run. No real network."""
+class Releases(Case):
+    """A scratch Slate and a stand-in GitHub with a release on it (no real network)."""
     scratch = True
     TAG = "v9.9.9"
     API = "https://api.github.com/repos/daylerees/slate/releases/latest"
@@ -315,6 +314,12 @@ class Install(Case):
         self.assertEqual(st["status"], "failed")
         self.assertIn(saying, st["error"])
         return st
+
+
+
+class Install(Releases):
+    """`install`: only a proper, newer release, from Slate's own repository on GitHub, that
+    matches the checksum published with it, is unpacked and run. No real network."""
 
     def test_good_checksum_installs(self):
         st = self.install()
@@ -513,3 +518,132 @@ class CheckOnline(Case):
             with self.subTest(tag=tag):
                 self.net.pages[Install.API] = json.dumps({"tag_name": tag}).encode()
                 self.assertIs(self.check()["newer"], False)
+
+
+class ForEveryone(Releases):
+    """Slate installed once for everyone: root's copy is updated by slate-update-install,
+    given only the tag (it downloads and checks the release again itself, as root), through
+    slate-system's password prompt. Nothing is downloaded or run here. A packaged Slate
+    updates with the system, never by itself."""
+
+    def setUp(self):
+        super().setUp()
+        # (this copy's slate-system and slate stand in for the real ones: they note what
+        # they're asked; slate-system answers with $ROOT_ANSWER)
+        self.asked = os.path.join(self.h.dir, "asked")
+        bin_dir = os.path.join(self.dest, "bin")
+        os.makedirs(bin_dir)
+        for name in ("slate-system", "slate"):
+            p = os.path.join(bin_dir, name)
+            with open(p, "w") as f:
+                f.write('#!/bin/sh\necho "%s $*" >> "%s"\nexit ${ROOT_ANSWER:-0}\n' % (name, self.asked))
+            os.chmod(p, 0o755)
+        self.mod.layout = lambda: "shared"
+
+    def calls(self):
+        try:
+            with open(self.asked) as f:
+                return f.read().splitlines()
+        except FileNotFoundError:
+            return []
+
+    def test_handed_over_by_its_tag_only(self):
+        st = self.install()
+        self.assertEqual(st["status"], "done", st)
+        self.assertEqual(self.calls(), ["slate-system --root slate-update-install " + self.TAG, "slate restart"])
+        self.assertEqual(self.ran(), "", "a release's installer was run here")
+        downloads = [u for u in self.net.asked if u != self.API]
+        self.assertEqual(downloads, [], "the release was downloaded here, not by the root helper")
+
+    def test_password_prompt_closed(self):
+        os.environ["ROOT_ANSWER"] = "126"
+        self.addCleanup(os.environ.pop, "ROOT_ANSWER", None)
+        st = self.install()
+        self.assertEqual(st["status"], "failed")
+        self.assertIn("password prompt was closed", st["error"])
+        self.assertNotIn("slate restart", self.calls())
+
+    def test_only_a_newer_proper_release_is_handed_over(self):
+        for tag in ("v0.30.0", "v9.9.9; rm -rf /", "latest"):
+            with self.subTest(tag):
+                self.release(tag, self.good, reply_tag=tag)
+                st = self.install()
+                self.assertEqual(st["status"], "failed")
+                self.assertEqual(self.calls(), [])
+
+    def test_going_back(self):
+        os.makedirs(self.dest + ".previous")
+        with open(os.path.join(self.dest + ".previous", "shell.qml"), "w") as f:
+            f.write("Scope {}\n")
+        self.mod.revert()
+        self.assertEqual(self.calls(), ["slate-system --root slate-update-install --revert", "slate restart"])
+
+    def test_packaged_never_updates_itself(self):
+        self.mod.layout = lambda: "packaged"
+        st = self.install()
+        self.assertEqual(st["status"], "failed")
+        self.assertIn("system's packages", st["error"])
+        self.assertEqual((self.calls(), self.ran(), self.net.asked), ([], "", []))
+        self.mod.revert()
+        self.assertEqual(self.calls(), [])
+
+
+class HowItsInstalled(Case):
+    """layout(): own (a folder you can change), shared (the copy for everyone, not yours) or
+    packaged (where only package managers put things)."""
+    scratch = True
+
+    def test_each(self):
+        mod = load_updater()
+        code = os.path.join(self.h.dir, "slate")
+        os.makedirs(code)
+        mod.HERE = code
+        self.assertEqual(mod.layout(), "own")
+        os.chmod(code, 0o555)
+        self.addCleanup(os.chmod, code, 0o755)
+        self.assertEqual(mod.layout(), "shared", "a copy you can't change is updated as root")
+        mod.PACKAGED = (self.h.dir + "/",)
+        self.assertEqual(mod.layout(), "packaged")
+
+    def test_where_the_version_before_is_kept(self):
+        mod = load_updater()
+        mod.HERE = "/usr/local/share/slate"
+        mod.DEST = os.path.join(self.h.dir, "config", "slate")
+        self.assertEqual(mod.previous_dir(), "/usr/local/share/slate.previous")
+        # A link to a checkout keeps none
+        os.makedirs(os.path.join(self.h.dir, "checkout", "shell"))
+        os.makedirs(os.path.dirname(mod.DEST))
+        os.symlink(os.path.join(self.h.dir, "checkout", "shell"), mod.DEST)
+        mod.HERE = os.path.join(self.h.dir, "checkout", "shell")
+        self.assertEqual(mod.previous_dir(), "")
+
+
+class GoingBackYourOwn(Case):
+    """revert for a copy that's yours apart from your files (the copy for everyone in a folder
+    of yours): the two versions swap, and your files, which aren't in either, stay put."""
+    scratch = True
+
+    def test_swap(self):
+        mod = load_updater()
+        code = os.path.join(self.h.dir, "share", "slate")
+        for d, v in ((code, "v2.0.0"), (code + ".previous", "v1.0.0")):
+            os.makedirs(os.path.join(d, "bin"))
+            with open(os.path.join(d, "VERSION"), "w") as f:
+                f.write(v + "\n")
+            with open(os.path.join(d, "shell.qml"), "w") as f:
+                f.write("Scope {}\n")
+            with open(os.path.join(d, "bin", "slate"), "w") as f:
+                f.write("#!/bin/sh\n")
+            os.chmod(os.path.join(d, "bin", "slate"), 0o755)
+        mine = os.path.join(self.h.dir, "config", "slate")
+        os.makedirs(mine)
+        with open(os.path.join(mine, "settings.json"), "w") as f:
+            f.write("{}")
+        mod.HERE, mod.DEST = code, mine
+        mod.STATE_DIR = os.path.join(self.h.dir, "state")
+        mod.STATE = os.path.join(mod.STATE_DIR, "update.json")
+        mod.revert()
+        self.assertEqual(mod.version_in(code), "v1.0.0")
+        self.assertEqual(mod.version_in(code + ".previous"), "v2.0.0")
+        self.assertFalse(os.path.exists(os.path.join(code, "settings.json")), "your files went into Slate's code")
+        self.assertTrue(os.path.isfile(os.path.join(mine, "settings.json")))
