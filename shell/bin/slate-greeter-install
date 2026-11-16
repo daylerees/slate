@@ -46,7 +46,12 @@ OWNER="${SUDO_USER:-}"
 [ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec
 [ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
 HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
+# Slate's code, as slate-session finds it: your own install (or a link to a checkout) if you
+# have one, else the copy installed once for everyone. Read with your own permissions either way
 SRC="$HOMEDIR/.config/slate"
+for d in "$HOMEDIR/.config/slate" /usr/local/share/slate /usr/share/slate; do
+    runuser -u "$OWNER" -- test -f "$d/greeter/files" && { SRC=$d; break; }
+done
 
 CHECK=1; MODE=full
 for a in "$@"; do

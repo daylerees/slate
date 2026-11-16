@@ -24,7 +24,8 @@ set -euo pipefail
 GREETD_ETC="${SLATE_GREETD_ETC:-/etc/greetd}"               # overrides only for testing
 DEST="${SLATE_GREETER_DIR:-/var/lib/slate-greeter}"      # overrides only for testing
 CODE="${SLATE_GREETER_CODE:-/usr/local/share/slate-greeter}"
-SRC="$HOME/.config/slate"
+SRC=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)    # this Slate's code
+YOURS="${XDG_CONFIG_HOME:-$HOME/.config}/slate"          # your own files: settings.json
 
 # Files making up the login screen's code (greeter/files): <installed name> <source path>
 code_files() {
@@ -141,10 +142,10 @@ write() {  # write <name in DEST>  (contents on stdin)
 }
 
 # Theme settings (accent, light/dark, tint, fonts, rounded corners…)
-put "$SRC/settings.json" settings.json
+put "$YOURS/settings.json" settings.json
 
 # The wallpaper and interface font, from Slate's settings (one read for both)
-{ read -r wall; read -r family; } < <(python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s.get("wallpaper","")); print(s.get("fontFamily","Geist") or "Geist")' "$SRC/settings.json" 2>/dev/null || printf '\nGeist\n')
+{ read -r wall; read -r family; } < <(python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); print(s.get("wallpaper","")); print(s.get("fontFamily","Geist") or "Geist")' "$YOURS/settings.json" 2>/dev/null || printf '\nGeist\n')
 family=${family:-Geist}
 
 # Wallpaper; without it the login screen uses plain slate

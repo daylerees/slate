@@ -33,9 +33,14 @@ sudo -u tester -H fc-list : family | grep -qi "^Geist" && echo "Geist font: ok" 
 sudo -u tester -H fc-list : family | grep -qi "^Geist Mono" && echo "Geist Mono font: ok" || echo "Geist Mono font: missing"
 command -v slate >/dev/null || test -x /home/tester/.local/bin/slate && echo "slate command: ok"
 python3 -c "import PIL" && echo "python Pillow: ok" || echo "python Pillow: MISSING"
+# Slate for everyone (root'"'"'s, readable by all) and only your own files in your folder
+[ -f /usr/local/share/slate/shell.qml ] && [ "$(stat -c %U /usr/local/share/slate)" = root ] && echo "shared copy: ok, root'"'"'s" || echo "shared copy: MISSING or not root'"'"'s"
+sudo -u nobody test -r /usr/local/share/slate/shell.qml && echo "shared copy readable by others: ok" || echo "shared copy readable by others: NO"
+ls /home/tester/.config/slate | tr "\n" " " | sed "s/^/your folder: /"; echo
+[ ! -e /home/tester/.config/slate/shell.qml ] && echo "no code in your folder: ok" || echo "code in your folder: WRONG"
 echo "--- QML modules Slate imports (no display here, so windows are not created) ---"
 mkdir -p /tmp/qmlcheck
-{ grep -hoE "^import [A-Za-z0-9_.]+" /home/tester/.config/slate/*.qml /home/tester/.config/slate/greeter/*.qml | sort -u
+{ grep -hoE "^import [A-Za-z0-9_.]+" /usr/local/share/slate/*.qml /usr/local/share/slate/greeter/*.qml | sort -u
   echo "ShellRoot { Component.onCompleted: { console.log(\"QML-IMPORTS-OK\"); Qt.quit(); } }"; } > /tmp/qmlcheck/shell.qml
 chmod -R a+r /tmp/qmlcheck
 sudo -u tester -H env QT_QPA_PLATFORM=offscreen XDG_RUNTIME_DIR=/tmp timeout 20 qs -p /tmp/qmlcheck 2>&1 \

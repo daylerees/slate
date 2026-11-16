@@ -13,7 +13,6 @@ import slate
 from slate import Case, run
 from stubs import Stubs
 
-SCRIPT = slate.path("shell", "bin", "slate-greeter-sync")
 REAL_CODE = "/usr/local/share/slate-greeter"
 
 
@@ -44,6 +43,8 @@ class GreeterCase(Case):
     def setUp(self):
         super().setUp()
         self.slate = self.h.install_slate()
+        # (the installed copy's own script: it compares the login screen with the Slate it's in)
+        self.script = os.path.join(self.slate, "bin", "slate-greeter-sync")
         self.s = Stubs(self.h)
         self.dest = os.path.join(self.h.dir, "var-lib-slate-greeter")
         self.s.env["SLATE_GREETER_DIR"] = self.dest
@@ -60,7 +61,6 @@ class Check(GreeterCase):
         # The installed code's folder, in the scratch dir
         self.code = os.path.join(self.h.dir, "usr-local-share-slate-greeter")
         self.s.env["SLATE_GREETER_CODE"] = self.code
-        self.script = SCRIPT
 
     def install_code(self, layout="us"):
         """What slate-greeter-install puts in place: the listed files and hyprland.lua."""
@@ -154,7 +154,7 @@ class Check(GreeterCase):
         """The script itself, unchanged: --check only reads, answers one word, and exits 0.
         (Its answer depends on this machine's login screen, so any of the three is fine.)"""
         env = {k: v for k, v in self.s.env.items() if k != "SLATE_GREETER_CODE"}
-        code, out = run(["bash", SCRIPT, "--check"], env=env)
+        code, out = run(["bash", self.script, "--check"], env=env)
         self.assertEqual(code, 0, out)
         self.assertIn(out, ("not-installed\n", "outdated\n", "current\n"))
         if not os.path.isdir(REAL_CODE):
@@ -316,11 +316,12 @@ class Sync(GreeterCase):
         self.s.env["SLATE_SESSION"] = "1"
 
     def settings(self, s):
-        with open(os.path.join(self.slate, "settings.json"), "w") as f:
+        # (your settings: in your own Slate folder, wherever the code is)
+        with open(os.path.join(self.h.slate_home, "settings.json"), "w") as f:
             json.dump(s, f)
 
     def sync(self):
-        code, out = run(["bash", SCRIPT], env=self.s.env)
+        code, out = run(["bash", self.script], env=self.s.env)
         self.no_password_asked()
         return code, out
 
@@ -335,6 +336,18 @@ class Sync(GreeterCase):
                               "Settings → Security, or with: ./install.sh --login-screen\n")
         self.assertFalse(os.path.exists(self.dest))
 
+    def test_from_the_copy_for_everyone(self):
+        """Slate installed once for everyone: the sync runs from that copy, and the settings
+        it hands the login screen are yours, from your own folder."""
+        shared = self.h.install_slate(shared=True)
+        self.script = os.path.join(shared, "bin", "slate-greeter-sync")
+        self.settings({"wallpaper": self.wall, "fontFamily": "Geist", "accent": "#a1b2c3"})
+        os.makedirs(self.dest)
+        code, out = self.sync()
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.dest, "settings.json")) as f:
+            self.assertEqual(json.load(f)["accent"], "#a1b2c3")
+
     def test_copies_appearance(self):
         os.makedirs(os.path.join(self.dest, "fonts"))
         open(os.path.join(self.dest, "fonts", "OldFont.ttf"), "w").close()
@@ -342,7 +355,7 @@ class Sync(GreeterCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(out, "slate-greeter-sync: login screen appearance updated\n")
         d = lambda *p: os.path.join(self.dest, *p)
-        self.assertTrue(self.same(d("settings.json"), os.path.join(self.slate, "settings.json")))
+        self.assertTrue(self.same(d("settings.json"), os.path.join(self.h.slate_home, "settings.json")))
         self.assertTrue(self.same(d("wallpaper"), self.wall))
         self.assertTrue(self.same(d("avatar"), self.h(".face")))
         with open(d("user.json")) as f:

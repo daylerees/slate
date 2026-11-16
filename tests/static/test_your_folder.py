@@ -23,6 +23,15 @@ RULE = {
     "shell/scripts/slate_theme.py": ['CFG = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")'],
     "shell/UserFiles.qml": ['Config.userDir + "/hypr"', 'Config.userDir + "/user/shell.qml"'],
     "shell/bin/slate-logs": ['SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"'],
+    "shell/bin/slate-greeter-sync": ['YOURS="${XDG_CONFIG_HOME:-$HOME/.config}/slate"', 'put "$YOURS/settings.json" settings.json'],
+}
+
+# Where Slate's code is: your own install (or a link) first, then the copy for everyone, in the
+# same order everywhere that looks
+CODE_ORDER = {
+    "shell/session/slate-session": ['"${XDG_CONFIG_HOME:-$HOME/.config}/slate" $SHARED', 'SHARED="/usr/local/share/slate /usr/share/slate"'],
+    "shell/bin/slate-greeter-install": ['for d in "$HOMEDIR/.config/slate" /usr/local/share/slate /usr/share/slate; do'],
+    "install.sh": ['if [ -f "$DEST/session/hypr/hyprland.lua" ]; then echo "$DEST"; else echo "$CODE"; fi', 'CODE=/usr/local/share/slate '],
 }
 
 ALLOWED = set()
@@ -43,6 +52,13 @@ class YourFolder(Case):
             for line in lines:
                 with self.subTest(path, line=line):
                     self.assertIn(line, src, f"{path} works out your Slate folder differently")
+
+    def test_every_copy_of_where_the_code_is(self):
+        for path, lines in CODE_ORDER.items():
+            src = slate.read(*path.split("/"))
+            for line in lines:
+                with self.subTest(path, line=line):
+                    self.assertIn(line, src, f"{path} looks for Slate's code differently")
 
     def test_nothing_reads_your_files_next_to_the_code(self):
         files = slate.run(["git", "-C", slate.path(), "ls-files", "shell"])[1].split()
