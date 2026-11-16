@@ -470,7 +470,7 @@ Item {
         Column {
             id: menuCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
-            spacing: 2
+            spacing: 6
             Repeater {
                 model: m.items
                 delegate: Rectangle {
