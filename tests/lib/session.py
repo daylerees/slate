@@ -173,6 +173,9 @@ class Session:
         self._write(h(".config", "user-dirs.dirs"), 'XDG_DOWNLOAD_DIR="$HOME/Downloads"\nXDG_PICTURES_DIR="$HOME/Pictures"\n')
 
         self.env = dict(h.env)
+        # Where Slate's code is, as slate-session says it (the Hyprland config finding it by its
+        # own path, should this not arrive, is static/test_configs.py's)
+        self.env["SLATE_DIR"] = self.slate_dir
         self.env.pop("DBUS_SESSION_BUS_ADDRESS", None)    # dbus-run-session makes one
         self.env.pop("DBUS_SYSTEM_BUS_ADDRESS", None)
         self.env.update({

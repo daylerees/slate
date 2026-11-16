@@ -665,7 +665,7 @@ SCENES["bar-arranging-priority"] = {
 # instant: every item on it drawn (three were once left undrawn when the two came together).
 # Both are sent at once, two IPC calls side by side, not one after the other as "settings" and
 # "do" would; glass goes back off after (it's off to start with)
-_SLATE_IPC = 'qs -p "$XDG_CONFIG_HOME/slate" ipc call '
+_SLATE_IPC = 'qs -p "$SLATE_DIR" ipc call '
 SCENES["bar-arranging-glass"] = {
     "do": [("!sh", "-c", _SLATE_IPC + "config set glass true & " + _SLATE_IPC + "bar edit start & wait")],
     "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"], "settle": 5,     # (glass: its blur is made the first time)
