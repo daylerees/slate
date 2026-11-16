@@ -179,6 +179,7 @@ Column {
                 field: modelInput
                 width: 160; height: 30
                 TextInput {
+                    activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                     id: modelInput
                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                     verticalAlignment: TextInput.AlignVCenter
@@ -201,6 +202,7 @@ Column {
                 field: commandInput
                 width: 260; height: 30
                 TextInput {
+                    activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                     id: commandInput
                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                     verticalAlignment: TextInput.AlignVCenter

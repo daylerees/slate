@@ -977,6 +977,7 @@ PanelWindow {
                                 color: w.card
                                 border.width: box.activeFocus ? 1 : 0; border.color: w.accent
                                 TextInput {
+                                    activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                                     id: box
                                     anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                                     verticalAlignment: TextInput.AlignVCenter

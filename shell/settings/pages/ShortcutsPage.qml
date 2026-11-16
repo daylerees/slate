@@ -95,6 +95,7 @@ Column {
             text: win.glyph(0xEB1C); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
         }
         TextInput {
+            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
             id: findKeys
             anchors { left: keysGlass.right; leftMargin: 10; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
             color: win.text; font.family: win.font; font.pixelSize: 13; clip: true

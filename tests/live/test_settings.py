@@ -351,3 +351,30 @@ class NeedsAnother(LiveCase):
         self.assertEqual(self.waiting(st)["Tiles in the icon's color"], "Needs Fill the shape to be off")
         self.ipc("test", "settingsFollowNeeds", "Tiles in the icon's color")
         self.wait(lambda st: st["settings"]["found"] == "Fill the shape", "Fill the shape gone to and lit up")
+
+
+class TabBetweenBoxes(LiveCase):
+    """Tab moves from one text box in Settings to the next, and Shift+Tab back: from the
+    search box at the top to the page's own (General's location search), and back again.
+    (As Qt moves it for the Tab key: the tests' key presses come from a keyboard that comes and
+    goes, which takes the keyboard away from the window each time.)"""
+    def focus_is(self, name, what):
+        import time
+        end = time.monotonic() + 10
+        while time.monotonic() < end:
+            got = self.s.state()["settings"]["focusedBox"]
+            if got == name:
+                return
+            time.sleep(0.2)
+        self.fail(f"{what}: the keyboard was in {got!r}, not {name!r}")
+
+    def test_tab_and_back(self):
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "page", "general")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "general", "Settings on General")
+        self.ipc("settings", "search", "")          # (the search box takes the keyboard)
+        self.focus_is("pageFind", "the search box with the keyboard")
+        self.ipc("test", "settingsTab", "true")
+        self.focus_is("locationSearch", "Tab to the page's own box")
+        self.ipc("test", "settingsTab", "false")
+        self.focus_is("pageFind", "Shift+Tab back to the search box")

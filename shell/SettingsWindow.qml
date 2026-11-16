@@ -279,6 +279,15 @@ FloatingWindow {
     // the control centre's picture; or someone else's, from Users (pickPictureFor: the picture
     // chosen goes to then(path) instead)
     property bool avatarPicking: false
+    // (the tests: which text box has the keyboard, by its objectName)
+    readonly property string focusedBox: contentPane.Window.activeFocusItem ? (contentPane.Window.activeFocusItem.objectName || "?") : ""
+    // ...and Tab or Shift+Tab, as Qt does it: on to the next item in the window's focus chain
+    // (the tests' key presses come from a keyboard that comes and goes, which loses the focus)
+    function testTab(forward) {
+        const f = contentPane.Window.activeFocusItem;
+        const n = f ? f.nextItemInFocusChain(forward) : null;
+        if (n) n.forceActiveFocus(forward ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+    }
     onAvatarPickingChanged: if (avatarPicking) avatarPicker.open()
     function pickPictureFor(who, then) {
         avatarPicker.forName = who;
@@ -685,6 +694,8 @@ FloatingWindow {
                     }
                     TextInput {
                         id: pageFind
+                        objectName: "pageFind"
+                        activeFocusOnTab: true          // Tab: on into the page's own boxes
                         anchors { left: pageFindIcon.right; leftMargin: 8; right: pageFindClear.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         color: win.text; font.family: win.font; font.pixelSize: 13
                         selectionColor: win.accent; selectedTextColor: win.accentText

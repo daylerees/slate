@@ -35,6 +35,7 @@ Column {
             color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 18
         }
         TextInput {
+            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
             id: findField
             anchors { left: findIcon.right; leftMargin: 10; right: clearFind.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
             color: win.text; font.family: win.font; font.pixelSize: 14

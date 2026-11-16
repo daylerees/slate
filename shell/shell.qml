@@ -219,6 +219,8 @@ ShellRoot {
         function activateNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.activate(h.key); }
         // Settings → Printers and Network: what their next looks find, as printers.py list and
         // netinfo.sh would print it ("": the real thing again), and a look now
+        // Settings: Tab (or Shift+Tab) from the text box that has the keyboard
+        function settingsTab(forward: bool): void { if (settingsLoader.item) settingsLoader.item.testTab(forward); }
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Less room for the dock's things than its edge has (px; 0: the whole edge), to fill it
@@ -429,6 +431,7 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
+                            focusedBox: settings ? settings.focusedBox : "",
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
                             thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,

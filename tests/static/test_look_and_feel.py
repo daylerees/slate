@@ -304,3 +304,28 @@ class ScrollShadesFollowShadows(Case):
         for need in ("Config.shade(", "Config.s.shadowDarkness", "Config.shadowSpread", "Config.shadowReach"):
             self.assertIn(need, src, f"the scroll shades don't follow {need}")
         self.assertNotRegex(src, r"shadowsOn|s\.shadows\b", "the scroll shades go with shadows switched off")
+
+
+class TabOrder(Case):
+    """Every text box in Settings and the Welcome window is in the Tab order (Tab to the next,
+    Shift+Tab back), so a form like Settings → Users' Add someone can be filled in from the
+    keyboard. Left out on purpose: the search boxes inside a dropdown and a picker, which are
+    pop-ups (tabbing out would leave them open)."""
+    POPUPS = {"dropFind", "findBox"}        # (a dropdown's and the picker's search boxes, by id)
+
+    def test_every_box(self):
+        import glob
+        files = ["shell/SettingsWindow.qml", "shell/Welcome.qml"] + sorted(
+            p.replace(slate.path() + "/", "") for p in glob.glob(slate.path("shell", "settings", "**", "*.qml"), recursive=True))
+        missing = []
+        for rel in files:
+            with open(slate.path(*rel.split("/")), encoding="utf-8") as f:   # (each file as it is)
+                src = f.read()
+            for m in re.finditer(r"TextInput \{\n((?:.*\n){0,4})", src):
+                head = m.group(1)
+                ident = re.search(r"id: (\w+)", head)
+                if ident and ident.group(1) in self.POPUPS:
+                    continue
+                if "activeFocusOnTab: true" not in head:
+                    missing.append(f"{rel}:{src[:m.start()].count(chr(10)) + 1}")
+        self.assertEqual(missing, [], "text boxes Tab skips over: " + ", ".join(missing))

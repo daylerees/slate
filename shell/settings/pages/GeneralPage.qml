@@ -147,6 +147,8 @@ Column {
                     field: placeInput
                     width: 240; height: 30
                     TextInput {
+                        objectName: "locationSearch"
+                        activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                         id: placeInput
                         anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                         verticalAlignment: TextInput.AlignVCenter

@@ -242,6 +242,7 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 92; height: 30
                         TextInput {
+                            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                             id: hexInput
                             anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                             verticalAlignment: TextInput.AlignVCenter

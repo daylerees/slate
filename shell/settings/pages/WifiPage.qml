@@ -226,6 +226,7 @@ Column {
                         color: win.control
                         border.width: 1; border.color: win.accent
                         TextInput {
+                            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
                             id: psk
                             anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                             verticalAlignment: TextInput.AlignVCenter
