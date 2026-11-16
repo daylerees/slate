@@ -67,12 +67,19 @@ Item {
     }
 
     // ---- Look ------------------------------------------------------------------
-    readonly property color accent: Config.accent
-    readonly property color accentText: Config.tint("#12151a")
-    readonly property color frame: Config.tint("#0f1216")
-    readonly property color field: Config.tint("#1d222a")
-    readonly property color text: Config.tint("#eef1f5")
-    readonly property color dim: Config.tint("#8b94a3")
+    // (easing from one look to another, on the login screen, when someone else is chosen)
+    property color accent: Config.accent
+    Behavior on accent { ColorAnimation { duration: Config.ms(450) } }
+    property color accentText: Config.tint("#12151a")
+    Behavior on accentText { ColorAnimation { duration: Config.ms(450) } }
+    property color frame: Config.tint("#0f1216")
+    Behavior on frame { ColorAnimation { duration: Config.ms(450) } }
+    property color field: Config.tint("#1d222a")
+    Behavior on field { ColorAnimation { duration: Config.ms(450) } }
+    property color text: Config.tint("#eef1f5")
+    Behavior on text { ColorAnimation { duration: Config.ms(450) } }
+    property color dim: Config.tint("#8b94a3")
+    Behavior on dim { ColorAnimation { duration: Config.ms(450) } }
     readonly property color error: Config.tint("#f28b8b")
     readonly property string font: Config.s.fontFamily
     property url iconFontSource: "file://" + Quickshell.shellPath("fonts/tabler.ttf")   // the greeter passes its own copy
@@ -103,15 +110,37 @@ Item {
             GradientStop { position: 1.0; color: Config.tint("#0f1216") }
         }
     }
-    Image {
+    // The wallpaper, crossfading when it changes (the login screen, choosing someone with a look
+    // of their own): the new one loads behind, then fades in as the old one fades out
+    component WallLayer: Image {
+        id: layer
+        property bool shown: false
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        opacity: shown && status === Image.Ready ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Config.ms(450); easing.type: Easing.InOutQuad } }
+        onStatusChanged: if (status === Image.Ready && layer !== wall.front && source.toString() === wall.want) wall.swap()
+    }
+    Item {
+        id: wall
         // A few pixels past each edge: some wallpapers have a stray light/dark
         // row or column at the very edge
         anchors { fill: parent; margins: -4 }
-        source: ls.wallpaper ? "file://" + ls.wallpaper : ""
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        opacity: status === Image.Ready ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Config.ms(400) } }
+        readonly property string want: ls.wallpaper ? "file://" + ls.wallpaper : ""
+        property Item front: wallA
+        readonly property Item back: front === wallA ? wallB : wallA
+        function show() {
+            if (want === "") { wallA.shown = false; wallB.shown = false; return; }
+            if (front.source.toString() === want) { front.shown = true; return; }
+            back.source = want;
+            if (back.status === Image.Ready) swap();      // (already loaded: no signal comes)
+        }
+        function swap() { const b = back; b.shown = true; front.shown = false; front = b; }
+        onWantChanged: show()
+        Component.onCompleted: show()
+        WallLayer { id: wallA }
+        WallLayer { id: wallB }
     }
 
     // Rounded screen corners, the same black squircles as the desktop (Bar.qml /
@@ -185,9 +214,9 @@ Item {
                 readonly property real line: 8
                 // (partly see-through: the frosted glass, or the frame without glass, shows through)
                 readonly property real see: 0.6
-                readonly property color lit: Qt.alpha(Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.5)), see)
-                readonly property color soft: Qt.alpha(Qt.tint(Config.accent, Qt.rgba(1, 1, 1, 0.15)), see)
-                readonly property color base: Qt.alpha(Config.accent, see)
+                readonly property color lit: Qt.alpha(Qt.tint(ls.accent, Qt.rgba(1, 1, 1, 0.5)), see)
+                readonly property color soft: Qt.alpha(Qt.tint(ls.accent, Qt.rgba(1, 1, 1, 0.15)), see)
+                readonly property color base: Qt.alpha(ls.accent, see)
                 anchors.fill: parent
                 preferredRendererType: Shape.CurveRenderer
                 ShapePath {
