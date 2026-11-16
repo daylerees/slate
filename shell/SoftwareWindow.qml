@@ -263,9 +263,19 @@ FloatingWindow {
                         Rectangle {
                             visible: parent.modelData.id === "updates" && sw.updateCount > 0 && !sw.compact
                             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                            width: Math.max(22, countText.implicitWidth + 12); height: 20; radius: Config.corner(10)
+                            width: Math.max(height, countShape.tightBoundingRect.width + 12); height: 20; radius: Config.corner(10)
                             color: parent.current ? Qt.rgba(sw.accentText.r, sw.accentText.g, sw.accentText.b, 0.15) : sw.accent
-                            Text { id: countText; anchors.centerIn: parent; text: sw.updateCount; color: sw.accentText; font.family: sw.font; font.pixelSize: 11; font.weight: Font.DemiBold }
+                            // Centred by the number's own shape rather than its line of text
+                            // (which has room above for capitals and below for descenders, and
+                            // left the digits sitting high)
+                            TextMetrics { id: countShape; font: countText.font; text: countText.text }
+                            Text {
+                                id: countText
+                                x: Math.round((parent.width - countShape.tightBoundingRect.width) / 2 - countShape.tightBoundingRect.x)
+                                y: Math.round((parent.height - countShape.tightBoundingRect.height) / 2 - countText.baselineOffset - countShape.tightBoundingRect.y)
+                                text: sw.updateCount; color: sw.accentText
+                                font.family: sw.font; font.pixelSize: 11; font.weight: Font.DemiBold
+                            }
                         }
                         HoverHandler { id: navHover }
                         ClickTap { onTapped: sw.show(parent.modelData.id) }
@@ -283,7 +293,8 @@ FloatingWindow {
             Rectangle {
                 id: searchBox
                 z: 2
-                anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 22 }
+                // (clear of the close button, as Settings' search is)
+                anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
                 height: 36; radius: Config.corner(10)
                 color: sw.faint
                 border.width: findApps.activeFocus ? 1 : 0; border.color: sw.accent
@@ -312,6 +323,13 @@ FloatingWindow {
                 }
                 HoverHandler { cursorShape: Qt.IBeamCursor }
                 TapHandler { onTapped: findApps.forceActiveFocus() }
+            }
+            // Close, top right, where Settings has it
+            IconButton {
+                z: 3
+                anchors { right: parent.right; rightMargin: 14; top: parent.top; topMargin: 16 }
+                icon: 0xEB55
+                onClicked: sw.visible = false
             }
             Flickable {
                 id: scroller
@@ -446,7 +464,7 @@ FloatingWindow {
                         }
                         Group {
                             visible: sw.installed.length > 0
-                            Repeater { model: sw.installed; delegate: AppRow { required property var modelData; required property int index; entry: sw.asApp(modelData); first: index === 0 } }
+                            Repeater { model: sw.installed; delegate: AppRow { required property var modelData; required property int index; entry: sw.asApp(modelData); first: index === 0; removable: true } }
                         }
                     }
 
@@ -465,26 +483,29 @@ FloatingWindow {
                             text: "Everything's up to date."; color: sw.dim; font.family: sw.font; font.pixelSize: 13
                         }
                         GroupLabel { visible: sw.updates.apps.length > 0; text: sw.updates.apps.length === 1 ? "1 app" : sw.updates.apps.length + " apps" }
+                        // Update all of them at once, or each on its own (its row's Update)
                         Group {
                             visible: sw.updates.apps.length > 0
-                            Repeater {
-                                model: sw.updates.apps
-                                delegate: AppRow { required property var modelData; required property int index; entry: sw.asApp(modelData); first: index === 0; updating: true; newVersion: modelData.version || "" }
-                            }
-                            Separator {}
                             Item {
                                 width: parent.width; height: 56
                                 Text {
-                                    anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-                                    text: sw.waiting("update-apps", "") ? "Updating your apps…" : "Your apps and windows stay open while they update"
+                                    anchors { left: parent.left; leftMargin: 16; right: allButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    elide: Text.ElideRight
+                                    text: sw.busy && sw.busy.what === "update-apps" && sw.busy.id === "" ? "Updating your apps… (" + sw.progress + "%)"
+                                        : "Your apps and windows stay open while they update"
                                     color: sw.dim; font.family: sw.font; font.pixelSize: 12
                                 }
                                 Button {
+                                    id: allButton
                                     anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
                                     label: "Update all apps"; primary: true; icon: 0xEB13
                                     opacity: sw.waiting("update-apps", "") ? 0.5 : 1
                                     onClicked: sw.act("update-apps", "", "your apps")
                                 }
+                            }
+                            Repeater {
+                                model: sw.updates.apps
+                                delegate: AppRow { required property var modelData; entry: sw.asApp(modelData); updating: true; newVersion: modelData.version || "" }
                             }
                         }
                         GroupLabel { visible: sw.updates.system.length > 0 || sw.updates.systemProblem !== ""; text: "This computer's system" }
@@ -505,8 +526,7 @@ FloatingWindow {
                                         textFormat: Text.PlainText
                                         text: sw.updates.systemProblem !== "" ? sw.updates.systemProblem
                                             : sw.waiting("update-system", "") ? "Updating the system… (" + sw.progress + "%)"
-                                            : sw.updates.system.slice(0, 6).map(u => u.name).join(", ") + (sw.updates.system.length > 6 ? " and " + (sw.updates.system.length - 6) + " more" : "")
-                                              + ". Asks for an administrator's password; restart afterwards if it says to"
+                                            : "They update together. Asks for an administrator's password; restart afterwards if it says to"
                                         color: sw.dim; font.family: sw.font; font.pixelSize: 12
                                     }
                                 }
@@ -517,6 +537,31 @@ FloatingWindow {
                                     label: "Update"; icon: 0xEB13
                                     opacity: sw.waiting("update-system", "") ? 0.5 : 1
                                     onClicked: sw.act("update-system", "", "the system")
+                                }
+                            }
+                            // Each package, with the version it goes to. (They update together: one
+                            // on its own is a partial upgrade, which some systems, Arch among them,
+                            // don't support)
+                            Repeater {
+                                model: sw.updates.system
+                                delegate: Item {
+                                    required property var modelData
+                                    width: parent.width; height: 40
+                                    Separator {}
+                                    Text {
+                                        anchors { left: parent.left; leftMargin: 16; right: pkgVersion.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                        elide: Text.ElideRight; textFormat: Text.PlainText
+                                        text: parent.modelData.name
+                                        color: sw.text; font.family: sw.font; font.pixelSize: 13
+                                    }
+                                    Text {
+                                        id: pkgVersion
+                                        anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                                        width: Math.min(implicitWidth, parent.width * 0.55)
+                                        elide: Text.ElideMiddle; textFormat: Text.PlainText
+                                        text: (parent.modelData.from ? parent.modelData.from + "  →  " : "") + parent.modelData.to
+                                        color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                                    }
                                 }
                             }
                         }
@@ -539,14 +584,16 @@ FloatingWindow {
         id: row
         property var entry: ({})
         property bool first: false
-        property bool updating: false             // (on Updates: the new version, and no Open)
+        property bool updating: false             // (on Updates: the new version, and Update)
         property string newVersion: ""
+        property bool removable: false            // (on Installed: Remove beside Open, asking first)
         readonly property bool isInstalled: !!sw.installedIds[entry.id]
         readonly property bool busyHere: !!sw.busy && sw.busy.id === entry.id
         width: parent ? parent.width : 0
         height: 64
         Separator { visible: !row.first }
-        HoverFill { anchors.fill: parent; hovered: rowHover.hovered; radius: 0 }
+        // (rounded to sit inside its group's card: the card's corner less the room round its rows)
+        HoverFill { anchors.fill: parent; hovered: rowHover.hovered; radius: Config.corner(8) }
         AppIcon { id: rowIcon; anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } size: 40; path: row.entry.icon || "" }
         Column {
             anchors { left: rowIcon.right; leftMargin: 12; right: rowAction.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -561,7 +608,7 @@ FloatingWindow {
         Item {
             id: rowAction
             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            width: row.busyHere ? 120 : rowButton.width; height: 30
+            width: row.busyHere ? 120 : rowButtons.width; height: 30
             Meter {
                 visible: row.busyHere
                 anchors.verticalCenter: parent.verticalCenter
@@ -569,12 +616,23 @@ FloatingWindow {
                 value: sw.progress / 100
                 colour: sw.accent; trackColour: sw.faint
             }
-            Button {
-                id: rowButton
-                visible: !row.busyHere && !row.updating
-                label: sw.waiting("install", row.entry.id) ? "Waiting…" : row.isInstalled ? "Open" : "Install"
-                primary: !row.isInstalled
-                onClicked: row.isInstalled ? sw.launch(row.entry.id) : sw.act("install", row.entry.id, row.entry.name)
+            Row {
+                id: rowButtons
+                spacing: 8
+                visible: !row.busyHere
+                Button {
+                    visible: row.removable && row.isInstalled
+                    label: "Remove"; destructive: true
+                    onClicked: sw.askRemove(row.entry)
+                }
+                Button {
+                    id: rowButton
+                    label: row.updating ? (sw.waiting("update-apps", row.entry.id) ? "Waiting…" : "Update")
+                        : sw.waiting("install", row.entry.id) ? "Waiting…" : row.isInstalled ? "Open" : "Install"
+                    primary: !row.updating && !row.isInstalled
+                    onClicked: row.updating ? sw.act("update-apps", row.entry.id, row.entry.name)
+                        : row.isInstalled ? sw.launch(row.entry.id) : sw.act("install", row.entry.id, row.entry.name)
+                }
             }
         }
         HoverHandler { id: rowHover }

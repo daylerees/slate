@@ -87,3 +87,9 @@ class Software(LiveCase):
         self.ipc("test", "softwarePretend", json.dumps(dict(PRETEND, act="Slate couldn't install it: no connection")))
         self.ipc("test", "softwareAct", "install", "org.mozilla.firefox")
         self.wait(lambda st: st["software"]["note"] == "Slate couldn't install it: no connection", "what went wrong, said")
+
+    def test_one_app_updates_on_its_own(self):
+        self.ipc("software", "page", "updates")
+        self.ipc("test", "softwareAct", "update-apps", "org.videolan.VLC")
+        self.wait(lambda st: st["software"]["busy"] == "update-apps org.videolan.VLC", "VLC updating, on its own")
+        self.wait(lambda st: st["software"]["busy"] == "", "done")
