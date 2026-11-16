@@ -155,10 +155,10 @@ class Adding(AccountsCase):
 
     def test_the_password_never_goes_on_the_command_line(self):
         src = slate.read("shell", "settings", "pages", "UsersPage.qml")
-        for action in ('"add"', '"password"'):
+        for action in ('"add"', '"password"', '"own-password"'):
             line = next(l for l in src.splitlines() if "usersPane.act([" + action in l)
             self.assertNotIn("pw]", line, "the password is in the command's arguments")
-            self.assertRegex(line, r"\], .+, pw,", "the password isn't handed in on stdin")
+            self.assertRegex(line, r"\], .+, (current \+ \"\\n\" \+ )?pw,", "the password isn't handed in on stdin")
 
     def test_a_bad_username_is_refused_before_anything_changes(self):
         for bad in ["Sam", "1sam", "sam lee", "sam:x", "", "a" * 33, "-sam"]:
@@ -298,3 +298,82 @@ class SomeoneElsesPicture(Case):
         code, out = run([AVATAR, "--", self.img, "1001; rm -rf ~"], env=self.env)
         self.assertNotEqual(code, 0)
         self.assertEqual(self.s.calls("gdbus"), [])
+
+
+# A stand-in for passwd, prompting as shadow's does (with LC_ALL=C), on the terminal it's given.
+# FAKE_CURRENT: the right current password; FAKE_BAD: say the new one's too weak (pwquality's
+# words) and ask again; FAKE_LOG: where the new password goes when it's accepted
+FAKE_PASSWD = r'''#!/usr/bin/env python3
+import os, sys
+out = sys.stdout
+out.write("Changing password for someone.\n"); out.flush()
+out.write("Current password: "); out.flush()
+if sys.stdin.readline().rstrip("\n") != os.environ["FAKE_CURRENT"]:
+    out.write("\npasswd: Authentication token manipulation error\npasswd: password unchanged\n"); out.flush()
+    sys.exit(10)
+while True:
+    out.write("New password: "); out.flush()
+    new = sys.stdin.readline().rstrip("\n")
+    if os.environ.get("FAKE_BAD"):
+        out.write("BAD PASSWORD: " + os.environ["FAKE_BAD"] + "\n"); out.flush()
+        continue
+    out.write("Retype new password: "); out.flush()
+    again = sys.stdin.readline().rstrip("\n")
+    if again != new:
+        out.write("Sorry, passwords do not match.\npasswd: Authentication token manipulation error\n"); out.flush()
+        sys.exit(10)
+    with open(os.environ["FAKE_LOG"], "w") as f:
+        f.write(new)
+    out.write("passwd: password updated successfully\n"); out.flush()
+    sys.exit(0)
+'''
+
+
+class OwnPassword(Case):
+    """accounts.py own-password: your current password, then the new one, answered to passwd's
+    prompts (not AccountsService, which would ask a standard account for an administrator)."""
+    scratch = True
+
+    def setUp(self):
+        super().setUp()
+        self.bin = os.path.join(self.h.dir, "fake-bin")
+        os.makedirs(self.bin)
+        p = os.path.join(self.bin, "passwd")
+        with open(p, "w") as f:
+            f.write(FAKE_PASSWD)
+        os.chmod(p, 0o755)
+        self.log = os.path.join(self.h.dir, "set")
+        self.env = dict(self.h.env, PATH=self.bin + ":" + os.environ["PATH"],
+                        FAKE_CURRENT="old one", FAKE_LOG=self.log)
+
+    def change(self, current, new, **env):
+        return run(["python3", SCRIPT, "own-password"], env=dict(self.env, **env), input=f"{current}\n{new}\n", timeout=60)
+
+    def test_changed(self):
+        code, out = self.change("old one", "a new one: with spaces")
+        self.assertEqual((code, out.strip()), (0, "ok"))
+        with open(self.log) as f:
+            self.assertEqual(f.read(), "a new one: with spaces")
+
+    def test_wrong_current_password(self):
+        code, out = self.change("not it", "new")
+        self.assertEqual((code, out.strip()), (1, "error That isn't your current password"))
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_too_weak_says_why(self):
+        """passwd asks again after a weak one: Slate stops there, rather than answering for ever."""
+        code, out = self.change("old one", "zq9x", FAKE_BAD="The password is shorter than 8 characters")
+        self.assertEqual((code, out.strip()), (1, "error That password isn't strong enough: the password is shorter than 8 characters"))
+        # (the stand-in leaves the terminal's echo on: Slate turns it off, so nothing typed is quoted)
+        self.assertNotIn("zq9x", out)
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_nothing_typed(self):
+        self.assertEqual(self.change("", "new")[1].strip(), "error Type your current password")
+        self.assertEqual(self.change("old one", "")[1].strip(), "error Choose a new password")
+
+    def test_the_passwords_are_never_arguments(self):
+        """Nothing secret on passwd's command line, where anyone could read it."""
+        src = slate.read("shell", "scripts", "accounts.py")
+        body = src.split("def own_password")[1].split("\ndef ")[0]
+        self.assertIn("os.execve(passwd, [passwd], env)", body)

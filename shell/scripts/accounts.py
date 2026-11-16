@@ -10,12 +10,19 @@ Usage:
                                         "delete" (then it and everything in it goes)
   accounts.py name <uid> <name>         change an account's full name
   accounts.py type <uid> <standard|admin>
-  accounts.py password <uid>            set an account's password, read from stdin
+  accounts.py password <uid>            set someone's password (an administrator's), read from
+                                        stdin
+  accounts.py own-password              change your own password: your current one, then the new
+                                        one, a line each on stdin (through passwd, so a standard
+                                        account needs only its own password)
   accounts.py picture <uid> <image>     set an account's picture (yours: scripts/set-avatar.sh)
 
 Everything goes through AccountsService (org.freedesktop.Accounts) over D-Bus, the same on
 every distro; polkit asks for an administrator's password where it's needed (Slate's own
-password card). Nothing here runs as root or writes /etc/passwd. Passwords never go on the
+password card). Nothing here runs as root or writes /etc/passwd. Your own password is the
+exception to AccountsService: its rule for that asks for an administrator, so it goes through
+passwd (setuid, on every distro), which asks for your current password itself, the same as a
+terminal would, and applies the distro's own rules for a good password. Passwords never go on the
 command line (anyone can read that): they come in on stdin and are hashed here, with the
 system's own libcrypt, before AccountsService sees them.
 
@@ -266,6 +273,111 @@ def set_password(uid):
     call(conn, user_path(conn, uid), USER, "SetPassword", (password, ""), "(ss)", ask=True)
 
 
+PASSWD_SECONDS = 30
+
+
+def own_password():
+    """Your own password, through passwd in a pseudo-terminal (it reads from one). Its prompts
+    are matched in English (LC_ALL=C): "Current password:", "New password:", "Retype new
+    password:"; anything it says that isn't a prompt is kept, to explain a refusal."""
+    import pty
+    import select
+    import shutil
+    import signal
+    import time
+    current = sys.stdin.readline().rstrip("\n")
+    new = sys.stdin.readline().rstrip("\n")
+    if not current:
+        raise Problem("Type your current password")
+    if not new:
+        raise Problem("Choose a new password")
+    passwd = shutil.which("passwd")
+    if not passwd:
+        raise Problem("Slate couldn't find passwd to change your password")
+    env = dict(os.environ, LC_ALL="C", LANG="C")
+    pid, fd = pty.fork()
+    if pid == 0:                                # (the child: passwd, with the pty as its terminal)
+        try:
+            os.execve(passwd, [passwd], env)
+        finally:
+            os._exit(127)
+    # No echo, whatever passwd does with the terminal: what's typed never comes back to be
+    # read (or quoted in a refusal)
+    import termios
+    try:
+        attrs = termios.tcgetattr(fd)
+        attrs[3] &= ~(termios.ECHO | termios.ECHONL)
+        termios.tcsetattr(fd, termios.TCSANOW, attrs)
+    except termios.error:
+        pass
+    said, buf, news = [], "", 0
+    deadline = time.monotonic() + PASSWD_SECONDS
+    try:
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select([fd], [], [], 0.5)
+            if not ready:
+                if os.waitpid(pid, os.WNOHANG)[0]:
+                    break
+                continue
+            try:
+                chunk = os.read(fd, 1024).decode(errors="replace")
+            except OSError:                     # (passwd has finished: the pty's closed)
+                break
+            if not chunk:
+                break
+            buf += chunk
+            lines = buf.split("\n")
+            buf = lines.pop()                   # (a prompt has no newline after it)
+            said += [l.strip() for l in lines if l.strip()]
+            prompt = buf.strip().lower()
+            if not prompt.endswith(":"):
+                continue
+            if "new" in prompt and "password" in prompt:
+                news += 1
+                if news > 2:                    # asked again: the new one was refused
+                    os.kill(pid, signal.SIGTERM)
+                    break
+                os.write(fd, (new + "\n").encode())
+            elif "password" in prompt:          # the current one (or a plain "Password:")
+                if news:
+                    os.kill(pid, signal.SIGTERM)
+                    break
+                os.write(fd, (current + "\n").encode())
+            else:
+                os.kill(pid, signal.SIGTERM)
+                break
+            buf = ""
+        else:
+            os.kill(pid, signal.SIGTERM)
+            said.append("timed out")
+    finally:
+        try:
+            _, status = os.waitpid(pid, 0)
+        except ChildProcessError:
+            status = 1
+        os.close(fd)
+    if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0 and news >= 1:
+        return
+    raise Problem(passwd_refusal(said))
+
+
+def passwd_refusal(said):
+    """Why passwd said no, in words (said: the lines it wrote, in English)."""
+    text = " ".join(said)
+    low = text.lower()
+    bad = next((l for l in said if "bad password" in l.lower()), None)
+    if bad:
+        why = bad[bad.lower().index("bad password") + len("bad password"):].lstrip(": ").strip()
+        return "That password isn't strong enough" + (": " + why[0].lower() + why[1:] if why else "")
+    if "do not match" in low or "don't match" in low or "mismatch" in low:
+        return "Those passwords don't match"
+    if "authentication" in low or "incorrect" in low or "failure" in low:
+        return "That isn't your current password"
+    if "timed out" in low:
+        return "Changing the password took too long. Try again"
+    return "Slate couldn't change your password" + (": " + said[-1] if said else "")
+
+
 def set_picture(uid, image):
     """Cropped and saved by set-avatar.sh, the same as your own picture."""
     r = subprocess.run([os.path.join(HERE, "set-avatar.sh"), "--", image, str(int(uid))],
@@ -285,7 +397,8 @@ def main(argv):
         return 0
     # (each action and how many arguments it takes)
     actions = {"add": (add, (3,)), "remove": (remove, (1, 2)), "name": (set_name, (2,)),
-               "type": (set_type, (2,)), "password": (set_password, (1,)), "picture": (set_picture, (2,))}
+               "type": (set_type, (2,)), "password": (set_password, (1,)), "own-password": (own_password, (0,)),
+               "picture": (set_picture, (2,))}
     if what not in actions or len(args) not in actions[what][1]:
         print(__doc__, file=sys.stderr)
         return 2

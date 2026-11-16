@@ -268,31 +268,43 @@ Column {
                     }
                     Separator {}
                     SettingRow {
+                        // Yours: your current password, then the new one (passwd, in accounts.py
+                        // own-password: AccountsService would ask for an administrator's).
+                        // Someone else's: an administrator sets it
+                        id: pwRow
+                        readonly property bool mine: userRow.user.me
+                        readonly property bool ready: (!mine || pw0.text !== "") && pw1.text !== "" && pw1.text === pw2.text
                         label: "Password"
                         detail: userRow.changingPassword
-                            ? (pw1.text !== "" && pw2.text !== "" && pw1.text !== pw2.text ? "Those passwords don't match" : "Type the new password twice, then Change")
-                            : userRow.user.me ? "The one you log in and unlock with" : "The one they log in with. Let them know what it is"
+                            ? (pw1.text !== "" && pw2.text !== "" && pw1.text !== pw2.text ? "Those passwords don't match"
+                                : mine ? "Your current password, then the new one twice" : "Type the new password twice, then Change")
+                            : mine ? "The one you log in and unlock with" : "The one they log in with. Let them know what it is"
                         Row {
                             spacing: 8
-                            Field { id: pw1; visible: userRow.changingPassword; width: 150; secret: true; hint: "New password"; onAccepted: pw2.input.forceActiveFocus() }
-                            Field { id: pw2; visible: userRow.changingPassword; width: 150; secret: true; hint: "Again"; onAccepted: setPw.clicked() }
+                            Field { id: pw0; visible: userRow.changingPassword && pwRow.mine; width: 120; secret: true; hint: "Current"; onAccepted: pw1.input.forceActiveFocus() }
+                            Field { id: pw1; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "New password"; onAccepted: pw2.input.forceActiveFocus() }
+                            Field { id: pw2; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "Again"; onAccepted: setPw.clicked() }
                             Button {
                                 id: setPw
                                 label: userRow.changingPassword ? "Change" : "Change password"
                                 primary: userRow.changingPassword
-                                opacity: !userRow.changingPassword || (pw1.text !== "" && pw1.text === pw2.text) ? 1 : 0.5
+                                opacity: !userRow.changingPassword || pwRow.ready ? 1 : 0.5
                                 onClicked: {
                                     if (!userRow.changingPassword) {
-                                        pw1.text = ""; pw2.text = "";
+                                        pw0.text = ""; pw1.text = ""; pw2.text = "";
                                         userRow.changingPassword = true;
-                                        pw1.input.forceActiveFocus();
+                                        (pwRow.mine ? pw0 : pw1).input.forceActiveFocus();
                                         return;
                                     }
-                                    if (pw1.text === "" || pw1.text !== pw2.text) return;
-                                    const pw = pw1.text;
-                                    pw1.text = ""; pw2.text = "";
-                                    usersPane.act(["password", String(userRow.user.uid)], "Changing the password…", pw,
-                                        ok => { if (ok) userRow.changingPassword = false; });
+                                    if (!pwRow.ready || actProc.running) return;
+                                    const current = pw0.text, pw = pw1.text;
+                                    pw0.text = ""; pw1.text = ""; pw2.text = "";
+                                    if (pwRow.mine)
+                                        usersPane.act(["own-password"], "Changing your password…", current + "\n" + pw,
+                                            ok => { if (ok) userRow.changingPassword = false; });
+                                    else
+                                        usersPane.act(["password", String(userRow.user.uid)], "Changing the password…", pw,
+                                            ok => { if (ok) userRow.changingPassword = false; });
                                 }
                             }
                         }
@@ -329,7 +341,7 @@ Column {
         SettingRow {
             visible: !usersPane.adding
             label: "Add someone"
-            detail: usersPane.admin ? "A new account, with its own files, settings and password"
+            detail: usersPane.admin ? "A new account, with its own files, settings and password. For now, they can use other desktops on the login screen, but not Slate yet"
                 : "Only an administrator can add people to this computer"
             Button {
                 visible: usersPane.admin
