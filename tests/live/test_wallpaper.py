@@ -27,6 +27,17 @@ class SlateWallpapers(LiveCase):
         self.assertGreaterEqual(len(names), 4)
         self.assertTrue(all(n.startswith("slate-") and n.endswith(".png") for n in names), names)
 
+    def test_a_first_start_gets_slates_blue_one(self):
+        """No wallpaper set yet (someone new, or Slate just installed): Slate's blue one, chosen
+        in their settings; one already chosen is never replaced."""
+        self.ipc("wallpaper", "set", "")
+        self.ipc("wallpaper", "startingPicture")
+        self.wait(lambda st: self.ipc("wallpaper", "get") == os.path.join(self.own, "slate-cobalt.png"), "Slate's blue wallpaper")
+        mine = os.path.join(self.own, "slate-ember.png")
+        self.ipc("wallpaper", "set", mine)
+        self.ipc("wallpaper", "startingPicture")
+        self.assertEqual(self.steady(lambda: self.ipc("wallpaper", "get"), floor=0.5), mine)
+
     def test_next_uses_slates_own(self):
         self.config("wallpaperShowSlate", "true")
         self.s.settle(0.8)

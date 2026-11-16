@@ -26,7 +26,17 @@ Scope {
         function next(): void { root.changeWallpaper(); }
         // (open: the next one along, as pressing its shortcut again does)
         function switcher(): void { switcherWin.open(); }
+        // (the tests: what an empty setting becomes, as at someone's first start)
+        function startingPicture(): void { root.startingPicture(); }
     }
+    // Someone with no wallpaper set yet (a first start: someone new, or Slate just installed) gets
+    // Slate's own blue one, chosen in their settings so Settings → Wallpaper shows it. (Not in
+    // the tests' sessions, whose pictures are taken on the plain backdrop: they call it directly)
+    readonly property string firstPicture: Quickshell.shellPath("wallpapers/slate-cobalt.png")
+    function startingPicture() {
+        if (Config.s.wallpaper === "" && !Config.isLoginScreen) Config.s.wallpaper = firstPicture;
+    }
+    Component.onCompleted: if (!Config.testMode) startingPicture()
 
     // For the desktop's right-click menu: a Slate command, or one of the default apps (the
     // terminal / file manager the shortcuts open, as set in Hyprland's config or Settings)
