@@ -40,7 +40,8 @@ ls /home/tester/.config/slate | tr "\n" " " | sed "s/^/your folder: /"; echo
 [ ! -e /home/tester/.config/slate/shell.qml ] && echo "no code in your folder: ok" || echo "code in your folder: WRONG"
 echo "--- QML modules Slate imports (no display here, so windows are not created) ---"
 mkdir -p /tmp/qmlcheck
-{ grep -hoE "^import [A-Za-z0-9_.]+" /usr/local/share/slate/*.qml /usr/local/share/slate/greeter/*.qml | sort -u
+# (Slate'"'"'s own modules, import qs…, only resolve inside Slate: left out)
+{ grep -hoE "^import [A-Za-z0-9_.]+" /usr/local/share/slate/*.qml /usr/local/share/slate/greeter/*.qml | grep -v "^import qs" | sort -u
   echo "ShellRoot { Component.onCompleted: { console.log(\"QML-IMPORTS-OK\"); Qt.quit(); } }"; } > /tmp/qmlcheck/shell.qml
 chmod -R a+r /tmp/qmlcheck
 sudo -u tester -H env QT_QPA_PLATFORM=offscreen XDG_RUNTIME_DIR=/tmp timeout 20 qs -p /tmp/qmlcheck 2>&1 \
