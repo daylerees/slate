@@ -1575,6 +1575,10 @@ Singleton {
     FileView {
         id: flathubColoursFile
         path: root.iconColoursWanted ? root.tileDir + "/flathub/colours.json" : ""
+        // (watched once its folder exists; Slate Software also asks for it again as it opens and
+        // after drawing: the file can arrive after Slate started, before anything watched it)
+        watchChanges: true
+        onFileChanged: reload()
         printErrors: false
         onLoaded: {
             try {

@@ -90,6 +90,7 @@ FloatingWindow {
     // installed: { apps }, updates }, in place of running it)
     property var pretend: ({})
     function refresh() {
+        Config.rereadFlathubColours();
         load("status", statusRun);
         if (catalogue.length === 0) load("catalogue", catalogueRun);
         load("lists", listsRun);

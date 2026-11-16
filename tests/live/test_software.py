@@ -144,3 +144,27 @@ class Software(LiveCase):
         st = self.wait(lambda st: st["software"]["open"], "open again")["software"]
         self.assertEqual(st["busy"], "install org.mozilla.firefox", "the install ended with the window")
         self.wait(lambda st: st["software"]["busy"] == "", "then finished", timeout=10)
+
+    def test_colours_that_arrive_later_are_used(self):
+        """A tile and its colour that arrive while Slate runs, without Slate Software drawing
+        anything (as after an update, the first time): its tile is in its own colour once the
+        window opens again."""
+        # (once its own drawing is done, which reads the colours again as it finishes)
+        st = self.wait(lambda st: st["software"]["tilesDrawn"] > 0, "Firefox's picture drawn", timeout=20)["software"]
+        self.s.settle(0.5)
+        self.ipc("software", "close")
+        folder = st["flathubTiles"]
+        os.makedirs(folder, exist_ok=True)
+        from PIL import Image
+        Image.new("RGBA", (192, 192), (40, 160, 90, 255)).save(os.path.join(folder, "org.gimp.GIMP.png"))
+        path = os.path.join(folder, "colours.json")
+        try:
+            with open(path) as f:
+                noted = json.load(f)
+        except (OSError, ValueError):
+            noted = {}
+        noted["org.gimp.GIMP"] = {"c": "#28a05a", "t": 0}
+        with open(path, "w") as f:
+            json.dump(noted, f)
+        self.ipc("software", "open")
+        self.wait(lambda st: "org.gimp.GIMP" in st["software"]["shaded"], "GIMP's tile in its own colour")
