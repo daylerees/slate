@@ -52,7 +52,13 @@ FloatingWindow {
     property string page: "discover"
     property string app: ""
     property string query: ""
-    readonly property bool searchFocused: findApps.activeFocus      // (the tests)
+    readonly property bool searchFocused: searchBox.input.activeFocus || heroSearch.input.activeFocus      // (the tests)
+    // The keyboard to whichever search box shows
+    function focusSearch() {
+        const f = onHome ? heroSearch.input : searchBox.input;
+        f.focus = true;
+        Qt.callLater(() => f.forceActiveFocus());
+    }
     // (opens on Discover each time, as Settings opens on All Settings: reset here rather than when
     // it shows, which can come after a page, an app or a search asked for with it)
     function open() {
@@ -60,10 +66,12 @@ FloatingWindow {
         if (opening) { app = ""; query = ""; page = "discover"; }
         visible = true;
         // (the search box takes the keyboard, so you can type straight away)
-        if (opening) { findApps.focus = true; Qt.callLater(() => findApps.forceActiveFocus()); }
+        if (opening) focusSearch();
         refresh();
     }
     function show(p) { app = ""; page = p; query = ""; scroller.contentY = 0; }
+    // Discover's own page (its search box in the middle), rather than an app or a category
+    readonly property bool onHome: page === "discover" && app === ""
     function openApp(id) { app = id; detail = null; appRun.command = [script, "app", id]; load("app", appRun); scroller.contentY = 0; }
 
     // ---- What the engine says (scripts/software.py) ---------------------------------------------
@@ -199,8 +207,15 @@ FloatingWindow {
         scored.sort((x, y) => x.s - y.s || x.a.name.localeCompare(y.a.name));
         return scored.slice(0, 60).map(x => x.a);
     }
-    function inList(name) { return (lists[name] || []).map(id => byId[id]).filter(a => !!a).slice(0, 8); }
-    function inCategory(cat) { return catalogue.filter(a => (a.categories || []).indexOf(cat) >= 0); }
+    // A category's apps: its most installed on Flathub first (when we've heard), then the rest by
+    // name; `many` of them (0: all)
+    function inCategory(cat, many) {
+        const top = ((lists.categories || {})[cat] || []).map(id => byId[id]).filter(a => !!a);
+        const seen = {};
+        for (const a of top) seen[a.id] = true;
+        const all = top.concat(catalogue.filter(a => !seen[a.id] && (a.categories || []).indexOf(cat) >= 0));
+        return many > 0 ? all.slice(0, many) : all;
+    }
     // An installed app as a row: from the catalog when it's in it, else as Flatpak names it
     function asApp(i) { return byId[i.id] || { id: i.id, name: i.name, summary: "", icon: "" }; }
 
@@ -295,46 +310,14 @@ FloatingWindow {
             id: contentPane
             anchors { top: parent.top; bottom: parent.bottom; left: sidebar.right; right: parent.right }
             color: sw.well
-            // Search all of Flathub, from any page
-            Rectangle {
+            // Search all of Flathub, from any page but Discover (which has its own, larger, in
+            // the middle of the page)
+            SearchField {
                 id: searchBox
                 z: 2
+                visible: !sw.onHome
                 // (clear of the close button, as Settings' search is)
                 anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
-                height: 36; radius: Config.corner(10)
-                color: sw.faint
-                border.width: findApps.activeFocus ? 1 : 0; border.color: sw.accent
-                Text {
-                    id: findIcon
-                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                    text: sw.glyph(0xEB1C); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: 16
-                }
-                TextInput {
-                    id: findApps
-                    objectName: "findApps"
-                    activeFocusOnTab: true
-                    focus: true
-                    anchors { left: findIcon.right; leftMargin: 8; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                    color: sw.text; font.family: sw.font; font.pixelSize: 13
-                    selectionColor: sw.accent; selectedTextColor: sw.accentText
-                    clip: true
-                    text: sw.query
-                    onTextEdited: { sw.query = text; sw.app = ""; scroller.contentY = 0; }
-                    // Escape: clears the search, then leaves an app's page, then closes the window
-                    Keys.onEscapePressed: {
-                        if (text !== "") sw.query = "";
-                        else if (sw.app !== "") sw.app = "";
-                        else sw.visible = false;
-                    }
-                    Text {
-                        visible: findApps.text === ""
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Search Flathub"
-                        color: sw.dim; font: findApps.font
-                    }
-                }
-                HoverHandler { cursorShape: Qt.IBeamCursor }
-                TapHandler { onTapped: findApps.forceActiveFocus() }
             }
             // Close, top right, where Settings has it
             IconButton {
@@ -345,7 +328,7 @@ FloatingWindow {
             }
             Flickable {
                 id: scroller
-                anchors { top: searchBox.bottom; topMargin: 8; left: parent.left; right: parent.right; bottom: parent.bottom }
+                anchors { top: parent.top; topMargin: searchBox.visible ? 59 : 0; left: parent.left; right: parent.right; bottom: parent.bottom }
                 contentHeight: pageCol.implicitHeight + 40
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -385,6 +368,35 @@ FloatingWindow {
                         sourceComponent: appPage
                     }
 
+                    // ---- Discover: what this is, a search box, and each category's popular apps ----
+                    Column {
+                        id: hero
+                        width: parent.width
+                        visible: sw.onHome
+                        spacing: 10
+                        topPadding: 34
+                        bottomPadding: 22
+                        Text {
+                            width: parent.width; horizontalAlignment: Text.AlignHCenter
+                            text: "Find apps for your computer"
+                            color: sw.text; font.family: sw.font; font.pixelSize: 24; font.weight: Font.Medium
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: Math.min(parent.width, 520); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter
+                            text: "Slate Software installs apps from Flathub, where thousands of free apps run safely in a space of their own. "
+                                + "What you install here is there for everyone who uses this computer, and its updates show under Updates."
+                            color: sw.dim; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
+                        }
+                        Item { width: 1; height: 6 }
+                        SearchField {
+                            id: heroSearch
+                            big: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: Math.min(parent.width, 560)
+                        }
+                    }
+
                     // ---- Search ----
                     Column {
                         id: searchPage
@@ -399,53 +411,18 @@ FloatingWindow {
                         }
                     }
 
-                    // ---- Discover ----
                     Column {
                         width: parent.width
-                        visible: sw.app === "" && sw.query.trim() === "" && sw.page === "discover"
-                        spacing: 4
-                        Text { text: "Discover"; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
-                        GroupLabel { text: "Categories" }
-                        Flow {
-                            width: parent.width
-                            spacing: 8
-                            bottomPadding: 8
-                            Repeater {
-                                model: sw.categories
-                                delegate: Rectangle {
-                                    required property var modelData
-                                    width: catRow.implicitWidth + 28; height: 40; radius: Config.corner(10)
-                                    color: sw.card
-                                    HoverFill { hovered: catHover.hovered; radius: parent.radius }
-                                    Row {
-                                        id: catRow
-                                        anchors.centerIn: parent
-                                        spacing: 8
-                                        Text { text: sw.glyph(parent.parent.modelData.icon); color: Config.colourful ? Config.pageColour("updates") : sw.accent; font.family: sw.bar.iconFont; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: parent.parent.modelData.label; color: sw.text; font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
-                                    }
-                                    HoverHandler { id: catHover }
-                                    ClickTap { onTapped: sw.show(parent.modelData.id) }
-                                }
-                            }
-                        }
+                        visible: sw.onHome && sw.query.trim() === ""
+                        spacing: 26
                         Repeater {
-                            model: [{ id: "popular", label: "Popular on Flathub" }, { id: "trending", label: "Trending" }, { id: "recently-added", label: "New on Flathub" }]
-                            delegate: Column {
-                                id: listCol
-                                required property var modelData
-                                readonly property var apps: sw.inList(modelData.id)
-                                width: parent.width
-                                visible: apps.length > 0
-                                spacing: 4
-                                GroupLabel { text: listCol.modelData.label }
-                                Group { Repeater { model: listCol.apps; delegate: AppRow { required property var modelData; required property int index; entry: modelData; first: index === 0 } } }
-                            }
+                            model: sw.categories
+                            delegate: CategoryStrip { required property var modelData; cat: modelData }
                         }
                         Text {
-                            visible: !!sw.lists.offline && !(sw.lists.popular || []).length
-                            width: parent.width; wrapMode: Text.Wrap; topPadding: 8
-                            text: "Flathub's popular and new apps show here when you're online. Search and the categories work offline."
+                            visible: !!sw.lists.offline && !sw.lists.categories
+                            width: parent.width; wrapMode: Text.Wrap
+                            text: "Each category's most popular apps show here when you're online. Until then, they're in alphabetical order, and search works as usual."
                             color: sw.dim; font.family: sw.font; font.pixelSize: 12
                         }
                     }
@@ -456,7 +433,7 @@ FloatingWindow {
                         width: parent.width
                         readonly property var cat: sw.categories.find(c => c.id === sw.page)
                         visible: sw.app === "" && sw.query.trim() === "" && !!cat
-                        readonly property var apps: visible ? sw.inCategory(sw.page) : []
+                        readonly property var apps: visible ? sw.inCategory(sw.page, 0) : []
                         spacing: 4
                         Text { text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
                         Group { Repeater { model: catPage.apps.slice(0, 120); delegate: AppRow { required property var modelData; required property int index; entry: modelData; first: index === 0 } } }
@@ -584,7 +561,8 @@ FloatingWindow {
                 z: 3
                 flick: scroller
                 color: sw.text
-                anchors { top: scroller.top; bottom: parent.bottom; right: parent.right; rightMargin: 4; bottomMargin: 8 }
+                // (below the close button)
+                anchors { top: scroller.top; topMargin: searchBox.visible ? 0 : 56; bottom: parent.bottom; right: parent.right; rightMargin: 4; bottomMargin: 8 }
             }
             ScrollShade { z: 3; anchors { top: scroller.top; left: parent.left; right: parent.right } distance: scroller.contentY }
             ScrollShade { z: 3; atBottom: true; anchors { bottom: parent.bottom; left: parent.left; right: parent.right } distance: scroller.contentHeight - scroller.height - scroller.contentY }
@@ -673,6 +651,127 @@ FloatingWindow {
             color: sw.faint
             Text { anchors.centerIn: parent; text: sw.glyph(0xEB75); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: ai.size * 0.5 }
         }
+    }
+
+    // ---- A search box: in the header, or (big) in the middle of Discover ------------------------
+    // Both show and change the same search (sw.query)
+    component SearchField: Rectangle {
+        id: field
+        property bool big: false
+        readonly property alias input: fieldInput
+        height: big ? 48 : 36; radius: Config.corner(big ? 12 : 10)
+        color: big ? sw.card : sw.faint
+        border.width: fieldInput.activeFocus ? 1 : 0; border.color: sw.accent
+        Text {
+            id: fieldIcon
+            anchors { left: parent.left; leftMargin: field.big ? 16 : 12; verticalCenter: parent.verticalCenter }
+            text: sw.glyph(0xEB1C); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: field.big ? 19 : 16
+        }
+        TextInput {
+            id: fieldInput
+            activeFocusOnTab: true
+            anchors { left: fieldIcon.right; leftMargin: field.big ? 10 : 8; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+            color: sw.text; font.family: sw.font; font.pixelSize: field.big ? 15 : 13
+            selectionColor: sw.accent; selectedTextColor: sw.accentText
+            clip: true
+            text: sw.query
+            onTextEdited: { sw.query = text; sw.app = ""; if (!field.big) scroller.contentY = 0; }
+            // Escape: clears the search, then leaves an app's page, then closes the window
+            Keys.onEscapePressed: {
+                if (text !== "") sw.query = "";
+                else if (sw.app !== "") sw.app = "";
+                else sw.visible = false;
+            }
+            Text {
+                visible: fieldInput.text === ""
+                anchors.verticalCenter: parent.verticalCenter
+                text: field.big ? "Search thousands of apps" : "Search Flathub"
+                color: sw.dim; font: fieldInput.font
+            }
+        }
+        HoverHandler { cursorShape: Qt.IBeamCursor }
+        TapHandler { onTapped: fieldInput.forceActiveFocus() }
+    }
+
+    // ---- A category on Discover: its name, See all, and its most popular apps as cards in a row,
+    // a page at a time (the arrows). Paged rather than scrolled sideways, so the wheel always
+    // scrolls the page
+    component CategoryStrip: Column {
+        id: strip
+        property var cat: ({})
+        readonly property var apps: sw.inCategory(cat.id, 16)
+        readonly property int gap: 12
+        readonly property int perPage: Math.max(2, Math.floor((width + gap) / (180 + gap)))
+        readonly property real cardWidth: (width - gap * (perPage - 1)) / perPage
+        property int first: 0
+        onPerPageChanged: first = Math.floor(first / perPage) * perPage
+        width: parent ? parent.width : 0
+        visible: apps.length > 0
+        spacing: 10
+        Item {
+            width: parent.width; height: 30
+            Row {
+                anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
+                spacing: 8
+                Text { anchors.verticalCenter: parent.verticalCenter; text: sw.glyph(strip.cat.icon || 0xEB1C); color: Config.colourful ? Config.pageColour("updates") : sw.accent; font.family: sw.bar.iconFont; font.pixelSize: 17 }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: strip.cat.label || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15; font.weight: Font.Medium }
+            }
+            Row {
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                spacing: 4
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    rightPadding: 8
+                    text: "See all"
+                    color: seeAllHover.hovered ? sw.text : sw.accent; font.family: sw.font; font.pixelSize: 12; font.weight: Font.Medium
+                    HoverHandler { id: seeAllHover }
+                    ClickTap { onTapped: sw.show(strip.cat.id) }
+                }
+                IconButton {
+                    icon: 0xEA60
+                    opacity: strip.first > 0 ? 1 : 0.35
+                    onClicked: strip.first = Math.max(0, strip.first - strip.perPage)
+                }
+                IconButton {
+                    icon: 0xEA61
+                    opacity: strip.first + strip.perPage < strip.apps.length ? 1 : 0.35
+                    onClicked: if (strip.first + strip.perPage < strip.apps.length) strip.first += strip.perPage
+                }
+            }
+        }
+        Row {
+            spacing: strip.gap
+            Repeater {
+                model: strip.apps.slice(strip.first, strip.first + strip.perPage)
+                delegate: AppCard { required property var modelData; entry: modelData; width: strip.cardWidth }
+            }
+        }
+    }
+
+    // An app as a card: its icon, name and what it's for; opens its page
+    component AppCard: Rectangle {
+        id: card
+        property var entry: ({})
+        height: 140; radius: Config.corner(12)
+        color: sw.card
+        HoverFill { hovered: cardHover.hovered; radius: parent.radius }
+        AppIcon { id: cardIcon; anchors { left: parent.left; top: parent.top; margins: 14 } size: 52; path: card.entry.icon || "" }
+        Text {
+            visible: !!sw.installedIds[card.entry.id]
+            anchors { right: parent.right; top: parent.top; margins: 14 }
+            text: "Installed"; color: sw.dim; font.family: sw.font; font.pixelSize: 11
+        }
+        Column {
+            anchors { left: parent.left; right: parent.right; top: cardIcon.bottom; margins: 14; topMargin: 10 }
+            spacing: 3
+            Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: card.entry.name || card.entry.id; color: sw.text; font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium }
+            Text {
+                width: parent.width; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; textFormat: Text.PlainText
+                text: card.entry.summary || ""; color: sw.dim; font.family: sw.font; font.pixelSize: 12
+            }
+        }
+        HoverHandler { id: cardHover }
+        ClickTap { onTapped: sw.openApp(card.entry.id) }
     }
 
     // ---- An app's own page ----------------------------------------------------------------------

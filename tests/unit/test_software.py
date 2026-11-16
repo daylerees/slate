@@ -204,9 +204,12 @@ class Discover(SoftwareCase):
             got = self.mod.discover()
             again = self.mod.discover()
         self.assertEqual(got["popular"], ["org.example.Paint", "com.example.Chat"], "a name that isn't an app id got through")
-        self.assertEqual(len(asked), 3, "asked again within six hours")
+        self.assertEqual(len(asked), 3 + len(self.mod.CATEGORIES), "asked again within six hours")
         self.assertTrue(all(u.startswith("https://flathub.org/api/v2/collection/") for u in asked))
+        self.assertIn("https://flathub.org/api/v2/collection/category/Game?page=1&per_page=16", asked)
+        self.assertEqual(got["categories"]["Game"], ["org.example.Paint", "com.example.Chat"])
         self.assertEqual(again["popular"], got["popular"])
+        self.assertEqual(again["categories"], got["categories"])
 
     def test_offline_keeps_the_last(self):
         with mock.patch("urllib.request.urlopen", lambda req, timeout=None: self.reply(["org.example.Paint"])):

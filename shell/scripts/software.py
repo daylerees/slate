@@ -47,6 +47,8 @@ sys.path.insert(0, HERE)
 REMOTE = "flathub"
 API = "https://flathub.org/api/v2/collection/%s?page=1&per_page=%d"
 LISTS = ("popular", "recently-added", "trending")
+# Flathub's main categories (Slate Software's Discover has a row of each's most installed apps)
+CATEGORIES = ("Game", "Graphics", "AudioVideo", "Office", "Network", "Development", "Education", "Science", "Utility", "System")
 DISCOVER_EVERY = 6 * 3600
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "slate", "software")
 # Where Flatpak keeps Flathub's catalogue, for everyone and for you
@@ -219,8 +221,9 @@ def app(app_id):
 
 
 def discover():
-    """Flathub's lists (their app ids), fetched at most every 6 hours; the last answer when
-    there's no connection."""
+    """Flathub's lists (their app ids): popular, new and trending, and each category's most
+    installed apps ({"categories": {name: [ids]}}), fetched at most every 6 hours; the last
+    answer when there's no connection."""
     cache = os.path.join(CACHE, "discover.json")
     kept = {}
     try:
@@ -228,18 +231,25 @@ def discover():
             kept = json.load(f)
     except (OSError, ValueError):
         pass
-    if kept and time.time() - kept.get("at", 0) < DISCOVER_EVERY:
+    # (kept from before the categories were fetched too: fetched again)
+    if kept and "categories" in kept and time.time() - kept.get("at", 0) < DISCOVER_EVERY:
         return kept
-    got = {"at": time.time()}
+
+    def ids_of(path, many):
+        url = API % (path, many)
+        assert url.startswith("https://flathub.org/")
+        req = urllib.request.Request(url, headers={"User-Agent": "slate-software"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read(4 * 1024 * 1024))
+        ids = [h.get("app_id") for h in data.get("hits", []) if isinstance(h, dict)]
+        return [i for i in ids if isinstance(i, str) and re.fullmatch(r"[A-Za-z0-9._-]+", i)]
+
+    got = {"at": time.time(), "categories": {}}
     try:
         for name in LISTS:
-            url = API % (name, 30)
-            assert url.startswith("https://flathub.org/")
-            req = urllib.request.Request(url, headers={"User-Agent": "slate-software"})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read(4 * 1024 * 1024))
-            ids = [h.get("app_id") for h in data.get("hits", []) if isinstance(h, dict)]
-            got[name] = [i for i in ids if isinstance(i, str) and re.fullmatch(r"[A-Za-z0-9._-]+", i)]
+            got[name] = ids_of(name, 30)
+        for cat in CATEGORIES:
+            got["categories"][cat] = ids_of("category/" + cat, 16)
     except Exception:
         if kept:
             kept["offline"] = True
