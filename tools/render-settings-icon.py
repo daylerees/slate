@@ -2,9 +2,11 @@
 """Render Slate's settings/app icon: the slate mark (as drawn by SlateLogo.qml: a shaded slab
 with its side showing and an accent edge) on a dark rounded tile.
 
-    tools/render-settings-icon.py <out-dir> [accent #rrggbb] [--mark-only] [--flat]
+    tools/render-settings-icon.py <out-dir> [accent #rrggbb] [--mark-only] [--flat] [--software]
 
-Writes settings-<size>.png for 512, 256, 128, 64, 48, 32 and 16 px. --mark-only leaves out
+Writes settings-<size>.png for 512, 256, 128, 64, 48, 32 and 16 px. --software draws Slate
+Software's icon instead (software-<size>.png): the same slab, with a down arrow into a tray on
+its face in the accent. --mark-only leaves out
 the tile, for the mark on its own (the logo, tools/render-logo.py). --flat draws the slab
 straight on instead of at an angle (for small sizes beside text, like the site's header).
 Needs Pillow."""
@@ -14,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 mark_only = "--mark-only" in sys.argv
 flat = "--flat" in sys.argv
+software = "--software" in sys.argv
 out = args[0]
 accent = args[1] if len(args) > 1 else "#8fb3e8"
 S = 2048                                  # drawn large, scaled down for smooth edges
@@ -99,9 +102,22 @@ else:
     face_mask = Image.new("L", (S, S), 0)
     rounded_poly(ImageDraw.Draw(face_mask), [(15.8, 24.9), (52.4, 15.0), (52.4, 44.2), (14.6, 54.4)], 1.7, 255)
     img.paste(vgrad(hexc("#66738a"), hexc("#363f4e"), P(0, 14)[1], P(0, 56)[1]), (0, 0), face_mask)
-    grain = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(grain).line([P(15.2, 42.0), P(51.8, 32.2)], fill=(255, 255, 255, 40), width=round(1.0 * k))
-    img.alpha_composite(grain)
+    if not software:
+        grain = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        ImageDraw.Draw(grain).line([P(15.2, 42.0), P(51.8, 32.2)], fill=(255, 255, 255, 40), width=round(1.0 * k))
+        img.alpha_composite(grain)
+    else:
+        # A down arrow into a tray, on the face (its lines follow the face's slant)
+        arrow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        ad = ImageDraw.Draw(arrow)
+        light = lighter(hexc(accent), 0.2)
+        capsule(ad, (33.6, 25.4), (33.6, 38.6), 3.0, light)
+        capsule(ad, (27.6, 34.8), (33.6, 39.4), 3.0, light)
+        capsule(ad, (39.6, 33.2), (33.6, 39.4), 3.0, light)
+        capsule(ad, (23.0, 42.4), (23.0, 45.6), 3.0, light)
+        capsule(ad, (23.0, 45.6), (44.2, 39.9), 3.0, light)
+        capsule(ad, (44.2, 39.9), (44.2, 36.7), 3.0, light)
+        img.alpha_composite(arrow)
     edge = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     ed = ImageDraw.Draw(edge)
     capsule(ed, (14.6, 22.6), (52.6, 12.4), 4.4, hexc(accent))
@@ -109,5 +125,5 @@ else:
     img.alpha_composite(edge)
 
 for size in (512, 256, 128, 64, 48, 32, 16):
-    img.resize((size, size), Image.LANCZOS).save(f"{out}/settings-{size}.png")
+    img.resize((size, size), Image.LANCZOS).save(f"{out}/{'software' if software else 'settings'}-{size}.png")
 print("rendered", out)

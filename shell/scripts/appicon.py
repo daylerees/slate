@@ -399,8 +399,9 @@ def colours(tile_dir, out):
 
 # Slate's own windows (Settings, Nova): their icon is Slate's, in Slate's own folder, so it's
 # never looked for in the icon themes (where only the person who installed Slate had a copy)
-OWN_ICONS = {"slate-settings": os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                            "assets", "icon", "settings-512.png")}
+_ICONS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "icon")
+OWN_ICONS = {"slate-settings": os.path.join(_ICONS, "settings-512.png"),
+             "slate-software": os.path.join(_ICONS, "software-512.png")}
 
 
 def icon_for(cls):

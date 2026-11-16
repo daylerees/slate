@@ -181,6 +181,8 @@ hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titl
 -- (880×620 times the interface size), kept within the screen by the floating-window limit
 -- above, and pinned: open, it stays with you on every workspace, as Nova does (below)
 hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true, pin = true })
+-- Slate Software: floats in the middle too, at its own size, but stays on its workspace (an app)
+hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Slate Software)$" }, float = true, center = true })
 -- Nova, Slate's assistant (Super+K, Assistant.qml): a window of Slate's own, by its app id and
 -- title. Floats in the middle of the screen at the size it asks for (the size you last left
 -- it at), pinned so it's on whichever workspace you're looking at. It has its own header to

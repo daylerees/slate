@@ -223,6 +223,14 @@ ShellRoot {
         function settingsTab(forward: bool): void { if (settingsLoader.item) settingsLoader.item.testTab(forward); }
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         function newSpace(): void { popouts.newSpaceAsked(); }
+        // Slate Software: what its engine (scripts/software.py) would say, as a JSON object
+        // { status, catalogue, lists, installed, updates, app, act }, used in place of running it
+        // (act: how an install, removal or update goes, "ok" or what went wrong)
+        function softwarePretend(json: string): void { root.softwareWindow().pretend = JSON.parse(json); }
+        // Slate Software's Remove on an app's page (it asks first)
+        function softwareRemove(id: string): void { const w = root.softwareWindow(); w.askRemove(w.byId[id] || { id: id, name: id }); }
+        // Slate Software's Install (or Update all, or Update for the system: id "update-apps", "update-system")
+        function softwareAct(what: string, id: string): void { root.softwareWindow().act(what, id, id); }
         // Less room for the dock's things than its edge has (px; 0: the whole edge), to fill it
         // with a few windows rather than dozens
         function dockRoom(px: real): void { win.setTestRoom(px); }
@@ -430,6 +438,13 @@ ShellRoot {
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
+                software: softwareLoader.item ? (w => ({
+                    built: true, open: w.visible, page: w.page, app: w.app, query: w.query,
+                    apps: w.catalogue.length, installed: w.installed.map(a => a.id), updates: w.updateCount,
+                    busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note,
+                    found: w.query.trim() !== "" ? w.found(w.query).map(a => a.id) : [],
+                    detail: w.detail ? w.detail.name : ""
+                }))(softwareLoader.item) : { built: false, open: false },
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
                             focusedBox: settings ? settings.focusedBox : "",
                             changed: settings ? settings.changedHere : 0,
@@ -612,6 +627,24 @@ ShellRoot {
             placeFile: root.settingsPlaceFile
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
+    }
+    // Slate Software (SoftwareWindow.qml), built the first time it's opened, as Settings is
+    LazyLoader {
+        id: softwareLoader
+        active: false
+        SoftwareWindow { bar: topBar; confirmer: powerConfirm }
+    }
+    function softwareWindow() {
+        softwareLoader.active = true;
+        return softwareLoader.item;
+    }
+    IpcHandler {
+        target: "software"
+        function open(): void { root.softwareWindow().open(); }
+        function close(): void { if (softwareLoader.item) softwareLoader.item.visible = false; }
+        function page(p: string): void { const w = root.softwareWindow(); w.open(); w.show(p); }
+        function app(id: string): void { const w = root.softwareWindow(); w.open(); w.openApp(id); }
+        function search(text: string): void { const w = root.softwareWindow(); w.open(); w.app = ""; w.query = text; }
     }
     // Quick Look (QuickLook.qml): a large preview of a file (Space on one in the launcher, the
     // dock's Downloads or the Waste Basket), built the first time it's wanted

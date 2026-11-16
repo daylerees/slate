@@ -310,8 +310,8 @@ PanelWindow {
                 id: card
                 required property var modelData
                 required property int index
-                readonly property var entry: Config.appEntry(modelData.wayland ? modelData.wayland.appId : "")
-                readonly property string key: entry ? entry.id : (modelData.wayland ? modelData.wayland.appId : "")
+                readonly property var entry: Config.appEntry(Config.appIdOf(modelData.wayland))
+                readonly property string key: entry ? entry.id : Config.appIdOf(modelData.wayland)
                 readonly property string tilePath: Config.tilePath(key)
                 width: sw.cardW
                 height: sw.cardH

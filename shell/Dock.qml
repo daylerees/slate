@@ -256,11 +256,11 @@ PanelWindow {
 
     // ---- Apps: pinned first, then anything else that's running ---------
     function belongsTo(t, id, e) {
-        const a = (t.appId || "").toLowerCase();
+        const a = Config.appIdOf(t).toLowerCase();
         if (a === id.toLowerCase()) return true;
         if (!e) return false;
         if (a === (e.startupClass || "").toLowerCase() || a === (e.id || "").toLowerCase()) return true;
-        const h = Config.appEntry(t.appId);
+        const h = Config.appEntry(Config.appIdOf(t));
         return h !== null && h.id === e.id;
     }
     property var items: {
@@ -278,8 +278,8 @@ PanelWindow {
         }
         for (const t of tops) {
             if (claimed.has(t)) continue;
-            const e = Config.appEntry(t.appId);
-            const key = e ? e.id : t.appId;
+            const e = Config.appEntry(Config.appIdOf(t));
+            const key = e ? e.id : Config.appIdOf(t);
             const existing = out.find(o => o.key === key);
             if (existing) existing.windows.push(t);
             else out.push({ key: key, entry: e, windows: [t], pinned: false });

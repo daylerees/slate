@@ -1112,8 +1112,8 @@ PanelWindow {
                     width: bar.capsuleHeight; height: bar.capsuleHeight
                     opacity: bar.titleFade * bar.arrangeSwap
                     readonly property var focusedTop: bar.shownTop
-                    readonly property var entry: Config.appEntry(focusedTop ? focusedTop.appId : "")
-                    readonly property string winKey: entry ? entry.id : (focusedTop ? focusedTop.appId : "")
+                    readonly property var entry: Config.appEntry(Config.appIdOf(focusedTop))
+                    readonly property string winKey: entry ? entry.id : Config.appIdOf(focusedTop)
                     // (while the bar's being arranged: Slate Settings' own icon, as a stand-in)
                     readonly property string key: bar.arrangeShown ? "slate-settings" : winKey
                     readonly property string path: Config.tilePath(key)

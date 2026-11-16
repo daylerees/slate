@@ -736,8 +736,8 @@ PanelWindow {
                                 layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: Config.shadowColour; shadowOpacity: 0.55; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
                                 AppTile {
                                     anchors.fill: parent
-                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? Config.appEntry(parent.parent.modelData.wayland.appId) : null
-                                    app: entry ? entry.id : (parent.parent.modelData && parent.parent.modelData.wayland ? parent.parent.modelData.wayland.appId : "")
+                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? Config.appEntry(Config.appIdOf(parent.parent.modelData.wayland)) : null
+                                    app: entry ? entry.id : (parent.parent.modelData && parent.parent.modelData.wayland ? Config.appIdOf(parent.parent.modelData.wayland) : "")
                                 }
                             }
                             // The window came from a space: its badge in the top left corner
@@ -764,7 +764,7 @@ PanelWindow {
                     elide: Text.ElideRight
                     horizontalAlignment: Text.AlignHCenter
                     opacity: 1 - ov.zoomP
-                    readonly property var first: card.wins.length ? Config.appEntry(card.wins[0].wayland ? card.wins[0].wayland.appId : "") : null
+                    readonly property var first: card.wins.length ? Config.appEntry(card.wins[0].wayland ? Config.appIdOf(card.wins[0].wayland) : "") : null
                     // (its own name if it has one: Config.workspaceLabel, live if it's renamed)
                     textFormat: Text.PlainText        // never markup: a workspace's name
                     text: Config.workspaceLabel(card.modelData.id)

@@ -420,6 +420,25 @@ SCENES["welcome-password"] = {
     "settle": 1.2,
     "undo": [("welcome", "close"), ("!sh", "-c", 'rm -f "$XDG_CONFIG_HOME/slate/.new-here"'), ("welcome", "lookForNewHere")],
 }
+# Slate Software (SoftwareWindow.qml) on stand-in answers from its engine (the live test's): Discover
+# with categories and Flathub's lists, the Updates page with an app and the system, and an app's page
+import json as _json
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "live"))
+from test_software import PRETEND as _SW
+_SW_DO = [("test", "softwarePretend", _json.dumps(_SW))]
+_SW_UNDO = [("software", "close")]
+SCENES["software-discover"] = {
+    "do": _SW_DO + [("software", "page", "discover")],
+    "wait": lambda st: st["software"]["open"] and st["software"]["apps"] > 0 and st["software"]["updates"] == 3,
+    "settle": 1.2, "undo": _SW_UNDO,
+}
+SCENES["software-updates"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "updates")],
+    wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["updates"] == 3)
+SCENES["software-app"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "app", "org.mozilla.firefox")],
+    wait=lambda st: st["software"]["open"] and st["software"]["detail"] == "Firefox")
+SCENES["software-search"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "search", "play")],
+    wait=lambda st: st["software"]["open"] and len(st["software"]["found"]) == 2)
 SCENES["welcome-look"] = {
     "do": [("welcome", "page", "3")], "wait": lambda st: st["welcome"]["open"] and st["welcome"]["page"] == 3,
     "settle": 1.2, "undo": [("welcome", "close")],

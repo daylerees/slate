@@ -263,7 +263,7 @@ PanelWindow {
         const seen = new Set();
         return DesktopEntries.applications.values
             .filter(a => !a.noDisplay && a.name && !seen.has(a.id) && seen.add(a.id))
-            .concat([slateSettingsApp])
+            .concat([slateSettingsApp, slateSoftwareApp])
             .sort((a, b) => a.name.localeCompare(b.name));
     }
     // Lock / suspend / log out / restart / shut down: found by searching, ranked with apps
@@ -281,6 +281,12 @@ PanelWindow {
         setting: true, app: true, id: "slate-settings", name: "Slate Settings", page: "overview",
         genericName: "Settings", comment: "Theme, wallpaper, menu bar, dock, notifications and more",
         keywords: ["settings", "preferences", "configuration", "control panel", "options", "slate"]
+    })
+    // Slate Software (SoftwareWindow.qml), the same way
+    readonly property var slateSoftwareApp: ({
+        setting: true, app: true, software: true, id: "slate-software", name: "Slate Software", page: "updates",
+        genericName: "Software", comment: "Install, remove and update apps, and update the system",
+        keywords: ["software", "store", "app store", "install", "flatpak", "flathub", "updates", "apps", "slate"]
     })
 
     function score(a, q) {
@@ -503,10 +509,10 @@ PanelWindow {
         const out = [];
         for (const t of ToplevelManager.toplevels.values) {
             if (Config.isNova(t)) continue;          // (Nova's window: Slate's own)
-            const e = Config.appEntry(t.appId);
-            const appName = e ? e.name : (t.appId || "");
+            const e = Config.appEntry(Config.appIdOf(t));
+            const appName = e ? e.name : Config.appIdOf(t);
             if (!((t.title || "") + " " + appName).toLowerCase().includes(q)) continue;
-            out.push({ kind: "window", id: e ? e.id : (t.appId || ""), name: t.title || appName,
+            out.push({ kind: "window", id: e ? e.id : Config.appIdOf(t), name: t.title || appName,
                 comment: "Open window · " + appName, run: () => t.activate() });
             if (out.length >= 5) break;
         }
@@ -819,7 +825,8 @@ PanelWindow {
         }
         if (entry.setting) {       // a Slate setting: open Settings on its page
             // Straight to the setting on its page (just the page for the Slate Settings app itself)
-            if (entry.app) Config.slateCall("settings", "page", entry.page);
+            if (entry.software) Config.slateCall("software", "open");
+            else if (entry.app) Config.slateCall("settings", "page", entry.page);
             else Config.slateCall("settings", "find", entry.page, entry.name);
             closeLauncher();
             return;
@@ -1224,7 +1231,7 @@ PanelWindow {
                 Image {
                     visible: row.setting && !!row.modelData.app
                     anchors.fill: tile
-                    source: visible ? "file://" + Quickshell.shellPath("assets/icon/settings-128.png") : ""
+                    source: visible ? "file://" + Quickshell.shellPath(row.modelData.software ? "assets/icon/software-128.png" : "assets/icon/settings-128.png") : ""
                     // Shrunk once to the size it's drawn at, rather than mipmapped: drawing it
                     // mipmapped held up a frame the first time it scrolled into view, at the
                     // bottom of the list (tests/live/test_launcher_scroll.py)

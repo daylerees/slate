@@ -2064,6 +2064,15 @@ Singleton {
             : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
         return cls === "slate-settings" || cls === "" || cls === undefined || cls === null;
     }
+    // Which app a window is, by its app ID, with Slate's own sorted out: Slate's windows all share
+    // Slate's app ID (slate-settings), and Slate Software is an app of its own (its own place in the
+    // dock and the switcher, its own icon), told apart by its title, as Nova is
+    readonly property string softwareTitle: "Slate Software"
+    function appIdOf(t) {
+        if (!t) return "";
+        const id = t.appId || "";
+        return id === "slate-settings" && t.title === softwareTitle ? "slate-software" : id;
+    }
     function isNova(t) {
         if (!t || t.title !== novaTitle) return false;
         const o = t.lastIpcObject;
