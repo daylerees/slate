@@ -198,6 +198,16 @@ SCENES["settings-users"] = dict(SCENES["settings-users"],
     do=[("settings", "page", "users"), ("test", "settingsPoll", "users", _PEOPLE)],
     undo=[("test", "settingsPoll", "users", ""), ("settings", "close")])
 
+# A picture arriving after one that couldn't be loaded (the login screen, from someone without a
+# picture to someone with one): it shows, rather than the round picture staying empty
+_PEOPLE_MISSING = _PEOPLE.replace('"picture": "", "me": false, "loggedIn": false', '"picture": "/tmp/slate-scene-no-such-face.png", "me": false, "loggedIn": false')
+_PEOPLE_PIC = _PEOPLE.replace('"picture": "", "me": false, "loggedIn": false', '"picture": "/tmp/slate-scene-face.png", "me": false, "loggedIn": false')
+SCENES["settings-users-picture-arrives"] = dict(SCENES["settings-users"],
+    do=[("!sh", "-c", "python3 -c \"from PIL import Image; Image.new('RGB', (96, 96), (230, 120, 60)).save('/tmp/slate-scene-face.png')\""),
+        ("settings", "page", "users"), ("test", "settingsPoll", "users", _PEOPLE_PIC), ("test", "settingsPoll", "users", _PEOPLE_MISSING),
+        ("test", "settingsPoll", "users", _PEOPLE_PIC)],
+    undo=[("test", "settingsPoll", "users", ""), ("settings", "close")])
+
 # Every shadow the same way with a long distance straight down (Settings → Appearance → Shadows):
 # moved down, not grown at the sides. A panel under the bar (its shadow used to widen all
 # round), Settings (Hyprland's shadow, drawn to match Slate's), the launcher and a menu

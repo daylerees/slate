@@ -62,8 +62,15 @@ Item {
         layer.enabled: ri.visible && img.status === Image.Ready
         Rectangle { anchors.fill: parent; radius: ri.radius }
     }
-    MultiEffect {
-        anchors.fill: parent; source: img; maskEnabled: true; maskSource: imgMask
-        saturation: ri.saturation; brightness: ri.brightness
+    // Made afresh each time a picture is ready: kept across one that couldn't be loaded, it held
+    // on to the mask from before and drew nothing when the same picture came back (the login
+    // screen, from you to someone without a picture and back)
+    Loader {
+        anchors.fill: parent
+        active: img.status === Image.Ready
+        sourceComponent: MultiEffect {
+            source: img; maskEnabled: true; maskSource: imgMask
+            saturation: ri.saturation; brightness: ri.brightness
+        }
     }
 }
