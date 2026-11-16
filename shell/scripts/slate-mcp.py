@@ -8,9 +8,9 @@ Add it to an agent that speaks the Model Context Protocol and that agent can ans
 questions about your desktop and do things on it ("turn on glass", "put Firefox on
 workspace 2", "which window is on workspace 3?"):
 
-    Claude Code    claude mcp add slate -- ~/.config/slate/bin/slate mcp
-    Codex          codex mcp add slate -- ~/.config/slate/bin/slate mcp
-    Others         {"mcpServers": {"slate": {"command": "~/.config/slate/bin/slate", "args": ["mcp"]}}}
+    Claude Code    claude mcp add slate -- /usr/local/share/slate/bin/slate mcp
+    Codex          codex mcp add slate -- /usr/local/share/slate/bin/slate mcp
+    Others         {"mcpServers": {"slate": {"command": "/usr/local/share/slate/bin/slate", "args": ["mcp"]}}}
                    (with the whole path in place of ~)
 
 Nothing works until you switch it on in Settings → Assistant, which says what it means. What a

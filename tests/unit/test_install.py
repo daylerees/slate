@@ -331,7 +331,7 @@ class RestartOnlySlate(Pieces):
     """After putting Slate in place the installer restarts it, if it's running. `qs` is
     Quickshell, which other shells run on too: one of those running on another desktop isn't
     Slate, and `slate restart` there would start Slate over that desktop."""
-    LINE = [l for l in SRC.splitlines() if '"$DEST/bin/slate" restart' in l]
+    LINE = [l for l in SRC.splitlines() if '"$SLATE/bin/slate" restart' in l]
 
     def restarted(self, listing):
         # Slate's own command, standing in: says where it lives, and notes what it's asked
@@ -340,7 +340,7 @@ class RestartOnlySlate(Pieces):
         self.s.add("pgrep", code=0)                      # "a qs is running"
         self.s.add("qs", by_args={"list": listing})
         env = dict(self.s.env, WAYLAND_DISPLAY="wayland-9")
-        code, out = bash(self.LINE[0] + "\necho CARRIED-ON\n", env, DEST=self.dest)
+        code, out = bash(self.LINE[0] + "\necho CARRIED-ON\n", env, DEST=self.dest, CODE=self.dest, SLATE=self.dest)
         self.assertEqual(code, 0, out)
         self.assertIn("CARRIED-ON", out)
         return "restart" in self.ran()
@@ -367,7 +367,7 @@ class IconTheme(Pieces):
         self.s.add("gsettings", stdout=f"'{current}'\n")
         piece = between("# Icon theme: Papirus-Dark", '\ncase ":$PATH:"').replace("/usr/share/icons/Papirus-Dark", papirus)
         self.state = os.path.join(self.h.dir, "state", "slate")
-        code, out = bash(piece + "\necho CARRIED-ON\n", self.s.env, answers=answers, DEST=self.dest,
+        code, out = bash(piece + "\necho CARRIED-ON\n", self.s.env, answers=answers, DEST=self.dest, SLATE=self.dest,
                          STATE_DIR=self.state, **vars)
         self.assertEqual(code, 0, out)
         self.assertIn("CARRIED-ON", out)
@@ -531,10 +531,12 @@ class NixOS(Pieces):
         out = self.step5(family="fedora")
         self.assertIn("/usr/share/wayland-sessions/slate.desktop", out)
         # (the helpers' installer from the release being installed, never a script in $DEST,
-        # which then runs the session's installer from its root-owned place)
+        # which then runs the session's installer from its root-owned place, taking the two
+        # session files from that release too: the copy for everyone is root's, not yours)
         self.assertIn("/usr/local/libexec/slate", out)
         self.assertEqual(self.s.calls("sudo"), [[os.path.join(self.release, "shell", "bin", "slate-helpers-install"),
-                                                 os.path.join(self.release, "shell"), "slate-session-install", self.dest]])
+                                                 os.path.join(self.release, "shell"), "slate-session-install",
+                                                 os.path.join(self.release, "shell")]])
 
     def test_no_login_screen_on_nixos(self):
         self.s.add("sudo", code=0)
@@ -542,6 +544,133 @@ class NixOS(Pieces):
         self.assertEqual(code, 0, out)
         self.assertEqual(self.s.calls("sudo"), [])
         self.assertIn("services.greetd", out)
+
+
+class InstallPlaces(Pieces):
+    """Step 4: Slate's code goes in $CODE, once for everyone (root's, with sudo; or in place
+    without sudo when that folder is yours on purpose), and ~/.config/slate keeps only your files,
+    an older copy of your own moved aside whole."""
+    PIECES = function("stage_code") + function("place_code") + function("your_folder") + "KEEP=(settings.json hypr user)\n"
+
+    def setUp(self):
+        super().setUp()
+        # sudo as a stand-in: it notes the command and runs it as you (chown to root can't be
+        # done in a test, so that's only noted)
+        self.sudo_log = os.path.join(self.h.dir, "sudo")
+        script(os.path.join(self.s.dir, "sudo"),
+               f'echo "$*" >> "{self.sudo_log}"\ncase "$1" in chown) exit 0 ;; esac\nexec "$@"\n')
+        # A checkout of Slate with what a --link'ed one gathers: your files, caches, backups
+        self.root = os.path.join(self.h.dir, "checkout")
+        shell = os.path.join(self.root, "shell")
+        for rel, text in {"shell.qml": "Scope {}\n", "bin/slate": "#!/bin/sh\n", "scripts/a.py": "#\n",
+                          "session/slate-session": "#!/bin/sh\n", "session/hypr/hyprland.lua": "--\n",
+                          "settings.json": "{}", "hypr/binds.lua": "-- mine\n", "user/shell.qml": "mine\n",
+                          "Bar.qml.bak-old": "old\n", "scripts/__pycache__/a.pyc": "x"}.items():
+            os.makedirs(os.path.dirname(os.path.join(shell, rel)), exist_ok=True)
+            with open(os.path.join(shell, rel), "w") as f:
+                f.write(text)
+        os.makedirs(os.path.join(self.root, "packaging"))
+        with open(os.path.join(self.root, "packaging", "arch.txt"), "w") as f:
+            f.write("hyprland\n")
+        self.code = os.path.join(self.h.dir, "usr-local-share", "slate")
+        os.makedirs(os.path.dirname(self.code))
+        self.dest = self.h.slate_home
+
+    def piece(self, body, **more):
+        code, out = bash(self.PIECES + body, self.s.env, ROOT=self.root, CODE=self.code, DEST=self.dest, **more)
+        self.assertEqual(code, 0, out)
+        return out
+
+    def sudo(self):
+        try:
+            with open(self.sudo_log) as f:
+                return f.read().splitlines()
+        except FileNotFoundError:
+            return []
+
+    def install(self):
+        return self.piece('t=$(mktemp -d); stage_code "$t/slate"; place_code "$t/slate"; rm -rf "$t"; your_folder\n')
+
+    def test_for_everyone_with_sudo(self):
+        self.install()
+        self.assertTrue(os.path.isfile(os.path.join(self.code, "shell.qml")))
+        self.assertTrue(os.path.isfile(os.path.join(self.code, ".manifest")))
+        self.assertTrue(os.path.isfile(os.path.join(self.code, "packaging", "arch.txt")))
+        self.assertTrue(os.access(os.path.join(self.code, "bin", "slate"), os.X_OK))
+        for mine in ("settings.json", "hypr", "user", "Bar.qml.bak-old", "scripts/__pycache__"):
+            self.assertFalse(os.path.exists(os.path.join(self.code, mine)), f"{mine} went into the copy for everyone")
+        said = self.sudo()
+        self.assertTrue(any(l.startswith("chown -R root:root") for l in said), said)
+        self.assertTrue(any(l.startswith("chmod -R u+rwX,go+rX,go-w") for l in said), said)
+        with self.subTest("again: the one before is kept"):
+            # (root's, as it really is: not one you can write to, so sudo again)
+            os.chmod(self.code, 0o555)
+            self.addCleanup(lambda: os.path.isdir(self.code + ".previous") and os.chmod(self.code + ".previous", 0o755))
+            self.install()
+            self.assertTrue(os.path.isfile(os.path.join(self.code + ".previous", "shell.qml")))
+
+    def test_a_folder_of_yours_is_changed_without_sudo(self):
+        os.makedirs(self.code)
+        with open(os.path.join(self.code, "gone.qml"), "w") as f:
+            f.write("from before\n")
+        out = self.install()
+        self.assertIn("no password", out)
+        self.assertEqual(self.sudo(), [])
+        self.assertTrue(os.path.isfile(os.path.join(self.code, "shell.qml")))
+        self.assertFalse(os.path.exists(os.path.join(self.code, "gone.qml")), "a file of the old version was left")
+        self.assertFalse(os.path.exists(self.code + ".previous"))
+
+    def test_your_own_copy_from_before_is_moved_aside(self):
+        os.makedirs(os.path.join(self.dest, "hypr"))
+        os.makedirs(os.path.join(self.dest, "user"))
+        for rel, text in {"shell.qml": "old code", "settings.json": '{"accent": "#123456"}',
+                          "hypr/binds.lua": "-- my keys", "user/shell.qml": "my qml", "Bar.qml.bak-x": "old"}.items():
+            with open(os.path.join(self.dest, rel), "w") as f:
+                f.write(text)
+        os.makedirs(self.code)
+        self.install()
+        self.assertEqual(sorted(os.listdir(self.dest)), ["hypr", "settings.json", "user"])
+        with open(os.path.join(self.dest, "settings.json")) as f:
+            self.assertEqual(f.read(), '{"accent": "#123456"}')
+        with open(os.path.join(self.dest, "hypr", "binds.lua")) as f:
+            self.assertEqual(f.read(), "-- my keys")
+        kept = self.dest + ".before-shared"
+        self.assertEqual(sorted(os.listdir(kept)), ["Bar.qml.bak-x", "hypr", "settings.json", "shell.qml", "user"])
+        with self.subTest("a second time: nothing more is moved"):
+            self.install()
+            self.assertEqual(sorted(os.listdir(self.dest)), ["hypr", "settings.json", "user"])
+            self.assertFalse([d for d in os.listdir(self.h.config) if d.startswith("slate.before-shared-")])
+
+    def test_a_link_to_a_checkout_becomes_your_folder(self):
+        os.makedirs(self.code)
+        os.makedirs(self.h.config, exist_ok=True)
+        os.rmdir(self.dest) if os.path.isdir(self.dest) and not os.listdir(self.dest) else None
+        os.symlink(os.path.join(self.root, "shell"), self.dest)
+        self.install()
+        self.assertFalse(os.path.islink(self.dest))
+        self.assertEqual(sorted(os.listdir(self.dest)), ["hypr", "settings.json", "user"])
+        self.assertTrue(os.path.isfile(os.path.join(self.root, "shell", "settings.json")), "the checkout's own was taken")
+
+    def test_where_slate_runs_from(self):
+        os.makedirs(self.code)
+        out = self.piece('echo "IN_USE=$(code_in_use)"\n')
+        self.assertIn("IN_USE=" + self.code, out)
+        os.makedirs(os.path.join(self.dest, "session", "hypr"))
+        with open(os.path.join(self.dest, "session", "hypr", "hyprland.lua"), "w") as f:
+            f.write("--")
+        self.assertIn("IN_USE=" + self.dest, self.piece('echo "IN_USE=$(code_in_use)"\n'))
+
+    def test_an_update_from_settings_never_asks_for_a_password(self):
+        """Settings → Updates can't give one: a copy for everyone that's root's stops with
+        code 3 (install in full), and nothing is changed."""
+        body = between("    # (an update from Settings has no password to give", "    code_is_yours || [") + "    echo carried-on\n"
+        code, out = bash("if true; then\n" + body + "fi\n", self.s.env, CODE="/usr", DEST=self.dest, UPDATE=1)
+        self.assertEqual(code, 3, out)
+        self.assertNotIn("carried-on", out)
+        self.assertEqual(self.sudo(), [])
+        os.makedirs(self.code)
+        code, out = bash("if true; then\n" + body + "fi\n", self.s.env, CODE=self.code, DEST=self.dest, UPDATE=1)
+        self.assertEqual((code, "carried-on" in out), (0, True), out)
 
 
 class Uninstall(Case):
@@ -554,6 +683,12 @@ class Uninstall(Case):
         self.s = Stubs(self.h)
         self.s.add("sudo", code=0)
         self.s.add("qs", code=0)
+        # A copy for everyone of its own, never the real one
+        self.code = os.path.join(self.h.dir, "usr-local-share", "slate")
+        os.makedirs(self.code)
+        with open(os.path.join(self.code, "shell.qml"), "w") as f:
+            f.write("Scope {}\n")
+        self.s.env.update(SLATE_TEST="1", SLATE_TEST_CODE=self.code)
         self.dest = os.path.join(self.h.config, "slate")
         self.fonts = os.path.join(self.s.env["XDG_DATA_HOME"], "fonts", "Geist")
         for d in (self.dest, self.dest + ".previous", self.fonts):
@@ -607,9 +742,21 @@ class Uninstall(Case):
         self.uninstall()
         self.assertIn(["reset", "org.gnome.desktop.interface", "icon-theme"], self.s.calls("gsettings"))
 
-    def test_yes_deletes_the_older_copy_only(self):
+    def test_lists_the_copy_for_everyone_and_keeps_it_unasked(self):
+        out, _ = self.uninstall()
+        self.assertIn(f"sudo rm -r {self.code} {self.code}.previous", out.split("These were left as they are:", 1)[1])
+        self.assertTrue(os.path.isfile(os.path.join(self.code, "shell.qml")))
+
+    def test_a_folder_that_isnt_slate_is_never_offered(self):
+        os.remove(os.path.join(self.code, "shell.qml"))
+        out, _ = self.uninstall("--yes")
+        self.assertTrue(os.path.isdir(self.code))
+        self.assertNotIn(self.code, out)
+
+    def test_yes_deletes_the_older_copies_only(self):
         out, moved = self.uninstall("--yes", icon_theme="Adwaita")
         self.assertFalse(os.path.exists(self.dest + ".previous"))
+        self.assertFalse(os.path.exists(self.code), "the copy for everyone was asked about, and told yes")
         left = out.split("These were left as they are:", 1)[1]
         self.assertNotIn(".previous", left)
         self.assertNotIn("icon theme", left)
@@ -631,8 +778,10 @@ class SessionStarter(Case):
         self.s = Stubs(self.h)
         self.s.add("start-hyprland", code=0)
         self.s.add("uwsm", missing=True)
-        # (a session bus "already there", so it's started directly on any computer)
-        self.env = dict(self.s.env, DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent")
+        # (a session bus "already there", so it's started directly on any computer; and the
+        # copies for everyone looked for in a scratch folder, never this computer's own)
+        self.env = dict(self.s.env, DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent",
+                        SLATE_TEST="1", SLATE_TEST_SHARED=os.path.join(self.h.dir, "no-copy-for-everyone"))
 
     def config_in(self, *folder):
         d = os.path.join(self.h.config, *folder, "session", "hypr")
@@ -682,9 +831,11 @@ class SessionStarter(Case):
 
     def test_the_tests_paths_only_under_the_tests(self):
         local = self.shared_copy("usr-local")
-        code, out = run(["sh", self.STARTER], env=dict(self.env, SLATE_TEST_SHARED=local), timeout=20)
-        self.assertEqual(code, 1, out)
-        self.assertIn("Slate isn't installed", out)
+        env = dict(self.env, SLATE_TEST_SHARED=local)
+        env.pop("SLATE_TEST")
+        run(["sh", self.STARTER], env=env, timeout=20)
+        # (this computer's own copy may be there and be started: never the one the variable named)
+        self.assertFalse([c for c in self.s.calls("start-hyprland") if any(local in a for a in c)])
 
     def test_nowhere_else(self):
         self.config_in("quickshell", "slate")

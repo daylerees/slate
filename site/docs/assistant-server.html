@@ -61,12 +61,12 @@
       <h2>Adding it to an agent</h2>
       <p>An agent starts the server itself when it needs it; you never run it by hand.</p>
       <pre><code># Claude Code
-claude mcp add slate -- ~/.config/slate/bin/slate mcp
+claude mcp add slate -- /usr/local/share/slate/bin/slate mcp
 
 # Codex
-codex mcp add slate -- ~/.config/slate/bin/slate mcp</code></pre>
+codex mcp add slate -- /usr/local/share/slate/bin/slate mcp</code></pre>
       <p>Most other agents take a block like this in their settings, with the whole path in place of <code>~</code>:</p>
-      <pre><code>{ "mcpServers": { "slate": { "command": "/home/you/.config/slate/bin/slate", "args": ["mcp"] } } }</code></pre>
+      <pre><code>{ "mcpServers": { "slate": { "command": "/usr/local/share/slate/bin/slate", "args": ["mcp"] } } }</code></pre>
       <p>Settings → Assistant has these lines under <strong>Use Slate from other apps</strong>, each with a Copy
         button, and <code>slate mcp --help</code> prints them. To take it away again, remove it the same way
         (<code>claude mcp remove slate</code>).</p>

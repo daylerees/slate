@@ -22,7 +22,7 @@ Options: `./install.sh --help`.
 | `--yes` | don't ask, answer yes to everything |
 | `--login-screen` | also switch your login screen to Slate's own (greetd). Optional; read the risks in [LOCK-AND-LOGIN.md](LOCK-AND-LOGIN.md#login-screen-greetd) first |
 | `--no-deps` | skip installing packages (you installed them yourself) |
-| `--link` | link `~/.config/slate` to this folder instead of copying (for working on Slate) |
+| `--link` | link `~/.config/slate` to this folder instead of installing for everyone (for working on Slate: it then runs from here for you) |
 | `--uninstall` | remove Slate (see [Removing](#removing)) |
 
 Without `--yes`, a question that can't be asked (the installer was started from a script, with
@@ -239,9 +239,12 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    whether to use Papirus-Dark (a package; Folder color needs it). It's asked because the icon
    theme is shared: it changes for GTK and Qt apps on your other desktops too. Slate's cursors
    (bundled) are linked into `~/.local/share/icons` for the session to use.
-4. **Slate** — copies `shell/` to `~/.config/slate`. An existing copy is kept as
-   `slate.previous` (one version back; your `settings.json`, `hypr/` and `user/` are
-   carried over).
+4. **Slate** — copies `shell/` to `/usr/local/share/slate`, once for everyone on the computer
+   (with sudo: it's root's, so nothing running as one person can change what another runs),
+   keeping the version before as `slate.previous`. Your own files stay yours, in
+   `~/.config/slate`: `settings.json`, `hypr/` and `user/`. A copy of Slate of your own from
+   before (code and all, in `~/.config/slate`) is moved aside to `~/.config/slate.before-shared`,
+   and your files are brought back from it.
 5. **Login entry** — adds two files so login screens list "Slate":
    `/usr/local/bin/slate-session` and `/usr/share/wayland-sessions/slate.desktop`. This
    works with GDM, SDDM, LightDM and greetd login screens. (Not on NixOS, where the session
@@ -367,7 +370,7 @@ version in place without questions or `sudo`. Your settings and overrides are al
 - Slate also checks this itself, 25 seconds after it starts (for a copy put in place by
   hand, or a package removed since): when something is missing, an urgent notification
   offers to install it, with your password. It asks once for each set of changes, and
-  "Later" waits a week. `~/.config/slate/bin/slate-system --check` lists what it would do.
+  "Later" waits a week. `/usr/local/share/slate/bin/slate-system --check` lists what it would do.
 - **Slate's root helpers.** What Slate runs with your password (installing packages, the login
   session, the login screen, Private Mode's camera switch) is never a script in your home
   folder, which anything running as you could change and then wait for the next prompt. It
@@ -398,12 +401,13 @@ and offers to update it (it asks for your password).
 ```
 
 This takes "Slate" off the login screen, puts back your previous login screen if you used
-`--login-screen`, and moves `~/.config/slate` aside (to
+`--login-screen`, and moves your own files in `~/.config/slate` aside (to
 `slate.removed-<date>`), after putting back the pointer and code font Slate had set in other
 apps, and back to the icon theme you had before if the installer switched you to Papirus-Dark
 (the installer keeps what it replaced in `~/.local/state/slate`). It asks whether to remove Slate's root helpers
 (`/usr/local/libexec/slate`, and the rule that let Private Mode switch the camera without a
-password), and whether to delete the older copy in `~/.config/slate.previous` too.
+password), and whether to remove Slate for everyone on the computer from `/usr/local/share/slate`
+(anyone else who uses it loses it too).
 
 It finishes with a list of what it left, and the command that removes each:
 
@@ -420,12 +424,12 @@ It finishes with a list of what it left, and the command that removes each:
 
 - **Suspend, Restart or Shut down are missing, or settings are grayed out with "This needs
   systemd or elogind"** — your computer has no login service running. Run
-  `~/.config/slate/bin/slate-init info`: `logind=none` means elogind isn't installed or
+  `/usr/local/share/slate/bin/slate-init info`: `logind=none` means elogind isn't installed or
   isn't started. See [Without systemd](#without-systemd-artix-void-gentoo).
 - **No sound, without systemd** — check PipeWire is installed; Slate's session starts it.
   `pgrep -a pipewire` should show `pipewire`, `wireplumber` and `pipewire-pulse`.
 - **"Slate" isn't on the login screen** — run
-  `~/.config/slate/bin/slate-system --root slate-session-install` (it asks for your
+  `/usr/local/share/slate/bin/slate-system --root slate-session-install` (it asks for your
   password). Some login screens only rescan sessions after a reboot.
 - **The Slate session starts and immediately ends** — usually Hyprland is too old or
   `start-hyprland` is missing. Check `Hyprland --version` (needs 0.57+). With uwsm:
@@ -440,7 +444,7 @@ It finishes with a list of what it left, and the command that removes each:
   location, your own command for Nova or your home folder's name; look it over, then attach it to the issue. Turning **Log detail** up first (it
   restarts Slate) and reproducing the problem gives a fuller log.
 - **Starting over** — Settings → Debug → **Factory reset** (or
-  `~/.config/slate/bin/slate-factory-reset`) puts every setting back to its default and forgets
+  `/usr/local/share/slate/bin/slate-factory-reset`) puts every setting back to its default and forgets
   dock pins, saved Spaces, launcher and clipboard history, notifications, the display layout and
   app theming (the pointer and code font in other apps are put back first, so they don't come
   back on by themselves). It asks twice first. Your own `hypr/*.lua` and `user/` files are kept unless you

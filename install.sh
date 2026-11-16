@@ -9,7 +9,8 @@
 #                                 and off by default; it can also be installed later from
 #                                 Settings → Lock & Idle. See docs/LOCK-AND-LOGIN.md for the risks
 #   ./install.sh --no-deps        skip installing packages (you've done it yourself)
-#   ./install.sh --link           link ~/.config/slate to this folder (for development)
+#   ./install.sh --link           link ~/.config/slate to this folder (for development: Slate then
+#                                 runs from here for you, with your files in here too)
 #   ./install.sh --update         just put this version of Slate in place, keeping your files, with
 #                                 no questions or sudo (Settings → Updates runs this); stops with
 #                                 code 3 if it needs new packages or more (run it in full then)
@@ -20,8 +21,10 @@
 #   1. installs the packages Slate needs (packaging/<distro>.txt)
 #   2. checks Hyprland (0.57+, Lua config) and Quickshell (0.3+) are new enough
 #   3. installs the bundled Geist and Geist Mono fonts for your other apps, unless already there
-#   4. puts Slate in ~/.config/slate (keeping your settings) and the `slate` command in ~/.local/bin,
-#      and offers Papirus-Dark as your icon theme if you haven't picked one of your own
+#   4. puts Slate in /usr/local/share/slate, once for everyone on the computer (needs sudo), with
+#      the `slate` command, the Settings icon and Slate Cursors; your own files (settings, Hyprland
+#      tweaks, your QML) stay in ~/.config/slate. Offers Papirus-Dark as your icon theme if you
+#      haven't picked one of your own
 #   5. adds "Slate" to your login screen's session list (two small files, needs sudo), and
 #      puts Slate's root helpers in /usr/local/libexec/slate (root-owned: what Slate later
 #      runs with your password is never a script in your home)
@@ -31,7 +34,10 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
-DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"
+DEST="${XDG_CONFIG_HOME:-$HOME/.config}/slate"    # your own files: settings.json, hypr/, user/
+CODE=/usr/local/share/slate                         # Slate's code, for everyone on the computer
+# (the tests' own, in a scratch folder: only under the tests, so they never reach the real one)
+[ "${SLATE_TEST:-}" != 1 ] || [ -z "${SLATE_TEST_CODE:-}" ] || CODE=$SLATE_TEST_CODE
 BIN_LINK="$HOME/.local/bin/slate"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/slate"   # what the installer remembers between runs
 HELPERS=/usr/local/libexec/slate      # Slate's root helpers (shell/bin/slate-helpers-install)
@@ -81,13 +87,24 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # version_ge 0.57.1 0.57 → true
 version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
+# Where your Slate runs from: your own copy or link in ~/.config/slate (an install from before
+# Slate was installed for everyone, or --link), else the copy for everyone (the rule is
+# session/slate-session's)
+code_in_use() {
+    if [ -f "$DEST/session/hypr/hyprland.lua" ]; then echo "$DEST"; else echo "$CODE"; fi
+}
+
+# code_is_yours: $CODE is your own (made so on purpose, to change Slate without a password, as
+# on a computer only you use for working on Slate): it's then changed as you, never with sudo
+code_is_yours() { [ -d "$CODE" ] && [ ! -L "$CODE" ] && [ -w "$CODE" ] && [ "$(stat -c %u "$CODE")" = "$(id -u)" ]; }
+
 # Is this Slate running? Only Slate's own copy counts (the one started from its folder, which is
 # how bin/slate finds it too): `qs` is Quickshell, and other shells run on it as well, so "a qs
 # is running" on another desktop says nothing about Slate.
 slate_running() {
     have qs || return 1
     local dir
-    dir=$("$DEST/bin/slate" dir 2>/dev/null) || return 1
+    dir=$("$(code_in_use)/bin/slate" dir 2>/dev/null) || return 1
     [ -n "$(qs list -p "$dir" 2>/dev/null | sed -n 's/^ *Process ID: *//p')" ]
 }
 
@@ -113,20 +130,21 @@ if [ "$UNINSTALL" -eq 1 ]; then
                 && ok "Removed Slate's root helpers"
         fi
     fi
+    SLATE=$(code_in_use)
     # (slate stop first: it stops what would start Slate again after a crash, too)
-    [ -x "$DEST/bin/slate" ] && "$DEST/bin/slate" stop >/dev/null 2>&1 || true
-    have qs && qs kill -p "$DEST" >/dev/null 2>&1 || true
+    [ -x "$SLATE/bin/slate" ] && "$SLATE/bin/slate" stop >/dev/null 2>&1 || true
+    have qs && qs kill -p "$SLATE" >/dev/null 2>&1 || true
     [ -L "$BIN_LINK" ] && rm "$BIN_LINK" && ok "Removed the slate command"
     data="${XDG_DATA_HOME:-$HOME/.local/share}"
     rm -f "$data/applications/slate-settings.desktop" "$data"/icons/hicolor/*/apps/slate-settings.png
     [ -L "$data/icons/Slate-Cursors" ] && rm "$data/icons/Slate-Cursors" && ok "Removed Slate Cursors"
     # The pointer and the code font in other apps: put back as they were, so they aren't left
     # pointing at things Slate was providing
-    if [ -f "$DEST/scripts/apply-theme.py" ]; then
-        python3 "$DEST/scripts/apply-theme.py" --undo-own 2>/dev/null | grep -q "^switched off" && ok "Pointer and code font in your apps put back" || true
+    if [ -f "$SLATE/scripts/apply-theme.py" ]; then
+        python3 "$SLATE/scripts/apply-theme.py" --undo-own 2>/dev/null | grep -q "^switched off" && ok "Pointer and code font in your apps put back" || true
     fi
     # Folder colour: back to the icon theme it was made from (removes Slate-Icons)
-    [ -x "$DEST/scripts/folder-colour.py" ] && "$DEST/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
+    [ -x "$SLATE/scripts/folder-colour.py" ] && "$SLATE/scripts/folder-colour.py" default >/dev/null 2>&1 && ok "Folder icons back to the icon theme's own"
     # The icon theme the installer replaced with Papirus-Dark: back to what it was, unless you've
     # since picked another one (then it's yours, and left alone)
     if [ -f "$STATE_DIR/previous-icon-theme" ] && have gsettings; then
@@ -146,9 +164,15 @@ if [ "$UNINSTALL" -eq 1 ]; then
     elif [ -d "$DEST" ]; then
         b="$DEST.removed-$(date +%Y%m%d-%H%M%S)"; mv "$DEST" "$b" && ok "Moved $DEST to $b (your settings are in there; delete it when you're sure)"
     fi
-    # The version before this one, kept by the last install or update
+    # The version before this one, kept by an install from before Slate was installed for everyone
     if [ -d "$DEST.previous" ] && ask "Delete the older copy of Slate kept in $DEST.previous too?"; then
         rm -rf "$DEST.previous" && ok "Deleted $DEST.previous"
+    fi
+    # The copy for everyone: only when asked, since anyone else on the computer loses Slate too
+    if [ -f "$CODE/shell.qml" ] && ask "Remove Slate for everyone on this computer, from $CODE (uses sudo)? Anyone else who uses it loses it too."; then
+        if code_is_yours; then rm -rf "$CODE" "$CODE.previous" 2>/dev/null || sudo rm -rf "$CODE" "$CODE.previous"
+        else sudo rm -rf "$CODE" "$CODE.previous"; fi
+        [ -d "$CODE" ] || ok "Removed $CODE"
     fi
     # What's left, and how to remove each. None of it is deleted here: other apps may be using
     # the fonts and the icon theme, and nothing marks them as Slate's rather than yours.
@@ -156,6 +180,8 @@ if [ "$UNINSTALL" -eq 1 ]; then
     [ -z "$b" ] || left+=("Your settings and Slate's files: rm -r $b")
     [ ! -d "$HELPERS" ] || left+=("Slate's root helpers: sudo rm -r $HELPERS /etc/polkit-1/rules.d/49-slate-private-camera.rules")
     [ ! -d "$DEST.previous" ] || left+=("The older copy of Slate: rm -r $DEST.previous")
+    [ ! -f "$CODE/shell.qml" ] || left+=("Slate for everyone on this computer: sudo rm -r $CODE $CODE.previous")
+    for d in "$DEST".before-shared*; do [ ! -d "$d" ] || left+=("Your copy of Slate from before it was installed for everyone: rm -r $d"); done
     fontdir="$data/fonts/Geist"
     [ ! -d "$fontdir" ] || left+=("The Geist and Geist Mono fonts (your other apps may use them): rm -r $fontdir && fc-cache -f")
     cur=""
@@ -484,64 +510,117 @@ fi
 ok "Icon font: bundled with Slate"
 
 # ---- 4. Slate itself ------------------------------------------------------------------
-# ~/.config/slate holds Slate's code plus your own files, which are always kept:
+# Slate's code goes in $CODE, once for everyone on the computer, owned by root so nothing running
+# as one person can change what another runs. Your own files stay in ~/.config/slate ($DEST):
 #   settings.json (Slate's settings), hypr/ (your Hyprland tweaks) and user/ (your own QML)
+# --link instead makes ~/.config/slate a link to this checkout (for development): the code and
+# your files are then one folder, and Slate runs from there for you.
 step "4. Slate"
 KEEP=(settings.json hypr user)     # (the same list as KEEP in shell/scripts/update.py)
-mkdir -p "$(dirname "$DEST")"
-if [ -L "$DEST" ] && [ "$(readlink -f "$DEST")" = "$ROOT/shell" ]; then
-    ok "$DEST already links to this folder"
-else
-    keep=""
-    # The new copy is made next to the old one first, so a failed copy leaves the old in place
-    if [ "$LINK" -eq 0 ]; then
-        rm -rf "$DEST.new"
-        cp -a "$ROOT/shell" "$DEST.new"
-        # Python's caches from running the scripts in this checkout aren't part of Slate
-        find "$DEST.new" -name __pycache__ -prune -exec rm -rf {} +
-        # The package lists, so Slate can tell when a version needs packages you don't have
-        mkdir -p "$DEST.new/packaging" && cp "$ROOT"/packaging/*.txt "$DEST.new/packaging/"
-        # Its version (a release's, or this checkout's) and a fingerprint of each of its files,
-        # so Settings → Updates can tell you which you've changed before an update replaces them
-        [ -f "$DEST.new/VERSION" ] || { v=$(git -C "$ROOT" describe --tags 2>/dev/null || true); [ -z "$v" ] || echo "$v" > "$DEST.new/VERSION"; }
-        (cd "$DEST.new" && find . -type f ! -path '*/.*' ! -path '*/__pycache__/*' ! -path ./VERSION \
-            ! -path ./settings.json ! -path './hypr/*' ! -path './user/*' -printf '%P\0' | sort -z | xargs -0 sha256sum) > "$DEST.new/.manifest"
+
+# stage_code <dir>: this version of Slate, ready to put in place, made in <dir>
+stage_code() {
+    local d=$1
+    cp -a "$ROOT/shell" "$d"
+    # Python's caches from running the scripts in this checkout, and a checkout's own files
+    # (when it's been --link'ed) aren't part of Slate
+    find "$d" -name __pycache__ -prune -exec rm -rf {} +
+    local k; for k in "${KEEP[@]}"; do rm -rf "${d:?}/$k"; done
+    rm -f "$d/.manifest" "$d"/*.bak*
+    # The package lists, so Slate can tell when a version needs packages you don't have
+    mkdir -p "$d/packaging" && cp "$ROOT"/packaging/*.txt "$d/packaging/"
+    # Its version (a release's, or this checkout's) and a fingerprint of each of its files, so
+    # Settings → Updates can tell which have been changed before an update replaces them
+    [ -f "$d/VERSION" ] || { v=$(git -C "$ROOT" describe --tags 2>/dev/null || true); [ -z "$v" ] || echo "$v" > "$d/VERSION"; }
+    chmod +x "$d"/bin/* "$d"/scripts/*.sh "$d"/scripts/*.py "$d"/greeter/run-greeter.sh "$d"/session/slate-session 2>/dev/null || true
+    (cd "$d" && find . -type f ! -path '*/.*' ! -path '*/__pycache__/*' ! -path ./VERSION -printf '%P\0' \
+        | sort -z | xargs -0 sha256sum) > "$d/.manifest"
+}
+
+# place_code <staged>: put it in $CODE. Root's (the usual): with sudo, made root's and readable
+# by everyone, the version before kept in $CODE.previous. Yours: replaced in place, as you.
+place_code() {
+    local new=$1
+    if code_is_yours; then
+        find "$CODE" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+        cp -a "$new/." "$CODE/"
+        ok "Put Slate in $CODE (a folder of yours, so no password)"
+        return 0
     fi
-    if [ -e "$DEST" ] || [ -L "$DEST" ]; then
+    sudo rm -rf "$CODE.new"
+    sudo cp -a "$new" "$CODE.new"
+    sudo chown -R root:root "$CODE.new"
+    sudo chmod -R u+rwX,go+rX,go-w "$CODE.new"
+    if [ -d "$CODE" ]; then sudo rm -rf "$CODE.previous"; sudo mv "$CODE" "$CODE.previous"; fi
+    sudo mv "$CODE.new" "$CODE"
+    ok "Put Slate in $CODE, for everyone on this computer"
+}
+
+# your_folder: ~/.config/slate holding only your files. A copy of Slate of your own from before
+# it was installed for everyone (its code in there too), or a --link to a checkout, is moved
+# aside whole, and your files are brought back from it.
+your_folder() {
+    local from="" b=""
+    if [ -L "$DEST" ]; then
+        from=$(readlink -f "$DEST"); rm "$DEST"
+    elif [ -f "$DEST/shell.qml" ]; then
+        b="$DEST.before-shared"; [ ! -e "$b" ] || b="$b-$(date +%Y%m%d-%H%M%S)"
+        mv "$DEST" "$b"; from=$b
+    fi
+    mkdir -p "$DEST"
+    [ -n "$from" ] || return 0
+    local k; for k in "${KEEP[@]}"; do [ ! -e "$from/$k" ] || cp -a "$from/$k" "$DEST/"; done
+    if [ -n "$b" ]; then ok "Your own copy of Slate is now kept in $b (your settings and tweaks stay in $DEST)"
+    else ok "Your settings and tweaks copied into $DEST from $from"; fi
+}
+
+mkdir -p "$(dirname "$DEST")"
+if [ "$LINK" -eq 1 ]; then
+    if [ -L "$DEST" ] && [ "$(readlink -f "$DEST")" = "$ROOT/shell" ]; then
+        ok "$DEST already links to this folder"
+    else
         keep=$(mktemp -d)
         for k in "${KEEP[@]}"; do [ -e "$DEST/$k" ] && cp -a "$DEST/$k" "$keep/"; done
-        # One backup, of the version before this one (Settings → Updates can go back to it)
-        b="$DEST.previous"
-        rm -rf "$b"
-        mv "$DEST" "$b"; ok "Kept the previous Slate in $b"
-    fi
-    if [ "$LINK" -eq 1 ]; then
+        if [ -e "$DEST" ] || [ -L "$DEST" ]; then
+            b="$DEST.before-link"; rm -rf "$b"; mv "$DEST" "$b"; ok "Moved what was in $DEST to $b"
+        fi
         ln -s "$ROOT/shell" "$DEST"; ok "Linked $DEST -> $ROOT/shell"
-    else
-        mv "$DEST.new" "$DEST"; ok "Copied Slate to $DEST"
-    fi
-    if [ -n "$keep" ]; then
-        for k in "${KEEP[@]}"; do [ -e "$keep/$k" ] && cp -a "$keep/$k" "$DEST/"; done
+        for k in "${KEEP[@]}"; do [ -e "$keep/$k" ] && [ ! -e "$DEST/$k" ] && cp -a "$keep/$k" "$DEST/"; done
         rm -rf "$keep"; ok "Kept your settings and your own tweaks"
     fi
+else
+    # (an update from Settings has no password to give: when the copy for everyone is root's,
+    # it needs installing in full, which asks for one)
+    if [ "$UPDATE" -eq 1 ] && ! code_is_yours; then
+        echo "  This version is installed for everyone on the computer, which needs your password: run ./install.sh"
+        exit 3
+    fi
+    code_is_yours || [ "$UPDATE" -eq 1 ] \
+        || ask "Install Slate for everyone on this computer, in $CODE (uses sudo)? Your settings stay yours, in $DEST." \
+        || die "Slate wasn't installed. Run ./install.sh again when you're ready."
+    staged=$(mktemp -d)
+    stage_code "$staged/slate"
+    place_code "$staged/slate"
+    rm -rf "$staged"
+    your_folder
 fi
+SLATE=$(code_in_use)          # where your Slate runs from now
 # Files for your own tweaks, with instructions in them, where they don't exist yet
-sh "$DEST/scripts/user-files.sh" "$DEST" >/dev/null && ok "Your own tweaks go in $DEST/hypr and $DEST/user (instructions inside)"
-chmod +x "$DEST"/bin/* "$DEST"/scripts/*.sh "$DEST"/scripts/*.py "$DEST"/greeter/run-greeter.sh "$DEST"/session/slate-session 2>/dev/null || true
+sh "$SLATE/scripts/user-files.sh" "$DEST" >/dev/null && ok "Your own tweaks go in $DEST/hypr and $DEST/user (instructions inside)"
 mkdir -p "$(dirname "$BIN_LINK")"
-ln -sfn "$DEST/bin/slate" "$BIN_LINK"; ok "The slate command: $BIN_LINK"
+ln -sfn "$SLATE/bin/slate" "$BIN_LINK"; ok "The slate command: $BIN_LINK"
 # Slate Settings' window icon: a (hidden) desktop entry plus the icon in the user's icon theme
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 mkdir -p "$data/applications"
-sed "s|@SLATE@|$DEST/bin/slate|" "$DEST/data/slate-settings.desktop" > "$data/applications/slate-settings.desktop"
+sed "s|@SLATE@|$SLATE/bin/slate|" "$SLATE/data/slate-settings.desktop" > "$data/applications/slate-settings.desktop"
 for s in 512 256 128 64 48 32 16; do
-    install -D -m 644 "$DEST/assets/icon/settings-$s.png" "$data/icons/hicolor/${s}x${s}/apps/slate-settings.png"
+    install -D -m 644 "$SLATE/assets/icon/settings-$s.png" "$data/icons/hicolor/${s}x${s}/apps/slate-settings.png"
 done
 have gtk-update-icon-cache && gtk-update-icon-cache -q -t "$data/icons/hicolor" 2>/dev/null || true
 ok "Settings icon and desktop entry"
 # Slate Cursors (the session's mouse cursor): linked where Hyprland and apps look for themes
 mkdir -p "$data/icons"
-ln -sfn "$DEST/cursors/Slate-Cursors" "$data/icons/Slate-Cursors"; ok "Slate Cursors"
+ln -sfn "$SLATE/cursors/Slate-Cursors" "$data/icons/Slate-Cursors"; ok "Slate Cursors"
 # Floating windows' title bars are Slate's own, with nothing to build. Hyprbars (the optional
 # Hyprland plugin for them) is built only when chosen: Settings → Windows → Title bars, or
 # `slate build-hyprbars`. A build that's already there is left as it is.
@@ -555,7 +634,7 @@ if [ "$UPDATE" -eq 0 ] && have gsettings && { [ -d /usr/share/icons/Papirus-Dark
             if ask "Use Papirus-Dark icons? Slate's Folder color setting needs it, and it changes the icon theme for GTK and Qt apps on your other desktops too."; then
                 # What it was, so --uninstall can put it back
                 (umask 077; mkdir -p "$STATE_DIR" && printf '%s\n' "$cur" > "$STATE_DIR/previous-icon-theme") || true
-                "$DEST/scripts/folder-colour.py" --icon-theme Papirus-Dark \
+                "$SLATE/scripts/folder-colour.py" --icon-theme Papirus-Dark \
                     && ok "Icon theme: Papirus-Dark${cur:+ (was $cur)}" || warn "Slate couldn't set the icon theme to Papirus-Dark"
             else
                 ok "Icon theme: keeping yours${cur:+ ($cur)}. To change it later: Settings → Icons → Icon theme"
@@ -570,17 +649,17 @@ case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "~/.local/bin isn't on your
 # or say how to
 if [ "$UPDATE" -eq 1 ]; then
     # (`grep -x … >/dev/null`, not `grep -q`: see the fonts step)
-    if "$DEST/bin/slate-system" --check | grep -x session >/dev/null; then
-        if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$DEST/bin/slate-system" --fix >/dev/null 2>&1; then
+    if "$SLATE/bin/slate-system" --check | grep -x session >/dev/null; then
+        if [ -n "${WAYLAND_DISPLAY:-}" ] && have pkexec && "$SLATE/bin/slate-system" --fix >/dev/null 2>&1; then
             ok "Updated the login session"
         else
-            warn "This version changes the login session; to finish: $DEST/bin/slate-system --fix"
+            warn "This version changes the login session; to finish: $SLATE/bin/slate-system --fix"
         fi
     fi
 fi
 # If Slate is running (updating from inside it), restart it on the new code. Only then: on
 # another desktop `slate restart` would start Slate over it.
-if [ -n "${WAYLAND_DISPLAY:-}" ] && slate_running; then "$DEST/bin/slate" restart && ok "Restarted Slate"; fi
+if [ -n "${WAYLAND_DISPLAY:-}" ] && slate_running; then "$SLATE/bin/slate" restart && ok "Restarted Slate"; fi
 if [ "$UPDATE" -eq 1 ]; then
     echo; echo "${G}${B}Slate is updated.${N}"
     exit 0
@@ -604,8 +683,8 @@ fi
 # $DEST is a well-known path that has sat in your home since it was copied.
 if [ "$family" = nixos ]; then :
 elif ask "Add the Slate session (uses sudo)?"; then
-    # (told where Slate is: with XDG_CONFIG_HOME set it isn't ~/.config/slate)
-    sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$DEST" | sed 's/^/  /'
+        # (its two files are taken from this checkout, which is yours: the copy for everyone is root's)
+    sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$ROOT/shell" | sed 's/^/  /'
 else
     warn "Skipped. Later: run ./install.sh again"
 fi

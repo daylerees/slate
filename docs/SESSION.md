@@ -60,8 +60,8 @@ login screen's default session.
 ## Install / remove
 
 ```sh
-~/.config/slate/bin/slate-system --root slate-session-install            # add / update
-~/.config/slate/bin/slate-system --root slate-session-install --remove   # remove
+/usr/local/share/slate/bin/slate-system --root slate-session-install            # add / update
+/usr/local/share/slate/bin/slate-system --root slate-session-install --remove   # remove
 ```
 
 Both ask for your password, and run the installer's root-owned copy,

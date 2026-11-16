@@ -64,9 +64,10 @@
           your other apps too. If you haven't picked an icon theme of your own, it asks whether to use Papirus-Dark,
           which Folder color needs: the icon theme is shared, so it changes on your other desktops too. Slate's
           pointers are made available to the session.</li>
-        <li><strong>Slate itself</strong>, copied to <code>~/.config/slate</code>, with the <code>slate</code> command
-          in <code>~/.local/bin</code>. An existing copy is kept as <code>~/.config/slate.previous</code>, and your
-          settings and own files come along.</li>
+        <li><strong>Slate itself</strong>, installed once for everyone on the computer in
+          <code>/usr/local/share/slate</code> (it asks for your password), with the <code>slate</code> command in
+          <code>~/.local/bin</code>. Your settings and own files stay yours, in <code>~/.config/slate</code>, and the
+          version you had is kept to go back to.</li>
         <li><strong>The login entry</strong>, so login screens list Slate. This works with GDM, SDDM, LightDM and
           greetd.</li>
       </ol>
@@ -78,8 +79,8 @@
         <tr><td><code>--login-screen</code></td><td>Also switches your login screen to Slate's own. Optional: read
           <a href="#slate-s-own-login-screen">Slate's own login screen</a> first</td></tr>
         <tr><td><code>--no-deps</code></td><td>Skips installing packages, for when you've installed them yourself</td></tr>
-        <tr><td><code>--link</code></td><td>Links <code>~/.config/slate</code> to the folder instead of copying it,
-          for working on Slate</td></tr>
+        <tr><td><code>--link</code></td><td>Links <code>~/.config/slate</code> to the folder instead of installing
+          Slate for everyone, for working on Slate</td></tr>
         <tr><td><code>--uninstall</code></td><td>Removes Slate (see <a href="#removing-slate">Removing Slate</a>)</td></tr>
       </table>
       <p><code>./install.sh --help</code> lists them too.</p>
@@ -149,7 +150,7 @@
       <p>To go back to your old desktop, log out and pick it at the login screen. Nothing there has changed, and you
         can switch between the two whenever you like.</p>
       <div class="callout"><i class="ti">&#xEA51;</i>
-        <p>If Slate isn't in the list, run <code>~/.config/slate/bin/slate-system --root slate-session-install</code>
+        <p>If Slate isn't in the list, run <code>/usr/local/share/slate/bin/slate-system --root slate-session-install</code>
           (it asks for your password). Some login screens only look for new sessions after a restart.</p></div>
       <p>Along with the session, the installer puts a few small helpers in <code>/usr/local/libexec/slate</code>,
         owned by root. They're what Slate runs when it asks for your password (to install a package, update the login
@@ -173,9 +174,10 @@
       <p>This takes Slate off the login screen, puts your previous login screen back if you installed Slate's, and
         puts back the pointer and code font Slate had set in your other apps (and your icon theme, if the
         installer switched you to Papirus-Dark), and
-        moves <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather than deleting it.
-        It asks whether to remove Slate's helpers from <code>/usr/local/libexec/slate</code>, and whether to delete the
-        older copy in <code>~/.config/slate.previous</code> too.</p>
+        moves your own files in <code>~/.config/slate</code> aside to <code>slate.removed-&lt;date&gt;</code> rather
+        than deleting them. It asks whether to remove Slate's helpers from <code>/usr/local/libexec/slate</code>, and
+        whether to remove Slate for everyone on the computer from <code>/usr/local/share/slate</code> (anyone else who
+        uses it loses it too).</p>
       <p>It finishes with a list of what it left, and the command that removes each: your settings (in
         <code>slate.removed-&lt;date&gt;</code>), the Geist fonts in <code>~/.local/share/fonts/Geist</code> (your
         other apps may be using them), your icon theme if it's a Papirus one, Slate's saved state in

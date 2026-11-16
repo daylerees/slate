@@ -1325,7 +1325,7 @@ class NothingOfYoursRunsAsRoot(Case):
         self.assertEqual(found, [], "run as root from your folder:\n" + "\n".join(found))
 
     def test_the_callers(self):
-        self.assertIn('sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$DEST"',
+        self.assertIn('sudo "$ROOT/shell/bin/slate-helpers-install" "$ROOT/shell" slate-session-install "$ROOT/shell"',
                       slate.read("install.sh"))
         self.assertIn('"$SRC/bin/slate-system" --root slate-greeter-install --code-only',
                       slate.read("shell", "bin", "slate-greeter-sync"))

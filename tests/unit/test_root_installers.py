@@ -192,7 +192,8 @@ class SessionFiles(RootCase):
     def test_the_callers_say_where_slate_is(self):
         """(Both run the root-owned copy of it now: see the helpers' tests below.)"""
         with open(slate.path("install.sh")) as f:
-            self.assertIn('slate-session-install "$DEST" |', f.read())
+            # (the release being installed: yours, where the copy for everyone is root's)
+            self.assertIn('slate-session-install "$ROOT/shell" |', f.read())
         with open(slate.path("shell", "bin", "slate-system")) as f:
             self.assertIn('session) args+=("--session=$SRC")', f.read())
 

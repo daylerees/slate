@@ -173,17 +173,17 @@ The server is `slate mcp`. An agent starts it when it needs it; you never run it
 
 ```sh
 # Claude Code
-claude mcp add slate -- ~/.config/slate/bin/slate mcp
+claude mcp add slate -- /usr/local/share/slate/bin/slate mcp
 
 # Codex
-codex mcp add slate -- ~/.config/slate/bin/slate mcp
+codex mcp add slate -- /usr/local/share/slate/bin/slate mcp
 ```
 
 Most other agents take a block like this in their settings (with the whole path in place of
 `~`):
 
 ```json
-{ "mcpServers": { "slate": { "command": "/home/you/.config/slate/bin/slate", "args": ["mcp"] } } }
+{ "mcpServers": { "slate": { "command": "/usr/local/share/slate/bin/slate", "args": ["mcp"] } } }
 ```
 
 `slate mcp --help` prints the same lines. To take it away again, remove it the same way

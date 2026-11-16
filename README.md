@@ -41,7 +41,7 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 | Path | What |
 |---|---|
 | `install.sh` | installer (packages, font, Slate, login session; `--help` for options) |
-| `shell/` | Slate itself: installed to `~/.config/slate` |
+| `shell/` | Slate itself: installed to `/usr/local/share/slate`, once for everyone on the computer |
 | `shell/session/` | the "Slate" login session and its Hyprland config |
 | `shell/greeter/` | Slate's login screen (greetd) |
 | `shell/wallpapers/` | Slate's own wallpapers (made by `tools/make-wallpapers.py`) |
@@ -107,18 +107,19 @@ Needs Hyprland 0.57+ (the Lua config) and Quickshell 0.3+.
 
 | What | Path |
 |---|---|
-| Shell code + `settings.json` | `~/.config/slate/` (run with `slate`) |
+| Slate's code (for everyone on the computer) | `/usr/local/share/slate/` (run with `slate`) |
+| Your settings (`settings.json`) | `~/.config/slate/` |
 | Saved state (pinned apps, launcher counts, notification history) | `~/.local/state/slate/` |
 | Saved Spaces, and backups from a factory reset | `~/.local/share/slate/` |
 | Cache (app icon tiles) | `~/.cache/slate/tiles/` |
 | Log | `~/.cache/slate.log` |
 | Your own Hyprland config (other sessions) | `~/.config/hypr/` — not used by the Slate session |
-| Slate session's Hyprland config | `~/.config/slate/session/hypr/` |
+| Slate session's Hyprland config | `/usr/local/share/slate/session/hypr/` |
 | Your own tweaks for the Slate session (made with instructions; reloaded as you save) | `~/.config/slate/hypr/` (`env`, `variables`, `monitors`, `binds`, `rules`, `autostart`, `hyprland` `.lua`) and `~/.config/slate/user/shell.qml` (QML loaded into Slate) |
 | Session launcher + login entry (installed) | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` |
 | Login screen code (root-owned copy) | `/usr/local/share/slate-greeter/` |
 | Login screen appearance (synced) | `/var/lib/slate-greeter/` |
-| Helpers | `~/.config/slate/bin/`: `slate-greeter-sync`, `slate-system` (`--check`, `--fix`, `--root <helper>`). What runs as root is a root-owned copy in `/usr/local/libexec/slate`: `slate-session-install`, `slate-greeter-install`, `slate-private-camera`, `slate-system-root` |
+| Helpers | `/usr/local/share/slate/bin/`: `slate-greeter-sync`, `slate-system` (`--check`, `--fix`, `--root <helper>`). What runs as root is a root-owned copy in `/usr/local/libexec/slate`: `slate-session-install`, `slate-greeter-install`, `slate-private-camera`, `slate-system-root` |
 | App-icon tile generator | `scripts/appicon.py` (in the shell folder) |
 
 ## Everyday commands
@@ -134,7 +135,7 @@ slate ipc call launcher search "2*pi"
 slate ipc call assistant ask "turn on glass"     # Nova, once it's switched on in Settings → Assistant
 
 # Let an AI agent ask about your desktop and act on it (switch it on in Settings → Assistant first)
-claude mcp add slate -- ~/.config/slate/bin/slate mcp
+claude mcp add slate -- slate mcp
 
 # Slate as its own login session
 sudo /usr/local/libexec/slate/slate-session-install            # add "Slate" to the login screen

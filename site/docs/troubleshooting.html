@@ -81,7 +81,7 @@
       <h2>Common problems</h2>
 
       <h3>Slate isn't on the login screen</h3>
-      <p>Run <code>~/.config/slate/bin/slate-system --root slate-session-install</code> (it asks for your password).
+      <p>Run <code>/usr/local/share/slate/bin/slate-system --root slate-session-install</code> (it asks for your password).
         Some login screens only look for new sessions after a restart.</p>
 
       <h3>The session starts and ends straight away</h3>
@@ -114,7 +114,7 @@
 
       <h3>Suspend, Restart or Shut down are missing</h3>
       <p>Or settings are grayed out with "This needs systemd or elogind". Your computer has no login service running.
-        Run <code>~/.config/slate/bin/slate-init info</code>: <code>logind=none</code> means elogind isn't installed or
+        Run <code>/usr/local/share/slate/bin/slate-init info</code>: <code>logind=none</code> means elogind isn't installed or
         isn't started.</p>
 
       <h3>No sound, on a system without systemd</h3>
@@ -150,7 +150,7 @@
       <div class="callout warn"><i class="ti">&#xEAC5;</i>
         <p>There's no undo in Settings: putting things back from the backup folder is done by hand. If only one page
           needs resetting, <a href="settings.html#restore-defaults">Restore defaults</a> on that page is gentler.</p></div>
-      <p>From a terminal, the same reset is <code>~/.config/slate/bin/slate-factory-reset</code>, with
+      <p>From a terminal, the same reset is <code>/usr/local/share/slate/bin/slate-factory-reset</code>, with
         <code>--user-files</code> to clear your own files too.</p>
 
       <h2>Reporting a problem</h2>

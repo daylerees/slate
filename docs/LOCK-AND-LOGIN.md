@@ -44,7 +44,7 @@ the gloss sheen like the bar's containers and no outline.
   times in Settings → Security; respects idle inhibitors (video) if enabled.
   Slate's own idle suspend locks first and waits for `secure`.
 - **Crash safety:** if Slate dies while locked, Hyprland stays locked. Recover from a
-  text console (Ctrl+Alt+F3): `slate restart` (or `~/.config/slate/bin/slate restart`) — `allow_session_lock_restore`
+  text console (Ctrl+Alt+F3): `slate restart` (or `/usr/local/share/slate/bin/slate restart`) — `allow_session_lock_restore`
   lets it take the lock back.
 - **Preview** without locking: `slate ipc call lock preview lock` (checks the
   real password, power menu only says what it would do). Locking for real closes a
@@ -94,7 +94,7 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
-| `/usr/local/share/slate-greeter` (+ `.good`) | root | the files listed in `greeter/files` (`shell.qml`, `LoginWindow.qml`, `LoginScreen.qml`, `Config.qml`, … and the `emergency/` login screen), plus `hyprland.lua` (keyboard layout filled in), `version`, and `settings.json` → symlink to the data folder | `sudo ~/.config/slate/bin/slate-greeter-install` |
+| `/usr/local/share/slate-greeter` (+ `.good`) | root | the files listed in `greeter/files` (`shell.qml`, `LoginWindow.qml`, `LoginScreen.qml`, `Config.qml`, … and the `emergency/` login screen), plus `hyprland.lua` (keyboard layout filled in), `version`, and `settings.json` → symlink to the data folder | `sudo /usr/local/share/slate/bin/slate-greeter-install` |
 | `/var/lib/slate-greeter` | you | appearance only: `settings.json`, `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
 | `/var/cache/slate-greeter` | greeter | `last-session`, `proven` (version of the last copy someone logged in with), logs, caches | the greeter |
 

@@ -116,7 +116,7 @@ if [ "${1:-}" = "--prompt" ]; then
     else
         rm -f "$asked"      # cancelled or failed: ask again next time
         # Critical too: it says how to finish the update by hand, so it stays until read
-        notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock "Login screen not updated" "Run: ~/.config/slate/bin/slate-system --root slate-greeter-install --code-only"
+        notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock "Login screen not updated" "Run: /usr/local/share/slate/bin/slate-system --root slate-greeter-install --code-only"
     fi
     exit 0
 fi
