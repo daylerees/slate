@@ -4,6 +4,9 @@
 # could have changed: slate-helpers-install puts a root-owned copy in /usr/local/libexec/slate,
 # and slate-system calls that one with pkexec (your password).
 #   slate-system-root [<package>…] [--session[=<Slate folder>]]
+#   slate-system-root --upgrade      the distro's full system upgrade (Slate Software's Update):
+#                                    one fixed command per distro, never only some packages (a
+#                                    partial upgrade can break Arch)
 # What it's told is checked here, and whatever else it uses (the package lists, the session's
 # installer) is the root-owned copy beside it, never your folder's.
 set -uo pipefail
@@ -34,6 +37,19 @@ FAMILY=$(family)
 
 # The root-owned copy of the list's lines, without comments
 read_list() { [ -f "$HERE/packaging/$FAMILY.txt" ] && grep -v '^\s*\(#\|$\)' "$HERE/packaging/$FAMILY.txt" | sed 's/\s*#.*//; s/\s*$//'; }
+
+# The whole system's updates, and nothing else
+if [ "${1:-}" = --upgrade ]; then
+    [ "$#" -eq 1 ] || { echo "slate-system: --upgrade takes nothing else" >&2; exit 1; }
+    case "$FAMILY" in
+        arch|artix) exec pacman -Syu --noconfirm ;;
+        void) exec xbps-install -Syu ;;
+        debian) apt-get update && DEBIAN_FRONTEND=noninteractive exec apt-get upgrade -y ;;
+        fedora) exec dnf upgrade -y --refresh ;;
+        opensuse) exec zypper --non-interactive update ;;
+        *) echo "slate-system: don't know how to update this system" >&2; exit 1 ;;
+    esac
+fi
 
 pkgs=(); session=0; folder=""
 for a in "$@"; do

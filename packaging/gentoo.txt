@@ -63,6 +63,9 @@ x11-themes/papirus-icon-theme
 ?media-gfx/sane-backends
 ?media-gfx/simple-scan
 
+# Slate Software: apps from Flathub (scripts/software.py)
+?sys-apps/flatpak
+
 # Emoji, your account picture, and extras
 media-fonts/noto-emoji
 sys-apps/accountsservice

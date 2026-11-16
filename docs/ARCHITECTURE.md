@@ -224,6 +224,9 @@ scripts/theme-packs.py        a few pointer and icon themes put in with one clic
                               release, pinned to a version and checked by SHA-256
 scripts/set-avatar.sh         sets your account picture (or someone else's, by uid): cropped square, handed to
                               AccountsService, and ~/.face (yours only)
+scripts/software.py           Slate Software's engine: the Flathub catalog on this computer (search,
+                              details), installed apps, app and system updates, and installing,
+                              removing and updating (system upgrade through slate-system --upgrade)
 scripts/accounts.py           the people on this computer for Settings → Users: listing, adding, changing and
                               removing accounts (home folders kept unless asked) through AccountsService
                               (passwords on stdin, hashed with libcrypt)
@@ -677,6 +680,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `python-numpy`, `librsvg` (`rsvg-convert`) | `appicon.py`: theme shadows taken off icons, and SVG icons drawn |
 | `imagemagick` | accent and tone picked from the wallpaper |
 | Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
+| `flatpak` (optional) | Slate Software: apps from Flathub, their catalog and updates (`scripts/software.py`); without it the window says what to install |
+| `pacman-contrib` (Arch, optional) | `checkupdates`: Slate Software's list of system updates, without root |
 | `accountsservice` | your account picture (Settings → General, the lock and login screens); the accounts on Settings → Users (`scripts/accounts.py`) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |
 | `python-gobject` (PyGObject) | the tray's register, apart from Slate so tray icons outlive its restarts (`scripts/tray-watcher.py`); without it, Quickshell is the register (icons from apps that sign up once are lost when Slate restarts) |

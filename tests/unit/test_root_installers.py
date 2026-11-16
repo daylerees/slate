@@ -514,6 +514,25 @@ class SystemRoot(HelpersCase):
                 self.assertIn("bad package name", out)
         self.assertEqual(len(self.s.calls("pacman")), 1)
 
+    def test_the_full_upgrade_and_nothing_else(self):
+        """--upgrade: the distro's whole system upgrade, one fixed command, never only some
+        packages (a partial upgrade can break Arch), and nothing else may come with it."""
+        for release, tool, expected in (("ID=arch\n", "pacman", ["-Syu", "--noconfirm"]),
+                                        ("ID=fedora\n", "dnf", ["upgrade", "-y", "--refresh"])):
+            with self.subTest(tool):
+                self.on(release)
+                os.remove(self.s._log(tool)) if os.path.exists(self.s._log(tool)) else None
+                code, out = run([self.root, "--upgrade"], env=self.s.env, timeout=10)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.s.calls(tool), [expected])
+        self.on("ID=arch\n")
+        os.remove(self.s._log("pacman"))
+        for extra in ("kitty", "--overwrite=*", "--session"):
+            with self.subTest(extra):
+                code, out = run([self.root, "--upgrade", extra], env=self.s.env, timeout=10)
+                self.assertNotEqual(code, 0, out)
+        self.assertEqual(self.s.calls("pacman"), [])
+
     def test_repositories_come_from_the_root_owned_list(self):
         """Fedora's COPRs are read from root's own copy of the list: one added to your folder's
         list afterwards isn't switched on (it would be someone else's packages, as root)."""

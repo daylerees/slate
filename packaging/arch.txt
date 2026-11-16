@@ -70,6 +70,10 @@ papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 ?sane-airscan
 ?simple-scan
 
+# Slate Software: apps from Flathub (scripts/software.py)
+?flatpak
+?pacman-contrib   # checkupdates: Slate Software's system updates, without root
+
 # Emoji (the picker, the launcher's :emoji), your account picture (AccountsService), and
 # extras: btop (Ctrl+Shift+Esc), ffmpeg (silent screensaver videos), xdg-user-dirs (your
 # Downloads and Pictures folders), pciutils (Debug → Export logs)

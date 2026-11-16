@@ -67,6 +67,9 @@ papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)
 ?sane-airscan
 ?simple-scan
 
+# Slate Software: apps from Flathub (scripts/software.py)
+?flatpak
+
 # Emoji, your account picture (AccountsService), and extras
 noto-fonts-emoji
 accountsservice
