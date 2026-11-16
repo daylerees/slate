@@ -11,11 +11,13 @@ Scope {
     property var hold: null                  // UpdateHold.qml
 
     // Keep the login screen (/var/lib/slate-greeter) in step with the wallpaper and
-    // settings. Does nothing until it's been set up with: sudo slate-greeter-install
+    // settings: the shared look, when that folder is yours, and your own look in its people/
+    // folder, which everyone can keep theirs in. Does nothing until it's been set up with:
+    // sudo slate-greeter-install
     Timer { id: greeterSync; interval: 3000; onTriggered: if (!root.hold.heldBack(greeterSync)) greeterSyncRun.running = !Config.testMode }
     Process {
         id: greeterSyncRun
-        command: ["sh", "-c", "[ -w /var/lib/slate-greeter ] && exec \"$0\" || true", Quickshell.shellPath("bin/slate-greeter-sync")]
+        command: ["sh", "-c", "{ [ -w /var/lib/slate-greeter ] || [ -w /var/lib/slate-greeter/people ]; } && exec \"$0\" || true", Quickshell.shellPath("bin/slate-greeter-sync")]
     }
     Connections { target: Config; function onWallpaperChanged() { greeterSync.restart(); } function onSaved() { greeterSync.restart(); } function onAvatarVersionChanged() { greeterSync.restart(); } }
 

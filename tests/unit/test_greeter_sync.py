@@ -464,3 +464,12 @@ class Sync(GreeterCase):
             text = f.read()
         self.assertEqual(json.loads(text), {"user": "tester", "name": name, "session": "slate", "kb_layout": "gb"})
         self.assertIn("Zoë", text, "the name was written as escapes, not as itself")
+
+
+class StartedForEveryone(Case):
+    def test_slate_starts_the_sync_for_someone_with_only_their_own_folder(self):
+        """Slate starts the sync when the login screen's folder is yours, and also when only its
+        people/ folder can be written: everyone but the person who set the login screen up.
+        (It used to start it only for that person, so nobody else's look was ever kept.)"""
+        src = slate.read("shell", "GreeterSync.qml")
+        self.assertIn("[ -w /var/lib/slate-greeter/people ]", src)
