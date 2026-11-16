@@ -633,9 +633,13 @@ else
     stage_code "$staged/slate"
     place_code "$staged/slate"
     rm -rf "$staged"
-    # (a copy for everyone that's yours is a computer of yours for working on Slate: nothing more
-    # is needed, and nothing is done with sudo)
-    code_is_yours || [ "$UPDATE" -eq 1 ] || for_everyone
+    # (a copy for everyone that's yours is a computer of yours for working on Slate: what the others
+    # need beside it is asked about, since it needs sudo, and never on an update)
+    if [ "$UPDATE" -eq 0 ]; then
+        if ! code_is_yours || ask "Make the slate command, Slate Settings' icon, the cursors and fonts available to everyone on this computer (uses sudo)?"; then
+            for_everyone
+        fi
+    fi
     your_folder
 fi
 SLATE=$(code_in_use)          # where your Slate runs from now
