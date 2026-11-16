@@ -4,6 +4,7 @@ installs one at a time. Its engine (scripts/software.py, unit-tested on its own)
 for with pretend answers (test softwarePretend), so nothing here runs Flatpak or reaches
 Flathub."""
 import json
+import os
 
 from live import LiveCase
 
@@ -11,7 +12,7 @@ APPS = [
     {"id": "org.gimp.GIMP", "name": "GNU Image Manipulation Program", "summary": "Create images and edit photographs",
      "icon": "", "categories": ["Graphics"], "keywords": "photo paint", "developer": "The GIMP team"},
     {"id": "org.mozilla.firefox", "name": "Firefox", "summary": "Fast, private and safe web browser",
-     "icon": "", "categories": ["Network"], "keywords": "web browser internet", "developer": "Mozilla"},
+     "icon": "/tmp/slate-test-app-icon.png", "categories": ["Network"], "keywords": "web browser internet", "developer": "Mozilla"},
     {"id": "org.videolan.VLC", "name": "VLC", "summary": "Play every kind of video",
      "icon": "", "categories": ["AudioVideo"], "keywords": "player movie", "developer": "VideoLAN"},
     {"id": "com.valvesoftware.Steam", "name": "Steam", "summary": "Play your games",
@@ -34,9 +35,15 @@ PRETEND = {
 }
 
 
+# The catalog's picture of Firefox (a plain orange disc): drawn as the dock draws apps
+ICON_MAKER = ("python3 -c \"from PIL import Image, ImageDraw; im = Image.new('RGBA', (128, 128), (0, 0, 0, 0)); "
+              "ImageDraw.Draw(im).ellipse((8, 8, 120, 120), fill=(240, 120, 40, 255)); im.save('/tmp/slate-test-app-icon.png')\"")
+
+
 class Software(LiveCase):
     def setUp(self):
         super().setUp()
+        os.system(ICON_MAKER)
         self.addCleanup(lambda: self.ipc("software", "close"))
         self.ipc("test", "softwarePretend", json.dumps(PRETEND))
         self.ipc("software", "open")
@@ -98,3 +105,12 @@ class Software(LiveCase):
         self.ipc("test", "softwareAct", "update-apps", "org.videolan.VLC")
         self.wait(lambda st: st["software"]["busy"] == "update-apps org.videolan.VLC", "VLC updating, on its own")
         self.wait(lambda st: st["software"]["busy"] == "", "done")
+
+    def test_icons_drawn_as_the_docks(self):
+        """An app that isn't installed has its catalog picture drawn as a tile in the icon
+        style in use (Settings → Icons), into that style's own folder."""
+        st = self.wait(lambda st: st["software"]["tilesDrawn"] > 0, "Firefox's picture drawn", timeout=20)["software"]
+        tile = os.path.join(st["flathubTiles"], "org.mozilla.firefox.png")
+        self.assertTrue(os.path.isfile(tile), tile)
+        from PIL import Image
+        self.assertEqual(Image.open(tile).size, (192, 192))

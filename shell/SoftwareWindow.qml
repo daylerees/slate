@@ -130,6 +130,41 @@ FloatingWindow {
     }
     Process { id: appRun; stdout: StdioCollector { onStreamFinished: sw.take("app", text, v => sw.detail = v) } }
 
+    // ---- Apps' icons, drawn as the dock's are (AppIcon) ------------------------------------
+    // Apps not installed: drawn from the catalog's picture into the style's own folder
+    // (tiles/<style>/flathub), a batch at a time, by scripts/appicon.py --tile-files
+    function flathubTile(id) { return Config.tileDir + "/flathub/" + String(id).replace(/[^A-Za-z0-9._-]/g, "_") + ".png"; }
+    property int tilesVersion: 0
+    property var tilesAsked: ({})              // style folder + id: asked already
+    property var tilesWanted: []                // ["id\tpicture"], for the next batch
+    function wantTile(id, picture) {
+        if (!id || !picture) return;
+        const key = Config.tileDir + " " + id;
+        if (tilesAsked[key]) return;
+        tilesAsked[key] = true;
+        tilesWanted.push(id + "\t" + picture);
+        tileBatch.restart();
+    }
+    Timer {
+        id: tileBatch
+        interval: 150
+        onTriggered: {
+            if (tileRun.running) { restart(); return; }
+            if (sw.tilesWanted.length === 0) return;
+            tileRun.lines = sw.tilesWanted.join("\n") + "\n";
+            sw.tilesWanted = [];
+            tileRun.command = [Config.tileScript, "--tile-files", Config.tileDir + "/flathub", "192"];
+            tileRun.running = true;
+        }
+    }
+    Process {
+        id: tileRun
+        property string lines: ""
+        stdinEnabled: true
+        onStarted: { write(lines); stdinEnabled = false; }
+        onExited: { stdinEnabled = true; sw.tilesVersion++; if (sw.tilesWanted.length) tileBatch.restart(); }
+    }
+
     // ---- Doing: one at a time, in order ------------------------------------------------------
     // queue: [{ what: "install"|"remove"|"update-apps"|"update-system", id, name }]; busy: the
     // one running (and its progress, 0–100); note: how the last one went, when it didn't
@@ -593,7 +628,7 @@ FloatingWindow {
         Separator { visible: !row.first }
         // (rounded to sit inside its group's card: the card's corner less the room round its rows)
         HoverFill { anchors.fill: parent; hovered: rowHover.hovered; radius: Config.corner(8) }
-        AppIcon { id: rowIcon; anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } size: 40; path: row.entry.icon || "" }
+        AppIcon { id: rowIcon; anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } size: 40; appId: row.entry.id || ""; path: row.entry.icon || "" }
         Column {
             anchors { left: rowIcon.right; leftMargin: 12; right: rowAction.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
             spacing: 2
@@ -642,20 +677,46 @@ FloatingWindow {
     // An app's icon from the catalog, or a plain stand-in
     component AppIcon: Item {
         id: ai
-        property string path: ""
+        property string appId: ""
+        property string path: ""                  // the catalog's picture of it
         property real size: 40
+        // Drawn as the dock draws apps (Settings → Icons: shape, fill, theme, tint, glass):
+        // installed, the dock's own tile of it; else its catalog picture drawn the same way
+        // (sw.wantTile), with the picture itself until that's done
+        readonly property bool installedApp: !!sw.installedIds[appId]
+        property bool noDockTile: false
+        onAppIdChanged: noDockTile = false
+        readonly property string tile: !appId ? "" : installedApp && !noDockTile ? Config.tilePath(appId) : sw.flathubTile(appId)
         width: size; height: size
+        Image {
+            id: aiTile
+            anchors.fill: parent
+            visible: status === Image.Ready
+            source: ai.tile ? "file://" + ai.tile + "?v=" + Config.tileVersion + "." + sw.tilesVersion : ""
+            sourceSize: Qt.size(192, 192)
+            smooth: true; mipmap: true
+            asynchronous: true
+            onStatusChanged: {
+                if (status !== Image.Error) return;
+                if (ai.installedApp && !ai.noDockTile) ai.noDockTile = true;
+                else sw.wantTile(ai.appId, ai.path);
+            }
+            layer.enabled: Config.iconTint > 0
+            layer.effect: IconTint {}
+            IconPlate { anchors.fill: parent; z: -1; visible: parent.status === Image.Ready && !Config.s.iconFill && Config.s.iconShape !== "original" }
+            IconGloss { visible: parent.status === Image.Ready && Config.glassGloss && Config.s.iconShape !== "original" }
+        }
         Image {
             id: aiImg
             anchors.fill: parent
-            visible: ai.path !== "" && status === Image.Ready
-            source: ai.path ? "file://" + ai.path : ""
+            visible: !aiTile.visible && ai.path !== "" && status === Image.Ready
+            source: !aiTile.visible && ai.path ? "file://" + ai.path : ""
             sourceSize: Qt.size(ai.size * 2, ai.size * 2)
             fillMode: Image.PreserveAspectFit
             asynchronous: true
         }
         Rectangle {
-            visible: !aiImg.visible
+            visible: !aiTile.visible && !aiImg.visible
             anchors.fill: parent; radius: Config.corner(ai.size * 0.22)
             color: sw.faint
             Text { anchors.centerIn: parent; text: sw.glyph(0xEB75); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: ai.size * 0.5 }
@@ -781,7 +842,7 @@ FloatingWindow {
         height: 140; radius: Config.corner(12)
         color: sw.card
         HoverFill { hovered: cardHover.hovered; radius: parent.radius }
-        AppIcon { id: cardIcon; anchors { left: parent.left; top: parent.top; margins: 14 } size: 52; path: card.entry.icon || "" }
+        AppIcon { id: cardIcon; anchors { left: parent.left; top: parent.top; margins: 14 } size: 52; appId: card.entry.id || ""; path: card.entry.icon || "" }
         Text {
             visible: !!sw.installedIds[card.entry.id]
             anchors { right: parent.right; top: parent.top; margins: 14 }
@@ -821,7 +882,7 @@ FloatingWindow {
             }
             Item {
                 width: parent.width; height: 96
-                AppIcon { id: bigIcon; size: 96; path: pg.d.icon || "" }
+                AppIcon { id: bigIcon; size: 96; appId: sw.app; path: pg.d.icon || "" }
                 Column {
                     anchors { left: bigIcon.right; leftMargin: 18; right: pageActions.left; rightMargin: 18; verticalCenter: parent.verticalCenter }
                     spacing: 4

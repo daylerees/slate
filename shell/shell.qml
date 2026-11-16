@@ -439,7 +439,8 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 software: softwareLoader.item ? (w => ({
-                    built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page, app: w.app, query: w.query,
+                    built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page,
+                    flathubTiles: Config.tileDir + "/flathub", tilesDrawn: w.tilesVersion, app: w.app, query: w.query,
                     apps: w.catalogue.length, installed: w.installed.map(a => a.id), updates: w.updateCount,
                     busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note,
                     found: w.query.trim() !== "" ? w.found(w.query).map(a => a.id) : [],

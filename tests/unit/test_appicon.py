@@ -285,6 +285,34 @@ class AppIcon(Case):
             self.assertEqual(Image.open(os.path.join(out, n + ".png")).size, (PX, PX))
         self.assertFalse([f for f in os.listdir(out) if f.endswith(".tmp")], "temp files left behind")
 
+    def test_tile_files_from_given_pictures(self):
+        """--tile-files (Slate Software): each app drawn from the picture given for it, in the
+        style of the folder above (here: circle), once; ids that aren't app ids and
+        missing pictures are passed over, and a broken one doesn't stop the rest."""
+        out = os.path.join(self.h.cache, "slate", "tiles", "circle", "flathub")
+        broken = os.path.join(self.icons, "broken.png")
+        with open(broken, "w") as f:
+            f.write("not a png")
+        lines = "".join(f"{a}\t{p}\n" for a, p in (
+            ("org.example.Square", os.path.join(self.icons, "squareapp.png")),
+            ("org.example.Broken", broken),
+            ("../escape", os.path.join(self.icons, "roundapp.png")),
+            ("org.example.Missing", os.path.join(self.icons, "nothing.png")),
+            ("org.example.Round", os.path.join(self.icons, "roundapp.png"))))
+        code, log = run([sys.executable, SCRIPT, "--tile-files", out, str(PX)], env=self.h.env, input=lines)
+        self.assertEqual(code, 0, log)
+        self.assertIn("org.example.Broken:", log)
+        self.assertEqual(sorted(os.listdir(out)), ["org.example.Round.png", "org.example.Square.png"])
+        sq = Image.open(os.path.join(out, "org.example.Square.png"))
+        self.assertEqual(sq.size, (PX, PX))
+        self.assertEqual(sq.getpixel((0, 0))[3], 0, "not drawn in the folder's style (a circle: corners cut away)")
+        # Again: what's drawn is kept
+        with open(os.path.join(out, "org.example.Round.png"), "w") as f:
+            f.write("already drawn")
+        self.ok([sys.executable, SCRIPT, "--tile-files", out, str(PX)], env=self.h.env, input=lines)
+        with open(os.path.join(out, "org.example.Round.png")) as f:
+            self.assertEqual(f.read(), "already drawn")
+
     def test_slate_settings_has_its_own_icon(self):
         """Slate Settings' icon is Slate's own file, found without any desktop entry or icon
         theme copy (someone who didn't install Slate has neither in their home)."""

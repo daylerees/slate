@@ -5,6 +5,9 @@ Usage: appicon.py --tile <app-id-or-class> <out.png> <pixels> [--shape S] [--fil
        appicon.py --tile-all <dir> <pixels> [--shape S] [--fill|--whole] [--theme T]   (every installed app)
        appicon.py --preview <dir> <pixels>   (one app in every shape and style, for Settings)
        appicon.py --colours <dir> <out.json> (each drawn icon's main colour, for tiles in it)
+       appicon.py --tile-files <dir>/flathub <pixels>   (Slate Software: "<app id>\t<icon file>"
+                  lines on stdin, each drawn from that picture into <id>.png in the style of
+                  the folder above, unless it's there already)
 
 Settings → Icons → App icons:
   --shape  tile (default: a rounded square), squircle, circle, square, or original
@@ -560,6 +563,30 @@ def style(args):
     return shape, fill
 
 
+def tile_files(out_dir, px, lines):
+    """Slate Software's icons for apps not installed yet (no desktop entry or theme icon to go
+    by): each drawn from the picture Flathub's catalog has for it, in the style of the tiles
+    folder out_dir sits in (tiles/<style>/flathub), as the dock draws installed apps."""
+    import re
+    shape, fill = style_of_folder(os.path.dirname(os.path.normpath(out_dir))) or ("tile", True)
+    os.makedirs(out_dir, exist_ok=True)
+    for line in lines:
+        app, _, icon = line.rstrip("\n").partition("\t")
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", app) or not os.path.isfile(icon):
+            continue
+        out = os.path.join(out_dir, app + ".png")
+        if os.path.exists(out):
+            continue
+        try:
+            img = render_tile(icon, px, shape, fill)
+            fd, tmp = tempfile.mkstemp(dir=out_dir, suffix=".tmp")
+            os.close(fd)
+            img.save(tmp, format="PNG")
+            os.replace(tmp, out)
+        except Exception as e:  # one broken picture shouldn't stop the rest
+            print(f"{app}: {e}", file=sys.stderr)
+
+
 def style_of_folder(folder):
     """Slate keeps each style's icons in its own folder (tiles/<shape>[-whole], or tiles itself
     for the default), so a folder's name says which style belongs in it. That wins over the
@@ -608,6 +635,9 @@ def main():
     if len(args) >= 3 and args[0] == "--tile-all":
         shape, fill = style_of_folder(args[1]) or (shape, fill)
         tile_all(args[1], int(args[2]), shape, fill)
+        return
+    if len(args) >= 3 and args[0] == "--tile-files":
+        tile_files(args[1], int(args[2]), sys.stdin)
         return
     if len(args) >= 4 and args[0] == "--tile":
         shape, fill = style_of_folder(os.path.dirname(args[2])) or (shape, fill)

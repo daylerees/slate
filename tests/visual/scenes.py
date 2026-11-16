@@ -426,7 +426,8 @@ import json as _json
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "live"))
 from test_software import PRETEND as _SW
-_SW_DO = [("test", "softwarePretend", _json.dumps(_SW))]
+from test_software import ICON_MAKER as _SW_ICON
+_SW_DO = [("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(_SW))]
 _SW_UNDO = [("software", "close")]
 SCENES["software-discover"] = {
     "do": _SW_DO + [("software", "page", "discover")],
