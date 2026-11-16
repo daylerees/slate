@@ -67,7 +67,15 @@ Item {
     }
 
     // ---- Look ------------------------------------------------------------------
-    // (easing from one look to another, on the login screen, when someone else is chosen)
+    // (easing from one look to another, on the login screen, when someone else is chosen: the
+    // colours below, and how much glass, shadow and roundness, which everything here draws with)
+    property real glassOn: Config.glass ? 1 : 0
+    Behavior on glassOn { NumberAnimation { duration: Config.ms(450); easing.type: Easing.InOutQuad } }
+    property real shadowOn: Config.shadowsOn ? 1 : 0
+    Behavior on shadowOn { NumberAnimation { duration: Config.ms(450); easing.type: Easing.InOutQuad } }
+    property real roundness: Config.s.roundedElements ? 1 : 0
+    Behavior on roundness { NumberAnimation { duration: Config.ms(450); easing.type: Easing.InOutQuad } }
+    function corner(r) { return r * roundness; }       // (Config.corner, eased)
     property color accent: Config.accent
     Behavior on accent { ColorAnimation { duration: Config.ms(450) } }
     property color accentText: Config.tint("#12151a")
@@ -112,6 +120,18 @@ Item {
     }
     // The wallpaper, crossfading when it changes (the login screen, choosing someone with a look
     // of their own): the new one loads behind, then fades in as the old one fades out
+    component PicLayer: RoundImage {
+        id: picLayer
+        property bool on: false
+        anchors.fill: parent
+        radius: ls.corner(width / 2)
+        fallback: true      // no account picture: the themed person icon
+        fontSource: ls.iconFontSource
+        asynchronous: true
+        opacity: on ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Config.ms(450); easing.type: Easing.InOutQuad } }
+        onStatusChanged: if (status !== Image.Loading && picLayer !== pic.front && source.toString() === pic.want) pic.swap()
+    }
     component WallLayer: Image {
         id: layer
         property bool shown: false
@@ -195,14 +215,14 @@ Item {
         // (avatarRing, below), over the glass, which shows through it
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 140; height: 140; radius: Config.corner(70)
-            color: Config.glass ? "transparent" : ls.frame
+            width: 140; height: 140; radius: ls.corner(70)
+            color: Qt.alpha(ls.frame, 1 - ls.glassOn)
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.45; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
-            GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: parent.radius }
+            layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.45 * ls.shadowOn; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
+            GlassFill { screen: ls; shown: ls.glassOn; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: parent.radius }
             Rectangle {
                 anchors { fill: parent; margins: 8 }
-                radius: Config.corner(width / 2)
+                radius: ls.corner(width / 2)
                 color: Config.raised(ls.field)
             }
             // The picture's border: the accent, with a light catch along 45° from the top left, as
@@ -232,22 +252,32 @@ Item {
                     }
                     PathRectangle {
                         width: avatarRing.width; height: avatarRing.height
-                        radius: Config.corner(avatarRing.width / 2)
+                        radius: ls.corner(avatarRing.width / 2)
                     }
                     PathRectangle {
                         x: avatarRing.line; y: avatarRing.line
                         width: avatarRing.width - avatarRing.line * 2; height: avatarRing.height - avatarRing.line * 2
-                        radius: Config.corner((avatarRing.width - avatarRing.line * 2) / 2)
+                        radius: ls.corner((avatarRing.width - avatarRing.line * 2) / 2)
                     }
                 }
             }
-            Image { id: avatarImg; source: ls.avatar ? "file://" + ls.avatar : ""; visible: false; asynchronous: true }
-            RoundImage {
+            // The picture, crossfading when someone else is chosen (as the wallpaper does)
+            Item {
+                id: pic
                 anchors { fill: parent; margins: 8 }
-                radius: Config.corner(width / 2)
-                fallback: true      // no account picture: the themed person icon
-                fontSource: ls.iconFontSource
-                source: avatarImg.source
+                readonly property string want: ls.avatar ? "file://" + ls.avatar : ""
+                property Item front: picA
+                readonly property Item back: front === picA ? picB : picA
+                function show() {
+                    if (front.source.toString() === want) { front.on = true; return; }
+                    back.source = want;
+                    if (back.status !== Image.Loading) swap();
+                }
+                function swap() { const b = back; b.on = true; front.on = false; front = b; }
+                onWantChanged: show()
+                Component.onCompleted: show()
+                PicLayer { id: picA }
+                PicLayer { id: picB }
             }
         }
 
@@ -257,11 +287,11 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 360
             height: boxCol.implicitHeight + 28
-            radius: Config.corner(18)
-            color: Config.glass ? "transparent" : ls.frame
+            radius: ls.corner(18)
+            color: Qt.alpha(ls.frame, 1 - ls.glassOn)
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
-            GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: box.radius }
+            layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.4 * ls.shadowOn; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
+            GlassFill { screen: ls; shown: ls.glassOn; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: box.radius }
             transform: Translate { id: shakeX }
             SequentialAnimation {
                 id: shake
@@ -278,7 +308,7 @@ Item {
 
                 // Password field with a go button
                 Rectangle {
-                    width: parent.width; height: 46; radius: Config.corner(12)
+                    width: parent.width; height: 46; radius: ls.corner(12)
                     color: Config.raised(ls.field)
                     // (flat, with glass too: an outline while it has the keyboard)
                     border.width: password.activeFocus ? 1 : 0
@@ -317,7 +347,7 @@ Item {
                     Rectangle {
                         id: goBtn
                         anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                        width: 34; height: 34; radius: Config.corner(9)
+                        width: 34; height: 34; radius: ls.corner(9)
                         color: password.text !== "" ? ls.accent : "transparent"
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         // The arrow, and the spinner in its place while the password's checked: two
@@ -352,7 +382,7 @@ Item {
                     // Only an error's strip needs room round it: a plain line (Caps Lock, a status)
                     // takes its own height, so the frame's edge is as close under it as above the field
                     height: isError ? Math.max(30, noteRow.implicitHeight + 12) : noteRow.implicitHeight
-                    radius: Config.corner(10)
+                    radius: ls.corner(10)
                     visible: ls.capsLock || ls.message !== ""
                     color: isError ? Qt.rgba(ls.error.r, ls.error.g, ls.error.b, 0.14) : "transparent"
                     Row {
@@ -399,16 +429,16 @@ Item {
         signal clicked()
         height: 44
         width: label ? pillRow.implicitWidth + 30 : 44
-        radius: Config.corner(22)
+        radius: ls.corner(22)
         readonly property color fill: active ? ls.accent : pillHover.hovered ? Config.hoverOn(ls.frame) : ls.frame
         // The active color fades in and out; the hover comes and goes at once (CONVENTIONS, the
         // muted hover): laid over it, below
         readonly property color base: active ? ls.accent : ls.frame
-        color: Config.glass ? "transparent" : base
+        color: Qt.alpha(base, 1 - ls.glassOn)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         layer.enabled: true
-        layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.35; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
-        GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }
+        layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.35 * ls.shadowOn; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
+        GlassFill { screen: ls; shown: ls.glassOn; wallpaper: ls.wallpaper; fill: pill.active ? pill.fill : Config.surface(pill.fill); radius: pill.radius }
         Rectangle {
             anchors.fill: parent
             radius: pill.radius
@@ -432,11 +462,11 @@ Item {
         signal chosen(var item)
         width: 220
         height: menuCol.implicitHeight + 12
-        radius: Config.corner(16)
-        color: Config.glass ? "transparent" : ls.frame
+        radius: ls.corner(16)
+        color: Qt.alpha(ls.frame, 1 - ls.glassOn)
         layer.enabled: true
-        layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
-        GlassFill { screen: ls; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: m.radius }
+        layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.4 * ls.shadowOn; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
+        GlassFill { screen: ls; shown: ls.glassOn; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: m.radius }
         Column {
             id: menuCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 6 }
@@ -445,7 +475,7 @@ Item {
                 model: m.items
                 delegate: Rectangle {
                     required property var modelData
-                    width: parent.width; height: 40; radius: Config.corner(10)
+                    width: parent.width; height: 40; radius: ls.corner(10)
                     color: modelData.current ? ls.accent : itemHover.hovered ? Config.hover : "transparent"
                     Row {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }

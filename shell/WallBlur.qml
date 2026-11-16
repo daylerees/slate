@@ -12,6 +12,7 @@ import QtQuick.Effects
 Item {
     id: wb
     property string wallpaper: Config.wallpaper ? "file://" + Config.wallpaper : ""
+    readonly property int status: wbImg.status      // (the picture's: loaded yet?)
     property rect win: Qt.rect(0, 0, 1, 1)
     property size screen: Qt.size(1, 1)
     property real pixelScale: 0.25          // for the blur's size
