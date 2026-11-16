@@ -449,6 +449,12 @@ SCENES["software-app-shots"] = dict(SCENES["software-discover"],
     do=[("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(dict(_SW, app=dict(_SW["app"], screenshots=_SHOTS)))),
         ("software", "app", "org.mozilla.firefox")],
     wait=lambda st: st["software"]["open"] and st["software"]["detail"] == "Firefox")
+# Updates with nothing waiting: a calm "You're up to date" in the middle, and Check again
+SCENES["software-up-to-date"] = dict(SCENES["software-discover"],
+    do=[("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(dict(_SW, updates={"apps": [], "system": [], "systemTool": "checkupdates", "systemProblem": ""}))),
+        ("software", "page", "updates")],
+    wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["updates"] == 0,
+    mask=[(700, 452, 250, 24)])       # ("Checked at" and the time it was)
 SCENES["software-installed"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "installed")],
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "installed" and st["software"]["installed"] == ["org.videolan.VLC"])
 SCENES["software-category"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "Game")],

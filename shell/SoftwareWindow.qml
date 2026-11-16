@@ -87,6 +87,7 @@ FloatingWindow {
     readonly property int updateCount: updates.apps.length + updates.system.length
     property var detail: null                 // the app page's: software.py app <id>
     property bool checkingUpdates: false
+    property var checkedAt: null              // when updates were last looked for
     // (the tests: what the engine would say, by what: { status, catalogue: { apps }, lists,
     // installed: { apps }, updates }, in place of running it)
     property var pretend: ({})
@@ -128,7 +129,7 @@ FloatingWindow {
     Process {
         id: updatesRun
         command: [sw.script, "updates"]
-        stdout: StdioCollector { onStreamFinished: { sw.take("updates", text, v => sw.updates = v); sw.checkingUpdates = false; } }
+        stdout: StdioCollector { onStreamFinished: { sw.take("updates", text, v => sw.updates = v); sw.checkingUpdates = false; sw.checkedAt = new Date(); } }
     }
     Process { id: appRun; stdout: StdioCollector { onStreamFinished: sw.take("app", text, v => sw.detail = v) } }
 
@@ -513,13 +514,64 @@ FloatingWindow {
                         visible: sw.app === "" && sw.query.trim() === "" && sw.page === "updates"
                         spacing: 4
                         Text { text: "Updates"; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
-                        Text {
-                            visible: sw.checkingUpdates && sw.updateCount === 0
-                            text: "Looking for updates…"; color: sw.dim; font.family: sw.font; font.pixelSize: 13
-                        }
-                        Text {
-                            visible: !sw.checkingUpdates && sw.updateCount === 0 && sw.updates.systemProblem === ""
-                            text: "Everything's up to date."; color: sw.dim; font.family: sw.font; font.pixelSize: 13
+                        // Nothing waiting: said calmly in the middle of the page, with what that
+                        // covers, when it was looked at, and a way to look again. (While looking:
+                        // Slate's spinner in its place)
+                        Column {
+                            id: upToDate
+                            readonly property bool looking: sw.checkingUpdates && sw.updateCount === 0
+                            visible: sw.updateCount === 0 && sw.updates.systemProblem === ""
+                            width: parent.width
+                            topPadding: 40
+                            spacing: 10
+                            Item {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 76; height: 76
+                                IconTile {
+                                    anchors.centerIn: parent
+                                    size: 76; code: 0xEA5E; colourOf: "software-updates"
+                                    opacity: upToDate.looking ? 0 : 1
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                                }
+                                Text {
+                                    id: lookingSpinner
+                                    anchors.centerIn: parent
+                                    opacity: upToDate.looking ? 1 : 0
+                                    visible: opacity > 0
+                                    Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+                                    text: sw.glyph(0xF226); color: sw.accent
+                                    font.family: sw.bar.iconFont; font.pixelSize: 30
+                                    RotationAnimation on rotation { running: lookingSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                                }
+                            }
+                            Item { width: 1; height: 4 }
+                            Text {
+                                width: parent.width; horizontalAlignment: Text.AlignHCenter
+                                text: upToDate.looking ? "Looking for updates…" : "You're up to date"
+                                color: sw.text; font.family: sw.font; font.pixelSize: 20; font.weight: Font.Medium
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: Math.min(parent.width, 420); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter
+                                text: upToDate.looking ? "Slate's checking your apps and this computer's system."
+                                    : sw.installed.length === 0 ? "This computer's system has the latest updates."
+                                    : (sw.installed.length === 1 ? "Your app" : "Your " + sw.installed.length + " apps")
+                                      + " and this computer's system have the latest updates."
+                                color: sw.dim; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
+                            }
+                            Text {
+                                width: parent.width; horizontalAlignment: Text.AlignHCenter
+                                visible: !upToDate.looking && !!sw.checkedAt
+                                text: sw.checkedAt ? "Checked at " + Qt.formatTime(sw.checkedAt, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP") : ""
+                                color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                            }
+                            Item { width: 1; height: 6 }
+                            Button {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                label: "Check again"; icon: 0xEB13
+                                opacity: upToDate.looking ? 0.5 : 1
+                                onClicked: if (!upToDate.looking) sw.checkUpdates()
+                            }
                         }
                         GroupLabel { visible: sw.updates.apps.length > 0; text: sw.updates.apps.length === 1 ? "1 app" : sw.updates.apps.length + " apps" }
                         // Update all of them at once, or each on its own (its row's Update)
