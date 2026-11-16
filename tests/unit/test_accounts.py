@@ -193,6 +193,25 @@ class Changing(AccountsCase):
         self.assertNotIn(1001, pa.people)
         self.assertIn(("DeleteUser", (1001, False), True), pa.calls)
 
+    def test_remove_and_delete_their_files(self):
+        """Only when asked: the confirmation's "Delete their files too" switch."""
+        with PretendAccounts(self.mod, self.everyone()) as pa:
+            self.assertEqual(self.act("remove", "1001", "delete"), (0, "ok"))
+            self.assertEqual(self.act("remove", "1002", "keep"), (0, "ok"))
+        self.assertIn(("DeleteUser", (1001, True), True), pa.calls)
+        self.assertIn(("DeleteUser", (1002, False), True), pa.calls)
+
+    def test_remove_with_an_unknown_word_does_nothing(self):
+        with PretendAccounts(self.mod, self.everyone()) as pa:
+            self.assertEqual(self.act("remove", "1001", "yes")[0], 1)
+        self.assertIn(1001, pa.people)
+        self.assertEqual([m for m, _, _ in pa.calls if m == "DeleteUser"], [])
+
+    def test_the_page_only_deletes_files_when_the_switch_is_on(self):
+        src = slate.read("shell", "settings", "pages", "UsersPage.qml")
+        self.assertIn('option: { label: "Delete their files too"', src)
+        self.assertIn('deleteFiles ? "delete" : "keep"', src)
+
     def test_you_cant_remove_yourself(self):
         with PretendAccounts(self.mod, self.everyone()) as pa:
             code, line = self.act("remove", str(ME))

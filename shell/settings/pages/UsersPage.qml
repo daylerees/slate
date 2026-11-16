@@ -6,7 +6,7 @@ import ".."
 
 // ---- Users: the people on this computer (AccountsService, through scripts/accounts.py) -------
 // Everyone's listed; an administrator can add someone, change anyone's name, picture,
-// password and account type, and remove an account (its home folder is kept). Anyone can change
+// password and account type, and remove an account (its home folder kept, or deleted if asked). Anyone can change
 // their own name, picture and password. polkit asks for the password (PolkitAgent.qml).
 Column {
     readonly property var win: SettingsHost.win
@@ -196,13 +196,21 @@ Column {
                             visible: usersPane.admin && !userRow.user.me
                             label: "Remove"
                             destructive: true
-                            onClicked: win.ask = {
-                                title: "Remove " + userRow.user.name + "?",
-                                body: userRow.user.loggedIn
-                                    ? userRow.user.name + " is logged in right now. Once they log out, you can remove them."
-                                    : userRow.user.name + " won't be able to log in anymore. Their files stay in " + (userRow.user.home || "their home folder") + ", so nothing they made is lost. This asks for an administrator's password.",
-                                button: userRow.user.loggedIn ? "OK" : "Remove", destructive: !userRow.user.loggedIn,
-                                run: () => { if (!userRow.user.loggedIn) usersPane.act(["remove", String(userRow.user.uid)], "Removing " + userRow.user.name + "…"); }
+                            onClicked: {
+                                const u = userRow.user;
+                                if (u.loggedIn) {
+                                    usersPane.note = u.name + " is logged in right now. Once they log out, you can remove them";
+                                    return;
+                                }
+                                win.ask = {
+                                    title: "Remove " + u.name + "?",
+                                    body: u.name + " won't be able to log in anymore. Their files stay in " + (u.home || "their home folder")
+                                        + " unless you choose to delete them too. This asks for an administrator's password.",
+                                    button: "Remove", destructive: true,
+                                    option: { label: "Delete their files too", detail: "Everything in " + (u.home || "their home folder") + " goes, and can't be brought back" },
+                                    run: deleteFiles => usersPane.act(["remove", String(u.uid), deleteFiles ? "delete" : "keep"],
+                                        (deleteFiles ? "Removing " + u.name + " and their files…" : "Removing " + u.name + "…"))
+                                };
                             }
                         }
                     }

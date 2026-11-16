@@ -5,7 +5,9 @@ Usage:
   accounts.py list                      the accounts, as JSON (below)
   accounts.py add <username> <name> <standard|admin>
                                         add an account; its password is read from stdin
-  accounts.py remove <uid>              remove an account (its home folder is kept)
+  accounts.py remove <uid> [keep|delete]
+                                        remove an account; its home folder is kept unless
+                                        "delete" (then it and everything in it goes)
   accounts.py name <uid> <name>         change an account's full name
   accounts.py type <uid> <standard|admin>
   accounts.py password <uid>            set an account's password, read from stdin
@@ -220,7 +222,9 @@ def add(username, name, kind):
         raise
 
 
-def remove(uid):
+def remove(uid, files="keep"):
+    if files not in ("keep", "delete"):
+        raise Problem("Say whether to keep their files or delete them")
     uid = int(uid)
     if uid == os.getuid():
         raise Problem("You can't remove your own account while you're using it")
@@ -228,8 +232,8 @@ def remove(uid):
         raise Problem("They're logged in right now. Once they log out, you can remove them")
     conn = bus()
     user_path(conn, uid)                        # (still there?)
-    # Their home folder is kept: nothing they made is lost
-    call(conn, PATH, "org.freedesktop.Accounts", "DeleteUser", (uid, False), "(xb)", ask=True)
+    # Their home folder is kept unless asked: nothing they made is lost by accident
+    call(conn, PATH, "org.freedesktop.Accounts", "DeleteUser", (uid, files == "delete"), "(xb)", ask=True)
 
 
 def admins(conn):
@@ -279,9 +283,10 @@ def main(argv):
     if what == "list":
         print(json.dumps(listing()))
         return 0
-    actions = {"add": (add, 3), "remove": (remove, 1), "name": (set_name, 2),
-               "type": (set_type, 2), "password": (set_password, 1), "picture": (set_picture, 2)}
-    if what not in actions or len(args) != actions[what][1]:
+    # (each action and how many arguments it takes)
+    actions = {"add": (add, (3,)), "remove": (remove, (1, 2)), "name": (set_name, (2,)),
+               "type": (set_type, (2,)), "password": (set_password, (1,)), "picture": (set_picture, (2,))}
+    if what not in actions or len(args) not in actions[what][1]:
         print(__doc__, file=sys.stderr)
         return 2
     try:

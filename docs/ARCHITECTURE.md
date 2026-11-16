@@ -207,7 +207,8 @@ scripts/theme-packs.py        a few pointer and icon themes put in with one clic
 scripts/set-avatar.sh         sets your account picture (or someone else's, by uid): cropped square, handed to
                               AccountsService, and ~/.face (yours only)
 scripts/accounts.py           the people on this computer for Settings → Users: listing, adding, changing and
-                              removing accounts through AccountsService (passwords on stdin, hashed with libcrypt)
+                              removing accounts (home folders kept unless asked) through AccountsService
+                              (passwords on stdin, hashed with libcrypt)
 scripts/netinfo.sh            connection details for the network panel (nmcli), as KEY=value lines
 scripts/camera-watch.py       tells Slate when a camera starts and stops being used (inotify on
                               /dev/video*), for OSD.qml's indicator
