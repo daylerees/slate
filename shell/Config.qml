@@ -1649,7 +1649,7 @@ Singleton {
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
         // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
-        "software-discover": "#8fb3e8", "software-installed": "#9ad3b8", "software-updates": "#a6d8a6",
+        "software-discover": "#8fb3e8", "software-installed": "#e8c48f", "software-updates": "#a6d8a6",
         "software-Game": "#e8a6c8", "software-Graphics": "#e8c4a6", "software-AudioVideo": "#c3a6e6",
         "software-Office": "#9db4d8", "software-Network": "#8fc7e8", "software-Development": "#e8d08f",
         "software-Education": "#e8b48f", "software-Science": "#8fd0c8", "software-Utility": "#c8c8a0",

@@ -438,6 +438,8 @@ SCENES["software-updates"] = dict(SCENES["software-discover"], do=_SW_DO + [("so
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "updates" and st["software"]["updates"] == 3)
 SCENES["software-installed"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "installed")],
     wait=lambda st: st["software"]["open"] and st["software"]["page"] == "installed" and st["software"]["installed"] == ["org.videolan.VLC"])
+SCENES["software-category"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "page", "Game")],
+    wait=lambda st: st["software"]["open"] and st["software"]["page"] == "Game")
 SCENES["software-app"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "app", "org.mozilla.firefox")],
     wait=lambda st: st["software"]["open"] and st["software"]["detail"] == "Firefox")
 SCENES["software-search"] = dict(SCENES["software-discover"], do=_SW_DO + [("software", "search", "play")],

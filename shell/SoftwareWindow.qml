@@ -439,7 +439,12 @@ FloatingWindow {
                         visible: sw.app === "" && sw.query.trim() === "" && !!cat
                         readonly property var apps: visible ? sw.inCategory(sw.page, 0) : []
                         spacing: 4
-                        Text { text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
+                        Row {
+                            spacing: 12
+                            bottomPadding: 8
+                            IconTile { anchors.verticalCenter: parent.verticalCenter; size: 36; code: catPage.cat ? catPage.cat.icon : 0xEB1C; colourOf: "software-" + sw.page }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium }
+                        }
                         Group { Repeater { model: catPage.apps.slice(0, 120); delegate: AppRow { required property var modelData; required property int index; entry: modelData; first: index === 0 } } }
                     }
 
@@ -717,7 +722,7 @@ FloatingWindow {
             Row {
                 anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
                 spacing: 8
-                Text { anchors.verticalCenter: parent.verticalCenter; text: sw.glyph(strip.cat.icon || 0xEB1C); color: Config.pageColour("software-" + strip.cat.id); font.family: sw.bar.iconFont; font.pixelSize: 17 }
+                IconTile { anchors.verticalCenter: parent.verticalCenter; code: strip.cat.icon || 0xEB1C; colourOf: "software-" + strip.cat.id }
                 Text { anchors.verticalCenter: parent.verticalCenter; text: strip.cat.label || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15; font.weight: Font.Medium }
             }
             Row {
@@ -749,6 +754,23 @@ FloatingWindow {
                 model: strip.apps.slice(strip.first, strip.first + strip.perPage)
                 delegate: AppCard { required property var modelData; entry: modelData; width: strip.cardWidth }
             }
+        }
+    }
+
+    // A category's icon on a soft square of its own colour, as All Settings' page icons are (its
+    // pastel when Colorful, else the accent)
+    component IconTile: Rectangle {
+        property int code: 0
+        property string colourOf: ""
+        property real size: 30
+        readonly property color pc: Config.pageColour(colourOf)
+        width: size; height: size; radius: Config.corner(size * 0.3)
+        color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
+        Text {
+            anchors.centerIn: parent
+            text: sw.glyph(parent.code)
+            color: parent.pc
+            font.family: sw.bar.iconFont; font.pixelSize: Math.round(parent.size * 0.53)
         }
     }
 
