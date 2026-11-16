@@ -240,7 +240,7 @@ Singleton {
         ["Network", "wifi", "connection internet ip address gateway dns link speed online offline"],
         ["Wired", "wifi", "ethernet cable lan socket network"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
-        ["Users", "users", "users people accounts account add person someone family guest administrator admin remove delete password picture username"],
+        ["Users", "users", "users people accounts account add person someone family guest administrator admin remove delete password username"],
         ["Printers", "printers", "printers and scanners print printer printing scanner scan scanning cups sane test page"],
         ["About Slate", "about", "version restart settings file"]
     ]
