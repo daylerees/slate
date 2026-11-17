@@ -85,10 +85,14 @@
         video is saved in your screenshot folder, and a notification tells you where.</p>
       <table>
         <tr><th>Setting</th><th>What it does</th></tr>
-        <tr><td>Sound</td><td><strong>No sound</strong> (to start with), <strong>The computer's sound</strong> (what's
-          playing) or <strong>The microphone</strong>.</td></tr>
+        <tr><td>Computer sound</td><td>What's playing goes into the recording (off to start with).</td></tr>
+        <tr><td>Microphone</td><td>What your microphone hears goes in too (off to start with). With both on, they're
+          mixed together.</td></tr>
       </table>
-      <p>Recording needs wf-recorder (the <code>wf-recorder</code> package); without it, Slate says so. Turning on
+      <p>Both switches are also right under the three choices in the Screenshot panel, so you can set them as you start
+        one. Recording needs wf-recorder (the <code>wf-recorder</code> package), and both sounds together need
+        <code>pactl</code> (in <code>libpulse</code> or <code>pulseaudio-utils</code>); without them, Slate says what to
+        install. Turning on
         Private Mode stops a recording (it's saved as it is), and none start while it's on.</p>
 
       <h2>Picking a color</h2>

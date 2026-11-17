@@ -196,9 +196,10 @@ JsonAdapter {
     property bool dndFullscreen: false
     property bool dndCalls: false
     property var dndAllowed: []
-    // Screen recordings' sound (Settings → Screenshots; scripts/record.sh): "none", "computer"
-    // (what's playing) or "microphone"
-    property string recordSound: "none"
+    // Screen recordings' sound (the Screenshot panel, Settings → Screenshots; scripts/record.sh):
+    // the computer's (what's playing), the microphone, or both, mixed
+    property bool recordComputerSound: false
+    property bool recordMicrophone: false
     property bool barShowCamera: false        // the camera: an open eye while an app is using it (off to start with)
     property bool barShowWifi: true
     property bool barShowKeyboard: true       // keyboard layout switcher (when there's more than one layout)

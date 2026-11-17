@@ -6,7 +6,8 @@
 # One recording at a time. While it runs, $RUNTIME/slate-recording holds its process, its file
 # and when it started (ScreenRecorder.qml watches it: the bar's indicator, the panel's Stop);
 # `stop` ends it, and the video is saved in the screenshots folder (Settings → Screenshots),
-# with a notification. Sound, as set there: none, the computer's, or the microphone.
+# with a notification. Sound, as switched on (the panel, or Settings → Screenshots): the
+# computer's, the microphone, both (mixed: mix_sounds), or none.
 # wf-recorder records; slurp is the chooser for an area or a window, as for screenshots.
 set -u
 here=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
@@ -34,6 +35,30 @@ running() {
     return 1
 }
 
+# Both sounds at once: wf-recorder takes one, so a private sink of Slate's own ($mix) with the
+# computer's sound and the microphone looped into it, recorded from its monitor. Nothing is
+# heard from it. Taken away when the recording ends (unmix, and the EXIT trap); any left from a
+# recording that was killed are taken away before the next one
+mix_sounds() {
+    leftovers
+    mix="slate-recording-$$"
+    sink=$(pactl load-module module-null-sink sink_name="$mix" sink_properties=device.description=Slate-recording) || return 1
+    modules="$sink"
+    for from in @DEFAULT_MONITOR@ @DEFAULT_SOURCE@; do
+        loop=$(pactl load-module module-loopback source="$from" sink="$mix" latency_msec=20) || return 1
+        modules="$loop $modules"
+    done
+}
+unmix() {
+    for m in $modules; do pactl unload-module "$m" 2>/dev/null; done
+    modules=""
+}
+leftovers() {
+    pactl list short modules 2>/dev/null | awk '/slate-recording-/ { print $1 }' | while read -r m; do
+        pactl unload-module "$m" 2>/dev/null
+    done
+}
+
 stop() {
     running || exit 0
     # (wf-recorder finishes the file on an interrupt; start's wait then saves and says so)
@@ -55,21 +80,28 @@ import json, sys
 try: d = json.load(open(sys.argv[1]))
 except Exception: d = {}
 print(d.get("screenshotFolder") or "")
-print(d.get("recordSound") or "none")
+print("yes" if d.get("recordComputerSound") else "")
+print("yes" if d.get("recordMicrophone") else "")
 ' "${XDG_CONFIG_HOME:-$HOME/.config}/slate/settings.json" 2>/dev/null)
     folder=$(printf '%s\n' "$settings" | sed -n 1p)
-    sound=$(printf '%s\n' "$settings" | sed -n 2p)
+    computer=$(printf '%s\n' "$settings" | sed -n 2p)
+    mic=$(printf '%s\n' "$settings" | sed -n 3p)
     [ -n "$folder" ] || folder="$HOME/Pictures/Screenshots"
 
     case "$mode" in screen) needed="wf-recorder" ;; region|window) needed="wf-recorder slurp" ;;
         *) echo "usage: $0 start region|window|screen" >&2; exit 1 ;; esac
+    # (both sounds at once are mixed through PipeWire's PulseAudio side: mix_sounds)
+    [ -n "$computer" ] && [ -n "$mic" ] && needed="$needed pactl"
     for tool in $needed; do
+        case "$tool" in pactl) package='"libpulse" or "pulseaudio-utils" package (whichever your system has)' ;;
+            *) package="\"$tool\" package" ;; esac
         command -v "$tool" >/dev/null 2>&1 || couldnt "Slate couldn't record the screen" \
-            "It needs $tool, which isn't installed. Install the \"$tool\" package, then try again."
+            "It needs $tool, which isn't installed. Install the $package, then try again."
     done
     said=$(mktemp) || couldnt "Slate couldn't record the screen" \
         "There was nowhere to keep a note while recording. Check there's some free space, then try again."
-    trap 'rm -f "$said"' EXIT
+    modules=""
+    trap 'rm -f "$said"; unmix' EXIT
 
     # Where: an area, a window, or the screen the pointer's on
     case "$mode" in
@@ -94,12 +126,16 @@ for c in json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=
             where="-o" ;;
     esac
 
-    # Sound: the computer's (what's playing: the default output's monitor) or the microphone
-    case "$sound" in
-        computer) audio="--audio=@DEFAULT_MONITOR@" ;;
-        microphone) audio="--audio=@DEFAULT_SOURCE@" ;;
-        *) audio="" ;;
-    esac
+    # Sound, as switched on: the computer's (what's playing: the default output's monitor), the
+    # microphone, or both mixed
+    if [ -n "$computer" ] && [ -n "$mic" ]; then
+        mix_sounds || couldnt "Slate couldn't record the sound" \
+            "It couldn't mix the computer's sound with the microphone's. Try recording with just one of them, in the Screenshot panel."
+        audio="--audio=$mix.monitor"
+    elif [ -n "$computer" ]; then audio="--audio=@DEFAULT_MONITOR@"
+    elif [ -n "$mic" ]; then audio="--audio=@DEFAULT_SOURCE@"
+    else audio=""
+    fi
 
     mkdir -p "$folder" 2>/dev/null
     file="$folder/Screen Recording $(date +'%Y-%m-%d %H.%M.%S').mp4"
@@ -112,6 +148,7 @@ for c in json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=
     ( umask 077; printf '%s\n%s\n%s\n' "$pid" "$file" "$(date +%s)" > "$mark" )
     tell_slate
     wait "$pid"
+    unmix
     rm -f "$mark"
     tell_slate
     if [ -s "$file" ]; then

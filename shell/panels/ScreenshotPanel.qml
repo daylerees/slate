@@ -33,6 +33,28 @@ Column {
     readonly property var modes: [{ mode: "region", label: "Area", code: 0xEEAE },
                                   { mode: "window", label: "Window", code: 0xEFE6 },
                                   { mode: "screen", label: "Screen", code: 0xEA89 }]
+    // A sound to record with it: an icon, its name and a switch
+    component SoundSwitch: Item {
+        id: sw
+        property int code
+        property string text
+        property string key
+        width: shotView.width; height: 30
+        Icon {
+            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+            code: sw.code; font.pixelSize: 16; color: pop.dim
+        }
+        Label {
+            anchors { left: parent.left; leftMargin: 36; verticalCenter: parent.verticalCenter }
+            text: sw.text; font.weight: Font.Normal
+        }
+        Switch {
+            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+            checked: !!Config.s[sw.key]
+            onToggled: Config.s[sw.key] = !Config.s[sw.key]
+            Accessible.name: sw.text
+        }
+    }
     // An Area / Window / Screen tile
     component Tile: Rectangle {
         id: tile
@@ -96,11 +118,9 @@ Column {
             text: "Stop recording · " + Config.recordingTime(); font.weight: Font.Normal; color: Config.tint("#f28b8b")
         }
     }
-    Label {
-        width: parent.width
-        text: ({ computer: "With the computer's sound", microphone: "With the microphone" })[Config.s.recordSound] || "Without sound"
-        color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
-    }
+    // What's recorded with it: either, both (mixed) or neither
+    SoundSwitch { visible: !Config.recording; code: 0xEB51; text: "Computer sound"; key: "recordComputerSound" }
+    SoundSwitch { visible: !Config.recording; code: 0xEAF0; text: "Microphone"; key: "recordMicrophone" }
     Divider {}
     LinkRow {
         code: 0xEAAD; text: "Open screenshots folder"

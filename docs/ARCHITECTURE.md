@@ -734,6 +734,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
 | `grim`, `slurp` | screenshots (Print / Super+Print), and choosing what to record |
 | `wf-recorder` (optional) | screen recording (the Screenshot panel, Super+Shift+Print); without it Slate says what to install |
+| `pactl` (optional: libpulse / pulseaudio-utils) | a screen recording with the computer's sound and the microphone together, mixed through a sink of its own while it records |
 | `hyprpicker` | the color picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
 | `ffmpeg` (Fedora `ffmpeg-free`; `ffprobe` comes with it) | takes the sound out of downloaded screensaver videos |
@@ -764,7 +765,7 @@ Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut do
 before a restart with "Reopen my apps" on, `spaces.py session-save` keeps the windows, and the next login's
 `spaces.py session-restore` reopens them, then the startup apps on workspaces of their own),
 `scripts/screenshot.sh`, `scripts/record.sh` (screen recording with wf-recorder: an area, a window or the
-screen, with the sound set in Settings → Screenshots, saved in the screenshot folder; it tells Slate when it
+screen, with the computer's sound, the microphone or both (mixed through a sink of its own, with pactl), saved in the screenshot folder; it tells Slate when it
 starts and ends, `record changed`), `scripts/apply-theme.py` (app theming, and, each behind its own switch, the pointer and the code font
 in other apps — fontconfig's "monospace", GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when
 the theme, accent, code font, those switches or the apps switched on in Settings → App Theming change;

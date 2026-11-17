@@ -102,16 +102,45 @@ class Record(Case):
         p.wait(timeout=10)
 
     def test_sound_as_set(self):
-        for sound, want in (("computer", "--audio=@DEFAULT_MONITOR@"), ("microphone", "--audio=@DEFAULT_SOURCE@")):
-            with self.subTest(sound):
-                self.settings({"recordSound": sound})
+        for computer, mic, want in ((True, False, "--audio=@DEFAULT_MONITOR@"), (False, True, "--audio=@DEFAULT_SOURCE@")):
+            with self.subTest(computer=computer, mic=mic):
+                self.settings({"recordComputerSound": computer, "recordMicrophone": mic})
                 if os.path.exists(self.calls):
                     os.remove(self.calls)
                 p = self.start()
                 self.wait_for(lambda: os.path.exists(self.mark) and os.path.exists(self.calls), "no recording")
                 self.assertIn(want, self.recorder_args()[0])
+                self.assertEqual(self.s.calls("pactl"), [], "a mix made for one sound")
                 run(["/bin/sh", SCRIPT, "stop"], env=self.s.env, timeout=10)
                 p.wait(timeout=10)
+
+    def test_both_sounds_mixed_and_tidied_away(self):
+        """Both on: a sink of Slate's own with the computer's sound and the microphone looped
+        into it, recorded from its monitor, and all three taken away when it ends."""
+        self.settings({"recordComputerSound": True, "recordMicrophone": True})
+        self.s.add("pactl", by_args={"module-null-sink": "41\n", "@DEFAULT_MONITOR@": "42\n", "@DEFAULT_SOURCE@": "43\n",
+                                     "list short modules": "", "": ""})
+        p = self.start()
+        self.wait_for(lambda: os.path.exists(self.mark) and os.path.exists(self.calls), "no recording")
+        args = self.recorder_args()[0]
+        sink = [a for a in args if a.startswith("--audio=")][0].split("=", 1)[1]
+        self.assertTrue(sink.startswith("slate-recording-") and sink.endswith(".monitor"), sink)
+        loads = [c for c in self.s.calls("pactl") if c[0] == "load-module"]
+        self.assertEqual([c[1] for c in loads], ["module-null-sink", "module-loopback", "module-loopback"])
+        self.assertIn("sink_name=" + sink[:-len(".monitor")], loads[0])
+        self.assertEqual(sorted(c[2] for c in loads[1:]), ["source=@DEFAULT_MONITOR@", "source=@DEFAULT_SOURCE@"])
+        run(["/bin/sh", SCRIPT, "stop"], env=self.s.env, timeout=10)
+        p.wait(timeout=10)
+        unloaded = sorted(c[1] for c in self.s.calls("pactl") if c[0] == "unload-module")
+        self.assertEqual(unloaded, ["41", "42", "43"], "the mix wasn't taken away")
+
+    def test_both_sounds_need_pactl(self):
+        self.settings({"recordComputerSound": True, "recordMicrophone": True})
+        self.s.add("pactl", missing=True)
+        code, out = run(["/bin/sh", SCRIPT, "start", "screen"], env=self.s.env, timeout=10)
+        self.assertEqual(code, 1, out)
+        self.assertIn('Install the \\"libpulse\\" or \\"pulseaudio-utils\\" package', json.dumps(self.notes()))
+        self.assertFalse(os.path.exists(self.calls), "recorded without the sound asked for")
 
     def test_toggle_stops_the_one_going(self):
         p = self.start()

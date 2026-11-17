@@ -67,15 +67,17 @@ Column {
     // Screen recordings (scripts/record.sh reads it): saved in the same folder
     GroupLabel { text: "Recording" }
     Group {
-        DropdownSetting {
-            label: "Sound"
-            settingKey: "recordSound"
-            detail: screenshotsPane.hasRecorder ? "Recordings are saved in the screenshot folder. Start one from the menu bar's Screenshot button, or with Super+Shift+Print Screen"
+        ToggleSetting {
+            label: "Computer sound"
+            detail: screenshotsPane.hasRecorder ? "What's playing goes into recordings. Recordings are saved in the screenshot folder; start one from the menu bar's Screenshot button, or with Super+Shift+Print Screen"
                 : "Needs wf-recorder to record the screen (the wf-recorder package)"
-            options: [{ value: "none", label: "No sound" }, { value: "computer", label: "The computer's sound" },
-                      { value: "microphone", label: "The microphone" }]
-            value: Config.s.recordSound
-            onPicked: v => Config.s.recordSound = v
+            key: "recordComputerSound"
+        }
+        Separator {}
+        ToggleSetting {
+            label: "Microphone"
+            detail: "What your microphone hears goes into recordings, mixed with the computer's sound when both are on"
+            key: "recordMicrophone"
         }
     }
     Footnote { text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen. Super+Shift+Print Screen records an area, and stops the recording." }
