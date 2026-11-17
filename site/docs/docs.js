@@ -44,6 +44,7 @@ const SECTIONS = [
     { id: "privacy", title: "Private Mode and the camera", icon: 0xF227, about: "Turning off the mic, camera, assistants and screen capture", },
   ]},
   { title: "Apps and tools", pages: [
+    { id: "software", title: "Software", icon: 0xEA96, about: "Finding and installing apps, and keeping everything up to date" },
     { id: "apps", title: "Default and startup apps", icon: 0xEBB6, about: "Which apps open things, and what opens at login", covers: ["apps", "startup"] },
     { id: "screenshots", title: "Screenshots", icon: 0xF201, about: "Areas, windows and screens, saved and marked up", covers: ["screenshots"] },
     { id: "clipboard", title: "Clipboard and emoji", icon: 0xEA6F, about: "Clipboard history and the emoji picker" },

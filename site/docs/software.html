@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software · Slate docs</title>
+<meta name="description" content="Finding, installing and removing apps from Flathub in Slate's Software app, and keeping your apps and your computer's system up to date.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=31">
+<link rel="stylesheet" href="docs.css?v=2">
+</head>
+<body class="docs" data-page="software">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Apps and tools</p>
+      <h1>Software</h1>
+      <p class="lead">Find and install apps from Flathub, and keep your apps and your computer's system up to date,
+        all in one place.</p>
+
+      <h2>Opening Software</h2>
+      <p>Search for <strong>Software</strong> in the launcher (<kbd>Super</kbd>). It opens on
+        <strong>Discover</strong>, with the search box ready for you to type. From a script, it's
+        <code>slate ipc call software open</code> (see <a href="command-line.html">The slate command</a>).</p>
+      <p>Apps come from <a href="https://flathub.org">Flathub</a>, where thousands of free apps run safely in a space
+        of their own (Flatpak). Software needs the <code>flatpak</code> package and Flathub set up for it: if either is
+        missing, it says so and how to add it.</p>
+
+      <h2>Finding apps</h2>
+      <p><strong>Discover</strong> has a large search box in the middle: type a name or what you're after ("photo",
+        "music player") and matching apps show beneath it as you type. Search works from any page, and offline too,
+        since the catalog is kept on your computer.</p>
+      <p>Below the search, each category (Games, Graphics &amp; Photos, Music &amp; Video and so on) has a row of its
+        most installed apps on Flathub. Move along a row with its arrows, or click <strong>See all</strong> for the
+        whole category, its popular apps first. The popular lists are fetched from Flathub at most every six hours;
+        offline, the rows are in alphabetical order.</p>
+
+      <h2>An app's page</h2>
+      <p>Click an app to see its page: what it does, who makes it, its version and license, its screenshots and a
+        description, with <strong>Install</strong> (or <strong>Open</strong> and <strong>Remove</strong> once it's
+        installed). Click a screenshot to see it large: <kbd>Left</kbd> and <kbd>Right</kbd>
+        (or the arrows) step through the rest, and <kbd>Esc</kbd>, the close button or a click outside
+        closes it. <strong>Back</strong>, beside the app's name, returns you to where you were.</p>
+
+      <h2>Installing and removing</h2>
+      <p>Click <strong>Install</strong>. Apps are installed for everyone on the computer, so this may ask for an
+        administrator's password. A progress bar shows how far the download and install have got. Several installs
+        wait their turn and run one at a time.</p>
+      <p>Closing Software doesn't stop an install, and neither does restarting Slate: open Software again and it's
+        still there, with its progress.</p>
+      <p>To remove an app, click <strong>Remove</strong> on its page or on <strong>Installed</strong>, then
+        <strong>Remove</strong> again to confirm. It's removed for everyone; your own files from it stay where they
+        are, and you can install it again any time.</p>
+
+      <h2>Installed</h2>
+      <p><strong>Installed</strong> lists the apps you have from Flathub, each with <strong>Open</strong> and
+        <strong>Remove</strong>.</p>
+
+      <h2>Updates</h2>
+      <p><strong>Updates</strong> shows a count of what's waiting in the sidebar. Software looks each time it opens,
+        and <strong>Check again</strong> looks once more.</p>
+      <table>
+        <tr><th>What</th><th>How it updates</th></tr>
+        <tr><td>Your apps</td><td><strong>Update all apps</strong>, or <strong>Update</strong> beside one to update it
+          on its own. Your apps and windows stay open while they update.</td></tr>
+        <tr><td>This computer's system</td><td>Its packages are listed with the version each goes to, and update
+          together with <strong>Update</strong> (one package on its own could leave the system half updated). It asks
+          for an administrator's password. Restart afterwards if it says to, for a new kernel, say.</td></tr>
+      </table>
+      <p>When nothing's waiting, Updates says you're up to date, and when it last looked.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>System updates use your distro's own tools: <code>checkupdates</code> on Arch (the
+          <code>pacman-contrib</code> package), PackageKit where it's installed, or apt, dnf or zypper. On NixOS, your
+          configuration updates the system, so Software only lists apps there.</p></div>
+      <p>Slate's own updates are separate: see <a href="updating.html">Updates</a>.</p>
+
+      <h2>How it looks</h2>
+      <p>Software follows your theme and the rest of Slate's look. Apps' icons are drawn the way the dock draws them,
+        in the shape and style you chose in <span class="path"><i class="ti">&#xEB20;</i> Settings → Icons</span>.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js?v=4"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>
