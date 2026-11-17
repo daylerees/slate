@@ -1038,6 +1038,8 @@ Singleton {
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
+            // Accessibility → Zoom (binds.lua's setZoom; the keys tell Slate where they got to)
+            + `if setZoom then setZoom(${s.zoom ? "true" : "false"}, ${Math.max(1.25, Math.min(5, Number(s.zoomLevel) || 2)).toFixed(2)}, ${s.zoomFollow === "center" ? "true" : "false"}) end; `
             // Accessibility → Reduce motion: windows and workspaces only fade (animations.lua)
             + `if setReduceMotion then setReduceMotion(${s.reduceMotion ? "true" : "false"}) end; `
             // Glass: blur behind Slate's surfaces, from just under their own opacity (glassCut).

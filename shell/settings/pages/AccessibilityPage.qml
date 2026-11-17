@@ -13,6 +13,30 @@ Column {
     IntroText {
         text: "Make Slate easier to see and use. These work on top of your other settings without changing them, so you can switch any of them off again and everything is as you had it."
     }
+    GroupLabel { text: "Zoom" }
+    Group {
+        ToggleSetting {
+            label: "Zoom"
+            detail: "Magnify the whole screen around the pointer. Super+Alt+Z turns it on and off, and Super+Plus and Super+Minus zoom in and out"
+            key: "zoom"
+        }
+        Separator {}
+        SettingRow {
+            label: "Zoom level"
+            settingKey: "zoomLevel"
+            detail: "How far in it goes"
+            ValueSlider { from: 1.25; to: 5; stepSize: 0.25; decimals: 2; suffix: "×"; value: Config.s.zoomLevel; onMoved: v => Config.s.zoomLevel = v }
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Follow the pointer"
+            settingKey: "zoomFollow"
+            detail: "Smoothly moves the view when the pointer nears its edge; In the middle keeps the pointer centered, moving the view with it"
+            options: [{ value: "smooth", label: "Smoothly" }, { value: "center", label: "In the middle" }]
+            value: Config.s.zoomFollow
+            onPicked: v => Config.s.zoomFollow = v
+        }
+    }
     GroupLabel { text: "Display" }
     Group {
         ToggleSetting {

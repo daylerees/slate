@@ -268,6 +268,7 @@ never the other way round. Name branches yourself, never with Linear's `gitBranc
 | Assistant | Nova, the MCP server (`slate mcp`) |
 | Tests | the test suite itself and tests/run (not a feature's own tests) |
 | Site & docs | site/, the site's docs, README, docs/ when they're the work itself |
+| Accessibility | Settings → Accessibility and what it covers: zoom, reduced transparency and motion, contrast and text size, keyboard and pointer aids, the on-screen keyboard, the screen reader |
 
 ## Releases
 

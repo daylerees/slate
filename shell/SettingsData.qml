@@ -303,6 +303,12 @@ JsonAdapter {
     // whatever Animations is set to. They override the look without changing it
     property bool reduceTransparency: false
     property bool reduceMotion: false
+    // Zoom (Settings → Accessibility; Super+Plus/Minus, Super+Alt+Z): the whole screen magnified
+    // around the pointer, on or off, how far (1.25–5×), and following the pointer smoothly or
+    // keeping it in the middle ("center")
+    property bool zoom: false
+    property real zoomLevel: 2
+    property string zoomFollow: "smooth"
     // …and for apps and this computer's system (Software): a notification at most once a day
     property bool softwareUpdateCheck: true
     // Keyboard shortcuts (Settings → Shortcuts): slate, hyprland or hyprland-extras

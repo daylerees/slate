@@ -985,6 +985,7 @@ MOVES = ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"]
 # What each text setting takes: a list of values, or a pattern (with how to say it)
 VALUES = {
     "themeMode": ["dark", "light", "auto"],
+    "zoomFollow": ["smooth", "center"],
     "accent": (r"#[0-9a-fA-F]{6}", "a color like #8fb3e8"),
     "wallpaperMinSize": (r"\d{3,5}x\d{3,5}", "a size like 1280x720"),
     "wallpaperChange": (r"off|login|[1-9]\d{0,3}", "off, login, or a number of minutes"),
@@ -1033,7 +1034,7 @@ VALUES = {
 # What each number takes, as Settings' own sliders and menus allow (Slate doesn't check a
 # number set from outside; some are kept as 0 to 1 where Settings shows a percentage)
 RANGES = {
-    "accentBoldness": (0, 1), "toneBoldness": (0, 1),
+    "accentBoldness": (0, 1), "toneBoldness": (0, 1), "zoomLevel": (1.25, 5),
     "tickVolume": (0, 100), "notificationVolume": (0, 100), "clickVolume": (0, 100), "swishVolume": (0, 100),
     "welcomeVolume": (0, 100), "goodbyeVolume": (0, 100), "attentionVolume": (0, 100),
     "answeredVolume": (0, 100),
@@ -1058,7 +1059,7 @@ RANGES = {
 SWITCHES = {
     "accentFromWallpaper", "toneFromWallpaper", "wallpaperHideSmall", "wallpaperShowSlate",
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
-    "reduceTransparency", "reduceMotion",
+    "reduceTransparency", "reduceMotion", "zoom",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",

@@ -62,6 +62,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + Plus"]               = "Slate: Zoom in",
     ["SUPER + code:82"]            = "Slate: Zoom out (keypad -)",
     ["SUPER + code:86"]            = "Slate: Zoom in (keypad +)",
+    ["SUPER + ALT + Z"]            = "Slate: Zoom on or off",
     ["SUPER + Q"]                  = "Windows: Close the window",
     ["SUPER + Escape"]             = "Windows: Force-quit an app (click its window)",
     ["SUPER + Tab"]                = "Windows: Switch windows (hold Super)",
@@ -486,26 +487,39 @@ end)
 ---- ZOOM ----
 --------------
 
--- Zooming the whole screen in and out, between 1× and 3×
-local function zoomfunction(value)
-    local zoomvalue = hl.get_config("cursor:zoom_factor")
-    if (zoomvalue + value) > 3.0 then
-        hl.config({ cursor = { zoom_factor = 3.0 } })
-    elseif (zoomvalue + value) < 1.0 then
-        hl.config({ cursor = { zoom_factor = 1.0 } })
-    else
-        hl.config({ cursor = { zoom_factor = zoomvalue + value } })
-    end
+-- Zooming the whole screen around the pointer, between 1× and 5× (Settings → Accessibility →
+-- Zoom). The keys zoom here at once, then tell Slate where they got to ("zoom note"), which keeps
+-- Settings in step and puts the zoom back after a reload; Settings tells Hyprland through
+-- setZoom (Config.qml, with its other settings)
+SLATE_ZOOM_LEVEL = SLATE_ZOOM_LEVEL or 2
+local function zoomTo(value)
+    value = math.max(1, math.min(5, value))
+    hl.config({ cursor = { zoom_factor = value } })
+    hl.exec_cmd(slate("zoom note " .. string.format("%.2f", value)))
+end
+local function zoomBy(step)
+    zoomTo(hl.get_config("cursor:zoom_factor") + step)
+end
+-- On (at the level last chosen) or off
+local function zoomToggle()
+    if hl.get_config("cursor:zoom_factor") > 1.001 then zoomTo(1) else zoomTo(SLATE_ZOOM_LEVEL) end
+end
+-- From Slate: on or off, how far, and whether the pointer stays in the middle (rigid)
+function setZoom(on, level, rigid)
+    SLATE_ZOOM_LEVEL = math.max(1.25, math.min(5, level or 2))
+    hl.config({ cursor = { zoom_factor = on and SLATE_ZOOM_LEVEL or 1, zoom_rigid = rigid == true } })
 end
 
 -- (Slate's set, and Hyprland + Slate Extras)
 if SLATE_KEYS or EXTRAS then
-    hl.bind(mainMod .. " + Minus", function() zoomfunction(-0.3) end, { repeating = true })
-    hl.bind(mainMod .. " + Plus", function() zoomfunction(0.3) end, { repeating = true })
+    hl.bind(mainMod .. " + Minus", function() zoomBy(-0.25) end, { repeating = true })
+    hl.bind(mainMod .. " + Plus", function() zoomBy(0.25) end, { repeating = true })
 
     -- Zoom with the keypad's - and +
-    hl.bind(mainMod .. " + code:82", function() zoomfunction(-0.3) end, { repeating = true })
-    hl.bind(mainMod .. " + code:86", function() zoomfunction(0.3) end, { repeating = true })
+    hl.bind(mainMod .. " + code:82", function() zoomBy(-0.25) end, { repeating = true })
+    hl.bind(mainMod .. " + code:86", function() zoomBy(0.25) end, { repeating = true })
+    -- Zoom on or off
+    hl.bind(mainMod .. " + ALT + Z", zoomToggle)
 end
 
 --------------------------------

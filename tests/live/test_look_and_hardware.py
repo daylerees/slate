@@ -341,3 +341,31 @@ class Accessibility(LiveCase):
         self.wait(lambda st: st["look"]["animate"], "movement back")
         settings_in_hyprland(self)
         self.assertEqual(lua(self, "SLATE_REDUCE_MOTION"), "false")
+
+    def test_zoom(self):
+        """Zoom: the keys say where they got to (zoom note) and Settings follows; Settings tells
+        Hyprland (its zoom, and keeping the pointer in the middle); off is 1×."""
+        for key in ("zoom", "zoomLevel", "zoomFollow"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: settings_in_hyprland(self))
+        self.s.ipc("zoom", "note", "2.5")
+        for _ in range(30):
+            if self.s.ipc("config", "get", "zoom") == "true" and self.s.ipc("config", "get", "zoomLevel") == "2.5":
+                break
+            self.s.settle(0.1)
+        self.assertEqual((self.s.ipc("config", "get", "zoom"), self.s.ipc("config", "get", "zoomLevel")), ("true", "2.5"))
+        settings_in_hyprland(self)
+        self.assertAlmostEqual(float(self.option("cursor:zoom_factor")), 2.5, places=2)
+        self.config("zoomFollow", "center")
+        settings_in_hyprland(self)
+        self.assertEqual(self.option("cursor:zoom_rigid"), 1, "the pointer isn't kept in the middle")
+        self.s.ipc("zoom", "toggle")
+        settings_in_hyprland(self)
+        self.assertAlmostEqual(float(self.option("cursor:zoom_factor")), 1.0, places=2)
+        self.assertEqual(self.s.ipc("config", "get", "zoomLevel"), "2.5", "the level was forgotten")
+        self.s.ipc("zoom", "toggle")
+        settings_in_hyprland(self)
+        self.assertAlmostEqual(float(self.option("cursor:zoom_factor")), 2.5, places=2, msg="toggled back on, not at the level")
+        self.s.ipc("zoom", "note", "1")
+        settings_in_hyprland(self)
+        self.assertEqual(self.s.ipc("config", "get", "zoom"), "false")

@@ -653,6 +653,21 @@ ShellRoot {
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
     }
+    // Zoom (Settings → Accessibility): the keys (binds.lua) zoom at once and say where they got
+    // to with note; step and toggle are the same from anywhere else
+    IpcHandler {
+        target: "zoom"
+        function note(factor: real): void {
+            const f = Math.max(1, Math.min(5, Number(factor) || 1));
+            if (f > 1.001) { Config.s.zoomLevel = Math.round(f * 100) / 100; Config.s.zoom = true; }
+            else Config.s.zoom = false;
+        }
+        function toggle(): void { Config.s.zoom = !Config.s.zoom; }
+        function step(by: real): void {
+            const now = Config.s.zoom ? Number(Config.s.zoomLevel) : 1;
+            note(now + 0.25 * by);
+        }
+    }
     // Slate Software (SoftwareWindow.qml), built the first time it's opened, as Settings is, and
     // built afresh after it's closed from outside Slate (Super+Q, a title bar's close button):
     // until then it couldn't be shown again
