@@ -1489,6 +1489,15 @@ Singleton {
         if (o.wait) c.push("--wait");          // (stays running until it's clicked or closed: actions answer on stdout)
         return c.concat(["--", title, body]);
     }
+    // A size in bytes in words: "1.2 GB", "340 MB", "1.5 TB" (as the battery panel's free space)
+    function bytesText(bytes) {
+        const g = bytes / 1e9;
+        if (g >= 1000) return (g / 1000).toFixed(1) + " TB";
+        if (g >= 100) return Math.round(g) + " GB";
+        if (g >= 1) return g.toFixed(1) + " GB";
+        const m = bytes / 1e6;
+        return m >= 1 ? Math.round(m) + " MB" : bytes > 0 ? "Under 1 MB" : "Nothing";
+    }
     // "2 min ago", worded as on notifications ("now", then a date after a day). `t` is in
     // milliseconds. `wordy` is the clipboard's wording instead: "Just now", and "Yesterday" /
     // "3 days ago" rather than a date
@@ -1758,7 +1767,7 @@ Singleton {
     readonly property var pagePastels: ({
         overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
         input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
-        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8", timers: "#e8b0a0",
+        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8", timers: "#e8b0a0", storage: "#b8c8a0",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",

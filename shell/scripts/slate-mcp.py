@@ -690,6 +690,12 @@ def status():
     out["gameMode"] = bool(STATUS.get("gameMode"))
     out["doNotDisturb"] = ipc("notifications", "dndGet") == "true"
     try:
+        drives = json.loads(subprocess.run([sys.executable, os.path.join(HERE, "storage.py"), "drives"],
+                                           capture_output=True, text=True, timeout=10).stdout or "[]")
+        out["storage"] = [{"name": d["name"], "freeGB": round(d["free"] / 1e9, 1), "sizeGB": round(d["size"] / 1e9, 1)} for d in drives]
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
+        pass
+    try:
         t = json.loads(ipc("timers", "state") or "{}")
         out["timers"] = {"drink": {k: t["drink"][k] for k in ("on", "overdue", "left")},
                          "focus": {k: t["focus"][k] for k in ("on", "phase", "paused", "left", "round")}}
@@ -1078,7 +1084,7 @@ SWITCHES = {
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
     "reduceTransparency", "reduceMotion", "zoom", "highContrast", "onScreenKeyboard", "screenReader", "pointerTrail",
     "dndSchedule", "dndFullscreen", "dndCalls", "recordComputerSound", "recordMicrophone",
-    "drinkReminder", "focusTimer", "focusQuiet", "barShowDrink", "dockShowDrink", "barShowFocus", "dockShowFocus",
+    "drinkReminder", "focusTimer", "focusQuiet", "storageWarning", "barShowDrink", "dockShowDrink", "barShowFocus", "dockShowFocus",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",

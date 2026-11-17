@@ -453,6 +453,7 @@ ShellRoot {
                                               popoutHere: b.popoutHere, width: Math.round(b.width), height: Math.round(b.height),
                                               dots: b.dotsState, bell: b.bellText, shot: b.shotState, clock: b.clockText })),
                 wakes: Config.wakes,
+                storage: { checks: storageWatch.checks, said: storageWatch.said, warned: Object.keys(storageWatch.warned) },
                 popout: popouts.current, popoutKeyFocus: popouts.keyFocusText, popoutKeyPath: popouts.keyFocusPath,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
@@ -679,6 +680,8 @@ ShellRoot {
     }
     // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
     LocatePointer { id: locatePointer }
+    // A drive nearly full (Settings → Storage)
+    StorageWatch { id: storageWatch }
     // Screen recording (the Screenshot panel, Super+Shift+Print)
     ScreenRecorder { id: screenRecorder }
     // Trailing pointer (Accessibility)

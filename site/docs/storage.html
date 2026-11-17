@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storage · Slate docs</title>
+<meta name="description" content="Storage in Slate: how full your drives are, what's using the space, freeing some, and a warning when a drive is nearly full.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=31">
+<link rel="stylesheet" href="docs.css?v=2">
+</head>
+<body class="docs" data-page="storage">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Storage</h1>
+      <p class="lead">How full your drives are and what's using the space, with gentle ways to free some:
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Storage</span>.</p>
+
+      <h2>Drives</h2>
+      <p>Each drive, how much is free, and a bar for how full it is. It turns red once a drive has less than a tenth of
+        its space (or 5 GB) left.</p>
+
+      <h2>What's using your space</h2>
+      <p>Apps (installed apps and the system), Documents, Downloads, Pictures, Videos, Music, caches, the Waste Basket,
+        and everything else in your home folder. Measuring takes a little while, so the page shows the last
+        measurement straight away and a fresh one when it's done. Below that, <strong>Your biggest folders</strong>
+        lists the largest folders in your home, each with <strong>Open</strong>. Hidden ones (their names start with a
+        dot) are kept by apps.</p>
+
+      <h2>Freeing space</h2>
+      <table>
+        <tr><th>Action</th><th>What it does</th></tr>
+        <tr><td>Empty the Waste Basket</td><td>Deletes what's in it for good, after asking.</td></tr>
+        <tr><td>Clear old caches</td><td>Deletes thumbnails, and apps' temporary files nothing has used for a month,
+          after asking. Your own files stay as they are, and apps make what they need again.</td></tr>
+      </table>
+
+      <h2>Nearly full</h2>
+      <p>With <strong>Warn when a drive is nearly full</strong> on (as it is to start with), Slate checks every ten
+        minutes and sends one calm notification when a drive gets down to a tenth of its space or 5 GB. It won't say
+        it again until the drive has had room again.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js?v=4"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

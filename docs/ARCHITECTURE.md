@@ -120,7 +120,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
 │        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
 │        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
-│        AccessibilityPage.qml, TimersPage.qml
+│        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
@@ -221,6 +221,8 @@ scripts/thumbnails.py         small pictures of images from the shared thumbnail
                               (~/.cache/thumbnails), made where missing: the wallpaper switcher's cards
 scripts/image-sizes.py        each image's pixel size in a folder, so Settings → Appearance can hide ones too
                               small to be wallpapers
+scripts/storage.py            Settings → Storage: the drives (statvfs), what's using the space by kind and the biggest
+                              folders (measured at low priority, kept in ~/.cache/slate/storage.json), clearing old caches
 scripts/settings-index.py     lists every setting in Settings (SettingsWindow.qml and settings/pages/) as JSON, for SettingsIndex.qml's search
 scripts/hypr-options.py       Hyprland options' current values as JSON, so Settings can show what's in
                               use for anything not set there
@@ -282,6 +284,8 @@ OnScreenKeyboard.qml          the on-screen keyboard on the desktop ("slate-osk"
                               with wtype; Super+Alt+K
 LocatePointer.qml             Accessibility → Locate the pointer (Super+Alt+P): rings round the pointer for a moment, placed
                               from Hyprland's pointer position (made Slate's units: Config.screenPoint)
+StorageWatch.qml              Settings → Storage → Warn when a drive is nearly full: checks the drives every ten
+                              minutes (scripts/storage.py drives) and says so once; IPC `storage`
 Timers.qml                    the drink reminder and the focus timer (a Pomodoro): their countdowns, notifications with a
                               button, Do Not Disturb while focusing; IPC `timers` (singleton)
 TimerRing.qml                 a countdown ring that empties as time runs down (the timers' panels and dock tiles)

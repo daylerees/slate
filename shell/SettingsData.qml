@@ -206,6 +206,8 @@ JsonAdapter {
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)
     property bool barShowVolume: true
     property bool barShowBattery: true
+    // Settings → Storage: a calm notification when a drive is nearly full (StorageWatch.qml)
+    property bool storageWarning: true
     // The timers (Settings → Timers; Timers.qml): the drink reminder and the focus timer, their
     // lengths in minutes, and where they show (the menu bar, the dock, or both)
     property bool drinkReminder: false
