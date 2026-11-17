@@ -120,7 +120,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
 │        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
 │        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
-│        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml, BackupsPage.qml
+│        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
@@ -221,8 +221,6 @@ scripts/thumbnails.py         small pictures of images from the shared thumbnail
                               (~/.cache/thumbnails), made where missing: the wallpaper switcher's cards
 scripts/image-sizes.py        each image's pixel size in a folder, so Settings → Appearance can hide ones too
                               small to be wallpapers
-scripts/backup.py             Settings → Backups with restic: setting up (the key in the keyring, or a file of yours),
-                              backing up, what's due, the backups there are, and restoring beside your files
 scripts/storage.py            Settings → Storage: the drives (statvfs), what's using the space by kind and the biggest
                               folders (measured at low priority, kept in ~/.cache/slate/storage.json), clearing old caches
 scripts/settings-index.py     lists every setting in Settings (SettingsWindow.qml and settings/pages/) as JSON, for SettingsIndex.qml's search
@@ -286,8 +284,6 @@ OnScreenKeyboard.qml          the on-screen keyboard on the desktop ("slate-osk"
                               with wtype; Super+Alt+K
 LocatePointer.qml             Accessibility → Locate the pointer (Super+Alt+P): rings round the pointer for a moment, placed
                               from Hyprland's pointer position (made Slate's units: Config.screenPoint)
-Backups.qml                   Settings → Backups on a schedule: hourly, asks scripts/backup.py whether one's due and runs it
-                              at low priority (never in game mode); says so only when one fails; IPC `backups`
 StorageWatch.qml              Settings → Storage → Warn when a drive is nearly full: checks the drives every ten
                               minutes (scripts/storage.py drives) and says so once; IPC `storage`
 Timers.qml                    the drink reminder and the focus timer (a Pomodoro): their countdowns, notifications with a
@@ -746,8 +742,6 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
 | `grim`, `slurp` | screenshots (Print / Super+Print), and choosing what to record |
 | `wf-recorder` (optional) | screen recording (the Screenshot panel, Super+Shift+Print); without it Slate says what to install |
-| `restic` (optional) | backups (Settings → Backups); without it the page says what to install |
-| `secret-tool` (optional: libsecret) | the backups' key kept in your keyring; without it, a file only you can read |
 | `pactl` (optional: libpulse / pulseaudio-utils) | a screen recording with the computer's sound and the microphone together, mixed through a sink of its own while it records |
 | `hyprpicker` | the color picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |

@@ -39,7 +39,6 @@ const SECTIONS = [
     { id: "power", title: "Power and battery", icon: 0xEA38, about: "Power modes, the charging limit, the lid and the power button", covers: ["power"] },
     { id: "network", title: "Network and Bluetooth", icon: 0xF09F, about: "Wi-Fi, wired connections, Airplane Mode and Bluetooth devices", covers: ["wifi", "bluetooth"] },
     { id: "printers-webcam", title: "Printers and the webcam", icon: 0xEB0E, about: "Adding printers, scanning, and your camera's picture", covers: ["printers", "webcam"] },
-    { id: "backups", title: "Backups", icon: 0xEB13, about: "Encrypted copies of your files on another drive, and restoring them", covers: ["backups"] },
     { id: "storage", title: "Storage", icon: 0xEA88, about: "How full your drives are, what's using the space, and freeing some", covers: ["storage"] },
     { id: "timers", title: "Timers", icon: 0xEA70, about: "A drink reminder and a focus timer, on the menu bar or the dock", covers: ["timers"] },
     { id: "accessibility", title: "Accessibility", icon: 0xEBA9, about: "Easier to see and use: a screen reader, zoom, contrast, text size, an on-screen keyboard", covers: ["accessibility"] },

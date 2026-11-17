@@ -220,7 +220,6 @@ NAMED = {
     "barShowScreenshot": ("bar", "Screenshot"),
     "barShowCamera": ("bar", "Camera in use (an eye while an app is using the camera)"),
     "barShowGameMode": ("bar", "Game mode"),
-    "backupTo": ("backups", "Backing up to"),
     "barShowDrink": ("timers", "Show on"), "dockShowDrink": ("timers", "Show on"),
     "barShowFocus": ("timers", "Show on"), "dockShowFocus": ("timers", "Show on"),
     "barShowKeyboard": ("bar", "Keyboard layout"),
@@ -996,8 +995,6 @@ REFUSE = {
     "iconThemeBefore",
     # a list of apps (which may still interrupt you while it's quiet: the person's to choose)
     "dndAllowed",
-    # where backups go (a folder: set up from Settings, with its key)
-    "backupTo",
 }
 ON_OFF = ["", "on", "off"]
 CORNERS = ["none", "lock", "launcher", "overview", "control", "notifications", "screenoff"]
@@ -1016,8 +1013,6 @@ VALUES = {
     "dndFrom": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 22:00"),
     "dndTo": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 07:00"),
     "dndDays": ["every", "weekdays", "weekends"],
-    "backupWhat": ["home", "personal"],
-    "backupSchedule": ["daily", "weekly", "manual"],
     "workspaceShape": ["square", "circle"],
     "iconShape": ["tile", "squircle", "circle", "square", "original"],
     "folderColour": (r"[a-z]{3,20}", "default, auto, or a folder color your icons have, like teal"),

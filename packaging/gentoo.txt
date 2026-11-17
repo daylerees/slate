@@ -86,5 +86,3 @@ sys-apps/accountsservice
 ?app-accessibility/orca # The screen reader (Settings → Accessibility): reading the screen aloud
 ?gui-apps/wf-recorder # Screen recording (the Screenshot panel, Super+Shift+Print)
 ?media-libs/libpulse # pactl: a screen recording with the computer's sound and the microphone together
-?app-backup/restic  # Backups (Settings → Backups): encrypted backups of your files
-?app-crypt/libsecret # secret-tool: the backups' key kept in your keyring

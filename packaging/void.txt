@@ -96,5 +96,3 @@ accountsservice
 ?orca               # The screen reader (Settings → Accessibility): reading the screen aloud
 ?wf-recorder        # Screen recording (the Screenshot panel, Super+Shift+Print)
 ?pulseaudio-utils   # pactl: a screen recording with the computer's sound and the microphone together
-?restic             # Backups (Settings → Backups): encrypted backups of your files
-?libsecret          # secret-tool: the backups' key kept in your keyring
