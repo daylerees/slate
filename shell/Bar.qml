@@ -272,6 +272,10 @@ PanelWindow {
     // Pressed (the pointer held down on it, or its panel open): the accent, much darker, in
     // the hover's shape. Shown at once, as the hover is
     readonly property color pressFill: Qt.rgba(accent.r * 0.14, accent.g * 0.14, accent.b * 0.14, 1)
+    // How far in from a container's edge the hover and pressed fills stop: inside the bright line
+    // round it with glass (Gloss: 1 px, 2 in light mode, with its darker outer line), which they
+    // covered; flush without glass, where there's no line
+    readonly property real fillInset: Config.glass ? (Config.s.lightMode ? 2 : 1) : 0
     readonly property real pressStrength: 1
     // With more than one screen, the bars on screens without focus are dimmed
     readonly property bool dimmed: Quickshell.screens.length > 1 && !!screen
@@ -1749,8 +1753,8 @@ PanelWindow {
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
         Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
+            anchors { fill: parent; margins: bar.fillInset }
+            radius: Config.corner(Math.max(0, bar.capsuleRadius - bar.fillInset))
             color: bar.hoverFill
             opacity: cap.hoverTint && capReach.hovered ? bar.hoverStrength : 0   // (at once: CONVENTIONS, the muted hover)
         }
@@ -1855,7 +1859,14 @@ PanelWindow {
         // square sides that meet a separator
         Rectangle {
             id: segFill
-            anchors.fill: parent
+            // (inside the container's bright edge: across it, and at its ends)
+            anchors {
+                fill: parent
+                topMargin: bar.vert ? (seg.first ? bar.fillInset : 0) : bar.fillInset
+                bottomMargin: bar.vert ? (seg.last ? bar.fillInset : 0) : bar.fillInset
+                leftMargin: bar.vert ? bar.fillInset : (seg.first ? bar.fillInset : 0)
+                rightMargin: bar.vert ? bar.fillInset : (seg.last ? bar.fillInset : 0)
+            }
             readonly property real fade: Math.min(0.45, 12 / Math.max(1, width))   // ~12px soft edge
             gradient: Gradient {
                 orientation: bar.vert ? Gradient.Vertical : Gradient.Horizontal
@@ -1864,10 +1875,11 @@ PanelWindow {
                 GradientStop { position: 1 - segFill.fade; color: seg.fillColor }
                 GradientStop { position: 1.0; color: seg.last ? seg.fillColor : "transparent" }
             }
-            topLeftRadius: Config.corner(seg.first ? bar.capsuleRadius : 0)
-            bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? bar.capsuleRadius : 0)
-            topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? bar.capsuleRadius : 0)
-            bottomRightRadius: Config.corner(seg.last ? bar.capsuleRadius : 0)
+            readonly property real inner: Math.max(0, bar.capsuleRadius - bar.fillInset)
+            topLeftRadius: Config.corner(seg.first ? inner : 0)
+            bottomLeftRadius: Config.corner((bar.vert ? seg.last : seg.first) ? inner : 0)
+            topRightRadius: Config.corner((bar.vert ? seg.first : seg.last) ? inner : 0)
+            bottomRightRadius: Config.corner(seg.last ? inner : 0)
             opacity: seg.active ? bar.pressStrength : seg.lit ? bar.hoverStrength : 0   // (at once: CONVENTIONS, the muted hover)
         }
         // Picked, while the bar's being arranged: lit in the accent colour, with an outline
@@ -2083,9 +2095,10 @@ PanelWindow {
         property bool atEnd: false
         readonly property bool endFirst: atStart && trayCapsule.first
         readonly property bool endLast: atEnd && trayCapsule.last
-        readonly property real before: atStart ? 5 : 1      // (to the tray's edge, or half the gap between icons)
-        readonly property real after: atEnd ? 5 : 1
-        readonly property real across: bar.capsuleHeight
+        // (to the tray's edge, inside its bright line, or half the gap between icons)
+        readonly property real before: atStart ? 5 - (endFirst ? bar.fillInset : 0) : 1
+        readonly property real after: atEnd ? 5 - (endLast ? bar.fillInset : 0) : 1
+        readonly property real across: bar.capsuleHeight - 2 * bar.fillInset
         x: bar.vert ? (parent.width - across) / 2 : -before
         y: bar.vert ? -before : (parent.height - across) / 2
         width: bar.vert ? across : parent.width + before + after
@@ -2098,10 +2111,11 @@ PanelWindow {
             GradientStop { position: 1 - tf.fade; color: bar.hoverFill }
             GradientStop { position: 1.0; color: tf.endLast ? bar.hoverFill : "transparent" }
         }
-        topLeftRadius: Config.corner(endFirst ? bar.capsuleRadius : 0)
-        bottomLeftRadius: Config.corner((bar.vert ? endLast : endFirst) ? bar.capsuleRadius : 0)
-        topRightRadius: Config.corner((bar.vert ? endFirst : endLast) ? bar.capsuleRadius : 0)
-        bottomRightRadius: Config.corner(endLast ? bar.capsuleRadius : 0)
+        readonly property real inner: Math.max(0, bar.capsuleRadius - bar.fillInset)
+        topLeftRadius: Config.corner(endFirst ? inner : 0)
+        bottomLeftRadius: Config.corner((bar.vert ? endLast : endFirst) ? inner : 0)
+        topRightRadius: Config.corner((bar.vert ? endFirst : endLast) ? inner : 0)
+        bottomRightRadius: Config.corner(endLast ? inner : 0)
         opacity: lit ? bar.hoverStrength : 0                                 // (at once: CONVENTIONS, the muted hover)
     }
 
